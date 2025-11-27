@@ -1,0 +1,118 @@
+package top.yzljc.utiltools;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.net.URL;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.concurrent.Executors;
+
+public class ElectricCheck {
+    private static final ObjectMapper jsonMapper = new ObjectMapper();
+    private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
+    private static final String NAPCAT_GROUP_API = "http://106.14.23.232:8848/send_group_msg";
+    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L};
+    private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
+
+    public static void processElectric(JsonNode json) {
+        long groupId = json.path("group_id").asLong();
+        String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
+
+        if (!isAllowedGroup(groupId) || !containsKeyword(rawMessage)) return;
+
+        Executors.newSingleThreadExecutor().submit(() -> {
+            String feedback;
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(QUERY_URL).openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                conn.getInputStream().close();
+
+                JsonNode respJson = null;
+                try { respJson = jsonMapper.readTree(respStr); } catch (Exception ignored) {}
+                if (respJson != null) {
+                    String rec = respJson.path("rec").asText();
+                    String rsmd = respJson.path("rsmd").asText();
+                    String rsfd = respJson.path("rsfd").asText();
+                    String rljd = respJson.path("rljd").asText();
+                    String rtzd = respJson.path("rtzd").asText();
+                    String rgzzt = respJson.path("rgzzt").asText();
+
+                    String status = decodeUnicode(rgzzt);
+
+                    feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s",
+                            rec, rsmd, rsfd, rljd, rtzd, status);
+                    System.out.println("[ElectricCheck] 电表数据发送 => " + feedback.replace("\n", " | "));
+                } else {
+                    feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
+                    System.err.println("[ElectricCheck] 返回内容无法解析: " + respStr);
+                }
+            } catch (Exception ex) {
+                feedback = "[电表查询失败] 网络异常或远端接口错误。";
+                System.err.println("[ElectricCheck] 查询异常: " + ex.getMessage());
+            }
+            sendGroupMsg(groupId, feedback);
+        });
+    }
+
+    private static boolean isAllowedGroup(long groupId) {
+        for (long g : ALLOWED_GROUPS)
+            if (g == groupId) return true;
+        return false;
+    }
+
+    private static boolean containsKeyword(String msg) {
+        for (String kw : KEYWORDS)
+            if (msg.equalsIgnoreCase(kw)) return true;
+        return false;
+    }
+
+    private static String decodeUnicode(String unicodeStr) {
+        StringBuilder out = new StringBuilder();
+        int len = unicodeStr.length();
+        for (int i = 0; i < len;) {
+            char c = unicodeStr.charAt(i++);
+            if (c == '\\' && i < len && unicodeStr.charAt(i) == 'u' && i + 4 < len) {
+                String hex = unicodeStr.substring(i + 1, i + 5);
+                try {
+                    out.append((char) Integer.parseInt(hex, 16));
+                } catch (Exception e) {
+                    out.append("\\u").append(hex);
+                }
+                i += 5;
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
+    private static void sendGroupMsg(long groupId, String text) {
+        try {
+            var textNode = Collections.singletonMap("type", "text");
+            var textData = Collections.singletonMap("text", text);
+            var node = new java.util.HashMap<String, Object>(textNode);
+            node.put("data", textData);
+            var payloadMap = new java.util.HashMap<String, Object>();
+            payloadMap.put("group_id", groupId);
+            payloadMap.put("message", Collections.singletonList(node));
+            String payload = jsonMapper.writeValueAsString(payloadMap);
+
+            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_GROUP_API).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
+            conn.getInputStream().close();
+            System.out.println("[ElectricCheck] 群反馈已发送 => groupId: " + groupId + " 内容: " + text.replace("\n", " | "));
+        } catch (Exception e) {
+            System.err.println("[ElectricCheck] 群消息发送失败: " + e.getMessage());
+        }
+    }
+}
