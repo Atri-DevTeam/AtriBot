@@ -105,27 +105,47 @@ public class App {
 
     private static void handleClient(Socket socket) {
         try (InputStream in = socket.getInputStream()) {
-            byte[] buffer = new byte[1024];
+            // 修改：增大缓冲区以容纳日志内容
+            byte[] buffer = new byte[8192];
             int len = in.read(buffer);
             if (len > 0) {
                 String rawData = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
-                System.out.println("收到Socket数据: " + rawData);
+                // System.out.println("收到Socket数据: " + rawData);
 
-                String[] parts = rawData.split("\\|");
+                // 修改：分割为最多3部分 (ID | TYPE | CONTENT)
+                String[] parts = rawData.split("\\|", 3);
+
                 if (parts.length >= 2) {
                     String receivedId = parts[0];
-                    String statusStr = parts[1];
-                    SInfo serverInfo = serverMap.get(receivedId);
+                    String type = parts[1]; // 这里的type可能是 "ONLINE", "OFFLINE" 或者 "CMD_RESPONSE"
 
-                    if (serverInfo != null) {
-                        ServerState state = "ONLINE".equalsIgnoreCase(statusStr) ? ServerState.ONLINE : ServerState.OFFLINE;
-                        if (state == ServerState.ONLINE) {
-                            System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
+                    // 新增机制：处理指令反馈日志
+                    if ("CMD_RESPONSE".equalsIgnoreCase(type)) {
+                        String logs = (parts.length == 3) ? parts[2] : "(无输出)";
+
+                        // 获取 SendLike 中正在等待的 Future
+                        var future = SendLike.pendingCommandResponses.get(receivedId);
+                        if (future != null) {
+                            future.complete(logs);
+                            System.out.printf("[%s] 收到指令反馈日志，长度: %d\n", receivedId, logs.length());
+                        } else {
+                            System.out.println("收到过期或无匹配的日志反馈: " + receivedId);
                         }
-                        boolean ok = sendToQQBot(serverInfo, state);
-                        System.out.printf("[%s] 处理完毕: %s -> 推送%s\n", serverInfo.name, state.desc, ok ? "成功" : "失败");
-                    } else {
-                        System.err.println("收到未知服务器ID的数据: " + receivedId);
+                    }
+                    // 原有机制：处理服务器状态上报
+                    else {
+                        SInfo serverInfo = serverMap.get(receivedId);
+
+                        if (serverInfo != null) {
+                            ServerState state = "ONLINE".equalsIgnoreCase(type) ? ServerState.ONLINE : ServerState.OFFLINE;
+                            if (state == ServerState.ONLINE) {
+                                System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
+                            }
+                            boolean ok = sendToQQBot(serverInfo, state);
+                            System.out.printf("[%s] 处理完毕: %s -> 推送%s\n", serverInfo.name, state.desc, ok ? "成功" : "失败");
+                        } else {
+                            System.err.println("收到未知服务器ID的数据: " + receivedId);
+                        }
                     }
                 }
             }

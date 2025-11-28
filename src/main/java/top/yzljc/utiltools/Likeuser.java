@@ -53,8 +53,6 @@ public class Likeuser {
             }
         });
     }
-
-    // 发送点赞请求，获取结果并把反馈发到群 & 控制台
     public static void sendLike(long userId, long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
             String likeResult = "点赞成功！";
