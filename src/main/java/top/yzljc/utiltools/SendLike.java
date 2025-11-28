@@ -4,9 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,22 +18,16 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static top.yzljc.utiltools.Likeuser.sendLike;
+import static top.yzljc.utiltools.LikeUser.sendLike;
 
 public class SendLike {
     private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
-    private static final String ADMIN_FILE = "adminuser.txt";
+    private static final String ADMIN_FILE = "adminuser.json";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6379;
-    private static final String REDIS_PASSWORD = "ljcyyds0316@";
-    private static final String REDIS_CHANNEL = "mc_rc_channel";
-    private static JedisPool jedisPool;
+    // 【核心修改 1】 Value 改为 List，支持一对多
+    private static Map<String, List<AuthInfo>> adminRules = new HashMap<>();
 
-    private static Map<String, AuthInfo> adminRules = new HashMap<>();
-
-    // 【新增】用于存储等待指令回执的Future，Key=serverId
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
     private static class AuthInfo {
@@ -51,14 +42,9 @@ public class SendLike {
 
     public static void start(int port) {
         try {
-            JedisPoolConfig poolConfig = new JedisPoolConfig();
-            poolConfig.setMaxTotal(10);
-            jedisPool = new JedisPool(poolConfig, REDIS_HOST, REDIS_PORT, 2000, REDIS_PASSWORD);
-
             loadAdminConfig();
 
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-
             server.createContext("/", (HttpExchange exchange) -> {
                 try {
                     InputStream is = exchange.getRequestBody();
@@ -70,6 +56,8 @@ public class SendLike {
                             JsonNode root = jsonMapper.readTree(body);
                             processMessage(root);
                         } catch (Exception e) {
+                            System.err.println("[ERROR] 处理消息异常: " + e.getMessage());
+                            e.printStackTrace();
                         }
                     }
 
@@ -97,10 +85,19 @@ public class SendLike {
     }
 
     private static void processMessage(JsonNode json) {
+        String postType = json.path("post_type").asText("");
+        if ("request".equals(postType)) {
+            AutoAccept.handle(json);
+            return;
+        }
+        if (!"message".equals(postType)) {
+            return;
+        }
+
         ElectricCheck.processElectric(json);
-        String postType = json.path("post_type").asText();
+
         String messageType = json.path("message_type").asText();
-        if (!"message".equals(postType) || !"group".equals(messageType)) {
+        if (!"group".equals(messageType)) {
             return;
         }
 
@@ -119,81 +116,86 @@ public class SendLike {
             }
         }
 
+        // 处理 /rc 指令
         if (rawMessage != null && rawMessage.trim().startsWith("/rc")) {
             System.out.printf("[CMD] 收到指令: %s (User:%d Group:%d)\n", rawMessage, userId, groupId);
 
             String key = userId + "/" + groupId;
 
+            // 先检查该用户在当前群是否有任何权限配置
             if (adminRules.containsKey(key)) {
-                AuthInfo info = adminRules.get(key);
-                handleRcCommand(rawMessage, groupId, userId, info);
+                List<AuthInfo> userServers = adminRules.get(key);
+
+                // 解析指令，获取目标 ServerID
+                String[] parts = rawMessage.trim().split("\\s+", 3);
+                if (parts.length < 3) {
+                    sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
+                    return;
+                }
+                String targetServerId = parts[1];
+                String command = parts[2];
+
+                // 【核心修改 2】 遍历列表，寻找匹配的 ServerID
+                AuthInfo matchedInfo = null;
+                for (AuthInfo info : userServers) {
+                    if (info.serverId.equals(targetServerId)) {
+                        matchedInfo = info;
+                        break;
+                    }
+                }
+
+                if (matchedInfo != null) {
+                    // 找到了对应权限，执行指令
+                    executeRcCommand(targetServerId, command, matchedInfo, groupId);
+                } else {
+                    System.out.println("[AUTH] 鉴权失败: 用户 " + userId + " 无权控制 " + targetServerId);
+                    sendGroupMessage(groupId, "[!] 权限不足: 您在当前群未绑定服务器 " + targetServerId);
+                }
+
             } else {
                 System.out.println("[AUTH] 鉴权拒绝: " + key);
                 sendGroupMessage(groupId, "You don't have permission to do that!");
             }
         }
     }
+
     private static String cleanLog(String log) {
         if (log == null) return "";
-        // 正则表达式匹配 ANSI 转义序列
         return log.replaceAll("\\x1B\\[[;\\d]*m", "");
     }
-    private static void handleRcCommand(String rawMessage, long groupId, long userId, AuthInfo info) {
-        String[] parts = rawMessage.trim().split("\\s+", 3);
-        if (parts.length < 3) {
-            sendGroupMessage(groupId, "Invalid command.");
-            return;
-        }
-        String targetServerId = parts[1];
-        String command = parts[2];
 
-        if (!targetServerId.equals(info.serverId)) {
-            sendGroupMessage(groupId, "[!] 权限不足: 您只能控制编号为 " + info.serverId + " 的服务器。");
-            return;
-        }
-
-        // 【修改】改为异步执行，包含等待回传逻辑
+    private static void executeRcCommand(String targetServerId, String command, AuthInfo info, long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
-            try (Jedis jedis = jedisPool.getResource()) {
-                Map<String, String> redisPayload = new HashMap<>();
-                redisPayload.put("serverId", targetServerId);
-                redisPayload.put("command", command);
-                redisPayload.put("secret", info.secretKey);
-                redisPayload.put("issuer", String.valueOf(userId));
+            // 传递密钥给 App.sendCommand
+            boolean success = App.sendCommand(targetServerId, command, info.secretKey);
 
-                // 1. 注册 Future
-                CompletableFuture<String> future = new CompletableFuture<>();
-                pendingCommandResponses.put(targetServerId, future);
-
-                // 2. 推送 Redis
-                String jsonPayload = jsonMapper.writeValueAsString(redisPayload);
-                jedis.publish(REDIS_CHANNEL, jsonPayload);
-
-                System.out.println("============================================================");
-                System.out.printf("[SUCCESS] Redis推送 -> Server: %s | Cmd: %s\n", targetServerId, command);
-                System.out.println("============================================================");
-
-                // 3. 等待日志回传 (超时设为 4500ms，配合插件端的 3000ms)
-                String consoleLog;
-                try {
-                    consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
-                } catch (TimeoutException e) {
-                    consoleLog = "(超时未收到控制台反馈)";
-                } catch (Exception e) {
-                    consoleLog = "(获取反馈异常: " + e.getMessage() + ")";
-                } finally {
-                    pendingCommandResponses.remove(targetServerId);
-                }
-                String cleanLogContent = cleanLog(consoleLog);
-                // 4. 发送结果
-                String replyMsg = String.format("[√] 指令已送达\n目标: %s\n内容: %s\n----------------\n控制台返回:\n%s",
-                        targetServerId, command, cleanLogContent);
-                sendGroupMessage(groupId, replyMsg);
-
-            } catch (Exception e) {
-                System.err.println("Redis error: " + e.getMessage());
-                sendGroupMessage(groupId, "[X] Redis 连接失败");
+            if (!success) {
+                sendGroupMessage(groupId, "[X] 目标服务器未连接或鉴权失败");
+                return;
             }
+
+            System.out.println("============================================================");
+            System.out.printf("[SUCCESS] Socket 发送 -> Server: %s | Cmd: %s\n", targetServerId, command);
+            System.out.println("============================================================");
+
+            CompletableFuture<String> future = new CompletableFuture<>();
+            pendingCommandResponses.put(targetServerId, future);
+
+            String consoleLog;
+            try {
+                consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                consoleLog = "(超时未收到控制台反馈)";
+            } catch (Exception e) {
+                consoleLog = "(获取反馈异常: " + e.getMessage() + ")";
+            } finally {
+                pendingCommandResponses.remove(targetServerId);
+            }
+            String cleanLogContent = cleanLog(consoleLog);
+
+            String replyMsg = String.format("[√] 指令已送达\n目标: %s\n内容: %s\n----------------\n控制台返回:\n%s",
+                    targetServerId, command, cleanLogContent);
+            sendGroupMessage(groupId, replyMsg);
         });
     }
 
@@ -233,21 +235,29 @@ public class SendLike {
             }
         });
     }
+
+    // 【核心修改 3】加载逻辑适配一对多
     private static void loadAdminConfig() {
         try {
             Path path = Paths.get(ADMIN_FILE);
             if (Files.exists(path)) {
-                String content = Files.readString(path).trim();
-                Map<String, AuthInfo> newRules = new HashMap<>();
-                for (String pair : content.split("#")) {
-                    if (pair.isBlank()) continue;
-                    String[] parts = pair.trim().split("/");
-                    if (parts.length == 4) {
-                        String qq = parts[0];
-                        String group = parts[1];
-                        String sId = parts[2];
-                        String secret = parts[3];
-                        newRules.put(qq + "/" + group, new AuthInfo(sId, secret));
+                JsonNode rootNode = jsonMapper.readTree(path.toFile());
+
+                Map<String, List<AuthInfo>> newRules = new HashMap<>();
+
+                if (rootNode.isArray()) {
+                    for (JsonNode node : rootNode) {
+                        String user = node.path("user").asText();
+                        String group = node.path("group").asText();
+                        String sId = node.path("server-id").asText();
+                        String secret = node.path("secret-key").asText();
+
+                        if (!user.isEmpty() && !group.isEmpty()) {
+                            String key = user + "/" + group;
+                            // 如果 Key 不存在，初始化一个新的 List
+                            newRules.computeIfAbsent(key, k -> new ArrayList<>())
+                                    .add(new AuthInfo(sId, secret));
+                        }
                     }
                 }
                 adminRules = newRules;

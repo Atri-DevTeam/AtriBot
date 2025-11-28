@@ -6,17 +6,18 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class App {
     private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
     private static final int LISTEN_PORT = 37142;
-    // 新增：QQ机器人监听的端口
     private static final int QQ_BOT_PORT = 8851;
-
     private static final String LIST_FILE = "serverlist.txt";
+
     private static final Map<String, SInfo> serverMap = new HashMap<>();
+    private static final Map<String, Socket> activeConnections = new ConcurrentHashMap<>();
 
     private enum ServerState {
         OFFLINE("离线"),
@@ -42,10 +43,9 @@ public class App {
     }
 
     public static void main(String[] args) {
-        System.out.println("==== Minecraft Server Monitor ====");
+        System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);
 
-        // 2. 加载配置到内存
         loadServers();
         if (serverMap.isEmpty()) {
             System.err.println("未读取到服务器配置，请检查 serverlist.txt");
@@ -54,6 +54,24 @@ public class App {
         }
         System.out.printf("已加载 %d 个服务器配置。\n", serverMap.size());
         startSocketServer();
+    }
+    public static boolean sendCommand(String serverId, String command, String secret) {
+        Socket client = activeConnections.get(serverId);
+        if (client == null || client.isClosed()) {
+            System.err.println("[App] 发送失败，目标服务器未连接: " + serverId);
+            return false;
+        }
+        try {
+            String payload = "EXEC_CMD|" + command + "|" + secret;
+            OutputStream out = client.getOutputStream();
+            out.write(payload.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            return true;
+        } catch (IOException e) {
+            System.err.println("[App] Socket 发送异常: " + e.getMessage());
+            activeConnections.remove(serverId);
+            return false;
+        }
     }
 
     private static void loadServers() {
@@ -104,40 +122,50 @@ public class App {
     }
 
     private static void handleClient(Socket socket) {
+        String currentServerId = null; // 记录当前 Socket 对应的 ServerID
+
         try (InputStream in = socket.getInputStream()) {
-            // 修改：增大缓冲区以容纳日志内容
             byte[] buffer = new byte[8192];
-            int len = in.read(buffer);
-            if (len > 0) {
+            int len;
+
+            // 【关键修改】使用 while 循环保持长连接读取
+            while ((len = in.read(buffer)) != -1) {
                 String rawData = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
                 // System.out.println("收到Socket数据: " + rawData);
 
-                // 修改：分割为最多3部分 (ID | TYPE | CONTENT)
                 String[] parts = rawData.split("\\|", 3);
 
                 if (parts.length >= 2) {
                     String receivedId = parts[0];
-                    String type = parts[1]; // 这里的type可能是 "ONLINE", "OFFLINE" 或者 "CMD_RESPONSE"
+                    String type = parts[1];
 
-                    // 新增机制：处理指令反馈日志
+                    // 【关键修改】一旦收到有效数据，注册连接
+                    if (currentServerId == null) {
+                        currentServerId = receivedId;
+                        activeConnections.put(receivedId, socket);
+                        // System.out.println("连接已注册: " + receivedId);
+                    }
+
                     if ("CMD_RESPONSE".equalsIgnoreCase(type)) {
                         String logs = (parts.length == 3) ? parts[2] : "(无输出)";
-
-                        // 获取 SendLike 中正在等待的 Future
                         var future = SendLike.pendingCommandResponses.get(receivedId);
                         if (future != null) {
                             future.complete(logs);
                             System.out.printf("[%s] 收到指令反馈日志，长度: %d\n", receivedId, logs.length());
-                        } else {
-                            System.out.println("收到过期或无匹配的日志反馈: " + receivedId);
                         }
                     }
-                    // 原有机制：处理服务器状态上报
+                    else if ("HEARTBEAT".equalsIgnoreCase(type)) {
+                        // 心跳包：保持连接活跃，不做任何处理
+                    }
                     else {
+                        // ONLINE / OFFLINE
                         SInfo serverInfo = serverMap.get(receivedId);
 
                         if (serverInfo != null) {
                             ServerState state = "ONLINE".equalsIgnoreCase(type) ? ServerState.ONLINE : ServerState.OFFLINE;
+
+                            // 只有状态确实改变或者是上线通知才打印/推送，避免重复刷屏
+                            // (这里保留你原有的逻辑)
                             if (state == ServerState.ONLINE) {
                                 System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
                             }
@@ -150,8 +178,14 @@ public class App {
                 }
             }
         } catch (Exception e) {
-            System.err.println("处理Socket连接异常: " + e.getMessage());
+            // 客户端断开连接通常会抛出异常，属正常现象
+            // System.err.println("Socket 连接断开: " + e.getMessage());
         } finally {
+            // 清理连接
+            if (currentServerId != null) {
+                activeConnections.remove(currentServerId);
+                System.out.println("移除活跃连接: " + currentServerId);
+            }
             try { socket.close(); } catch (IOException ignored) {}
         }
     }

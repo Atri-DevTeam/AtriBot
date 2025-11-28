@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -15,7 +14,7 @@ import java.util.concurrent.Executors;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
-public class Likeuser {
+public class LikeUser {
     public static final ObjectMapper jsonMapper = new ObjectMapper();
     public static final String NAPCAT_LIKE_API = "http://106.14.23.232:8848/send_like";
     public static final String NAPCAT_GROUP_API = "http://106.14.23.232:8848/send_group_msg";
