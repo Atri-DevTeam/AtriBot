@@ -13,7 +13,7 @@ public class ElectricCheck {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
     private static final String NAPCAT_GROUP_API = "http://106.14.23.232:8848/send_group_msg";
-    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L};
+    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L, 413478250L, 1041561558L};
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
 
     public static void processElectric(JsonNode json) {

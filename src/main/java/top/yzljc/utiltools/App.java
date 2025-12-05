@@ -1,11 +1,14 @@
 package top.yzljc.utiltools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.utiltools.img.MinecraftStatusImage;
 
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +46,8 @@ public class App {
     }
 
     public static void main(String[] args) {
+        System.setProperty("java.awt.headless", "true");
+
         System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);
 
@@ -55,6 +60,7 @@ public class App {
         System.out.printf("已加载 %d 个服务器配置。\n", serverMap.size());
         startSocketServer();
     }
+
     public static boolean sendCommand(String serverId, String command, String secret) {
         Socket client = activeConnections.get(serverId);
         if (client == null || client.isClosed()) {
@@ -122,16 +128,14 @@ public class App {
     }
 
     private static void handleClient(Socket socket) {
-        String currentServerId = null; // 记录当前 Socket 对应的 ServerID
+        String currentServerId = null;
 
         try (InputStream in = socket.getInputStream()) {
             byte[] buffer = new byte[8192];
             int len;
 
-            // 【关键修改】使用 while 循环保持长连接读取
             while ((len = in.read(buffer)) != -1) {
                 String rawData = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
-                // System.out.println("收到Socket数据: " + rawData);
 
                 String[] parts = rawData.split("\\|", 3);
 
@@ -139,11 +143,9 @@ public class App {
                     String receivedId = parts[0];
                     String type = parts[1];
 
-                    // 【关键修改】一旦收到有效数据，注册连接
                     if (currentServerId == null) {
                         currentServerId = receivedId;
                         activeConnections.put(receivedId, socket);
-                        // System.out.println("连接已注册: " + receivedId);
                     }
 
                     if ("CMD_RESPONSE".equalsIgnoreCase(type)) {
@@ -153,19 +155,14 @@ public class App {
                             future.complete(logs);
                             System.out.printf("[%s] 收到指令反馈日志，长度: %d\n", receivedId, logs.length());
                         }
-                    }
-                    else if ("HEARTBEAT".equalsIgnoreCase(type)) {
-                        // 心跳包：保持连接活跃，不做任何处理
-                    }
-                    else {
-                        // ONLINE / OFFLINE
+                    } else if ("HEARTBEAT".equalsIgnoreCase(type)) {
+                        // Keep alive
+                    } else {
                         SInfo serverInfo = serverMap.get(receivedId);
 
                         if (serverInfo != null) {
                             ServerState state = "ONLINE".equalsIgnoreCase(type) ? ServerState.ONLINE : ServerState.OFFLINE;
 
-                            // 只有状态确实改变或者是上线通知才打印/推送，避免重复刷屏
-                            // (这里保留你原有的逻辑)
                             if (state == ServerState.ONLINE) {
                                 System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
                             }
@@ -178,20 +175,23 @@ public class App {
                 }
             }
         } catch (Exception e) {
-            // 客户端断开连接通常会抛出异常，属正常现象
-            // System.err.println("Socket 连接断开: " + e.getMessage());
+            // Ignore disconnects
         } finally {
-            // 清理连接
             if (currentServerId != null) {
                 activeConnections.remove(currentServerId);
                 System.out.println("移除活跃连接: " + currentServerId);
             }
-            try { socket.close(); } catch (IOException ignored) {}
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
         }
     }
 
     private static boolean sendToQQBot(SInfo server, ServerState state) {
+        File tempFile = null;
         try {
+            System.out.println("[Debug] 开始构建推送消息...");
             ObjectMapper objectMapper = new ObjectMapper();
 
             String textContent = String.format(
@@ -205,17 +205,42 @@ public class App {
             textNode.put("type", "text");
             textNode.put("data", textData);
 
-            String imgUrl = String.format(
-                    "https://api.mcstatus.io/v2/widget/java/%s:%d?dark=true&rounded=true&ts=%d",
-                    server.ip, server.port, System.currentTimeMillis()
-            );
+            // ==================== 图片生成逻辑开始 ====================
+
+            File tmpDir = new File("tmp");
+            if (!tmpDir.exists()) {
+                tmpDir.mkdirs();
+            }
+
+            String fileName = String.format("status_%s_%d.png", server.id, System.currentTimeMillis());
+            tempFile = new File(tmpDir, fileName);
+
+            System.out.println("[Debug] 准备生成图片: " + tempFile.getAbsolutePath());
+            String ipPort = server.ip + ":" + server.port;
+
+            // 调用生成方法
+            MinecraftStatusImage.generateStatusImage(server.name, ipPort, state.desc, tempFile.getAbsolutePath());
+
+            if (!tempFile.exists()) {
+                System.err.println("[Error] 图片生成方法返回了但文件不存在！");
+                return false;
+            }
+            System.out.println("[Debug] 图片生成成功，大小: " + tempFile.length() + " 字节");
+
+            // ===== base64编码图片，并构造NapCat消息节点 =====
+            byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
+            String base64Img = Base64.getEncoder().encodeToString(imgBytes);
+            String fileUrl = "base64://" + base64Img;
 
             Map<String, Object> imgData = new HashMap<>();
-            imgData.put("name", "status_img");
-            imgData.put("url", imgUrl);
+            imgData.put("name", "status_img.png");
+            imgData.put("file", fileUrl);
+
             Map<String, Object> imgNode = new HashMap<>();
             imgNode.put("type", "image");
             imgNode.put("data", imgData);
+
+            // ==================== 图片生成逻辑结束 ====================
 
             Object[] messageList = new Object[]{textNode, imgNode};
 
@@ -225,19 +250,30 @@ public class App {
 
             String payload = objectMapper.writeValueAsString(payloadMap);
 
+            System.out.println("[Debug] 正在发送 HTTP 请求至 NapCat...");
             HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
+            conn.setConnectTimeout(5000); // 5秒连接超时
+            conn.setReadTimeout(10000);   // 10秒读取超时
             conn.setRequestProperty("Content-Type", "application/json");
             conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
 
             int code = conn.getResponseCode();
+            System.out.println("[Debug] HTTP 响应码: " + code);
             conn.getInputStream().close();
             return code == 200;
 
         } catch (Exception ex) {
-            System.err.println("推送QQ bot异常: " + ex.getMessage());
+            System.err.println("[Error] 推送QQ bot异常: " + ex.getMessage());
+            ex.printStackTrace(); // 打印完整堆栈以便排查
             return false;
+        } finally {
+            // 临时图片生成成功后立即删除
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+                System.out.println("[Debug] 临时图片已清理");
+            }
         }
     }
 }

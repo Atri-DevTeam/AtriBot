@@ -95,6 +95,7 @@ public class SendLike {
         }
 
         ElectricCheck.processElectric(json);
+        AutoRepeat.processGroupMessage(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
@@ -115,6 +116,8 @@ public class SendLike {
                 }
             }
         }
+
+        CheckBilibili.process(json);
 
         // 处理 /rc 指令
         if (rawMessage != null && rawMessage.trim().startsWith("/rc")) {
@@ -199,7 +202,7 @@ public class SendLike {
         });
     }
 
-    private static void sendGroupMessage(long groupId, String content) {
+    public static void sendGroupMessage(long groupId, String content) {
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 Map<String, Object> textData = new HashMap<>();
