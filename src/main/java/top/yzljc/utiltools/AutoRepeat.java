@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 public class AutoRepeat {
     // 用于记录每个群最近若干条消息：group_id -> List<msg>
     private static final int MEMORY_SIZE = 10; // 每个群只记最近10条消息
-    private static final int REPEAT_THRESHOLD = 2; // 连续2条一致触发复读
+    private static final int REPEAT_THRESHOLD = 3; // 连续2条一致触发复读
     private static final Map<Long, LinkedList<String>> groupMsgHistory = new ConcurrentHashMap<>();
     // 用于避免对同一句话多次复读（如持续刷屏），key: groupId+"|"+msg
     private static final Set<String> recentlyRepeated = Collections.newSetFromMap(new ConcurrentHashMap<>());

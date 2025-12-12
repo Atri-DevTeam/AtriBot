@@ -36,7 +36,7 @@ public class MinecraftStatusImage {
     }
 
     /**
-     * 生成Minecraft服务器状态图片
+     * 生成 Minecraft 服务器状态图片
      */
     public static void generateStatusImage(String serverName, String ipPort, String state, String outputPath) throws Exception {
         // 1. 检查背景图
@@ -415,7 +415,7 @@ public class MinecraftStatusImage {
             int keyIdx = findKeyIndex(key);
             if (keyIdx == -1) return null;
 
-            int valStart = json.indexOf("\"", keyIdx + key.length() + 2); // 粗略跳过 key":"
+            int valStart = json.indexOf("\"", keyIdx + key.length() + 2); // 粗略跳过":"
             if (valStart == -1) return null; // 没找到值开始
 
             // 向后找 "，注意 \" 转义

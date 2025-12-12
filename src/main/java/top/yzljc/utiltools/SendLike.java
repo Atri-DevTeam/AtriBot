@@ -95,6 +95,7 @@ public class SendLike {
         }
 
         ElectricCheck.processElectric(json);
+        AutoSign.processAutoSign(json);
         AutoRepeat.processGroupMessage(json);
 
         String messageType = json.path("message_type").asText();
