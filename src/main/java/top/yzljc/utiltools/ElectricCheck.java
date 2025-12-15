@@ -218,8 +218,7 @@ public class ElectricCheck {
             }
             return;
         }
-
-        // 新增: 测试记录指令，仅ALLOWED_USERS生效
+        
         if (isAllowedUser(userId) && TEST_CHECK_KEYWORD.equals(rawMessage)) {
             testQueryAndRecord(groupId, userId);
             return;
