@@ -218,7 +218,7 @@ public class ElectricCheck {
             }
             return;
         }
-        
+
         if (isAllowedUser(userId) && TEST_CHECK_KEYWORD.equals(rawMessage)) {
             testQueryAndRecord(groupId, userId);
             return;
@@ -250,7 +250,6 @@ public class ElectricCheck {
 
                     String status = decodeUnicode(rgzzt);
 
-                    // 新增: 查找当前累计断电次数，仅对ALLOWED_USERS显示
                     String cdTimesMsg;
                     int curCd = cdCountMap.getOrDefault(userId, 0);
                     cdTimesMsg = "\n当前累计断电次数：" + curCd + " 次";
