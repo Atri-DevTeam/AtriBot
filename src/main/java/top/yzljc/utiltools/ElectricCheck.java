@@ -207,7 +207,6 @@ public class ElectricCheck {
         long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
-        // 新增: 处理cd断电消息逻辑
         if (isAllowedUser(userId) && CD_KEYWORD.equalsIgnoreCase(rawMessage)) {
             int cur = cdCountMap.getOrDefault(userId, 0) + 1;
             if (cur >= 5) {
