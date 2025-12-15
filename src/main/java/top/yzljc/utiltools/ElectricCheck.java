@@ -329,8 +329,7 @@ public class ElectricCheck {
             System.err.println("[ElectricCheck] 群消息发送失败: " + e.getMessage());
         }
     }
-
-    // 保存的结构体
+    
     private static class ElectricData {
         double allUsed;
         double rsmd, rsfd;
