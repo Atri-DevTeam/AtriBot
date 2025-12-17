@@ -35,7 +35,7 @@ public class ElectricCheck {
     public static void startScheduler() {
         long delay = computeInitialDelay();
         scheduler.scheduleAtFixedRate(ElectricCheck::scheduledQueryAndRecord, delay, TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS);
-        System.out.println("[ElectricCheck] 定时任务已启动，每天23:30自动查询记录并播报电量，可用testforcheck测试。下次任务延迟(ms): " + delay);
+        System.out.println("[INFO] 定时任务已启动，每天23:30自动查询记录并播报电量，可用testforcheck测试。下次任务延迟(ms): " + delay);
     }
 
     // 计算距离下次23:30的毫秒数
@@ -58,7 +58,7 @@ public class ElectricCheck {
                 compareAndBroadcast(today, data, true);
             }
         } catch (Exception e) {
-            System.err.println("[ElectricCheck] scheduledQueryAndRecord异常: " + e.getMessage());
+            System.err.println("[INFO] scheduledQueryAndRecord异常: " + e.getMessage());
         }
     }
 
@@ -71,10 +71,10 @@ public class ElectricCheck {
                     LocalDate today = LocalDate.now();
                     saveMonitorData(today, data);
                     String msg = compareAndBroadcast(today, data, false); // 不播报，仅返回内容
-                    sendGroupMsg(groupId, "[testforcheck]" + msg);
+                    sendGroupMsg(groupId, msg);
                 }
             } catch (Exception e) {
-                sendGroupMsg(groupId, "[testforcheck] 查询/记录异常: " + e.getMessage());
+                sendGroupMsg(groupId, "查询/记录异常: " + e.getMessage());
             }
         });
     }
@@ -99,9 +99,9 @@ public class ElectricCheck {
             try (FileOutputStream out = new FileOutputStream(f, false)) {
                 jsonMapper.writerWithDefaultPrettyPrinter().writeValue(out, root);
             }
-            System.out.println("[ElectricCheck] 用电数据已记录: " + date + " -> " + data);
+            System.out.println("[INFO] 用电数据已记录: " + date + " -> " + data);
         } catch (Exception e) {
-            System.err.println("[ElectricCheck] 记录electricmonitor.json失败: " + e.getMessage());
+            System.err.println("[INFO] 记录electricmonitor.json失败: " + e.getMessage());
         }
     }
 
@@ -162,10 +162,10 @@ public class ElectricCheck {
                     sendGroupMsg(gid, msg);
                 }
             }
-            System.out.println("[ElectricCheck] 今日用电播报: " + msg.replace("\n", "|"));
+            System.out.println("[INFO] 今日用电播报: " + msg.replace("\n", "|"));
             return msg;
         } catch (Exception e) {
-            System.err.println("[ElectricCheck] 比较与播报异常: " + e.getMessage());
+            System.err.println("[INFO] 比较与播报异常: " + e.getMessage());
             return "[播报异常] " + e.getMessage();
         }
     }
@@ -193,7 +193,7 @@ public class ElectricCheck {
                 return new ElectricData(rljd, rsmd, rsfd);
             }
         } catch (Exception ex) {
-            System.err.println("[ElectricCheck] fetchElectricData异常: " + ex.getMessage());
+            System.err.println("[INFO] fetchElectricData异常: " + ex.getMessage());
         }
         return null;
     }
@@ -256,14 +256,14 @@ public class ElectricCheck {
 
                     feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s%s",
                             rec, rsmd, rsfd, rljd, rtzd, status, cdTimesMsg);
-                    System.out.println("[ElectricCheck] 电表数据发送 => " + feedback.replace("\n", " | "));
+                    System.out.println("[INFO] 电表数据发送 => " + feedback.replace("\n", " | "));
                 } else {
                     feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
-                    System.err.println("[ElectricCheck] 返回内容无法解析: " + respStr);
+                    System.err.println("[INFO] 返回内容无法解析: " + respStr);
                 }
             } catch (Exception ex) {
                 feedback = "[电表查询失败] 网络异常或远端接口错误。";
-                System.err.println("[ElectricCheck] 查询异常: " + ex.getMessage());
+                System.err.println("[INFO] 查询异常: " + ex.getMessage());
             }
             sendGroupMsg(groupId, feedback);
         });
@@ -324,12 +324,12 @@ public class ElectricCheck {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
             conn.getInputStream().close();
-            System.out.println("[ElectricCheck] 群反馈已发送 => groupId: " + groupId + " 内容: " + text.replace("\n", " | "));
+            System.out.println("[INFO] 群反馈已发送 => groupId: " + groupId + " 内容: " + text.replace("\n", " | "));
         } catch (Exception e) {
-            System.err.println("[ElectricCheck] 群消息发送失败: " + e.getMessage());
+            System.err.println("[INFO] 群消息发送失败: " + e.getMessage());
         }
     }
-    
+
     private static class ElectricData {
         double allUsed;
         double rsmd, rsfd;

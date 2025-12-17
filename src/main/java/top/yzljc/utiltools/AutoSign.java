@@ -27,7 +27,7 @@ public class AutoSign {
         long initialDelay = computeInitialDelay();
         long oneDayMs = TimeUnit.DAYS.toMillis(1);
         scheduler.scheduleAtFixedRate(AutoSign::signAllGroups, initialDelay, oneDayMs, TimeUnit.MILLISECONDS);
-        System.out.println("[AutoSign] 每天0:00:10自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
+        System.out.println("[INFO] 每天0:00:10自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
     }
 
     // 计算距离下个0:00:10的毫秒数
@@ -45,15 +45,15 @@ public class AutoSign {
         try {
             Set<String> groupIds = fetchAllGroupIds();
             if (groupIds.isEmpty()) {
-                System.out.println("[AutoSign] 未拉取到任何群号，自动打卡跳过。");
+                System.out.println("[INFO] 未拉取到任何群号，自动打卡跳过。");
                 return;
             }
             for (String groupId : groupIds) {
                 sendGroupSign(groupId);
             }
-            System.out.println("[AutoSign] 已对 " + groupIds.size() + " 个群执行自动打卡。");
+            System.out.println("[INFO] 已对 " + groupIds.size() + " 个群执行自动打卡。");
         } catch (Exception e) {
-            System.err.println("[AutoSign] 自动打卡异常: " + e.getMessage());
+            System.err.println("[INFO] 自动打卡异常: " + e.getMessage());
         }
     }
 
@@ -100,7 +100,7 @@ public class AutoSign {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[AutoSign] 获取群列表异常: " + e.getMessage());
+            System.err.println("[INFO] 获取群列表异常: " + e.getMessage());
         }
         return groupIds;
     }
@@ -116,7 +116,7 @@ public class AutoSign {
             conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
             conn.getInputStream().close();
         } catch (Exception e) {
-            System.err.println("[AutoSign] 群打卡失败 group_id=" + groupId + "  " + e.getMessage());
+            System.err.println("[INFO] 群打卡失败 group_id=" + groupId + "  " + e.getMessage());
         }
     }
 

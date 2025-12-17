@@ -27,7 +27,7 @@ public class AutoRepeat {
         queue.addLast(rawMsg);
         if (queue.size() > MEMORY_SIZE) queue.removeFirst();
 
-        // 检查是否触发复读：最后N条是否至少2条都是这一条
+        // 检查是否触发复读：最后N条是否至少3条都是这一条
         int count = 0;
         for (int i = queue.size() - 1; i >= 0; i--) {
             if (!queue.get(i).equals(rawMsg)) break;
@@ -36,6 +36,9 @@ public class AutoRepeat {
 
         if (count >= REPEAT_THRESHOLD) {
             String repeatKey = groupId + "|" + rawMsg;
+            if (rawMsg.equals("赞我") || rawMsg.equals("likeme") || rawMsg.equals("zanwo") || rawMsg.equals("电表") || rawMsg.equals("cd") || rawMsg.equals("db")) {
+                return; // 忽略的复读
+            }
             if (!recentlyRepeated.contains(repeatKey)) {
                 // 发送复读消息
                 SendLike.sendGroupMessage(groupId, rawMsg);

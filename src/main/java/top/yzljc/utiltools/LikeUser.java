@@ -44,7 +44,7 @@ public class LikeUser {
                 }
             } catch (Exception e) {
                 resp = "{\"status\":\"fail\"}";
-                System.err.println("[Likeuser] 请求处理异常: " + e.getMessage());
+                System.err.println("[INFO] 请求处理异常: " + e.getMessage());
             }
             exchange.sendResponseHeaders(200, resp.getBytes(StandardCharsets.UTF_8).length);
             try (OutputStream os = exchange.getResponseBody()) {
@@ -57,7 +57,7 @@ public class LikeUser {
             String likeResult = "点赞成功！";
             try {
                 String payload = String.format("{\"user_id\":\"%s\",\"times\":10}", userId);
-                System.out.println("[Likeuser] 准备点赞 => QQ: " + userId);
+                System.out.println("[INFO] 准备点赞 => QQ: " + userId);
                 HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_LIKE_API).openConnection();
                 conn.setRequestMethod("POST");
                 conn.setDoOutput(true);
@@ -73,21 +73,21 @@ public class LikeUser {
                     String msg = respJson.path("msg").asText("");
                     if ("ok".equalsIgnoreCase(status)) {
                         likeResult = "点赞成功！(+10 Social Credits!)";
-                        System.out.println("[Likeuser] 点赞成功 => QQ: " + userId);
+                        System.out.println("[INFO] 点赞成功 => QQ: " + userId);
                     }
                     else if (status.contains("fail")) {
                         likeResult = "点赞失败，可能是由于该用户今日已被赞过啦~";
-                        System.out.println("[Likeuser] 点赞失败 => QQ: " + userId + " | msg: " + msg);
+                        System.out.println("[INFO] 点赞失败 => QQ: " + userId + " | msg: " + msg);
                     } else {
-                        System.out.println("[Likeuser] 点赞未知响应 => QQ: " + userId + " | 原始: " + respStr);
+                        System.out.println("[INFO] 点赞未知响应 => QQ: " + userId + " | 原始: " + respStr);
                     }
                 } else {
-                    System.out.println("[Likeuser] 点赞接口返回非预期格式 => QQ: " + userId + " | 原始: " + respStr);
+                    System.out.println("[INFO] 点赞接口返回非预期格式 => QQ: " + userId + " | 原始: " + respStr);
                 }
                 sendGroupMsg(groupId, likeResult);
             } catch (Exception ex) {
                 sendGroupMsg(groupId,"点赞接口异常，请稍后再试。");
-                System.err.println("[Likeuser] 点赞接口异常: " + ex.getMessage());
+                System.err.println("[INFO] 点赞接口异常: " + ex.getMessage());
             }
         });
     }
@@ -109,9 +109,9 @@ public class LikeUser {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
             conn.getInputStream().close();
-            System.out.println("[Likeuser] 群反馈已发送 => groupId: " + groupId + " 内容: " + text);
+            System.out.println("[INFO] 群反馈已发送 => groupId: " + groupId + " 内容: " + text);
         } catch (Exception e) {
-            System.err.println("[Likeuser] 群消息发送失败: " + e.getMessage());
+            System.err.println("[INFO] 群消息发送失败: " + e.getMessage());
         }
     }
 }

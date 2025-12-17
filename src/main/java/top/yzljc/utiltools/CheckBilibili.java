@@ -74,7 +74,7 @@ public class CheckBilibili {
                 JsonNode root = sendBilibiliRequest(viewUrl);
 
                 if (root == null) {
-                    System.out.println("[Bilibili] Error: view interface no response.");
+                    System.out.println("[INFO] Error: view interface no response.");
                     sendGroupMessage(groupId, "B站接口无响应 (可能是网络或IP封禁)");
                     return;
                 }
@@ -82,7 +82,7 @@ public class CheckBilibili {
                 int code = root.path("code").asInt();
                 if (code != 0) {
                     String msg = root.path("message").asText();
-                    System.out.println("[Bilibili] API Error: " + msg + " (Code: " + code + ")");
+                    System.out.println("[INFO] API Error: " + msg + " (Code: " + code + ")");
                     sendGroupMessage(groupId, "查询失败: " + msg + " (Code: " + code + ")");
                     return;
                 }
@@ -133,7 +133,7 @@ public class CheckBilibili {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("[Bilibili] Exception: " + e.getMessage());
+                System.err.println("[INFO] Exception: " + e.getMessage());
                 sendGroupMessage(groupId, "处理异常: " + e.getMessage());
             }
         });

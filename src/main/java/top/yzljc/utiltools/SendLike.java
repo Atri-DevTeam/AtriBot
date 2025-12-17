@@ -28,6 +28,11 @@ public class SendLike {
     private static Map<String, List<String>> adminRules = new HashMap<>();
     private static Map<String, String> serverSecretMap = new HashMap<>();
 
+    // ==== 新增：允许触发MC新闻手动检查的管理员QQ列表 ====
+    private static final List<String> ALLOW_USERS = Arrays.asList(
+            "3199590352"// 其他管理员QQ
+    );
+
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
     private static class AuthInfo {
@@ -43,6 +48,9 @@ public class SendLike {
     public static void start(int port) {
         try {
             loadAdminConfig();
+
+            // ==== 启动 Minecraft 新闻定时任务 ====
+            MinecraftNews.startScheduler();
 
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/", (HttpExchange exchange) -> {
@@ -109,6 +117,22 @@ public class SendLike {
 
         if (rawMessage != null) {
             String msgLower = rawMessage.trim().toLowerCase();
+
+            // ==== 新增：处理 testformc 指令 ====
+            if ("testformc".equals(msgLower)) {
+                if (ALLOW_USERS.contains(String.valueOf(userId))) {
+                    sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
+                    // 异步执行检查，避免阻塞主线程
+                    Executors.newSingleThreadExecutor().submit(() -> {
+                        MinecraftNews.checkNews(true);
+                    });
+                } else {
+                    // 可选：无权限提示
+                    // sendGroupMessage(groupId, "[!] 权限不足");
+                }
+                return;
+            }
+
             String[] keywords = {"赞我", "zanwo", "likeme"};
             for (String kw : keywords) {
                 if (msgLower.equalsIgnoreCase(kw)) {
@@ -122,13 +146,12 @@ public class SendLike {
 
         // 处理 /rc 指令
         if (rawMessage != null && rawMessage.trim().startsWith("/rc")) {
+            // ... (保持原有 /rc 指令逻辑不变) ...
             System.out.printf("[CMD] 收到指令: %s (User:%d Group:%d)\n", rawMessage, userId, groupId);
 
             String key = userId + "/" + groupId;
 
-            // 【添加权限豁免】QQ号为3199590352的用户在任何群拥有任何服务器的控制权限
             if (String.valueOf(userId).equals("3199590352")) {
-                // 解析指令，获取目标 ServerID
                 String[] parts = rawMessage.trim().split("\\s+", 3);
                 if (parts.length < 3) {
                     sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
@@ -146,11 +169,8 @@ public class SendLike {
                 return;
             }
 
-            // 先检查该用户在当前群是否有任何权限配置
             if (adminRules.containsKey(key)) {
                 List<String> userServers = adminRules.get(key);
-
-                // 解析指令，获取目标 ServerID
                 String[] parts = rawMessage.trim().split("\\s+", 3);
                 if (parts.length < 3) {
                     sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
@@ -159,7 +179,6 @@ public class SendLike {
                 String targetServerId = parts[1];
                 String command = parts[2];
 
-                // 【核心修改 2】 遍历列表，寻找匹配的 ServerID
                 AuthInfo matchedInfo = null;
                 for (String sid : userServers) {
                     if (sid.equals(targetServerId)) {
@@ -172,7 +191,6 @@ public class SendLike {
                 }
 
                 if (matchedInfo != null) {
-                    // 找到了对应权限，执行指令
                     executeRcCommand(targetServerId, command, matchedInfo, groupId);
                 } else {
                     System.out.println("[AUTH] 鉴权失败: 用户 " + userId + " 无权控制 " + targetServerId);
@@ -192,8 +210,8 @@ public class SendLike {
     }
 
     private static void executeRcCommand(String targetServerId, String command, AuthInfo info, long groupId) {
+        // ... (保持不变) ...
         Executors.newSingleThreadExecutor().submit(() -> {
-            // 传递密钥给 App.sendCommand
             boolean success = App.sendCommand(targetServerId, command, info.secretKey);
 
             if (!success) {
@@ -227,6 +245,7 @@ public class SendLike {
     }
 
     public static void sendGroupMessage(long groupId, String content) {
+        // ... (保持不变) ...
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 Map<String, Object> textData = new HashMap<>();
@@ -263,10 +282,9 @@ public class SendLike {
         });
     }
 
-    // 【核心修改 3】加载逻辑适配一对多
     private static void loadAdminConfig() {
+        // ... (保持不变) ...
         try {
-            // 加载 adminuser.json
             Path adminPath = Paths.get(ADMIN_FILE);
             Map<String, List<String>> newRules = new HashMap<>();
 
@@ -288,7 +306,6 @@ public class SendLike {
             }
             adminRules = newRules;
 
-            // 加载 server-secret.json
             Path secretPath = Paths.get(SERVER_SECRET_FILE);
             Map<String, String> secretMap = new HashMap<>();
 

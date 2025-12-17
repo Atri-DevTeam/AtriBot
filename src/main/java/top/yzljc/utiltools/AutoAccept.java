@@ -37,18 +37,18 @@ public class AutoAccept {
 
         // 如果没有 flag，没法同意，直接退出
         if (flag.isEmpty()) {
-            System.err.println("[AutoAccept] 收到好友请求但 flag 为空，无法处理！");
+            System.err.println("[INFO] 收到好友请求但 flag 为空，无法处理！");
             return;
         }
 
-        System.out.printf("[AutoAccept] 收到好友请求 -> 用户: %d | 验证消息: %s | Flag: %s\n", userId, comment, flag);
+        System.out.printf("[INFO] 收到好友请求 -> 用户: %d | 验证消息: %s | Flag: %s\n", userId, comment, flag);
 
         // 3. 异步发送同意指令
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 approveFriendRequest(flag);
             } catch (Exception e) {
-                System.err.println("[AutoAccept] 同意操作失败: " + e.getMessage());
+                System.err.println("[INFO] 同意操作失败: " + e.getMessage());
                 e.printStackTrace();
             }
         });
@@ -76,9 +76,9 @@ public class AutoAccept {
         conn.getInputStream().close();
 
         if (code == 200) {
-            System.out.println("[AutoAccept] 已成功同意好友请求 (Flag: " + flag + ")");
+            System.out.println("[INFO] 已成功同意好友请求 (Flag: " + flag + ")");
         } else {
-            System.err.println("[AutoAccept] API 请求返回错误代码: " + code);
+            System.err.println("[INFO] API 请求返回错误代码: " + code);
         }
     }
 }
