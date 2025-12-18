@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import top.yzljc.utiltools.img.ManosabaDate;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,6 +106,7 @@ public class SendLike {
         ElectricCheck.processElectric(json);
         AutoSign.processAutoSign(json);
         AutoRepeat.processGroupMessage(json);
+        ManosabaDate.processManodate(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
@@ -118,17 +120,13 @@ public class SendLike {
         if (rawMessage != null) {
             String msgLower = rawMessage.trim().toLowerCase();
 
-            // ==== 新增：处理 testformc 指令 ====
             if ("testformc".equals(msgLower)) {
                 if (ALLOW_USERS.contains(String.valueOf(userId))) {
                     sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
-                    // 异步执行检查，避免阻塞主线程
                     Executors.newSingleThreadExecutor().submit(() -> {
                         MinecraftNews.checkNews(true);
                     });
                 } else {
-                    // 可选：无权限提示
-                    // sendGroupMessage(groupId, "[!] 权限不足");
                 }
                 return;
             }
@@ -146,7 +144,6 @@ public class SendLike {
 
         // 处理 /rc 指令
         if (rawMessage != null && rawMessage.trim().startsWith("/rc")) {
-            // ... (保持原有 /rc 指令逻辑不变) ...
             System.out.printf("[CMD] 收到指令: %s (User:%d Group:%d)\n", rawMessage, userId, groupId);
 
             String key = userId + "/" + groupId;

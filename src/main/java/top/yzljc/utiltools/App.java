@@ -1,6 +1,7 @@
 package top.yzljc.utiltools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.utiltools.img.ManosabaDate;
 import top.yzljc.utiltools.img.MinecraftStatusImage;
 
 import java.io.*;
@@ -50,6 +51,7 @@ public class App {
         ElectricCheck.startScheduler();
         AutoSign.startScheduler();
         MinecraftNews.startScheduler();
+        ManosabaDate.startAutoDailyTask();
         System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);
 

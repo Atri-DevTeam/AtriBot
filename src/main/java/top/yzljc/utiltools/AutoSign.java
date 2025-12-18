@@ -121,7 +121,6 @@ public class AutoSign {
     }
 
     /**
-     * 同ElectricCheck：外部注入消息Json即可（如在主onMessage投递入口调用）
      * 仅允许 3199590352 发 testforsign（不区分群，所有群都能触发）立即执行一次打卡
      */
     public static void processAutoSign(JsonNode json) {
