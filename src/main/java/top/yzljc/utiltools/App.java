@@ -48,10 +48,13 @@ public class App {
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
+
         ElectricCheck.startScheduler();
         AutoSign.startScheduler();
         MinecraftNews.startScheduler();
         ManosabaDate.startAutoDailyTask();
+        HypixelNews.startScheduler();
+
         System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);
 

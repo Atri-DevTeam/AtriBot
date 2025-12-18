@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import top.yzljc.utiltools.command.AnnounceGroup;
 import top.yzljc.utiltools.img.ManosabaDate;
 
 import java.io.IOException;
@@ -107,6 +108,8 @@ public class SendLike {
         AutoSign.processAutoSign(json);
         AutoRepeat.processGroupMessage(json);
         ManosabaDate.processManodate(json);
+        HypixelNews.processTestForHyp(json);
+        AnnounceGroup.processAcCommand(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
