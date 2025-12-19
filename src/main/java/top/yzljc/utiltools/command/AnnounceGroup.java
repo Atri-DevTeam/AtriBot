@@ -52,6 +52,9 @@ public class AnnounceGroup {
             }
             String resp = buildListMessage();
             sendGroupMessage(groupId, resp);
+        } else if (rawMessage.startsWith("/acr")) {
+            String resp = processAdminRemoveCommand(rawMessage, userId);
+            sendGroupMessage(groupId, resp);
         } else if (rawMessage.startsWith("/ac")) {
             String resp = processAdminAcCommand(rawMessage, userId);
             sendGroupMessage(groupId, resp);
@@ -166,7 +169,46 @@ public class AnnounceGroup {
         return "添加成功！已将群 " + gid + " 加入 " + tag + " 新闻推广列表";
     }
 
-    /** 发送Napcat/CQHTTP群消息，仿CheckBilibili风格写法 */
+    /** 管理员通过/acr删除群聊，如/acr 123456 mc */
+    public static String processAdminRemoveCommand(String rawMessage, long userId) {
+        if (userId != ADMIN_USER) {
+            return "You have no permission to modify announce groups!";
+        }
+        String[] parts = rawMessage.trim().split("\\s+");
+        if (parts.length != 3 || !parts[0].equalsIgnoreCase("/acr")) {
+            return "格式错误: /acr <群号> <mc|hyp>";
+        }
+        long gid;
+        try {
+            gid = Long.parseLong(parts[1]);
+        } catch (Exception e) {
+            return "群号请填写数字";
+        }
+        String tag = parts[2].toLowerCase();
+        if (!ALLOWED_TAGS.contains(tag)) {
+            return "标签不合法，请用 mc 或 hyp";
+        }
+
+        // 加载当前所有
+        List<Long> mcList = new ArrayList<>(TARGET_GROUPS_MC);
+        List<Long> hypList = new ArrayList<>(TARGET_GROUPS_HYP);
+
+        boolean changed = false;
+        if (tag.equals("mc") && mcList.contains(gid)) {
+            mcList.remove(gid);
+            changed = true;
+        } else if (tag.equals("hyp") && hypList.contains(gid)) {
+            hypList.remove(gid);
+            changed = true;
+        }
+        if (!changed) {
+            return "该群不存在于 " + tag + " 推广列表";
+        }
+        saveGroups(mcList, hypList);
+        reloadGroups();
+        return "删除成功！已将群 " + gid + " 从 " + tag + " 新闻推广列表移除";
+    }
+
     private static void sendGroupMessage(long groupId, String content) {
         Executors.newSingleThreadExecutor().submit(() -> {
             try {

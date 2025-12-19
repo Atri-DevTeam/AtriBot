@@ -88,6 +88,7 @@ public class MinecraftNews {
 
             for (UnifiedArticle article : newArticlesFound) {
                 System.out.println("[INFO] 发现新文章: [" + article.tag + "] " + article.title);
+                System.out.println("[INFO] 当前MC新闻推广群: " + AnnounceGroup.TARGET_GROUPS_MC);
 
                 // 记录 ID
                 pushedArticleIds.add(article.id);

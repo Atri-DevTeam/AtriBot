@@ -78,6 +78,7 @@ public class HypixelNews {
             int newCount = 0;
             for (UnifiedArticle article : newArticlesFound) {
                 System.out.println("[INFO] 发现新Hypixel文章: " + article.title);
+                System.out.println("[INFO] 当前Hypixel新闻推广群: " + AnnounceGroup.TARGET_GROUPS_HYP);
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
                 newCount++;
