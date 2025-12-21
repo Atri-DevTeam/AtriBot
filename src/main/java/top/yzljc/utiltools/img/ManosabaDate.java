@@ -29,8 +29,7 @@ public class ManosabaDate {
      * @throws IOException 生成异常
      */
     public static void generateDevelopDayImage() throws IOException {
-        // 确保 temp 目录存在
-        File tempDir = new File("temp");
+        File tempDir = new File("tmp");
         if (!tempDir.exists()) tempDir.mkdirs();
         File outFile = new File(tempDir, "manoday.png");
 

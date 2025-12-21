@@ -110,6 +110,7 @@ public class SendLike {
         ManosabaDate.processManodate(json);
         HypixelNews.processTestForHyp(json);
         AnnounceGroup.processAcCommand(json);
+        AnnoyUser.processMessage(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
