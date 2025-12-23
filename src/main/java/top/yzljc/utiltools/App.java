@@ -1,6 +1,7 @@
 package top.yzljc.utiltools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.utiltools.command.MessageStats;
 import top.yzljc.utiltools.img.ManosabaDate;
 import top.yzljc.utiltools.img.MinecraftStatusImage;
 
@@ -54,6 +55,7 @@ public class App {
         MinecraftNews.startScheduler();
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
+        MessageStats.startDailyReportScheduler(MessageStats::sendMsgToGroup);
 
         System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);

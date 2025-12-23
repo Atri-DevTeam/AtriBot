@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import top.yzljc.utiltools.command.AnnounceGroup;
+import top.yzljc.utiltools.command.MessageStats;
+import top.yzljc.utiltools.command.RollbackMessages;
 import top.yzljc.utiltools.img.ManosabaDate;
 
 import java.io.IOException;
@@ -111,6 +113,9 @@ public class SendLike {
         HypixelNews.processTestForHyp(json);
         AnnounceGroup.processAcCommand(json);
         AnnoyUser.processMessage(json);
+        RecordGroupMessage.processRecord(json);
+        RollbackMessages.processCommand(json);
+        MessageStats.processCommand(json, MessageStats::sendMsgToGroup);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
