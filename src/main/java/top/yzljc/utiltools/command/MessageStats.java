@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.utiltools.RecordGroupMessage;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +29,10 @@ public class MessageStats {
     // CQ码@用户匹配 (只取第一个@的人)
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
     private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
+    private static final String NICKNAME_API = "http://106.14.23.232:8848/get_stranger_info";
+    // 昵称缓存（避免频繁请求，简单策略10分钟有效）
+    private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
+    private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
     // 是否已启动过定时器
     private static volatile boolean scheduled = false;
 
@@ -42,7 +48,7 @@ public class MessageStats {
             HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(5000); // 合理设置超时时间
+            conn.setConnectTimeout(5000);
             conn.setReadTimeout(10000);
             conn.setRequestProperty("Content-Type", "application/json");
             byte[] json = objectMapper.writeValueAsBytes(req);
@@ -54,7 +60,7 @@ public class MessageStats {
     }
 
     /**
-     * 启动每日统计定时推送（每晚0:00:05自动发统计）
+     * 启动每日统计定时推送（每晚23:59:45自动发统计）
      * sendMsgFunc: (groupId, msg) -> 群发方法
      */
     public static void startDailyReportScheduler(BiConsumer<Long, String> sendMsgFunc) {
@@ -66,7 +72,6 @@ public class MessageStats {
             t.setDaemon(true);
             return t;
         });
-        // 首次延时 = 距下一次凌晨0:00:05的秒数
         long initDelay = nextRunDelay();
 
         scheduler.scheduleAtFixedRate(() -> {
@@ -78,11 +83,13 @@ public class MessageStats {
         }, initDelay, 24 * 60 * 60, TimeUnit.SECONDS);
     }
 
-    // 计算距离下一个0点0分5秒的秒数
+    // 计算距离下一个23:59:45的秒数
     private static long nextRunDelay() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next =
-                now.toLocalDate().plusDays(1).atTime(0, 0, 5);
+        LocalDateTime next = now.toLocalDate().atTime(23, 59, 45);
+        if (!now.isBefore(next)) {
+            next = now.toLocalDate().plusDays(1).atTime(23, 59, 45);
+        }
         return Duration.between(now, next).getSeconds();
     }
 
@@ -139,13 +146,13 @@ public class MessageStats {
         if (rawMsg.startsWith("/stats")) {
             if (rawMsg.startsWith("/statsoverall")) {
                 overall = true;
-                msgContent = rawMsg.substring(13).trim(); // "/statsoverall".length() == 13
+                msgContent = rawMsg.substring(13).trim();
             } else {
-                msgContent = rawMsg.substring(6).trim();  // "/stats".length() == 6
+                msgContent = rawMsg.substring(6).trim();
             }
             qqAt = extractAtUser(msgContent);
         } else {
-            return; // 不是统计指令直接略过
+            return;
         }
 
         LocalDate now = LocalDate.now();
@@ -177,11 +184,6 @@ public class MessageStats {
 
     /**
      * 统计并组装群或用户统计结果消息
-     * @param groupId 群号
-     * @param whichDay 统计哪天（当日请用LocalDate.now()，总统计忽略）
-     * @param overall 是否查总数
-     * @param filterUserId 只查此人（null则全员）
-     * @return 统计文本
      */
     public static String buildGroupStatsMsg(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {
         Map<Long, Integer> statMap = statGroupSpeak(groupId, whichDay, overall, filterUserId);
@@ -191,8 +193,9 @@ public class MessageStats {
         }
         if (filterUserId != null) {
             int count = statMap.getOrDefault(filterUserId, 0);
-            return String.format("[统计]%d：%s发言%d次",
-                    filterUserId,
+            String nick = fetchNickname(filterUserId);
+            return String.format("[统计]%s：%s发言%d次",
+                    nick == null ? filterUserId : nick,
                     overall ? "历史共" : "今日",
                     count);
         }
@@ -203,19 +206,77 @@ public class MessageStats {
         StringBuilder sb = new StringBuilder();
         sb.append(overall ? "[历史发言总统计]\n" : "[今日发言统计]\n");
         int i = 1;
+
+        long nowTime = System.currentTimeMillis();
+        // 清理过期缓存
+        nicknameCache.entrySet().removeIf(entry -> nowTime - entry.getValue().time > NICKNAME_CACHE_EXPIRE);
+
         for (Map.Entry<Long, Integer> entry : sorted) {
+            Long userId = entry.getKey();
+            String nick = fetchNickname(userId);
             sb.append(i++).append(". ")
-                    .append("QQ号:").append(entry.getKey()).append("：")
+                    .append(nick == null ? "QQ号:" + userId : nick)
+                    .append("：")
                     .append(entry.getValue()).append("次")
                     .append("\n");
         }
         return sb.toString();
     }
 
-    // 已不用@，直接输出QQ号
-    // private static String atUserStr(long qq) {
-    //     return "[CQ:at,qq=" + qq + "]";
-    // }
+    /**
+     * 获取用户QQ昵称，带有缓存和惰性自动清理
+     */
+    private static String fetchNickname(Long userId) {
+        try {
+            long now = System.currentTimeMillis();
+            // 惰性清理缓存（仅本userId项，如有大量访问再扩展全表清理）
+            CachedNickname cached = nicknameCache.get(userId);
+            if (cached != null && (now - cached.time) < NICKNAME_CACHE_EXPIRE) {
+                return cached.nick;
+            }
+            nicknameCache.remove(userId);
+
+            // 请求接口
+            String body = String.format("{\"user_id\":\"%d\"}", userId);
+            HttpURLConnection conn = (HttpURLConnection) new URL(NICKNAME_API).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(2500);
+            conn.setReadTimeout(4000);
+            conn.setRequestProperty("Content-Type", "application/json");
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(body.getBytes(StandardCharsets.UTF_8));
+                os.flush();
+            }
+            StringBuilder resp = new StringBuilder();
+            try (InputStream in = conn.getInputStream()) {
+                byte[] buf = new byte[256];
+                int len;
+                while ((len = in.read(buf)) != -1) {
+                    resp.append(new String(buf, 0, len, StandardCharsets.UTF_8));
+                }
+            }
+            ObjectMapper om = new ObjectMapper();
+            JsonNode node = om.readTree(resp.toString());
+            String nick = null;
+            if (node.has("data") && node.get("data").has("nick")) {
+                nick = node.get("data").get("nick").asText();
+            }
+            nicknameCache.put(userId, new CachedNickname(nick, now));
+            return nick;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static class CachedNickname {
+        final String nick;
+        final long time;
+        CachedNickname(String n, long t) {
+            this.nick = n;
+            this.time = t;
+        }
+    }
 
     /**
      * 从分表统计发言
@@ -234,7 +295,6 @@ public class MessageStats {
         params.add(groupId);
 
         if (!overall) {
-            // 当天零点和明天零点
             LocalDateTime dayStart = whichDay.atStartOfDay();
             LocalDateTime dayEnd = dayStart.plusDays(1);
             long tsBegin = dayStart.toEpochSecond(ZoneOffset.ofHours(8)); // +8区
