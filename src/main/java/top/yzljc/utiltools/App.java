@@ -50,14 +50,14 @@ public class App {
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
 
-        ElectricCheck.startScheduler();
+        System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
+
         AutoSign.startScheduler();
         MinecraftNews.startScheduler();
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
         MessageStats.startDailyReportScheduler(MessageStats::sendMsgToGroup);
 
-        System.out.println("==== Minecraft Server Monitor (Socket Edition) ====");
         SendLike.start(QQ_BOT_PORT);
 
         loadServers();

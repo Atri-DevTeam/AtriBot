@@ -163,8 +163,15 @@ public class RollbackMessages {
      * @param message    消息内容
      */
     public static void handleRollbackCommand(long senderId, long groupId, String message) {
-        // 只处理指定管理员指令
-        if (senderId != 3199590352L) return;
+        long[] allowedUsers = {3199590352L,1948308L};
+        boolean isAllowed = false;
+        for (long id : allowedUsers) {
+            if (senderId == id) {
+                isAllowed = true;
+                break;
+            }
+        }
+        if (!isAllowed) return;
         if (!message.trim().startsWith("/rollback")) return;
 
         int count = rollback(Long.toString(groupId), message, RecordGroupMessage.getDataSource());

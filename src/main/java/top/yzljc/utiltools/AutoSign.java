@@ -27,13 +27,13 @@ public class AutoSign {
         long initialDelay = computeInitialDelay();
         long oneDayMs = TimeUnit.DAYS.toMillis(1);
         scheduler.scheduleAtFixedRate(AutoSign::signAllGroups, initialDelay, oneDayMs, TimeUnit.MILLISECONDS);
-        System.out.println("[INFO] 每天0:00:10自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
+        System.out.println("[INFO] 每天0:00:00自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
     }
 
     // 计算距离下个0:00:10的毫秒数
     private static long computeInitialDelay() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next = now.with(LocalTime.of(0, 0, 10));
+        LocalDateTime next = now.with(LocalTime.of(0, 0, 0));
         if (!now.isBefore(next)) {
             next = next.plusDays(1);
         }

@@ -45,7 +45,7 @@ public class ManosabaDate {
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         // 项目开始日
-        LocalDate start = LocalDate.of(2025, 11, 17);
+        LocalDate start = LocalDate.of(2025, 11, 13);
         LocalDate now = LocalDate.now();
         long days = ChronoUnit.DAYS.between(start, now) + 1;
         if (days < 1) days = 1;
