@@ -3,9 +3,8 @@ package top.yzljc.qqbot;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.messages.MessageProcessor;
-import top.yzljc.qqbot.messages.MessageReceiver; // 需要引入 Receiver
-import top.yzljc.qqbot.messages.MessageSender;
-import top.yzljc.qqbot.minecraft.SendCommand;    // 需要引入 SendCommand
+import top.yzljc.qqbot.messages.MessageReceiver;
+import top.yzljc.qqbot.minecraft.SendCommand;
 import top.yzljc.qqbot.news.HypixelNews;
 import top.yzljc.qqbot.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
