@@ -1,9 +1,9 @@
-package top.yzljc.utiltools.command;
+package top.yzljc.qqbot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.utiltools.RecordGroupMessage;
+import top.yzljc.qqbot.messages.RecordGroupMessage;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;

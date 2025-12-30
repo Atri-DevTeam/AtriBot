@@ -1,8 +1,10 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.tools;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
+import top.yzljc.qqbot.messages.MessageProcessor;
+import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -20,11 +22,8 @@ public class AnnoyUser {
     private static final String RECORD_FILE = "annoy_user_record.json";
     private static final Random RAND = new Random();
 
-    // Map<groupId, Map<qq, type>> type = "normal" or "super"
     private static final Map<Long, Map<Long, String>> annoyMap = new ConcurrentHashMap<>();
-    // Map<groupId, Set<qq>>，记录那些需要对下一条消息“一口气贴20个表情”的用户
     private static final Map<Long, Set<Long>> fuckOnceMap = new ConcurrentHashMap<>();
-    // 用线程池防止过多new Thread
     private static final ExecutorService PARALLEL_POOL = Executors.newCachedThreadPool();
 
     static {
@@ -59,21 +58,21 @@ public class AnnoyUser {
                 if (isSuper) {
                     addAnnoy(groupId, atId, "super");
                     System.out.println("[INFO][DEBUG] Enable SUPER annoy for QQ " + atId + " in group " + groupId);
-                    SendLike.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 疯狂发癫！");
+                    MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 疯狂发癫！");
                 } else {
                     addAnnoy(groupId, atId, "normal");
                     System.out.println("[INFO][DEBUG] Enable NORMAL annoy for QQ " + atId + " in group " + groupId);
-                    SendLike.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 发癫！");
+                    MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 发癫！");
                 }
             } else { // /ayr
                 if (isSuper) {
                     removeAnnoy(groupId, atId, "super");
                     System.out.println("[INFO][DEBUG] Disable SUPER annoy for QQ " + atId + " in group " + groupId);
-                    SendLike.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 疯狂发癫！");
+                    MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 疯狂发癫！");
                 } else {
                     removeAnnoy(groupId, atId, "normal");
                     System.out.println("[INFO][DEBUG] Disable NORMAL annoy for QQ " + atId + " in group " + groupId);
-                    SendLike.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 发癫！");
+                    MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 发癫！");
                 }
             }
             return;
@@ -96,27 +95,27 @@ public class AnnoyUser {
             }
             fuckOnceMap.computeIfAbsent(groupId, k -> new HashSet<>()).add(atId);
             System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + atId + " in group " + groupId + " will get 20-emoji!");
-            SendLike.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
+            MessageSender.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
             return;
         }
         // 用户自助开关/ayme /ayrme 只允许normal
         if (rawMsg.trim().equalsIgnoreCase("/ayme")) {
             addAnnoy(groupId, senderId, "normal");
             System.out.println("[INFO][DEBUG] Enable NORMAL annoy for QQ " + senderId + " in group " + groupId);
-            SendLike.sendGroupMessage(groupId, "现在我将会对着 " + senderId + " 发癫！");
+            MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + senderId + " 发癫！");
             return;
         }
         if (rawMsg.trim().equalsIgnoreCase("/ayrme")) {
             removeAnnoy(groupId, senderId, "normal");
             System.out.println("[INFO][DEBUG] Disable NORMAL annoy for QQ " + senderId + " in group " + groupId);
-            SendLike.sendGroupMessage(groupId, "现在我将不再会对着 " + senderId + " 发癫！");
+            MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + senderId + " 发癫！");
             return;
         }
         // 新增：支持用户自助/fuckme
         if (rawMsg.trim().equalsIgnoreCase("/fuckme")) {
             fuckOnceMap.computeIfAbsent(groupId, k -> new HashSet<>()).add(senderId);
             System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + senderId + " in group " + groupId + " will get 20-emoji! (from /fuckme)");
-            SendLike.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
+            MessageSender.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
             return;
         }
 

@@ -1,4 +1,4 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,12 +12,16 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class AutoAccept {
-    // NapCat 自动同意好友请求的接口
+    // 这里的 API 地址与发送消息不同，是处理请求的 API
     private static final String API_URL = "http://106.14.23.232:8848/set_friend_add_request";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
+    /**
+     * 处理好友请求逻辑
+     * 该方法由 MessageProcessor 在检测到 post_type 为 request 时调用
+     */
     public static void handle(JsonNode json) {
-        // 1. 严格校验：必须是 post_type=request 且 request_type=friend
+        // 二次校验，防止错误调用
         if (!json.has("post_type") || !"request".equals(json.get("post_type").asText())) {
             return;
         }
@@ -25,17 +29,10 @@ public class AutoAccept {
             return;
         }
 
-        // 2. 提取字段 (根据你抓到的日志)
-        // "flag": "1764309633"
         String flag = json.has("flag") ? json.get("flag").asText() : "";
-
-        // "user_id": 3614865692
         long userId = json.has("user_id") ? json.get("user_id").asLong() : 0;
-
-        // "comment": "我是来自..."
         String comment = json.has("comment") ? json.get("comment").asText() : "";
 
-        // 如果没有 flag，没法同意，直接退出
         if (flag.isEmpty()) {
             System.err.println("[INFO] 收到好友请求但 flag 为空，无法处理！");
             return;
@@ -43,7 +40,7 @@ public class AutoAccept {
 
         System.out.printf("[INFO] 收到好友请求 -> 用户: %d | 验证消息: %s | Flag: %s\n", userId, comment, flag);
 
-        // 3. 异步发送同意指令
+        // 异步执行同意操作
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 approveFriendRequest(flag);
@@ -55,7 +52,6 @@ public class AutoAccept {
     }
 
     private static void approveFriendRequest(String flag) throws Exception {
-        // 构造 NapCat 需要的参数: {"flag": "...", "approve": true, "remark": ""}
         Map<String, Object> params = new HashMap<>();
         params.put("flag", flag);
         params.put("approve", true);
@@ -73,7 +69,10 @@ public class AutoAccept {
         }
 
         int code = conn.getResponseCode();
-        conn.getInputStream().close();
+        // 无论成功失败，都需要关闭流
+        if (conn.getInputStream() != null) {
+            conn.getInputStream().close();
+        }
 
         if (code == 200) {
             System.out.println("[INFO] 已成功同意好友请求 (Flag: " + flag + ")");

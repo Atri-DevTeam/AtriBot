@@ -1,31 +1,30 @@
-package top.yzljc.utiltools.img;
+package top.yzljc.qqbot.img;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.messages.MessageSender;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * 生成并推送魔法少女の魔女审判 x Minecraft 项目进度图片到QQ群（自动计算天数）
+ * 生成并推送魔法少女の魔女审判 x Minecraft 项目进度图片到QQ群（计算天数）
  */
 public class ManosabaDate {
     private static final long GROUP_ID = 1041561558L;
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
-
     /**
-     * 生成项目第N天图片：temp/manoday.png
+     * 生成项目第N天图片：tmp/manoday.png
      * @throws IOException 生成异常
      */
     public static void generateDevelopDayImage() throws IOException {
@@ -101,7 +100,7 @@ public class ManosabaDate {
         ImageIO.write(img, "png", outFile);
     }
 
-    public static void processManodate(com.fasterxml.jackson.databind.JsonNode json) {
+    public static void processManodate(JsonNode json) {
         // 只监听 group 消息且内容为 manodate
         String postType = json.path("post_type").asText("");
         if (!"message".equals(postType)) return;
@@ -109,9 +108,10 @@ public class ManosabaDate {
         if (!"group".equals(messageType)) return;
         String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
         long groupId = json.path("group_id").asLong();
+
         if ("manodate".equals(rawMessage)) {
-            // 立即触发
-            sendAndNotifyToGroup();
+
+            sendAndNotifyToGroup(); // 保持原逻辑推送到固定群
             System.out.println("[INFO] manodate 指令触发图片推送：" + groupId);
         }
     }
@@ -121,6 +121,12 @@ public class ManosabaDate {
      * 支持发送完自动删除图片
      */
     public static boolean sendAndNotifyToGroup() {
+        // 使用固定的 GROUP_ID
+        return sendAndNotifyToGroup(GROUP_ID);
+    }
+
+    // 重载方法，支持推送到指定群
+    public static boolean sendAndNotifyToGroup(long targetGroupId) {
         File tempFile = new File("tmp", "manoday.png");
         try {
             generateDevelopDayImage();
@@ -132,36 +138,10 @@ public class ManosabaDate {
             // 图片转base64
             byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
             String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-            String fileUrl = "base64://" + base64Img;
 
-            // 构造NapCat群发消息
-            Map<String, Object> imgData = new HashMap<>();
-            imgData.put("name", "manoday.png");
-            imgData.put("file", fileUrl);
+            MessageSender.sendGroupMessage(targetGroupId, null, base64Img);
 
-            Map<String, Object> imgNode = new HashMap<>();
-            imgNode.put("type", "image");
-            imgNode.put("data", imgData);
-
-            Object[] messageList = new Object[]{imgNode};
-            Map<String, Object> payloadMap = new HashMap<>();
-            payloadMap.put("group_id", GROUP_ID);
-            payloadMap.put("message", messageList);
-
-            String payload = new ObjectMapper().writeValueAsString(payloadMap);
-
-            // 发送HTTP POST
-            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(10000);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-            int code = conn.getResponseCode();
-            System.out.println("[INFO] 群图片HTTP响应码: " + code);
-            conn.getInputStream().close();
-            return code == 200;
+            return true;
 
         } catch (Exception ex) {
             System.err.println("[INFO] 推送图片异常: " + ex.getMessage());
@@ -169,39 +149,29 @@ public class ManosabaDate {
             return false;
         } finally {
             // 自动删除
-            File tempFileDel = new File("temp", "manoday.png");
-            if (tempFileDel.exists()) {
-                if (tempFileDel.delete()) {
-                    System.out.println("[INFO] 临时图片已自动清理: " + tempFileDel.getAbsolutePath());
+            if (tempFile.exists()) {
+                if (tempFile.delete()) {
+                    System.out.println("[INFO] 临时图片已自动清理: " + tempFile.getAbsolutePath());
                 }
             }
         }
     }
 
-    /**
-     * 每天0:00:11自动发送
-     */
     public static void startAutoDailyTask() {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-        Runnable task = new Runnable() {
-            @Override
-            public void run() {
-                sendAndNotifyToGroup();
-            }
-        };
+        Runnable task = () -> sendAndNotifyToGroup();
 
         long initialDelay = computeInitialDelayToMidnight11();
         long period = 24 * 60 * 60; // 24小时，单位秒
 
         scheduler.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-        System.out.println("[INFO] 已启动每日0:00:11自动推送任务");
+        System.out.println("[INFO] 已启动每日0:00:01自动推送任务");
     }
 
-    // 计算离下一个0:00:11的秒数
     private static long computeInitialDelayToMidnight11() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextRun = now.toLocalDate().atStartOfDay().plusDays(0).plusSeconds(11);
+        LocalDateTime nextRun = now.toLocalDate().atStartOfDay().plusDays(0).plusSeconds(1);
         if (!now.isBefore(nextRun)) {
             nextRun = nextRun.plusDays(1);
         }

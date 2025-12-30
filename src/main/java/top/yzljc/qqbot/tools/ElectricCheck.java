@@ -1,22 +1,26 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.messages.MessageSender;
 
-import java.net.URL;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.concurrent.Executors;
 
 public class ElectricCheck {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
+    // 电费查询接口
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
-    private static final String NAPCAT_GROUP_API = "http://106.14.23.232:8848/send_group_msg";
+    // 允许的群组
     private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L, 413478250L, 1041561558L};
+    // 触发关键词
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
 
     public static void processElectric(JsonNode json) {
+        if (!json.has("group_id") || !json.has("raw_message")) return;
+
         long groupId = json.path("group_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
@@ -36,6 +40,7 @@ public class ElectricCheck {
 
                 JsonNode respJson = null;
                 try { respJson = jsonMapper.readTree(respStr); } catch (Exception ignored) {}
+
                 if (respJson != null) {
                     String rec = respJson.path("rec").asText();
                     String rsmd = respJson.path("rsmd").asText();
@@ -57,7 +62,9 @@ public class ElectricCheck {
                 feedback = "[电表查询失败] 网络异常或远端接口错误。";
                 System.err.println("[INFO] 查询异常: " + ex.getMessage());
             }
-            sendGroupMsg(groupId, feedback);
+
+            // ==== 修改点：调用 MessageSender 统一发送 ====
+            MessageSender.sendGroupMessage(groupId, feedback);
         });
     }
 
@@ -91,28 +98,5 @@ public class ElectricCheck {
             }
         }
         return out.toString();
-    }
-
-    private static void sendGroupMsg(long groupId, String text) {
-        try {
-            var textNode = Collections.singletonMap("type", "text");
-            var textData = Collections.singletonMap("text", text);
-            var node = new java.util.HashMap<String, Object>(textNode);
-            node.put("data", textData);
-            var payloadMap = new java.util.HashMap<String, Object>();
-            payloadMap.put("group_id", groupId);
-            payloadMap.put("message", Collections.singletonList(node));
-            String payload = jsonMapper.writeValueAsString(payloadMap);
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_GROUP_API).openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-            conn.getInputStream().close();
-            System.out.println("[INFO] 群反馈已发送 => groupId: " + groupId + " 内容: " + text.replace("\n", " | "));
-        } catch (Exception e) {
-            System.err.println("[INFO] 群消息发送失败: " + e.getMessage());
-        }
     }
 }

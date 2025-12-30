@@ -1,4 +1,4 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.news;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,7 +7,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import top.yzljc.utiltools.command.AnnounceGroup;
+import top.yzljc.qqbot.command.AnnounceGroup;
+import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,9 +16,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -29,12 +29,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class HypixelNews {
 
-    // Hypixel 官网新闻页面
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
-    // 文章详情前缀
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = "hypixel_news_history.json";
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
+
     public static final List<Long> TARGET_GROUPS = AnnounceGroup.TARGET_GROUPS_HYP;
 
     private static boolean isInitialized = false;
@@ -174,47 +172,8 @@ public class HypixelNews {
         }
 
         for (Long groupId : TARGET_GROUPS) {
-            sendGroupMessage(groupId, textContent, base64Img);
+            MessageSender.sendGroupMessage(groupId, textContent, base64Img);
             try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-        }
-    }
-
-    private static void sendGroupMessage(long groupId, String text, String base64Img) {
-        try {
-            List<Map<String, Object>> messageNodes = new ArrayList<>();
-
-            Map<String, Object> textData = new HashMap<>();
-            textData.put("text", text);
-            Map<String, Object> textNode = new HashMap<>();
-            textNode.put("type", "text");
-            textNode.put("data", textData);
-            messageNodes.add(textNode);
-
-            if (base64Img != null) {
-                Map<String, Object> imgData = new HashMap<>();
-                imgData.put("file", "base64://" + base64Img);
-                Map<String, Object> imgNode = new HashMap<>();
-                imgNode.put("type", "image");
-                imgNode.put("data", imgData);
-                messageNodes.add(imgNode);
-            }
-
-            Map<String, Object> payloadMap = new HashMap<>();
-            payloadMap.put("group_id", groupId);
-            payloadMap.put("message", messageNodes);
-
-            String payload = objectMapper.writeValueAsString(payloadMap);
-
-            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-            conn.getResponseCode();
-            conn.disconnect();
-            System.out.println("[INFO] Hypixel推送至: " + groupId + (base64Img != null ? " (图片)" : ""));
-        } catch (Exception e) {
-            System.err.println("[INFO] Hypixel推送失败: " + e.getMessage());
         }
     }
 
@@ -297,17 +256,27 @@ public class HypixelNews {
 
     /**
      * 指令触发入口，只允许 user=3199590352 使用 testforhyp 触发
+     * 保持方法签名不变，兼容 MessageProcessor
      */
     public static void processTestForHyp(JsonNode json) {
         String postType = json.path("post_type").asText("");
         if (!"message".equals(postType)) return;
         String messageType = json.path("message_type").asText("");
         if (!"group".equals(messageType)) return;
+
         String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
         long userId = json.path("user_id").asLong();
+        long groupId = json.path("group_id").asLong();
+
         if ("testforhyp".equals(rawMessage) && userId == 3199590352L) { // 仅限特定User
-            checkNews(true);
+            // 先发送反馈消息
+            MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
             System.out.println("[HypixelNews] testforhyp 指令触发Hypixel新闻监控 by " + userId);
+
+            // 异步执行检查，避免阻塞主线程
+            Executors.newSingleThreadExecutor().submit(() -> {
+                checkNews(true);
+            });
         }
     }
 

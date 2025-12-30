@@ -1,4 +1,4 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

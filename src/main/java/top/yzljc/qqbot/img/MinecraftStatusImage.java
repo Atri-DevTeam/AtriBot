@@ -1,4 +1,4 @@
-package top.yzljc.utiltools.img;
+package top.yzljc.qqbot.img;
 
 import javax.imageio.ImageIO;
 import java.awt.*;

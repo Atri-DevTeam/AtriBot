@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>top.yzljc</groupId>
-    <artifactId>qq-bot</artifactId>
+    <artifactId>Yzljc-qq-bot</artifactId>
     <version>1.1-SNAPSHOT</version>
 
     <properties>
@@ -88,7 +88,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>top.yzljc.utiltools.App</mainClass>
+                                    <mainClass>top.yzljc.qqbot.App</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

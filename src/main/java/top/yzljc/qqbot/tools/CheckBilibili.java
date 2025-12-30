@@ -1,29 +1,25 @@
-package top.yzljc.utiltools;
+package top.yzljc.qqbot.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class CheckBilibili {
 
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
-    private static final String LIST_FILE = "bvidlist.json"; // 存储BV号的文件
+    private static final String LIST_FILE = "bvidlist.json";
 
     // 依然需要填 Cookie，否则 web-interface/view 接口也可能看心情拦截
     private static final String SESSDATA = "f2325ec2,1779888479,15ce7*b1CjDTtjpSLV2fWS5Rkb69BXDkXMoAmVb1zdihONp9OdjaZDdLNKiVuMuRzSF7s9yw62USVmdDXzBzYm5xNGZlMUVyYWZjVmY1YmF1d1VmajI1LU93b29HOGc1cnAtUkYxRzZDbThZWHZPaTN4NnVmN1JpQjVudklHeGRRNHptQTRTZmVDcGs2V0xBIIEC";
@@ -44,7 +40,7 @@ public class CheckBilibili {
             if (!bvid.isEmpty()) {
                 fetchVideoDetail(groupId, bvid);
             } else {
-                sendGroupMessage(groupId, "请提供 BV 号，例如: /bl BV1xx411c7");
+                MessageSender.sendGroupMessage(groupId, "请提供 BV 号，例如: /bl BV1xx411c7");
             }
         }
         // 匹配 /bl 数字 (查询历史记录)
@@ -55,10 +51,10 @@ public class CheckBilibili {
                 String savedBvid = getBvidByIndex(index);
 
                 if (savedBvid != null) {
-                    sendGroupMessage(groupId, "正在查询历史记录 #" + index + " (" + savedBvid + ")...");
+                    MessageSender.sendGroupMessage(groupId, "正在查询历史记录 #" + index + " (" + savedBvid + ")...");
                     fetchVideoDetail(groupId, savedBvid);
                 } else {
-                    sendGroupMessage(groupId, "未找到序号为 " + index + " 的记录。");
+                    MessageSender.sendGroupMessage(groupId, "未找到序号为 " + index + " 的记录。");
                 }
             } catch (NumberFormatException e) {
                 // 忽略非数字输入
@@ -75,7 +71,7 @@ public class CheckBilibili {
 
                 if (root == null) {
                     System.out.println("[INFO] Error: view interface no response.");
-                    sendGroupMessage(groupId, "B站接口无响应 (可能是网络或IP封禁)");
+                    MessageSender.sendGroupMessage(groupId, "B站接口无响应 (可能是网络或IP封禁)");
                     return;
                 }
 
@@ -83,7 +79,7 @@ public class CheckBilibili {
                 if (code != 0) {
                     String msg = root.path("message").asText();
                     System.out.println("[INFO] API Error: " + msg + " (Code: " + code + ")");
-                    sendGroupMessage(groupId, "查询失败: " + msg + " (Code: " + code + ")");
+                    MessageSender.sendGroupMessage(groupId, "查询失败: " + msg + " (Code: " + code + ")");
                     return;
                 }
 
@@ -129,17 +125,17 @@ public class CheckBilibili {
                 sb.append("----------------\n");
                 sb.append("已记录! 下次可用 /bl ").append(savedIndex).append(" 快速查询");
 
-                sendGroupMessage(groupId, sb.toString());
+                MessageSender.sendGroupMessage(groupId, sb.toString());
 
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("[INFO] Exception: " + e.getMessage());
-                sendGroupMessage(groupId, "处理异常: " + e.getMessage());
+                MessageSender.sendGroupMessage(groupId, "处理异常: " + e.getMessage());
             }
         });
     }
 
-    // 【新增】保存 BV 号到 JSON 文件，返回其序号
+    // 保存 BV 号到 JSON 文件，返回其序号
     private static synchronized int saveBvid(String bvid, String title) {
         try {
             File file = new File(LIST_FILE);
@@ -181,7 +177,7 @@ public class CheckBilibili {
         }
     }
 
-    // 【新增】根据序号获取 BV 号
+    // 根据序号获取 BV 号
     private static synchronized String getBvidByIndex(int index) {
         try {
             File file = new File(LIST_FILE);
@@ -248,28 +244,5 @@ public class CheckBilibili {
     private static String formatNum(int num) {
         if (num >= 10000) return String.format("%.1f万", num / 10000.0);
         return String.valueOf(num);
-    }
-
-    private static void sendGroupMessage(long groupId, String content) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            try {
-                Map<String, Object> textData = new HashMap<>();
-                textData.put("text", content);
-                Map<String, Object> textNode = new HashMap<>();
-                textNode.put("type", "text");
-                textNode.put("data", textData);
-                Map<String, Object> payloadMap = new HashMap<>();
-                payloadMap.put("group_id", groupId);
-                payloadMap.put("message", Collections.singletonList(textNode));
-                String payload = jsonMapper.writeValueAsString(payloadMap);
-
-                HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-                conn.getInputStream().close();
-            } catch (Exception ignore) {}
-        });
     }
 }
