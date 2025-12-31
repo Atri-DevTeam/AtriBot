@@ -42,7 +42,6 @@ public class MessageReceiver {
                     if (!body.isEmpty()) {
                         try {
                             JsonNode root = jsonMapper.readTree(body);
-                            // 调用外部传入的处理逻辑（即 SendLike.processMessage）
                             if (messageHandler != null) {
                                 messageHandler.accept(root);
                             }

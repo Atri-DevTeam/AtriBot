@@ -29,6 +29,7 @@ public class GroupMessageFilter {
         // 2. 获取消息内容和ID
         String rawMessage = json.path("raw_message").asText();
         long messageId = json.path("message_id").asLong();
+        long userId = json.path("user_id").asLong();
 
         if (rawMessage == null || rawMessage.isEmpty() || messageId == 0) {
             return;
@@ -39,8 +40,8 @@ public class GroupMessageFilter {
             // 4. 执行撤回 (不报错模式)
             recallMessageSilent(messageId);
 
-            // 可选：在控制台打印一条日志方便管理员知道发生了撤回
-            System.out.println("[INFO] 检测到违规词，已尝试撤回消息 ID: " + messageId);
+            String detectedWord = SensitiveWordFilter.findSensitiveWord(rawMessage);
+            System.out.println("[INFO] 检测到违规词 [" + detectedWord + "]，来自QQ:" + userId + "，已尝试撤回消息 ID: " + messageId);
         }
     }
 

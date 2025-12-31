@@ -65,6 +65,20 @@ public class SensitiveWordFilter {
         }
     }
 
+    public static String findSensitiveWord(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+        checkReload(); // 检查热更新
+
+        for (String word : BLACKLIST) {
+            if (text.contains(word)) {
+                return word; // 返回具体命中的词
+            }
+        }
+        return null;
+    }
+
     /**
      * 检查文本是否包含任意违规词
      * @param text 待检查文本

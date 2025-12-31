@@ -204,7 +204,6 @@ public class MinecraftNews {
         }
 
         for (Long groupId : TARGET_GROUPS) {
-            // ==== 核心修改：调用 MessageSender 发送 ====
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
 
             try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
