@@ -28,10 +28,6 @@ public class RollbackMessages {
     // 发包地址
     private static final String DELETE_MSG_URL = "http://106.14.23.232:8848/delete_msg";
 
-    /**
-     * 通用入口，兼容 AnnoyUser 和 RecordGroupMessage 的“process”风格
-     * @param jsonInput 群聊消息 JsonNode
-     */
     public static void processCommand(JsonNode jsonInput) {
         if (jsonInput == null) return;
 

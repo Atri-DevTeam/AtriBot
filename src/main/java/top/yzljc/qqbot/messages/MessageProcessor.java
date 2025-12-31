@@ -15,6 +15,7 @@ import top.yzljc.qqbot.utils.AutoSign;
 import top.yzljc.qqbot.tools.CheckBilibili;
 import top.yzljc.qqbot.tools.ElectricCheck;
 import top.yzljc.qqbot.tools.LikeUser;
+import top.yzljc.qqbot.command.SearchRelevant;
 
 public class MessageProcessor {
 
@@ -44,6 +45,8 @@ public class MessageProcessor {
         RecordGroupMessage.processRecord(json);
         RollbackMessages.processCommand(json);
         MessageStats.processCommand(json);
+        SearchRelevant.processCommand(json);
+        GroupMessageFilter.checkAndRecall(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
