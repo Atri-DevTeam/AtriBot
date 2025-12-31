@@ -3,14 +3,11 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 /**
  * 群推送统一管理，支持动态添加群聊和标签映射，并群聊消息反馈
@@ -18,9 +15,6 @@ import java.util.concurrent.Executors;
 public class AnnounceGroup {
     private static final String GROUPS_FILE = "record_groups.json";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    // Napcat群发API
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
 
     // 只读的群号列表，随文件变化而自动更新
     public static List<Long> TARGET_GROUPS_MC = Collections.unmodifiableList(new ArrayList<>());
@@ -39,7 +33,7 @@ public class AnnounceGroup {
     /**
      * 一句话外部调用，自动判断和群反馈
      */
-    public static void processAcCommand(com.fasterxml.jackson.databind.JsonNode json) {
+    public static void processAcCommand(JsonNode json) {
         String rawMessage = json.path("raw_message").asText("");
         long userId = json.path("user_id").asLong();
         long groupId = json.path("group_id").asLong();
@@ -47,17 +41,18 @@ public class AnnounceGroup {
         if (rawMessage.startsWith("/ac list")) {
             // 列出所有群及标签，仅管理员可见
             if (userId != ADMIN_USER) {
-                sendGroupMessage(groupId, "You have no permission to view full list!");
+                // 调用 MessageSender
+                MessageSender.sendGroupMessage(groupId, "You have no permission to view full list!");
                 return;
             }
             String resp = buildListMessage();
-            sendGroupMessage(groupId, resp);
+            MessageSender.sendGroupMessage(groupId, resp);
         } else if (rawMessage.startsWith("/acr")) {
             String resp = processAdminRemoveCommand(rawMessage, userId);
-            sendGroupMessage(groupId, resp);
+            MessageSender.sendGroupMessage(groupId, resp);
         } else if (rawMessage.startsWith("/ac")) {
             String resp = processAdminAcCommand(rawMessage, userId);
-            sendGroupMessage(groupId, resp);
+            MessageSender.sendGroupMessage(groupId, resp);
         }
     }
 
@@ -207,30 +202,5 @@ public class AnnounceGroup {
         saveGroups(mcList, hypList);
         reloadGroups();
         return "删除成功！已将群 " + gid + " 从 " + tag + " 新闻推广列表移除";
-    }
-
-    private static void sendGroupMessage(long groupId, String content) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            try {
-                Map<String, Object> textData = new HashMap<>();
-                textData.put("text", content);
-
-                Map<String, Object> textNode = new HashMap<>();
-                textNode.put("type", "text");
-                textNode.put("data", textData);
-
-                Map<String, Object> payloadMap = new HashMap<>();
-                payloadMap.put("group_id", groupId);
-                payloadMap.put("message", Collections.singletonList(textNode));
-                String payload = objectMapper.writeValueAsString(payloadMap);
-
-                HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-                conn.getInputStream().close();
-            } catch (Exception ignore) {}
-        });
     }
 }
