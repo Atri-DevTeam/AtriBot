@@ -1,5 +1,6 @@
 package top.yzljc.qqbot;
 
+import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.messages.MessageProcessor;
@@ -35,6 +36,7 @@ public class App {
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
         MessageStats.startDailyReportScheduler();
+        ServerStatusReport.init();
 
         MessageReceiver.start(QQ_BOT_PORT, MessageProcessor::processMessage);
 

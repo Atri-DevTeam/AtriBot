@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.tools.AutoRepeat;
 import top.yzljc.qqbot.command.AnnounceGroup;
 import top.yzljc.qqbot.utils.MessageStats;
@@ -47,6 +48,7 @@ public class MessageProcessor {
         MessageStats.processCommand(json);
         SearchRelevant.processCommand(json);
         GroupMessageFilter.checkAndRecall(json);
+        ServerStatusReport.process(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {

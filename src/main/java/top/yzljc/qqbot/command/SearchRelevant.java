@@ -91,8 +91,8 @@ public class SearchRelevant {
         String paramsStr = matcher.group(2); // 后面的参数字符串
 
         // 【新增】如果搜索关键词本身就包含违规词，直接拒绝搜索
-        if (SensitiveWordFilter.containsSensitiveWord(keyword)) {
-            MessageSender.sendGroupMessage(groupId, "搜索关键词包含违规内容，拒绝执行。");
+        if (SensitiveWordFilter.containsSensitiveWord(keyword) || keyword.equals("\t") || keyword.equals("\n") || keyword.equals("SELECT") || keyword.equals("DELETE") || keyword.equals("UPDATE") || keyword.equals("INSERT") || keyword.equals("\n\t") || keyword.equals("\t\n")) {
+            MessageSender.sendGroupMessage(groupId, "搜索关键词不符合检索规则，拒绝执行!");
             return;
         }
 
@@ -211,7 +211,7 @@ public class SearchRelevant {
                 reply.append("----------------\n");
 
                 if (results.isEmpty()) {
-                    reply.append("未找到符合条件的记录（或含有违规内容已被隐藏）。");
+                    reply.append("未找到符合条件的记录（或含有违规内容已被隐藏）");
                 } else {
                     for (String line : results) {
                         reply.append(line).append("\n");
