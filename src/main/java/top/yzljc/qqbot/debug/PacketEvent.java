@@ -60,7 +60,7 @@ public class PacketEvent {
 
         // 检查发送者是否为管理员
         long userId = json.path("user_id").asLong();
-        if (admins.contains(userId)) {
+        if (!admins.contains(userId)) {
             return false;
         }
 

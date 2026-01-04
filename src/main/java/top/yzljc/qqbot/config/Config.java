@@ -59,7 +59,7 @@ public class Config implements Settings{
                 if (adminUidsObj instanceof List<?>) {
                     for (Object uid : (List<?>) adminUidsObj) {
                         try {
-                            long qq = Long.parseLong(uid.toString());
+                            long qq = ((Number) uid).longValue();
                             this.adminUids.add(qq);
                         } catch (NumberFormatException e) {
                             System.err.println("Invalid admin UID in config: " + uid);
@@ -71,15 +71,15 @@ public class Config implements Settings{
                 if (spyGroupsObj instanceof List<?>) {
                     for (Object gid : (List<?>) spyGroupsObj) {
                         try {
-                            long groupId = Long.parseLong(gid.toString());
+                            long groupId = ((Number) gid).longValue();
                             this.messageSpyGroups.add(groupId);
                         } catch (NumberFormatException e) {
                             System.err.println("Invalid message spy group ID in config: " + gid);
                         }
                     }
                 }
-                this.botUid = (long) data.getOrDefault("bot-uid", 970717559L);
-                this.debugGroupId = (long) data.getOrDefault("debug-group-id", 413478250L);
+                this.botUid = ((Number) data.getOrDefault("bot-uid", 970717559L)).longValue();
+                this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 413478250L)).longValue();
                 System.out.println("Config loaded successfully!");
             }
         } catch (Exception e) {
