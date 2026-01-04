@@ -1,8 +1,10 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
-import top.yzljc.qqbot.tools.AutoRepeat;
+import top.yzljc.qqbot.minecraft.MojangStatus;
+import top.yzljc.qqbot.tools.*;
 import top.yzljc.qqbot.command.AnnounceGroup;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.command.RollbackMessages;
@@ -10,18 +12,17 @@ import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.minecraft.SendCommand;
 import top.yzljc.qqbot.news.HypixelNews;
 import top.yzljc.qqbot.news.MinecraftNews;
-import top.yzljc.qqbot.tools.AnnoyUser;
 import top.yzljc.qqbot.utils.AutoAccept;
 import top.yzljc.qqbot.utils.AutoSign;
-import top.yzljc.qqbot.tools.CheckBilibili;
-import top.yzljc.qqbot.tools.ElectricCheck;
-import top.yzljc.qqbot.tools.LikeUser;
 import top.yzljc.qqbot.command.SearchRelevant;
 
 public class MessageProcessor {
 
     public static void processMessage(JsonNode json) {
         String postType = json.path("post_type").asText("");
+
+        PacketEvent.process(json);
+        PokeGift.process(json);
 
         // 处理加群/好友请求
         if ("request".equals(postType)) {
@@ -49,6 +50,8 @@ public class MessageProcessor {
         SearchRelevant.processCommand(json);
         GroupMessageFilter.checkAndRecall(json);
         ServerStatusReport.process(json);
+        MojangStatus.process(json);
+        CheckBilibili.process(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
@@ -73,7 +76,5 @@ public class MessageProcessor {
                 SendCommand.handle(userId, groupId, rawTrimmed);
             }
         }
-
-        CheckBilibili.process(json);
     }
 }

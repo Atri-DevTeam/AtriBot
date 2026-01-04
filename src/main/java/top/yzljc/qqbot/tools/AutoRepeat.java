@@ -120,6 +120,7 @@ public class AutoRepeat {
                 msg.equalsIgnoreCase("likeme") ||
                 msg.equalsIgnoreCase("zanwo") ||
                 msg.equalsIgnoreCase("电表") ||
+                msg.equalsIgnoreCase("/debug") ||
                 msg.equalsIgnoreCase("db");
     }
 }

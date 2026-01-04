@@ -36,7 +36,6 @@ public class App {
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
         MessageStats.startDailyReportScheduler();
-        ServerStatusReport.init();
 
         MessageReceiver.start(QQ_BOT_PORT, MessageProcessor::processMessage);
 
