@@ -1,0 +1,26 @@
+# Minecraft服务器数据监听端口
+listen-port: 37142
+
+# HTTPS对接Napcat的上报接收端口
+qq-bot-port: 8851
+
+# 哔哩哔哩视频查询用的Cookie
+bilibili-cookie: "f2325ec2,1779888479,15ce7*b1CjDTtjpSLV2fWS5Rkb69BXDkXMoAmVb1zdihONp9OdjaZDdLNKiVuMuRzSF7s9yw62USVmdDXzBzYm5xNGZlMUVyYWZjVmY1YmF1d1VmajI1LU93b29HOGc1cnAtUkYxRzZDbThZWHZPaTN4NnVmN1JpQjVudklHeGRRNHptQTRTZmVDcGs2V0xBIIEC"
+
+# 超级管理员QQ账号
+admin-uids:
+  - 3199590352
+  - 1948308
+
+# Bot的QQ号（用来做数据排除）
+bot-uid: 970717559
+
+# Debug用的QQ群号
+debug-group: 413478250
+
+# 启用消息监听的群聊列表
+enabled-groups:
+  - 413478250
+  - 818804507
+  - 1041561558
+  - 930319333

@@ -3,6 +3,8 @@ package top.yzljc.qqbot.tools;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageProcessor;
 import top.yzljc.qqbot.messages.MessageSender;
 
@@ -18,7 +20,6 @@ import java.util.concurrent.Executors;
 public class AnnoyUser {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String EMOJI_API = "http://106.14.23.232:8848/set_msg_emoji_like";
-    private static final long ALLOW_ADMIN = 3199590352L;
     private static final String RECORD_FILE = "annoy_user_record.json";
     private static final Random RAND = new Random();
 
@@ -38,7 +39,7 @@ public class AnnoyUser {
         JsonNode messageArr = json.path("message");
 
         // 管理员命令
-        if ((rawMsg.startsWith("/ay ") || rawMsg.startsWith("/ayr ")) && senderId == ALLOW_ADMIN) {
+        if ((rawMsg.startsWith("/ay ") || rawMsg.startsWith("/ayr ")) && Config.getInstance().getAdminUids().contains(senderId)) {
             boolean isSuper = rawMsg.trim().endsWith(" -s");
             String atQq = null;
             for (JsonNode node : messageArr) {
@@ -78,7 +79,7 @@ public class AnnoyUser {
             return;
         }
         // 增加/fuck @user 功能, 仅3199590352可用
-        if (rawMsg.startsWith("/fuck ") && senderId == ALLOW_ADMIN) {
+        if (rawMsg.startsWith("/fuck ") && Config.getInstance().getAdminUids().contains(senderId)) {
             String atQq = null;
             for (JsonNode node : messageArr) {
                 if ("at".equals(node.path("type").asText())) {

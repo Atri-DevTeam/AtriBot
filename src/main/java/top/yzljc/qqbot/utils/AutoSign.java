@@ -2,6 +2,8 @@ package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,16 +14,18 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
 public class AutoSign {
     private static final String GROUP_LIST_API = "http://106.14.23.232:8848/get_group_list";
     private static final String GROUP_SIGN_API = "http://106.14.23.232:8848/send_group_sign";
-    private static final long ALLOWED_USER_ID = 3199590352L;
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    static Settings settings = Config.getInstance();
+    private static final List<Long> admins = settings.getAdminUids();
     // 启动定时任务，每天0:00:10自动执行
     public static void startScheduler() {
         long initialDelay = computeInitialDelay();
@@ -120,13 +124,10 @@ public class AutoSign {
         }
     }
 
-    /**
-     * 仅允许 3199590352 发 testforsign（不区分群，所有群都能触发）立即执行一次打卡
-     */
     public static void processAutoSign(JsonNode json) {
         long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
-        if (userId == ALLOWED_USER_ID && "testforsign".equals(rawMessage)) {
+        if (admins.contains(userId) && "testforsign".equals(rawMessage)) {
             Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
         }
     }

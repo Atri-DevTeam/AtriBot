@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Set;
 
 public class RecordGroupMessage {
@@ -16,17 +19,19 @@ public class RecordGroupMessage {
     private static final String DB_USER = "qq_bot";
     private static final String DB_PASSWORD = "fimAyNWFXzWYJR7D";
     private static final String BASE_TABLE = "qq_group_message_record";
-    private static final Set<Long> ALLOWED_GROUPS = Set.of(818804507L, 413478250L, 1041561558L, 930319333L);
 
     private static HikariDataSource dataSource;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static Settings settings = Config.getInstance();
+    private static final List<Long> groups = settings.getMessageSpyGroups();
 
     static {
         try {
             initDataSource();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("[RecordGroupMessage] 初始化数据库连接失败！");
+            System.err.println("[INFO] 初始化数据库连接失败！");
         }
     }
 
@@ -78,11 +83,11 @@ public class RecordGroupMessage {
             long messageId = jsonInput.path("message_id").asLong();
             long groupId = jsonInput.path("group_id").asLong();
             String rawMessage = jsonInput.path("raw_message").asText("");
-            if (!ALLOWED_GROUPS.contains(groupId)) return;
+            if (!groups.contains(groupId)) return;
 
             saveToDatabase(userId, time, messageId, groupId, rawMessage);
         } catch (Exception e) {
-            System.err.println("[RecordGroupMessage] 解析消息或入库时发生错误: " + e.getMessage());
+            System.err.println("[INFO] 解析消息或入库时发生错误: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -92,7 +97,7 @@ public class RecordGroupMessage {
             JsonNode node = objectMapper.readTree(jsonString);
             processRecord(node);
         } catch (Exception e) {
-            System.err.println("[RecordGroupMessage] JSON字符串解析失败");
+            System.err.println("[INFO] JSON字符串解析失败");
         }
     }
 
@@ -103,7 +108,7 @@ public class RecordGroupMessage {
         try {
             initTableForGroup(groupId); // 保证表存在
         } catch (SQLException e) {
-            System.err.println("[RecordGroupMessage] 自动建分表失败：" + e.getMessage());
+            System.err.println("[INFO] 自动建分表失败：" + e.getMessage());
             return;
         }
 

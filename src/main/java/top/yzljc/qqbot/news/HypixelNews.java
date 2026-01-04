@@ -104,7 +104,6 @@ public class HypixelNews {
                 Element linkElem = post.selectFirst(".structItem-title a");
                 if (linkElem == null) continue;
                 String url = ARTICLE_BASE + linkElem.attr("href");
-                String id = url; //官网无ID字段，用完整链接唯一标识
 
                 String title = linkElem.text();
 
@@ -132,7 +131,7 @@ public class HypixelNews {
                 }
 
                 UnifiedArticle article = new UnifiedArticle();
-                article.id = id;
+                article.id = url;
                 article.title = title;
                 article.url = url;
                 article.timestamp = timestamp;

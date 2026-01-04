@@ -2,6 +2,8 @@ package top.yzljc.qqbot.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -9,6 +11,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 戳一戳回礼工具
@@ -17,8 +20,10 @@ import java.util.Map;
 public class PokeGift {
 
     private static final String POKE_API = "http://106.14.23.232:8848/group_poke";
-    private static final long BOT_QQ = 970717559L; // 机器人的QQ号
     private static final ObjectMapper jsonMapper = new ObjectMapper();
+
+    static Settings settings = Config.getInstance();
+    private static final long botQq = settings.getBotUid();
 
     public static void process(JsonNode json) {
         // 1. 判断是否为通知类型 (Notice)
@@ -36,12 +41,12 @@ public class PokeGift {
             long targetId = json.path("target_id").asLong();
 
             // 3. 判断被戳的对象是不是我们自己 (BOT_QQ)
-            if (targetId == BOT_QQ) {
+            if (targetId == botQq) {
                 long groupId = json.path("group_id").asLong();
                 long userId = json.path("user_id").asLong(); // 戳我的人
 
                 // 简单的防死循环：如果是机器人自己戳自己（虽然不太可能），忽略
-                if (userId == BOT_QQ) return;
+                if (userId == botQq) return;
 
                 System.out.println("[INFO] 监测到用户 " + userId + " 在群 " + groupId + " 戳了机器人，准备反击！");
                 

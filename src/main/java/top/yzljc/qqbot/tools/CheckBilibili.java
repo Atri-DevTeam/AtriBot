@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.BufferedReader;
@@ -21,10 +23,10 @@ public class CheckBilibili {
 
     private static final String LIST_FILE = "bvidlist.json";
 
-    // 依然需要填 Cookie，否则 web-interface/view 接口也可能看心情拦截
-    private static final String SESSDATA = "f2325ec2,1779888479,15ce7*b1CjDTtjpSLV2fWS5Rkb69BXDkXMoAmVb1zdihONp9OdjaZDdLNKiVuMuRzSF7s9yw62USVmdDXzBzYm5xNGZlMUVyYWZjVmY1YmF1d1VmajI1LU93b29HOGc1cnAtUkYxRzZDbThZWHZPaTN4NnVmN1JpQjVudklHeGRRNHptQTRTZmVDcGs2V0xBIIEC";
-
     private static final ObjectMapper jsonMapper = new ObjectMapper();
+
+    static Settings settings = Config.getInstance();
+    private static final String SESSDATA = settings.getBilibiliCookie();
 
     public static void process(JsonNode json) {
         String messageType = json.path("message_type").asText();

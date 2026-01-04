@@ -1,5 +1,7 @@
 package top.yzljc.qqbot;
 
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.img.ManosabaDate;
@@ -15,13 +17,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class App {
-    private static final int LISTEN_PORT = 37142;
-    private static final int QQ_BOT_PORT = 8851;
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
 
         System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
+
+        Settings settings = Config.getInstance();
+
+        int socketPort = settings.getListenPort();
+        int qqBotPort = settings.getQqBotPort();
 
         // 初始化配置与权限
         SendCommand.loadAdminConfig();
@@ -30,16 +35,15 @@ public class App {
                 SendCommand::loadAdminConfig, 60, 60, TimeUnit.SECONDS
         );
 
-        // 启动各类定时任务
         AutoSign.startScheduler();
         MinecraftNews.startScheduler();
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
         MessageStats.startDailyReportScheduler();
 
-        MessageReceiver.start(QQ_BOT_PORT, MessageProcessor::processMessage);
+        MessageReceiver.start(qqBotPort, MessageProcessor::processMessage);
 
         SocketManager.loadConfig();
-        SocketManager.start(LISTEN_PORT);
+        SocketManager.start(socketPort);
     }
 }

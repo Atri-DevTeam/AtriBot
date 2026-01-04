@@ -3,6 +3,7 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
+import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.messages.RecordGroupMessage;
 
 import java.io.OutputStream;
@@ -16,7 +17,7 @@ import java.util.regex.Pattern;
 
 /**
  * 指令工具: RollbackMessages
- * 支持/rollback [-n 数量] [-u QQ号]，撤回数据库中记录消息。
+ * 支持/rollback [-n 数量] [-u QQ号]，撤回数据库中记录消息
  */
 public class RollbackMessages {
     // 支持指令模式：/rollback -n [num] -u [QQ号]
@@ -116,7 +117,7 @@ public class RollbackMessages {
                 }
             }
         } catch (Exception e) {
-            System.err.println("RollbackMessages: 查询数据库失败：" + e.getMessage());
+            System.err.println("[INFO] 查询数据库失败：" + e.getMessage());
         }
         return list;
     }
@@ -143,11 +144,11 @@ public class RollbackMessages {
 
             int respCode = conn.getResponseCode();
             if (respCode != 200) {
-                System.err.println("RollbackMessages: 撤回消息[" + messageId + "]失败，HTTP " + respCode);
+                System.err.println("[INFO] 撤回消息[" + messageId + "]失败，HTTP " + respCode);
             }
             conn.disconnect();
         } catch (Exception e) {
-            System.err.println("RollbackMessages: 发送撤回包失败 message_id=" + messageId + " ：" + e.getMessage());
+            System.err.println("[INFO] 发送撤回包失败 message_id=" + messageId + " ：" + e.getMessage());
         }
     }
 
@@ -171,7 +172,7 @@ public class RollbackMessages {
         if (!message.trim().startsWith("/rollback")) return;
 
         int count = rollback(Long.toString(groupId), message, RecordGroupMessage.getDataSource());
-        System.out.println("RollbackMessages: 已批量撤回消息条数=" + count);
-        // 如需向群内反馈，可在此处调用发送反馈函数
+        System.out.println("[INFO] 已批量撤回消息条数=" + count);
+        MessageSender.sendGroupMessage(groupId, "已批量撤回消息 " + count + " 条");
     }
 }

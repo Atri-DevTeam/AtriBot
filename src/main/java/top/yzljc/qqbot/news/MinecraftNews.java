@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import top.yzljc.qqbot.command.AnnounceGroup;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender; // 引入 MessageSender
 
 import java.io.ByteArrayOutputStream;
@@ -33,16 +35,16 @@ public class MinecraftNews {
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static boolean isInitialized = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final List<String> ALLOW_USERS = Arrays.asList(
-            "3199590352"
-    );
+
+    static Settings settings = Config.getInstance();
+    private static final List<Long> admins = settings.getAdminUids();
 
     public static boolean processCommand(long userId, long groupId, String rawMessage) {
         if (rawMessage == null) return false;
         String msgLower = rawMessage.trim().toLowerCase();
 
         if ("testformc".equals(msgLower)) {
-            if (ALLOW_USERS.contains(String.valueOf(userId))) {
+            if (admins.contains(userId)) {
                 MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
 
                 Executors.newSingleThreadExecutor().submit(() -> {
