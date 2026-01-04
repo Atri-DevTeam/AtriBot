@@ -21,8 +21,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Deprecated(since = "客户自研，此项目废弃不再提供任何修复")
 /**
- * GordonHim 服务器状态专属查询 & 监控
+ * 这人跟傻逼一样我都做完了跟我说要自己研究这不傻逼吗
  */
 public class ServerStatusReport {
 
