@@ -9,21 +9,16 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * 戳一戳回礼工具
- * 监听戳一戳事件，如果是戳机器人，则光速反击20次
+ * 监听戳一戳事件，如果是戳机器人，则回击1次
  */
 public class PokeGift {
 
     private static final String POKE_API = "http://106.14.23.232:8848/group_poke";
     private static final long BOT_QQ = 970717559L; // 机器人的QQ号
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-
-    // 使用 CachedThreadPool 以便在短时间内并发执行多个网络请求
-    private static final ExecutorService WORKER_POOL = Executors.newCachedThreadPool();
 
     public static void process(JsonNode json) {
         // 1. 判断是否为通知类型 (Notice)
@@ -48,13 +43,9 @@ public class PokeGift {
                 // 简单的防死循环：如果是机器人自己戳自己（虽然不太可能），忽略
                 if (userId == BOT_QQ) return;
 
-                System.out.println("[PokeGift] 监测到用户 " + userId + " 在群 " + groupId + " 戳了机器人，准备反击！");
-
-                // 4. 光速连发 20 次
-                for (int i = 0; i < 20; i++) {
-                    // 放入线程池并发发送，不要阻塞主线程，也不要顺序发送（那样太慢）
-                    WORKER_POOL.submit(() -> sendPoke(groupId, userId));
-                }
+                System.out.println("[INFO] 监测到用户 " + userId + " 在群 " + groupId + " 戳了机器人，准备反击！");
+                
+                sendPoke(groupId, userId);
             }
         }
     }
@@ -86,10 +77,10 @@ public class PokeGift {
             }
 
             // 可以在调试时打开，平时关掉以免刷屏
-            // System.out.println("[PokeGift] 反击发送状态: " + code);
+            // System.out.println("[INFO] 反击发送状态: " + code);
 
         } catch (Exception e) {
-            System.err.println("[PokeGift] 戳一戳发送失败: " + e.getMessage());
+            System.err.println("[INFO] 戳一戳发送失败: " + e.getMessage());
         }
     }
 }

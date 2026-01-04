@@ -55,7 +55,7 @@ public class MojangStatus {
         String rawMsg = json.path("raw_message").asText().trim();
 
         if ("/mojang".equalsIgnoreCase(rawMsg)) {
-            MessageSender.sendGroupMessage(groupId, "正在逐项检查 Mojang 服务状态，请稍候...");
+            MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
             Executors.newSingleThreadExecutor().submit(() -> performChecksAndSend(groupId));
         }
     }
@@ -124,11 +124,11 @@ public class MojangStatus {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
                 MessageSender.sendGroupMessage(groupId, null, base64Img);
-                System.out.println("[MojangStatus] 图片发送成功 -> Group: " + groupId);
+                System.out.println("[INFO] 图片发送成功 -> Group: " + groupId);
             }
 
         } catch (Exception e) {
-            System.err.println("[MojangStatus] 处理异常: " + e.getMessage());
+            System.err.println("[INFO] 处理异常: " + e.getMessage());
             e.printStackTrace();
             MessageSender.sendGroupMessage(groupId, "状态检查发生内部错误: " + e.getMessage());
         } finally {
