@@ -19,6 +19,7 @@ public class Config implements Settings{
     private long botUid;
     private long debugGroupId;
     private List<Long> messageSpyGroups;
+    private String httpUrl;
 
     private Config() {
         load();
@@ -80,6 +81,7 @@ public class Config implements Settings{
                 }
                 this.botUid = ((Number) data.getOrDefault("bot-uid", 970717559L)).longValue();
                 this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 413478250L)).longValue();
+                this.httpUrl = (String) data.getOrDefault("napcat-data-url", "http://0.0.0.0:12345");
                 System.out.println("Config loaded successfully!");
             }
         } catch (Exception e) {
@@ -92,6 +94,7 @@ public class Config implements Settings{
             this.botUid = 970717559;
             this.debugGroupId = 413478250L;
             this.messageSpyGroups = new ArrayList<>();
+            this.httpUrl = "http://0.0.0.0:12345";
         }
     }
 
@@ -128,5 +131,10 @@ public class Config implements Settings{
     @Override
     public List<Long> getMessageSpyGroups() {
         return new ArrayList<>(messageSpyGroups);
+    }
+
+    @Override
+    public String getHttpUrl() {
+        return httpUrl;
     }
 }

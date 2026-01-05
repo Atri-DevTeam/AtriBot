@@ -3,6 +3,8 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.File;
@@ -23,8 +25,8 @@ public class AnnounceGroup {
     // 可用标签
     public static final Set<String> ALLOWED_TAGS = new HashSet<>(Arrays.asList("mc", "hyp"));
 
-    // 仅允许管理员修改
-    private static final long ADMIN_USER = 3199590352L;
+    static Settings settings = Config.getInstance();
+    private static final List<Long> admins = settings.getAdminUids();
 
     static {
         reloadGroups();
@@ -40,7 +42,7 @@ public class AnnounceGroup {
 
         if (rawMessage.startsWith("/ac list")) {
             // 列出所有群及标签，仅管理员可见
-            if (userId != ADMIN_USER) {
+            if (!admins.contains(userId)) {
                 // 调用 MessageSender
                 MessageSender.sendGroupMessage(groupId, "You have no permission to view full list!");
                 return;
@@ -126,7 +128,7 @@ public class AnnounceGroup {
 
     /** 管理员通过/ac添加群聊，如/ac 123456 mc */
     public static String processAdminAcCommand(String rawMessage, long userId) {
-        if (userId != ADMIN_USER) {
+        if (!admins.contains(userId)) {
             return "You have no permission to modify announce groups!";
         }
         String[] parts = rawMessage.trim().split("\\s+");
@@ -166,7 +168,7 @@ public class AnnounceGroup {
 
     /** 管理员通过/acr删除群聊，如/acr 123456 mc */
     public static String processAdminRemoveCommand(String rawMessage, long userId) {
-        if (userId != ADMIN_USER) {
+        if (!admins.contains(userId)) {
             return "You have no permission to modify announce groups!";
         }
         String[] parts = rawMessage.trim().split("\\s+");

@@ -18,11 +18,11 @@ import java.util.Set;
  * 监听戳一戳事件，如果是戳机器人，则回击1次
  */
 public class PokeGift {
-
-    private static final String POKE_API = "http://106.14.23.232:8848/group_poke";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String POKE_API = BASEURL + "/group_poke";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    static Settings settings = Config.getInstance();
     private static final long botQq = settings.getBotUid();
 
     public static void process(JsonNode json) {

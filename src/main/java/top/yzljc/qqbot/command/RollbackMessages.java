@@ -3,6 +3,8 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.messages.RecordGroupMessage;
 
@@ -26,8 +28,9 @@ public class RollbackMessages {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 发包地址
-    private static final String DELETE_MSG_URL = "http://106.14.23.232:8848/delete_msg";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String DELETE_MSG_URL = BASEURL + "/delete_msg";
 
     public static void processCommand(JsonNode jsonInput) {
         if (jsonInput == null) return;

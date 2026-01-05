@@ -1,6 +1,8 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -10,7 +12,10 @@ import java.util.*;
 import java.util.concurrent.Executors;
 
 public class MessageSender {
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
+
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String NAPCAT_API = BASEURL + "/send_group_msg";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     /**

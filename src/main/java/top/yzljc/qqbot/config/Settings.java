@@ -17,4 +17,6 @@ public interface Settings {
     long getDebugGroupId();
 
     List<Long> getMessageSpyGroups();
+
+    String getHttpUrl();
 }

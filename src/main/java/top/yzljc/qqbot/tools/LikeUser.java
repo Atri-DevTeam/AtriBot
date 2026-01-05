@@ -2,6 +2,8 @@ package top.yzljc.qqbot.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import java.net.HttpURLConnection;
@@ -11,8 +13,9 @@ import java.util.concurrent.Executors;
 
 public class LikeUser {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-    // 点赞接口地址
-    private static final String NAPCAT_LIKE_API = "http://106.14.23.232:8848/send_like";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String NAPCAT_LIKE_API = BASEURL + "/send_like";
 
     // 触发关键词
     private static final String[] KEYWORDS = {"赞我", "zanwo", "likeme"};

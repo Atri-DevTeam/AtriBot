@@ -7,7 +7,7 @@ qq-bot-port: 8851
 # 哔哩哔哩视频查询用的Cookie
 bilibili-cookie: "f2325ec2,1779888479,15ce7*b1CjDTtjpSLV2fWS5Rkb69BXDkXMoAmVb1zdihONp9OdjaZDdLNKiVuMuRzSF7s9yw62USVmdDXzBzYm5xNGZlMUVyYWZjVmY1YmF1d1VmajI1LU93b29HOGc1cnAtUkYxRzZDbThZWHZPaTN4NnVmN1JpQjVudklHeGRRNHptQTRTZmVDcGs2V0xBIIEC"
 
-# 超级管理员QQ账号
+# 管理员QQ账号
 admin-uids:
   - 3199590352
   - 1948308
@@ -19,8 +19,12 @@ bot-uid: 970717559
 debug-group: 413478250
 
 # 启用消息监听的群聊列表
-enabled-groups:
+message-spy-groups:
   - 413478250
   - 818804507
   - 1041561558
   - 930319333
+
+# Napcat HTTP 数据来源地址
+# 必须是http://xxx.xxx.xxx:port格式
+napcat-data-url: "http://106.14.23.232:8848"

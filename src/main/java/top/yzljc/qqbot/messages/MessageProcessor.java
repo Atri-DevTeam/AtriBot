@@ -3,6 +3,7 @@ package top.yzljc.qqbot.messages;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
+import top.yzljc.qqbot.img.HappyNewYear;
 import top.yzljc.qqbot.minecraft.MojangStatus;
 import top.yzljc.qqbot.tools.*;
 import top.yzljc.qqbot.command.AnnounceGroup;
@@ -52,6 +53,7 @@ public class MessageProcessor {
         ServerStatusReport.process(json);
         MojangStatus.process(json);
         CheckBilibili.process(json);
+        HappyNewYear.processManodate(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {

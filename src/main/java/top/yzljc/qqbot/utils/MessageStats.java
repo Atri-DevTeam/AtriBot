@@ -3,6 +3,8 @@ package top.yzljc.qqbot.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.SensitiveWordFilter; // 引入敏感词过滤器
 import top.yzljc.qqbot.messages.RecordGroupMessage;
 import top.yzljc.qqbot.messages.MessageSender;
@@ -29,8 +31,8 @@ public class MessageStats {
     // CQ码@用户匹配
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
 
-    // API 地址配置
-    private static final String API_BASE = "http://106.14.23.232:8848";
+    static Settings settings = Config.getInstance();
+    private static final String API_BASE= settings.getHttpUrl();
     private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
     private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
     private static final String DELETE_MSG_API = API_BASE + "/delete_msg";

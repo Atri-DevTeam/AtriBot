@@ -1,6 +1,8 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -13,7 +15,9 @@ import java.nio.charset.StandardCharsets;
  */
 public class GroupMessageFilter {
 
-    private static final String DELETE_API = "http://106.14.23.232:8848/delete_msg";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String DELETE_API = BASEURL + "/delete_msg";
 
     /**
      * 检查并撤回消息的主入口
