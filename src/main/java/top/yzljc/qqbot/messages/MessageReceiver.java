@@ -30,15 +30,12 @@ public class MessageReceiver {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
-            // 创建根路径上下文
             server.createContext("/", (HttpExchange exchange) -> {
                 try {
-                    // 1. 读取请求体
                     InputStream is = exchange.getRequestBody();
                     byte[] bodyBytes = is.readAllBytes();
                     String body = new String(bodyBytes, StandardCharsets.UTF_8);
 
-                    // 2. 如果内容不为空，尝试解析并回调处理逻辑
                     if (!body.isEmpty()) {
                         try {
                             JsonNode root = jsonMapper.readTree(body);
@@ -51,7 +48,6 @@ public class MessageReceiver {
                         }
                     }
 
-                    // 3. 返回响应
                     String resp = "{\"status\":\"ok\"}";
                     exchange.sendResponseHeaders(200, resp.length());
                     try (OutputStream os = exchange.getResponseBody()) {

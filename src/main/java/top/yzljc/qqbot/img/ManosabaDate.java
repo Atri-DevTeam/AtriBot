@@ -1,6 +1,8 @@
 package top.yzljc.qqbot.img;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import javax.imageio.ImageIO;
@@ -22,11 +24,9 @@ import java.util.concurrent.TimeUnit;
  * 生成并推送魔法少女の魔女审判 x Minecraft 项目进度图片到QQ群（计算天数）
  */
 public class ManosabaDate {
-    private static final long GROUP_ID = 1041561558L;
-    /**
-     * 生成项目第N天图片：tmp/manoday.png
-     * @throws IOException 生成异常
-     */
+    static Settings settings = Config.getInstance();
+    private static final long GROUP_ID = settings.getManosabaGroupId();
+
     public static void generateDevelopDayImage() throws IOException {
         File tempDir = new File("tmp");
         if (!tempDir.exists()) tempDir.mkdirs();
@@ -49,23 +49,21 @@ public class ManosabaDate {
         long days = ChronoUnit.DAYS.between(start, now) + 1;
         if (days < 1) days = 1;
 
-        // 分三行
         String line1 = "你说的对，但是今天是";
         String line2 = "【魔法少女の魔女审判 x Minecraft】项目";
         String line3 = "开发的第 " + days + " 天";
 
-        // 使用自定义 MinecraftAE.ttf 字体作为主字体
         Font font;
         File fontFile = new File("MinecraftAE.ttf");
         if (fontFile.exists()) {
             try {
                 font = Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(Font.BOLD, 28f);
             } catch (Exception e) {
-                System.err.println("[ImgWarning] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                System.err.println("[ERROR] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
                 font = new Font(Font.SANS_SERIF, Font.BOLD, 28);
             }
         } else {
-            System.err.println("[ImgWarning] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
+            System.err.println("[ERROR] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
             font = new Font(Font.SANS_SERIF, Font.BOLD, 28);
         }
         g.setFont(font);

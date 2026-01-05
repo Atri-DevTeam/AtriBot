@@ -28,12 +28,10 @@ public class MojangStatus {
     private static final String BACKGROUND_FILE = "mojangstatus.png";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    // 定义状态枚举
     enum Status {
         ONLINE, OFFLINE
     }
 
-    // 内部类用于存储单项服务结果
     static class ServiceResult {
         String name;
         Status status;
@@ -44,9 +42,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 消息处理入口
-     */
     public static void process(JsonNode json) {
         if (!"message".equals(json.path("post_type").asText())) return;
         if (!"group".equals(json.path("message_type").asText())) return;
@@ -63,47 +58,41 @@ public class MojangStatus {
     private static void performChecksAndSend(long groupId) {
         File tempFile = null;
         try {
-            // ==== 并发执行所有检测任务 ====
-
-            // 1. Session Server (验证 UUID)
+            // Session Server
             CompletableFuture<ServiceResult> checkSession = CompletableFuture.supplyAsync(() -> {
                 Status s = checkSessionServer() ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Session Server", s);
             });
 
-            // 2. Textures (检查图片加载)
+            // Textures
             CompletableFuture<ServiceResult> checkTexture = CompletableFuture.supplyAsync(() -> {
                 Status s = checkTextures() ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Textures Server", s);
             });
 
-            // 3. Mojang API (Updated: 查 jeb_ 的 profile)
+            // Mojang API
             CompletableFuture<ServiceResult> checkApi = CompletableFuture.supplyAsync(() -> {
                 Status s = checkMojangApi() ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Mojang API", s);
             });
 
-            // (已移除 Assets Server 检测)
-
-            // 4. Minecraft.net (Ping 官网)
+            // Minecraft.net
             CompletableFuture<ServiceResult> checkMcNet = CompletableFuture.supplyAsync(() -> {
                 Status s = checkTcpConnect("minecraft.net", 443) ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Minecraft.net", s);
             });
 
-            // 5. Minecraft Services (Ping sessionserver)
+            // Minecraft Services
             CompletableFuture<ServiceResult> checkServices = CompletableFuture.supplyAsync(() -> {
                 Status s = checkTcpConnect("sessionserver.mojang.com", 443) ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Minecraft Services", s);
             });
 
-            // 等待所有任务完成
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(
                     checkSession, checkTexture, checkApi, checkMcNet, checkServices
             );
             allFutures.join();
 
-            // 收集结果 (按顺序)
             List<ServiceResult> results = new ArrayList<>();
             results.add(checkSession.get());
             results.add(checkTexture.get());
@@ -111,7 +100,6 @@ public class MojangStatus {
             results.add(checkMcNet.get());
             results.add(checkServices.get());
 
-            // 2. 生成图片
             File tmpDir = new File("tmp");
             if (!tmpDir.exists()) tmpDir.mkdirs();
             String fileName = "mojang_status_" + System.currentTimeMillis() + ".png";
@@ -119,7 +107,6 @@ public class MojangStatus {
 
             drawStatusImage(results, tempFile);
 
-            // 3. 发送图片
             if (tempFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
@@ -138,13 +125,6 @@ public class MojangStatus {
         }
     }
 
-    // ================= 检测逻辑实现 =================
-
-    /**
-     * 1. 检查 Session Server
-     * URL: https://sessionserver.mojang.com/session/minecraft/profile/853c80ef3c3749fdaa49938b674adae6
-     * 规则: 返回JSON包含 "id" : "853c80ef3c3749fdaa49938b674adae6"
-     */
     private static boolean checkSessionServer() {
         String url = "https://sessionserver.mojang.com/session/minecraft/profile/853c80ef3c3749fdaa49938b674adae6";
         try {
@@ -158,11 +138,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 2. 检查 Textures
-     * URL: http://textures.minecraft.net/texture/...
-     * 规则: HTTP 200 即为正常
-     */
     private static boolean checkTextures() {
         String url = "http://textures.minecraft.net/texture/7fd9ba42a7c81eeea22f1524271ae85a8e045ce0af5a6ae16c6406ae917e68b5";
         try {
@@ -178,11 +153,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 3. 检查 Mojang API (Updated)
-     * URL: https://api.mojang.com/users/profiles/minecraft/jeb_
-     * 规则: 返回JSON包含 "name": "jeb_"
-     */
     private static boolean checkMojangApi() {
         String url = "https://api.mojang.com/users/profiles/minecraft/jeb_";
         try {
@@ -196,9 +166,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 4 & 5. 通用 TCP 连接检查 (模拟 Ping)
-     */
     private static boolean checkTcpConnect(String host, int port) {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), 3000); // 3秒超时
@@ -207,8 +174,6 @@ public class MojangStatus {
             return false;
         }
     }
-
-    // ================= 辅助工具 =================
 
     private static String httpGet(String urlStr) {
         try {
@@ -231,9 +196,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 绘图逻辑
-     */
     private static void drawStatusImage(List<ServiceResult> results, File outFile) throws Exception {
         File bgFile = new File(BACKGROUND_FILE);
         BufferedImage bg;
@@ -254,7 +216,6 @@ public class MojangStatus {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // 加载字体
         Font font;
         try {
             File fontFile = new File("MinecraftAE.ttf");
@@ -267,10 +228,8 @@ public class MojangStatus {
             font = new Font("SansSerif", Font.BOLD, 1);
         }
 
-        // ==== 绘制列表 ====
         g.setFont(font.deriveFont(Font.PLAIN, 24f));
 
-        // 坐标参数
         int startY = 190;
         int lineHeight = 65;
         int listX = 240; // 左边距
@@ -279,11 +238,9 @@ public class MojangStatus {
             String serviceName = entry.name;
             Status status = entry.status;
 
-            // 绘制服务名
             g.setColor(Color.WHITE);
             g.drawString(serviceName, listX, startY);
 
-            // 绘制状态
             String statusText;
             Color statusColor;
 

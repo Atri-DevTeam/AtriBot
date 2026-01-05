@@ -32,7 +32,7 @@ public class MessageStats {
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
 
     static Settings settings = Config.getInstance();
-    private static final String API_BASE= settings.getHttpUrl();
+    private static final String API_BASE = settings.getHttpUrl();
     private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
     private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
     private static final String DELETE_MSG_API = API_BASE + "/delete_msg";

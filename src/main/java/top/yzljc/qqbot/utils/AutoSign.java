@@ -17,10 +17,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class AutoSign {
-    private static final String GROUP_SIGN_API = "http://106.14.23.232:8848/send_group_sign";
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String GROUP_SIGN_API = BASEURL + "/send_group_sign";
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final List<Long> admins = settings.getAdminUids();
 
     public static void startScheduler() {
