@@ -1,6 +1,8 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -10,7 +12,10 @@ import java.util.*;
 import java.util.concurrent.Executors;
 
 public class MessageSender {
-    private static final String NAPCAT_API = "http://106.14.23.232:8848/send_group_msg";
+
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String NAPCAT_API = BASEURL + "/send_group_msg";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     /**
@@ -29,10 +34,8 @@ public class MessageSender {
     public static void sendGroupMessage(long groupId, String text, String base64Image) {
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
-                // 构造消息节点列表
                 List<Map<String, Object>> messageNodes = new ArrayList<>();
 
-                // 1. 文本节点
                 if (text != null && !text.isEmpty()) {
                     Map<String, Object> textData = new HashMap<>();
                     textData.put("text", text);
@@ -42,7 +45,6 @@ public class MessageSender {
                     messageNodes.add(textNode);
                 }
 
-                // 2. 图片节点 (如果有)
                 if (base64Image != null && !base64Image.isEmpty()) {
                     Map<String, Object> imgData = new HashMap<>();
                     imgData.put("file", "base64://" + base64Image);
@@ -62,7 +64,6 @@ public class MessageSender {
 
                 String payload = jsonMapper.writeValueAsString(payloadMap);
 
-                // 发送 HTTP 请求
                 HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
                 conn.setRequestMethod("POST");
                 conn.setDoOutput(true);
@@ -78,10 +79,10 @@ public class MessageSender {
                 if (code == 200) {
                     System.out.println("[INFO] 消息发送成功 -> Group: " + groupId + (base64Image != null ? " [含图片]" : ""));
                 } else {
-                    System.err.println("[INFO] 消息发送失败，HTTP Code: " + code);
+                    System.err.println("[ERROR] 消息发送失败，HTTP Code: " + code);
                 }
             } catch (Exception ex) {
-                System.err.println("[INFO] 推送异常: " + ex.getMessage());
+                System.err.println("[ERROR] 推送异常: " + ex.getMessage());
             }
         });
     }

@@ -1,32 +1,28 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class AutoSign {
-    private static final String GROUP_LIST_API = "http://106.14.23.232:8848/get_group_list";
-    private static final String GROUP_SIGN_API = "http://106.14.23.232:8848/send_group_sign";
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String GROUP_SIGN_API = BASEURL + "/send_group_sign";
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final List<Long> admins = settings.getAdminUids();
-    // 启动定时任务，每天0:00:10自动执行
+
     public static void startScheduler() {
         long initialDelay = computeInitialDelay();
         long oneDayMs = TimeUnit.DAYS.toMillis(1);
@@ -34,7 +30,6 @@ public class AutoSign {
         System.out.println("[INFO] 每天0:00:00自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
     }
 
-    // 计算距离下个0:00:10的毫秒数
     private static long computeInitialDelay() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime next = now.with(LocalTime.of(0, 0, 0));
@@ -44,75 +39,34 @@ public class AutoSign {
         return Duration.between(now, next).toMillis();
     }
 
-    // 向全部群调用打卡API
     private static void signAllGroups() {
         try {
-            Set<String> groupIds = fetchAllGroupIds();
+            // 修改点：接收 Long 类型的集合
+            Set<Long> groupIds = GroupList.fetchAllGroupIds();
+
             if (groupIds.isEmpty()) {
                 System.out.println("[INFO] 未拉取到任何群号，自动打卡跳过。");
                 return;
             }
-            for (String groupId : groupIds) {
+            // 修改点：遍历 Long
+            for (Long groupId : groupIds) {
                 sendGroupSign(groupId);
+                System.out.println("[INFO] 已手动对群 " + groupId + " 执行自动打卡，群号检索成功");
             }
-            System.out.println("[INFO] 已对 " + groupIds.size() + " 个群执行自动打卡。");
+            System.out.println("[INFO] 已对 " + groupIds.size() + " 个群执行自动打卡，任务完成");
         } catch (Exception e) {
             System.err.println("[INFO] 自动打卡异常: " + e.getMessage());
         }
     }
 
-    /** 拉取所有群号，适配你的实际JSON格式(data为群列表，每个group_id为群号) */
-    private static Set<String> fetchAllGroupIds() {
-        Set<String> groupIds = new HashSet<>();
-        String nextToken = "";
-        try {
-            while (true) {
-                String reqJson = "{\"next_token\":\"" + nextToken + "\"}";
-                HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_LIST_API).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(15000);
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json");
-                try (OutputStream out = conn.getOutputStream()) {
-                    out.write(reqJson.getBytes(StandardCharsets.UTF_8));
-                }
-
-                try (InputStream in = conn.getInputStream()) {
-                    JsonNode resp = JSON_MAPPER.readTree(in);
-                    // 适配实测json：data为array，每项有group_id
-                    if (resp.has("data") && resp.get("data").isArray()) {
-                        for (JsonNode group : resp.get("data")) {
-                            if (group.has("group_id")) {
-                                String gid = group.get("group_id").asText();
-                                groupIds.add(gid);
-                            }
-                        }
-                    }
-
-                    // 判断有没有下一页（与napcat新接口兼容，通常实际只有一页）
-                    if (resp.has("next_token")) {
-                        String token = resp.get("next_token").asText();
-                        if (token == null || token.isEmpty()) {
-                            break;
-                        } else {
-                            nextToken = token;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[INFO] 获取群列表异常: " + e.getMessage());
-        }
-        return groupIds;
-    }
-
     /** 调用群打卡请求API */
-    private static void sendGroupSign(String groupId) {
+    // 修改点：参数改为 long
+    private static void sendGroupSign(long groupId) {
         try {
+            // 修改点：拼接 JSON 时直接使用 long，通常 API 也支持数字型 group_id，
+            // 这里保留了引号以兼容旧逻辑，如果不加引号 API 也支持则可去掉引号。
             String payload = "{\"group_id\":\"" + groupId + "\"}";
+
             HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_SIGN_API).openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);

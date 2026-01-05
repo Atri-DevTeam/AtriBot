@@ -2,6 +2,8 @@ package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -12,8 +14,9 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class AutoAccept {
-    // 这里的 API 地址与发送消息不同，是处理请求的 API
-    private static final String API_URL = "http://106.14.23.232:8848/set_friend_add_request";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String API_URL = BASEURL + "/set_friend_add_request";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     /**

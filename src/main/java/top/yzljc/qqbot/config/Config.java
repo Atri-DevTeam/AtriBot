@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,13 @@ public class Config implements Settings{
     private long botUid;
     private long debugGroupId;
     private List<Long> messageSpyGroups;
+    private String httpUrl;
+    private String mysqlHost;
+    private int mysqlPort;
+    private String mysqlDatabase;
+    private String mysqlUsername;
+    private String mysqlPassword;
+    private long manosabaGroupId;
 
     private Config() {
         load();
@@ -51,8 +59,8 @@ public class Config implements Settings{
                 Map<String, Object> data = yaml.load(in);
 
                 // Parse values with defaults if missing
-                this.listenPort = (int) data.getOrDefault("listen-port", 37142);
-                this.qqBotPort = (int) data.getOrDefault("qq-bot-port", 8851);
+                this.listenPort = (int) data.getOrDefault("listen-port", 25566);
+                this.qqBotPort = (int) data.getOrDefault("qq-bot-port", 1234);
                 this.bilibiliCookie = (String) data.getOrDefault("bilibili-cookie", "null");
                 this.adminUids = new ArrayList<>();
                 Object adminUidsObj = data.get("admin-uids");
@@ -78,20 +86,30 @@ public class Config implements Settings{
                         }
                     }
                 }
-                this.botUid = ((Number) data.getOrDefault("bot-uid", 970717559L)).longValue();
-                this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 413478250L)).longValue();
+                this.botUid = ((Number) data.getOrDefault("bot-uid", 123456789L)).longValue();
+                this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 123456789L)).longValue();
+                this.httpUrl = (String) data.getOrDefault("napcat-data-url", "http://0.0.0.0:12345");
+                Object mysqlObj = data.get("mysql");
+                if (mysqlObj instanceof Map<?, ?> rawMap) {
+                    Map<String, Object> mysqlConfig = new HashMap<>();
+                    rawMap.forEach((k, v) -> {
+                        if (k instanceof String && v != null) {
+                            mysqlConfig.put((String) k, v);
+                        }
+                    });
+                    this.mysqlHost = (String) mysqlConfig.getOrDefault("host", "localhost");
+                    this.mysqlPort = ((Number) mysqlConfig.getOrDefault("port", 3306)).intValue();
+                    this.mysqlDatabase = (String) mysqlConfig.getOrDefault("database", "database");
+                    this.mysqlUsername = (String) mysqlConfig.getOrDefault("username", "root");
+                    this.mysqlPassword = (String) mysqlConfig.getOrDefault("password", "null");
+                } else {
+                    System.out.println("[ERROR] 在读取数据库配置时出现问题，请检查数据库配置!");
+                }
+                this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 System.out.println("Config loaded successfully!");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // Fallback defaults
-            this.listenPort = 37142;
-            this.qqBotPort = 8851;
-            this.bilibiliCookie = "null";
-            this.adminUids = new ArrayList<>();
-            this.botUid = 970717559;
-            this.debugGroupId = 413478250L;
-            this.messageSpyGroups = new ArrayList<>();
         }
     }
 
@@ -128,5 +146,40 @@ public class Config implements Settings{
     @Override
     public List<Long> getMessageSpyGroups() {
         return new ArrayList<>(messageSpyGroups);
+    }
+
+    @Override
+    public String getHttpUrl() {
+        return httpUrl;
+    }
+
+    @Override
+    public String getMysqlHost() {
+        return mysqlHost;
+    }
+
+    @Override
+    public int getMysqlPort() {
+        return mysqlPort;
+    }
+
+    @Override
+    public String getMysqlDatabase() {
+        return mysqlDatabase;
+    }
+
+    @Override
+    public String getMysqlUsername() {
+        return mysqlUsername;
+    }
+
+    @Override
+    public String getMysqlPassword() {
+        return mysqlPassword;
+    }
+
+    @Override
+    public long getManosabaGroupId() {
+        return manosabaGroupId;
     }
 }

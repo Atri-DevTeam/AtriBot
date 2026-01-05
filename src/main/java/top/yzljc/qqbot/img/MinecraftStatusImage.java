@@ -54,11 +54,11 @@ public class MinecraftStatusImage {
             try {
                 baseFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
             } catch (Exception e) {
-                System.err.println("[ImgWarning] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                System.err.println("[ERROR] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
                 baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1);
             }
         } else {
-            System.err.println("[ImgWarning] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
+            System.err.println("[ERROR] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
             baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1);
         }
 

@@ -18,8 +18,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AnnoyUser {
+
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final String EMOJI_API = "http://106.14.23.232:8848/set_msg_emoji_like";
+    private static final String EMOJI_API = BASEURL + "/set_msg_emoji_like";
     private static final String RECORD_FILE = "annoy_user_record.json";
     private static final Random RAND = new Random();
 

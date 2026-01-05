@@ -3,6 +3,7 @@ package top.yzljc.qqbot;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
+import top.yzljc.qqbot.img.HappyNewYear;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.messages.MessageProcessor;
@@ -40,6 +41,7 @@ public class App {
         ManosabaDate.startAutoDailyTask();
         HypixelNews.startScheduler();
         MessageStats.startDailyReportScheduler();
+        HappyNewYear.startAutoDailyTask();
 
         MessageReceiver.start(qqBotPort, MessageProcessor::processMessage);
 

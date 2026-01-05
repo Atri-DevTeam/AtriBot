@@ -2,11 +2,14 @@ package top.yzljc.qqbot.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 public class ElectricCheck {
@@ -14,17 +17,26 @@ public class ElectricCheck {
     // 电费查询接口
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
     // 允许的群组
-    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L, 413478250L, 1041561558L};
+    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L, 413478250L};
     // 触发关键词
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
+
+    static Settings settings = Config.getInstance();
+    private static final List<Long> admins = settings.getAdminUids();
 
     public static void processElectric(JsonNode json) {
         if (!json.has("group_id") || !json.has("raw_message")) return;
 
         long groupId = json.path("group_id").asLong();
+        long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
-        if (!isAllowedGroup(groupId) || !containsKeyword(rawMessage)) return;
+        if (!containsKeyword(rawMessage)) return;
+        if (!admins.contains(userId)){
+            if (!isAllowedGroup(groupId)) {
+                return;
+            }
+        }
 
         Executors.newSingleThreadExecutor().submit(() -> {
             String feedback;

@@ -26,13 +26,11 @@ public class StatusReporter {
         try {
             System.out.println("[INFO] 开始构建推送消息...");
 
-            // 1. 构造文本内容
             String textContent = String.format(
                     "[!] 服务器状态更新\n服务器：%s\n地址：%s:%d\n状态：%s",
                     name, ip, port, statusDesc
             );
 
-            // 2. 图片生成逻辑
             File tmpDir = new File("tmp");
             if (!tmpDir.exists()) {
                 tmpDir.mkdirs();
@@ -56,15 +54,12 @@ public class StatusReporter {
                 System.err.println("[Error] 图片生成失败，文件不存在！将只发送文本。");
             }
 
-            // 3. 调用 MessageSender 发送
-            // 如果 base64Img 为 null，MessageSender 会自动只发文本
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
 
         } catch (Exception ex) {
             System.err.println("[Error] 推送流程异常: " + ex.getMessage());
             ex.printStackTrace();
         } finally {
-            // 4. 清理临时文件
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
                 System.out.println("[INFO] 临时图片已清理");

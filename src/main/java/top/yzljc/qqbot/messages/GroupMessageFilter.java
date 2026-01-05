@@ -1,6 +1,8 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -13,20 +15,17 @@ import java.nio.charset.StandardCharsets;
  */
 public class GroupMessageFilter {
 
-    private static final String DELETE_API = "http://106.14.23.232:8848/delete_msg";
+    static Settings settings = Config.getInstance();
+    private static final String BASEURL = settings.getHttpUrl();
+    private static final String DELETE_API = BASEURL + "/delete_msg";
 
-    /**
-     * 检查并撤回消息的主入口
-     */
     public static void checkAndRecall(JsonNode json) {
         if (json == null) return;
 
-        // 1. 仅处理群消息
         if (!json.has("message_type") || !"group".equals(json.path("message_type").asText())) {
             return;
         }
 
-        // 2. 获取消息内容和ID
         String rawMessage = json.path("raw_message").asText();
         long messageId = json.path("message_id").asLong();
         long userId = json.path("user_id").asLong();
@@ -35,9 +34,7 @@ public class GroupMessageFilter {
             return;
         }
 
-        // 3. 检查是否包含敏感词
         if (SensitiveWordFilter.containsSensitiveWord(rawMessage)) {
-            // 4. 执行撤回 (不报错模式)
             recallMessageSilent(messageId);
 
             String detectedWord = SensitiveWordFilter.findSensitiveWord(rawMessage);
@@ -45,16 +42,13 @@ public class GroupMessageFilter {
         }
     }
 
-    /**
-     * 静默撤回消息，发生异常不抛出、不打印错误堆栈
-     */
     private static void recallMessageSilent(long messageId) {
         try {
             URL url = new URL(DELETE_API);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(2000); // 2秒超时，快速失败
+            conn.setConnectTimeout(2000);
             conn.setReadTimeout(2000);
             conn.setRequestProperty("Content-Type", "application/json");
 
@@ -65,12 +59,11 @@ public class GroupMessageFilter {
                 os.flush();
             }
 
-            // 触发请求发送
             conn.getResponseCode();
             conn.disconnect();
 
         } catch (Exception e) {
-            // 按照需求：没权限或网络错误时，当无事发生，不报错
+            System.err.println("[ERROR] 撤回消息 ID " + messageId + " 失败: " + e.getMessage());
         }
     }
 }

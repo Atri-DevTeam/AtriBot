@@ -24,9 +24,6 @@ public class SensitiveWordFilter {
         reload();
     }
 
-    /**
-     * 重新加载配置文件
-     */
     public static void reload() {
         File file = new File(CONFIG_FILE);
         if (!file.exists()) {
@@ -34,7 +31,6 @@ public class SensitiveWordFilter {
             return;
         }
 
-        // 如果文件没变动，则不重新加载 (可选，这里为了简单每次调用reload都重读)
         if (file.lastModified() == lastModifiedTime) {
             return;
         }
@@ -69,11 +65,11 @@ public class SensitiveWordFilter {
         if (text == null || text.isEmpty()) {
             return null;
         }
-        checkReload(); // 检查热更新
+        checkReload();
 
         for (String word : BLACKLIST) {
             if (text.contains(word)) {
-                return word; // 返回具体命中的词
+                return word;
             }
         }
         return null;
@@ -88,10 +84,7 @@ public class SensitiveWordFilter {
         if (text == null || text.isEmpty()) {
             return false;
         }
-
-        // 每次检查前尝试刷新（如果文件被修改）
-        // 为了性能，建议不要每条消息都查文件属性，这里做一个简单的策略：
-        // 如果你需要实时热更新，保留下面这行；如果不需要，注释掉下面这行即可。
+        // 这是个刷新调用
         checkReload();
 
         for (String word : BLACKLIST) {
@@ -106,7 +99,6 @@ public class SensitiveWordFilter {
     private static long lastCheckTime = 0;
     private static void checkReload() {
         long now = System.currentTimeMillis();
-        // 每 60 秒检查一次文件变动
         if (now - lastCheckTime > 60000) {
             reload();
             lastCheckTime = now;

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariDataSource;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.messages.RecordGroupMessage;
 import top.yzljc.qqbot.messages.SensitiveWordFilter;
@@ -43,7 +45,8 @@ public class SearchRelevant {
     private static final int MAX_MSG_LENGTH = 1000;
 
     // API 配置
-    private static final String API_BASE = "http://106.14.23.232:8848";
+    static Settings settings = Config.getInstance();
+    private static final String API_BASE = settings.getHttpUrl();
     private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
     private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
     private static final String DELETE_MSG_API = API_BASE + "/delete_msg";

@@ -17,15 +17,10 @@ public class SendCommand {
     private static final String ADMIN_FILE = "adminuser.json";
     private static final String SERVER_SECRET_FILE = "server-secret.json";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-
-    // 权限与密钥配置
     private static Map<String, List<String>> adminRules = new HashMap<>();
     private static Map<String, String> serverSecretMap = new HashMap<>();
-
-    // 用于等待 Socket 服务器响应的 Future (App.java 需要引用这个)
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
-    // 内部鉴权对象
     private static class AuthInfo {
         String serverId;
         String secretKey;
@@ -36,12 +31,8 @@ public class SendCommand {
         }
     }
 
-    /**
-     * 加载权限和密钥配置 (需定时调用)
-     */
     public static void loadAdminConfig() {
         try {
-            // 1. 加载管理员权限规则
             Path adminPath = Paths.get(ADMIN_FILE);
             Map<String, List<String>> newRules = new HashMap<>();
             if (Files.exists(adminPath)) {
@@ -60,7 +51,6 @@ public class SendCommand {
             }
             adminRules = newRules;
 
-            // 2. 加载服务器密钥
             Path secretPath = Paths.get(SERVER_SECRET_FILE);
             Map<String, String> secretMap = new HashMap<>();
             if (Files.exists(secretPath)) {
@@ -81,9 +71,6 @@ public class SendCommand {
         }
     }
 
-    /**
-     * 处理 /rc 指令
-     */
     public static void handle(long userId, long groupId, String rawMessage) {
         System.out.printf("[CMD] 收到指令: %s (User:%d Group:%d)\n", rawMessage, userId, groupId);
 
@@ -108,7 +95,6 @@ public class SendCommand {
             return;
         }
 
-        // 普通配置管理员逻辑
         if (adminRules.containsKey(key)) {
             List<String> userServers = adminRules.get(key);
             String[] parts = rawMessage.trim().split("\\s+", 3);
@@ -146,7 +132,6 @@ public class SendCommand {
 
     private static void executeRcCommand(String targetServerId, String command, AuthInfo info, long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
-            // 调用 App 发送 Socket 指令
             boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
 
             if (!success) {
@@ -163,7 +148,6 @@ public class SendCommand {
 
             String consoleLog;
             try {
-                // 等待 App.java 收到 Socket 回复并填充 future
                 consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 consoleLog = "(超时未收到控制台反馈)";

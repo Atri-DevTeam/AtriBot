@@ -3,7 +3,7 @@ package top.yzljc.qqbot.news;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import top.yzljc.qqbot.command.AnnounceGroup;
+import top.yzljc.qqbot.command.SendNewsGroups;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender; // 引入 MessageSender
@@ -31,7 +31,7 @@ public class MinecraftNews {
     private static final String IMAGE_BASE_URL = "https://launchercontent.mojang.com";
     private static final String HISTORY_FILE = "news_history.json";
 
-    public static final List<Long> TARGET_GROUPS = AnnounceGroup.TARGET_GROUPS_MC;
+    public static final List<Long> TARGET_GROUPS = SendNewsGroups.TARGET_GROUPS_MC;
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static boolean isInitialized = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();

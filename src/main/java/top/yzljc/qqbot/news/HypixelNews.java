@@ -7,7 +7,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import top.yzljc.qqbot.command.AnnounceGroup;
+import top.yzljc.qqbot.command.SendNewsGroups;
 import top.yzljc.qqbot.messages.MessageSender;
 
 import java.io.ByteArrayOutputStream;
@@ -33,7 +33,7 @@ public class HypixelNews {
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = "hypixel_news_history.json";
 
-    public static final List<Long> TARGET_GROUPS = AnnounceGroup.TARGET_GROUPS_HYP;
+    public static final List<Long> TARGET_GROUPS = SendNewsGroups.TARGET_GROUPS_HYP;
 
     private static boolean isInitialized = false;
     private static final Set<String> pushedArticleIds = new HashSet<>();
@@ -76,7 +76,7 @@ public class HypixelNews {
             int newCount = 0;
             for (UnifiedArticle article : newArticlesFound) {
                 System.out.println("[INFO] 发现新Hypixel文章: " + article.title);
-                System.out.println("[INFO] 当前Hypixel新闻推广群: " + AnnounceGroup.TARGET_GROUPS_HYP);
+                System.out.println("[INFO] 当前Hypixel新闻推广群: " + SendNewsGroups.TARGET_GROUPS_HYP);
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
                 newCount++;

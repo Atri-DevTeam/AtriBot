@@ -15,15 +15,18 @@ import java.util.List;
 import java.util.Set;
 
 public class RecordGroupMessage {
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/qq_bot?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
-    private static final String DB_USER = "qq_bot";
-    private static final String DB_PASSWORD = "fimAyNWFXzWYJR7D";
+    static Settings settings = Config.getInstance();
+    private static final String HOST = settings.getMysqlHost();
+    private static final int PORT = settings.getMysqlPort();
+    private static final String DATABASE = settings.getMysqlDatabase();
+    private static final String DB_USER = settings.getMysqlUsername();
+    private static final String DB_PASSWORD = settings.getMysqlPassword();
+
+    private static final String DB_URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE + "?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
     private static final String BASE_TABLE = "qq_group_message_record";
 
     private static HikariDataSource dataSource;
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    static Settings settings = Config.getInstance();
     private static final List<Long> groups = settings.getMessageSpyGroups();
 
     static {
