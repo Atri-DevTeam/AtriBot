@@ -1,12 +1,13 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.command.Reboot;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.img.HappyNewYear;
 import top.yzljc.qqbot.minecraft.MojangStatus;
 import top.yzljc.qqbot.tools.*;
-import top.yzljc.qqbot.command.AnnounceGroup;
+import top.yzljc.qqbot.command.SendNewsGroups;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.command.RollbackMessages;
 import top.yzljc.qqbot.img.ManosabaDate;
@@ -36,13 +37,12 @@ public class MessageProcessor {
             return;
         }
 
-        // ==== 各类功能模块分发 ====
         ElectricCheck.processElectric(json);
         AutoSign.processAutoSign(json);
         AutoRepeat.processGroupMessage(json);
         ManosabaDate.processManodate(json);
         HypixelNews.processTestForHyp(json);
-        AnnounceGroup.processAcCommand(json);
+        SendNewsGroups.processAcCommand(json);
         AnnoyUser.processMessage(json);
         LikeUser.processCommand(json);
         RecordGroupMessage.processRecord(json);
@@ -54,6 +54,7 @@ public class MessageProcessor {
         MojangStatus.process(json);
         CheckBilibili.process(json);
         HappyNewYear.processManodate(json);
+        Reboot.process(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
