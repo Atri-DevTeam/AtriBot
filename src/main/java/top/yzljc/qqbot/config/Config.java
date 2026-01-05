@@ -114,21 +114,6 @@ public class Config implements Settings{
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // Fallback defaults
-            this.listenPort = 37142;
-            this.qqBotPort = 8851;
-            this.bilibiliCookie = "null";
-            this.adminUids = new ArrayList<>();
-            this.botUid = 970717559;
-            this.debugGroupId = 413478250L;
-            this.messageSpyGroups = new ArrayList<>();
-            this.httpUrl = "http://0.0.0.0:12345";
-            this.mysqlHost = "localhost";
-            this.mysqlPort = 3306;
-            this.mysqlDatabase = "database";
-            this.mysqlUsername = "root";
-            this.mysqlPassword = "password";
-            this.manosabaGroupId = 123456L;
         }
     }
 
