@@ -103,11 +103,7 @@ public class Config implements Settings{
                     this.mysqlUsername = (String) mysqlConfig.getOrDefault("username", "root");
                     this.mysqlPassword = (String) mysqlConfig.getOrDefault("password", "null");
                 } else {
-                    this.mysqlHost = "localhost";
-                    this.mysqlPort = 3306;
-                    this.mysqlDatabase = "database";
-                    this.mysqlUsername = "root";
-                    this.mysqlPassword = "null";
+                    System.out.println("[ERROR] 在读取数据库配置时出现问题，请检查数据库配置!");
                 }
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 System.out.println("Config loaded successfully!");
