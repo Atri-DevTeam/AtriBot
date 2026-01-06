@@ -8,7 +8,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import top.yzljc.qqbot.command.SendNewsGroups;
+import top.yzljc.qqbot.config.GroupConfigManager;
 import top.yzljc.qqbot.messages.MessageSender;
+import top.yzljc.qqbot.utils.GroupList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,7 +35,7 @@ public class HypixelNews {
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = "hypixel_news_history.json";
 
-    public static final List<Long> TARGET_GROUPS = SendNewsGroups.TARGET_GROUPS_HYP;
+    public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
 
     private static boolean isInitialized = false;
     private static final Set<String> pushedArticleIds = new HashSet<>();
@@ -171,6 +173,11 @@ public class HypixelNews {
         }
 
         for (Long groupId : TARGET_GROUPS) {
+
+            if (!GroupConfigManager.isFeatureEnabled(groupId,"hyp_news")) {
+                continue;
+            }
+
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
             try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
         }

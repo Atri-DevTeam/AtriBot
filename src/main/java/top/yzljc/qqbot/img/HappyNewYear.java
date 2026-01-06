@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.img;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.config.GroupConfigManager;
 import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.utils.GroupList; // 引入刚才创建的类
 
@@ -22,14 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 public class HappyNewYear {
 
-    /**
-     * 生成项目第N天图片：tmp/manoday.png
-     * @throws IOException 生成异常
-     */
     public static void generateDevelopDayImage() throws IOException {
         File tempDir = new File("tmp");
         if (!tempDir.exists()) tempDir.mkdirs();
-        File outFile = new File(tempDir, "manoday.png");
+        File outFile = new File(tempDir, "happynewyear.png");
 
         String imgFileName = "manosaba.png";
         File bgFile = new File(imgFileName);
@@ -135,7 +132,6 @@ public class HappyNewYear {
     }
 
     public static void processManodate(JsonNode json) {
-        // 只监听 group 消息且内容为 manodate
         String postType = json.path("post_type").asText("");
         if (!"message".equals(postType)) return;
         String messageType = json.path("message_type").asText("");
@@ -150,11 +146,11 @@ public class HappyNewYear {
     }
 
     public static boolean sendToAllGroups() {
-        File tempFile = new File("tmp", "manoday.png");
+        File tempFile = new File("tmp", "happynewyear.png");
         try {
             generateDevelopDayImage();
             if (!tempFile.exists()) {
-                System.err.println("[INFO] manoday.png 生成失败，图片不存在！");
+                System.err.println("[INFO] happynewyear.png 生成失败，图片不存在！");
                 return false;
             }
 
@@ -170,6 +166,7 @@ public class HappyNewYear {
             System.out.println("[INFO] 开始向 " + groupIds.size() + " 个群推送图片...");
             int count = 0;
             for (Long gid : groupIds) {
+                if (!GroupConfigManager.isFeatureEnabled(gid,"new_year")) continue;
                 MessageSender.sendGroupMessage(gid, null, base64Img);
                 count++;
 
@@ -194,7 +191,7 @@ public class HappyNewYear {
     }
 
     public static void sendToSingleGroup(long targetGroupId) {
-        File tempFile = new File("tmp", "manoday.png");
+        File tempFile = new File("tmp", "happynewyear.png");
         try {
             generateDevelopDayImage();
             if (tempFile.exists()) {

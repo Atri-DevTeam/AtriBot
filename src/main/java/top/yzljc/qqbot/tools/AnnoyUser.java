@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageProcessor;
 import top.yzljc.qqbot.messages.MessageSender;
@@ -37,6 +38,11 @@ public class AnnoyUser {
     public static void processMessage(JsonNode json) {
         if (!json.path("message_type").asText("").equals("group")) return;
         long groupId = json.path("group_id").asLong();
+
+        if (!GroupConfigManager.isFeatureEnabled(groupId, "annoy_user")) {
+            return;
+        }
+
         long senderId = json.path("user_id").asLong();
         String rawMsg = json.path("raw_message").asText("");
         JsonNode messageArr = json.path("message");

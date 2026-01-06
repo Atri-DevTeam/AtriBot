@@ -1,22 +1,19 @@
 package top.yzljc.qqbot.messages;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.command.Reboot;
+import top.yzljc.qqbot.command.*;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.img.HappyNewYear;
 import top.yzljc.qqbot.minecraft.MojangStatus;
 import top.yzljc.qqbot.tools.*;
-import top.yzljc.qqbot.command.SendNewsGroups;
 import top.yzljc.qqbot.utils.MessageStats;
-import top.yzljc.qqbot.command.RollbackMessages;
 import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.minecraft.SendCommand;
 import top.yzljc.qqbot.news.HypixelNews;
 import top.yzljc.qqbot.news.MinecraftNews;
 import top.yzljc.qqbot.utils.AutoAccept;
 import top.yzljc.qqbot.utils.AutoSign;
-import top.yzljc.qqbot.command.SearchRelevant;
 
 public class MessageProcessor {
 
@@ -37,12 +34,12 @@ public class MessageProcessor {
             return;
         }
 
+        GroupModeManager.process(json);
         ElectricCheck.processElectric(json);
         AutoSign.processAutoSign(json);
         AutoRepeat.processGroupMessage(json);
         ManosabaDate.processManodate(json);
         HypixelNews.processTestForHyp(json);
-        SendNewsGroups.processAcCommand(json);
         AnnoyUser.processMessage(json);
         LikeUser.processCommand(json);
         RecordGroupMessage.processRecord(json);
