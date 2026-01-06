@@ -2,6 +2,7 @@ package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 
 import java.net.HttpURLConnection;
@@ -41,30 +42,29 @@ public class AutoSign {
 
     private static void signAllGroups() {
         try {
-            // 修改点：接收 Long 类型的集合
             Set<Long> groupIds = GroupList.fetchAllGroupIds();
 
             if (groupIds.isEmpty()) {
                 System.out.println("[INFO] 未拉取到任何群号，自动打卡跳过。");
                 return;
             }
-            // 修改点：遍历 Long
+
             for (Long groupId : groupIds) {
+
+                if (!GroupConfigManager.isFeatureEnabled(groupId, "auto_sign")) {
+                    continue;
+                }
+
                 sendGroupSign(groupId);
-                System.out.println("[INFO] 已手动对群 " + groupId + " 执行自动打卡，群号检索成功");
+                System.out.println("[INFO] 群 " + groupId + " 打卡成功");
             }
-            System.out.println("[INFO] 已对 " + groupIds.size() + " 个群执行自动打卡，任务完成");
         } catch (Exception e) {
             System.err.println("[INFO] 自动打卡异常: " + e.getMessage());
         }
     }
 
-    /** 调用群打卡请求API */
-    // 修改点：参数改为 long
     private static void sendGroupSign(long groupId) {
         try {
-            // 修改点：拼接 JSON 时直接使用 long，通常 API 也支持数字型 group_id，
-            // 这里保留了引号以兼容旧逻辑，如果不加引号 API 也支持则可去掉引号。
             String payload = "{\"group_id\":\"" + groupId + "\"}";
 
             HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_SIGN_API).openConnection();

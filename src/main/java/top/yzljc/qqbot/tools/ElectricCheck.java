@@ -3,22 +3,22 @@ package top.yzljc.qqbot.tools;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
+import top.yzljc.qqbot.utils.GroupList;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class ElectricCheck {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-    // 电费查询接口
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
-    // 允许的群组
-    private static final long[] ALLOWED_GROUPS = {1065552660L, 818804507L, 413478250L};
-    // 触发关键词
+    private static final Set<Long> ALLOWED_GROUPS = GroupList.fetchAllGroupIds();
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
 
     static Settings settings = Config.getInstance();
@@ -33,7 +33,7 @@ public class ElectricCheck {
 
         if (!containsKeyword(rawMessage)) return;
         if (!admins.contains(userId)){
-            if (!isAllowedGroup(groupId)) {
+            if (!GroupConfigManager.isFeatureEnabled(groupId, "electric_check")) {
                 return;
             }
         }
@@ -75,15 +75,8 @@ public class ElectricCheck {
                 System.err.println("[INFO] 查询异常: " + ex.getMessage());
             }
 
-            // ==== 修改点：调用 MessageSender 统一发送 ====
             MessageSender.sendGroupMessage(groupId, feedback);
         });
-    }
-
-    private static boolean isAllowedGroup(long groupId) {
-        for (long g : ALLOWED_GROUPS)
-            if (g == groupId) return true;
-        return false;
     }
 
     private static boolean containsKeyword(String msg) {
