@@ -8,6 +8,7 @@ import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.utils.GroupList;
 
+import javax.swing.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +19,6 @@ import java.util.concurrent.Executors;
 public class ElectricCheck {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
-    private static final Set<Long> ALLOWED_GROUPS = GroupList.fetchAllGroupIds();
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
 
     static Settings settings = Config.getInstance();
@@ -32,8 +32,8 @@ public class ElectricCheck {
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
         if (!containsKeyword(rawMessage)) return;
-        if (!admins.contains(userId)){
-            if (!GroupConfigManager.isFeatureEnabled(groupId, "electric_check")) {
+        if (!admins.contains(userId)) {
+            if (!GroupConfigManager.isFeatureEnabled(groupId,"electric_check")) {
                 return;
             }
         }
