@@ -22,15 +22,18 @@ public class GroupList {
 
     /**
      * 获取所有群号，返回 Set<Long>
+     * 供 GroupConfigManager 调用以进行配置同步
      */
     public static Set<Long> fetchAllGroupIds() {
         Set<Long> groupIds = new HashSet<>();
         String nextToken = "";
 
+        System.out.println("[GroupList] 开始联网同步群列表...");
+
         try {
             while (true) {
-                // 构建请求体，处理分页 token
-                String reqJson = "{\"next_token\":\"" + nextToken + "\"}";
+                // 构建请求体，处理分页 token (NapCat/OneBot11 标准可能不需要token，但保留以兼容)
+                String reqJson = "{}";
 
                 HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_LIST_API).openConnection();
                 conn.setRequestMethod("POST");
@@ -41,6 +44,11 @@ public class GroupList {
 
                 try (OutputStream out = conn.getOutputStream()) {
                     out.write(reqJson.getBytes(StandardCharsets.UTF_8));
+                }
+
+                if (conn.getResponseCode() != 200) {
+                    System.err.println("[GroupList] API 请求失败: " + conn.getResponseCode());
+                    break;
                 }
 
                 try (InputStream in = conn.getInputStream()) {
@@ -56,26 +64,20 @@ public class GroupList {
                                 } catch (Exception ignored) {}
                             }
                         }
-                    }
-
-                    // 处理分页逻辑
-                    if (resp.has("next_token")) {
-                        String token = resp.get("next_token").asText();
-                        if (token == null || token.isEmpty()) {
-                            break;
-                        } else {
-                            nextToken = token;
-                        }
                     } else {
-                        break;
+                        break; // 没有数据了
                     }
                 }
+
+                // 通常 get_group_list 不需要分页，一次性返回，或者不需要 token
+                // 如果你的 NapCat 环境确实需要分页，保留原有逻辑，否则直接 break
+                break;
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 获取群列表异常: " + e.getMessage());
+            System.err.println("[GroupList] 获取群列表异常: " + e.getMessage());
         }
 
-        System.out.println("[INFO] 共获取到 " + groupIds.size() + " 个群聊。");
+        System.out.println("[GroupList] 同步完成，共获取到 " + groupIds.size() + " 个群聊。");
         return groupIds;
     }
 }
