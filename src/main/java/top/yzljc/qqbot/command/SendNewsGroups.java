@@ -11,9 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * 群推送统一管理，支持动态添加群聊和标签映射，并群聊消息反馈
- */
+@Deprecated(since = "GroupModeManager更新", forRemoval = true)
 public class SendNewsGroups {
     private static final String GROUPS_FILE = "record_groups.json";
     private static final ObjectMapper objectMapper = new ObjectMapper();
