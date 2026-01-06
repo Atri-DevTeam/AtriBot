@@ -16,7 +16,7 @@ admin-uids:
 bot-uid: 123456
 
 # Debug用的QQ群号
-debug-group: 123456
+debug-group-id: 123456
 
 # 启用消息监听的群聊列表
 message-spy-groups:
