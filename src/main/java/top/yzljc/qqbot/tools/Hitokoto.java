@@ -15,12 +15,12 @@ import java.util.concurrent.Executors;
 public class Hitokoto {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String API_URL = "https://v1.hitokoto.cn/";
-    private static final String[] KEYWORDS = {"一言", "yiyan", "yy", "hitokoto"};
+    private static final String[] KEYWORDS = {"一言", "yiyan", "hitokoto"};
 
     static Settings settings = Config.getInstance();
     private static final java.util.List<Long> admins = settings.getAdminUids();
 
-    public static void processYiyan(JsonNode json) {
+    public static void process(JsonNode json) {
         if (!json.has("group_id") || !json.has("raw_message")) return;
 
         long groupId = json.path("group_id").asLong();
@@ -29,7 +29,7 @@ public class Hitokoto {
 
         if (!containsKeyword(rawMessage)) return;
         if (!admins.contains(userId)) {
-            if (!GroupConfigManager.isFeatureEnabled(groupId,"yiyan")) {
+            if (!GroupConfigManager.isFeatureEnabled(groupId,"hitokoto")) {
                 return;
             }
         }

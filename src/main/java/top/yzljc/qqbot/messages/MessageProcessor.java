@@ -52,6 +52,7 @@ public class MessageProcessor {
         CheckBilibili.process(json);
         HappyNewYear.processManodate(json);
         Reboot.process(json);
+        Hitokoto.process(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {
