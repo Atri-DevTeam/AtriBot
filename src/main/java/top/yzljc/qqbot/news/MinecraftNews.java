@@ -26,12 +26,15 @@ import java.util.concurrent.TimeUnit;
 
 public class MinecraftNews {
 
-    // 新的 API 地址
-    private static final String API_NEWS_SEARCH = "https://net-secondary.web.minecraft-services.net/api/v1.0/zh-cn/search?pageSize=5&sortType=Recent&category=News&newsOnly=true";
+    // 主 API (搜索接口)
+    private static final String API_PRIMARY = "https://net-secondary.web.minecraft-services.net/api/v1.0/zh-cn/search?pageSize=5&sortType=Recent&category=News&newsOnly=true";
+    // 辅助 API (CMS 内容接口)
+    private static final String API_SECONDARY = "https://www.minecraft.net/content/minecraftnet/language-masters/en-us/_jcr_content.articles.page-1.json";
+
     private static final String HISTORY_FILE = "news_history.json";
+    private static final String BASE_URL = "https://www.minecraft.net";
 
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
-    // 这里使用 URL 作为唯一标识 ID，因为新 API 返回并没有显式的 ID 字段，URL 是唯一的
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static boolean isInitialized = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -46,10 +49,7 @@ public class MinecraftNews {
         if ("testformc".equals(msgLower)) {
             if (admins.contains(userId)) {
                 MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
-
-                Executors.newSingleThreadExecutor().submit(() -> {
-                    checkNews(true);
-                });
+                Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
             } else {
                 System.out.println("[INFO] 用户 " + userId + " 尝试触发更新但无权限");
             }
@@ -79,7 +79,13 @@ public class MinecraftNews {
                 System.out.println("[INFO] 开始检查 Minecraft 新闻源...");
             }
 
-            List<UnifiedArticle> candidateArticles = fetchAndParse(API_NEWS_SEARCH, "Minecraft 资讯");
+            List<UnifiedArticle> primaryList = fetchAndParsePrimary(API_PRIMARY, "Minecraft 资讯");
+
+            List<UnifiedArticle> secondaryList = fetchAndParseSecondary(API_SECONDARY, "Minecraft 资讯（第二列表API）");
+
+            List<UnifiedArticle> candidateArticles = new ArrayList<>();
+            candidateArticles.addAll(primaryList);
+            candidateArticles.addAll(secondaryList);
 
             candidateArticles.sort((o1, o2) -> Long.compare(o2.timestamp, o1.timestamp));
 
@@ -88,8 +94,20 @@ public class MinecraftNews {
 
             for (UnifiedArticle article : candidateArticles) {
                 if (article.id == null || article.id.isEmpty()) continue;
+
+                // 去重判断
                 if (!pushedArticleIds.contains(article.id)) {
-                    newArticlesFound.add(article);
+                    // 二次去重：防止本次检查中主源和辅助源查到同一篇新文章，导致重复添加
+                    boolean alreadyInList = false;
+                    for (UnifiedArticle added : newArticlesFound) {
+                        if (added.id.equals(article.id)) {
+                            alreadyInList = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyInList) {
+                        newArticlesFound.add(article);
+                    }
                 }
             }
 
@@ -117,32 +135,26 @@ public class MinecraftNews {
         }
     }
 
-    private static List<UnifiedArticle> fetchAndParse(String urlStr, String tag) {
+    private static List<UnifiedArticle> fetchAndParsePrimary(String urlStr, String tag) {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
             JsonNode root = objectMapper.readTree(new URL(urlStr));
-
             JsonNode resultNode = root.get("result");
             if (resultNode == null) return list;
-
             JsonNode results = resultNode.get("results");
 
             if (results != null && results.isArray()) {
                 for (JsonNode node : results) {
                     UnifiedArticle article = new UnifiedArticle();
-
                     article.title = node.has("title") ? node.get("title").asText() : "未知标题";
                     article.tag = tag;
-
-                    // 使用 URL 作为唯一标识 ID
                     article.url = node.has("url") ? node.get("url").asText() : "";
-                    article.id = article.url;
+                    article.id = article.url; // ID = URL
 
                     long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
-                    article.timestamp = timeSeconds * 1000; // 转换为毫秒用于排序
+                    article.timestamp = timeSeconds * 1000;
                     article.dateDisplay = formatTimestamp(article.timestamp);
 
-                    // 描述
                     article.description = node.has("description") ? node.get("description").asText() : "";
                     article.author = node.has("author") ? node.get("author").asText() : "Staff";
 
@@ -158,7 +170,68 @@ public class MinecraftNews {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 解析源失败: " + e.getMessage());
+            System.err.println("[INFO] 主源解析失败: " + e.getMessage());
+        }
+        return list;
+    }
+
+    private static List<UnifiedArticle> fetchAndParseSecondary(String urlStr, String tag) {
+        List<UnifiedArticle> list = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(new URL(urlStr));
+            JsonNode grid = root.get("article_grid");
+
+            if (grid != null && grid.isArray() && grid.size() > 0) {
+                JsonNode item = grid.get(0); // 获取最新的一条
+
+                JsonNode tile = item.get("default_tile");
+                if (tile != null) {
+                    UnifiedArticle article = new UnifiedArticle();
+
+                    article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
+                    article.tag = tag;
+
+                    // URL 处理：API 返回的是相对路径，需要拼接域名
+                    String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
+                    if (relUrl.startsWith("/")) {
+                        article.url = BASE_URL + relUrl;
+                    } else {
+                        article.url = relUrl;
+                    }
+                    // 确保 ID 与主源一致 (完整URL)
+                    article.id = article.url;
+
+                    // 辅助源无时间戳
+                    article.timestamp = System.currentTimeMillis();
+                    article.dateDisplay = "未知时间";
+
+                    // 描述
+                    article.description = tile.has("sub_header") ? tile.get("sub_header").asText() : "";
+                    // 追加提示
+                    article.description += "\n\n(注：此消息来源于非主页面的新闻查询，无法获取发文时间与作者信息)";
+
+                    article.author = "未知作者";
+
+                    // 图片处理
+                    if (tile.has("image")) {
+                        JsonNode imgNode = tile.get("image");
+                        String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
+                        if (imgRel.startsWith("/")) {
+                            article.imageUrl = BASE_URL + imgRel;
+                        } else {
+                            article.imageUrl = imgRel;
+                        }
+                    } else {
+                        article.imageUrl = "";
+                    }
+
+                    if (article.id != null && !article.id.isEmpty()) {
+                        list.add(article);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[INFO] 辅助源解析失败: " + e.getMessage());
         }
         return list;
     }
@@ -186,13 +259,10 @@ public class MinecraftNews {
         }
 
         for (Long groupId : TARGET_GROUPS) {
-
             if (!GroupConfigManager.isFeatureEnabled(groupId,"mc_news")) {
                 continue;
             }
-
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
-
             try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
         }
     }
@@ -246,11 +316,10 @@ public class MinecraftNews {
         }
     }
 
-    // 新的时间格式化方法，直接处理 long 时间戳
     private static String formatTimestamp(long timestampMillis) {
         if (timestampMillis == 0) return "未知时间";
         try {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.of("Asia/Shanghai")) // 使用系统默认或指定时区
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.of("Asia/Shanghai"))
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         } catch (Exception e) {
             return "时间解析错误";
@@ -258,7 +327,7 @@ public class MinecraftNews {
     }
 
     static class UnifiedArticle {
-        String id; // 这里使用 URL 作为 ID
+        String id;
         String title;
         String description;
         String url;
