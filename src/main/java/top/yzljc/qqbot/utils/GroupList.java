@@ -19,11 +19,9 @@ public class GroupList {
     private static final String BASEURL = settings.getHttpUrl();
     private static final String GROUP_LIST_API = BASEURL + "/get_group_list";
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private static final boolean isDebugMode = settings.isDebugMode();
+    private static final long debugGroupId = settings.getDebugGroupId();
 
-    /**
-     * 获取所有群号，返回 Set<Long>
-     * 供 GroupConfigManager 调用以进行配置同步
-     */
     public static Set<Long> fetchAllGroupIds() {
         Set<Long> groupIds = new HashSet<>();
         String nextToken = "";
@@ -32,7 +30,6 @@ public class GroupList {
 
         try {
             while (true) {
-                // 构建请求体，处理分页 token (NapCat/OneBot11 标准可能不需要token，但保留以兼容)
                 String reqJson = "{}";
 
                 HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_LIST_API).openConnection();
@@ -68,9 +65,6 @@ public class GroupList {
                         break; // 没有数据了
                     }
                 }
-
-                // 通常 get_group_list 不需要分页，一次性返回，或者不需要 token
-                // 如果你的 NapCat 环境确实需要分页，保留原有逻辑，否则直接 break
                 break;
             }
         } catch (Exception e) {
@@ -78,6 +72,15 @@ public class GroupList {
         }
 
         System.out.println("[GroupList] 同步完成，共获取到 " + groupIds.size() + " 个群聊。");
+
+        // 修改点：如果是 Debug 模式，即使扫描到了所有群，也只返回 Debug 群号
+        if (isDebugMode) {
+            System.out.println("[GroupList] Debug 模式已开启，仅返回调试群号: " + debugGroupId);
+            Set<Long> debugSet = new HashSet<>();
+            debugSet.add(debugGroupId);
+            return debugSet;
+        }
+
         return groupIds;
     }
 }

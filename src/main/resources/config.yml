@@ -1,3 +1,6 @@
+# Debug 模式开关
+debug-mode: false
+
 # Minecraft服务器数据监听端口
 listen-port: 25566
 

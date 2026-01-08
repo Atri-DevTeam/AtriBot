@@ -35,6 +35,8 @@ public class GroupConfigManager {
 
         Set<Long> currentOnlineGroups = GroupList.fetchAllGroupIds();
 
+        boolean isDebug = Config.getInstance().isDebugMode();
+
         boolean isUpdated = false;
 
         for (Long groupId : currentOnlineGroups) {
@@ -57,7 +59,8 @@ public class GroupConfigManager {
         Iterator<Long> iterator = groupConfigCache.keySet().iterator();
         while (iterator.hasNext()) {
             Long cachedGroupId = iterator.next();
-            if (!currentOnlineGroups.contains(cachedGroupId)) {
+
+            if (!isDebug && !currentOnlineGroups.contains(cachedGroupId)) {
                 // 从缓存中移除
                 iterator.remove();
                 isUpdated = true;
