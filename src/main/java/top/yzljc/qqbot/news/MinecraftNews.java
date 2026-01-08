@@ -46,7 +46,7 @@ public class MinecraftNews {
         if (rawMessage == null) return false;
         String msgLower = rawMessage.trim().toLowerCase();
 
-        if ("testformc".equals(msgLower)) {
+        if ("/testformc".equals(msgLower)) {
             if (admins.contains(userId)) {
                 MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
                 Executors.newSingleThreadExecutor().submit(() -> checkNews(true));

@@ -7,6 +7,7 @@ import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.img.HappyNewYear;
 import top.yzljc.qqbot.minecraft.MojangStatus;
 import top.yzljc.qqbot.tools.*;
+import top.yzljc.qqbot.utils.CommandHelp;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.img.ManosabaDate;
 import top.yzljc.qqbot.minecraft.SendCommand;
@@ -53,6 +54,7 @@ public class MessageProcessor {
         HappyNewYear.processManodate(json);
         Reboot.process(json);
         Hitokoto.process(json);
+        CommandHelp.process(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {

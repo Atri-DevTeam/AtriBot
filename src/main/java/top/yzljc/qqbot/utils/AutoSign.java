@@ -81,7 +81,7 @@ public class AutoSign {
     public static void processAutoSign(JsonNode json) {
         long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
-        if (admins.contains(userId) && "testforsign".equals(rawMessage)) {
+        if (admins.contains(userId) && "/testforsign".equals(rawMessage)) {
             Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
         }
     }
