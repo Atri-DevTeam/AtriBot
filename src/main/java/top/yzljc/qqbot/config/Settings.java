@@ -31,4 +31,6 @@ public interface Settings {
     String getMysqlPassword();
 
     long getManosabaGroupId();
+
+    boolean isDebugMode();
 }

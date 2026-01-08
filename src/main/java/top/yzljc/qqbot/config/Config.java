@@ -27,6 +27,7 @@ public class Config implements Settings{
     private String mysqlUsername;
     private String mysqlPassword;
     private long manosabaGroupId;
+    private boolean debugMode;
 
     private Config() {
         load();
@@ -106,6 +107,7 @@ public class Config implements Settings{
                     System.out.println("[ERROR] 在读取数据库配置时出现问题，请检查数据库配置!");
                 }
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
+                this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
                 System.out.println("Config loaded successfully!");
             }
         } catch (Exception e) {
@@ -181,5 +183,10 @@ public class Config implements Settings{
     @Override
     public long getManosabaGroupId() {
         return manosabaGroupId;
+    }
+
+    @Override
+    public boolean isDebugMode() {
+        return debugMode;
     }
 }
