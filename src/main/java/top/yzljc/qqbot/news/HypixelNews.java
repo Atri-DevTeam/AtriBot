@@ -7,8 +7,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import top.yzljc.qqbot.command.SendNewsGroups;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.GroupConfigManager;
+import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.messages.MessageSender;
 import top.yzljc.qqbot.utils.GroupList;
 
@@ -34,7 +35,8 @@ public class HypixelNews {
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = "hypixel_news_history.json";
-
+    static Settings settings = Config.getInstance();
+    private static final List<Long> admins = settings.getAdminUids();
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
 
     private static boolean isInitialized = false;
@@ -78,7 +80,7 @@ public class HypixelNews {
             int newCount = 0;
             for (UnifiedArticle article : newArticlesFound) {
                 System.out.println("[INFO] 发现新Hypixel文章: " + article.title);
-                System.out.println("[INFO] 当前Hypixel新闻推广群: " + SendNewsGroups.TARGET_GROUPS_HYP);
+                System.out.println("[INFO] 当前Hypixel新闻推广群: " + TARGET_GROUPS);
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
                 newCount++;
@@ -260,10 +262,6 @@ public class HypixelNews {
         }
     }
 
-    /**
-     * 指令触发入口，只允许 user=3199590352 使用 testforhyp 触发
-     * 保持方法签名不变，兼容 MessageProcessor
-     */
     public static void processTestForHyp(JsonNode json) {
         String postType = json.path("post_type").asText("");
         if (!"message".equals(postType)) return;
@@ -274,7 +272,7 @@ public class HypixelNews {
         long userId = json.path("user_id").asLong();
         long groupId = json.path("group_id").asLong();
 
-        if ("testforhyp".equals(rawMessage) && userId == 3199590352L) { // 仅限特定User
+        if ("/testforhyp".equals(rawMessage) && admins.contains(userId)) {
             // 先发送反馈消息
             MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
             System.out.println("[HypixelNews] testforhyp 指令触发Hypixel新闻监控 by " + userId);

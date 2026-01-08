@@ -88,7 +88,7 @@ public class AnnoyUser {
             return;
         }
         // 增加/fuck @user 功能, 仅3199590352可用
-        if (rawMsg.startsWith("/fuck ") && Config.getInstance().getAdminUids().contains(senderId)) {
+        if (rawMsg.startsWith("/emj ") && Config.getInstance().getAdminUids().contains(senderId)) {
             String atQq = null;
             for (JsonNode node : messageArr) {
                 if ("at".equals(node.path("type").asText())) {
@@ -122,9 +122,9 @@ public class AnnoyUser {
             return;
         }
         // 新增：支持用户自助/fuckme
-        if (rawMsg.trim().equalsIgnoreCase("/fuckme")) {
+        if (rawMsg.trim().equalsIgnoreCase("/emj")) {
             fuckOnceMap.computeIfAbsent(groupId, k -> new HashSet<>()).add(senderId);
-            System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + senderId + " in group " + groupId + " will get 20-emoji! (from /fuckme)");
+            System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + senderId + " in group " + groupId + " will get 20-emoji! (from /emj)");
             MessageSender.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
             return;
         }

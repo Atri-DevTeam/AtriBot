@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 /**
  * 生成并推送魔法少女の魔女审判 x Minecraft 项目进度图片到QQ群（计算天数）
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 public class ManosabaDate {
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
+    private static final List<Long> admins = settings.getAdminUids();
 
     public static void generateDevelopDayImage() throws IOException {
         File tempDir = new File("tmp");
@@ -99,25 +101,25 @@ public class ManosabaDate {
     }
 
     public static void processManodate(JsonNode json) {
-        // 只监听 group 消息且内容为 manodate
         String postType = json.path("post_type").asText("");
         if (!"message".equals(postType)) return;
         String messageType = json.path("message_type").asText("");
         if (!"group".equals(messageType)) return;
         String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
         long groupId = json.path("group_id").asLong();
+        long userId = json.path("user_id").asLong();
 
-        if ("manodate".equals(rawMessage)) {
+        if (!admins.contains(userId)){
+            return;
+        }
+
+        if ("/manodate".equals(rawMessage)) {
 
             sendAndNotifyToGroup(); // 保持原逻辑推送到固定群
             System.out.println("[INFO] manodate 指令触发图片推送：" + groupId);
         }
     }
 
-    /**
-     * 自动生成并推送每日图片到目标QQ群。推荐每天0点调用。
-     * 支持发送完自动删除图片
-     */
     public static boolean sendAndNotifyToGroup() {
         // 使用固定的 GROUP_ID
         return sendAndNotifyToGroup(GROUP_ID);
