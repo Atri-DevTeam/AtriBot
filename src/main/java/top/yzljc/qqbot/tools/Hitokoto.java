@@ -30,44 +30,41 @@ public class Hitokoto {
         if (!GroupConfigManager.isFeatureEnabled(groupId, "one_text")) return;
 
         if (!containsKeyword(rawMessage)) return;
-        if (!admins.contains(userId)) {
-            if (!GroupConfigManager.isFeatureEnabled(groupId,"hitokoto")) {
-                return;
-            }
-        }
 
         Executors.newSingleThreadExecutor().submit(() -> {
-            String feedback;
-            try {
-                HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
-
-                String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                conn.getInputStream().close();
-
-                JsonNode respJson = jsonMapper.readTree(respStr);
-                
-                String hitokoto = respJson.path("hitokoto").asText();
-                String from = respJson.path("from").asText();
-                String from_who = respJson.path("from_who").asText();
-                
-                feedback = String.format("%s\n—— %s%s", 
-                    hitokoto, 
-                    from,
-                    from_who != null && !from_who.isEmpty() ? " · " + from_who : ""
-                );
-                
-                System.out.println("[INFO] 一言发送成功");
-            } catch (Exception ex) {
-                feedback = "[一言获取失败] 接口异常。";
-                System.err.println("[INFO] 一言获取异常: " + ex.getMessage());
-            }
-
+            String feedback = fetchHitokoto();
             MessageSender.sendGroupMessage(groupId, feedback);
         });
+    }
+
+    private static String fetchHitokoto() {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+
+            String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            JsonNode respJson = jsonMapper.readTree(respStr);
+
+            String hitokoto = respJson.path("hitokoto").asText();
+            String from = respJson.path("from").asText();
+            JsonNode fromWhoNode = respJson.path("from_who");
+
+            StringBuilder result = new StringBuilder(hitokoto).append("\n—— ").append(from);
+
+            if (!fromWhoNode.isNull() && !fromWhoNode.asText().isEmpty()) {
+                result.append(" · ").append(fromWhoNode.asText());
+            }
+
+            System.out.println("[INFO] 一言发送成功");
+            return result.toString();
+        
+        } catch (Exception ex) {
+            System.err.println("[ERROR] 一言获取异常: " + ex.getMessage());
+            return "[一言获取失败] 接口异常。";
+        }
     }
 
     private static boolean containsKeyword(String msg) {
