@@ -81,7 +81,7 @@ public class MinecraftNews {
 
             List<UnifiedArticle> primaryList = fetchAndParsePrimary(API_PRIMARY, "Minecraft 资讯");
 
-            List<UnifiedArticle> secondaryList = fetchAndParseSecondary(API_SECONDARY, "Minecraft 资讯（第二列表API）");
+            List<UnifiedArticle> secondaryList = fetchAndParseSecondary(API_SECONDARY, "Minecraft 快讯");
 
             List<UnifiedArticle> candidateArticles = new ArrayList<>();
             candidateArticles.addAll(primaryList);
@@ -181,38 +181,35 @@ public class MinecraftNews {
             JsonNode root = objectMapper.readTree(new URL(urlStr));
             JsonNode grid = root.get("article_grid");
 
-            if (grid != null && grid.isArray() && grid.size() > 0) {
-                JsonNode item = grid.get(0); // 获取最新的一条
+            if (grid != null && grid.isArray()) {
+                int limit = 5; // 如果还是他妈的漏新闻就给这个数值改大，我就不信了
+                for (JsonNode item : grid) {
+                    if (list.size() >= limit) break;
 
-                JsonNode tile = item.get("default_tile");
-                if (tile != null) {
                     UnifiedArticle article = new UnifiedArticle();
+
+                    JsonNode tile = item.get("default_tile");
+                    if (tile == null) continue;
 
                     article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
                     article.tag = tag;
 
-                    // URL 处理：API 返回的是相对路径，需要拼接域名
                     String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
                     if (relUrl.startsWith("/")) {
                         article.url = BASE_URL + relUrl;
                     } else {
                         article.url = relUrl;
                     }
-                    // 确保 ID 与主源一致 (完整URL)
                     article.id = article.url;
 
-                    // 辅助源无时间戳
                     article.timestamp = System.currentTimeMillis();
                     article.dateDisplay = "未知时间";
 
-                    // 描述
                     article.description = tile.has("sub_header") ? tile.get("sub_header").asText() : "";
-                    // 追加提示
-                    article.description += "\n\n(注：此消息来源于非主页面的新闻查询，无法获取发文时间与作者信息)";
+                    article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整咨询！";
 
                     article.author = "未知作者";
 
-                    // 图片处理
                     if (tile.has("image")) {
                         JsonNode imgNode = tile.get("image");
                         String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
@@ -240,8 +237,6 @@ public class MinecraftNews {
         StringBuilder sb = new StringBuilder();
         sb.append("【Minecraft 动态 | ").append(article.tag).append("】\n");
         sb.append(article.title).append("\n");
-        sb.append("作者：").append(article.author).append("\n");
-        sb.append("发布时间: ").append(article.dateDisplay).append("\n\n");
 
         if (article.description != null && !article.description.isEmpty()) {
             sb.append(article.description).append("\n\n");
