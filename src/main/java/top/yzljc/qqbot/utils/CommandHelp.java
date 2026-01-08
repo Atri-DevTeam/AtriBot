@@ -28,6 +28,7 @@ public class CommandHelp {
         commonCommands.put("/bl BVxxxx", "解析B站视频信息（输入BV号）");
         commonCommands.put("/mojang", "查询 Mojang 服务器状态");
         commonCommands.put("赞我", "名片点赞 10 次");
+        commonCommands.put("一言", "随机一言");
         commonCommands.put("/emj","贴表情刷屏");
         commonCommands.put("/ayme","每条消息获得三个表情");
         commonCommands.put("/ayrme","每条消息不再获取贴表情");
