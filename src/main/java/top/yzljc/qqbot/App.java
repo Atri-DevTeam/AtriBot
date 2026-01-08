@@ -58,5 +58,6 @@ public class App {
         GroupConfigManager.registerFeature("electric_check", false);      // 电费查询
         GroupConfigManager.registerFeature("annoy_user", true);    // 骚扰功能
         GroupConfigManager.registerFeature("new_year",true);
+        GroupConfigManager.refreshAllConfigs("one_text",true);
     }
 }
