@@ -27,6 +27,8 @@ public class Hitokoto {
         long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
+        if (!GroupConfigManager.isFeatureEnabled(groupId, "one_text")) return;
+
         if (!containsKeyword(rawMessage)) return;
         if (!admins.contains(userId)) {
             if (!GroupConfigManager.isFeatureEnabled(groupId,"hitokoto")) {
