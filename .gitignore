@@ -1,0 +1,12 @@
+# IDE
+.idea/
+*.iml
+
+# 编译输出
+target/
+build/
+*.class
+
+# 系统文件
+.DS_Store
+Thumbs.db
