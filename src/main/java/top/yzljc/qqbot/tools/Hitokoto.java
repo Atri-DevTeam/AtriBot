@@ -15,16 +15,13 @@ import java.util.concurrent.Executors;
 public class Hitokoto {
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String API_URL = "https://v1.hitokoto.cn/";
-    private static final String[] KEYWORDS = {"一言", "yiyan", "hitokoto"};
-
     static Settings settings = Config.getInstance();
-    private static final java.util.List<Long> admins = settings.getAdminUids();
+    private static final String[] KEYWORDS = settings.getKeywordsHitokoto();
 
     public static void process(JsonNode json) {
         if (!json.has("group_id") || !json.has("raw_message")) return;
 
         long groupId = json.path("group_id").asLong();
-        long userId = json.path("user_id").asLong();
         String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
 
         if (!GroupConfigManager.isFeatureEnabled(groupId, "one_text")) return;
@@ -63,7 +60,7 @@ public class Hitokoto {
         
         } catch (Exception ex) {
             System.err.println("[ERROR] 一言获取异常: " + ex.getMessage());
-            return "[一言获取失败] 接口异常。";
+            return "[ERROR] 一言获取失败：接口异常。";
         }
     }
 

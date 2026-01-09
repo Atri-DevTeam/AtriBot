@@ -33,4 +33,8 @@ public interface Settings {
     long getManosabaGroupId();
 
     boolean isDebugMode();
+
+    String[] getKeywordsHitokoto();
+
+    String[] getKeywordsLikeUser();
 }

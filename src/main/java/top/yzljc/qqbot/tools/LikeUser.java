@@ -16,8 +16,7 @@ public class LikeUser {
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String NAPCAT_LIKE_API = BASEURL + "/send_like";
-
-    private static final String[] KEYWORDS = {"赞我", "zanwo", "likeme"};
+    private static final String[] KEYWORDS = settings.getKeywordsLikeUser();
 
     /**
      * 处理点赞指令

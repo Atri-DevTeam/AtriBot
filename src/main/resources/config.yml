@@ -15,7 +15,7 @@ admin-uids:
   - 3199590352
   - 1948308
 
-# Bot的QQ号（用来做数据排除）
+# Bot的QQ号（用来做数据排除，不填的话某些地方可能会爆炸）
 bot-uid: 123456
 
 # Debug用的QQ群号
@@ -40,3 +40,16 @@ mysql:
 
 # ManoDate推送群号（保密项目）
 manosaba-group-id: 123456
+
+## 关键词设置区域
+# 一言
+keywords-hitokoto:
+    - "一言"
+    - "hitokoto"
+    - "yiyan"
+# 点赞
+keywords-like-user:
+    - "点赞"
+    - "likeme"
+    - "zanwo"
+    - "赞我"
