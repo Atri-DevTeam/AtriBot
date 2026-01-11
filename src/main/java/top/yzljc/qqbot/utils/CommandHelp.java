@@ -35,6 +35,7 @@ public class CommandHelp {
         commonCommands.put("db", "查询宿舍电表信息（仅限特定群聊）");
         commonCommands.put("/search \"text\" [-m a/p]","查询历史消息[模糊/精准]（仅开启有效）");
         commonCommands.put("/happynewyear","查询新年倒计时");
+        commonCommands.put("/hbt <玩家名>", "查询玩家在Ban服中的统计数据");
 
         // ==== 在这里添加管理员指令 ====
         adminCommands.put("/manodate", "查看某项目开发进度");

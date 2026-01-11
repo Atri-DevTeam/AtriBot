@@ -1,5 +1,7 @@
 package top.yzljc.qqbot.socket;
 
+import top.yzljc.qqbot.messages.MessageSender;
+import top.yzljc.qqbot.messages.SensitiveWordFilter;
 import top.yzljc.qqbot.minecraft.SendCommand;
 import top.yzljc.qqbot.minecraft.StatusReporter;
 
@@ -12,14 +14,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public class SocketManager {
     private static final String LIST_FILE = "serverlist.txt";
+    // 指定转发的目标群号
+    private static final long TARGET_GROUP_ID = 413478250L;
 
     // 服务器配置缓存 Map<ServerID, Info>
     private static final Map<String, ServerInfo> serverMap = new HashMap<>();
     // 活跃连接 Map<ServerID, Socket>
     private static final Map<String, Socket> activeConnections = new ConcurrentHashMap<>();
+
+    private static final Pattern STRICT_FILTER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\u4e00-\\u9fa5]");
 
     // 内部数据结构
     static class ServerInfo {
@@ -133,49 +140,110 @@ public class SocketManager {
             while ((len = in.read(buffer)) != -1) {
                 String rawData = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
 
+                // 第一层拆包：ID | Type | Content
+                // split limit 3 确保 Content 内部的 | 不会被切分
                 String[] parts = rawData.split("\\|", 3);
 
                 if (parts.length >= 2) {
                     String receivedId = parts[0];
                     String type = parts[1];
+                    String content = parts.length == 3 ? parts[2] : "";
 
+                    // 注册连接
                     if (currentServerId == null) {
                         currentServerId = receivedId;
                         activeConnections.put(receivedId, socket);
                     }
 
+                    // 获取服务器名称（如果配置中有）
+                    ServerInfo info = serverMap.get(receivedId);
+                    String serverName = (info != null) ? info.name : receivedId;
+
+                    // --- 分发处理逻辑 ---
+
                     if ("CMD_RESPONSE".equalsIgnoreCase(type)) {
-                        String logs = (parts.length == 3) ? parts[2] : "(无输出)";
-                        // 引用 SendCommand 中的 pending map
+                        // 1. 指令回显处理
+                        String logs = content.isEmpty() ? "(无输出)" : content;
                         var future = SendCommand.pendingCommandResponses.get(receivedId);
                         if (future != null) {
                             future.complete(logs);
                             System.out.printf("[%s] 收到指令反馈日志，长度: %d\n", receivedId, logs.length());
                         }
+
                     } else if ("HEARTBEAT".equalsIgnoreCase(type)) {
-                        // Keep alive
-                    } else {
-                        // 处理服务器状态上报 (ONLINE / OFFLINE)
-                        ServerInfo serverInfo = serverMap.get(receivedId);
+                        // 2. 心跳包 (忽略)
 
-                        if (serverInfo != null) {
-                            boolean isOnline = "ONLINE".equalsIgnoreCase(type);
+                    } else if ("Player".equalsIgnoreCase(type)) {
+                        // 3. 玩家上下线处理
+                        // 格式: JOIN|PlayerName 或 QUIT|PlayerName
+                        String[] details = content.split("\\|", 2);
+                        if (details.length == 2) {
+                            String action = details[0];
+                            String playerName = details[1];
+                            String msg = "";
 
-                            if (isOnline) {
-                                System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
+                            if ("JOIN".equalsIgnoreCase(action)) {
+                                msg = String.format("[%s] 玩家 %s 加入了服务器", serverName, playerName);
+                                System.out.println(msg);
+                            } else if ("QUIT".equalsIgnoreCase(action)) {
+                                msg = String.format("[%s] 玩家 %s 离开了服务器", serverName, playerName);
+                                System.out.println(msg);
                             }
 
-                            // 调用 StatusReporter 进行推送
+                            if (!msg.isEmpty()) {
+                                sendToGroup(TARGET_GROUP_ID, msg);
+                            }
+                        }
+
+                    } else if ("Chat".equalsIgnoreCase(type)) {
+                        // 4. 聊天信息处理
+                        // 格式: PlayerName|Message
+                        String[] details = content.split("\\|", 2);
+                        if (details.length == 2) {
+                            String playerName = details[0];
+                            String chatMsg = details[1];
+
+                            // === 严判违规词开始 ===
+                            // 1. 先用原始文本检测一次（防止漏掉本身就是正常词的情况）
+                            boolean isDirty = SensitiveWordFilter.containsSensitiveWord(chatMsg);
+
+                            if (!isDirty) {
+                                // 2. 如果原始文本没过，去除所有符号，只留中英文数字再次检测
+                                // 例如: f*-/-*u-*-/-*c/**-/-k -> fuck -> 命中
+                                String cleanedMsg = STRICT_FILTER_PATTERN.matcher(chatMsg).replaceAll("");
+                                isDirty = SensitiveWordFilter.containsSensitiveWord(cleanedMsg);
+                            }
+
+                            if (isDirty) {
+                                System.out.println("[严判拦截] 拦截到服务器 " + serverName + " 玩家 " + playerName + " 的消息: " + chatMsg);
+                                sendToGroup(TARGET_GROUP_ID, "有违规聊天内容已进行拦截，请管理员进行审查！");
+                                continue;
+                            }
+
+                            // 构造消息格式: [服务器] <ID>: 消息
+                            String formattedMsg = String.format("[%s] <%s>: %s", serverName, playerName, chatMsg);
+                            System.out.println("转发聊天: " + formattedMsg);
+
+                            sendToGroup(TARGET_GROUP_ID, formattedMsg);
+                        }
+
+                    } else if ("ONLINE".equalsIgnoreCase(type) || "OFFLINE".equalsIgnoreCase(type)) {
+                        // 5. 服务器状态处理
+                        if (info != null) {
+                            boolean isOnline = "ONLINE".equalsIgnoreCase(type);
+                            if (isOnline) {
+                                System.out.printf("[%s] 服务器上线，准备进行推送...\n", info.name);
+                            }
+
                             StatusReporter.sendReport(
-                                    serverInfo.groupId,
-                                    serverInfo.name,
-                                    serverInfo.ip,
-                                    serverInfo.port,
-                                    serverInfo.id,
+                                    info.groupId,
+                                    info.name,
+                                    info.ip,
+                                    info.port,
+                                    info.id,
                                     isOnline
                             );
-
-                            System.out.printf("[%s] 状态已处理: %s\n", serverInfo.name, type);
+                            System.out.printf("[%s] 状态已处理: %s\n", info.name, type);
                         } else {
                             System.err.println("收到未知服务器ID的数据: " + receivedId);
                         }
@@ -194,5 +262,14 @@ public class SocketManager {
             } catch (IOException ignored) {
             }
         }
+    }
+
+    /**
+     * 发送群消息的统一接口
+     */
+    private static void sendToGroup(long groupId, String message) {
+        MessageSender.sendGroupMessage(groupId,message);
+
+        System.out.println(">>> [Bot发送模拟] 群 " + groupId + ": " + message);
     }
 }
