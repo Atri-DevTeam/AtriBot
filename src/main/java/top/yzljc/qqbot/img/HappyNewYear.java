@@ -21,7 +21,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HappyNewYear {
+
+    private static final Logger log = LoggerFactory.getLogger(HappyNewYear.class);
 
     public static void generateDevelopDayImage() throws IOException {
         File tempDir = new File("tmp");
@@ -30,7 +35,7 @@ public class HappyNewYear {
 
         String imgFileName = "manosaba.png";
         File bgFile = new File(imgFileName);
-        if (!bgFile.exists()) throw new IOException("未找到背景图片: " + imgFileName);
+        if (!bgFile.exists()) throw new IOException("未找到背景图片：" + imgFileName);
 
         BufferedImage img = ImageIO.read(bgFile);
         Graphics2D g = img.createGraphics();
@@ -48,7 +53,7 @@ public class HappyNewYear {
             daysUntil = 0;
         }
 
-        String line1 = "距离 2026 年春节还有";
+        String line1 = String.format("距离 %s 年春节还有", now.getYear());
         String line2 = daysUntil + " 天";
 
         // 第一行使用较小的字体（28号）
@@ -58,11 +63,11 @@ public class HappyNewYear {
             try {
                 font1 = Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(Font.BOLD, 35f);
             } catch (Exception e) {
-                System.err.println("[ImgWarning] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                log.warn("自定义字体加载失败，将使用默认字体：{}", e.getMessage());
                 font1 = new Font(Font.SANS_SERIF, Font.BOLD, 35);
             }
         } else {
-            System.err.println("[ImgWarning] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
+            log.warn("字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体");
             font1 = new Font(Font.SANS_SERIF, Font.BOLD, 35);
         }
 
@@ -72,10 +77,11 @@ public class HappyNewYear {
             try {
                 font2 = Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(Font.BOLD, 55f);
             } catch (Exception e) {
-                System.err.println("[ImgWarning] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                log.warn("自定义字体加载失败，将使用默认字体：{}", e.getMessage());
                 font2 = new Font(Font.SANS_SERIF, Font.BOLD, 55);
             }
         } else {
+            log.warn("字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体");
             font2 = new Font(Font.SANS_SERIF, Font.BOLD, 55);
         }
 
@@ -141,7 +147,7 @@ public class HappyNewYear {
 
         if ("/happynewyear".equals(rawMessage)) {
             sendToSingleGroup(groupId);
-            System.out.println("[INFO] 新年倒计时指令触发图片推送：" + groupId);
+            log.info("新年倒计时指令触发图片推送：{}", groupId);
         }
     }
 
@@ -150,7 +156,7 @@ public class HappyNewYear {
         try {
             generateDevelopDayImage();
             if (!tempFile.exists()) {
-                System.err.println("[INFO] happynewyear.png 生成失败，图片不存在！");
+                log.warn("happynewyear.png 生成失败，图片不存在");
                 return false;
             }
 
@@ -159,11 +165,11 @@ public class HappyNewYear {
 
             Set<Long> groupIds = GroupList.fetchAllGroupIds();
             if (groupIds.isEmpty()) {
-                System.out.println("[INFO] 未获取到任何群号，跳过推送。");
+                log.info("未获取到任何群号，跳过推送");
                 return false;
             }
 
-            System.out.println("[INFO] 开始向 " + groupIds.size() + " 个群推送图片...");
+            log.info("开始向 {} 个群推送图片……", groupIds.size());
             int count = 0;
             for (Long gid : groupIds) {
                 if (!GroupConfigManager.isFeatureEnabled(gid,"new_year")) continue;
@@ -172,19 +178,19 @@ public class HappyNewYear {
 
                 try { Thread.sleep(200); } catch (InterruptedException e) {}
             }
-            System.out.println("[INFO] 推送完成，共发送给 " + count + " 个群。");
+            log.info("推送完成，共发送给 {} 个群", count);
 
             return true;
 
         } catch (Exception ex) {
-            System.err.println("[INFO] 群发图片异常: " + ex.getMessage());
+            log.error("群发图片异常：{}", ex.getMessage());
             ex.printStackTrace();
             return false;
         } finally {
             // 5. 任务完成后统一删除
             if (tempFile.exists()) {
                 if (tempFile.delete()) {
-                    System.out.println("[INFO] 临时图片已自动清理");
+                    log.info("临时图片已自动清理：{}", tempFile.getAbsolutePath());
                 }
             }
         }
@@ -216,7 +222,7 @@ public class HappyNewYear {
         long period = 24 * 60 * 60; // 24小时，单位秒
 
         scheduler.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-        System.out.println("[INFO] 已启动每日0:00:01自动推送任务");
+        log.info("已启动每日0:00:01自动推送任务");
     }
 
     private static long computeInitialDelayToMidnight11() {

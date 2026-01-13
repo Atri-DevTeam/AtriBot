@@ -10,10 +10,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 群功能配置管理器 (全量存储 + 自动补全 + 自动清理版)
  */
 public class GroupConfigManager {
+
+    private static final Logger log = LoggerFactory.getLogger(GroupConfigManager.class);
 
     private static final String CONFIG_FILE = "groupconfig.json";
     private static final ObjectMapper jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
@@ -31,7 +36,7 @@ public class GroupConfigManager {
     }
 
     public static synchronized void refreshAllConfigs() {
-        System.out.println("[Config] 正在同步群配置 (补全/清理)...");
+        log.info("正在同步群配置（补全/清理）……");
 
         Set<Long> currentOnlineGroups = GroupList.fetchAllGroupIds();
 
@@ -50,7 +55,7 @@ public class GroupConfigManager {
                 if (!groupSettings.containsKey(featureName)) {
                     groupSettings.put(featureName, defValue);
                     isUpdated = true;
-                    System.out.println("[Config] 为群 " + groupId + " 补全: " + featureName + "=" + defValue);
+                    log.info("为群 {} 补全：{}={}", groupId, featureName, defValue);
                 }
             }
         }
@@ -64,15 +69,15 @@ public class GroupConfigManager {
                 // 从缓存中移除
                 iterator.remove();
                 isUpdated = true;
-                System.out.println("[Config] 检测到已退出群 " + cachedGroupId + "，自动清理残留配置。");
+                log.info("检测到已退出群 {}，自动清理残留配置", cachedGroupId);
             }
         }
 
         if (isUpdated) {
             saveConfigToFile();
-            System.out.println("[Config] 配置同步完成 (有变动已保存)。");
+            log.info("配置同步完成（有变动已保存）");
         } else {
-            System.out.println("[Config] 配置同步完成 (无变动)。");
+            log.info("配置同步完成（无变动）");
         }
     }
 
@@ -117,7 +122,7 @@ public class GroupConfigManager {
         try {
             groupConfigCache = jsonMapper.readValue(file, new TypeReference<ConcurrentHashMap<Long, Map<String, Boolean>>>() {});
         } catch (IOException e) {
-            System.err.println("[Config] 配置文件读取失败: " + e.getMessage());
+            log.error("配置文件读取失败：{}", e.getMessage());
             groupConfigCache = new ConcurrentHashMap<>();
         }
     }
@@ -126,7 +131,7 @@ public class GroupConfigManager {
         try {
             jsonMapper.writeValue(new File(CONFIG_FILE), groupConfigCache);
         } catch (IOException e) {
-            System.err.println("[Config] 保存失败: " + e.getMessage());
+            log.error("配置文件保存失败：", e.getMessage());
         }
     }
 }

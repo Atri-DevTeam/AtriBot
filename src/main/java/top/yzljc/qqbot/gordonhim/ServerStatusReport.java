@@ -20,12 +20,19 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Deprecated(since = "客户自研，此项目废弃不再提供任何修复")
 /**
  * 这人跟傻逼一样我都做完了跟我说要自己研究这不傻逼吗
  */
 public class ServerStatusReport {
+
+    private static final Logger log = LoggerFactory.getLogger(ServerStatusReport.class);
 
     // ==== 配置区域 ====
 
@@ -67,7 +74,7 @@ public class ServerStatusReport {
 
         // 2. 每15分钟执行一次检测
         scheduler.scheduleAtFixedRate(ServerStatusReport::executeScheduledCheck, 0, 15, TimeUnit.MINUTES);
-        System.out.println("[GordonHim] 监控任务已启动，每15分钟检查一次，数据存储于: " + DATA_FILE.getAbsolutePath());
+        log.info("监控任务已启动，每15分钟检查一次，数据存储于：{}", DATA_FILE.getAbsolutePath());
     }
 
     /**
@@ -159,7 +166,7 @@ public class ServerStatusReport {
             // 1. 检测状态变化
             if (wasOnline && !isOnlineNow) {
                 // 状态变为离线 -> 发送 gh_offline.jpg
-                System.out.println("[GordonHim] 检测到服务器离线，全员推送...");
+                log.info("检测到服务器离线，全员推送……");
 
                 // 记录离线开始时间
                 currentData.offlineStartTime = now;
@@ -169,7 +176,7 @@ public class ServerStatusReport {
             }
             else if (!wasOnline && isOnlineNow) {
                 // 状态变为在线 -> 发送 gh_online.jpg
-                System.out.println("[GordonHim] 检测到服务器开服，全员推送...");
+                log.info("检测到服务器开服，全员推送……");
 
                 // 重置离线时间
                 currentData.offlineStartTime = 0L;
@@ -183,7 +190,7 @@ public class ServerStatusReport {
                 // 人数 >= 25 且 冷却时间已过 (2小时)
                 if (status.onlinePlayers >= 25) {
                     if (now - currentData.lastBroadcastTime > 7200 * 1000) {
-                        System.out.println("[GordonHim] 人数达标(" + status.onlinePlayers + ")，触发全员播报");
+                        log.info("人数达标（{}），触发全员播报", status.onlinePlayers);
                         File imgFile = generateStatusImage(GenerateType.ONLINE_COUNT, status.onlinePlayers, BG_NORMAL);
 
                         // 循环发送
@@ -214,7 +221,7 @@ public class ServerStatusReport {
             }
 
         } catch (Exception e) {
-            System.err.println("[GordonHim] 定时检测异常: " + e.getMessage());
+            log.error("定时检测异常：{}", e.getMessage());
         }
     }
 
@@ -228,8 +235,8 @@ public class ServerStatusReport {
                 currentData = new StatusData();
             }
         } catch (Exception e) {
-            System.err.println("[GordonHim] 读取数据文件失败: " + e.getMessage());
-            System.out.println("[GordonHim] 数据文件可能损坏或版本不兼容，已重置状态数据。");
+            log.error("读取数据文件失败：{}", e.getMessage());
+            log.error("数据文件可能损坏或版本不兼容，已重置状态数据");
             currentData = new StatusData(); // 失败时重置，防止报错卡死
             saveData(); // 覆盖坏文件
         }
@@ -239,7 +246,7 @@ public class ServerStatusReport {
         try {
             jsonMapper.writeValue(DATA_FILE, currentData);
         } catch (Exception e) {
-            System.err.println("[GordonHim] 保存数据文件失败: " + e.getMessage());
+            log.error("保存数据文件失败：{}", e.getMessage());
         }
     }
 
@@ -368,7 +375,7 @@ public class ServerStatusReport {
     }
 
     private static ServerStatus fetchStatus() throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) new URI(API_URL).toURL().openConnection();
         conn.setRequestMethod("GET");
         conn.setConnectTimeout(50000);
         conn.setReadTimeout(50000);

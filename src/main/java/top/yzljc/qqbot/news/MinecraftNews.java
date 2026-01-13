@@ -24,7 +24,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MinecraftNews {
+
+    private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
     // 主 API (搜索接口)
     private static final String API_PRIMARY = "https://net-secondary.web.minecraft-services.net/api/v1.0/zh-cn/search?pageSize=5&sortType=Recent&category=News&newsOnly=true";
@@ -51,7 +60,7 @@ public class MinecraftNews {
                 MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
                 Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
             } else {
-                System.out.println("[INFO] 用户 " + userId + " 尝试触发更新但无权限");
+                log.info("用户 {} 尝试触发更新但无权限", userId);
             }
             return true;
         }
@@ -64,7 +73,7 @@ public class MinecraftNews {
         loadHistory();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(() -> checkNews(false), 10, 3600, TimeUnit.SECONDS);
-        System.out.println("[INFO] Minecraft新闻抓取任务已启动!");
+        log.info("Minecraft 新闻抓取任务已启动");
         isInitialized = true;
     }
 
@@ -74,9 +83,9 @@ public class MinecraftNews {
     public static void checkNews(boolean isManualTrigger) {
         try {
             if (isManualTrigger) {
-                System.out.println("[INFO] 正在执行手动检查...");
+                log.info("正在执行手动检查……");
             } else {
-                System.out.println("[INFO] 开始检查 Minecraft 新闻源...");
+                log.info("开始检查 Minecraft 新闻源……");
             }
 
             List<UnifiedArticle> primaryList = fetchAndParsePrimary(API_PRIMARY, "Minecraft 资讯");
@@ -114,7 +123,7 @@ public class MinecraftNews {
             Collections.reverse(newArticlesFound);
 
             for (UnifiedArticle article : newArticlesFound) {
-                System.out.println("[INFO] 发现新文章: [" + article.tag + "] " + article.title);
+                log.info("发现新文章：[{}] {}", article.tag, article.title);
 
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
@@ -126,19 +135,18 @@ public class MinecraftNews {
             }
 
             if (isManualTrigger && newCount == 0) {
-                System.out.println("[INFO] 手动检查完成，未发现新文章!");
+                log.info("手动检查完成，未发现新文章");
             }
 
         } catch (Exception e) {
-            System.err.println("[INFO] 检查失败: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("检查失败：", e.getMessage(), e);
         }
     }
 
     private static List<UnifiedArticle> fetchAndParsePrimary(String urlStr, String tag) {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = objectMapper.readTree(new URL(urlStr));
+            JsonNode root = objectMapper.readTree(new URI(urlStr).toURL());
             JsonNode resultNode = root.get("result");
             if (resultNode == null) return list;
             JsonNode results = resultNode.get("results");
@@ -170,7 +178,7 @@ public class MinecraftNews {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 主源解析失败: " + e.getMessage());
+            log.warn("主源解析失败：{}", e.getMessage());
         }
         return list;
     }
@@ -178,7 +186,7 @@ public class MinecraftNews {
     private static List<UnifiedArticle> fetchAndParseSecondary(String urlStr, String tag) {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = objectMapper.readTree(new URL(urlStr));
+            JsonNode root = objectMapper.readTree(new URI(urlStr).toURL());
             JsonNode grid = root.get("article_grid");
 
             if (grid != null && grid.isArray()) {
@@ -228,7 +236,7 @@ public class MinecraftNews {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 辅助源解析失败: " + e.getMessage());
+            log.warn("辅助源解析失败：{}", e.getMessage());
         }
         return list;
     }
@@ -249,7 +257,7 @@ public class MinecraftNews {
             try {
                 base64Img = downloadImageAsBase64(article.imageUrl);
             } catch (Exception e) {
-                System.err.println("[INFO] 图片下载失败: " + e.getMessage());
+                log.warn("图片下载失败：{}", e.getMessage());
             }
         }
 
@@ -262,25 +270,33 @@ public class MinecraftNews {
         }
     }
 
-    private static String downloadImageAsBase64(String imageUrl) throws IOException {
-        URL url = new URL(imageUrl);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(10000);
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+    private static String downloadImageAsBase64(String imageUrl) {
+        try {
+            URL url = new URI(imageUrl).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(10000);
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-        try (InputStream in = conn.getInputStream();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) {
-                out.write(buffer, 0, n);
+            try (InputStream in = conn.getInputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int n;
+                while ((n = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, n);
+                }
+                byte[] imgBytes = out.toByteArray();
+                return Base64.getEncoder().encodeToString(imgBytes);
+            } finally {
+                conn.disconnect();
             }
-            byte[] imgBytes = out.toByteArray();
-            return Base64.getEncoder().encodeToString(imgBytes);
-        } finally {
-            conn.disconnect();
+        } catch (URISyntaxException | MalformedURLException e) {
+            log.error("URL格式错误：{}", imageUrl, e);
+            return null;  // 或者返回空字符串、默认图片等
+        } catch (IOException e) {
+            log.error("下载图片失败：{}", imageUrl, e);
+            return null;
         }
     }
 
@@ -295,7 +311,7 @@ public class MinecraftNews {
                 }
             }
         } catch (IOException e) {
-            System.err.println("[INFO] 读取历史记录失败，将重新创建。");
+            log.warn("读取历史记录失败，将重新创建");
         }
     }
 

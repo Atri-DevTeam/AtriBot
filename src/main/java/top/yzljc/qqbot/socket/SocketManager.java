@@ -13,7 +13,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SocketManager {
+
+    private static final Logger log = LoggerFactory.getLogger(SocketManager.class);
+
     private static final String LIST_FILE = "serverlist.txt";
 
     // 服务器配置缓存 Map<ServerID, Info>
@@ -44,7 +50,7 @@ public class SocketManager {
     public static boolean sendCommand(String serverId, String command, String secret) {
         Socket client = activeConnections.get(serverId);
         if (client == null || client.isClosed()) {
-            System.err.println("[SocketManager] 发送失败，目标服务器未连接: " + serverId);
+            log.warn("发送失败，目标服务器未连接：{}", serverId);
             return false;
         }
         try {
@@ -55,7 +61,7 @@ public class SocketManager {
             out.flush();
             return true;
         } catch (IOException e) {
-            System.err.println("[SocketManager] Socket 发送异常: " + e.getMessage());
+            log.error("Socket 发送异常：{}", e.getMessage());
             activeConnections.remove(serverId);
             return false;
         }
@@ -76,7 +82,7 @@ public class SocketManager {
             for (String item : items) {
                 String[] fs = item.split("/");
                 if (fs.length != 5) {
-                    System.err.println("格式错误跳过: " + item);
+                    log.warn("格式错误跳过：{}", item);
                     continue;
                 }
                 try {
@@ -87,19 +93,19 @@ public class SocketManager {
                     String id = fs[4].trim();
 
                     serverMap.put(id, new ServerInfo(gid, name, ip, port, id));
-                    System.out.printf("  -> 加载配置: [%s] %s (群:%d)\n", id, name, gid);
+                    log.info(" -> 加载配置：[{}] {} (群：{})", id, name, gid);
                 } catch (Exception e) {
-                    System.err.println("解析错误: " + item);
+                    log.error("解析错误：{}", item);
                 }
             }
             if (serverMap.isEmpty()) {
-                System.err.println("未读取到服务器配置，请检查 serverlist.txt");
-                System.err.println("格式: 群号/名称/IP/端口/编号#...");
+                log.warn("未读取到服务器配置，请检查 serverlist.txt");
+                log.warn("格式：群号/名称/IP/端口/编号#……");
             } else {
-                System.out.printf("已加载 %d 个服务器配置。\n", serverMap.size());
+                log.info("已加载 {} 个服务器配置", serverMap.size());
             }
         } catch (Exception e) {
-            System.err.println("读取配置文件失败: " + e.getMessage());
+            log.error("读取配置文件失败：{}", e.getMessage());
         }
     }
 
@@ -111,7 +117,7 @@ public class SocketManager {
         new Thread(() -> {
             ExecutorService threadPool = Executors.newCachedThreadPool();
             try (ServerSocket serverSocket = new ServerSocket(port)) {
-                System.out.println("正在监听Socket端口: " + port + "，等待插件连接...");
+                log.info("正在监听Socket端口：{}，等待插件连接……", port);
 
                 while (true) {
                     Socket client = serverSocket.accept();
@@ -150,7 +156,7 @@ public class SocketManager {
                         var future = SendCommand.pendingCommandResponses.get(receivedId);
                         if (future != null) {
                             future.complete(logs);
-                            System.out.printf("[%s] 收到指令反馈日志，长度: %d\n", receivedId, logs.length());
+                            log.info("[{}] 收到指令反馈日志，长度：{}", receivedId, logs.length());
                         }
                     } else if ("HEARTBEAT".equalsIgnoreCase(type)) {
                         // Keep alive
@@ -162,7 +168,7 @@ public class SocketManager {
                             boolean isOnline = "ONLINE".equalsIgnoreCase(type);
 
                             if (isOnline) {
-                                System.out.printf("[%s] 服务器上线，准备进行推送...\n", serverInfo.name);
+                                log.info("[{}] 服务器上线，准备进行推送", serverInfo.name);
                             }
 
                             // 调用 StatusReporter 进行推送
@@ -175,9 +181,9 @@ public class SocketManager {
                                     isOnline
                             );
 
-                            System.out.printf("[%s] 状态已处理: %s\n", serverInfo.name, type);
+                            log.info("[{}] 状态已处理: {}", serverInfo.name, type);
                         } else {
-                            System.err.println("收到未知服务器ID的数据: " + receivedId);
+                            log.warn("收到未知服务器ID的数据：{}", receivedId);
                         }
                     }
                 }
@@ -187,7 +193,7 @@ public class SocketManager {
         } finally {
             if (currentServerId != null) {
                 activeConnections.remove(currentServerId);
-                System.out.println("移除活跃连接: " + currentServerId);
+                log.info("移除活跃连接：{}", currentServerId);
             }
             try {
                 socket.close();

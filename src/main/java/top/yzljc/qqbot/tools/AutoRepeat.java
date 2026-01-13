@@ -8,7 +8,13 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AutoRepeat {
+
+    private static final Logger log = LoggerFactory.getLogger(AutoRepeat.class);
+    
     private static final int MEMORY_SIZE = 10;
     private static final int REPEAT_THRESHOLD = 3;
     private static final Map<Long, LinkedList<String>> groupMsgHistory = new ConcurrentHashMap<>();

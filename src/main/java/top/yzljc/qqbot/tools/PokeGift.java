@@ -13,11 +13,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * 戳一戳回礼工具
  * 监听戳一戳事件，如果是戳机器人，则回击1次
  */
 public class PokeGift {
+
+    private static final Logger log = LoggerFactory.getLogger(PokeGift.class);
+    
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String POKE_API = BASEURL + "/group_poke";
@@ -48,7 +57,7 @@ public class PokeGift {
                 // 简单的防死循环：如果是机器人自己戳自己（虽然不太可能），忽略
                 if (userId == botQq) return;
 
-                System.out.println("[INFO] 监测到用户 " + userId + " 在群 " + groupId + " 戳了机器人，准备反击！");
+                log.info("监测到用户 {} 在群 {} 戳了机器人，准备反击！", userId, groupId);
                 
                 sendPoke(groupId, userId);
             }
@@ -63,7 +72,7 @@ public class PokeGift {
 
             String payload = jsonMapper.writeValueAsString(data);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(POKE_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(POKE_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -85,7 +94,7 @@ public class PokeGift {
             // System.out.println("[INFO] 反击发送状态: " + code);
 
         } catch (Exception e) {
-            System.err.println("[INFO] 戳一戳发送失败: " + e.getMessage());
+            log.warn("戳一戳发送失败: {}", e.getMessage());
         }
     }
 }

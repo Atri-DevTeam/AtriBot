@@ -27,10 +27,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Hypixel官网新闻自动推送
  */
 public class HypixelNews {
+
+    private static final Logger log = LoggerFactory.getLogger(HypixelNews.class);
 
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
     private static final String ARTICLE_BASE = "https://hypixel.net";
@@ -48,16 +57,16 @@ public class HypixelNews {
         loadHistory();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(() -> checkNews(false), 10, 3600, TimeUnit.SECONDS);
-        System.out.println("[INFO] Hypixel新闻监控任务已启动");
+        log.info("Hypixel 新闻监控任务已启动");
         isInitialized = true;
     }
 
     public static void checkNews(boolean isManualTrigger) {
         try {
             if (isManualTrigger) {
-                System.out.println("[INFO] 正在执行 Hypixel 手动检查...");
+                log.info("正在执行 Hypixel 手动检查……");
             } else {
-                System.out.println("[INFO] Hypixel 自动新闻检查中...");
+                log.info("Hypixel 自动新闻检查中……");
             }
             // 1. 拉取和解析官网新闻首页
             List<UnifiedArticle> candidateArticles = fetchAndParse(NEWS_URL, 5);
@@ -79,19 +88,18 @@ public class HypixelNews {
 
             int newCount = 0;
             for (UnifiedArticle article : newArticlesFound) {
-                System.out.println("[INFO] 发现新Hypixel文章: " + article.title);
-                System.out.println("[INFO] 当前Hypixel新闻推广群: " + TARGET_GROUPS);
+                log.info("发现新Hypixel文章：{}", article.title);
+                log.info("当前Hypixel新闻推广群：{}", TARGET_GROUPS);
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
                 newCount++;
             }
             if (newCount > 0) saveHistory();
             if (isManualTrigger && newCount == 0) {
-                System.out.println("[INFO] Hypixel手动检查结束，无新文章。");
+                log.info("Hypixel手动检查结束，无新文章");
             }
         } catch (Exception e) {
-            System.err.println("[INFO] Hypixel新闻检查失败: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Hypixel 新闻检查失败：{}", e.getMessage(), e);
         }
     }
 
@@ -148,8 +156,7 @@ public class HypixelNews {
                 count++;
             }
         } catch (Exception e) {
-            System.err.println("[INFO] Hypixel解析失败: " + e.getMessage());
-            e.printStackTrace();
+            log.warn("Hypixel解析失败：{}", e.getMessage(), e);
         }
         return list;
     }
@@ -185,23 +192,31 @@ public class HypixelNews {
         }
     }
 
-    private static String downloadImageAsBase64(String imageUrl) throws IOException {
-        URL url = new URL(imageUrl);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(10000);
-        conn.setRequestMethod("GET");
-        try (InputStream in = conn.getInputStream();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) {
-                out.write(buffer, 0, n);
+    private static String downloadImageAsBase64(String imageUrl) {
+        try {
+            URL url = new URI(imageUrl).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(10000);
+            conn.setRequestMethod("GET");
+            try (InputStream in = conn.getInputStream();
+                    ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int n;
+                while ((n = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, n);
+                }
+                byte[] imgBytes = out.toByteArray();
+                return Base64.getEncoder().encodeToString(imgBytes);
+            } finally {
+                conn.disconnect();
             }
-            byte[] imgBytes = out.toByteArray();
-            return Base64.getEncoder().encodeToString(imgBytes);
-        } finally {
-            conn.disconnect();
+        } catch (URISyntaxException | MalformedURLException e) {
+            log.warn("URL 格式错误：{}", imageUrl);
+            return null;
+        } catch (IOException e) {
+            log.error("下载图片失败：{}", imageUrl, e);
+            return null;
         }
     }
 
@@ -216,7 +231,7 @@ public class HypixelNews {
                 }
             }
         } catch (IOException e) {
-            System.err.println("[INFO] Hypixel历史记录读取失败，将重新创建。");
+            log.warn("Hypixel 历史记录读取失败，将重新创建");
         }
     }
 
@@ -228,7 +243,7 @@ public class HypixelNews {
             }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(HISTORY_FILE), arrayNode);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("写入 Hypixel 历史记录失败：{}", e.getMessage(), e);
         }
     }
 
@@ -275,7 +290,7 @@ public class HypixelNews {
         if ("/testforhyp".equals(rawMessage) && admins.contains(userId)) {
             // 先发送反馈消息
             MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
-            System.out.println("[HypixelNews] testforhyp 指令触发Hypixel新闻监控 by " + userId);
+            log.info("testforhyp 指令触发 Hypixel 新闻监控 by {}", userId);
 
             // 异步执行检查，避免阻塞主线程
             Executors.newSingleThreadExecutor().submit(() -> {

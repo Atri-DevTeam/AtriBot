@@ -47,3 +47,6 @@ buildNumber.properties
 
 #IDEA.gitignore
 .idea/
+
+#vim.gitignore
+.vimrc

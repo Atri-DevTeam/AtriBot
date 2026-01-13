@@ -13,8 +13,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RecordGroupMessage {
+
+    private static final Logger log = LoggerFactory.getLogger(RecordGroupMessage.class);
+    
     static Settings settings = Config.getInstance();
     private static final String HOST = settings.getMysqlHost();
     private static final int PORT = settings.getMysqlPort();
@@ -34,7 +39,8 @@ public class RecordGroupMessage {
             initDataSource();
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("[INFO] 初始化数据库连接失败！");
+            log.error("初始化数据库连接失败");
+            // System.err.println("[INFO] 初始化数据库连接失败！");
         }
     }
 
@@ -90,7 +96,8 @@ public class RecordGroupMessage {
 
             saveToDatabase(userId, time, messageId, groupId, rawMessage);
         } catch (Exception e) {
-            System.err.println("[INFO] 解析消息或入库时发生错误: " + e.getMessage());
+            log.error("解析消息或入库时发生错误：{}", e.getMessage());
+            // System.err.println("[INFO] 解析消息或入库时发生错误: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -100,7 +107,8 @@ public class RecordGroupMessage {
             JsonNode node = objectMapper.readTree(jsonString);
             processRecord(node);
         } catch (Exception e) {
-            System.err.println("[INFO] JSON字符串解析失败");
+            log.error("JSON 字符串解析失败");
+            // System.err.println("[INFO] JSON字符串解析失败");
         }
     }
 
@@ -111,7 +119,8 @@ public class RecordGroupMessage {
         try {
             initTableForGroup(groupId); // 保证表存在
         } catch (SQLException e) {
-            System.err.println("[INFO] 自动建分表失败：" + e.getMessage());
+            log.error("自动建分表失败：", e.getMessage());
+            // System.err.println("[INFO] 自动建分表失败：" + e.getMessage());
             return;
         }
 

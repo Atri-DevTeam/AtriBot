@@ -20,10 +20,17 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 检查 Mojang 官方服务状态 (自定义独立检测版)
  */
+import java.net.URI;
+import java.net.URISyntaxException;
 public class MojangStatus {
+
+    private static final Logger log = LoggerFactory.getLogger(MojangStatus.class);
 
     private static final String BACKGROUND_FILE = "mojangstatus.png";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -111,13 +118,13 @@ public class MojangStatus {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
                 MessageSender.sendGroupMessage(groupId, null, base64Img);
-                System.out.println("[INFO] 图片发送成功 -> Group: " + groupId);
+                log.info("图片发送成功 -> Group: {}", groupId);
             }
 
         } catch (Exception e) {
-            System.err.println("[INFO] 处理异常: " + e.getMessage());
+            log.error("处理异常：{}", e.getMessage());
             e.printStackTrace();
-            MessageSender.sendGroupMessage(groupId, "状态检查发生内部错误: " + e.getMessage());
+            MessageSender.sendGroupMessage(groupId, "状态检查发生内部错误：" + e.getMessage());
         } finally {
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
@@ -141,7 +148,7 @@ public class MojangStatus {
     private static boolean checkTextures() {
         String url = "http://textures.minecraft.net/texture/7fd9ba42a7c81eeea22f1524271ae85a8e045ce0af5a6ae16c6406ae917e68b5";
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(url).toURL().openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
@@ -177,7 +184,7 @@ public class MojangStatus {
 
     private static String httpGet(String urlStr) {
         try {
-            URL url = new URL(urlStr);
+            URL url = new URI(urlStr).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);

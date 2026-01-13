@@ -11,7 +11,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class MessageSender {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageSender.class);
 
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
@@ -64,7 +72,7 @@ public class MessageSender {
 
                 String payload = jsonMapper.writeValueAsString(payloadMap);
 
-                HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_API).openConnection();
+                HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_API).toURL().openConnection();
                 conn.setRequestMethod("POST");
                 conn.setDoOutput(true);
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -77,12 +85,12 @@ public class MessageSender {
                 if (conn.getInputStream() != null) conn.getInputStream().close();
 
                 if (code == 200) {
-                    System.out.println("[INFO] 消息发送成功 -> Group: " + groupId + (base64Image != null ? " [含图片]" : ""));
+                    log.info("消息发送成功{} -> Group: {}", (base64Image != null ? " [含图片]" : ""), groupId);
                 } else {
-                    System.err.println("[ERROR] 消息发送失败，HTTP Code: " + code);
+                    log.error("消息发送失败，HTTP Code: {}", code);
                 }
             } catch (Exception ex) {
-                System.err.println("[ERROR] 推送异常: " + ex.getMessage());
+                log.error("推送异常：{}", ex.getMessage());
             }
         });
     }

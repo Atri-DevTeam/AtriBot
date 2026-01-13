@@ -10,7 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Config implements Settings{
+
+    private static final Logger log = LoggerFactory.getLogger(Config.class);
+
     private static final String CONFIG_FILE = "config.yml";
     private static Config instance;
     private int listenPort;
@@ -44,12 +50,12 @@ public class Config implements Settings{
         try {
             // Check if config exists in run directory, if not, copy from resources
             if (!Files.exists(Paths.get(CONFIG_FILE))) {
-                System.out.println("Config file not found, creating default config.yml...");
+                log.info("未找到配置文件，创建默认配置：config.yml");
                 try (InputStream in = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE)) {
                     if (in != null) {
                         Files.copy(in, Paths.get(CONFIG_FILE), StandardCopyOption.REPLACE_EXISTING);
                     } else {
-                        System.err.println("Default config.yml not found in resources!");
+                        log.error("resources 中未找到默认配置文件");
                     }
                 }
             }
@@ -71,7 +77,7 @@ public class Config implements Settings{
                             long qq = ((Number) uid).longValue();
                             this.adminUids.add(qq);
                         } catch (NumberFormatException e) {
-                            System.err.println("Invalid admin UID in config: " + uid);
+                            log.error("配置文件中存在无效管理员 UID：{}", uid);
                         }
                     }
                 }
@@ -83,7 +89,7 @@ public class Config implements Settings{
                             long groupId = ((Number) gid).longValue();
                             this.messageSpyGroups.add(groupId);
                         } catch (NumberFormatException e) {
-                            System.err.println("Invalid message spy group ID in config: " + gid);
+                            log.error("配置文件中消息监听群组 ID 无效：", gid);
                         }
                     }
                 }
@@ -104,11 +110,11 @@ public class Config implements Settings{
                     this.mysqlUsername = (String) mysqlConfig.getOrDefault("username", "root");
                     this.mysqlPassword = (String) mysqlConfig.getOrDefault("password", "null");
                 } else {
-                    System.out.println("[ERROR] 在读取数据库配置时出现问题，请检查数据库配置!");
+                    log.error("读取数据库配置时出现问题，请检查数据库配置");
                 }
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
-                System.out.println("Config loaded successfully!");
+                log.info("配置文件加载成功");
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -11,7 +11,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class LikeUser {
+    
+    private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
+
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
@@ -58,9 +66,9 @@ public class LikeUser {
             try {
                 // 构造点赞请求 (点赞10次)
                 String payload = String.format("{\"user_id\":\"%s\",\"times\":10}", userId);
-                System.out.println("[INFO] 准备点赞 => QQ: " + userId);
+                log.info("准备点赞 => QQ：{}", userId);
 
-                HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_LIKE_API).openConnection();
+                HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_LIKE_API).toURL().openConnection();
                 conn.setRequestMethod("POST");
                 conn.setDoOutput(true);
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -80,23 +88,23 @@ public class LikeUser {
 
                     if ("ok".equalsIgnoreCase(status)) {
                         likeResult = "点赞成功！(+10 Social Credits!)";
-                        System.out.println("[INFO] 点赞成功 => QQ: " + userId);
+                        log.info("点赞成功 => QQ: {}", userId);
                     }
                     else if (status.contains("fail")) {
                         likeResult = "点赞失败，可能是由于该用户今日已被赞过啦~";
-                        System.out.println("[INFO] 点赞失败 => QQ: " + userId + " | msg: " + msg);
+                        log.info("点赞失败 => QQ: {} | msg: {}", userId, msg);
                     } else {
-                        System.out.println("[INFO] 点赞未知响应 => QQ: " + userId + " | 原始: " + respStr);
+                        log.info("点赞未知响应 => QQ: {} | 原始: {}", userId, respStr);
                     }
                 } else {
-                    System.out.println("[INFO] 点赞接口返回非预期格式 => QQ: " + userId + " | 原始: " + respStr);
+                    log.warn("点赞接口返回非预期格式 => QQ: {} | 原始: {}", userId, respStr);
                 }
 
                 MessageSender.sendGroupMessage(groupId, likeResult);
 
             } catch (Exception ex) {
                 MessageSender.sendGroupMessage(groupId, "点赞接口异常，请稍后再试。");
-                System.err.println("[INFO] 点赞接口异常: " + ex.getMessage());
+                log.warn("点赞接口异常: {}", ex.getMessage());
             }
         });
     }

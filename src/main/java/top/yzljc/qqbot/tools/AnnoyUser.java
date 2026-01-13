@@ -18,7 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class AnnoyUser {
+
+    private static final Logger log = LoggerFactory.getLogger(AnnoyUser.class);
 
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
@@ -67,21 +74,21 @@ public class AnnoyUser {
             if (rawMsg.startsWith("/ay ")) {
                 if (isSuper) {
                     addAnnoy(groupId, atId, "super");
-                    System.out.println("[INFO][DEBUG] Enable SUPER annoy for QQ " + atId + " in group " + groupId);
+                    log.debug("Enable SUPER annoy for QQ {} in group {}", atId, groupId);
                     MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 疯狂发癫！");
                 } else {
                     addAnnoy(groupId, atId, "normal");
-                    System.out.println("[INFO][DEBUG] Enable NORMAL annoy for QQ " + atId + " in group " + groupId);
+                    log.debug("Enable NORMAL annoy for QQ {} in group {}", atId, groupId);
                     MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + atId + " 发癫！");
                 }
             } else { // /ayr
                 if (isSuper) {
                     removeAnnoy(groupId, atId, "super");
-                    System.out.println("[INFO][DEBUG] Disable SUPER annoy for QQ " + atId + " in group " + groupId);
+                    log.debug("Disable SUPER annoy for QQ {} in group {}", atId, groupId);
                     MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 疯狂发癫！");
                 } else {
                     removeAnnoy(groupId, atId, "normal");
-                    System.out.println("[INFO][DEBUG] Disable NORMAL annoy for QQ " + atId + " in group " + groupId);
+                    log.debug("Disable NORMAL annoy for QQ {} in group {}", atId, groupId);
                     MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + atId + " 发癫！");
                 }
             }
@@ -104,27 +111,27 @@ public class AnnoyUser {
                 return;
             }
             fuckOnceMap.computeIfAbsent(groupId, k -> new HashSet<>()).add(atId);
-            System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + atId + " in group " + groupId + " will get 20-emoji!");
+            log.debug("NEXT MSG of QQ {} in group {} will get 20-emoji!", atId, groupId);
             MessageSender.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
             return;
         }
         // 用户自助开关/ayme /ayrme 只允许normal
         if (rawMsg.trim().equalsIgnoreCase("/ayme")) {
             addAnnoy(groupId, senderId, "normal");
-            System.out.println("[INFO][DEBUG] Enable NORMAL annoy for QQ " + senderId + " in group " + groupId);
+            log.debug("Enable NORMAL annoy for QQ {} in group {}", senderId, groupId);
             MessageSender.sendGroupMessage(groupId, "现在我将会对着 " + senderId + " 发癫！");
             return;
         }
         if (rawMsg.trim().equalsIgnoreCase("/ayrme")) {
             removeAnnoy(groupId, senderId, "normal");
-            System.out.println("[INFO][DEBUG] Disable NORMAL annoy for QQ " + senderId + " in group " + groupId);
+            log.debug("Disable NORMAL annoy for QQ {} in group {}", senderId, groupId);
             MessageSender.sendGroupMessage(groupId, "现在我将不再会对着 " + senderId + " 发癫！");
             return;
         }
         // 新增：支持用户自助/fuckme
         if (rawMsg.trim().equalsIgnoreCase("/emj")) {
             fuckOnceMap.computeIfAbsent(groupId, k -> new HashSet<>()).add(senderId);
-            System.out.println("[INFO][DEBUG] NEXT MSG of QQ " + senderId + " in group " + groupId + " will get 20-emoji! (from /emj)");
+            log.debug("NEXT MSG of QQ {} in group {} will get 20-emoji! (from /emj)", senderId, groupId);
             MessageSender.sendGroupMessage(groupId, "收到，牢大正在准备派送惊喜！");
             return;
         }
@@ -142,7 +149,7 @@ public class AnnoyUser {
             );
             fuckSet.remove(targetId);
             if (fuckSet.isEmpty()) fuckOnceMap.remove(groupId);
-            System.out.println("[INFO][DEBUG] FUCK 20-emoji at " + targetId + " in group " + groupId + " 已触发并移除！");
+            log.debug("FUCK 20-emoji at {} in group {} 已触发并移除！", targetId, groupId);
         }
 
         // 常规/超级监听
@@ -198,7 +205,7 @@ public class AnnoyUser {
             req.put("set", true);
             String body = mapper.writeValueAsString(req);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(EMOJI_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(EMOJI_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
@@ -207,7 +214,7 @@ public class AnnoyUser {
             }
             conn.getInputStream().close();
         } catch (Exception e) {
-            System.err.println("[INFO] 点赞请求异常: " + e.getMessage());
+            log.warn("点赞请求异常: {}", e.getMessage());
         }
     }
 
@@ -253,7 +260,7 @@ public class AnnoyUser {
         try (FileWriter writer = new FileWriter(RECORD_FILE, false)) {
             mapper.writeValue(writer, raw);
         } catch (Exception e) {
-            System.err.println("[INFO] 记录文件保存错误：" + e.getMessage());
+            log.warn("记录文件保存错误：{}", e.getMessage());
         }
     }
 }

@@ -23,11 +23,17 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 群发言统计工具
  */
+import java.net.URI;
+import java.net.URISyntaxException;
 public class MessageStats {
 
+    private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
     // CQ码@用户匹配
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
 
@@ -68,7 +74,7 @@ public class MessageStats {
             try {
                 autoReportAllGroups();
             } catch (Exception e) {
-                System.err.println("MessageStats: 定时任务异常 " + e.getMessage());
+                log.error("定时任务异常 {}", e.getMessage());
             }
         }, initDelay, 24 * 60 * 60, TimeUnit.SECONDS);
     }
@@ -110,7 +116,7 @@ public class MessageStats {
                 }
             }
         } catch (Exception e) {
-            System.err.println("MessageStats: 取所有群号分表异常 " + e.getMessage());
+            log.error("取所有群号分表异常 {}", e.getMessage());
         }
         return groupIds;
     }
@@ -228,7 +234,7 @@ public class MessageStats {
             String jsonBody = objectMapper.writeValueAsString(root);
 
             // 发送 HTTP 请求
-            HttpURLConnection conn = (HttpURLConnection) new URL(SEND_MSG_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(SEND_MSG_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(3000);
@@ -261,7 +267,7 @@ public class MessageStats {
 
         } catch (Exception e) {
             // 发送失败或解析失败，尝试回退到普通发送（虽然不完美，但保证功能可用）
-            System.err.println("MessageStats: 自动撤回发送流程异常: " + e.getMessage());
+            log.warn("自动撤回发送流程异常: {}", e.getMessage());
             MessageSender.sendGroupMessage(groupId, message);
         }
     }
@@ -272,7 +278,7 @@ public class MessageStats {
     private static void withdrawMessage(long messageId) {
         try {
             String jsonBody = String.format("{\"message_id\":%d}", messageId);
-            HttpURLConnection conn = (HttpURLConnection) new URL(DELETE_MSG_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(DELETE_MSG_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(3000);
@@ -286,7 +292,7 @@ public class MessageStats {
             conn.getResponseCode();
             conn.disconnect();
         } catch (Exception e) {
-            System.err.println("MessageStats: 撤回消息 " + messageId + " 失败: " + e.getMessage());
+            log.error("MessageStats: 撤回消息 {} 失败: {}", messageId, e.getMessage());
         }
     }
 
@@ -300,7 +306,7 @@ public class MessageStats {
             nicknameCache.remove(userId);
 
             String body = String.format("{\"user_id\":\"%d\"}", userId);
-            HttpURLConnection conn = (HttpURLConnection) new URL(NICKNAME_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(NICKNAME_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(2500);
@@ -376,7 +382,7 @@ public class MessageStats {
                 }
             }
         } catch (Exception e) {
-            System.err.println("MessageStats: 统计失败 " + e.getMessage());
+            log.error("MessageStats: 统计失败 {}", e.getMessage());
         }
         return result;
     }

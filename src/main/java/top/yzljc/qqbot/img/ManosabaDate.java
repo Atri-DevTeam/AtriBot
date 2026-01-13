@@ -21,10 +21,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 生成并推送魔法少女の魔女审判 x Minecraft 项目进度图片到QQ群（计算天数）
  */
 public class ManosabaDate {
+
+    private static final Logger log = LoggerFactory.getLogger(ManosabaDate.class);
+
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
     private static final List<Long> admins = settings.getAdminUids();
@@ -36,7 +42,7 @@ public class ManosabaDate {
 
         String imgFileName = "manosaba.png";
         File bgFile = new File(imgFileName);
-        if (!bgFile.exists()) throw new IOException("未找到背景图片: " + imgFileName);
+        if (!bgFile.exists()) throw new IOException("未找到背景图片：" + imgFileName);
 
         BufferedImage img = ImageIO.read(bgFile);
         Graphics2D g = img.createGraphics();
@@ -55,17 +61,18 @@ public class ManosabaDate {
         String line2 = "【魔法少女の魔女审判 x Minecraft】项目";
         String line3 = "开发的第 " + days + " 天";
 
+// TODO: 此处图片生成和字体检测逻辑与HappyNewYear.java中重复，考虑抽象到工具类
         Font font;
         File fontFile = new File("MinecraftAE.ttf");
         if (fontFile.exists()) {
             try {
                 font = Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(Font.BOLD, 28f);
             } catch (Exception e) {
-                System.err.println("[ERROR] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                log.warn("自定义字体加载失败，将使用默认字体：{}", e.getMessage());
                 font = new Font(Font.SANS_SERIF, Font.BOLD, 28);
             }
         } else {
-            System.err.println("[ERROR] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
+            log.warn("字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体");
             font = new Font(Font.SANS_SERIF, Font.BOLD, 28);
         }
         g.setFont(font);
@@ -116,7 +123,7 @@ public class ManosabaDate {
         if ("/manodate".equals(rawMessage)) {
 
             sendAndNotifyToGroup(); // 保持原逻辑推送到固定群
-            System.out.println("[INFO] manodate 指令触发图片推送：" + groupId);
+            log.info("manodate 指令触发图片推送：{}", groupId);
         }
     }
 
@@ -131,7 +138,7 @@ public class ManosabaDate {
         try {
             generateDevelopDayImage();
             if (!tempFile.exists()) {
-                System.err.println("[INFO] manoday.png 生成失败，图片不存在！");
+                log.warn("manoday.png 生成失败，图片不存在");
                 return false;
             }
 
@@ -144,14 +151,14 @@ public class ManosabaDate {
             return true;
 
         } catch (Exception ex) {
-            System.err.println("[INFO] 推送图片异常: " + ex.getMessage());
+            log.error("推送图片异常：{}, ex.getMessage()");
             ex.printStackTrace();
             return false;
         } finally {
             // 自动删除
             if (tempFile.exists()) {
                 if (tempFile.delete()) {
-                    System.out.println("[INFO] 临时图片已自动清理: " + tempFile.getAbsolutePath());
+                    log.info("临时图片已自动清理：{}", tempFile.getAbsolutePath());
                 }
             }
         }
@@ -166,7 +173,7 @@ public class ManosabaDate {
         long period = 24 * 60 * 60; // 24小时，单位秒
 
         scheduler.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-        System.out.println("[INFO] 已启动每日0:00:01自动推送任务");
+        log.info("已启动每日0:00:01自动推送任务");
     }
 
     private static long computeInitialDelayToMidnight11() {
