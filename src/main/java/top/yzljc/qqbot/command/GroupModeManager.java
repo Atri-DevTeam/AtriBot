@@ -188,8 +188,7 @@ public class GroupModeManager {
                 }
             }
         } catch (Exception e) {
-            log.error("获取群 {} 名称失败", groupId);
-            // System.err.println("[GroupModeManager] 获取群 " + groupId + " 名称失败: " + e.getMessage());
+            log.error("获取群 {} 名称失败：", groupId, e.getMessage());
         }
         return groupName;
     }
