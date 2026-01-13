@@ -116,7 +116,7 @@ public class Config implements Settings{
                 }
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
-                log.info("配置文件加载成功");
+
                 Object keywordsObj = data.get("keywords-hitokoto");
                 if (keywordsObj instanceof List<?>) {
                     List<String> keywordsList = new ArrayList<>();
@@ -141,6 +141,7 @@ public class Config implements Settings{
                 } else {
                     this.keywordsLikeUser = new String[0];
                 }
+                log.info("配置文件加载成功");
             }
         } catch (Exception e) {
             e.printStackTrace();
