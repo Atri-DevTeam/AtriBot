@@ -1,0 +1,77 @@
+name: Java CI/CD with Maven
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]  # 当release发布时触发
+
+env:
+  MAVEN_OPTS: "-Djava.version=22"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '22'
+        distribution: 'temurin'
+    
+    - name: Run tests
+      run: mvn test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '22'
+        distribution: 'temurin'
+    
+    - name: Build package
+      run: mvn clean package -DskipTests
+    
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: java-app
+        path: target/*.jar
+
+  publish-release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release'
+    
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '22'
+        distribution: 'temurin'
+    
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: java-app
+    
+    - name: Publish to GitHub Releases
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          *.jar
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
