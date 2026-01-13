@@ -1,7 +1,7 @@
 name: Release
 
 on:
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
     inputs:
       version:
         description: 'Release version (e.g., 1.0.0)'
@@ -19,13 +19,13 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 需要写入权限来创建release
+      contents: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # 获取所有历史用于版本号
+        fetch-depth: 0
     
     - name: Set up JDK 22
       uses: actions/setup-java@v4
@@ -41,19 +41,58 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     
-    - name: Configure Git
-      run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-    
     - name: Update version in pom.xml
       if: github.event.inputs.version != ''
       run: |
+        echo "Updating version to: ${{ github.event.inputs.version }}"
         mvn versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
     
-    - name: Build with Maven
-      run: mvn clean package -DskipTests
+    # 第一步：查看项目结构
+    - name: Debug - List project structure
+      run: |
+        echo "=== Project Structure ==="
+        find . -name "pom.xml" -o -name "*.java" | head -20
+        echo "=== Current Directory ==="
+        pwd
+        ls -la
     
+    # 第二步：用详细的命令构建
+    - name: Build with Maven (verbose)
+      run: |
+        echo "=== Building with Maven ==="
+        mvn clean package -DskipTests -X  # 添加-X参数显示详细日志
+    
+    # 第三步：查看target目录的内容
+    - name: Debug - Check target directory
+      run: |
+        echo "=== Checking target directory ==="
+        if [ -d "target" ]; then
+          echo "Target directory exists"
+          ls -la target/
+          echo "=== Looking for JAR files ==="
+          find target/ -name "*.jar" -type f
+        else
+          echo "ERROR: target directory does not exist!"
+          echo "Maven build might have failed"
+        fi
+    
+    # 第四步：如果找到JAR，确认路径
+    - name: Debug - Verify JAR path
+      run: |
+        echo "=== Verifying JAR files ==="
+        # 列出所有可能的JAR文件
+        JAR_FILES=$(find . -name "*.jar" -type f)
+        if [ -n "$JAR_FILES" ]; then
+          echo "Found JAR files:"
+          echo "$JAR_FILES"
+          echo ""
+          echo "Most likely JAR file:"
+          find . -name "*.jar" -type f | grep -v ".m2/repository" | head -5
+        else
+          echo "No JAR files found in project"
+        fi
+    
+    # 第五步：继续原来的发布步骤，但更安全地获取JAR文件
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
@@ -66,12 +105,36 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Upload JAR to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./target/*.jar
-        asset_name: ${{ github.event.repository.name }}-${{ github.event.inputs.version || '1.0.0' }}.jar
-        asset_content_type: application/java-archive
+    # 第六步：修改上传步骤，处理不同的JAR文件情况
+    - name: Find and Upload JAR files
+      id: upload_jar
+      run: |
+        echo "=== Finding JAR files for upload ==="
+        
+        # 查找JAR文件
+        JAR_FILES=$(find . -name "*.jar" -type f | grep -v ".m2/repository" || true)
+        
+        if [ -n "$JAR_FILES" ]; then
+          echo "Found JAR files:"
+          echo "$JAR_FILES"
+          
+          # 使用第一个找到的非依赖JAR
+          MAIN_JAR=$(echo "$JAR_FILES" | head -1)
+          echo "Uploading: $MAIN_JAR"
+          
+          # 提取文件名
+          JAR_NAME=$(basename "$MAIN_JAR")
+          
+          # 上传到release
+          curl -s \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/java-archive" \
+            --data-binary @"$MAIN_JAR" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$JAR_NAME"
+            
+          echo "✓ Uploaded $JAR_NAME"
+        else
+          echo "⚠ No JAR files found to upload"
+          exit 1
+        fi
