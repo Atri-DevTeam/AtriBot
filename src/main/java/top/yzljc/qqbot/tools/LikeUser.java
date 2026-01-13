@@ -78,7 +78,7 @@ public class LikeUser {
                     String msg = respJson.path("msg").asText("");
 
                     if ("ok".equalsIgnoreCase(status)) {
-                        likeResult = "点赞成功！(+10 Social Credits!)";
+                        likeResult = "点赞成功！(+10 Social Credits)，没加好友可能无法收到点赞哦！";
                         System.out.println("[INFO] 点赞成功 => QQ: " + userId);
                     }
                     else if (status.contains("fail")) {
