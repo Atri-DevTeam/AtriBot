@@ -77,6 +77,35 @@ public class SendCommand {
         }
     }
 
+    public static void processMessage(JsonNode json) {
+        if (!"group".equals(json.path("message_type").asText(""))) return;
+
+        long groupId = json.path("group_id").asLong();
+        String rawMsg = json.path("raw_message").asText("");
+        String rawTrimmed = rawMsg.trim();
+
+        if (rawTrimmed.startsWith("/unbanme")) {
+            handleUnbanMeCommand(groupId, rawTrimmed);
+        }
+    }
+
+    private static void handleUnbanMeCommand(long groupId, String rawTrimmed) {
+        String[] parts = rawTrimmed.split("\\s+");
+        if (parts.length < 2) {
+            MessageSender.sendGroupMessage(groupId, "用法: /unbanme <ID>");
+            return;
+        }
+        String targetId = parts[1];
+
+        String hbtSecret = serverSecretMap.get("hbt");
+
+        if (hbtSecret != null) {
+            executeUnbanMeLogic(targetId, new AuthInfo("hbt", hbtSecret), groupId);
+        } else {
+            MessageSender.sendGroupMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封。");
+        }
+    }
+
     public static void handle(long userId, long groupId, String rawMessage) {
         log.info("收到指令：{} (User: {}, Group: {}", rawMessage, userId, groupId);
 
@@ -166,6 +195,43 @@ public class SendCommand {
 
             String replyMsg = String.format("[√] 指令已送达\n目标: %s\n内容: %s\n----------------\n控制台返回:\n%s",
                     targetServerId, command, cleanLogContent);
+            MessageSender.sendGroupMessage(groupId, replyMsg);
+        });
+    }
+
+    /**
+     * 专门为 /unbanme 准备的逻辑，向 hbt 服务器发送双重解封指令
+     */
+    private static void executeUnbanMeLogic(String targetId, AuthInfo info, long groupId) {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            // 1. 发送 unban 指令
+            SocketManager.sendCommand(info.serverId, "unban " + targetId, info.secretKey);
+
+            // 2. 发送 pardon 指令并准备接收反馈
+            String secondCmd = "pardon " + targetId;
+            boolean success = SocketManager.sendCommand(info.serverId, secondCmd, info.secretKey);
+
+            if (!success) {
+                MessageSender.sendGroupMessage(groupId, "[X] hbt 服务器未连接或鉴权失败");
+                return;
+            }
+
+            CompletableFuture<String> future = new CompletableFuture<>();
+            pendingCommandResponses.put(info.serverId, future);
+
+            String consoleLog;
+            try {
+                // 等待反馈
+                consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                consoleLog = "(解封指令已发送，但未收到控制台回执)";
+            } finally {
+                pendingCommandResponses.remove(info.serverId);
+            }
+
+            String cleanLogContent = cleanLog(consoleLog);
+            String replyMsg = String.format("[√] 自助解封申请已提交至 hbt\n目标ID: %s\n----------------\n控制台返回:\n%s",
+                    targetId, cleanLogContent);
             MessageSender.sendGroupMessage(groupId, replyMsg);
         });
     }

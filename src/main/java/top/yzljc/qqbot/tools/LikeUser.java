@@ -24,8 +24,7 @@ public class LikeUser {
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String NAPCAT_LIKE_API = BASEURL + "/send_like";
-
-    private static final String[] KEYWORDS = {"赞我", "zanwo", "likeme"};
+    private static final String[] KEYWORDS = settings.getKeywordsLikeUser();
 
     /**
      * 处理点赞指令
@@ -87,7 +86,7 @@ public class LikeUser {
                     String msg = respJson.path("msg").asText("");
 
                     if ("ok".equalsIgnoreCase(status)) {
-                        likeResult = "点赞成功！(+10 Social Credits!)";
+                        likeResult = "点赞成功！(+10 Social Credits!)，没加好友可能无法收到点赞哦！";
                         log.info("点赞成功 => QQ: {}", userId);
                     }
                     else if (status.contains("fail")) {

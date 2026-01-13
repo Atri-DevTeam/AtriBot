@@ -34,6 +34,8 @@ public class Config implements Settings{
     private String mysqlPassword;
     private long manosabaGroupId;
     private boolean debugMode;
+    private String[] keywordsHitokoto;
+    private String[] keywordsLikeUser;
 
     private Config() {
         load();
@@ -115,6 +117,30 @@ public class Config implements Settings{
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
                 log.info("配置文件加载成功");
+                Object keywordsObj = data.get("keywords-hitokoto");
+                if (keywordsObj instanceof List<?>) {
+                    List<String> keywordsList = new ArrayList<>();
+                    for (Object kw : (List<?>) keywordsObj) {
+                        if (kw instanceof String) {
+                            keywordsList.add((String) kw);
+                        }
+                    }
+                    this.keywordsHitokoto = keywordsList.toArray(new String[0]);
+                } else {
+                    this.keywordsHitokoto = new String[0];
+                }
+                Object keywordsLikeUserObj = data.get("keywords-like-user");
+                if (keywordsLikeUserObj instanceof List<?>) {
+                    List<String> keywordsLikeUserList = new ArrayList<>();
+                    for (Object kw : (List<?>) keywordsLikeUserObj) {
+                        if (kw instanceof String) {
+                            keywordsLikeUserList.add((String) kw);
+                        }
+                    }
+                    this.keywordsLikeUser = keywordsLikeUserList.toArray(new String[0]);
+                } else {
+                    this.keywordsLikeUser = new String[0];
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -194,5 +220,15 @@ public class Config implements Settings{
     @Override
     public boolean isDebugMode() {
         return debugMode;
+    }
+
+    @Override
+    public String[] getKeywordsHitokoto() {
+        return keywordsHitokoto;
+    }
+
+    @Override
+    public String[] getKeywordsLikeUser() {
+        return keywordsLikeUser;
     }
 }

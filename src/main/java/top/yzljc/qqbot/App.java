@@ -14,6 +14,7 @@ import top.yzljc.qqbot.news.HypixelNews;
 import top.yzljc.qqbot.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.utils.AutoSign;
+import top.yzljc.qqbot.web.WebDashboardAPI;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,8 @@ public class App {
         System.setProperty("java.awt.headless", "true");
 
         System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
+
+        WebDashboardAPI.start(65500);
 
         Settings settings = Config.getInstance();
 

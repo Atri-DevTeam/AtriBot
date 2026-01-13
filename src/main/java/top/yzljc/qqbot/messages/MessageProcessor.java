@@ -4,6 +4,7 @@ import top.yzljc.qqbot.command.*;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
 import top.yzljc.qqbot.img.HappyNewYear;
+import top.yzljc.qqbot.minecraft.McNetworkInfo;
 import top.yzljc.qqbot.minecraft.MojangStatus;
 import top.yzljc.qqbot.tools.*;
 import top.yzljc.qqbot.utils.CommandHelp;
@@ -60,6 +61,8 @@ public class MessageProcessor {
         Reboot.process(json);
         Hitokoto.process(json);
         CommandHelp.process(json);
+        McNetworkInfo.process(json);
+        SendCommand.processMessage(json);
 
         String messageType = json.path("message_type").asText();
         if (!"group".equals(messageType)) {

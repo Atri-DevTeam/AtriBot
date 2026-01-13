@@ -23,14 +23,15 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * 群发言统计工具
  */
-import java.net.URI;
-import java.net.URISyntaxException;
 public class MessageStats {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
