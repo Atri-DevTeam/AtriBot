@@ -14,10 +14,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Executors;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Minecraft 玩家全网数据查询
  */
 public class McNetworkInfo {
+
+    private static final Logger log = LoggerFactory.getLogger(McNetworkInfo.class);
 
     private static final String CMD_PREFIX = "/hbt";
     private static final String API_URL = "http://mc.yzljc.top:65123/playerinfo?name=";
@@ -51,9 +59,9 @@ public class McNetworkInfo {
             String encodedName = URLEncoder.encode(playerName, StandardCharsets.UTF_8);
             String finalUrl = API_URL + encodedName;
 
-            System.out.println("[McNetworkInfo] 正在请求: " + finalUrl);
+            log.info("正在请求：{}", finalUrl);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(finalUrl).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(finalUrl).toURL().openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
@@ -126,7 +134,7 @@ public class McNetworkInfo {
             MessageSender.sendGroupMessage(groupId, sb.toString());
 
         } catch (Exception e) {
-            System.err.println("[McNetworkInfo] Error: " + e.getMessage());
+            log.warn("查询出错，请检查 API 接口：{}", e.getMessage());
             MessageSender.sendGroupMessage(groupId, "❌ 查询出错，请检查 API 接口。");
         }
     }

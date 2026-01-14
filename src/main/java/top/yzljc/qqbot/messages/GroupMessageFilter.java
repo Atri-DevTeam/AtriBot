@@ -8,12 +8,19 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * 群消息实时过滤器
  * 检测到违规词立即撤回
  */
 public class GroupMessageFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(GroupMessageFilter.class);
 
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
@@ -38,13 +45,14 @@ public class GroupMessageFilter {
             recallMessageSilent(messageId);
 
             String detectedWord = SensitiveWordFilter.findSensitiveWord(rawMessage);
-            System.out.println("[INFO] 检测到违规词 [" + detectedWord + "]，来自QQ:" + userId + "，已尝试撤回消息 ID: " + messageId);
-        }
+            log.info("检测到违规词：{}，已尝试撤回。来自 QQ: {}, 消息 ID: {}", detectedWord, userId, messageId);
+            
+	    }
     }
 
     private static void recallMessageSilent(long messageId) {
         try {
-            URL url = new URL(DELETE_API);
+            URL url = new URI(DELETE_API).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
@@ -63,7 +71,7 @@ public class GroupMessageFilter {
             conn.disconnect();
 
         } catch (Exception e) {
-            System.err.println("[ERROR] 撤回消息 ID " + messageId + " 失败: " + e.getMessage());
+            log.error("撤回消息（ID: {}）失败: {}", messageId, e.getMessage());
         }
     }
 }

@@ -13,7 +13,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class AutoAccept {
+
+    private static final Logger log = LoggerFactory.getLogger(AutoAccept.class);
+    
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String API_URL = BASEURL + "/set_friend_add_request";
@@ -37,19 +45,18 @@ public class AutoAccept {
         String comment = json.has("comment") ? json.get("comment").asText() : "";
 
         if (flag.isEmpty()) {
-            System.err.println("[INFO] 收到好友请求但 flag 为空，无法处理！");
+            log.warn("[WARN] 收到好友请求但 flag 为空，无法处理！");
             return;
         }
 
-        System.out.printf("[INFO] 收到好友请求 -> 用户: %d | 验证消息: %s | Flag: %s\n", userId, comment, flag);
+        log.info("收到好友请求 -> 用户: {} | 验证消息: {} | Flag: {}", userId, comment, flag);
 
         // 异步执行同意操作
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 approveFriendRequest(flag);
             } catch (Exception e) {
-                System.err.println("[INFO] 同意操作失败: " + e.getMessage());
-                e.printStackTrace();
+                log.warn("[INFO] 同意操作失败: {}", e.getMessage(), e);
             }
         });
     }
@@ -62,7 +69,7 @@ public class AutoAccept {
 
         String payload = jsonMapper.writeValueAsString(params);
 
-        HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) new URI(API_URL).toURL().openConnection();
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
         conn.setRequestProperty("Content-Type", "application/json");
@@ -78,9 +85,9 @@ public class AutoAccept {
         }
 
         if (code == 200) {
-            System.out.println("[INFO] 已成功同意好友请求 (Flag: " + flag + ")");
+            log.info("已成功同意好友请求 (Flag: {})", flag);
         } else {
-            System.err.println("[INFO] API 请求返回错误代码: " + code);
+            log.warn("API 请求返回错误代码: {}", code);
         }
     }
 }

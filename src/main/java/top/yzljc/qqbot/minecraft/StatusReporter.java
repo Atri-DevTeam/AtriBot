@@ -7,7 +7,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Base64;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StatusReporter {
+
+    private static final Logger log = LoggerFactory.getLogger(StatusReporter.class);
 
     /**
      * 生成状态图片并推送到群
@@ -24,7 +29,7 @@ public class StatusReporter {
         String statusDesc = isOnline ? "在线" : "离线";
 
         try {
-            System.out.println("[INFO] 开始构建推送消息...");
+            log.info("开始构建推送消息……");
 
             String textContent = String.format(
                     "[!] 服务器状态更新\n服务器：%s\n地址：%s:%d\n状态：%s",
@@ -39,7 +44,7 @@ public class StatusReporter {
             String fileName = String.format("status_%s_%d.png", id, System.currentTimeMillis());
             tempFile = new File(tmpDir, fileName);
 
-            System.out.println("[INFO] 准备生成图片: " + tempFile.getAbsolutePath());
+            log.info("准备生成图片：{}", tempFile.getAbsolutePath());
             String ipPort = ip + ":" + port;
 
             // 调用生成方法
@@ -47,22 +52,23 @@ public class StatusReporter {
 
             String base64Img = null;
             if (tempFile.exists()) {
-                System.out.println("[INFO] 图片生成成功，大小: " + tempFile.length() + " 字节");
+                log.info("图片生成成功，大小：{}", tempFile.length());
+                System.out.println("[INFO] 图片生成成功，大小 {} 字节" + tempFile.length() + " 字节");
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 base64Img = Base64.getEncoder().encodeToString(imgBytes);
             } else {
-                System.err.println("[Error] 图片生成失败，文件不存在！将只发送文本。");
+                log.warn("图片生成失败，文件不存在，将只发送文本");
             }
 
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
 
         } catch (Exception ex) {
-            System.err.println("[Error] 推送流程异常: " + ex.getMessage());
+            log.error("推送流程异常：{}", ex.getMessage());
             ex.printStackTrace();
         } finally {
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
-                System.out.println("[INFO] 临时图片已清理");
+                log.info("临时图片已清理");
             }
         }
     }

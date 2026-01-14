@@ -7,12 +7,18 @@ import top.yzljc.qqbot.messages.MessageSender;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 全局数据包调试监听器
  * 用于将接收到的所有原始数据转发到调试群
  * 这个玩意只用测试数据用，平时用不到，瞎几把打印数据会死人的
  */
 public class PacketEvent {
+
+    private static final Logger log = LoggerFactory.getLogger(PacketEvent.class);
+    
     // 调试模式开关（默认关闭）
     private static volatile boolean isDebugEnabled = false;
     // 过滤的目标群号 (null表示监听全局，有值表示只监听特定群)
@@ -91,19 +97,19 @@ public class PacketEvent {
                 targetFilterGroupId = null;
 
                 if (isDebugEnabled) {
-                    statusMsg = "[System] Debug 模式已开启 (全局模式)！\n所有收到的原始数据包将转发至群 " + debugGroupId;
+                    statusMsg = "Debug 模式已开启（全局模式）\n所有收到的原始数据包将转发至群 " + debugGroupId;
                 } else {
-                    statusMsg = "[System] Debug 模式已关闭。";
+                    statusMsg = "Debug 模式已关闭";
                 }
             }
 
-            System.out.println(statusMsg);
+            log.info(statusMsg);
 
             // 发送反馈消息
             if (fromGroupId > 0) {
                 MessageSender.sendGroupMessage(fromGroupId, statusMsg);
             } else {
-                System.out.println("无效的群号，无法发送状态提示！");
+                log.warn("无效的群号，无法发送状态提示");
             }
             return true;
         }
@@ -126,7 +132,7 @@ public class PacketEvent {
             MessageSender.sendGroupMessage(debugGroupId, jsonString);
 
         } catch (Exception e) {
-            System.err.println("[PacketEvent] Forwarding failed: " + e.getMessage());
+            log.error("转发失败：{}", e.getMessage());
         }
     }
 }

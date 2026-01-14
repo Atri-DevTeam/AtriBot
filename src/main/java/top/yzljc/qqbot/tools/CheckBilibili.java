@@ -19,7 +19,15 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class CheckBilibili {
+
+
+    private static final Logger log = LoggerFactory.getLogger(CheckBilibili.class);
 
     private static final String LIST_FILE = "bvidlist.json";
 
@@ -72,7 +80,7 @@ public class CheckBilibili {
                 JsonNode root = sendBilibiliRequest(viewUrl);
 
                 if (root == null) {
-                    System.out.println("[INFO] Error: view interface no response.");
+                    log.warn("view interface no response");
                     MessageSender.sendGroupMessage(groupId, "B站接口无响应 (可能是网络或IP封禁)");
                     return;
                 }
@@ -80,7 +88,7 @@ public class CheckBilibili {
                 int code = root.path("code").asInt();
                 if (code != 0) {
                     String msg = root.path("message").asText();
-                    System.out.println("[INFO] API Error: " + msg + " (Code: " + code + ")");
+                    log.warn("API Error: {} (Code: {})", msg, code);
                     MessageSender.sendGroupMessage(groupId, "查询失败: " + msg + " (Code: " + code + ")");
                     return;
                 }
@@ -106,12 +114,11 @@ public class CheckBilibili {
                 int savedIndex = saveBvid(bvid, title);
 
                 // 5. 控制台日志
-                System.out.println("========== [Bilibili Query Log] ==========");
-                System.out.println("Index: " + savedIndex);
-                System.out.println("BVID:  " + bvid);
-                System.out.println("Title: " + title);
-                System.out.println("==========================================");
-
+                log.info("========== [Bilibili Query Log] ==========");
+                log.info("Index: {}", savedIndex);
+                log.info("BVID:  {}", bvid);
+                log.info("Title: {}", title);
+                log.info("==========================================");
                 StringBuilder sb = new StringBuilder();
                 sb.append("标题: ").append(title).append("\n");
                 sb.append("UP主: ").append(upName).append("\n");
@@ -131,7 +138,7 @@ public class CheckBilibili {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("[INFO] Exception: " + e.getMessage());
+                log.warn("Exception: {}", e.getMessage());
                 MessageSender.sendGroupMessage(groupId, "处理异常: " + e.getMessage());
             }
         });
@@ -209,7 +216,7 @@ public class CheckBilibili {
 
     private static JsonNode sendBilibiliRequest(String urlStr) {
         try {
-            URL url = new URL(urlStr);
+            URL url = new URI(urlStr).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);
@@ -238,7 +245,7 @@ public class CheckBilibili {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[Bili API] Request Failed: " + e.getMessage());
+            log.warn("[Bili API] Request Failed: {}", e.getMessage());
         }
         return null;
     }

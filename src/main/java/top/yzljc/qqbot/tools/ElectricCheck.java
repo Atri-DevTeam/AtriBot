@@ -16,7 +16,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class ElectricCheck {
+
+    private static final Logger log = LoggerFactory.getLogger(ElectricCheck.class);
+    
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
     private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
@@ -41,7 +49,7 @@ public class ElectricCheck {
         Executors.newSingleThreadExecutor().submit(() -> {
             String feedback;
             try {
-                HttpURLConnection conn = (HttpURLConnection) new URL(QUERY_URL).openConnection();
+                HttpURLConnection conn = (HttpURLConnection) new URI(QUERY_URL).toURL().openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/json");
                 conn.setConnectTimeout(5000);
@@ -65,14 +73,14 @@ public class ElectricCheck {
 
                     feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s",
                             rec, rsmd, rsfd, rljd, rtzd, status);
-                    System.out.println("[INFO] 电表数据发送 => " + feedback.replace("\n", " | "));
+                    log.info("电表数据发送 => {}", feedback.replace("\n", " | "));
                 } else {
                     feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
-                    System.err.println("[INFO] 返回内容无法解析: " + respStr);
+                    log.warn("返回内容无法解析：{}", respStr);
                 }
             } catch (Exception ex) {
                 feedback = "[电表查询失败] 网络异常或远端接口错误。";
-                System.err.println("[INFO] 查询异常: " + ex.getMessage());
+                log.warn("查询异常：{}", ex.getMessage());
             }
 
             MessageSender.sendGroupMessage(groupId, feedback);

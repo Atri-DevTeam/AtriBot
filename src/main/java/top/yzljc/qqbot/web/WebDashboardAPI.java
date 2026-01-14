@@ -22,7 +22,16 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class WebDashboardAPI {
+
+    private static final Logger log = LoggerFactory.getLogger(WebDashboardAPI.class);
+
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String NAPCAT_ADDR = Config.getInstance().getHttpUrl();
 
@@ -44,7 +53,7 @@ public class WebDashboardAPI {
             webExecutor = Executors.newCachedThreadPool();
             server.setExecutor(webExecutor);
 
-            System.out.println("[WebDashboard] 服务已启动 端口: " + port);
+            log.info("[WebDashboard] 服务已启动，端口：{}", port);
 
             // ================== 路由定义 ==================
 
@@ -183,7 +192,7 @@ public class WebDashboardAPI {
 
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("[WebDashboard] 启动失败，端口可能被占用: " + port);
+            log.error("[WebDashboard] 启动失败，端口可能被占用：{}", port);
         }
     }
 
@@ -255,14 +264,14 @@ public class WebDashboardAPI {
                 while (rs.next()) list.add(rs.getLong("message_id"));
             }
         } catch (Exception e) {
-            System.err.println("[WebDashboard] 查库失败: " + e.getMessage());
+            log.error("查库失败：{}", e.getMessage());
         }
         return list;
     }
 
     private static boolean sendDeleteMessage(long messageId) {
         try {
-            URL url = new URL(NAPCAT_ADDR + "/delete_msg");
+            URL url = new URI(NAPCAT_ADDR + "/delete_msg").toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
@@ -280,7 +289,7 @@ public class WebDashboardAPI {
 
     private static String fetchNickname(String userId) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_ADDR + "/get_stranger_info").openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_ADDR + "/get_stranger_info").toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -293,7 +302,7 @@ public class WebDashboardAPI {
     private static Map<Long, String> fetchAllGroupNames() {
         Map<Long, String> map = new HashMap<>();
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(NAPCAT_ADDR + "/get_group_list").openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_ADDR + "/get_group_list").toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");

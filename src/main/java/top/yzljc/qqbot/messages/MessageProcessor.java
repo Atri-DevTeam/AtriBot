@@ -1,6 +1,5 @@
 package top.yzljc.qqbot.messages;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.command.*;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.gordonhim.ServerStatusReport;
@@ -17,7 +16,13 @@ import top.yzljc.qqbot.news.MinecraftNews;
 import top.yzljc.qqbot.utils.AutoAccept;
 import top.yzljc.qqbot.utils.AutoSign;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MessageProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageProcessor.class);
 
     public static void processMessage(JsonNode json) {
         String postType = json.path("post_type").asText("");

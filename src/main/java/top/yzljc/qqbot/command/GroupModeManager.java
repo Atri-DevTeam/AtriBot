@@ -15,7 +15,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class GroupModeManager {
+
+    private static final Logger log = LoggerFactory.getLogger(GroupModeManager.class);
     static Settings settings = Config.getInstance();
     private static final List<Long> ADMIN_LIST = settings.getAdminUids();
     private static final Map<Long, String> userSession = new ConcurrentHashMap<>();
@@ -157,7 +165,7 @@ public class GroupModeManager {
             reqData.put("group_id", String.valueOf(groupId));
             String payload = jsonMapper.writeValueAsString(reqData);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(5000);
@@ -180,7 +188,7 @@ public class GroupModeManager {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[GroupModeManager] 获取群 " + groupId + " 名称失败: " + e.getMessage());
+            log.error("获取群 {} 名称失败：", groupId, e.getMessage());
         }
         return groupName;
     }

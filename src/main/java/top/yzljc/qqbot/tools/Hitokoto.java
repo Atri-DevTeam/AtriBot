@@ -12,7 +12,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class Hitokoto {
+
+    private static final Logger log = LoggerFactory.getLogger(Hitokoto.class);
+    
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String API_URL = "https://v1.hitokoto.cn/";
     static Settings settings = Config.getInstance();
@@ -36,7 +44,7 @@ public class Hitokoto {
 
     private static String fetchHitokoto() {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(API_URL).toURL().openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
             conn.setConnectTimeout(5000);
@@ -55,12 +63,12 @@ public class Hitokoto {
                 result.append(" · ").append(fromWhoNode.asText());
             }
 
-            System.out.println("[INFO] 一言发送成功");
+            log.info("一言发送成功 => {}", result.toString());
             return result.toString();
         
         } catch (Exception ex) {
-            System.err.println("[ERROR] 一言获取异常: " + ex.getMessage());
-            return "[ERROR] 一言获取失败：接口异常。";
+            log.warn("一言获取异常: {}", ex.getMessage());
+            return "一言获取失败：接口异常。";
         }
     }
 

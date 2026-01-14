@@ -13,7 +13,13 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SendCommand {
+
+    private static final Logger log = LoggerFactory.getLogger(SendCommand.class);
+
     private static final String ADMIN_FILE = "adminuser.json";
     private static final String SERVER_SECRET_FILE = "server-secret.json";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -67,7 +73,7 @@ public class SendCommand {
             }
             serverSecretMap = secretMap;
         } catch (IOException e) {
-            System.out.println("[WARN] 读取权限配置文件失败: " + e.getMessage());
+            log.warn("读取权限配置文件失败：{}", e.getMessage());
         }
     }
 
@@ -101,8 +107,7 @@ public class SendCommand {
     }
 
     public static void handle(long userId, long groupId, String rawMessage) {
-
-        System.out.printf("[CMD] 收到指令: %s (User:%d Group:%d)\n", rawMessage, userId, groupId);
+        log.info("收到指令：{} (User: {}, Group: {}", rawMessage, userId, groupId);
 
         String key = userId + "/" + groupId;
 
@@ -150,12 +155,12 @@ public class SendCommand {
             if (matchedInfo != null) {
                 executeRcCommand(targetServerId, command, matchedInfo, groupId);
             } else {
-                System.out.println("[AUTH] 鉴权失败: 用户 " + userId + " 无权控制 " + targetServerId);
+                log.info("[AUTH] 鉴权失败：用户 {} 无权控制 {}", userId, targetServerId);
                 MessageSender.sendGroupMessage(groupId, "[!] 权限不足: 您在当前群未绑定服务器 " + targetServerId);
             }
 
         } else {
-            System.out.println("[AUTH] 鉴权拒绝: " + key);
+            log.info("[AUTH] 鉴权拒绝：{}", key);
             MessageSender.sendGroupMessage(groupId, "You don't have permission to do that!");
         }
     }
@@ -170,7 +175,7 @@ public class SendCommand {
             }
 
             System.out.println("============================================================");
-            System.out.printf("[SUCCESS] Socket 发送 -> Server: %s | Cmd: %s\n", targetServerId, command);
+            log.info("[SUCCESS] Socket 发送 -> Server: {} | Cmd: {}", targetServerId, command);
             System.out.println("============================================================");
 
             CompletableFuture<String> future = new CompletableFuture<>();

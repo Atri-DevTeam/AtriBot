@@ -7,8 +7,12 @@ import top.yzljc.qqbot.messages.MessageSender;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Reboot {
 
+    private static final Logger log = LoggerFactory.getLogger(Reboot.class);
     static Settings settings = Config.getInstance();
     private static final List<Long> admins = settings.getAdminUids();
 
@@ -21,17 +25,14 @@ public class Reboot {
         long groupId = json.path("group_id").asLong();
 
         if (admins.contains(userId) && "/reboot".equalsIgnoreCase(rawMsg)) {
-            System.out.println("[Reboot] 收到管理员 " + userId + " 的终止指令");
-
+            log.info("收到管理员 {} 的终止指令", userId);
             MessageSender.sendGroupMessage(groupId, "收到指令，正在终止进程...");
 
             new Thread(() -> {
                 try {
                     Thread.sleep(1000);
-
-                    System.out.println("[Reboot] 正在终止当前进程 (System.exit 0)");
+                    log.info("调用系统退出方法终止当前进程：System.exit(0)");
                     System.exit(0);
-
                 } catch (Exception e) {
                     e.printStackTrace();
                     MessageSender.sendGroupMessage(groupId, "终止失败: " + e.getMessage());

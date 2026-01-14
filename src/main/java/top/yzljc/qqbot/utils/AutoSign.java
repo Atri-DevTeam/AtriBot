@@ -17,7 +17,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class AutoSign {
+
+    private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
+    
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String GROUP_SIGN_API = BASEURL + "/send_group_sign";
@@ -67,7 +75,7 @@ public class AutoSign {
         try {
             String payload = "{\"group_id\":\"" + groupId + "\"}";
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(GROUP_SIGN_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(GROUP_SIGN_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");

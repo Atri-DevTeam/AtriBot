@@ -12,11 +12,15 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 负责接收 HTTP 请求并将消息转发给处理逻辑
  */
 public class MessageReceiver {
+
+    private static final Logger log = LoggerFactory.getLogger(MessageReceiver.class);
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -43,7 +47,7 @@ public class MessageReceiver {
                                 messageHandler.accept(root);
                             }
                         } catch (Exception e) {
-                            System.err.println("[ERROR] JSON 解析或处理异常: " + e.getMessage());
+                            log.error("JSON 解析或处理异常：{}", e.getMessage());
                             e.printStackTrace();
                         }
                     }
@@ -63,10 +67,9 @@ public class MessageReceiver {
             // 设置线程池
             server.setExecutor(Executors.newFixedThreadPool(4));
             server.start();
-            System.out.println("[INFO] QQ指令监听服务已启动，端口: " + port);
-
+            log.info("QQ 指令监听服务已启动，端口：{}", port);
         } catch (IOException e) {
-            System.err.println("[ERROR] 无法启动 HTTP 服务: " + e.getMessage());
+            log.error("无法启动 HTTP 服务：{}", e.getMessage());
         }
     }
 }

@@ -12,7 +12,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class MinecraftStatusImage {
+
+    private static final Logger log = LoggerFactory.getLogger(MinecraftStatusImage.class);
 
     // Minecraft 颜色代码映射
     private static final Map<Character, Color> MC_COLORS = new HashMap<>();
@@ -54,11 +61,11 @@ public class MinecraftStatusImage {
             try {
                 baseFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
             } catch (Exception e) {
-                System.err.println("[ERROR] 自定义字体加载失败，将使用默认字体: " + e.getMessage());
+                log.warn("自定义字体加载失败，将使用默认字体：{}", e.getMessage());
                 baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1);
             }
         } else {
-            System.err.println("[ERROR] 字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体。");
+            log.warn("字体文件 MinecraftAE.ttf 未找到，将使用默认无衬线字体");
             baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1);
         }
 
@@ -97,12 +104,12 @@ public class MinecraftStatusImage {
             drawBottomRightMotdAndIcon(bg, statusInfo, baseFont);
 
             if (statusInfo != null && statusInfo.icon != null) {
-                System.out.println("[DEBUG] 服务器icon成功添加到图片右下角。");
+                log.info("服务器 icon 成功添加到图片右下角");
             } else {
-                System.out.println("[DEBUG] 服务器icon为null，未添加。");
+                log.warn("服务器 icon 为 null，未添加");
             }
         } catch (Exception e) {
-            System.err.println("[DEBUG] icon/motd获取或绘制时异常: " + e.getMessage());
+            log.error("icon/motd 获取或绘制时异常：{}", e.getMessage());
             e.printStackTrace();
         }
 
@@ -113,7 +120,7 @@ public class MinecraftStatusImage {
         ImageIO.write(bg, "png", outFile);
 
         if(!outFile.exists() || outFile.length() == 0){
-            throw new Exception("图片写入失败，文件不存在或大小为0");
+            throw new Exception("图片写入失败，文件不存在或大小为 0 ");
         }
     }
 
@@ -320,13 +327,13 @@ public class MinecraftStatusImage {
     private static ServerStatusInfo fetchServerStatus(String ipPort) {
         String api = "https://api.mcsrvstat.us/3/" + ipPort;
         try {
-            System.out.println("[DEBUG] 请求服务器icon/motd的API: " + api);
-            HttpURLConnection conn = (HttpURLConnection) new URL(api).openConnection();
+            log.debug("请求服务器 icon/motd 的 API：{}", api);
+            HttpURLConnection conn = (HttpURLConnection) new URI(api).toURL().openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
 
             if(conn.getResponseCode() != 200){
-                System.out.println("[DEBUG] icon/motd请求非200，响应: " + conn.getResponseCode());
+                log.debug("icon/motd 请求非200，响应：{}", conn.getResponseCode());
                 return null;
             }
 
@@ -352,7 +359,7 @@ public class MinecraftStatusImage {
                     byte[] imgBytes = Base64.getDecoder().decode(base64Data);
                     icon = ImageIO.read(new ByteArrayInputStream(imgBytes));
                 } catch (Exception ex) {
-                    System.out.println("[DEBUG] Icon解码错误: " + ex.getMessage());
+                    log.warn("icon 解码错误：{}", ex.getMessage());
                 }
             }
 
@@ -384,17 +391,17 @@ public class MinecraftStatusImage {
 
             // 打印调试
             if (!motdLines.isEmpty()) {
-                System.out.println("[DEBUG] 提取到 " + motdLines.size() + " 行MOTD:");
+                log.debug("提取到 {} 行MOTD", motdLines.size());
                 for (String l : motdLines) System.out.println("  - " + l);
             } else {
-                System.out.println("[DEBUG] 未提取到MOTD (raw字段为空或解析失败)");
+                log.debug("未提取到 MOTD（raw 字段为空或解析失败）");
             }
-            System.out.println("[DEBUG] Info -> Ver:" + version + ", Players:" + online + "/" + max);
+            log.debug("Info -> Ver: {}, Players: {}/{}", version, online, max);
 
             return new ServerStatusInfo(icon, motdLines, online, max, version);
 
         } catch (Exception e) {
-            System.out.println("[DEBUG] icon/motd接口请求或解析异常: " + e.getMessage());
+            log.warn("icon/motd 接口请求或解析异常：{}", e.getMessage());
             e.printStackTrace();
         }
         return null;

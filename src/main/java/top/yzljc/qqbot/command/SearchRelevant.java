@@ -30,7 +30,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 public class SearchRelevant {
+
+    private static final Logger log = LoggerFactory.getLogger(SearchRelevant.class);
 
     private static final Pattern QUOTE_PATTERN = Pattern.compile("/search\\s+\"([^\"]+)\"(.*)");
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)(?:,.*?)?]");
@@ -205,7 +212,7 @@ public class SearchRelevant {
             root.put("message", message);
             String jsonBody = objectMapper.writeValueAsString(root);
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(SEND_MSG_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(SEND_MSG_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -235,7 +242,7 @@ public class SearchRelevant {
     private static void withdrawMessage(long messageId) {
         try {
             String jsonBody = String.format("{\"message_id\":%d}", messageId);
-            HttpURLConnection conn = (HttpURLConnection) new URL(DELETE_MSG_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(DELETE_MSG_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -281,7 +288,7 @@ public class SearchRelevant {
             if (cached != null && (now - cached.time) < NICKNAME_CACHE_EXPIRE) return cached.nick;
 
             String body = String.format("{\"user_id\":\"%d\"}", userId);
-            HttpURLConnection conn = (HttpURLConnection) new URL(NICKNAME_API).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URI(NICKNAME_API).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");

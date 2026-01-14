@@ -9,12 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 敏感词过滤工具类
  * 读取根目录下的 filter.yml 进行过滤
  */
 public class SensitiveWordFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(SensitiveWordFilter.class);
     private static final String CONFIG_FILE = "filter.yml";
     private static final List<String> BLACKLIST = new CopyOnWriteArrayList<>();
     private static long lastModifiedTime = 0;
@@ -27,7 +31,8 @@ public class SensitiveWordFilter {
     public static void reload() {
         File file = new File(CONFIG_FILE);
         if (!file.exists()) {
-            System.err.println("[INFO] 未找到 " + CONFIG_FILE + "，跳过过滤加载。");
+            log.error("未找到 {}，跳过过滤加载", CONFIG_FILE);
+            // System.err.println("[INFO] 未找到 " + CONFIG_FILE + "，跳过过滤加载。");
             return;
         }
 
@@ -54,10 +59,12 @@ public class SensitiveWordFilter {
             BLACKLIST.clear();
             BLACKLIST.addAll(temp);
             lastModifiedTime = file.lastModified();
-            System.out.println("[INFO] 已加载 " + BLACKLIST.size() + " 个违规词。");
+            log.info("已加载 {} 个违规词", BLACKLIST.size());
+            // System.out.println("[INFO] 已加载 " + BLACKLIST.size() + " 个违规词。");
 
         } catch (Exception e) {
-            System.err.println("[INFO] 读取配置文件失败: " + e.getMessage());
+            log.error("读取配置文件失败：{}", e.getMessage());
+            // System.err.println("[INFO] 读取配置文件失败: " + e.getMessage());
         }
     }
 

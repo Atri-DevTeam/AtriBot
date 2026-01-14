@@ -17,14 +17,24 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * 指令工具: RollbackMessages
  * 支持/rollback [-n 数量] [-u QQ号]，撤回数据库中记录消息
  */
+
 public class RollbackMessages {
+
+    private static final Logger log = LoggerFactory.getLogger(RollbackMessages.class);    
+
     // 支持指令模式：/rollback -n [num] -u [QQ号]
     private static final Pattern ROLLBACK_PATTERN =
-            Pattern.compile("^/rollback(?:\\s+-n\\s+(\\d+))?(?:\\s+-u\\s+(\\d+))?\\s*$");
+        Pattern.compile("^/rollback(?:\\s+-n\\s+(\\d+))?(?:\\s+-u\\s+(\\d+))?\\s*$");
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -120,7 +130,7 @@ public class RollbackMessages {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 查询数据库失败：" + e.getMessage());
+            log.error("查询数据库失败：{}", e.getMessage());
         }
         return list;
     }
@@ -130,7 +140,7 @@ public class RollbackMessages {
      */
     private static void sendDeleteMessage(Long messageId) {
         try {
-            URL url = new URL(DELETE_MSG_URL);
+            URL url = new URI(DELETE_MSG_URL).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(4000);
@@ -147,11 +157,11 @@ public class RollbackMessages {
 
             int respCode = conn.getResponseCode();
             if (respCode != 200) {
-                System.err.println("[INFO] 撤回消息[" + messageId + "]失败，HTTP " + respCode);
+                log.error("撤回消息 {} 失败，HTTP Code: {}", messageId, respCode);
             }
             conn.disconnect();
         } catch (Exception e) {
-            System.err.println("[INFO] 发送撤回包失败 message_id=" + messageId + " ：" + e.getMessage());
+            log.warn("发送撤回包失败，message_id = {}：{}", messageId, e.getMessage());
         }
     }
 
@@ -175,7 +185,7 @@ public class RollbackMessages {
         if (!message.trim().startsWith("/rollback")) return;
 
         int count = rollback(Long.toString(groupId), message, RecordGroupMessage.getDataSource());
-        System.out.println("[INFO] 已批量撤回消息条数=" + count);
+        log.info("已批量撤回消息数 = {}", count);
         MessageSender.sendGroupMessage(groupId, "已批量撤回消息 " + count + " 条");
     }
 }
