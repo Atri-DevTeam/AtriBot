@@ -6,8 +6,7 @@
             <pattern>[%d{HH:mm:ss}] [%thread/%highlight%level] %cyan(%c{0}) - %msg%n</pattern>
         </encoder>
     </appender>
-    
-    <!-- 文件输出，按日期和大小滚动 -->
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/bot.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
