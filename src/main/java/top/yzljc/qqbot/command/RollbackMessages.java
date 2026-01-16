@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.messages.MessageSender;
-import top.yzljc.qqbot.messages.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * 指令工具: RollbackMessages

@@ -6,13 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.messages.MessageSender;
-import top.yzljc.qqbot.messages.RecordGroupMessage;
-import top.yzljc.qqbot.messages.SensitiveWordFilter;
+import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+
 public class SearchRelevant {
 
     private static final Logger log = LoggerFactory.getLogger(SearchRelevant.class);

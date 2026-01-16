@@ -52,12 +52,12 @@ public class Config implements Settings{
         try {
             // Check if config exists in run directory, if not, copy from resources
             if (!Files.exists(Paths.get(CONFIG_FILE))) {
-                log.info("未找到配置文件，创建默认配置：config.yml");
+                log.info("未找到配置文件，后端程序将创建并使用默认配置config.yml");
                 try (InputStream in = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE)) {
                     if (in != null) {
                         Files.copy(in, Paths.get(CONFIG_FILE), StandardCopyOption.REPLACE_EXISTING);
                     } else {
-                        log.error("resources 中未找到默认配置文件");
+                        log.error("后端设计出现错误，无法找到默认的配置文件，请联系开发者解决此问题！");
                     }
                 }
             }
@@ -91,7 +91,7 @@ public class Config implements Settings{
                             long groupId = ((Number) gid).longValue();
                             this.messageSpyGroups.add(groupId);
                         } catch (NumberFormatException e) {
-                            log.error("配置文件中消息监听群组 ID 无效：", gid);
+                            log.error("配置文件中消息监听功能中出现无效群号：{}", gid);
                         }
                     }
                 }

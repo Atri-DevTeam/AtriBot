@@ -3,7 +3,7 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.messages.MessageSender;
+import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.util.List;
 

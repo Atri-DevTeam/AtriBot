@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.messages.SensitiveWordFilter; // 引入敏感词过滤器
-import top.yzljc.qqbot.messages.RecordGroupMessage;
-import top.yzljc.qqbot.messages.MessageSender;
+import top.yzljc.qqbot.botkits.message.SensitiveWordFilter; // 引入敏感词过滤器
+import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.GroupConfigManager;
-import top.yzljc.qqbot.messages.RecordGroupMessage;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

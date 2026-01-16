@@ -1,19 +1,18 @@
 package top.yzljc.qqbot;
 
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.GroupConfigManager;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.gordonhim.ServerStatusReport;
-import top.yzljc.qqbot.img.HappyNewYear;
+import top.yzljc.qqbot.feature.HappyNewYear;
 import top.yzljc.qqbot.utils.MessageStats;
-import top.yzljc.qqbot.img.ManosabaDate;
-import top.yzljc.qqbot.messages.MessageProcessor;
-import top.yzljc.qqbot.messages.MessageReceiver;
-import top.yzljc.qqbot.minecraft.SendCommand;
-import top.yzljc.qqbot.news.HypixelNews;
-import top.yzljc.qqbot.news.MinecraftNews;
+import top.yzljc.qqbot.feature.ManosabaDate;
+import top.yzljc.qqbot.botkits.message.MessageProcessor;
+import top.yzljc.qqbot.botkits.message.MessageReceiver;
+import top.yzljc.qqbot.feature.minecraft.SendCommand;
+import top.yzljc.qqbot.feature.news.HypixelNews;
+import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
-import top.yzljc.qqbot.utils.AutoSign;
+import top.yzljc.qqbot.feature.AutoSign;
 import top.yzljc.qqbot.web.WebDashboardAPI;
 
 import java.util.concurrent.Executors;
@@ -62,5 +61,6 @@ public class App {
         GroupConfigManager.registerFeature("annoy_user", true);    // 骚扰功能
         GroupConfigManager.registerFeature("new_year",true);
         GroupConfigManager.registerFeature("one_text",true);
+        GroupConfigManager.registerFeature("repeat_msg", true); // 复读机
     }
 }

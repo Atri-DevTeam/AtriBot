@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.socket;
 
-import top.yzljc.qqbot.messages.MessageSender;
-import top.yzljc.qqbot.messages.SensitiveWordFilter;
-import top.yzljc.qqbot.minecraft.SendCommand;
-import top.yzljc.qqbot.minecraft.StatusReporter;
+import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
+import top.yzljc.qqbot.feature.minecraft.SendCommand;
+import top.yzljc.qqbot.feature.minecraft.StatusReporter;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -221,13 +221,12 @@ public class SocketManager {
                             }
 
                             if (isDirty) {
-                                log.info("[严判拦截] 拦截到服务器 {} 玩家 {} 的消息", serverName, playerName, chatMsg);
+                                log.info("检测到违规消息，拦截到服务器 {} 玩家 {} 的消息： {}", serverName, playerName, chatMsg);
                                 sendToGroup(TARGET_GROUP_ID, "有违规聊天内容已进行拦截，请管理员进行审查！");
                                 continue;
                             }
 
-                            // 构造消息格式: [服务器] <ID>: 消息
-                            String formattedMsg = String.format("[%s] <%s>: %s", serverName, playerName, chatMsg);
+                            String formattedMsg = String.format("[%s] %s: %s", serverName, playerName, chatMsg);
                             log.info("转发聊天：{}", formattedMsg);
 
                             sendToGroup(TARGET_GROUP_ID, formattedMsg);
@@ -270,11 +269,8 @@ public class SocketManager {
         }
     }
 
-    /**
-     * 发送群消息的统一接口
-     */
     private static void sendToGroup(long groupId, String message) {
         MessageSender.sendGroupMessage(groupId,message);
-        log.info(">>> [Bot发送模拟] 群 {}：{}", groupId, message);
+        log.info("Minecraft服务器消息转发成功，目标群号 {}，目标消息内容：{}", groupId, message);
     }
 }
