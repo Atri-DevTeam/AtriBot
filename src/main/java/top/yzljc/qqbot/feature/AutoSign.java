@@ -36,7 +36,7 @@ public class AutoSign {
         long initialDelay = computeInitialDelay();
         long oneDayMs = TimeUnit.DAYS.toMillis(1);
         scheduler.scheduleAtFixedRate(AutoSign::signAllGroups, initialDelay, oneDayMs, TimeUnit.MILLISECONDS);
-        System.out.println("[INFO] 每天0:00:00自动群打卡任务已启动。首次延迟(ms): " + initialDelay);
+        log.info("每天0:00:00自动群打卡任务已启动。首次延迟(ms):{}", initialDelay);
     }
 
     private static long computeInitialDelay() {
@@ -53,7 +53,7 @@ public class AutoSign {
             Set<Long> groupIds = GroupList.fetchAllGroupIds();
 
             if (groupIds.isEmpty()) {
-                System.out.println("[INFO] 未拉取到任何群号，自动打卡跳过。");
+                log.warn("未获取到任何群号，自动打卡跳过");
                 return;
             }
 
@@ -64,10 +64,10 @@ public class AutoSign {
                 }
 
                 sendGroupSign(groupId);
-                System.out.println("[INFO] 群 " + groupId + " 打卡成功");
+                log.info("群 {} 打卡成功", groupId);
             }
         } catch (Exception e) {
-            System.err.println("[INFO] 自动打卡异常: " + e.getMessage());
+            log.warn("自动打卡异常", e);
         }
     }
 
