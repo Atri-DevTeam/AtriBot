@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botkits.message.SensitiveWordFilter; // 引入敏感词过滤器
+import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
@@ -27,13 +27,10 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 群发言统计工具
- */
 public class MessageStats {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
-    // CQ码@用户匹配
+    // 这玩意是处理@别人的，省的弄个一坨出来
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
 
     static Settings settings = Config.getInstance();
@@ -41,23 +38,12 @@ public class MessageStats {
     private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
     private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
     private static final String DELETE_MSG_API = API_BASE + "/delete_msg";
-
-    // JSON 工具
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    // 昵称缓存
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-
-    // 是否已启动过每日定时任务
     private static volatile boolean scheduled = false;
-
-    // 【新增】用于执行撤回任务的调度池
     private static final ScheduledExecutorService withdrawScheduler = Executors.newSingleThreadScheduledExecutor();
 
-    /**
-     * 启动每日统计定时推送（每晚23:59:45自动发统计）
-     */
     public static void startDailyReportScheduler() {
         if (scheduled) return;
         scheduled = true;
@@ -87,15 +73,11 @@ public class MessageStats {
         return Duration.between(now, next).getSeconds();
     }
 
-    /**
-     * 查询并发送所有统计
-     */
     public static void autoReportAllGroups() {
         Set<Long> groups = findAllGroupsWithRecords();
         for (long groupId : groups) {
             String msg = buildGroupStatsMsg(groupId, LocalDate.now(), false, null);
             if (msg != null && !msg.isEmpty()) {
-                // 【修改】使用带自动撤回的发送方法
                 sendAndScheduleWithdraw(groupId, msg);
             }
         }
@@ -120,44 +102,53 @@ public class MessageStats {
         return groupIds;
     }
 
-    /**
-     * 查询指令入口
-     */
     public static void processCommand(JsonNode jsonInput) {
         if (jsonInput == null || !"group".equals(jsonInput.path("message_type").asText())) return;
         long groupId = jsonInput.path("group_id").asLong();
         String rawMsg = jsonInput.path("raw_message").asText().trim();
         String msgContent = rawMsg;
         boolean overall = false;
+        LocalDate targetDate = LocalDate.now();
         Long qqAt = null;
 
+        // 【修复】增加长度判断，防止 substring 越界
         if (rawMsg.startsWith("/stats")) {
             if (rawMsg.startsWith("/statsoverall")) {
                 overall = true;
-                msgContent = rawMsg.substring(13).trim();
-            } else {
-                msgContent = rawMsg.substring(6).trim();
+                // 如果长度正好等于指令长度，说明后面没参数，给空字符串即可
+                msgContent = rawMsg.length() > 13 ? rawMsg.substring(13).trim() : "";
+            }
+            else if (rawMsg.startsWith("/statsyesterday")) {
+                targetDate = LocalDate.now().minusDays(1);
+                msgContent = rawMsg.length() > 15 ? rawMsg.substring(15).trim() : "";
+            }
+            else if (rawMsg.startsWith("/statsy")) {
+                targetDate = LocalDate.now().minusDays(1);
+                msgContent = rawMsg.length() > 7 ? rawMsg.substring(7).trim() : "";
+            }
+            else {
+                // 对应普通的 /stats
+                msgContent = rawMsg.length() > 6 ? rawMsg.substring(6).trim() : "";
             }
             qqAt = extractAtUser(msgContent);
         } else {
             return;
         }
 
-        LocalDate now = LocalDate.now();
         String replyMsg;
         if (qqAt == null) {
-            replyMsg = buildGroupStatsMsg(groupId, now, overall, null);
+            replyMsg = buildGroupStatsMsg(groupId, targetDate, overall, null);
         } else {
-            replyMsg = buildGroupStatsMsg(groupId, now, overall, qqAt);
+            replyMsg = buildGroupStatsMsg(groupId, targetDate, overall, qqAt);
         }
 
         if (replyMsg != null && !replyMsg.isEmpty()) {
-            // 【修改】使用带自动撤回的发送方法
             sendAndScheduleWithdraw(groupId, replyMsg);
         }
     }
 
     private static Long extractAtUser(String msg) {
+        if (msg == null || msg.isEmpty()) return null;
         Matcher m = AT_PATTERN.matcher(msg);
         if (m.find()) {
             try {
@@ -170,8 +161,17 @@ public class MessageStats {
     public static String buildGroupStatsMsg(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {
         Map<Long, Integer> statMap = statGroupSpeak(groupId, whichDay, overall, filterUserId);
         if (statMap == null || statMap.isEmpty()) {
-            if (filterUserId != null) return "[统计] 该成员暂无发言记录。";
-            else return "[统计] 暂无可统计的发言记录。";
+            if (filterUserId != null) return "[统计] 该成员暂无发言记录";
+            else return "[统计] 暂无可统计的发言记录";
+        }
+
+        String timePrefix;
+        if (overall) {
+            timePrefix = "历史共";
+        } else if (whichDay.equals(LocalDate.now())) {
+            timePrefix = "今日";
+        } else {
+            timePrefix = whichDay.toString() + " ";
         }
 
         // 单人统计
@@ -179,14 +179,13 @@ public class MessageStats {
             int count = statMap.getOrDefault(filterUserId, 0);
             String nick = fetchNickname(filterUserId);
 
-            // 【新增】单人查询也要检测昵称违规
             if (nick != null && SensitiveWordFilter.containsSensitiveWord(nick)) {
                 nick = null; // 触发后文的 fallback 显示QQ号
             }
 
             return String.format("[统计]%s：%s发言%d次\n⚠️(1分钟后自动撤回)",
                     nick == null ? "QQ:" + filterUserId : nick,
-                    overall ? "历史共" : "今日",
+                    timePrefix,
                     count);
         }
 
@@ -194,7 +193,17 @@ public class MessageStats {
         List<Map.Entry<Long, Integer>> sorted = new ArrayList<>(statMap.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
         StringBuilder sb = new StringBuilder();
-        sb.append(overall ? "[历史发言总统计]\n" : "[今日发言统计]\n");
+
+        if (overall) {
+            sb.append("[历史发言总统计]\n");
+        } else if (whichDay.equals(LocalDate.now())) {
+            sb.append("[今日发言统计]\n");
+        } else if (whichDay.equals(LocalDate.now().minusDays(1))) {
+            sb.append("[昨日发言统计]\n");
+        } else {
+            sb.append("[").append(whichDay.toString()).append(" 发言统计]\n");
+        }
+
         int i = 1;
 
         long nowTime = System.currentTimeMillis();
@@ -204,7 +213,6 @@ public class MessageStats {
             Long userId = entry.getKey();
             String nick = fetchNickname(userId);
 
-            // 【新增】核心改动：如果昵称包含违规词，则不显示昵称，改用QQ号代替
             if (nick != null && SensitiveWordFilter.containsSensitiveWord(nick)) {
                 nick = null; // 强制置空，触发下方的 "QQ号:" 逻辑
             }
@@ -216,14 +224,15 @@ public class MessageStats {
                     .append("\n");
         }
 
-        // 加上自动撤回提示
         sb.append("\n⚠️ 本统计消息将于1分钟后自动撤回");
+
+        if (whichDay.equals(LocalDate.now())){
+            sb.append("\n使用/statsyesterday 或 /statsy 可查询昨日发言统计");
+        }
+
         return sb.toString();
     }
 
-    /**
-     * 【新增】发送消息并安排1分钟后撤回
-     */
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
             // 构造发送请求的 JSON
@@ -260,20 +269,16 @@ public class MessageStats {
             if (respNode.has("data") && respNode.get("data").has("message_id")) {
                 long messageId = respNode.get("data").get("message_id").asLong();
 
-                // 安排撤回任务：60秒后执行
                 withdrawScheduler.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             }
 
         } catch (Exception e) {
-            // 发送失败或解析失败，尝试回退到普通发送（虽然不完美，但保证功能可用）
+            // 发送失败或解析失败，尝试回退到普通发送
             log.warn("自动撤回发送流程异常: {}", e.getMessage());
             MessageSender.sendGroupMessage(groupId, message);
         }
     }
 
-    /**
-     * 【新增】执行撤回操作
-     */
     private static void withdrawMessage(long messageId) {
         try {
             String jsonBody = String.format("{\"message_id\":%d}", messageId);
@@ -287,7 +292,6 @@ public class MessageStats {
                 os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
                 os.flush();
             }
-            // 触发请求
             conn.getResponseCode();
             conn.disconnect();
         } catch (Exception e) {
