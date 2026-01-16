@@ -14,7 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 群功能配置管理器 (全量存储 + 自动补全 + 自动清理版)
+ * &#064;群功能配置管理核心文件
+ * &#064;Author：YZ_Ljc_
  */
 public class GroupConfigManager {
 
@@ -131,7 +132,7 @@ public class GroupConfigManager {
         try {
             jsonMapper.writeValue(new File(CONFIG_FILE), groupConfigCache);
         } catch (IOException e) {
-            log.error("配置文件保存失败：", e.getMessage());
+            log.error("配置文件保存失败：{}", e.getMessage());
         }
     }
 }
