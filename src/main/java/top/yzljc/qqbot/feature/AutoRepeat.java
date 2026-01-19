@@ -127,6 +127,7 @@ public class AutoRepeat {
                 msg.equalsIgnoreCase("zanwo") ||
                 msg.equalsIgnoreCase("电表") ||
                 msg.equalsIgnoreCase("/debug") ||
+                msg.equalsIgnoreCase("一言") ||
                 msg.equalsIgnoreCase("db");
     }
 }
