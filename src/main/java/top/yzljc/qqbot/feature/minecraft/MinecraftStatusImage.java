@@ -8,11 +8,10 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,29 +41,21 @@ public class MinecraftStatusImage {
         MC_COLORS.put('f', new Color(255, 255, 255)); // White
     }
 
-    /**
-     * 生成 Minecraft 服务器状态图片 (外部入口)
-     */
     public static void generateStatusImage(String serverName, String ipPort, String state, String outputPath) throws Exception {
         new Generator().generate(serverName, ipPort, state, new File(outputPath));
     }
 
-    /**
-     * 内部生成器类，继承抽象基类
-     */
     private static class Generator extends AbstractImage {
 
         public void generate(String serverName, String ipPort, String state, File outFile) throws Exception {
-            // 1. 初始化背景
+
             initFromBackground("manoyinxi.png");
 
-            // 2. 字体准备
             Font baseFont = loadFont(Font.PLAIN, 1f);
             Font titleFont = baseFont.deriveFont(Font.BOLD, 30f);
             Font infoFont = baseFont.deriveFont(Font.PLAIN, 22f);
             Font stateFont = baseFont.deriveFont(Font.BOLD, 24f);
 
-            // 3. 绘制基础信息 (使用父类方法 drawShadowText)
             g.setFont(titleFont);
             drawShadowText("Minecraft服务器状态", 20, 50, Color.WHITE, Color.BLACK);
 
@@ -76,7 +67,6 @@ public class MinecraftStatusImage {
             g.setFont(stateFont);
             drawShadowText("状态: " + state, 25, 170, stateColor, Color.BLACK);
 
-            // 4. 绘制右下角 Icon 和 MOTD
             try {
                 ServerStatusInfo statusInfo = fetchServerStatus(ipPort);
                 if (statusInfo != null) {
@@ -84,16 +74,15 @@ public class MinecraftStatusImage {
                     if (statusInfo.icon != null) log.info("服务器 icon 成功添加到图片右下角");
                 }
             } catch (Exception e) {
-                log.error("icon/motd 获取或绘制时异常：{}", e.getMessage());
+                log.error("icon/motd 获取或绘制时异常：", e);
             }
 
-            // 5. 保存
             saveAndDispose(outFile);
         }
 
         private void drawBottomRightMotdAndIcon(ServerStatusInfo info, Font baseFont) {
             BufferedImage icon = info.icon;
-            List<String> motdLines = info.motdLines;
+            List<List<TextSegment>> motdLines = info.motdStructure;
 
             int iconSize = 70;
             int fontSizeMain = 18;
@@ -107,8 +96,8 @@ public class MinecraftStatusImage {
             Font subFont = baseFont.deriveFont(Font.PLAIN, (float)fontSizeSub);
             Font infoFont = baseFont.deriveFont(Font.PLAIN, (float)fontSizeInfo);
 
-            String line1 = (motdLines != null && !motdLines.isEmpty()) ? motdLines.get(0) : "";
-            String line2 = (motdLines != null && motdLines.size() > 1) ? motdLines.get(1) : "";
+            List<TextSegment> line1Segs = (motdLines != null && !motdLines.isEmpty()) ? motdLines.get(0) : new ArrayList<>();
+            List<TextSegment> line2Segs = (motdLines != null && motdLines.size() > 1) ? motdLines.get(1) : new ArrayList<>();
 
             String infoStr = "";
             if (info.version != null && !info.version.isEmpty()) infoStr += "Ver: " + info.version;
@@ -117,9 +106,8 @@ public class MinecraftStatusImage {
                 infoStr += "Online: " + info.onlinePlayers + "/" + info.maxPlayers;
             }
 
-            // 计算宽度
-            int width1 = getColoredStringWidth(mainFont, line1);
-            int width2 = getColoredStringWidth(subFont, line2);
+            int width1 = getSegmentsWidth(mainFont, line1Segs);
+            int width2 = getSegmentsWidth(subFont, line2Segs);
             g.setFont(infoFont);
             int widthInfo = g.getFontMetrics().stringWidth(infoStr);
 
@@ -128,13 +116,12 @@ public class MinecraftStatusImage {
             int boxW = contentW + margin * 2;
 
             int textBlockH = 0;
-            if (!line1.isEmpty()) textBlockH += fontSizeMain + lineSpacing;
-            if (!line2.isEmpty()) textBlockH += fontSizeSub + lineSpacing;
+            if (!line1Segs.isEmpty()) textBlockH += fontSizeMain + lineSpacing;
+            if (!line2Segs.isEmpty()) textBlockH += fontSizeSub + lineSpacing;
             if (!infoStr.isEmpty()) textBlockH += fontSizeInfo + lineSpacing;
             if (textBlockH > 0) textBlockH -= lineSpacing;
 
             int boxH = Math.max(iconSize, textBlockH) + margin * 2;
-            // 使用父类的 width, height
             int startX = width - boxW - margin - 5;
             int startY = height - boxH - margin - 5;
 
@@ -152,12 +139,12 @@ public class MinecraftStatusImage {
 
             int currentY = startY + (boxH - textBlockH) / 2;
 
-            if (!line1.isEmpty()) {
-                drawColoredString(mainFont, line1, textStartX, currentY + fontSizeMain);
+            if (!line1Segs.isEmpty()) {
+                drawSegments(mainFont, line1Segs, textStartX, currentY + fontSizeMain);
                 currentY += fontSizeMain + lineSpacing;
             }
-            if (!line2.isEmpty()) {
-                drawColoredString(subFont, line2, textStartX, currentY + fontSizeSub);
+            if (!line2Segs.isEmpty()) {
+                drawSegments(subFont, line2Segs, textStartX, currentY + fontSizeSub);
                 currentY += fontSizeSub + lineSpacing;
             }
             if (!infoStr.isEmpty()) {
@@ -167,56 +154,28 @@ public class MinecraftStatusImage {
             }
         }
 
-        private int getColoredStringWidth(Font font, String text) {
+        private int getSegmentsWidth(Font font, List<TextSegment> segments) {
+            if (segments == null || segments.isEmpty()) return 0;
             g.setFont(font);
             FontMetrics fm = g.getFontMetrics();
-            if (text == null || text.isEmpty()) return 0;
             int totalWidth = 0;
-            for (TextSegment seg : parseColorCodes(text)) {
+            for (TextSegment seg : segments) {
                 totalWidth += fm.stringWidth(seg.text);
             }
             return totalWidth;
         }
 
-        private void drawColoredString(Font font, String text, int x, int y) {
+        private void drawSegments(Font font, List<TextSegment> segments, int x, int y) {
+            if (segments == null || segments.isEmpty()) return;
             g.setFont(font);
             FontMetrics fm = g.getFontMetrics();
-            if (text == null || text.isEmpty()) return;
             int currentX = x;
-            for (TextSegment seg : parseColorCodes(text)) {
+            for (TextSegment seg : segments) {
                 g.setColor(seg.color);
                 g.drawString(seg.text, currentX, y);
                 currentX += fm.stringWidth(seg.text);
             }
         }
-    }
-
-    // --- 静态辅助方法 (颜色解析、网络请求、JSON解析) ---
-
-    private static List<TextSegment> parseColorCodes(String text) {
-        List<TextSegment> segments = new ArrayList<>();
-        if (text == null) return segments;
-        Color currentColor = Color.WHITE;
-        StringBuilder buffer = new StringBuilder();
-
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            if (c == '§' && i + 1 < text.length()) {
-                if (buffer.length() > 0) {
-                    segments.add(new TextSegment(buffer.toString(), currentColor));
-                    buffer.setLength(0);
-                }
-                char code = text.charAt(i + 1);
-                Color newColor = MC_COLORS.get(Character.toLowerCase(code));
-                if (newColor != null) currentColor = newColor;
-                else if (code == 'r') currentColor = Color.WHITE;
-                i++;
-            } else {
-                buffer.append(c);
-            }
-        }
-        if (buffer.length() > 0) segments.add(new TextSegment(buffer.toString(), currentColor));
-        return segments;
     }
 
     private static class TextSegment {
@@ -225,9 +184,9 @@ public class MinecraftStatusImage {
     }
 
     private static ServerStatusInfo fetchServerStatus(String ipPort) {
-        String api = "https://api.mcsrvstat.us/3/" + ipPort;
+        String api = "https://api.mcstatus.io/v2/status/java/" + ipPort;
         try {
-            log.debug("请求服务器 icon/motd 的 API：{}", api);
+            log.debug("请求服务器API：{}", api);
             HttpURLConnection conn = (HttpURLConnection) new URI(api).toURL().openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
@@ -243,7 +202,6 @@ public class MinecraftStatusImage {
             String jsonString = jsonBuilder.toString();
             JsonParser parser = new JsonParser(jsonString);
 
-            // Icon
             String iconBase64Full = parser.extractString("icon");
             BufferedImage icon = null;
             if (iconBase64Full != null && iconBase64Full.contains("base64,")) {
@@ -256,16 +214,39 @@ public class MinecraftStatusImage {
                 }
             }
 
-            // MOTD
-            List<String> motdLines = new ArrayList<>();
+            List<List<TextSegment>> motdStructure = new ArrayList<>();
             String motdObj = parser.extractObject("motd");
             if (motdObj != null) {
                 JsonParser motdParser = new JsonParser(motdObj);
-                List<String> rawList = motdParser.extractStringArray("raw");
-                if (rawList != null) motdLines = rawList;
+
+                String rawMotd = motdParser.extractString("raw");
+                if (rawMotd != null && !rawMotd.isEmpty()) {
+                    String normalizedMotd = rawMotd.replace("\\n", "\n");
+
+                    String[] lines = normalizedMotd.split("\n");
+                    for (String line : lines) {
+                        motdStructure.add(parseLegacyColorCodes(line));
+                    }
+                } else {
+                    List<String> rawList = motdParser.extractStringArray("raw");
+                    if (rawList != null) {
+                        for (String line : rawList) {
+                            motdStructure.add(parseLegacyColorCodes(line));
+                        }
+                    }
+                }
             }
 
-            String version = parser.extractString("version");
+            String version = "";
+            String versionObj = parser.extractObject("version");
+            if (versionObj != null) {
+                JsonParser verParser = new JsonParser(versionObj);
+                version = verParser.extractString("name_clean");
+                if (version == null) version = verParser.extractString("name_raw");
+            } else {
+                version = parser.extractString("version");
+            }
+
             int online = 0;
             int max = 0;
             String playersObj = parser.extractObject("players");
@@ -275,12 +256,44 @@ public class MinecraftStatusImage {
                 max = plParser.extractInt("max");
             }
 
-            return new ServerStatusInfo(icon, motdLines, online, max, version);
+            return new ServerStatusInfo(icon, motdStructure, online, max, version);
 
         } catch (Exception e) {
-            log.warn("icon/motd 接口请求或解析异常：{}", e.getMessage());
+            log.warn("API请求或解析异常：{}", e.getMessage());
         }
         return null;
+    }
+
+    private static List<TextSegment> parseLegacyColorCodes(String text) {
+        List<TextSegment> segments = new ArrayList<>();
+        if (text == null) return segments;
+        Color currentColor = Color.WHITE;
+        StringBuilder buffer = new StringBuilder();
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '§' && i + 1 < text.length()) {
+                if (buffer.length() > 0) {
+                    segments.add(new TextSegment(buffer.toString(), currentColor));
+                    buffer.setLength(0);
+                }
+                char code = text.charAt(i + 1);
+                Color newColor = MC_COLORS.get(Character.toLowerCase(code));
+
+                if (newColor != null) {
+                    currentColor = newColor;
+                } else if (code == 'r') {
+                    currentColor = Color.WHITE;
+                }
+                i++;
+            } else {
+                buffer.append(c);
+            }
+        }
+        if (buffer.length() > 0) {
+            segments.add(new TextSegment(buffer.toString(), currentColor));
+        }
+        return segments;
     }
 
     private static class JsonParser {
@@ -400,10 +413,17 @@ public class MinecraftStatusImage {
     }
 
     private static class ServerStatusInfo {
-        public BufferedImage icon; public List<String> motdLines;
-        public int onlinePlayers; public int maxPlayers; public String version;
-        public ServerStatusInfo(BufferedImage icon, List<String> motdLines, int online, int max, String ver) {
-            this.icon = icon; this.motdLines = motdLines; this.onlinePlayers = online; this.maxPlayers = max; this.version = ver;
+        public BufferedImage icon;
+        public List<List<TextSegment>> motdStructure;
+        public int onlinePlayers;
+        public int maxPlayers;
+        public String version;
+        public ServerStatusInfo(BufferedImage icon, List<List<TextSegment>> motdStructure, int online, int max, String ver) {
+            this.icon = icon;
+            this.motdStructure = motdStructure;
+            this.onlinePlayers = online;
+            this.maxPlayers = max;
+            this.version = ver;
         }
     }
 }

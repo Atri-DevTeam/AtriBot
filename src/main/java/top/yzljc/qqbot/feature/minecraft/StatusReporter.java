@@ -46,13 +46,11 @@ public class StatusReporter {
             log.info("准备生成图片：{}", tempFile.getAbsolutePath());
             String ipPort = ip + ":" + port;
 
-            // 调用生成方法
             MinecraftStatusImage.generateStatusImage(name, ipPort, statusDesc, tempFile.getAbsolutePath());
 
             String base64Img = null;
             if (tempFile.exists()) {
                 log.info("图片生成成功，大小：{}", tempFile.length());
-                System.out.println("[INFO] 图片生成成功，大小 {} 字节" + tempFile.length() + " 字节");
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 base64Img = Base64.getEncoder().encodeToString(imgBytes);
             } else {
