@@ -90,11 +90,8 @@ public class MessageProcessor {
                 SendCommand.handle(userId, groupId, rawTrimmed);
             }
 
-            if (groupId == 715842297L && rawTrimmed.startsWith("/wl")){
-                if (userId != 1981868489L && userId != 3199590352L) {
-                    return;
-                }
-                SendCommand.handleWhiteListCommand(groupId, rawTrimmed);
+            if (rawTrimmed.startsWith("/wl")){
+                SendCommand.handleWhiteListCommand(userId, groupId, rawTrimmed);
             }
         }
     }

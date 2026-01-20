@@ -236,7 +236,17 @@ public class SendCommand {
     }
 
     // 给YunTEA-Minecraft用的白名单指令处理
-    public static void handleWhiteListCommand(long groupId, String rawMessage) {
+    public static void handleWhiteListCommand(long userId, long groupId, String rawMessage) {
+        String key = userId + "/" + groupId;
+        List<String> userServers = adminRules.get(key);
+
+        if (!String.valueOf(userId).equals("3199590352")){
+            if (userServers == null || !userServers.contains("yt")) {
+                MessageSender.sendGroupMessage(groupId, "[!] 权限不足：您的账号未与 YunTEA 服务器绑定，无法使用白名单指令");
+                return;
+            }
+        }
+
         String[] parts = rawMessage.trim().split("\\s+");
         if (parts.length < 2) {
             MessageSender.sendGroupMessage(groupId, "用法: /wl add|remove <用户名> 或 /wl list");
