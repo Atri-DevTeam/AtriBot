@@ -101,7 +101,7 @@ public class SendCommand {
         if (hbtSecret != null) {
             executeUnbanMeLogic(targetId, new AuthInfo("hbt", hbtSecret), groupId);
         } else {
-            MessageSender.sendGroupMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封。");
+            MessageSender.sendGroupMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封");
         }
     }
 
@@ -235,6 +235,79 @@ public class SendCommand {
         });
     }
 
+    // 给YunTEA-Minecraft用的白名单指令处理
+    public static void handleWhiteListCommand(long groupId, String rawMessage) {
+        String[] parts = rawMessage.trim().split("\\s+");
+        if (parts.length < 2) {
+            MessageSender.sendGroupMessage(groupId, "用法: /wl add|remove <用户名> 或 /wl list");
+            return;
+        }
+        String action = parts[1];
+        String ytSecret = serverSecretMap.get("yt");
+        if (ytSecret == null) {
+            MessageSender.sendGroupMessage(groupId, "[!] 未找到yt服务器的密钥配置，无法操作白名单");
+            return;
+        }
+        AuthInfo ytInfo = new AuthInfo("yt", ytSecret);
+
+        String ytCmd = null;
+        switch (action) {
+            case "add":
+                if (parts.length < 3) {
+                    MessageSender.sendGroupMessage(groupId, "用法: /wl add <用户名>");
+                    return;
+                }
+                ytCmd = String.format("owhitelist add name %s", parts[2]);
+                break;
+            case "remove":
+                if (parts.length < 3) {
+                    MessageSender.sendGroupMessage(groupId, "用法: /wl remove <用户名>");
+                    return;
+                }
+                ytCmd = String.format("owhitelist remove name %s", parts[2]);
+                break;
+            case "list":
+                ytCmd = "owhitelist list name";
+                break;
+            default:
+                MessageSender.sendGroupMessage(groupId, "未知子命令，仅支持 add、remove、list");
+                return;
+        }
+
+        executeWhiteListCommand("yt", ytCmd, ytInfo, groupId);
+    }
+
+    private static void executeWhiteListCommand(String targetServerId, String command, AuthInfo info, long groupId) {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
+
+            if (!success) {
+                MessageSender.sendGroupMessage(groupId, "[X] yt服务器未连接或鉴权失败");
+                return;
+            }
+
+            CompletableFuture<String> future = new CompletableFuture<>();
+            pendingCommandResponses.put(targetServerId, future);
+
+            String consoleLog;
+            try {
+                consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                consoleLog = "(超时未收到控制台反馈)";
+            } catch (Exception e) {
+                consoleLog = "(获取反馈异常: " + e.getMessage() + ")";
+            } finally {
+                pendingCommandResponses.remove(targetServerId);
+            }
+            String cleanLogContent = cleanLog(consoleLog);
+
+            String replyMsg = String.format(
+                    "[√] 白名单指令已送达 yt\n内容: %s\n----------------\n控制台返回:\n%s",
+                    command, cleanLogContent);
+            MessageSender.sendGroupMessage(groupId, replyMsg);
+        });
+    }
+    
     private static String cleanLog(String log) {
         if (log == null) return "";
         return log.replaceAll("\\x1B\\[[;\\d]*m", "");
