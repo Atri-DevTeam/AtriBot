@@ -7,6 +7,13 @@ listen-port: 25566
 # HTTPS对接Napcat的上报接收端口
 qq-bot-port: 1234
 
+# Gtihub推送用Webhook端口和Secret密钥
+github-webhook-port: 54321
+github-webhook-secret: null
+
+# 网页管理器服务器端口
+web-dashboard-port: 32123
+
 # 哔哩哔哩视频查询用的Cookie
 bilibili-cookie: "null"
 

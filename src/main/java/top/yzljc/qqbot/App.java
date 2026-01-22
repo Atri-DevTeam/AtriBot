@@ -4,6 +4,7 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.feature.HappyNewYear;
+import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.feature.ManosabaDate;
 import top.yzljc.qqbot.botkits.message.MessageProcessor;
@@ -22,15 +23,15 @@ public class App {
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
-
         System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
-
-        WebDashboardAPI.start(65500);
 
         Settings settings = Config.getInstance();
 
         int socketPort = settings.getListenPort();
         int qqBotPort = settings.getQqBotPort();
+        int webhookPort = settings.getGithubWebhookPort();
+        int webDashboardPort = settings.getWebDashboardPort();
+        String webhookSecret = settings.getGithubWebhookSecret();
 
         // 初始化配置与权限
         SendCommand.loadAdminConfig();
@@ -52,6 +53,8 @@ public class App {
 
         SocketManager.loadConfig();
         SocketManager.start(socketPort);
+        WebhookServer.start(webhookPort, webhookSecret);
+        WebDashboardAPI.start(webDashboardPort);
 
         // 群功能开关及默认值
         GroupConfigManager.registerFeature("auto_sign", true);     // 自动签到
@@ -65,5 +68,6 @@ public class App {
         GroupConfigManager.registerFeature("send_poke",true);
         GroupConfigManager.registerFeature("like_user", true);
         GroupConfigManager.registerFeature("mojang_status", true);
+        GroupConfigManager.registerFeature("github_info",false);
     }
 }

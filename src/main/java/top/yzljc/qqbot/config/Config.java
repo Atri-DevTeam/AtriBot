@@ -36,6 +36,9 @@ public class Config implements Settings{
     private boolean debugMode;
     private String[] keywordsHitokoto;
     private String[] keywordsLikeUser;
+    private int githubWebhookPort;
+    private String githubWebhookSecret;
+    private int webDashboardPort;
 
     private Config() {
         load();
@@ -116,6 +119,9 @@ public class Config implements Settings{
                 }
                 this.manosabaGroupId = ((Integer) data.getOrDefault("manosaba-group-id", 123456)).longValue();
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
+                this.githubWebhookPort = (int) data.getOrDefault("github-webhook-port", 54321);
+                this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
+                this.webDashboardPort = (int) data.getOrDefault("web-dashboard-port", 32123);
 
                 Object keywordsObj = data.get("keywords-hitokoto");
                 if (keywordsObj instanceof List<?>) {
@@ -144,7 +150,7 @@ public class Config implements Settings{
                 log.info("配置文件加载成功");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("加载配置文件时出现错误", e);
         }
     }
 
@@ -231,5 +237,20 @@ public class Config implements Settings{
     @Override
     public String[] getKeywordsLikeUser() {
         return keywordsLikeUser;
+    }
+
+    @Override
+    public String getGithubWebhookSecret() {
+        return githubWebhookSecret;
+    }
+
+    @Override
+    public int getGithubWebhookPort() {
+        return githubWebhookPort;
+    }
+
+    @Override
+    public int getWebDashboardPort() {
+        return webDashboardPort;
     }
 }

@@ -229,7 +229,7 @@ public class SendCommand {
             }
 
             String cleanLogContent = cleanLog(consoleLog);
-            String replyMsg = String.format("[√] 自助解封申请已提交至 hbt\n目标ID: %s\n----------------\n控制台返回:\n%s",
+            String replyMsg = String.format("[√] 自助解封申请已提交至服务器\n目标ID: %s\n----------------\n控制台返回:\n%s",
                     targetId, cleanLogContent);
             MessageSender.sendGroupMessage(groupId, replyMsg);
         });
@@ -242,7 +242,7 @@ public class SendCommand {
 
         if (!String.valueOf(userId).equals("3199590352")){
             if (userServers == null || !userServers.contains("yt")) {
-                MessageSender.sendGroupMessage(groupId, "[!] 权限不足：您的账号未与 YunTEA 服务器绑定，无法使用白名单指令");
+                MessageSender.sendGroupMessage(groupId, "[!] 权限不足：您的账号未与 YunTEA 服务器管理组绑定，无法使用白名单指令");
                 return;
             }
         }
@@ -255,7 +255,7 @@ public class SendCommand {
         String action = parts[1];
         String ytSecret = serverSecretMap.get("yt");
         if (ytSecret == null) {
-            MessageSender.sendGroupMessage(groupId, "[!] 未找到yt服务器的密钥配置，无法操作白名单");
+            MessageSender.sendGroupMessage(groupId, "[!] 未找到YunTEA服务器的密钥配置，无法操作白名单");
             return;
         }
         AuthInfo ytInfo = new AuthInfo("yt", ytSecret);
@@ -292,7 +292,7 @@ public class SendCommand {
             boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
 
             if (!success) {
-                MessageSender.sendGroupMessage(groupId, "[X] yt服务器未连接或鉴权失败");
+                MessageSender.sendGroupMessage(groupId, "[X] YunTEA 服务器未连接或鉴权失败");
                 return;
             }
 
@@ -312,7 +312,7 @@ public class SendCommand {
             String cleanLogContent = cleanLog(consoleLog);
 
             String replyMsg = String.format(
-                    "[√] 白名单指令已送达 yt\n内容: %s\n----------------\n控制台返回:\n%s",
+                    "[√] 白名单指令已送达 YunTEA 登陆服\n内容: %s\n----------------\n控制台返回:\n%s",
                     command, cleanLogContent);
             MessageSender.sendGroupMessage(groupId, replyMsg);
         });

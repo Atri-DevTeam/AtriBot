@@ -37,4 +37,10 @@ public interface Settings {
     String[] getKeywordsHitokoto();
 
     String[] getKeywordsLikeUser();
+
+    String getGithubWebhookSecret();
+
+    int getGithubWebhookPort();
+
+    int getWebDashboardPort();
 }
