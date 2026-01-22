@@ -110,7 +110,6 @@ public class CommitDisplay extends AbstractImage {
             currentY += 45;
             int bodyStartY = drawCommitTitle(payload.message, startX, currentY);
 
-
             drawCommitBody(payload.message, startX, bodyStartY + 35, cardH - 180);
 
             int bottomY = cardY + cardH - 25;
@@ -164,24 +163,25 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private void drawCommitBody(String rawMsg, int x, int y, int maxHeight) {
-        // 第一个换行符后面全是详细信息
-        rawMsg = rawMsg.replace("\r\n", "\n");
-        int firstNewLineIdx = rawMsg.indexOf('\n');
-        if (firstNewLineIdx == -1 || firstNewLineIdx == rawMsg.length() - 1) {
+        if (rawMsg == null || rawMsg.isEmpty()) return;
+
+        String normalizedMsg = rawMsg.replace("\r\n", "\n");
+
+        String[] allLines = normalizedMsg.split("\n");
+
+        if (allLines.length < 2) {
             return;
         }
-
-        String body = rawMsg.substring(firstNewLineIdx + 1).trim();
-        if (body.isEmpty()) return;
 
         g.setFont(getSmartFont(Font.PLAIN, 20));
         g.setColor(new Color(160, 165, 170)); // 浅灰色文字
 
-        String[] lines = body.split("\\r?\\n");
         int lineHeight = 28;
         int currentY = y;
 
-        for (String line : lines) {
+        for (int i = 1; i < allLines.length; i++) {
+            String line = allLines[i];
+
             // 简单的防溢出控制
             if (currentY > maxHeight + y) {
                 g.drawString("...", x, currentY);
