@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.net.URI;
 
@@ -51,7 +52,10 @@ public class SendPoke {
                 long groupId = json.path("group_id").asLong();
                 long userId = json.path("user_id").asLong(); // 戳我的人
 
-                // 简单的防死循环：如果是机器人自己戳自己（虽然不太可能），忽略
+                if (!GroupConfigManager.isFeatureEnabled(groupId,"send_poke")) {
+                    return;
+                }
+
                 if (userId == botQq) return;
 
                 log.info("监测到用户 {} 在群 {} 戳了机器人，准备反击！", userId, groupId);

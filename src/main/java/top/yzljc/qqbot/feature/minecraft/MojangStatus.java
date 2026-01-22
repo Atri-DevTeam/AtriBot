@@ -22,6 +22,7 @@ import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 /**
  * 检查 Mojang 官方服务状态 (自定义独立检测版)
@@ -111,6 +112,10 @@ public class MojangStatus {
 
         long groupId = json.path("group_id").asLong();
         String rawMsg = json.path("raw_message").asText().trim();
+
+        if (!GroupConfigManager.isFeatureEnabled(groupId,"mojang_status")){
+            return;
+        }
 
         if ("/mojang".equalsIgnoreCase(rawMsg)) {
             MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");

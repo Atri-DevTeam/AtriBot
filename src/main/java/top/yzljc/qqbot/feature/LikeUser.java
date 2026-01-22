@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.net.URI;
 
@@ -46,6 +47,9 @@ public class LikeUser {
                 long userId = json.path("user_id").asLong();
                 long groupId = json.path("group_id").asLong();
 
+                if (!GroupConfigManager.isFeatureEnabled(groupId,"like_user")) {
+                    return;
+                }
                 // 触发点赞逻辑
                 sendLike(userId, groupId);
                 return;

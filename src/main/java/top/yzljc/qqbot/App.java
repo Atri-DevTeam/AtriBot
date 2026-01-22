@@ -62,5 +62,8 @@ public class App {
         GroupConfigManager.registerFeature("new_year",true);
         GroupConfigManager.registerFeature("one_text",true);
         GroupConfigManager.registerFeature("repeat_msg", true); // 复读机
+        GroupConfigManager.registerFeature("send_poke",true);
+        GroupConfigManager.registerFeature("like_user", true);
+        GroupConfigManager.registerFeature("mojang_status", true);
     }
 }
