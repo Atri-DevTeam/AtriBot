@@ -200,7 +200,6 @@ public class CommitDisplay extends AbstractImage {
         String added = "+" + payload.addedCount;
         String files = payload.changedFilesCount + " files changed";
 
-        // 从右向左绘制
         g.setColor(new Color(248, 81, 73)); // Red
         int remW = g.getFontMetrics().stringWidth(removed);
         g.drawString(removed, rightX - remW, baselineY);
