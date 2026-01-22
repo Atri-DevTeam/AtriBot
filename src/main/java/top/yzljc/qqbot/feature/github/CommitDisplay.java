@@ -163,27 +163,26 @@ public class CommitDisplay extends AbstractImage {
         return y;
     }
 
-    /**
-     * 绘制详细信息 (Body)
-     */
     private void drawCommitBody(String rawMsg, int x, int y, int maxHeight) {
-        // \n\n 和 \r\n\r\n
-        String[] parts = rawMsg.split("\\r?\\n\\r?\\n", 2);
-
-        if (parts.length < 2 || parts[1].trim().isEmpty()) {
+        // 第一个换行符后面全是详细信息
+        rawMsg = rawMsg.replace("\r\n", "\n");
+        int firstNewLineIdx = rawMsg.indexOf('\n');
+        if (firstNewLineIdx == -1 || firstNewLineIdx == rawMsg.length() - 1) {
             return;
         }
 
-        String body = parts[1].trim();
+        String body = rawMsg.substring(firstNewLineIdx + 1).trim();
+        if (body.isEmpty()) return;
+
         g.setFont(getSmartFont(Font.PLAIN, 20));
-        g.setColor(new Color(160, 165, 170));
+        g.setColor(new Color(160, 165, 170)); // 浅灰色文字
 
         String[] lines = body.split("\\r?\\n");
         int lineHeight = 28;
         int currentY = y;
 
         for (String line : lines) {
-            // 简单的防溢出控制，如果写太多行就不画了
+            // 简单的防溢出控制
             if (currentY > maxHeight + y) {
                 g.drawString("...", x, currentY);
                 break;
