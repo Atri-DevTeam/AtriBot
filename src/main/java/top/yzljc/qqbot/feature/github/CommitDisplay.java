@@ -111,8 +111,15 @@ public class CommitDisplay extends AbstractImage {
 
             String cleanMessage = payload.message;
             if (cleanMessage != null) {
-                cleanMessage = cleanMessage.replace("\r\n", "\n")
-                        .replace("\\\"", "\""); // 核心修复：把 \" 变成 "
+                // 统一换行符
+                cleanMessage = cleanMessage.replace("\r\n", "\n");
+
+                // 暴力替换：将所有反斜杠 \ 替换为空格
+                cleanMessage = cleanMessage.replace("\\", " ");
+
+                // 暴力替换：将所有双引号 " 替换为空格
+                // 这样 "数字 \"2\"" 就会变成 "数字  2 "，彻底避免截断风险
+                cleanMessage = cleanMessage.replace("\"", " ");
             }
 
             int bodyStartY = drawCommitTitle(cleanMessage, startX, currentY);
@@ -198,25 +205,21 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private void drawStats(GithubPayload payload, int rightX, int baselineY) {
-        // ... (保持原样)
         g.setFont(getSmartFont(Font.BOLD, 22));
 
         String removed = "-" + payload.removedCount;
         String added = "+" + payload.addedCount;
         String files = payload.changedFilesCount + " files changed";
 
-        g.setColor(new Color(248, 81, 73)); // Red
+        g.setColor(new Color(248, 81, 73));
         int remW = g.getFontMetrics().stringWidth(removed);
         g.drawString(removed, rightX - remW, baselineY);
 
-        g.setColor(new Color(63, 185, 80)); // Green
+        g.setColor(new Color(63, 185, 80));
         int addW = g.getFontMetrics().stringWidth(added);
         g.drawString(added, rightX - remW - 10 - addW, baselineY);
 
-        // 括号分隔
         g.setColor(new Color(139, 148, 158));
-
-        // 重新计算总宽度
         int totalW = remW + 10 + addW + 15 + g.getFontMetrics().stringWidth(files);
         int startX = rightX - totalW;
 
@@ -224,16 +227,13 @@ public class CommitDisplay extends AbstractImage {
         g.drawString(files, startX, baselineY);
 
         int fileW = g.getFontMetrics().stringWidth(files);
-
         g.setColor(new Color(63, 185, 80));
         g.drawString(added, startX + fileW + 15, baselineY);
-
         g.setColor(new Color(248, 81, 73));
         g.drawString(removed, startX + fileW + 15 + addW + 10, baselineY);
     }
 
     private int drawTag(String text, int x, int y, Color bg, Font font) {
-        // ... (保持原样)
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics();
         int w = fm.stringWidth(text) + 16;
@@ -250,7 +250,6 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private void drawAvatar(String url, int x, int y, int size) {
-        // ... (保持原样)
         try {
             BufferedImage img = ImageIO.read(new URL(url));
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
