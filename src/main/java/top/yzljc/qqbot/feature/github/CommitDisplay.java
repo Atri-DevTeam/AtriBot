@@ -47,7 +47,7 @@ public class CommitDisplay extends AbstractImage {
             try {
                 initFromBackground("github_background.png");
             } catch (IOException e) {
-                initBlank(900, 500); // 稍微加高一点以容纳详细信息
+                initBlank(900, 500);
                 GradientPaint gp = new GradientPaint(0, 0, new Color(20, 23, 29), 0, height, new Color(10, 10, 10));
                 g.setPaint(gp);
                 g.fillRect(0, 0, width, height);
@@ -59,7 +59,7 @@ public class CommitDisplay extends AbstractImage {
             int cardW = width - (margin * 2);
             int cardH = height - (margin * 2);
 
-            g.setColor(new Color(22, 27, 34, 210)); // GitHub Dark Dimmed 背景色
+            g.setColor(new Color(22, 27, 34, 210));
             g.fill(new RoundRectangle2D.Float(cardX, cardY, cardW, cardH, 20, 20));
 
             g.setStroke(new BasicStroke(1.0f));
@@ -78,7 +78,7 @@ public class CommitDisplay extends AbstractImage {
             String shortHash = payload.hash.length() > 7 ? payload.hash.substring(0, 7) : payload.hash;
             String hashText = "#" + shortHash;
             g.setFont(getSmartFont(Font.PLAIN, 22));
-            g.setColor(new Color(139, 148, 158)); // 灰色
+            g.setColor(new Color(139, 148, 158));
             int hashW = g.getFontMetrics().stringWidth(hashText);
             g.drawString(hashText, rightX - hashW, currentY);
 
@@ -94,7 +94,7 @@ public class CommitDisplay extends AbstractImage {
             String branchText = "变动分支 " + payload.branch;
             int nameW = g.getFontMetrics().stringWidth(payload.pusherName);
             g.setFont(getSmartFont(Font.PLAIN, 18));
-            g.setColor(new Color(147, 83, 221)); // Blue
+            g.setColor(new Color(147, 83, 221));
             g.drawString(branchText, startX + avatarSize + 15 + nameW + 15, currentY);
 
             String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
@@ -104,18 +104,24 @@ public class CommitDisplay extends AbstractImage {
             g.drawString(timeStr, rightX - timeW, currentY);
 
             currentY += 30;
-            g.setColor(new Color(48, 54, 61)); // GitHub Border Color
+            g.setColor(new Color(48, 54, 61));
             g.drawLine(startX, currentY, rightX, currentY);
 
             currentY += 45;
-            int bodyStartY = drawCommitTitle(payload.message, startX, currentY);
 
-            drawCommitBody(payload.message, startX, bodyStartY + 35, cardH - 180);
+            String cleanMessage = payload.message;
+            if (cleanMessage != null) {
+                cleanMessage = cleanMessage.replace("\r\n", "\n")
+                        .replace("\\\"", "\""); // 核心修复：把 \" 变成 "
+            }
+
+            int bodyStartY = drawCommitTitle(cleanMessage, startX, currentY);
+
+            drawCommitBody(cleanMessage, startX, bodyStartY + 35, cardH - 180);
 
             int bottomY = cardY + cardH - 25;
             drawStats(payload, rightX, bottomY);
 
-            // 输出
             if (g != null) g.dispose();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(image, "png", baos);
@@ -128,6 +134,8 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private int drawCommitTitle(String rawMsg, int x, int y) {
+        if (rawMsg == null || rawMsg.isEmpty()) return y;
+
         String firstLine = rawMsg.split("\n")[0];
         Pattern pattern = Pattern.compile("^(\\w+)(?:\\(([^)]+)\\))?[:：]\\s*(.+)");
         Matcher matcher = pattern.matcher(firstLine);
@@ -162,19 +170,17 @@ public class CommitDisplay extends AbstractImage {
         return y;
     }
 
-    private void drawCommitBody(String rawMsg, int x, int y, int maxHeight) {
-        if (rawMsg == null || rawMsg.isEmpty()) return;
+    private void drawCommitBody(String cleanMsg, int x, int y, int maxHeight) {
+        if (cleanMsg == null || cleanMsg.isEmpty()) return;
 
-        String normalizedMsg = rawMsg.replace("\r\n", "\n");
-
-        String[] allLines = normalizedMsg.split("\n");
+        String[] allLines = cleanMsg.split("\n");
 
         if (allLines.length < 2) {
             return;
         }
 
         g.setFont(getSmartFont(Font.PLAIN, 20));
-        g.setColor(new Color(160, 165, 170)); // 浅灰色文字
+        g.setColor(new Color(160, 165, 170));
 
         int lineHeight = 28;
         int currentY = y;
@@ -182,7 +188,6 @@ public class CommitDisplay extends AbstractImage {
         for (int i = 1; i < allLines.length; i++) {
             String line = allLines[i];
 
-            // 简单的防溢出控制
             if (currentY > maxHeight + y) {
                 g.drawString("...", x, currentY);
                 break;
@@ -193,7 +198,7 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private void drawStats(GithubPayload payload, int rightX, int baselineY) {
-
+        // ... (保持原样)
         g.setFont(getSmartFont(Font.BOLD, 22));
 
         String removed = "-" + payload.removedCount;
@@ -228,6 +233,7 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private int drawTag(String text, int x, int y, Color bg, Font font) {
+        // ... (保持原样)
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics();
         int w = fm.stringWidth(text) + 16;
@@ -238,22 +244,20 @@ public class CommitDisplay extends AbstractImage {
         g.fillRoundRect(x, rectY, w, h, 8, 8);
 
         g.setColor(Color.WHITE);
-        // 居中绘制文字
         int textX = x + (w - fm.stringWidth(text)) / 2;
-        g.drawString(text, textX, y - 1); // 微调Y
+        g.drawString(text, textX, y - 1);
         return w;
     }
 
     private void drawAvatar(String url, int x, int y, int size) {
+        // ... (保持原样)
         try {
             BufferedImage img = ImageIO.read(new URL(url));
-            // 开启抗锯齿
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setClip(new Ellipse2D.Float(x, y, size, size));
             g.drawImage(img, x, y, size, size, null);
             g.setClip(null);
 
-            // 描边
             g.setColor(new Color(200, 200, 200, 100));
             g.setStroke(new BasicStroke(1.5f));
             g.drawOval(x, y, size, size);
