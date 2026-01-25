@@ -17,9 +17,9 @@ import java.net.URI;
  * 群消息实时过滤器
  * 检测到违规词立即撤回
  */
-public class GroupMessageFilter {
+public class MessageFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupMessageFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(MessageFilter.class);
 
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();

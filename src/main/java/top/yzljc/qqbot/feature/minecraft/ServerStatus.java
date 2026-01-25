@@ -9,9 +9,9 @@ import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatusReporter {
+public class ServerStatus {
 
-    private static final Logger log = LoggerFactory.getLogger(StatusReporter.class);
+    private static final Logger log = LoggerFactory.getLogger(ServerStatus.class);
 
     /**
      * 生成状态图片并推送到群
@@ -46,7 +46,7 @@ public class StatusReporter {
             log.info("准备生成图片：{}", tempFile.getAbsolutePath());
             String ipPort = ip + ":" + port;
 
-            MinecraftStatusImage.generateStatusImage(name, ipPort, statusDesc, tempFile.getAbsolutePath());
+            ServerStatusImage.generateStatusImage(name, ipPort, statusDesc, tempFile.getAbsolutePath());
 
             String base64Img = null;
             if (tempFile.exists()) {

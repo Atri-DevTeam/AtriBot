@@ -16,9 +16,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RecordGroupMessage {
+public class MessageRecorder {
 
-    private static final Logger log = LoggerFactory.getLogger(RecordGroupMessage.class);
+    private static final Logger log = LoggerFactory.getLogger(MessageRecorder.class);
     
     static Settings settings = Config.getInstance();
     private static final String HOST = settings.getMysqlHost();
@@ -38,9 +38,7 @@ public class RecordGroupMessage {
         try {
             initDataSource();
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("初始化数据库连接失败");
-            // System.err.println("[INFO] 初始化数据库连接失败！");
+            log.error("初始化数据库连接失败: {}", e.getMessage());
         }
     }
 
@@ -97,18 +95,16 @@ public class RecordGroupMessage {
             saveToDatabase(userId, time, messageId, groupId, rawMessage);
         } catch (Exception e) {
             log.error("解析消息或入库时发生错误：{}", e.getMessage());
-            // System.err.println("[INFO] 解析消息或入库时发生错误: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
+    // 这是一个备用的方法，暂时用不到，但是别删
     public static void processRecord(String jsonString) {
         try {
             JsonNode node = objectMapper.readTree(jsonString);
             processRecord(node);
         } catch (Exception e) {
             log.error("JSON 字符串解析失败");
-            // System.err.println("[INFO] JSON字符串解析失败");
         }
     }
 
@@ -119,8 +115,7 @@ public class RecordGroupMessage {
         try {
             initTableForGroup(groupId); // 保证表存在
         } catch (SQLException e) {
-            log.error("自动建分表失败：", e.getMessage());
-            // System.err.println("[INFO] 自动建分表失败：" + e.getMessage());
+            log.error("自动建分表失败: {}", e.getMessage());
             return;
         }
 
@@ -141,12 +136,29 @@ public class RecordGroupMessage {
             }
         }
     }
-    // 静态获取分表名字
+
     public static String getDynamicTableName(long groupId) {
         return "qq_group_message_record_" + groupId;
     }
-    // 静态暴露数据源
+
     public static HikariDataSource getDataSource() {
         return dataSource;
+    }
+
+    public static String searchMessage(long groupId, long messageId) {
+        String tableName = getTableNameForGroup(groupId);
+        String sql = "SELECT raw_message FROM `" + tableName + "` WHERE message_id = ? ORDER BY id DESC LIMIT 1";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, messageId);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("raw_message");
+                }
+            }
+        } catch (SQLException e) {
+            log.error("查询原始消息失败: {}", e.getMessage());
+        }
+        return null;
     }
 }

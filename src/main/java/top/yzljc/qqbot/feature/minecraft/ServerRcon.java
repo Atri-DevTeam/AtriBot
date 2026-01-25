@@ -3,7 +3,9 @@ package top.yzljc.qqbot.feature.minecraft;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.feature.minecraft.specificserver.YunTea;
 import top.yzljc.qqbot.socket.SocketManager;
+import top.yzljc.qqbot.feature.minecraft.specificserver.HypixelBanTest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,9 +17,9 @@ import java.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SendCommand {
+public class ServerRcon {
 
-    private static final Logger log = LoggerFactory.getLogger(SendCommand.class);
+    private static final Logger log = LoggerFactory.getLogger(ServerRcon.class);
 
     private static final String ADMIN_FILE = "adminuser.json";
     private static final String SERVER_SECRET_FILE = "server-secret.json";
@@ -26,14 +28,28 @@ public class SendCommand {
     private static Map<String, String> serverSecretMap = new HashMap<>();
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
-    private static class AuthInfo {
-        String serverId;
-        String secretKey;
+    public static class AuthInfo {
+        public String serverId;
+        public String secretKey;
 
-        AuthInfo(String serverId, String secretKey) {
+        public AuthInfo(String serverId, String secretKey) {
             this.serverId = serverId;
             this.secretKey = secretKey;
         }
+    }
+
+    public static Map<String, List<String>> getAdminRules() {
+        return adminRules;
+    }
+    public static Map<String, String> getServerSecretMap() {
+        return serverSecretMap;
+    }
+    public static ConcurrentHashMap<String, CompletableFuture<String>> getPendingCommandResponses() {
+        return pendingCommandResponses;
+    }
+    public static String cleanLog(String log) {
+        if (log == null) return "";
+        return log.replaceAll("\\x1B\\[[;\\d]*m", "");
     }
 
     public static void loadAdminConfig() {
@@ -76,32 +92,29 @@ public class SendCommand {
         }
     }
 
+    // server子包指令传入的核心逻辑，所有与服务器相关的内容都在这里分发
     public static void processMessage(JsonNode json) {
         if (!"group".equals(json.path("message_type").asText(""))) return;
 
         long groupId = json.path("group_id").asLong();
         String rawMsg = json.path("raw_message").asText("");
+        long userId = json.path("user_id").asLong();
         String rawTrimmed = rawMsg.trim();
 
         if (rawTrimmed.startsWith("/unbanme")) {
-            handleUnbanMeCommand(groupId, rawTrimmed);
+            HypixelBanTest.handleUnbanMeCommand(groupId, rawTrimmed, serverSecretMap.get("hbt"));
         }
-    }
 
-    private static void handleUnbanMeCommand(long groupId, String rawTrimmed) {
-        String[] parts = rawTrimmed.split("\\s+");
-        if (parts.length < 2) {
-            MessageSender.sendGroupMessage(groupId, "用法: /unbanme <ID>");
-            return;
+        if (rawTrimmed.startsWith("/rc")) {
+            handle(userId, groupId, rawTrimmed);
         }
-        String targetId = parts[1];
 
-        String hbtSecret = serverSecretMap.get("hbt");
+        if (rawTrimmed.startsWith("/wl")){
+            YunTea.handleWhiteListCommand(userId, groupId, rawTrimmed);
+        }
 
-        if (hbtSecret != null) {
-            executeUnbanMeLogic(targetId, new AuthInfo("hbt", hbtSecret), groupId);
-        } else {
-            MessageSender.sendGroupMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封");
+        if (rawTrimmed.startsWith("白名单") && groupId == 715842297L){
+            YunTea.handleWhiteListSelfCheck(groupId, rawTrimmed);
         }
     }
 
@@ -173,9 +186,7 @@ public class SendCommand {
                 return;
             }
 
-            System.out.println("============================================================");
-            log.info("[SUCCESS] Socket 发送 -> Server: {} | Cmd: {}", targetServerId, command);
-            System.out.println("============================================================");
+            log.info("Minecraft服务器指令发送 -> 服务器: {} | 指令: {}", targetServerId, command);
 
             CompletableFuture<String> future = new CompletableFuture<>();
             pendingCommandResponses.put(targetServerId, future);
@@ -196,130 +207,5 @@ public class SendCommand {
                     targetServerId, command, cleanLogContent);
             MessageSender.sendGroupMessage(groupId, replyMsg);
         });
-    }
-
-    /**
-     * 专门为 /unbanme 准备的逻辑，向 hbt 服务器发送双重解封指令
-     */
-    private static void executeUnbanMeLogic(String targetId, AuthInfo info, long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            // 1. 发送 unban 指令
-            SocketManager.sendCommand(info.serverId, "unban " + targetId, info.secretKey);
-
-            // 2. 发送 pardon 指令并准备接收反馈
-            String secondCmd = "pardon " + targetId;
-            boolean success = SocketManager.sendCommand(info.serverId, secondCmd, info.secretKey);
-
-            if (!success) {
-                MessageSender.sendGroupMessage(groupId, "[X] hbt 服务器未连接或鉴权失败");
-                return;
-            }
-
-            CompletableFuture<String> future = new CompletableFuture<>();
-            pendingCommandResponses.put(info.serverId, future);
-
-            String consoleLog;
-            try {
-                // 等待反馈
-                consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                consoleLog = "(解封指令已发送，但未收到控制台回执)";
-            } finally {
-                pendingCommandResponses.remove(info.serverId);
-            }
-
-            String cleanLogContent = cleanLog(consoleLog);
-            String replyMsg = String.format("[√] 自助解封申请已提交至服务器\n目标ID: %s\n----------------\n控制台返回:\n%s",
-                    targetId, cleanLogContent);
-            MessageSender.sendGroupMessage(groupId, replyMsg);
-        });
-    }
-
-    // 给YunTEA-Minecraft用的白名单指令处理
-    public static void handleWhiteListCommand(long userId, long groupId, String rawMessage) {
-        String key = userId + "/" + groupId;
-        List<String> userServers = adminRules.get(key);
-
-        if (!String.valueOf(userId).equals("3199590352")){
-            if (userServers == null || !userServers.contains("yt")) {
-                MessageSender.sendGroupMessage(groupId, "[!] 权限不足：您的账号未与 YunTEA 服务器管理组绑定，无法使用白名单指令");
-                return;
-            }
-        }
-
-        String[] parts = rawMessage.trim().split("\\s+");
-        if (parts.length < 2) {
-            MessageSender.sendGroupMessage(groupId, "用法: /wl add|remove <用户名> 或 /wl list");
-            return;
-        }
-        String action = parts[1];
-        String ytSecret = serverSecretMap.get("yt");
-        if (ytSecret == null) {
-            MessageSender.sendGroupMessage(groupId, "[!] 未找到YunTEA服务器的密钥配置，无法操作白名单");
-            return;
-        }
-        AuthInfo ytInfo = new AuthInfo("yt", ytSecret);
-
-        String ytCmd = null;
-        switch (action) {
-            case "add":
-                if (parts.length < 3) {
-                    MessageSender.sendGroupMessage(groupId, "用法: /wl add <用户名>");
-                    return;
-                }
-                ytCmd = String.format("owhitelist add name %s", parts[2]);
-                break;
-            case "remove":
-                if (parts.length < 3) {
-                    MessageSender.sendGroupMessage(groupId, "用法: /wl remove <用户名>");
-                    return;
-                }
-                ytCmd = String.format("owhitelist remove name %s", parts[2]);
-                break;
-            case "list":
-                ytCmd = "owhitelist list name";
-                break;
-            default:
-                MessageSender.sendGroupMessage(groupId, "未知子命令，仅支持 add、remove、list");
-                return;
-        }
-
-        executeWhiteListCommand("yt", ytCmd, ytInfo, groupId);
-    }
-
-    private static void executeWhiteListCommand(String targetServerId, String command, AuthInfo info, long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
-
-            if (!success) {
-                MessageSender.sendGroupMessage(groupId, "[X] YunTEA 服务器未连接或鉴权失败");
-                return;
-            }
-
-            CompletableFuture<String> future = new CompletableFuture<>();
-            pendingCommandResponses.put(targetServerId, future);
-
-            String consoleLog;
-            try {
-                consoleLog = future.get(4500, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
-                consoleLog = "(超时未收到控制台反馈)";
-            } catch (Exception e) {
-                consoleLog = "(获取反馈异常: " + e.getMessage() + ")";
-            } finally {
-                pendingCommandResponses.remove(targetServerId);
-            }
-            String cleanLogContent = cleanLog(consoleLog);
-
-            String replyMsg = String.format(
-                    "[√] 白名单指令已送达 YunTEA 登陆服\n内容: %s\n----------------\n控制台返回:\n%s",
-                    command, cleanLogContent);
-            MessageSender.sendGroupMessage(groupId, replyMsg);
-        });
-    }
-    
-    private static String cleanLog(String log) {
-        if (log == null) return "";
-        return log.replaceAll("\\x1B\\[[;\\d]*m", "");
     }
 }

@@ -6,7 +6,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageRecorder;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -107,7 +107,7 @@ public class RollbackMessages {
      */
     private static List<Long> fetchMessageIds(String groupId, Long userId, int limit, HikariDataSource dataSource) {
         List<Long> list = new ArrayList<>();
-        String tableName = RecordGroupMessage.getDynamicTableName(Long.parseLong(groupId));
+        String tableName = MessageRecorder.getDynamicTableName(Long.parseLong(groupId));
         String sql =
                 "SELECT message_id FROM " + tableName +
                         " WHERE group_id = ?" +
@@ -183,7 +183,7 @@ public class RollbackMessages {
         if (!isAllowed) return;
         if (!message.trim().startsWith("/rollback")) return;
 
-        int count = rollback(Long.toString(groupId), message, RecordGroupMessage.getDataSource());
+        int count = rollback(Long.toString(groupId), message, MessageRecorder.getDataSource());
         log.info("已批量撤回消息数 = {}", count);
         MessageSender.sendGroupMessage(groupId, "已批量撤回消息 " + count + " 条");
     }

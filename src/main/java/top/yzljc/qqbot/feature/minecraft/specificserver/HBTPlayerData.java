@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.feature.minecraft;
+package top.yzljc.qqbot.feature.minecraft.specificserver;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,18 +18,13 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Minecraft 玩家全网数据查询
- */
-public class McNetworkInfo {
+public class HBTPlayerData {
 
-    private static final Logger log = LoggerFactory.getLogger(McNetworkInfo.class);
+    private static final Logger log = LoggerFactory.getLogger(HBTPlayerData.class);
 
     private static final String CMD_PREFIX = "/hbt";
     private static final String API_URL = "http://mc.yzljc.top:65123/playerinfo?name=";
     private static final ObjectMapper mapper = new ObjectMapper();
-
-    // 使用统一的时间格式
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public static void process(JsonNode json) {
@@ -78,23 +73,18 @@ public class McNetworkInfo {
             JsonNode root = mapper.readTree(reader);
             conn.disconnect();
 
-            // 1. 基础信息读取
             String ign = root.path("ign").asText("未知");
             String uuid = root.path("uuid").asText("未知");
             String rank = root.path("permissionGroup").asText("DEFAULT");
             String title = root.path("currentTitle").asText("");
 
-            // 2. 时间戳处理
-            // 直接将 long 值传给 Date，不再进行任何 magnitude (量级) 猜测，确保兼容公元 1111 年 (-27080340872000)
             String firstJoin = formatRawTimestamp(root.path("firstJoinDate").asLong(0));
             String lastJoin = formatRawTimestamp(root.path("lastJoinTime").asLong(0));
             String lastQuit = formatRawTimestamp(root.path("lastQuitTime").asLong(0));
 
-            // 3. 在线时间计算 (分钟转天/时/分)
             long totalMinutes = root.path("totalPlayTime").asLong(0);
             String playTimeFormatted = formatPlayTime(totalMinutes);
 
-            // 4. 字段映射
             String giftHunter = "yes".equalsIgnoreCase(root.path("giftHunterInfo").asText()) ? "完成" : "未完成";
             String unbanMode = "yes".equalsIgnoreCase(root.path("unbanModeInfo").asText()) ? "开启" : "关闭";
             String canBuild = root.path("canBuildHub").asBoolean(false) ? "有权限" : "无权限";
@@ -149,13 +139,8 @@ public class McNetworkInfo {
         return result.toString();
     }
 
-    /**
-     * 原始毫秒时间戳转换
-     * 不再包含任何 if 判断，直接信任传入的毫秒值
-     */
     private static String formatRawTimestamp(long timestamp) {
         if (timestamp == 0) return "无记录";
-        // Java Date(long) 构造函数完美支持负数时间戳（1970年以前）
         return sdf.format(new Date(timestamp));
     }
 }

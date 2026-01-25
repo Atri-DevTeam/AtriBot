@@ -10,15 +10,13 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MinecraftStatusImage {
+public class ServerStatusImage {
 
-    private static final Logger log = LoggerFactory.getLogger(MinecraftStatusImage.class);
+    private static final Logger log = LoggerFactory.getLogger(ServerStatusImage.class);
 
     // Minecraft 颜色代码映射
     private static final Map<Character, Color> MC_COLORS = new HashMap<>();

@@ -7,7 +7,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -102,13 +102,13 @@ public class SearchRelevant {
     }
 
     private static void searchInDatabase(long groupId, String keyword, Long targetUserId, String mode) {
-        HikariDataSource dataSource = RecordGroupMessage.getDataSource();
+        HikariDataSource dataSource = MessageRecorder.getDataSource();
         if (dataSource == null) {
             MessageSender.sendGroupMessage(groupId, "数据库未初始化，无法搜索。");
             return;
         }
 
-        String tableName = RecordGroupMessage.getDynamicTableName(groupId);
+        String tableName = MessageRecorder.getDynamicTableName(groupId);
         long nowSeconds = System.currentTimeMillis() / 1000L;
         long sevenDaysAgoTs = nowSeconds - (7 * 24 * 60 * 60); // 7天前的时间戳
 

@@ -3,10 +3,11 @@ package top.yzljc.qqbot.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.qqbot.botkits.seizeinfo.GetUserName;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
-import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.io.InputStream;
@@ -85,7 +86,7 @@ public class MessageStats {
 
     public static Set<Long> findAllGroupsWithRecords() {
         Set<Long> groupIds = new HashSet<>();
-        try (Connection conn = RecordGroupMessage.getDataSource().getConnection();
+        try (Connection conn = MessageRecorder.getDataSource().getConnection();
              ResultSet rs = conn.getMetaData().getTables(null, null, "qq_group_message_record_%", new String[]{"TABLE"})) {
             while (rs.next()) {
                 String table = rs.getString("TABLE_NAME");
@@ -179,7 +180,7 @@ public class MessageStats {
             int count = statMap.getOrDefault(filterUserId, 0);
             String nick = fetchNickname(filterUserId);
 
-            if (nick != null && SensitiveWordFilter.containsSensitiveWord(nick)) {
+            if (SensitiveWordFilter.containsSensitiveWord(nick)) {
                 nick = null; // 触发后文的 fallback 显示QQ号
             }
 
@@ -308,30 +309,10 @@ public class MessageStats {
             }
             nicknameCache.remove(userId);
 
-            String body = String.format("{\"user_id\":\"%d\"}", userId);
-            HttpURLConnection conn = (HttpURLConnection) new URI(NICKNAME_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(2500);
-            conn.setReadTimeout(4000);
-            conn.setRequestProperty("Content-Type", "application/json");
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(body.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-            StringBuilder resp = new StringBuilder();
-            try (InputStream in = conn.getInputStream()) {
-                byte[] buf = new byte[256];
-                int len;
-                while ((len = in.read(buf)) != -1) {
-                    resp.append(new String(buf, 0, len, StandardCharsets.UTF_8));
-                }
-            }
-            JsonNode node = objectMapper.readTree(resp.toString());
-            String nick = null;
-            if (node.has("data") && node.get("data").has("nick")) {
-                nick = node.get("data").get("nick").asText();
-            }
+            String nick = GetUserName.getUserName(userId);
+
+            if (nick == null) return null;
+
             nicknameCache.put(userId, new CachedNickname(nick, now));
             return nick;
         } catch (Exception e) {
@@ -350,7 +331,7 @@ public class MessageStats {
 
     public static Map<Long, Integer> statGroupSpeak(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {
         Map<Long, Integer> result = new HashMap<>();
-        String tableName = RecordGroupMessage.getDynamicTableName(groupId);
+        String tableName = MessageRecorder.getDynamicTableName(groupId);
 
         String base = "SELECT user_id, COUNT(*) as cnt FROM " + tableName + " WHERE group_id=?";
         List<Object> params = new ArrayList<>();
@@ -371,7 +352,7 @@ public class MessageStats {
         }
         base += " GROUP BY user_id";
 
-        try (Connection conn = RecordGroupMessage.getDataSource().getConnection();
+        try (Connection conn = MessageRecorder.getDataSource().getConnection();
              PreparedStatement ps = conn.prepareStatement(base)) {
             for (int i = 0; i < params.size(); i++) {
                 Object p = params.get(i);

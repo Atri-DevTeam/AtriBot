@@ -83,7 +83,7 @@ public class MessageSender {
                 if (conn.getInputStream() != null) conn.getInputStream().close();
 
                 if (code == 200) {
-                    log.info("消息发送成功{} -> Group: {}", (base64Image != null ? " [含图片]" : ""), groupId);
+                    log.info("消息发送成功{} -> 群: {}", (base64Image != null ? " [含图片]" : ""), groupId);
                 } else {
                     log.error("消息发送失败，HTTP Code: {}", code);
                 }

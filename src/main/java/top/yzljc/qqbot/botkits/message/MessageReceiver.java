@@ -15,21 +15,11 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 负责接收 HTTP 请求并将消息转发给处理逻辑
- */
 public class MessageReceiver {
 
     private static final Logger log = LoggerFactory.getLogger(MessageReceiver.class);
-
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    /**
-     * 启动 HTTP 监听服务
-     *
-     * @param port           监听端口
-     * @param messageHandler 消息处理回调函数（当收到 JSON 消息时调用）
-     */
     public static void start(int port, Consumer<JsonNode> messageHandler) {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -48,7 +38,6 @@ public class MessageReceiver {
                             }
                         } catch (Exception e) {
                             log.error("JSON 解析或处理异常：{}", e.getMessage());
-                            e.printStackTrace();
                         }
                     }
 
@@ -58,7 +47,7 @@ public class MessageReceiver {
                         os.write(resp.getBytes());
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("请求发送失败：{}", e.getMessage());
                     exchange.sendResponseHeaders(500, 0);
                     exchange.close();
                 }
@@ -67,7 +56,7 @@ public class MessageReceiver {
             // 设置线程池
             server.setExecutor(Executors.newFixedThreadPool(4));
             server.start();
-            log.info("QQ 指令监听服务已启动，端口：{}", port);
+            log.info("前端消息监听服务已启动，端口：{}", port);
         } catch (IOException e) {
             log.error("无法启动 HTTP 服务：{}", e.getMessage());
         }

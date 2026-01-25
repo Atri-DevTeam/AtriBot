@@ -6,7 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botkits.message.RecordGroupMessage;
+import top.yzljc.qqbot.botkits.message.MessageRecorder;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -101,8 +101,8 @@ public class WebDashboardAPI {
 
                     List<Map<String, Object>> msgs = new ArrayList<>();
                     // 动态获取连接，用完即关，不占用数据库连接池
-                    String tableName = RecordGroupMessage.getDynamicTableName(gid);
-                    try (Connection conn = RecordGroupMessage.getDataSource().getConnection()) {
+                    String tableName = MessageRecorder.getDynamicTableName(gid);
+                    try (Connection conn = MessageRecorder.getDataSource().getConnection()) {
                         if (tableExists(conn, tableName)) {
                             String sql = "SELECT message_id, user_id, msg_time, raw_message FROM " + tableName + " ORDER BY msg_time DESC LIMIT ? OFFSET ?";
                             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -225,7 +225,7 @@ public class WebDashboardAPI {
     // --- 数据库逻辑 ---
     private static List<Long> fetchMessageIds(long groupId, Long userId, int limit, long startTime, long endTime) {
         List<Long> list = new ArrayList<>();
-        String tableName = RecordGroupMessage.getDynamicTableName(groupId);
+        String tableName = MessageRecorder.getDynamicTableName(groupId);
 
         StringBuilder sql = new StringBuilder("SELECT message_id FROM ").append(tableName).append(" WHERE group_id = ?");
 
@@ -242,7 +242,7 @@ public class WebDashboardAPI {
             sql.append(" ORDER BY id DESC LIMIT ?");
         }
 
-        try (Connection conn = RecordGroupMessage.getDataSource().getConnection();
+        try (Connection conn = MessageRecorder.getDataSource().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             int idx = 1;

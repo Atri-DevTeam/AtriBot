@@ -32,7 +32,6 @@ public class SensitiveWordFilter {
         File file = new File(CONFIG_FILE);
         if (!file.exists()) {
             log.error("未找到 {}，跳过过滤加载", CONFIG_FILE);
-            // System.err.println("[INFO] 未找到 " + CONFIG_FILE + "，跳过过滤加载。");
             return;
         }
 
