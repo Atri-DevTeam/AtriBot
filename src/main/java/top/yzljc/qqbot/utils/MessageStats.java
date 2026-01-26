@@ -3,7 +3,7 @@ package top.yzljc.qqbot.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.qqbot.botkits.seizeinfo.GetUserName;
+import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;

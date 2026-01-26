@@ -1,16 +1,11 @@
 package top.yzljc.qqbot.command;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +14,6 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.URI;
 
 /**
  * 指令工具: RollbackMessages
@@ -35,26 +28,8 @@ public class RollbackMessages {
     private static final Pattern ROLLBACK_PATTERN =
         Pattern.compile("^/rollback(?:\\s+-n\\s+(\\d+))?(?:\\s+-u\\s+(\\d+))?\\s*$");
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    static Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
-    private static final String DELETE_MSG_URL = BASEURL + "/delete_msg";
-
-    public static void processCommand(JsonNode jsonInput) {
-        if (jsonInput == null) return;
-
-        // 只处理群聊消息
-        if (!"group".equals(jsonInput.path("message_type").asText())) return;
-
-        long groupId = jsonInput.path("group_id").asLong();
-        long senderId = jsonInput.path("user_id").asLong();
-        String rawMsg = jsonInput.path("raw_message").asText("");
-
-        // 只允许指定人发送的/rollback命令
-        if (senderId == 3199590352L && rawMsg.trim().startsWith("/rollback")) {
-            handleRollbackCommand(senderId, groupId, rawMsg);
-        }
+    public static void processRollBack(long senderId, long groupId, String rawMsg) {
+        handleRollbackCommand(senderId, groupId, rawMsg);
     }
 
     /**
@@ -134,31 +109,9 @@ public class RollbackMessages {
         return list;
     }
 
-    /**
-     * 发送撤回消息请求
-     */
     private static void sendDeleteMessage(Long messageId) {
         try {
-            URL url = new URI(DELETE_MSG_URL).toURL();
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(4000);
-            conn.setDoOutput(true);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            String json = "{\"message_id\":\"" + messageId + "\"}";
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(json.getBytes("UTF-8"));
-                os.flush();
-            }
-
-            int respCode = conn.getResponseCode();
-            if (respCode != 200) {
-                log.error("撤回消息 {} 失败，HTTP Code: {}", messageId, respCode);
-            }
-            conn.disconnect();
+            PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE,messageId);
         } catch (Exception e) {
             log.warn("发送撤回包失败，message_id = {}：{}", messageId, e.getMessage());
         }
@@ -172,15 +125,6 @@ public class RollbackMessages {
      * @param message    消息内容
      */
     public static void handleRollbackCommand(long senderId, long groupId, String message) {
-        long[] allowedUsers = {3199590352L,1948308L};
-        boolean isAllowed = false;
-        for (long id : allowedUsers) {
-            if (senderId == id) {
-                isAllowed = true;
-                break;
-            }
-        }
-        if (!isAllowed) return;
         if (!message.trim().startsWith("/rollback")) return;
 
         int count = rollback(Long.toString(groupId), message, MessageRecorder.getDataSource());

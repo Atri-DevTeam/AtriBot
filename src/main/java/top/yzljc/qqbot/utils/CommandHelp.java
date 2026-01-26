@@ -13,11 +13,6 @@ import java.util.Map;
  * 监听 [CQ:at,qq=970717559] /help 并回复
  */
 public class CommandHelp {
-
-    static Settings settings = Config.getInstance();
-    private static final long BOT_QQ = settings.getBotUid();
-    private static final String HELP_TRIGGER = "/help";
-
     private static final Map<String, String> commonCommands = new LinkedHashMap<>();
     private static final Map<String, String> adminCommands = new LinkedHashMap<>();
 
@@ -50,17 +45,8 @@ public class CommandHelp {
         adminCommands.put("/rollback [-n 数量] [-u QQ号]", "撤回数据库中记录的消息");
     }
 
-    public static void process(JsonNode json) {
-        if (!"message".equals(json.path("post_type").asText())) return;
-        if (!"group".equals(json.path("message_type").asText())) return;
-
-        String rawMsg = json.path("raw_message").asText().trim();
-        long groupId = json.path("group_id").asLong();
-
-        // 匹配逻辑：被艾特 且 包含 /help
-        if (rawMsg.contains("[CQ:at,qq=" + BOT_QQ + "]") && rawMsg.toLowerCase().contains(HELP_TRIGGER)) {
-            sendHelpMenu(groupId);
-        }
+    public static void processHelp(long groupId) {
+        sendHelpMenu(groupId);
     }
 
     private static void sendHelpMenu(long groupId) {

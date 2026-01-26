@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
@@ -91,5 +92,61 @@ public class MessageSender {
                 log.error("推送异常：{}", ex.getMessage());
             }
         });
+    }
+
+    public static Long sendGroupMessageGetId(long groupId, String content) {
+        try {
+            List<Map<String, Object>> messageNodes = new ArrayList<>();
+
+            if (content != null && !content.isEmpty()) {
+                Map<String, Object> textData = new HashMap<>();
+                textData.put("text", content);
+                Map<String, Object> textNode = new HashMap<>();
+                textNode.put("type", "text");
+                textNode.put("data", textData);
+                messageNodes.add(textNode);
+            }
+
+            if (messageNodes.isEmpty()) return null;
+
+            Map<String, Object> payloadMap = new HashMap<>();
+            payloadMap.put("group_id", groupId);
+            payloadMap.put("message", messageNodes);
+
+            String payload = jsonMapper.writeValueAsString(payloadMap);
+
+            HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_API).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(payload.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int code = conn.getResponseCode();
+
+            if (code == 200) {
+                try (InputStream is = conn.getInputStream()) {
+                    // 读取整个响应体
+                    StringBuilder sb = new StringBuilder();
+                    byte[] buf = new byte[512];
+                    int len;
+                    while ((len = is.read(buf)) > 0) {
+                        sb.append(new String(buf, 0, len, StandardCharsets.UTF_8));
+                    }
+                    // 解析 message_id
+                    com.fasterxml.jackson.databind.JsonNode resp = jsonMapper.readTree(sb.toString());
+                    if (resp.has("data") && resp.get("data").has("message_id")) {
+                        return resp.get("data").get("message_id").asLong();
+                    }
+                }
+            } else {
+                log.error("消息发送失败，HTTP Code: {}", code);
+            }
+        } catch (Exception ex) {
+            log.error("同步消息推送异常：{}", ex.getMessage());
+        }
+        return null;
     }
 }

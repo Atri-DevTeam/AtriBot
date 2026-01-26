@@ -2,14 +2,10 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
@@ -23,25 +19,8 @@ public class ElectricCheck {
     
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
-    private static final String[] KEYWORDS = {"电表", "dianbiao", "db"};
 
-    static Settings settings = Config.getInstance();
-    private static final List<Long> admins = settings.getAdminUids();
-
-    public static void processElectric(JsonNode json) {
-        if (!json.has("group_id") || !json.has("raw_message")) return;
-
-        long groupId = json.path("group_id").asLong();
-        long userId = json.path("user_id").asLong();
-        String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
-
-        if (!containsKeyword(rawMessage)) return;
-        if (!admins.contains(userId)) {
-            if (!GroupConfigManager.isFeatureEnabled(groupId,"electric_check")) {
-                return;
-            }
-        }
-
+    public static void processElectric(long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
             String feedback;
             try {
@@ -81,12 +60,6 @@ public class ElectricCheck {
 
             MessageSender.sendGroupMessage(groupId, feedback);
         });
-    }
-
-    private static boolean containsKeyword(String msg) {
-        for (String kw : KEYWORDS)
-            if (msg.equalsIgnoreCase(kw)) return true;
-        return false;
     }
 
     private static String decodeUnicode(String unicodeStr) {

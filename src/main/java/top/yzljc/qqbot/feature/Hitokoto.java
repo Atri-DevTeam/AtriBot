@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.net.HttpURLConnection;
@@ -29,8 +26,6 @@ public class Hitokoto {
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String API_URL = "https://v1.hitokoto.cn/";
-    static Settings settings = Config.getInstance();
-    private static final String[] KEYWORDS = settings.getKeywordsHitokoto();
     private static final String LOCAL_JSON_PATH = "OneText-Library.json";
     private static List<OneTextEntry> localEntries = null;
     private static final Random RANDOM = new Random();
@@ -56,16 +51,7 @@ public class Hitokoto {
         }
     }
 
-    public static void process(JsonNode json) {
-        if (!json.has("group_id") || !json.has("raw_message")) return;
-
-        long groupId = json.path("group_id").asLong();
-        String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
-
-        if (!GroupConfigManager.isFeatureEnabled(groupId, "one_text")) return;
-
-        if (!containsKeyword(rawMessage)) return;
-
+    public static void processHitokoto(long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
             String feedback = fetchEitherHitokotoOrLocal();
             MessageSender.sendGroupMessage(groupId, feedback);
@@ -135,12 +121,6 @@ public class Hitokoto {
             log.warn("本地一言获取异常: {}", ex.getMessage());
             return null;
         }
-    }
-
-    private static boolean containsKeyword(String msg) {
-        for (String kw : KEYWORDS)
-            if (msg.contains(kw)) return true;
-        return false;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botkits.seizeinfo;
+package top.yzljc.qqbot.botkits.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,19 +13,19 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-public class GetGroupName {
-
-    private static final Logger log = LoggerFactory.getLogger(GetUserName.class);
+public class PostDataRequest {
+    private static final Logger log = LoggerFactory.getLogger(PostDataRequest.class);
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
-    private static final String GET_GROUP_INFO_URL = BASEURL + "/get_group_info";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static String sendCheckPost(long groupId) {
+    private static String sendSimplePost(CheckType checkType, long checkData) {
         try {
-            String payload = "{\"group_id\":\"" + groupId + "\"}";
 
-            HttpURLConnection conn = (HttpURLConnection) new URI(GET_GROUP_INFO_URL).toURL().openConnection();
+            String postUrl = BASEURL + checkType.getRequestLink();
+            String payload = String.format("{\"%s\":\"%d\"}", checkType.getRequestDataType(), checkData);
+
+            HttpURLConnection conn = (HttpURLConnection) new URI(postUrl).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
@@ -42,29 +42,22 @@ public class GetGroupName {
             }
 
         } catch (Exception e) {
-            log.warn("获取群聊信息请求失败，group_id = {}：{}", groupId, e.getMessage());
+            log.warn("Request Error! Request Type: {}, Data: {}, Error: {}", checkType, checkData, e.getMessage());
         }
         return null;
     }
 
-    private static JsonNode parseJson(String jsonString) {
+    private static JsonNode tranJson(String jsonString) {
         try {
             return objectMapper.readTree(jsonString);
         } catch (Exception e) {
-            log.warn("字符串转JsonNode失败: {}", e.getMessage());
+            log.warn("原始数据在转化为JsonNode类型时发生错误: {}", e.getMessage());
             return null;
         }
     }
 
-    public static String getGroupName(long groupId) {
-        String response = sendCheckPost(groupId);
-        JsonNode json = null;
-        if (response != null) {
-            json = parseJson(response);
-        }
-        if (json != null) {
-            return json.path("data").path("group_name").asText();
-        }
-        return null;
+    public static JsonNode getSimplePostResult(CheckType checkType, long checkData) {
+        String response = sendSimplePost(checkType, checkData);
+        return tranJson(response);
     }
 }

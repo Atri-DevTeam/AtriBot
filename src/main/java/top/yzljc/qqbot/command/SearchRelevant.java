@@ -2,17 +2,13 @@ package top.yzljc.qqbot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,8 +28,6 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-
 public class SearchRelevant {
 
     private static final Logger log = LoggerFactory.getLogger(SearchRelevant.class);
@@ -46,12 +40,6 @@ public class SearchRelevant {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final int MAX_RESULTS = 200;
     private static final int MAX_MSG_LENGTH = 1000;
-
-    static Settings settings = Config.getInstance();
-    private static final String API_BASE = settings.getHttpUrl();
-    private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
-    private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
-    private static final String DELETE_MSG_API = API_BASE + "/delete_msg";
 
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
@@ -206,32 +194,11 @@ public class SearchRelevant {
 
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
-            ObjectNode root = objectMapper.createObjectNode();
-            root.put("group_id", groupId);
-            root.put("message", message);
-            String jsonBody = objectMapper.writeValueAsString(root);
-
-            HttpURLConnection conn = (HttpURLConnection) new URI(SEND_MSG_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-
-            StringBuilder resp = new StringBuilder();
-            try (InputStream in = conn.getInputStream()) {
-                byte[] buf = new byte[256];
-                int len;
-                while ((len = in.read(buf)) != -1) resp.append(new String(buf, 0, len, StandardCharsets.UTF_8));
-            }
-
-            JsonNode respNode = objectMapper.readTree(resp.toString());
-            if (respNode.has("data") && respNode.get("data").has("message_id")) {
-                long messageId = respNode.get("data").get("message_id").asLong();
+            Long messageId = MessageSender.sendGroupMessageGetId(groupId, message);
+            if (messageId != null) {
                 scheduler.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+            } else {
+                MessageSender.sendGroupMessage(groupId, message);
             }
         } catch (Exception e) {
             MessageSender.sendGroupMessage(groupId, message);
@@ -240,17 +207,7 @@ public class SearchRelevant {
 
     private static void withdrawMessage(long messageId) {
         try {
-            String jsonBody = String.format("{\"message_id\":%d}", messageId);
-            HttpURLConnection conn = (HttpURLConnection) new URI(DELETE_MSG_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-            conn.getResponseCode();
-            conn.disconnect();
+            PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE, messageId);
         } catch (Exception ignored) {}
     }
 
@@ -286,19 +243,7 @@ public class SearchRelevant {
             CachedNickname cached = nicknameCache.get(userId);
             if (cached != null && (now - cached.time) < NICKNAME_CACHE_EXPIRE) return cached.nick;
 
-            String body = String.format("{\"user_id\":\"%d\"}", userId);
-            HttpURLConnection conn = (HttpURLConnection) new URI(NICKNAME_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(body.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-
-            JsonNode node = objectMapper.readTree(conn.getInputStream());
-            String nick = node.path("data").path("nick").asText(null);
+            String nick = GetUserName.getUserName(userId);
 
             if (nick != null && !nick.isEmpty()) {
                 nicknameCache.put(userId, new CachedNickname(nick, now));

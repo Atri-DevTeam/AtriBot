@@ -12,7 +12,6 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.net.URI;
 
@@ -24,37 +23,9 @@ public class LikeUser {
     static Settings settings = Config.getInstance();
     private static final String BASEURL = settings.getHttpUrl();
     private static final String NAPCAT_LIKE_API = BASEURL + "/send_like";
-    private static final String[] KEYWORDS = settings.getKeywordsLikeUser();
 
-    /**
-     * 处理点赞指令
-     * @param json 原始消息 JSON
-     */
-    public static void processCommand(JsonNode json) {
-        // 1. 基本校验
-        if (!json.has("message_type") || !"group".equals(json.path("message_type").asText())) {
-            return;
-        }
-
-        String rawMessage = json.path("raw_message").asText();
-        if (rawMessage == null || rawMessage.isEmpty()) {
-            return;
-        }
-
-        String msgLower = rawMessage.trim().toLowerCase();
-        for (String kw : KEYWORDS) {
-            if (msgLower.equalsIgnoreCase(kw)) {
-                long userId = json.path("user_id").asLong();
-                long groupId = json.path("group_id").asLong();
-
-                if (!GroupConfigManager.isFeatureEnabled(groupId,"like_user")) {
-                    return;
-                }
-                // 触发点赞逻辑
-                sendLike(userId, groupId);
-                return;
-            }
-        }
+    public static void processCommand(long userId, long groupId) {
+        sendLike(userId, groupId);
     }
 
     /**

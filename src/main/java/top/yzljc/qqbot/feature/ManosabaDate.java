@@ -1,6 +1,5 @@
 package top.yzljc.qqbot.feature;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -78,21 +77,9 @@ public class ManosabaDate {
         new ImageGen().generate(new File(tempDir, "manoday.png"));
     }
 
-    public static void processManodate(JsonNode json) {
-        String postType = json.path("post_type").asText("");
-        if (!"message".equals(postType)) return;
-        String messageType = json.path("message_type").asText("");
-        if (!"group".equals(messageType)) return;
-        String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
-        long groupId = json.path("group_id").asLong();
-        long userId = json.path("user_id").asLong();
-
-        if (!admins.contains(userId)) return;
-
-        if ("/manodate".equals(rawMessage)) {
-            sendAndNotifyToGroup();
-            log.info("manodate 指令触发图片推送：{}", groupId);
-        }
+    public static void receiveManodate(long groupId) {
+        sendAndNotifyToGroup();
+        log.info("manodate 指令触发图片推送：{}", groupId);
     }
 
     public static boolean sendAndNotifyToGroup() {

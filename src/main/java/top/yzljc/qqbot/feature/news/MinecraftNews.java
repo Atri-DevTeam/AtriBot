@@ -3,9 +3,7 @@ package top.yzljc.qqbot.feature.news;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.groups.GroupList;
 
@@ -48,23 +46,14 @@ public class MinecraftNews {
     private static boolean isInitialized = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    static Settings settings = Config.getInstance();
-    private static final List<Long> admins = settings.getAdminUids();
-
-    public static boolean processCommand(long userId, long groupId, String rawMessage) {
-        if (rawMessage == null) return false;
-        String msgLower = rawMessage.trim().toLowerCase();
-
-        if ("/testformc".equals(msgLower)) {
-            if (admins.contains(userId)) {
-                MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
-                Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
-            } else {
-                log.info("用户 {} 尝试触发更新但无权限", userId);
-            }
-            return true;
+    public static void processUpdate(long groupId) {
+        try{
+            MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
+            log.info("Minecraft 新闻手动检查触发，群号：{}", groupId);
+            Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
+        } catch (Exception e){
+            log.error("手动检查Minecraft新闻时发生错误：", e);
         }
-        return false;
     }
 
     public static void startScheduler() {

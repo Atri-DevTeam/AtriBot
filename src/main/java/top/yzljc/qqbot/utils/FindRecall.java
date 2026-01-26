@@ -3,8 +3,8 @@ package top.yzljc.qqbot.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.seizeinfo.GetGroupName;
-import top.yzljc.qqbot.botkits.seizeinfo.GetUserName;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
+import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 public class FindRecall {
     static Settings settings = Config.getInstance();
     private static final long DEBUG_GROUP_ID = settings.getDebugGroupId();
+    private static final long BOT_ID = settings.getBotUid();
 
     public static void processMessage(JsonNode json) {
 
@@ -29,6 +30,10 @@ public class FindRecall {
         String foundUserName = GetUserName.getUserName(userId);
         String foundGroupName = GetGroupName.getGroupName(groupId);
         String myMessage = null;
+
+        if (userId == BOT_ID) {
+            return; // 不写会炸，别问我怎么知道的
+        }
 
         if (foundMessage != null) {
             myMessage = "[" + formattedTime + "] " + foundUserName + "在群 " + foundGroupName + " 撤回了一条消息：" + foundMessage;

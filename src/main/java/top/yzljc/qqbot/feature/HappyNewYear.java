@@ -1,6 +1,5 @@
 package top.yzljc.qqbot.feature;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.groups.GroupList;
@@ -89,21 +88,12 @@ public class HappyNewYear {
         new ImageGen().generate(outFile);
     }
 
-    public static void processManodate(JsonNode json) {
-        String postType = json.path("post_type").asText("");
-        if (!"message".equals(postType)) return;
-        String messageType = json.path("message_type").asText("");
-        if (!"group".equals(messageType)) return;
-        String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
-        long groupId = json.path("group_id").asLong();
-
-        if ("/happynewyear".equals(rawMessage)) {
-            sendToSingleGroup(groupId);
-            log.info("新年倒计时指令触发图片推送：{}", groupId);
-        }
+    public static void processHappyNewYear(long groupId) {
+        sendToSingleGroup(groupId);
+        log.info("新年倒计时指令触发图片推送：{}", groupId);
     }
 
-    public static boolean sendToAllGroups() {
+    public static void sendToAllGroups() {
         File tempFile = new File("tmp", "happynewyear.png");
         try {
             generateDevelopDayImage();
@@ -114,7 +104,7 @@ public class HappyNewYear {
             Set<Long> groupIds = GroupList.fetchAllGroupIds();
             if (groupIds.isEmpty()) {
                 log.info("未获取到任何群号，跳过推送");
-                return false;
+                return;
             }
 
             log.info("开始向 {} 个群推送图片……", groupIds.size());
@@ -126,11 +116,9 @@ public class HappyNewYear {
                 try { Thread.sleep(200); } catch (InterruptedException e) {}
             }
             log.info("推送完成，共发送给 {} 个群", count);
-            return true;
         } catch (Exception ex) {
             log.error("群发图片异常：{}", ex.getMessage());
             ex.printStackTrace();
-            return false;
         } finally {
             if (tempFile.exists()) tempFile.delete();
         }

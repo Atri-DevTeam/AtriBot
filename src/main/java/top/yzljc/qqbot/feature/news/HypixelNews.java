@@ -277,26 +277,12 @@ public class HypixelNews {
         }
     }
 
-    public static void processTestForHyp(JsonNode json) {
-        String postType = json.path("post_type").asText("");
-        if (!"message".equals(postType)) return;
-        String messageType = json.path("message_type").asText("");
-        if (!"group".equals(messageType)) return;
-
-        String rawMessage = json.path("raw_message").asText("").trim().toLowerCase();
-        long userId = json.path("user_id").asLong();
-        long groupId = json.path("group_id").asLong();
-
-        if ("/testforhyp".equals(rawMessage) && admins.contains(userId)) {
-            // 先发送反馈消息
-            MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
-            log.info("testforhyp 指令触发 Hypixel 新闻监控 by {}", userId);
-
-            // 异步执行检查，避免阻塞主线程
-            Executors.newSingleThreadExecutor().submit(() -> {
+    public static void processTestForHyp(long groupId) {
+        MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
+        log.info("Hypixel 新闻手动检查触发，群号：{}", groupId);
+        Executors.newSingleThreadExecutor().submit(() -> {
                 checkNews(true);
-            });
-        }
+        });
     }
 
     /** 统一文章结构 */

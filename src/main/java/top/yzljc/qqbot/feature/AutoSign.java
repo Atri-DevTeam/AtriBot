@@ -1,12 +1,12 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,15 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.groups.GroupList;
 
-import java.net.URI;
-
 public class AutoSign {
 
     private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
     
     static Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
-    private static final String GROUP_SIGN_API = BASEURL + "/send_group_sign";
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final List<Long> admins = settings.getAdminUids();
 
@@ -72,25 +68,10 @@ public class AutoSign {
     }
 
     private static void sendGroupSign(long groupId) {
-        try {
-            String payload = "{\"group_id\":\"" + groupId + "\"}";
-
-            HttpURLConnection conn = (HttpURLConnection) new URI(GROUP_SIGN_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-            conn.getInputStream().close();
-        } catch (Exception e) {
-            System.err.println("[INFO] 群打卡失败 group_id=" + groupId + "  " + e.getMessage());
-        }
+        PostRequest.sendSimplePost(CheckType.SEND_SIGN, groupId);
     }
 
-    public static void processAutoSign(JsonNode json) {
-        long userId = json.path("user_id").asLong();
-        String rawMessage = json.path("raw_message").asText().trim().toLowerCase();
-        if (admins.contains(userId) && "/testforsign".equals(rawMessage)) {
-            Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
-        }
+    public static void processAutoSign() {
+        Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
     }
 }
