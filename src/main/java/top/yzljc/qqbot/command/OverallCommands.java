@@ -7,10 +7,13 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.feature.*;
+import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.MojangStatus;
+import top.yzljc.qqbot.feature.minecraft.ServerStatus;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.utils.CommandHelp;
+import top.yzljc.qqbot.utils.MessageStats;
 
 import java.util.List;
 
@@ -68,6 +71,15 @@ public class OverallCommands {
         }
         if (admins.contains(userId) && "/signall".equals(rawMessage)){
             AutoSign.processAutoSign();
+        }
+        if (rawMessage.startsWith("/github") && admins.contains(userId)){
+            WebhookServer.processCommand(groupId,rawMessage);
+        }
+        if (rawMessage.startsWith("/stats")){
+            MessageStats.processCommand(groupId,rawMessage);
+        }
+        if (rawMessage.startsWith("/serverstatus")) {
+            ServerStatus.processModeChange(userId,groupId,rawMessage);
         }
         if (electricKeyword(rawMessage)){
             if (!admins.contains(userId)){

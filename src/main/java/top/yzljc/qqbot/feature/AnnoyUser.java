@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -29,7 +30,7 @@ public class AnnoyUser {
     private static final String BASEURL = settings.getHttpUrl();
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String EMOJI_API = BASEURL + "/set_msg_emoji_like";
-    private static final String RECORD_FILE = "annoy_user_record.json";
+    private static final String RECORD_FILE = ConfigFile.ANNOY_RECORD.getFileName();
     private static final Random RAND = new Random();
 
     private static final Map<Long, Map<Long, String>> annoyMap = new ConcurrentHashMap<>();

@@ -17,7 +17,7 @@ public class Config implements Settings{
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
-    private static final String CONFIG_FILE = "config.yml";
+    private static final String CONFIG_FILE = ConfigFile.CONFIG.getFileName();
     private static Config instance;
     private int listenPort;
     private int qqBotPort;

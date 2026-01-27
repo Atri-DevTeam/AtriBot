@@ -1,29 +1,58 @@
 package top.yzljc.qqbot.feature.minecraft;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Base64;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.ConfigFile;
 
 public class ServerStatus {
 
     private static final Logger log = LoggerFactory.getLogger(ServerStatus.class);
+    private static final String SERVER_LIST = ConfigFile.SERVER_LIST.getFileName();
+    private static final String ADMIN_FILE = ConfigFile.RCON_USER.getFileName();
 
-    /**
-     * 生成状态图片并推送到群
-     *
-     * @param groupId 群号
-     * @param name    服务器名称
-     * @param ip      服务器IP
-     * @param port    服务器端口
-     * @param id      服务器ID（用于生成文件名）
-     * @param isOnline 是否在线
-     */
+    public static class ServerInfo {
+        public long group_id;
+        public String name;
+        public String ip;
+        public int port;
+        public String id;
+        public String server_mode;
+    }
+
+    public static List<ServerInfo> loadServerList() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            File file = new File(SERVER_LIST);
+            List<ServerInfo> list = mapper.readValue(file, new TypeReference<List<ServerInfo>>() {});
+            if (list != null) {
+                for (ServerInfo si : list) {
+                    if (si.server_mode == null) si.server_mode = "normal";
+                }
+            }
+            return list;
+        } catch (Exception e) {
+            log.error("读取服务器列表文件时出错：{}", e.getMessage());
+            return null;
+        }
+    }
+
     public static void sendReport(long groupId, String name, String ip, int port, String id, boolean isOnline) {
+
+        if (isMaintenance(id)) {
+            log.info("服务器[{}]当前为maintenance，跳过群[{}]推送", id, groupId);
+            return;
+        }
+
         File tempFile = null;
         String statusDesc = isOnline ? "在线" : "离线";
 
@@ -68,5 +97,70 @@ public class ServerStatus {
                 log.info("临时图片已清理");
             }
         }
+    }
+
+    private static boolean isMaintenance(String id) {
+        try {
+            List<ServerInfo> servers = loadServerList();
+            if (servers != null) {
+                for (ServerInfo s : servers) {
+                    if (id.equals(s.id)) {
+                        return "maintenance".equalsIgnoreCase(s.server_mode);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("检查server_mode出错：{}", e.getMessage());
+        }
+        return false;
+    }
+
+    public static void processModeChange(long userId,long groupId, String message) {
+
+        String[] args = message.trim().split("\\s+");
+        if (args.length < 3) return;
+        String serverId = args[1];
+        String mode = args[2];
+        if (!("normal".equals(mode) || "maintenance".equals(mode))) return;
+        try {
+            List<ServerInfo> servers = loadServerList();
+            if (servers == null) return;
+            ServerInfo s = null;
+            for (ServerInfo si : servers) {
+                if (serverId.equals(si.id)) {
+                    s = si;
+                    break;
+                }
+            }
+            if (s == null) return;
+            if (!canAuth(String.valueOf(userId), groupId, serverId)) {
+                MessageSender.sendGroupMessage(groupId, "无操作权限！", null);
+                return;
+            }
+            s.server_mode = mode;
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File(SERVER_LIST), servers);
+            MessageSender.sendGroupMessage(groupId, "服务器 [" + s.name + "] 模式已切换为：" + mode, null);
+        } catch (Exception ex) {
+            log.error("管理指令处理出错: {}", ex.getMessage());
+        }
+    }
+
+    private static boolean canAuth(String userId, long groupId, String serverId) {
+        if ("3199590352".equals(userId)) return true;
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode arr = mapper.readTree(new File(ADMIN_FILE));
+            for (JsonNode obj : arr) {
+                if (
+                        userId.equals(obj.path("user").asText())
+                                && String.valueOf(groupId).equals(obj.path("group").asText())
+                                && serverId.equals(obj.path("server-id").asText())
+                ) return true;
+            }
+        } catch (Exception e) {
+            log.error("读取用户鉴权配置文件失败：{}", e.getMessage());
+        }
+        return false;
     }
 }

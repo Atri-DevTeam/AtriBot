@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.ConfigFile;
 
 /**
  * &#064;群功能配置管理核心文件
@@ -21,7 +22,7 @@ public class GroupConfigManager {
 
     private static final Logger log = LoggerFactory.getLogger(GroupConfigManager.class);
 
-    private static final String CONFIG_FILE = "groupconfig.json";
+    private static final String CONFIG_FILE = ConfigFile.GROUP_CONFIG.getFileName();
     private static final ObjectMapper jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     private static Map<Long, Map<String, Boolean>> groupConfigCache = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> registeredFeatures = new LinkedHashMap<>();

@@ -1,19 +1,12 @@
 package top.yzljc.qqbot.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
@@ -23,23 +16,13 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.net.URI;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MessageStats {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
-    // 这玩意是处理@别人的，省的弄个一坨出来
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
-
-    static Settings settings = Config.getInstance();
-    private static final String API_BASE = settings.getHttpUrl();
-    private static final String NICKNAME_API = API_BASE + "/get_stranger_info";
-    private static final String SEND_MSG_API = API_BASE + "/send_group_msg";
-    private static final String DELETE_MSG_API = API_BASE + "/delete_msg";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
     private static volatile boolean scheduled = false;
@@ -103,38 +86,30 @@ public class MessageStats {
         return groupIds;
     }
 
-    public static void processCommand(JsonNode jsonInput) {
-        if (jsonInput == null || !"group".equals(jsonInput.path("message_type").asText())) return;
-        long groupId = jsonInput.path("group_id").asLong();
-        String rawMsg = jsonInput.path("raw_message").asText().trim();
+    public static void processCommand(long groupId, String rawMsg) {
         String msgContent = rawMsg;
         boolean overall = false;
         LocalDate targetDate = LocalDate.now();
         Long qqAt = null;
 
-        // 【修复】增加长度判断，防止 substring 越界
-        if (rawMsg.startsWith("/stats")) {
-            if (rawMsg.startsWith("/statsoverall")) {
-                overall = true;
-                // 如果长度正好等于指令长度，说明后面没参数，给空字符串即可
-                msgContent = rawMsg.length() > 13 ? rawMsg.substring(13).trim() : "";
-            }
-            else if (rawMsg.startsWith("/statsyesterday")) {
-                targetDate = LocalDate.now().minusDays(1);
-                msgContent = rawMsg.length() > 15 ? rawMsg.substring(15).trim() : "";
-            }
-            else if (rawMsg.startsWith("/statsy")) {
-                targetDate = LocalDate.now().minusDays(1);
-                msgContent = rawMsg.length() > 7 ? rawMsg.substring(7).trim() : "";
-            }
-            else {
-                // 对应普通的 /stats
-                msgContent = rawMsg.length() > 6 ? rawMsg.substring(6).trim() : "";
-            }
-            qqAt = extractAtUser(msgContent);
-        } else {
-            return;
+        if (rawMsg.startsWith("/statsoverall")) {
+            overall = true;
+            // 如果长度正好等于指令长度，说明后面没参数，给空字符串即可
+            msgContent = rawMsg.length() > 13 ? rawMsg.substring(13).trim() : "";
         }
+        else if (rawMsg.startsWith("/statsyesterday")) {
+            targetDate = LocalDate.now().minusDays(1);
+            msgContent = rawMsg.length() > 15 ? rawMsg.substring(15).trim() : "";
+        }
+        else if (rawMsg.startsWith("/statsy")) {
+            targetDate = LocalDate.now().minusDays(1);
+            msgContent = rawMsg.length() > 7 ? rawMsg.substring(7).trim() : "";
+        }
+        else {
+            // 对应普通的 /stats
+            msgContent = rawMsg.length() > 6 ? rawMsg.substring(6).trim() : "";
+        }
+        qqAt = extractAtUser(msgContent);
 
         String replyMsg;
         if (qqAt == null) {
@@ -236,68 +211,21 @@ public class MessageStats {
 
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
-            // 构造发送请求的 JSON
-            ObjectNode root = objectMapper.createObjectNode();
-            root.put("group_id", groupId);
-            root.put("message", message);
-            String jsonBody = objectMapper.writeValueAsString(root);
+            Long messageId = MessageSender.sendGroupMessageGetId(groupId, message);
 
-            // 发送 HTTP 请求
-            HttpURLConnection conn = (HttpURLConnection) new URI(SEND_MSG_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(5000);
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-
-            // 读取响应获取 message_id
-            StringBuilder resp = new StringBuilder();
-            try (InputStream in = conn.getInputStream()) {
-                byte[] buf = new byte[256];
-                int len;
-                while ((len = in.read(buf)) != -1) {
-                    resp.append(new String(buf, 0, len, StandardCharsets.UTF_8));
-                }
-            }
-
-            // 解析 message_id
-            JsonNode respNode = objectMapper.readTree(resp.toString());
-            if (respNode.has("data") && respNode.get("data").has("message_id")) {
-                long messageId = respNode.get("data").get("message_id").asLong();
-
+            if (messageId != null) {
                 withdrawScheduler.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+            } else {
+                MessageSender.sendGroupMessage(groupId, message);
             }
-
         } catch (Exception e) {
-            // 发送失败或解析失败，尝试回退到普通发送
             log.warn("自动撤回发送流程异常: {}", e.getMessage());
             MessageSender.sendGroupMessage(groupId, message);
         }
     }
 
     private static void withdrawMessage(long messageId) {
-        try {
-            String jsonBody = String.format("{\"message_id\":%d}", messageId);
-            HttpURLConnection conn = (HttpURLConnection) new URI(DELETE_MSG_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(3000);
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
-                os.flush();
-            }
-            conn.getResponseCode();
-            conn.disconnect();
-        } catch (Exception e) {
-            log.error("MessageStats: 撤回消息 {} 失败: {}", messageId, e.getMessage());
-        }
+        PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE, messageId);
     }
 
     private static String fetchNickname(Long userId) {

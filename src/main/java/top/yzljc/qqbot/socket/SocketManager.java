@@ -3,9 +3,13 @@ package top.yzljc.qqbot.socket;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.minecraft.ServerStatus;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -13,6 +17,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,32 +31,40 @@ public class SocketManager {
     private static final Logger log = LoggerFactory.getLogger(SocketManager.class);
     static Settings settings = Config.getInstance();
     private static final long debugGroupId = settings.getDebugGroupId();
-    private static final String LIST_FILE = "serverlist.txt";
+    private static final String LIST_FILE = ConfigFile.SERVER_LIST.getFileName();
     private static final Map<String, ServerInfo> serverMap = new HashMap<>();
     private static final Map<String, Socket> activeConnections = new ConcurrentHashMap<>();
 
     private static final Pattern STRICT_FILTER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\u4e00-\\u9fa5]");
 
-    // 内部数据结构
-    static class ServerInfo {
-        long groupId;
-        String name;
-        String ip;
-        int port;
-        String id;
+    public static class ServerInfo {
+        public long group_id;
+        public String name;
+        public String ip;
+        public int port;
+        public String id;
+        public String server_mode;
+    }
 
-        ServerInfo(long g, String n, String i, int p, String id) {
-            groupId = g;
-            name = n;
-            ip = i;
-            port = p;
-            this.id = id;
+    public static void loadConfig() {
+        serverMap.clear();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<ServerInfo> list = mapper.readValue(new File(LIST_FILE), new TypeReference<List<ServerInfo>>() {});
+            for (ServerInfo s : list) {
+                serverMap.put(s.id, s);
+                log.info(" -> 加载配置：[{}] {} (群：{})", s.id, s.name, s.group_id);
+            }
+            if (serverMap.isEmpty()) {
+                log.warn("未读取到服务器配置，请检查 serverlist.json");
+            } else {
+                log.info("已加载 {} 个服务器配置", serverMap.size());
+            }
+        } catch (Exception e) {
+            log.error("读取配置文件失败：{}", e.getMessage());
         }
     }
 
-    /**
-     * 发送指令到指定服务器
-     */
     public static boolean sendCommand(String serverId, String command, String secret) {
         Socket client = activeConnections.get(serverId);
         if (client == null || client.isClosed()) {
@@ -59,7 +72,6 @@ public class SocketManager {
             return false;
         }
         try {
-            // 协议格式: EXEC_CMD|指令内容|密钥
             String payload = "EXEC_CMD|" + command + "|" + secret;
             OutputStream out = client.getOutputStream();
             out.write(payload.getBytes(StandardCharsets.UTF_8));
@@ -72,53 +84,7 @@ public class SocketManager {
         }
     }
 
-    /**
-     * 加载服务器配置文件
-     */
-    public static void loadConfig() {
-        serverMap.clear();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(LIST_FILE), StandardCharsets.UTF_8))) {
-            String line = reader.readLine();
-            if (line == null || line.isEmpty()) return;
-
-            if (line.startsWith("\uFEFF")) line = line.substring(1);
-
-            String[] items = line.split("#");
-            for (String item : items) {
-                String[] fs = item.split("/");
-                if (fs.length != 5) {
-                    log.warn("格式错误跳过：{}", item);
-                    continue;
-                }
-                try {
-                    long gid = Long.parseLong(fs[0].trim());
-                    String name = fs[1].trim();
-                    String ip = fs[2].trim();
-                    int port = Integer.parseInt(fs[3].trim());
-                    String id = fs[4].trim();
-
-                    serverMap.put(id, new ServerInfo(gid, name, ip, port, id));
-                    log.info(" -> 加载配置：[{}] {} (群：{})", id, name, gid);
-                } catch (Exception e) {
-                    log.error("解析错误：{}", item);
-                }
-            }
-            if (serverMap.isEmpty()) {
-                log.warn("未读取到服务器配置，请检查 serverlist.txt");
-                log.warn("格式：群号/名称/IP/端口/编号#……");
-            } else {
-                log.info("已加载 {} 个服务器配置", serverMap.size());
-            }
-        } catch (Exception e) {
-            log.error("读取配置文件失败：{}", e.getMessage());
-        }
-    }
-
-    /**
-     * 启动 Socket 服务端
-     */
     public static void start(int port) {
-        // 使用新线程启动监听，避免阻塞主线程
         new Thread(() -> {
             ExecutorService threadPool = Executors.newCachedThreadPool();
             try (ServerSocket serverSocket = new ServerSocket(port)) {
@@ -144,8 +110,6 @@ public class SocketManager {
             while ((len = in.read(buffer)) != -1) {
                 String rawData = new String(buffer, 0, len, StandardCharsets.UTF_8).trim();
 
-                // 第一层拆包：ID | Type | Content
-                // split limit 3 确保 Content 内部的 | 不会被切分
                 String[] parts = rawData.split("\\|", 3);
 
                 if (parts.length >= 2) {
@@ -153,7 +117,6 @@ public class SocketManager {
                     String type = parts[1];
                     String content = parts.length == 3 ? parts[2] : "";
 
-                    // 注册连接
                     if (currentServerId == null) {
                         currentServerId = receivedId;
                         activeConnections.put(receivedId, socket);
@@ -161,7 +124,6 @@ public class SocketManager {
 
                     ServerInfo info = serverMap.get(receivedId);
                     String serverName = (info != null) ? info.name : receivedId;
-
 
                     if ("CMD_RESPONSE".equalsIgnoreCase(type)) {
                         String logs = content.isEmpty() ? "(无输出)" : content;
@@ -185,11 +147,11 @@ public class SocketManager {
                                 System.out.println(msg);
                             } else if ("QUIT".equalsIgnoreCase(action)) {
                                 msg = String.format("[%s] 玩家 %s 离开了服务器", serverName, playerName);
-                               log.info(msg); 
+                                log.info(msg);
                             }
 
                             if (!msg.isEmpty()) {
-                                sendToGroup(debugGroupId, msg);
+                                sendToGroup(msg);
                             }
                         }
 
@@ -208,14 +170,14 @@ public class SocketManager {
 
                             if (isDirty) {
                                 log.info("检测到违规消息，拦截到服务器 {} 玩家 {} 的消息： {}", serverName, playerName, chatMsg);
-                                sendToGroup(debugGroupId, "有违规聊天内容已进行拦截，请管理员进行审查！");
+                                sendToGroup("有违规聊天内容已进行拦截，请管理员进行审查！");
                                 continue;
                             }
 
                             String formattedMsg = String.format("[%s] %s: %s", serverName, playerName, chatMsg);
                             log.info("转发聊天：{}", formattedMsg);
 
-                            sendToGroup(debugGroupId, formattedMsg);
+                            sendToGroup(formattedMsg);
                         }
 
                     } else if ("ONLINE".equalsIgnoreCase(type) || "OFFLINE".equalsIgnoreCase(type)) {
@@ -227,7 +189,7 @@ public class SocketManager {
                             }
 
                             ServerStatus.sendReport(
-                                    info.groupId,
+                                    info.group_id,
                                     info.name,
                                     info.ip,
                                     info.port,
@@ -255,8 +217,8 @@ public class SocketManager {
         }
     }
 
-    private static void sendToGroup(long groupId, String message) {
-        MessageSender.sendGroupMessage(groupId,message);
-        log.info("Minecraft服务器消息转发成功，目标群号 {}，目标消息内容：{}", groupId, message);
+    private static void sendToGroup(String message) {
+        MessageSender.sendGroupMessage(SocketManager.debugGroupId,message);
+        log.info("Minecraft服务器消息转发成功，目标群号 {}，目标消息内容：{}", SocketManager.debugGroupId, message);
     }
 }

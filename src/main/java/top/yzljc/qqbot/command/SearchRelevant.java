@@ -1,7 +1,6 @@
 package top.yzljc.qqbot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.botkits.request.CheckType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
@@ -25,13 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SearchRelevant {
-
-    private static final Logger log = LoggerFactory.getLogger(SearchRelevant.class);
-
     private static final Pattern QUOTE_PATTERN = Pattern.compile("/search\\s+\"([^\"]+)\"(.*)");
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)(?:,.*?)?]");
     private static final Pattern REPLY_PATTERN = Pattern.compile("\\[CQ:reply,id=(\\d+)(?:,.*?)?]");
@@ -43,7 +36,6 @@ public class SearchRelevant {
 
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private static class CachedNickname {

@@ -55,7 +55,6 @@ public class MessageProcessor {
         GroupModeManager.process(json);
         AnnoyUser.processMessage(json);
         MessageRecorder.processRecord(json);
-        MessageStats.processCommand(json);
         SearchRelevant.processCommand(json);
         ServerStatusReport.process(json);
         CheckBilibili.process(json);

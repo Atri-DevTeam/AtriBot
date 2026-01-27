@@ -1,16 +1,12 @@
 package top.yzljc.qqbot.feature;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botkits.request.CheckType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,10 +19,7 @@ import top.yzljc.qqbot.config.groups.GroupList;
 public class AutoSign {
 
     private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
-    
-    static Settings settings = Config.getInstance();
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private static final List<Long> admins = settings.getAdminUids();
 
     public static void startScheduler() {
         long initialDelay = computeInitialDelay();

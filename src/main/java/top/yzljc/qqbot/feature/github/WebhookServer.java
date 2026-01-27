@@ -1,5 +1,7 @@
 package top.yzljc.qqbot.feature.github;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -12,19 +14,27 @@ import top.yzljc.qqbot.config.groups.GroupList;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 
 public class WebhookServer {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String CONFIG_FILE_PATH = "github_repository.json";
+    private static final Map<String, List<Long>> repoConfig = new HashMap<>();
+
+    static {
+        loadConfig();
+    }
 
     public static void start(int port, String secret) {
         try {
@@ -35,6 +45,67 @@ public class WebhookServer {
             log.info("Webhook server started on port " + port);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void processCommand(long groupId, String rawMessage) {
+        String[] parts = rawMessage.split("\\s+");
+
+        // 指令格式: /github 仓库名 群号1 群号2 ...
+        if (parts.length >= 3) {
+            String targetRepo = parts[1];
+            List<Long> targetGroupIds = new ArrayList<>();
+
+            try {
+                for (int i = 2; i < parts.length; i++) {
+                    targetGroupIds.add(Long.parseLong(parts[i]));
+                }
+
+                // 存入配置 (key转小写以忽略大小写)
+                synchronized (repoConfig) {
+                    repoConfig.put(targetRepo.toLowerCase(), targetGroupIds);
+                    saveConfig();
+                }
+
+                MessageSender.sendGroupMessage(groupId, "配置成功！仓库 [" + targetRepo + "] 将仅推送到群: " + targetGroupIds);
+
+            } catch (NumberFormatException e) {
+                MessageSender.sendGroupMessage(groupId, "指令错误：群号必须为数字。");
+            } catch (Exception e) {
+                log.warn("Failed to process /github command", e);
+                MessageSender.sendGroupMessage(groupId, "配置更新失败，发生内部错误。");
+            }
+        } else {
+            MessageSender.sendGroupMessage(groupId, "用法: /github <仓库名> <群号1> [群号2...]");
+        }
+    }
+
+    private static void loadConfig() {
+        File file = new File(CONFIG_FILE_PATH);
+        if (!file.exists()) return;
+        try {
+            synchronized (repoConfig) {
+                Map<String, List<Long>> loaded = objectMapper.readValue(file, new TypeReference<Map<String, List<Long>>>() {});
+                if (loaded != null) {
+                    repoConfig.clear();
+                    // 确保key为小写
+                    for (Map.Entry<String, List<Long>> entry : loaded.entrySet()) {
+                        repoConfig.put(entry.getKey().toLowerCase(), entry.getValue());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.error("Failed to load github repository config", e);
+        }
+    }
+
+    private static void saveConfig() {
+        try {
+            synchronized (repoConfig) {
+                objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(CONFIG_FILE_PATH), repoConfig);
+            }
+        } catch (IOException e) {
+            log.error("Failed to save github repository config", e);
         }
     }
 
@@ -81,20 +152,42 @@ public class WebhookServer {
 
         private void processPushEvent(String json) {
             CommitDisplay.GithubPayload data = parseJson(json);
+            String repoNameForFilter = getSimpleRepoName(json);
             CommitDisplay generator = new CommitDisplay();
             String base64Image = generator.generateBase64(data);
 
             if (base64Image != null) {
-                for (Long groupId : TARGET_GROUPS) {
-                    if (!GroupConfigManager.isFeatureEnabled(groupId,"github_info")) {
-                        continue;
+                Collection<Long> destinationGroups = new ArrayList<>();
+
+                if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase())) {
+                    destinationGroups = repoConfig.get(repoNameForFilter.toLowerCase());
+                } else {
+                    for (Long groupId : TARGET_GROUPS) {
+                        if (GroupConfigManager.isFeatureEnabled(groupId, "github_info")) {
+                            destinationGroups.add(groupId);
+                        }
                     }
-                    MessageSender.sendGroupMessage(groupId, null, base64Image);
-                    try { Thread.sleep(1000);
-                    } catch (InterruptedException ignored) {
+                }
+
+                if (destinationGroups != null) {
+                    for (Long groupId : destinationGroups) {
+                        MessageSender.sendGroupMessage(groupId, null, base64Image);
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException ignored) {
+                        }
                     }
                 }
             }
+        }
+
+        private String getSimpleRepoName(String json) {
+            int repoIndex = json.indexOf("\"repository\":");
+            if (repoIndex != -1) {
+                String repoPart = json.substring(repoIndex);
+                return extractString(repoPart, "\"name\":\"", "\"");
+            }
+            return null;
         }
 
         private CommitDisplay.GithubPayload parseJson(String json) {

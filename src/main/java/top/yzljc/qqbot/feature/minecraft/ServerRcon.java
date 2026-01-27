@@ -3,6 +3,7 @@ package top.yzljc.qqbot.feature.minecraft;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.feature.minecraft.specificserver.YunTea;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.feature.minecraft.specificserver.HypixelBanTest;
@@ -21,8 +22,8 @@ public class ServerRcon {
 
     private static final Logger log = LoggerFactory.getLogger(ServerRcon.class);
 
-    private static final String ADMIN_FILE = "adminuser.json";
-    private static final String SERVER_SECRET_FILE = "server-secret.json";
+    private static final String ADMIN_FILE = ConfigFile.RCON_USER.getFileName();
+    private static final String SERVER_SECRET_FILE = ConfigFile.RCON_SERVER_SECRET.getFileName();
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static Map<String, List<String>> adminRules = new HashMap<>();
     private static Map<String, String> serverSecretMap = new HashMap<>();
