@@ -197,7 +197,11 @@ public class Motd {
         }
 
         private void drawCard(String serverName, String ip, int port, MotdResult data, boolean failed, File outFile) throws Exception {
-            initBlank(CARD_W, CARD_H);
+            try {
+                initFromBackground("manoyinxi.png");
+            } catch (Exception e) {
+                initBlank(CARD_W, CARD_H);
+            }
             Font baseFont = loadFont(Font.PLAIN, 1f);
             Font titleFont = baseFont.deriveFont(Font.BOLD, 22f);
             Font labelFont = baseFont.deriveFont(Font.PLAIN, 16f);
@@ -220,7 +224,7 @@ public class Motd {
             } else {
                 if (data.icon != null) {
                     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    g.drawImage(data.icon, CARD_W - PAD - ICON_SIZE, PAD + 2, ICON_SIZE, ICON_SIZE, null);
+                    g.drawImage(data.icon, width - PAD - ICON_SIZE, PAD + 2, ICON_SIZE, ICON_SIZE, null);
                 }
 
                 g.setFont(valueFont);
@@ -240,7 +244,7 @@ public class Motd {
 
             g.setFont(baseFont.deriveFont(Font.PLAIN, 12f));
             String timeStr = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            drawCenteredShadowText(timeStr, CARD_H - 16, Color.GRAY, Color.BLACK);
+            drawCenteredShadowText(timeStr, height - 16, Color.GRAY, Color.BLACK);
             saveAndDispose(outFile);
         }
 
