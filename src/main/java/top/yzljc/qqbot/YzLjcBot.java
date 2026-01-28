@@ -68,6 +68,7 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("send_poke", true);
         GroupConfigManager.registerFeature("like_user", true);
         GroupConfigManager.registerFeature("mojang_status", true);
+        GroupConfigManager.registerFeature("motd", true);
         GroupConfigManager.registerFeature("github_info", false);
         GroupConfigManager.registerFeature("bv_check", false);
     }
