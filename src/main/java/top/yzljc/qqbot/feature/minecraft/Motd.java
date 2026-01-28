@@ -23,9 +23,6 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 通过 mcstatus.io API 获取服务器 MOTD，供 /motd 指令使用。（与 ServerStatusImage 同 API）
- */
 public class Motd {
 
     private static final Logger log = LoggerFactory.getLogger(Motd.class);
@@ -55,37 +52,19 @@ public class Motd {
     private static final int READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_PORT = 25565;
 
-    private static class HostPort {
-        final String host;
-        final int port;
+    private record HostPort(String host, int port) {}
 
-        HostPort(String host, int port) {
-            this.host = host;
-            this.port = port;
+    private record MotdResult(String motd, List<String> motdRawLines, String version, int online, int max,
+                              BufferedImage icon) {
+            private MotdResult(String motd, List<String> motdRawLines, String version, int online, int max, BufferedImage icon) {
+                this.motd = motd != null ? motd : "";
+                this.motdRawLines = motdRawLines != null ? motdRawLines : List.of();
+                this.version = version != null ? version : "";
+                this.online = online;
+                this.max = max;
+                this.icon = icon;
+            }
         }
-
-        String display() {
-            return port == DEFAULT_PORT ? host : host + ":" + port;
-        }
-    }
-
-    private static class MotdResult {
-        final String motd;
-        final List<String> motdRawLines;
-        final String version;
-        final int online;
-        final int max;
-        final BufferedImage icon;
-
-        MotdResult(String motd, List<String> motdRawLines, String version, int online, int max, BufferedImage icon) {
-            this.motd = motd != null ? motd : "";
-            this.motdRawLines = motdRawLines != null ? motdRawLines : List.of();
-            this.version = version != null ? version : "";
-            this.online = online;
-            this.max = max;
-            this.icon = icon;
-        }
-    }
 
     public static void processCommand(long groupId, String rawMessage) {
         String trimmed = rawMessage.trim();
@@ -99,16 +78,13 @@ public class Motd {
 
         HostPort hp = parseHostPort(arg);
         if (hp == null) {
-            MessageSender.sendGroupMessage(groupId, "[MOTD] 无效地址，请使用 主机 或 主机:端口，如 mc.hypixel.net 或 mc.xxx.com:12345", null);
+            MessageSender.sendGroupMessage(groupId, "无效地址，请使用 主机 或 主机:端口，如 mc.hypixel.net 或 mc.xxx.com:12345", null);
             return;
         }
 
         Executors.newSingleThreadExecutor().submit(() -> fetchAndSendMotd(groupId, hp));
     }
 
-    /**
-     * 解析 "mc.hypixel.net" 或 "mc.xxx.com:12345"。无端口则默认 25565。
-     */
     private static HostPort parseHostPort(String input) {
         if (input == null || input.isBlank()) return null;
         input = input.trim();
@@ -139,11 +115,10 @@ public class Motd {
         File tmpFile = new File(tmpDir, "motd_" + System.currentTimeMillis() + ".png");
 
         try {
-            String display = hp.display();
             if (result == null) {
-                MotdImageGen.generateFailure(display, hp.host, hp.port, tmpFile);
+                MotdImageGen.generateFailure(hp.host, hp.port, tmpFile);
             } else {
-                MotdImageGen.generate(display, hp.host, hp.port, result, tmpFile);
+                MotdImageGen.generate(hp.host, hp.port, result, tmpFile);
             }
             if (tmpFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tmpFile.toPath());
@@ -153,15 +128,12 @@ public class Motd {
             }
         } catch (Exception e) {
             log.error("MOTD 图片生成或发送异常: {}", e.getMessage());
-            MessageSender.sendGroupMessage(groupId, "[MOTD] 图片生成失败: " + e.getMessage(), null);
+            MessageSender.sendGroupMessage(groupId, "MOTD 图片生成失败: " + e.getMessage(), null);
         } finally {
             if (tmpFile.exists()) tmpFile.delete();
         }
     }
 
-    /**
-     * 通过 mcstatus.io API 获取 MOTD、版本、在线人数、icon，与 ServerStatusImage 同源。
-     */
     private static MotdResult fetchMotdData(String host, int port) {
         String ipPort = host + ":" + port;
         String url = API_BASE + ipPort;
@@ -196,7 +168,6 @@ public class Motd {
         }
     }
 
-    /** 保留两行，用 \n 分隔；不足两行则单行。clean 用于 "(无)" 等。 */
     private static String parseMotdFromApi(JsonNode motd) {
         if (motd.isMissingNode() || !motd.isObject()) return "";
         JsonNode clean = motd.path("clean");
@@ -212,7 +183,7 @@ public class Motd {
             for (int i = 0; i < raw.size(); i++) {
                 JsonNode n = raw.get(i);
                 if (n.isTextual()) {
-                    if (sb.length() > 0) sb.append("\n");
+                    if (!sb.isEmpty()) sb.append("\n");
                     sb.append(stripFormatting(n.asText("")));
                 }
             }
@@ -221,7 +192,6 @@ public class Motd {
         return "";
     }
 
-    /** 两行 raw（保留 §/& 颜色码），用于绘图解析颜色。 */
     private static List<String> parseMotdRawLinesFromApi(JsonNode motd) {
         List<String> out = new ArrayList<>();
         if (motd.isMissingNode() || !motd.isObject()) return out;
@@ -247,7 +217,7 @@ public class Motd {
 
     private static String parseVersionFromApi(JsonNode ver) {
         if (ver.isMissingNode()) return "";
-        String s = "";
+        String s;
         if (ver.isObject()) {
             s = ver.path("name_clean").asText("");
             if (s.isEmpty()) s = ver.path("name_raw").asText("");
@@ -282,11 +252,9 @@ public class Motd {
         return t.trim();
     }
 
-    /** 移除可能显示为乱码的字符：Û ū 等（§ & 已在 stripFormatting 中处理）。 */
     private static String sanitizeMysterySymbols(String s) {
         if (s == null) return "";
-        return s.replace("\u00DB", "")  // Û
-            .replace("\u016B", "");    // ū
+        return s.replace("Û", "").replace("ū", "");
     }
 
     private static List<TextSegment> parseLegacyColorCodes(String text) {
@@ -308,7 +276,7 @@ public class Motd {
                     }
                     if (hex) { i += 13; continue; }
                 }
-                if (buffer.length() > 0) {
+                if (!buffer.isEmpty()) {
                     segments.add(new TextSegment(buffer.toString(), currentColor));
                     buffer.setLength(0);
                 }
@@ -317,7 +285,7 @@ public class Motd {
                 else if (MC_COLORS.containsKey(code)) currentColor = MC_COLORS.get(code);
                 i++;
             } else if (c == '&' && i + 1 < text.length()) {
-                if (buffer.length() > 0) {
+                if (!buffer.isEmpty()) {
                     segments.add(new TextSegment(buffer.toString(), currentColor));
                     buffer.setLength(0);
                 }
@@ -329,16 +297,13 @@ public class Motd {
                 buffer.append(c);
             }
         }
-        if (buffer.length() > 0) {
+        if (!buffer.isEmpty()) {
             segments.add(new TextSegment(buffer.toString(), currentColor));
         }
         return segments;
     }
 
-    private static class TextSegment {
-        final String text;
-        final Color color;
-        TextSegment(String t, Color c) { text = t; color = c; }
+    private record TextSegment(String text, Color color) {
     }
 
     private static final class MotdImageGen extends AbstractImage {
@@ -355,17 +320,17 @@ public class Motd {
         private static final int INFO_FONT_SIZE = 14;
         private static final int INFO_FONT_SIZE_MIN = 10;
 
-        static void generate(String serverName, String ip, int port, MotdResult data, File outFile) throws Exception {
+        static void generate(String ip, int port, MotdResult data, File outFile) throws Exception {
             MotdImageGen gen = new MotdImageGen();
-            gen.drawCard(serverName, ip, port, data, false, outFile);
+            gen.drawCard(ip, port, data, false, outFile);
         }
 
-        static void generateFailure(String serverName, String ip, int port, File outFile) throws Exception {
+        static void generateFailure(String ip, int port, File outFile) throws Exception {
             MotdImageGen gen = new MotdImageGen();
-            gen.drawCard(serverName, ip, port, null, true, outFile);
+            gen.drawCard(ip, port, null, true, outFile);
         }
 
-        private void drawCard(String serverName, String ip, int port, MotdResult data, boolean failed, File outFile) throws Exception {
+        private void drawCard(String ip, int port, MotdResult data, boolean failed, File outFile) throws Exception {
             try {
                 initFromBackground("manoyinxi.png");
             } catch (Exception e) {
@@ -407,7 +372,7 @@ public class Motd {
             } else {
                 List<List<TextSegment>> segLines = motdToSegmentLines(data);
                 Font motdFont = baseFont.deriveFont(Font.BOLD, (float) MOTD_FONT_SIZE);
-                float motdSize = scaleFontToFitSegments(g, motdFont, segLines, maxContentWidth, MOTD_FONT_SIZE, MOTD_FONT_SIZE_MIN);
+                float motdSize = scaleFontToFitSegments(g, motdFont, segLines, maxContentWidth);
                 motdFont = baseFont.deriveFont(Font.BOLD, motdSize);
                 g.setFont(motdFont);
                 FontMetrics fm = g.getFontMetrics();
@@ -429,7 +394,7 @@ public class Motd {
             }
             if (!info.isEmpty()) {
                 Font infoFont = baseFont.deriveFont(Font.PLAIN, (float) INFO_FONT_SIZE);
-                float infoSize = scaleFontToFit(g, infoFont, new String[] { info }, maxContentWidth, INFO_FONT_SIZE, INFO_FONT_SIZE_MIN);
+                float infoSize = scaleFontToFit(g, infoFont, new String[] { info }, maxContentWidth);
                 infoFont = baseFont.deriveFont(Font.PLAIN, infoSize);
                 g.setFont(infoFont);
                 g.setColor(new Color(200, 200, 200));
@@ -496,8 +461,8 @@ public class Motd {
             }
         }
 
-        private static float scaleFontToFitSegments(Graphics2D g, Font font, List<List<TextSegment>> segLines, int maxWidth, float defaultSize, float minSize) {
-            if (segLines == null || segLines.isEmpty()) return defaultSize;
+        private static float scaleFontToFitSegments(Graphics2D g, Font font, List<List<TextSegment>> segLines, int maxWidth) {
+            if (segLines == null || segLines.isEmpty()) return (float) MotdImageGen.MOTD_FONT_SIZE;
             FontMetrics fm = g.getFontMetrics(font);
             int maxW = 0;
             for (List<TextSegment> segs : segLines) {
@@ -505,13 +470,13 @@ public class Motd {
                 for (TextSegment seg : segs) w += fm.stringWidth(seg.text);
                 if (w > maxW) maxW = w;
             }
-            if (maxW <= 0 || maxW <= maxWidth) return defaultSize;
-            float scale = defaultSize * (float) maxWidth / maxW;
-            return scale < minSize ? minSize : scale;
+            if (maxW == 0 || maxW <= maxWidth) return (float) MotdImageGen.MOTD_FONT_SIZE;
+            float scale = (float) MotdImageGen.MOTD_FONT_SIZE * (float) maxWidth / maxW;
+            return Math.max(scale, (float) MotdImageGen.MOTD_FONT_SIZE_MIN);
         }
 
-        private static float scaleFontToFit(Graphics2D g, Font font, String[] lines, int maxWidth, float defaultSize, float minSize) {
-            if (lines == null || lines.length == 0) return defaultSize;
+        private static float scaleFontToFit(Graphics2D g, Font font, String[] lines, int maxWidth) {
+            if (lines == null || lines.length == 0) return (float) MotdImageGen.INFO_FONT_SIZE;
             FontMetrics fm = g.getFontMetrics(font);
             int maxW = 0;
             for (String s : lines) {
@@ -520,10 +485,9 @@ public class Motd {
                     if (w > maxW) maxW = w;
                 }
             }
-            if (maxW <= 0 || maxW <= maxWidth) return defaultSize;
-            float scale = defaultSize * (float) maxWidth / maxW;
-            if (scale < minSize) return minSize;
-            return scale;
+            if (maxW == 0 || maxW <= maxWidth) return (float) MotdImageGen.INFO_FONT_SIZE;
+            float scale = (float) MotdImageGen.INFO_FONT_SIZE * (float) maxWidth / maxW;
+            return Math.max(scale, (float) MotdImageGen.INFO_FONT_SIZE_MIN);
         }
     }
 
