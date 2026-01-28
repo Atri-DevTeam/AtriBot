@@ -1,14 +1,9 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.botkits.request.RequestType;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -16,21 +11,10 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 public class AutoAccept {
 
     private static final Logger log = LoggerFactory.getLogger(AutoAccept.class);
-    
-    static Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
-    private static final String API_URL = BASEURL + "/set_friend_add_request";
-    private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    /**
-     * 处理好友请求逻辑
-     * 该方法由 MessageProcessor 在检测到 post_type 为 request 时调用
-     */
     public static void handle(JsonNode json) {
         // 二次校验，防止错误调用
         if (!json.has("post_type") || !"request".equals(json.get("post_type").asText())) {
@@ -61,33 +45,17 @@ public class AutoAccept {
         });
     }
 
-    private static void approveFriendRequest(String flag) throws Exception {
+    private static void approveFriendRequest(String flag) {
         Map<String, Object> params = new HashMap<>();
         params.put("flag", flag);
         params.put("approve", true);
         params.put("remark", ""); // 备注留空
 
-        String payload = jsonMapper.writeValueAsString(params);
-
-        HttpURLConnection conn = (HttpURLConnection) new URI(API_URL).toURL().openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        conn.setRequestProperty("Content-Type", "application/json");
-
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(payload.getBytes(StandardCharsets.UTF_8));
-        }
-
-        int code = conn.getResponseCode();
-        // 无论成功失败，都需要关闭流
-        if (conn.getInputStream() != null) {
-            conn.getInputStream().close();
-        }
-
-        if (code == 200) {
+        try {
+            PostRequest.sendPost(RequestType.ACCEPT_FRIEND_REQUEST, params);
             log.info("已成功同意好友请求 (Flag: {})", flag);
-        } else {
-            log.warn("API 请求返回错误代码: {}", code);
+        } catch (Exception e) {
+            log.warn("同意好友请求时发生异常 (Flag: {})，错误信息: {}", flag, e.getMessage());
         }
     }
 }

@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.botkits.message;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +35,6 @@ public class MessageFilter {
     }
 
     private static void recallMessageSilent(long messageId) {
-        PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE,messageId);
+        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE,"message_id", messageId);
     }
 }

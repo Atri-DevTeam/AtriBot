@@ -117,7 +117,7 @@ src/main/java/top/yzljc/qqbot/
 
 ### 4. 启动
 
-编译项目并运行 `top.yzljc.qqbot.App` 类的 main 方法。  
+编译项目并运行 `top.yzljc.qqbot.YzLjcBot` 类的 main 方法。  
 注意：需添加 `-Djava.awt.headless=true` 启动参数以支持在无头服务器上生成图片。
 
 ---

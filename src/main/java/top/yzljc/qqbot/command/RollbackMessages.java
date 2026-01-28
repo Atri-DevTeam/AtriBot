@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.command;
 
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
@@ -15,21 +15,14 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 指令工具: RollbackMessages
- * 支持/rollback [-n 数量] [-u QQ号]，撤回数据库中记录消息
- */
-
 public class RollbackMessages {
 
-    private static final Logger log = LoggerFactory.getLogger(RollbackMessages.class);    
-
-    // 支持指令模式：/rollback -n [num] -u [QQ号]
+    private static final Logger log = LoggerFactory.getLogger(RollbackMessages.class);
     private static final Pattern ROLLBACK_PATTERN =
         Pattern.compile("^/rollback(?:\\s+-n\\s+(\\d+))?(?:\\s+-u\\s+(\\d+))?\\s*$");
 
-    public static void processRollBack(long senderId, long groupId, String rawMsg) {
-        handleRollbackCommand(senderId, groupId, rawMsg);
+    public static void processRollBack(long groupId, String rawMsg) {
+        handleRollbackCommand(groupId, rawMsg);
     }
 
     /**
@@ -40,13 +33,10 @@ public class RollbackMessages {
      * @return 撤回条数
      */
     public static int rollback(String groupId, String commandText, HikariDataSource dataSource) {
-        // 1. 参数解析
         Matcher matcher = ROLLBACK_PATTERN.matcher(commandText.trim());
         if (!matcher.matches()) {
-            // 指令格式不对
             return 0;
         }
-        // 解析参数
         String nStr = matcher.group(1);
         String uStr = matcher.group(2);
 
@@ -55,9 +45,7 @@ public class RollbackMessages {
             try {
                 limit = Integer.parseInt(nStr);
                 if (limit <= 0) limit = 10;
-            } catch (Exception e) {
-                limit = 10;
-            }
+            } catch (Exception ignored) {}
         }
         Long userId = null;
         if (uStr != null && !uStr.isEmpty()) {
@@ -66,20 +54,14 @@ public class RollbackMessages {
             } catch (Exception ignored) {}
         }
 
-        // 2. 查数据库找要撤回的 message_id
         List<Long> msgIdList = fetchMessageIds(groupId, userId, limit, dataSource);
 
-        // 3. 发送撤回请求
         for (Long msgId : msgIdList) {
             sendDeleteMessage(msgId);
-            // 简单做法：如需严格也可以检查返回值/加延迟防止风控
         }
         return msgIdList.size();
     }
 
-    /**
-     * 查数据库，返回最近limit条满足条件的message_id（按id倒序，防止重复撤回已撤回消息可额外加过滤）
-     */
     private static List<Long> fetchMessageIds(String groupId, Long userId, int limit, HikariDataSource dataSource) {
         List<Long> list = new ArrayList<>();
         String tableName = MessageRecorder.getDynamicTableName(Long.parseLong(groupId));
@@ -111,22 +93,17 @@ public class RollbackMessages {
 
     private static void sendDeleteMessage(Long messageId) {
         try {
-            PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE,messageId);
+            PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE,"message_id",messageId);
         } catch (Exception e) {
             log.warn("发送撤回包失败，message_id = {}：{}", messageId, e.getMessage());
         }
     }
 
     /**
-     * 提供公共方法由主程序调用
-     *
-     * @param senderId   发送指令用户QQ号
      * @param groupId    群号
      * @param message    消息内容
      */
-    public static void handleRollbackCommand(long senderId, long groupId, String message) {
-        if (!message.trim().startsWith("/rollback")) return;
-
+    public static void handleRollbackCommand(long groupId, String message) {
         int count = rollback(Long.toString(groupId), message, MessageRecorder.getDataSource());
         log.info("已批量撤回消息数 = {}", count);
         MessageSender.sendGroupMessage(groupId, "已批量撤回消息 " + count + " 条");

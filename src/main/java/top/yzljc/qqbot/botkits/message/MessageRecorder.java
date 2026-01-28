@@ -129,11 +129,7 @@ public class MessageRecorder {
             pstmt.setString(5, rawMessage);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            if (e.getErrorCode() == 1062) {
-                // Duplicate entry
-            } else {
-                e.printStackTrace();
-            }
+            log.warn("消息入库失败: {}", e.getMessage());
         }
     }
 

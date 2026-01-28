@@ -1,17 +1,10 @@
 package top.yzljc.qqbot.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * 指令帮助菜单
- * 监听 [CQ:at,qq=970717559] /help 并回复
- */
 public class CommandHelp {
     private static final Map<String, String> commonCommands = new LinkedHashMap<>();
     private static final Map<String, String> adminCommands = new LinkedHashMap<>();
@@ -55,30 +48,15 @@ public class CommandHelp {
         sb.append("----------------------------\n");
 
         sb.append("💡 [普通指令]\n");
-        commonCommands.forEach((cmd, desc) -> {
-            sb.append("▶ ").append(cmd).append(" : ").append(desc).append("\n");
-        });
+        commonCommands.forEach((cmd, desc) -> sb.append("▶ ").append(cmd).append(" : ").append(desc).append("\n"));
 
         sb.append("\n👑 [管理指令]\n");
-        adminCommands.forEach((cmd, desc) -> {
-            sb.append("⭐ ").append(cmd).append(" : ").append(desc).append("\n");
-        });
+        adminCommands.forEach((cmd, desc) -> sb.append("⭐ ").append(cmd).append(" : ").append(desc).append("\n"));
 
         sb.append("----------------------------\n");
         sb.append("💡 使用配置菜单请发送 /cfg\n");
         sb.append("💡 强制保存配置请发送 /save");
 
         MessageSender.sendGroupMessage(groupId, sb.toString());
-    }
-
-    /**
-     * 【扩展接口】如果其他类想动态添加指令说明，可以调用此方法
-     */
-    public static void registerCommand(String cmd, String desc, boolean isAdmin) {
-        if (isAdmin) {
-            adminCommands.put(cmd, desc);
-        } else {
-            commonCommands.put(cmd, desc);
-        }
     }
 }

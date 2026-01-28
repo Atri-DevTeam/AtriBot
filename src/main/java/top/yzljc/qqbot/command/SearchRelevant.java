@@ -2,7 +2,7 @@ package top.yzljc.qqbot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -38,10 +38,7 @@ public class SearchRelevant {
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private static class CachedNickname {
-        final String nick;
-        final long time;
-        CachedNickname(String n, long t) { this.nick = n; this.time = t; }
+    private record CachedNickname(String nick, long time) {
     }
 
     public static void processCommand(JsonNode json) {
@@ -199,7 +196,7 @@ public class SearchRelevant {
 
     private static void withdrawMessage(long messageId) {
         try {
-            PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE, messageId);
+            PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
         } catch (Exception ignored) {}
     }
 

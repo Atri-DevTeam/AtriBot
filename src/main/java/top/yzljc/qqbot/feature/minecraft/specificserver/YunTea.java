@@ -1,7 +1,5 @@
 package top.yzljc.qqbot.feature.minecraft.specificserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.socket.SocketManager;
@@ -13,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class YunTea {
-
-    private static final Logger log = LoggerFactory.getLogger(YunTea.class);
 
     public static void handleWhiteListCommand(long userId, long groupId, String rawMessage) {
         String key = userId + "/" + groupId;

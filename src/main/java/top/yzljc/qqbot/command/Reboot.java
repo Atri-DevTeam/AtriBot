@@ -19,7 +19,7 @@ public class Reboot {
                 log.info("调用系统退出方法终止当前进程：System.exit(0)");
                 System.exit(0);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.warn("终止进程时发生异常: {}", e.getMessage());
                 MessageSender.sendGroupMessage(groupId, "终止失败: " + e.getMessage());
             }
         }).start();

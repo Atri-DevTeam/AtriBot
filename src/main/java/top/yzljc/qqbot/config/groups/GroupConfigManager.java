@@ -15,8 +15,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.ConfigFile;
 
 /**
- * &#064;群功能配置管理核心文件
- * &#064;Author：YZ_Ljc_
+ * 群功能配置管理核心文件
  */
 public class GroupConfigManager {
 

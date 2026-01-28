@@ -1,5 +1,7 @@
-package top.yzljc.qqbot.botkits.message;
+package top.yzljc.qqbot.botkits.request;
 
+import top.yzljc.qqbot.botkits.message.MessageFilter;
+import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.command.*;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -10,15 +12,13 @@ import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.deprecated.ServerStatusReport;
 import top.yzljc.qqbot.feature.minecraft.specificserver.HBTPlayerData;
 import top.yzljc.qqbot.utils.FindRecall;
-import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.utils.AutoAccept;
-import top.yzljc.qqbot.feature.AutoSign;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
-public class MessageProcessor {
+public class DataProcessor {
 
     static Settings settings = Config.getInstance();
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
@@ -57,7 +57,6 @@ public class MessageProcessor {
         MessageRecorder.processRecord(json);
         SearchRelevant.processCommand(json);
         ServerStatusReport.process(json);
-        CheckBilibili.process(json);
         HBTPlayerData.process(json);
         ServerRcon.processMessage(json);
 
@@ -69,6 +68,10 @@ public class MessageProcessor {
         // 复读机消息拦截
         if (GroupConfigManager.isFeatureEnabled(groupId, "repeat_msg")) {
             AutoRepeat.processGroupMessage(json);
+        }
+
+        if (GroupConfigManager.isFeatureEnabled(groupId,"bv_check")) {
+            CheckBilibili.process(json);
         }
     }
 }

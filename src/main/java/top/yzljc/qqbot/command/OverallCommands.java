@@ -67,7 +67,7 @@ public class OverallCommands {
             LikeUser.processCommand(userId, groupId);
         }
         if (rawMessage.startsWith("/rollback") && admins.contains(userId)){
-            RollbackMessages.processRollBack(userId,groupId,rawMessage);
+            RollbackMessages.processRollBack(groupId,rawMessage);
         }
         if (admins.contains(userId) && "/signall".equals(rawMessage)){
             AutoSign.processAutoSign();

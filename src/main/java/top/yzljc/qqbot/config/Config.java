@@ -3,6 +3,7 @@ package top.yzljc.qqbot.config;
 import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -54,11 +55,12 @@ public class Config implements Settings{
     private void load() {
         try {
             // Check if config exists in run directory, if not, copy from resources
-            if (!Files.exists(Paths.get(CONFIG_FILE))) {
+            Path configPath = Paths.get(CONFIG_FILE);
+            if (!Files.exists(configPath)) {
                 log.info("未找到配置文件，后端程序将创建并使用默认配置config.yml");
                 try (InputStream in = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE)) {
                     if (in != null) {
-                        Files.copy(in, Paths.get(CONFIG_FILE), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(in, configPath, StandardCopyOption.REPLACE_EXISTING);
                     } else {
                         log.error("后端设计出现错误，无法找到默认的配置文件，请联系开发者解决此问题！");
                     }
@@ -66,7 +68,7 @@ public class Config implements Settings{
             }
 
             // Load config
-            try (InputStream in = Files.newInputStream(Paths.get(CONFIG_FILE))) {
+            try (InputStream in = Files.newInputStream(configPath)) {
                 Yaml yaml = new Yaml();
                 Map<String, Object> data = yaml.load(in);
 

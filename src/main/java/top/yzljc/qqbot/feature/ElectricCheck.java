@@ -1,40 +1,25 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.URI;
+import top.yzljc.qqbot.botkits.request.HttpRequest;
 
 public class ElectricCheck {
 
     private static final Logger log = LoggerFactory.getLogger(ElectricCheck.class);
-    
-    private static final ObjectMapper jsonMapper = new ObjectMapper();
+
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
 
     public static void processElectric(long groupId) {
         Executors.newSingleThreadExecutor().submit(() -> {
             String feedback;
             try {
-                HttpURLConnection conn = (HttpURLConnection) new URI(QUERY_URL).toURL().openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
-
-                String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                conn.getInputStream().close();
-
-                JsonNode respJson = null;
-                try { respJson = jsonMapper.readTree(respStr); } catch (Exception ignored) {}
+                JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);
 
                 if (respJson != null) {
                     String rec = respJson.path("rec").asText();
@@ -51,7 +36,7 @@ public class ElectricCheck {
                     log.info("电表数据发送 => {}", feedback.replace("\n", " | "));
                 } else {
                     feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
-                    log.warn("返回内容无法解析：{}", respStr);
+                    log.warn("返回内容无法解析为JSON对象");
                 }
             } catch (Exception ex) {
                 feedback = "[电表查询失败] 网络异常或远端接口错误。";

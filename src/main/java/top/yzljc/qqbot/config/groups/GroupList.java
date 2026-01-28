@@ -1,8 +1,8 @@
 package top.yzljc.qqbot.config.groups;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.request.CheckType;
-import top.yzljc.qqbot.botkits.request.PostDataRequest;
+import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class GroupList {
         log.info("开始联网同步群列表……");
 
         try {
-            JsonNode resp = PostDataRequest.getSimplePostResult(CheckType.GET_GROUP_LIST, 0L);
+            JsonNode resp = PostRequest.getPostResult(RequestType.GET_GROUP_LIST);
 
             if (resp != null && resp.has("data") && resp.get("data").isArray()) {
                 for (JsonNode group : resp.get("data")) {

@@ -1,22 +1,15 @@
 package top.yzljc.qqbot.config.groups;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.URI;
 
 public class GroupModeManager {
 
@@ -25,7 +18,6 @@ public class GroupModeManager {
     private static final List<Long> ADMIN_LIST = settings.getAdminUids();
     private static final Map<Long, String> userSession = new ConcurrentHashMap<>();
     private static final Map<Long, List<Long>> groupSelectionCache = new ConcurrentHashMap<>();
-    private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     public static void process(JsonNode json) {
         String postType = json.path("post_type").asText();
@@ -154,36 +146,10 @@ public class GroupModeManager {
     }
 
     private static String fetchGroupName(long groupId) {
-        String apiUrl = settings.getHttpUrl() + "/get_group_info";
         String groupName = "未知群聊";
 
         try {
-            Map<String, String> reqData = new HashMap<>();
-            reqData.put("group_id", String.valueOf(groupId));
-            String payload = jsonMapper.writeValueAsString(reqData);
-
-            HttpURLConnection conn = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(5000);
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json");
-
-            try (OutputStream out = conn.getOutputStream()) {
-                out.write(payload.getBytes(StandardCharsets.UTF_8));
-            }
-
-            if (conn.getResponseCode() == 200) {
-                try (InputStream in = conn.getInputStream()) {
-                    JsonNode root = jsonMapper.readTree(in);
-                    if (root.has("data")) {
-                        JsonNode data = root.get("data");
-                        if (data.has("group_name")) {
-                            groupName = data.get("group_name").asText();
-                        }
-                    }
-                }
-            }
+            groupName = GetGroupName.getGroupName(groupId);
         } catch (Exception e) {
             log.error("获取群 {} 名称失败：{}", groupId, e.getMessage());
         }

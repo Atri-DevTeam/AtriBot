@@ -6,14 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.request.HttpRequest;
 
-import java.net.URI;
 import java.util.*;
 import java.io.*;
 import java.nio.file.Files;
@@ -36,18 +34,19 @@ public class Hitokoto {
 
     private static void releaseResourceJsonIfAbsent() {
         try {
-            if (!Files.exists(Paths.get(LOCAL_JSON_PATH))) {
+            Path path = Paths.get(LOCAL_JSON_PATH);
+            if (!Files.exists(path)) {
                 log.info("未找到一言 json，自动释放资源到当前目录: " + LOCAL_JSON_PATH);
                 try (InputStream in = Hitokoto.class.getClassLoader().getResourceAsStream(LOCAL_JSON_PATH)) {
                     if (in != null) {
-                        Files.copy(in, Paths.get(LOCAL_JSON_PATH), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
                     } else {
                         log.error("无法找到默认的一言文件资源: " + LOCAL_JSON_PATH + "，请联系开发者！");
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("释放一言 json 失败: " + e.getMessage());
+            log.error("释放一言 json 失败: {}", e.getMessage());
         }
     }
 
@@ -72,14 +71,12 @@ public class Hitokoto {
 
     private static String fetchHitokoto() {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URI(API_URL).toURL().openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
+            JsonNode respJson = HttpRequest.sendGetRequest(API_URL);
 
-            String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            JsonNode respJson = jsonMapper.readTree(respStr);
+            if (respJson == null) {
+                log.warn("一言获取异常: 接口未返回数据");
+                return "一言获取失败：接口异常。";
+            }
 
             String hitokoto = respJson.path("hitokoto").asText();
             String from = respJson.path("from").asText();
@@ -91,7 +88,7 @@ public class Hitokoto {
                 result.append(" · ").append(fromWhoNode.asText());
             }
 
-            log.info("一言发送成功(API) => {}", result.toString());
+            log.info("一言发送成功(API) => {}", result);
             return result.toString();
 
         } catch (Exception ex) {
@@ -104,7 +101,8 @@ public class Hitokoto {
         try {
             if (localEntries == null) {
                 try (InputStream in = new FileInputStream(LOCAL_JSON_PATH)) {
-                    localEntries = jsonMapper.readValue(in, new TypeReference<List<OneTextEntry>>() {});
+                    localEntries = jsonMapper.readValue(in, new TypeReference<>() {
+                    });
                 }
             }
             if (localEntries == null || localEntries.isEmpty()) return null;
@@ -115,7 +113,7 @@ public class Hitokoto {
             if (entry.by != null && !entry.by.isEmpty()) {
                 sb.append(" · ").append(entry.by);
             }
-            log.info("一言发送成功(本地) => {}", sb.toString());
+            log.info("一言发送成功(本地) => {}", sb);
             return sb.toString();
         } catch (Exception ex) {
             log.warn("本地一言获取异常: {}", ex.getMessage());

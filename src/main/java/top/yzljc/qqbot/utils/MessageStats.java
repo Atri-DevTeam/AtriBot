@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.utils;
 
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
-import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
@@ -225,7 +225,7 @@ public class MessageStats {
     }
 
     private static void withdrawMessage(long messageId) {
-        PostRequest.sendSimplePost(CheckType.RECALL_MESSAGE, messageId);
+        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
     }
 
     private static String fetchNickname(Long userId) {

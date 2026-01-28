@@ -17,7 +17,6 @@ import java.util.Base64;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,6 @@ public class ManosabaDate {
 
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
-    private static final List<Long> admins = settings.getAdminUids();
 
     private static class ImageGen extends AbstractImage {
         public void generate(File outFile) throws IOException {

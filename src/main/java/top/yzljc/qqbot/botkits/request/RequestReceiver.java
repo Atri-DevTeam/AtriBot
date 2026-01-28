@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botkits.message;
+package top.yzljc.qqbot.botkits.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,9 +15,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageReceiver {
+public class RequestReceiver {
 
-    private static final Logger log = LoggerFactory.getLogger(MessageReceiver.class);
+    private static final Logger log = LoggerFactory.getLogger(RequestReceiver.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     public static void start(int port, Consumer<JsonNode> messageHandler) {

@@ -1,28 +1,18 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-
 public class LikeUser {
     
     private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
-
-    private static final ObjectMapper jsonMapper = new ObjectMapper();
-    static Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
-    private static final String NAPCAT_LIKE_API = BASEURL + "/send_like";
 
     public static void processCommand(long userId, long groupId) {
         sendLike(userId, groupId);
@@ -37,23 +27,20 @@ public class LikeUser {
         Executors.newSingleThreadExecutor().submit(() -> {
             String likeResult = "点赞成功！";
             try {
-                // 构造点赞请求 (点赞10次)
-                String payload = String.format("{\"user_id\":\"%s\",\"times\":10}", userId);
-                log.info("准备点赞 => QQ：{}", userId);
-
-                HttpURLConnection conn = (HttpURLConnection) new URI(NAPCAT_LIKE_API).toURL().openConnection();
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.getOutputStream().write(payload.getBytes(StandardCharsets.UTF_8));
-
-                String respStr = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                conn.getInputStream().close();
-
+                String respStr = "";
                 JsonNode respJson = null;
+
                 try {
-                    respJson = jsonMapper.readTree(respStr);
-                } catch (Exception ignored) {}
+                    java.util.Map<String, Object> params = new java.util.HashMap<>();
+                    params.put("user_id", String.valueOf(userId));
+                    params.put("times", 10);
+                    respJson = PostRequest.getPostResult(RequestType.SEND_LIKE, params);
+                    if (respJson != null) {
+                        respStr = respJson.toString();
+                    }
+                } catch (Exception e) {
+                    log.warn("点赞接口请求异常: {}", e.getMessage());
+                }
 
                 if (respJson != null) {
                     String status = respJson.path("status").asText();
@@ -65,7 +52,7 @@ public class LikeUser {
                     }
                     else if (status.contains("fail")) {
                         likeResult = "点赞失败，可能是由于该用户今日已被赞过啦~";
-                        log.info("点赞失败 => QQ: {} | msg: {}", userId, msg);
+                        log.info("点赞失败 => QQ: {} | 用户今日获赞数量达到上限", userId);
                     } else {
                         log.info("点赞未知响应 => QQ: {} | 原始: {}", userId, respStr);
                     }

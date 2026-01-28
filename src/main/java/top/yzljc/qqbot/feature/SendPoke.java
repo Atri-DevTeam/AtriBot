@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -8,6 +9,9 @@ import top.yzljc.qqbot.config.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class SendPoke {
 
@@ -39,8 +43,13 @@ public class SendPoke {
                 if (userId == botQq) return;
 
                 log.info("监测到用户 {} 在群 {} 戳了机器人，准备反击！", userId, groupId);
-                
-                PostRequest.sendPoke(groupId, userId);
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("group_id", groupId);
+                params.put("user_id", userId);
+
+                PostRequest.sendPost(RequestType.GROUP_POKE,params);
+                log.info("已向用户 {} 反戳！", userId);
             }
         }
     }

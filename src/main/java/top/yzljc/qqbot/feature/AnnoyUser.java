@@ -3,15 +3,14 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -20,16 +19,11 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-
 public class AnnoyUser {
 
     private static final Logger log = LoggerFactory.getLogger(AnnoyUser.class);
 
-    static Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final String EMOJI_API = BASEURL + "/set_msg_emoji_like";
     private static final String RECORD_FILE = ConfigFile.ANNOY_RECORD.getFileName();
     private static final Random RAND = new Random();
 
@@ -93,7 +87,7 @@ public class AnnoyUser {
             }
             return;
         }
-        // 增加/fuck @user 功能, 仅3199590352可用
+
         if (rawMsg.startsWith("/emj ") && Config.getInstance().getAdminUids().contains(senderId)) {
             String atQq = null;
             for (JsonNode node : messageArr) {
@@ -202,16 +196,8 @@ public class AnnoyUser {
             req.put("message_id", String.valueOf(msgId));
             req.put("emoji_id", emojiId);
             req.put("set", true);
-            String body = mapper.writeValueAsString(req);
 
-            HttpURLConnection conn = (HttpURLConnection) new URI(EMOJI_API).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(body.getBytes(StandardCharsets.UTF_8));
-            }
-            conn.getInputStream().close();
+            PostRequest.sendPost(RequestType.PUT_EMOJI, req);
         } catch (Exception e) {
             log.warn("点赞请求异常: {}", e.getMessage());
         }

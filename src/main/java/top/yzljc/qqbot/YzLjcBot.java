@@ -7,8 +7,8 @@ import top.yzljc.qqbot.feature.HappyNewYear;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.utils.MessageStats;
 import top.yzljc.qqbot.feature.ManosabaDate;
-import top.yzljc.qqbot.botkits.message.MessageProcessor;
-import top.yzljc.qqbot.botkits.message.MessageReceiver;
+import top.yzljc.qqbot.botkits.request.DataProcessor;
+import top.yzljc.qqbot.botkits.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
@@ -19,7 +19,7 @@ import top.yzljc.qqbot.web.WebDashboardAPI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class App {
+public class YzLjcBot {
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
@@ -49,7 +49,7 @@ public class App {
         MessageStats.startDailyReportScheduler();
         HappyNewYear.startAutoDailyTask();
 
-        MessageReceiver.start(qqBotPort, MessageProcessor::processMessage);
+        RequestReceiver.start(qqBotPort, DataProcessor::processMessage);
 
         SocketManager.loadConfig();
         SocketManager.start(socketPort);
@@ -69,5 +69,6 @@ public class App {
         GroupConfigManager.registerFeature("like_user", true);
         GroupConfigManager.registerFeature("mojang_status", true);
         GroupConfigManager.registerFeature("github_info", false);
+        GroupConfigManager.registerFeature("bv_check", false);
     }
 }

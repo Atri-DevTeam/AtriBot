@@ -6,7 +6,7 @@
 
     <groupId>top.yzljc</groupId>
     <artifactId>Yzljc-qq-bot</artifactId>
-    <version>2.5.3-SNAPSHOT</version>
+    <version>2.5.4-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
@@ -22,11 +22,10 @@
             <version>2.15.2</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
+            <version>9.5.0</version>
         </dependency>
 
         <dependency>
@@ -39,6 +38,12 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>7.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.15.0</version>
         </dependency>
 
         <dependency>
@@ -56,7 +61,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.24</version>
+            <version>1.5.26</version>
         </dependency>
 
         <dependency>
@@ -105,7 +110,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>top.yzljc.qqbot.App</mainClass>
+                                    <mainClass>top.yzljc.qqbot.YzLjcBot</mainClass>
                                 </transformer>
                                 <!-- SLF4J 绑定文件（解决日志问题） -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">

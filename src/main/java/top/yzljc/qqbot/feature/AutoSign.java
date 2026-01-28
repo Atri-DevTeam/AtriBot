@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.feature;
 
-import top.yzljc.qqbot.botkits.request.CheckType;
+import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
@@ -61,7 +61,7 @@ public class AutoSign {
     }
 
     private static void sendGroupSign(long groupId) {
-        PostRequest.sendSimplePost(CheckType.SEND_SIGN, groupId);
+        PostRequest.sendSimplePost(RequestType.SEND_SIGN, "group_id", groupId);
     }
 
     public static void processAutoSign() {
