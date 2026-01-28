@@ -9,6 +9,7 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.MojangStatus;
+import top.yzljc.qqbot.feature.minecraft.Motd;
 import top.yzljc.qqbot.feature.minecraft.ServerStatus;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
@@ -59,6 +60,9 @@ public class OverallCommands {
         }
         if ("/mojang".equalsIgnoreCase(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"mojang_status")) {
             MojangStatus.processCheckMojangStatus(groupId);
+        }
+        if (rawMessage.startsWith("/motd") && GroupConfigManager.isFeatureEnabled(groupId, "motd")) {
+            Motd.processCommand(groupId, rawMessage);
         }
         if (rawMessage.contains("[CQ:at,qq=" + BOT_QQ + "]") && rawMessage.toLowerCase().contains("/help")){
             CommandHelp.processHelp(groupId);
