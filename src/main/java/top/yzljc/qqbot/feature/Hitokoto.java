@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.HttpRequest;
+import top.yzljc.qqbot.config.ConfigFile;
 
 import java.util.*;
 import java.io.*;
@@ -24,7 +25,7 @@ public class Hitokoto {
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final String API_URL = "https://v1.hitokoto.cn/";
-    private static final String LOCAL_JSON_PATH = "OneText-Library.json";
+    private static final String LOCAL_JSON_PATH = ConfigFile.HITOKOTO_LIBRARY.getFileName();
     private static List<OneTextEntry> localEntries = null;
     private static final Random RANDOM = new Random();
 

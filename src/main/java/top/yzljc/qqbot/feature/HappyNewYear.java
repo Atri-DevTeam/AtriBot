@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.feature;
 
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.groups.GroupList;
@@ -25,13 +26,10 @@ import org.slf4j.LoggerFactory;
 public class HappyNewYear {
 
     private static final Logger log = LoggerFactory.getLogger(HappyNewYear.class);
-
     private static class ImageGen extends AbstractImage {
         public void generate(File outFile) throws IOException {
-            // 1. 初始化背景
-            initFromBackground("manosaba.png");
+            initFromBackground(ConfigFile.IMG_MANOSABA.getFileName());
 
-            // 2. 准备数据
             LocalDate targetDate = LocalDate.of(2026, 2, 17);
             LocalDate now = LocalDate.now();
             long daysUntil = ChronoUnit.DAYS.between(now, targetDate);
@@ -43,7 +41,6 @@ public class HappyNewYear {
             Color red = new Color(229, 31, 86);
             Color shadow = new Color(0, 0, 0, 128);
 
-            // 3. 计算坐标 (利用父类的 g 和 loadFont)
             Font font1 = loadFont(Font.BOLD, 35f);
             g.setFont(font1);
             FontMetrics fm1 = g.getFontMetrics(font1);
@@ -67,14 +64,12 @@ public class HappyNewYear {
             int line2Y = line1Y + line1Height + 15;
             int line2X = (width - line2Width) / 2;
 
-            // 4. 绘制
             g.setFont(font1);
             drawShadowText(line1, line1X, line1Y, red, shadow);
 
             g.setFont(font2);
             drawShadowText(line2, line2X, line2Y, red, shadow);
 
-            // 5. 保存
             saveAndDispose(outFile);
         }
     }

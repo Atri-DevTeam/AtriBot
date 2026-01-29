@@ -8,6 +8,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.groups.GroupList;
 
@@ -29,7 +30,7 @@ public class WebhookServer {
     private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final String CONFIG_FILE_PATH = "github_repository.json";
+    private static final String CONFIG_FILE_PATH = ConfigFile.GITHUB_REPOSITORY.getFileName();
     private static final Map<String, List<Long>> repoConfig = new HashMap<>();
 
     static {

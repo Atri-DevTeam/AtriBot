@@ -3,6 +3,7 @@ package top.yzljc.qqbot.feature.github;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
+import top.yzljc.qqbot.config.ConfigFile;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -12,7 +13,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
@@ -45,7 +46,7 @@ public class CommitDisplay extends AbstractImage {
     public String generateBase64(GithubPayload payload) {
         try {
             try {
-                initFromBackground("github_background.png");
+                initFromBackground(ConfigFile.IMG_GITHUB.getFileName());
             } catch (IOException e) {
                 initBlank(900, 500);
                 GradientPaint gp = new GradientPaint(0, 0, new Color(20, 23, 29), 0, height, new Color(10, 10, 10));
@@ -54,22 +55,20 @@ public class CommitDisplay extends AbstractImage {
             }
 
             int margin = 100;
-            int cardX = margin;
-            int cardY = margin;
             int cardW = width - (margin * 2);
             int cardH = height - (margin * 2);
 
             g.setColor(new Color(22, 27, 34, 210));
-            g.fill(new RoundRectangle2D.Float(cardX, cardY, cardW, cardH, 20, 20));
+            g.fill(new RoundRectangle2D.Float(margin, margin, cardW, cardH, 20, 20));
 
             g.setStroke(new BasicStroke(1.0f));
             g.setColor(new Color(255, 255, 255, 40));
-            g.draw(new RoundRectangle2D.Float(cardX, cardY, cardW, cardH, 20, 20));
+            g.draw(new RoundRectangle2D.Float(margin, margin, cardW, cardH, 20, 20));
 
             int padding = 35;
-            int startX = cardX + padding;
-            int rightX = cardX + cardW - padding;
-            int currentY = cardY + padding + 10;
+            int startX = margin + padding;
+            int rightX = margin + cardW - padding;
+            int currentY = margin + padding + 10;
 
             g.setFont(getSmartFont(Font.BOLD, 30));
             g.setColor(new Color(230, 237, 243));
@@ -126,7 +125,7 @@ public class CommitDisplay extends AbstractImage {
 
             drawCommitBody(cleanMessage, startX, bodyStartY + 35, cardH - 180);
 
-            int bottomY = cardY + cardH - 25;
+            int bottomY = margin + cardH - 25;
             drawStats(payload, rightX, bottomY);
 
             if (g != null) g.dispose();
@@ -251,7 +250,7 @@ public class CommitDisplay extends AbstractImage {
 
     private void drawAvatar(String url, int x, int y, int size) {
         try {
-            BufferedImage img = ImageIO.read(new URL(url));
+            BufferedImage img = ImageIO.read(new URI(url).toURL());
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setClip(new Ellipse2D.Float(x, y, size, size));
             g.drawImage(img, x, y, size, size, null);

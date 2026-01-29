@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 抽象图片生成器基类
@@ -28,14 +29,30 @@ public abstract class AbstractImage {
      */
     protected void initFromBackground(String bgPath) throws IOException {
         File bgFile = new File(bgPath);
-        if (!bgFile.exists()) {
-            throw new IOException("背景图片未找到: " + bgPath);
+        if (bgFile.exists() && bgFile.isFile()) {
+            this.image = ImageIO.read(bgFile);
+            this.width = image.getWidth();
+            this.height = image.getHeight();
+            this.g = image.createGraphics();
+            setupRenderingHints();
+            return;
         }
-        this.image = ImageIO.read(bgFile);
-        this.width = image.getWidth();
-        this.height = image.getHeight();
-        this.g = image.createGraphics();
-        setupRenderingHints();
+
+        InputStream resourceStream = null;
+        try {
+            resourceStream = getClass().getClassLoader().getResourceAsStream(bgPath);
+            if (resourceStream != null) {
+                this.image = ImageIO.read(resourceStream);
+                this.width = image.getWidth();
+                this.height = image.getHeight();
+                this.g = image.createGraphics();
+                setupRenderingHints();
+                return;
+            }
+        } finally {
+            if (resourceStream != null) try { resourceStream.close(); } catch (Exception ignore) {}
+        }
+        throw new IOException("背景图片未找到: " + bgPath);
     }
 
     /**
@@ -55,7 +72,7 @@ public abstract class AbstractImage {
     /**
      * 设置抗锯齿
      */
-    private void setupRenderingHints() {
+    protected void setupRenderingHints() {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
     }

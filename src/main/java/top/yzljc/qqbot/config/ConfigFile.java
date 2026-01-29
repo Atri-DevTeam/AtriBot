@@ -7,7 +7,13 @@ public enum ConfigFile {
     RCON_SERVER_SECRET("server-secret.json"),
     FILTER_CONFIG("filter.yml"),
     SERVER_LIST("serverlist.json"),
-    ANNOY_RECORD("annoy_user_record.json");
+    ANNOY_RECORD("annoy_user_record.json"),
+    GITHUB_REPOSITORY("github_repository.json"),
+    HITOKOTO_LIBRARY("OneText-Library.json"),
+    IMG_MOTD("manoyinxi.png"),
+    IMG_GITHUB("github_background.png"),
+    IMG_MOJANGSTATUS("mojangstatus.png"),
+    IMG_MANOSABA("manosaba.png");
 
     private final String fileName;
 

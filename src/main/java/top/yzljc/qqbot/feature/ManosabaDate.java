@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
@@ -30,7 +31,7 @@ public class ManosabaDate {
 
     private static class ImageGen extends AbstractImage {
         public void generate(File outFile) throws IOException {
-            initFromBackground("manosaba.png");
+            initFromBackground(ConfigFile.IMG_MANOSABA.getFileName());
 
             LocalDate start = LocalDate.of(2025, 11, 13);
             LocalDate now = LocalDate.now();

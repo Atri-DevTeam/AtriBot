@@ -22,6 +22,7 @@ import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.ConfigFile;
 
 /**
  * 检查 Mojang 官方服务状态 (自定义独立检测版)
@@ -29,8 +30,6 @@ import org.slf4j.LoggerFactory;
 public class MojangStatus {
 
     private static final Logger log = LoggerFactory.getLogger(MojangStatus.class);
-
-    private static final String BACKGROUND_FILE = "mojangstatus.png";
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     enum Status {
@@ -54,7 +53,7 @@ public class MojangStatus {
         public void generate(List<ServiceResult> results, File outFile) throws Exception {
             // 尝试加载背景，失败则创建纯黑背景
             try {
-                initFromBackground(BACKGROUND_FILE);
+                initFromBackground(ConfigFile.IMG_MOJANGSTATUS.getFileName());
             } catch (Exception e) {
                 initBlank(800, 600);
             }
