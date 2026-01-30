@@ -3,6 +3,7 @@ package top.yzljc.qqbot.feature.news;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.groups.GroupList;
@@ -38,7 +39,7 @@ public class MinecraftNews {
     // 辅助 API (CMS 内容接口)
     private static final String API_SECONDARY = "https://www.minecraft.net/content/minecraftnet/language-masters/en-us/_jcr_content.articles.page-1.json";
 
-    private static final String HISTORY_FILE = "news_history.json";
+    private static final String HISTORY_FILE = ConfigFile.MINECRAFT_NEWS.getFileName();
     private static final String BASE_URL = "https://www.minecraft.net";
 
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
@@ -77,9 +78,9 @@ public class MinecraftNews {
                 log.info("开始检查 Minecraft 新闻源……");
             }
 
-            List<UnifiedArticle> primaryList = fetchAndParsePrimary(API_PRIMARY, "Minecraft 资讯");
+            List<UnifiedArticle> primaryList = fetchAndParsePrimary();
 
-            List<UnifiedArticle> secondaryList = fetchAndParseSecondary(API_SECONDARY, "Minecraft 快讯");
+            List<UnifiedArticle> secondaryList = fetchAndParseSecondary();
 
             List<UnifiedArticle> candidateArticles = new ArrayList<>();
             candidateArticles.addAll(primaryList);
@@ -128,14 +129,14 @@ public class MinecraftNews {
             }
 
         } catch (Exception e) {
-            log.warn("检查失败：", e.getMessage(), e);
+            log.warn("检查失败：{}", e.getMessage(), e);
         }
     }
 
-    private static List<UnifiedArticle> fetchAndParsePrimary(String urlStr, String tag) {
+    private static List<UnifiedArticle> fetchAndParsePrimary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = objectMapper.readTree(new URI(urlStr).toURL());
+            JsonNode root = objectMapper.readTree(new URI(MinecraftNews.API_PRIMARY).toURL());
             JsonNode resultNode = root.get("result");
             if (resultNode == null) return list;
             JsonNode results = resultNode.get("results");
@@ -144,7 +145,7 @@ public class MinecraftNews {
                 for (JsonNode node : results) {
                     UnifiedArticle article = new UnifiedArticle();
                     article.title = node.has("title") ? node.get("title").asText() : "未知标题";
-                    article.tag = tag;
+                    article.tag = "Minecraft 资讯";
                     article.url = node.has("url") ? node.get("url").asText() : "";
                     article.id = article.url; // ID = URL
 
@@ -172,10 +173,10 @@ public class MinecraftNews {
         return list;
     }
 
-    private static List<UnifiedArticle> fetchAndParseSecondary(String urlStr, String tag) {
+    private static List<UnifiedArticle> fetchAndParseSecondary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = objectMapper.readTree(new URI(urlStr).toURL());
+            JsonNode root = objectMapper.readTree(new URI(MinecraftNews.API_SECONDARY).toURL());
             JsonNode grid = root.get("article_grid");
 
             if (grid != null && grid.isArray()) {
@@ -189,7 +190,7 @@ public class MinecraftNews {
                     if (tile == null) continue;
 
                     article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
-                    article.tag = tag;
+                    article.tag = "Minecraft 快讯";
 
                     String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
                     if (relUrl.startsWith("/")) {
@@ -219,7 +220,7 @@ public class MinecraftNews {
                         article.imageUrl = "";
                     }
 
-                    if (article.id != null && !article.id.isEmpty()) {
+                    if (!article.id.isEmpty()) {
                         list.add(article);
                     }
                 }
@@ -320,7 +321,7 @@ public class MinecraftNews {
             }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(HISTORY_FILE), arrayNode);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("保存历史记录失败：{}", e.getMessage());
         }
     }
 

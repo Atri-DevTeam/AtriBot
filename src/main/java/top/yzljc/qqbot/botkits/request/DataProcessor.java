@@ -15,6 +15,7 @@ import top.yzljc.qqbot.utils.FindRecall;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.utils.AutoAccept;
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.utils.Scratch;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class DataProcessor {
 
     static Settings settings = Config.getInstance();
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
+    private static final long MANOSABA_GROUP = settings.getManosabaGroupId();
 
     public static void processMessage(JsonNode json) {
         String postType = json.path("post_type").asText("");
@@ -72,6 +74,14 @@ public class DataProcessor {
 
         if (GroupConfigManager.isFeatureEnabled(groupId,"bv_check")) {
             CheckBilibili.process(json);
+        }
+
+        if (groupId == MANOSABA_GROUP && userId == 3180644904L) {
+            if (rawMessage.contains("[CQ:image")){
+                Scratch.huffCount();
+            }else{
+                Scratch.stopHuff();
+            }
         }
     }
 }

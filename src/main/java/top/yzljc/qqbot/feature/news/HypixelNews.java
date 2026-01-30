@@ -7,9 +7,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.groups.GroupList;
 
@@ -43,9 +42,7 @@ public class HypixelNews {
 
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
     private static final String ARTICLE_BASE = "https://hypixel.net";
-    private static final String HISTORY_FILE = "hypixel_news_history.json";
-    static Settings settings = Config.getInstance();
-    private static final List<Long> admins = settings.getAdminUids();
+    private static final String HISTORY_FILE = ConfigFile.HYPIXEL_NEWS.getFileName();
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
 
     private static boolean isInitialized = false;

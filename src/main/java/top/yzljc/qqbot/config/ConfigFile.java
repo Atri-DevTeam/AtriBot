@@ -10,6 +10,8 @@ public enum ConfigFile {
     ANNOY_RECORD("annoy_user_record.json"),
     GITHUB_REPOSITORY("github_repository.json"),
     HITOKOTO_LIBRARY("OneText-Library.json"),
+    HYPIXEL_NEWS("hypixel_news_history.json"),
+    MINECRAFT_NEWS("news_history.json"),
     IMG_MOTD("manoyinxi.png"),
     IMG_GITHUB("github_background.png"),
     IMG_MOJANGSTATUS("mojangstatus.png"),
