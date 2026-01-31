@@ -27,6 +27,7 @@ public class Config implements Settings{
     private long botUid;
     private long debugGroupId;
     private List<Long> messageSpyGroups;
+    private List<Long> ignoredUsers;
     private String httpUrl;
     private String mysqlHost;
     private int mysqlPort;
@@ -124,6 +125,19 @@ public class Config implements Settings{
                 this.githubWebhookPort = (int) data.getOrDefault("github-webhook-port", 54321);
                 this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
                 this.webDashboardPort = (int) data.getOrDefault("web-dashboard-port", 32123);
+
+                this.ignoredUsers = new ArrayList<>();
+                Object ignoredUserObj = data.get("recall-ignore-user");
+                if (ignoredUserObj instanceof List<?>) {
+                    for (Object uid : (List<?>) ignoredUserObj) {
+                        try {
+                            long userId = ((Number) uid).longValue();
+                            this.ignoredUsers.add(userId);
+                        } catch (NumberFormatException e) {
+                            log.error("配置文件中屏蔽用户列表中出现无效信息：{}", uid);
+                        }
+                    }
+                }
 
                 Object keywordsObj = data.get("keywords-hitokoto");
                 if (keywordsObj instanceof List<?>) {
@@ -224,6 +238,11 @@ public class Config implements Settings{
     @Override
     public long getManosabaGroupId() {
         return manosabaGroupId;
+    }
+
+    @Override
+    public List<Long> getIgnoredUsers() {
+        return new ArrayList<>(ignoredUsers);
     }
 
     @Override

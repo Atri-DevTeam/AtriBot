@@ -20,7 +20,6 @@ bilibili-cookie: "null"
 # 管理员QQ账号
 admin-uids:
   - 3199590352
-  - 1948308
 
 # Bot的QQ号（用来做数据排除，不填的话某些地方可能会爆炸）
 bot-uid: 123456
@@ -32,6 +31,10 @@ debug-group-id: 123456
 message-spy-groups:
   - 123456
   - 234567
+
+# 消息撤回监听屏蔽用户列表
+recall-ignore-user:
+  - 123456
 
 # Napcat HTTP 数据来源地址
 # 必须是http://xxx.xxx.xxx:port格式

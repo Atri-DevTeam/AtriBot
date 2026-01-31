@@ -13,11 +13,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FindRecall {
     static Settings settings = Config.getInstance();
     private static final long DEBUG_GROUP_ID = settings.getDebugGroupId();
     private static final long BOT_ID = settings.getBotUid();
+    private static final List<Long> IGNORE_USER_IDS = settings.getIgnoredUsers();
+    private static String CHECK_MSG;
 
     public static void processMessage(JsonNode json) {
 
@@ -35,8 +40,8 @@ public class FindRecall {
             return; // 不写会炸，别问我怎么知道的
         }
 
-        if (userId == 3889056552L){
-            return; // 忽略某个机器人的撤回
+        if (IGNORE_USER_IDS.contains(userId)) {
+            return; // 忽略机器人的撤回
         }
 
         if (foundMessage != null) {
@@ -45,12 +50,30 @@ public class FindRecall {
 
             if (findResult.textMessage() != null && findResult.imgBase64() == null){
                 MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + findResult.textMessage());
+                return;
             }
-            else if (findResult.imgBase64() != null && findResult.textMessage() == null){
+
+            Pattern imgPattern = Pattern.compile("\\[CQ:image,([^]]+)]");
+            Matcher stillHaveImg;
+            int imgCount = 1;
+            if (findResult.textMessage() == null) {
                 MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage, findResult.imgBase64());
+                return;
             }
-            else {
-                MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + findResult.textMessage(), findResult.imgBase64());
+            stillHaveImg = imgPattern.matcher(findResult.textMessage());
+            MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + findResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片 " + imgCount++ + "]", findResult.imgBase64());
+            if (stillHaveImg.find()) {
+                TextImage.Result newFindResult = TextImage.parseTextImage(findResult.textMessage());
+                MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + newFindResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片 " + imgCount + "]", newFindResult.imgBase64());
+                while (true){
+                    imgCount++;
+                    stillHaveImg = imgPattern.matcher(newFindResult.textMessage());
+                    if (!stillHaveImg.find()) {
+                        return;
+                    }
+                    newFindResult = TextImage.parseTextImage(newFindResult.textMessage());
+                    MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + newFindResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片: " + imgCount + "]", newFindResult.imgBase64());
+                }
             }
         }
     }

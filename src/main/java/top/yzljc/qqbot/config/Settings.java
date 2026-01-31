@@ -43,4 +43,6 @@ public interface Settings {
     int getGithubWebhookPort();
 
     int getWebDashboardPort();
+
+    List<Long> getIgnoredUsers();
 }
