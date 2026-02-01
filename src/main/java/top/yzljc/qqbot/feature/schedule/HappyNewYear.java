@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.feature;
+package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -10,15 +10,10 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,21 +128,5 @@ public class HappyNewYear {
         } finally {
             if (tempFile.exists()) tempFile.delete();
         }
-    }
-
-    public static void startAutoDailyTask() {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        Runnable task = HappyNewYear::sendToAllGroups;
-        long initialDelay = computeInitialDelayToMidnight11();
-        long period = 24 * 60 * 60;
-        scheduler.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-        log.info("已启动每日0:00:01自动推送任务");
-    }
-
-    private static long computeInitialDelayToMidnight11() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextRun = now.toLocalDate().atStartOfDay().plusDays(0).plusSeconds(1);
-        if (!now.isBefore(nextRun)) nextRun = nextRun.plusDays(1);
-        return Duration.between(now, nextRun).toSeconds();
     }
 }

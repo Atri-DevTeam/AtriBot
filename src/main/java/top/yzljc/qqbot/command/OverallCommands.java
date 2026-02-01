@@ -13,8 +13,12 @@ import top.yzljc.qqbot.feature.minecraft.Motd;
 import top.yzljc.qqbot.feature.minecraft.ServerStatus;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
+import top.yzljc.qqbot.feature.schedule.AutoSign;
+import top.yzljc.qqbot.feature.schedule.HappyNewYear;
+import top.yzljc.qqbot.feature.schedule.ManosabaDate;
+import top.yzljc.qqbot.feature.schedule.WakeUp;
 import top.yzljc.qqbot.utils.CommandHelp;
-import top.yzljc.qqbot.utils.MessageStats;
+import top.yzljc.qqbot.feature.schedule.MessageStats;
 
 import java.util.List;
 
@@ -84,6 +88,9 @@ public class OverallCommands {
         }
         if (rawMessage.startsWith("/serverstatus")) {
             ServerStatus.processModeChange(userId,groupId,rawMessage);
+        }
+        if (rawMessage.equals("/wakeup") && admins.contains(userId)){
+            WakeUp.debugSendImgToGroup(groupId);
         }
         if (electricKeyword(rawMessage)){
             if (!admins.contains(userId)){

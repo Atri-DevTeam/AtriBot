@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.web;
+package top.yzljc.qqbot.deprecated;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +27,7 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated(since = "2.5.8 此功能过于鸡肋", forRemoval = true)
 public class WebDashboardAPI {
 
     private static final Logger log = LoggerFactory.getLogger(WebDashboardAPI.class);
@@ -40,7 +41,6 @@ public class WebDashboardAPI {
     private static ExecutorService webExecutor;
 
     public static synchronized void start(int port) {
-        // 防止重复启��
         if (server != null) return;
 
         try {
@@ -53,8 +53,6 @@ public class WebDashboardAPI {
             server.setExecutor(webExecutor);
 
             log.info("[WebDashboard] 服务已启动，端口：{}", port);
-
-            // ================== 路由定义 ==================
 
             // 1. 获取群列表
             server.createContext("/api/groups", (exchange) -> {

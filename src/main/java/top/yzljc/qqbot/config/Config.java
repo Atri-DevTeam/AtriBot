@@ -40,7 +40,7 @@ public class Config implements Settings{
     private String[] keywordsLikeUser;
     private int githubWebhookPort;
     private String githubWebhookSecret;
-    private int webDashboardPort;
+    private String wakeupImgLink;
 
     private Config() {
         load();
@@ -55,7 +55,6 @@ public class Config implements Settings{
 
     private void load() {
         try {
-            // Check if config exists in run directory, if not, copy from resources
             Path configPath = Paths.get(CONFIG_FILE);
             if (!Files.exists(configPath)) {
                 log.info("未找到配置文件，后端程序将创建并使用默认配置config.yml");
@@ -68,12 +67,10 @@ public class Config implements Settings{
                 }
             }
 
-            // Load config
             try (InputStream in = Files.newInputStream(configPath)) {
                 Yaml yaml = new Yaml();
                 Map<String, Object> data = yaml.load(in);
 
-                // Parse values with defaults if missing
                 this.listenPort = (int) data.getOrDefault("listen-port", 25566);
                 this.qqBotPort = (int) data.getOrDefault("qq-bot-port", 1234);
                 this.bilibiliCookie = (String) data.getOrDefault("bilibili-cookie", "null");
@@ -104,6 +101,7 @@ public class Config implements Settings{
                 this.botUid = ((Number) data.getOrDefault("bot-uid", 123456789L)).longValue();
                 this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 123456789L)).longValue();
                 this.httpUrl = (String) data.getOrDefault("napcat-data-url", "http://0.0.0.0:12345");
+                this.wakeupImgLink = (String) data.getOrDefault("wakeup-image-link", "null");
                 Object mysqlObj = data.get("mysql");
                 if (mysqlObj instanceof Map<?, ?> rawMap) {
                     Map<String, Object> mysqlConfig = new HashMap<>();
@@ -124,7 +122,6 @@ public class Config implements Settings{
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
                 this.githubWebhookPort = (int) data.getOrDefault("github-webhook-port", 54321);
                 this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
-                this.webDashboardPort = (int) data.getOrDefault("web-dashboard-port", 32123);
 
                 this.ignoredUsers = new ArrayList<>();
                 Object ignoredUserObj = data.get("recall-ignore-user");
@@ -271,7 +268,7 @@ public class Config implements Settings{
     }
 
     @Override
-    public int getWebDashboardPort() {
-        return webDashboardPort;
+    public String getWakeupImgLink() {
+        return wakeupImgLink;
     }
 }

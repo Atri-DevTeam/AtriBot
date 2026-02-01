@@ -1,24 +1,18 @@
 package top.yzljc.qqbot;
 
+import top.yzljc.qqbot.botkits.clock.RunScheduleTask;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.feature.HappyNewYear;
+import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
-import top.yzljc.qqbot.utils.MessageStats;
-import top.yzljc.qqbot.feature.ManosabaDate;
 import top.yzljc.qqbot.botkits.request.DataProcessor;
 import top.yzljc.qqbot.botkits.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
-import top.yzljc.qqbot.feature.AutoSign;
 import top.yzljc.qqbot.utils.SetProjectInfo;
-import top.yzljc.qqbot.web.WebDashboardAPI;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class YzLjcBot {
 
@@ -31,31 +25,22 @@ public class YzLjcBot {
         int socketPort = settings.getListenPort();
         int qqBotPort = settings.getQqBotPort();
         int webhookPort = settings.getGithubWebhookPort();
-        int webDashboardPort = settings.getWebDashboardPort();
         String webhookSecret = settings.getGithubWebhookSecret();
 
-        // 初始化配置与权限
         ServerRcon.loadAdminConfig();
-        // 启动定时重新加载权限配置的任务 (每60秒)
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-                ServerRcon::loadAdminConfig, 60, 60, TimeUnit.SECONDS
-        );
+
+        RunScheduleTask.runAllTasks();
 
         GroupConfigManager.refreshAllConfigs();
 
-        AutoSign.startScheduler();
-        MinecraftNews.startScheduler();
-        ManosabaDate.startAutoDailyTask();
-        HypixelNews.startScheduler();
-        MessageStats.startDailyReportScheduler();
-        HappyNewYear.startAutoDailyTask();
+        MinecraftNews.loadHistory();
+        HypixelNews.loadHistory();
 
         RequestReceiver.start(qqBotPort, DataProcessor::processMessage);
 
         SocketManager.loadConfig();
         SocketManager.start(socketPort);
         WebhookServer.start(webhookPort, webhookSecret);
-        WebDashboardAPI.start(webDashboardPort);
 
         // 同步commit信息
         SetProjectInfo.setInfo();
@@ -75,5 +60,6 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("motd", false);
         GroupConfigManager.registerFeature("github_info", false);
         GroupConfigManager.registerFeature("bv_check", false);
+        GroupConfigManager.registerFeature("wakeup_send", false);
     }
 }

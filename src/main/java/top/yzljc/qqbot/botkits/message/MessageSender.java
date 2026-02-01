@@ -12,35 +12,61 @@ import java.util.concurrent.Executors;
 public class MessageSender {
     private static final Logger log = LoggerFactory.getLogger(MessageSender.class);
 
-    /**
-     * 发送纯文本群消息
-     */
+    // 发送纯文本群消息
     public static void sendGroupMessage(long groupId, String content) {
-        sendGroupMessage(groupId, content, null);
+        sendGroupMessage(groupId, content, null,true);
     }
 
-    /**
-     * 发送带图片的群消息
-     */
-    public static void sendGroupMessage(long groupId, String text, String base64Image) {
+    // 发送带图片的群消息
+    public static void sendGroupMessage(long groupId, String text, String imageData) {
+        sendGroupMessage(groupId, text, imageData, true);
+    }
+
+    // 发送带http连接请求类型的图片的群消息
+    public static void sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
         Executors.newSingleThreadExecutor().submit(() -> {
-            Long messageId = executeRequest(groupId, text, base64Image);
+            Long messageId = sendGroupMsg(groupId, text, imageData, isBase64);
             if (messageId != null) {
-                log.info("消息发送成功{} -> 群: {}", (base64Image != null ? " [含图片]" : ""), groupId);
+                log.info("消息发送成功{} -> 群: {}", (imageData != null ? " [含图片]" : ""), groupId);
             }
         });
     }
 
-    /**
-     * 发送纯文本群消息并返回消息ID，如果之后我换了方法的话就给base64填上去再写一个新的函数
-     */
+    // 发送纯文本群消息并返回消息ID，如果之后我换了方法的话就给base64填上去再写一个新的函数
     public static Long sendGroupMessageGetId(long groupId, String content) {
-        return executeRequest(groupId, content, null);
+        return sendGroupMsg(groupId, content, null,true);
     }
 
-    private static Long executeRequest(long groupId, String text, String base64Image) {
+    // 发送私聊消息
+    public static void sendPrivateMessage(long userId, String content) {
+        sendPrivateMsg(userId, content);
+    }
+
+    // 私聊消息的上报实现，如果需要扩展获取message_id则将函数改为Long类型返回
+    private static void sendPrivateMsg(long userId, String text) {
         try {
-            List<Map<String, Object>> messageNodes = getMaps(text, base64Image);
+            List<Map<String, Object>> messageNodes = getMaps(text, null, true); // imgData没写，直接null吧用到再说
+            if (messageNodes.isEmpty()) return;
+
+            Map<String, Object> payloadMap = new HashMap<>();
+            payloadMap.put("user_id", userId);
+            payloadMap.put("message", messageNodes);
+
+            JsonNode resp = PostRequest.getPostResult(RequestType.SEND_PRIVATE_MSG, payloadMap);
+
+            if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
+                resp.get("data").get("message_id").asLong();
+            } else {
+                log.error("私聊消息发送失败，返回内容: {}", resp);
+            }
+        } catch (Exception ex) {
+            log.error("推送异常：{}", ex.getMessage(), ex);
+        }
+    }
+
+    private static Long sendGroupMsg(long groupId, String text, String imageData, boolean isBase64) {
+        try {
+            List<Map<String, Object>> messageNodes = getMaps(text, imageData, isBase64);
             if (messageNodes.isEmpty()) return null;
 
             Map<String, Object> payloadMap = new HashMap<>();
@@ -60,7 +86,7 @@ public class MessageSender {
         return null;
     }
 
-    private static List<Map<String, Object>> getMaps(String text, String base64Image) {
+    private static List<Map<String, Object>> getMaps(String text, String imageData, boolean isBase64) {
         List<Map<String, Object>> messageNodes = new ArrayList<>();
 
         if (text != null && !text.isEmpty()) {
@@ -72,9 +98,14 @@ public class MessageSender {
             messageNodes.add(textNode);
         }
 
-        if (base64Image != null && !base64Image.isEmpty()) {
+        if (imageData != null && !imageData.isEmpty()) {
             Map<String, Object> imgData = new HashMap<>();
-            imgData.put("file", "base64://" + base64Image);
+            if (isBase64){
+                imgData.put("file", "base64://" + imageData);
+            }else{
+                imgData.put("file", imageData);
+            }
+
             Map<String, Object> imgNode = new HashMap<>();
             imgNode.put("type", "image");
             imgNode.put("data", imgData);

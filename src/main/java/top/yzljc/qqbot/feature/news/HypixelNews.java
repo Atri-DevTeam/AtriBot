@@ -23,8 +23,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -45,18 +43,8 @@ public class HypixelNews {
     private static final String HISTORY_FILE = ConfigFile.HYPIXEL_NEWS.getFileName();
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
 
-    private static boolean isInitialized = false;
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    public static void startScheduler() {
-        if (isInitialized) return;
-        loadHistory();
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> checkNews(false), 10, 3600, TimeUnit.SECONDS);
-        log.info("Hypixel 新闻监控任务已启动");
-        isInitialized = true;
-    }
 
     public static void checkNews(boolean isManualTrigger) {
         try {
@@ -66,7 +54,7 @@ public class HypixelNews {
                 log.info("Hypixel 自动新闻检查中……");
             }
             // 1. 拉取和解析官网新闻首页
-            List<UnifiedArticle> candidateArticles = fetchAndParse(NEWS_URL, 5);
+            List<UnifiedArticle> candidateArticles = fetchAndParse();
 
             // 2. 按发布时间新到旧排好
             candidateArticles.sort(Comparator.comparingLong(a -> -a.timestamp));
@@ -100,15 +88,15 @@ public class HypixelNews {
         }
     }
 
-    private static List<UnifiedArticle> fetchAndParse(String newsUrl, int limit) {
+    private static List<UnifiedArticle> fetchAndParse() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            Document doc = Jsoup.connect(newsUrl).userAgent("Mozilla/5.0").get();
+            Document doc = Jsoup.connect(HypixelNews.NEWS_URL).userAgent("Mozilla/5.0").get();
             // Hypixel新闻列表所有帖子都在 .structItem--thread 结构下
             Elements posts = doc.select("div.structItem--thread");
             int count = 0;
             for (Element post : posts) {
-                if (count >= limit) break;
+                if (count >= 5) break;
 
                 Element linkElem = post.selectFirst(".structItem-title a");
                 if (linkElem == null) continue;
@@ -217,7 +205,7 @@ public class HypixelNews {
         }
     }
 
-    private static void loadHistory() {
+    public static void loadHistory() {
         File file = new File(HISTORY_FILE);
         if (!file.exists()) return;
         try {
@@ -277,9 +265,7 @@ public class HypixelNews {
     public static void processTestForHyp(long groupId) {
         MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
         log.info("Hypixel 新闻手动检查触发，群号：{}", groupId);
-        Executors.newSingleThreadExecutor().submit(() -> {
-                checkNews(true);
-        });
+        Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
     }
 
     /** 统一文章结构 */

@@ -1,16 +1,11 @@
-package top.yzljc.qqbot.feature;
+package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,23 +14,6 @@ import top.yzljc.qqbot.config.groups.GroupList;
 public class AutoSign {
 
     private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
-    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-    public static void startScheduler() {
-        long initialDelay = computeInitialDelay();
-        long oneDayMs = TimeUnit.DAYS.toMillis(1);
-        scheduler.scheduleAtFixedRate(AutoSign::signAllGroups, initialDelay, oneDayMs, TimeUnit.MILLISECONDS);
-        log.info("每天0:00:00自动群打卡任务已启动。首次延迟(ms):{}", initialDelay);
-    }
-
-    private static long computeInitialDelay() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next = now.with(LocalTime.of(0, 0, 0));
-        if (!now.isBefore(next)) {
-            next = next.plusDays(1);
-        }
-        return Duration.between(now, next).toMillis();
-    }
 
     private static void signAllGroups() {
         try {

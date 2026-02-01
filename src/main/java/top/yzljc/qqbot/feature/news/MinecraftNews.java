@@ -20,8 +20,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,7 +42,6 @@ public class MinecraftNews {
 
     public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
     private static final Set<String> pushedArticleIds = new HashSet<>();
-    private static boolean isInitialized = false;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void processUpdate(long groupId) {
@@ -57,19 +54,6 @@ public class MinecraftNews {
         }
     }
 
-    public static void startScheduler() {
-        if (isInitialized) return;
-
-        loadHistory();
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(() -> checkNews(false), 10, 3600, TimeUnit.SECONDS);
-        log.info("Minecraft 新闻抓取任务已启动");
-        isInitialized = true;
-    }
-
-    /**
-     * 核心检查逻辑
-     */
     public static void checkNews(boolean isManualTrigger) {
         try {
             if (isManualTrigger) {
@@ -298,7 +282,7 @@ public class MinecraftNews {
         }
     }
 
-    private static void loadHistory() {
+    public static void loadHistory() {
         File file = new File(HISTORY_FILE);
         if (!file.exists()) return;
         try {

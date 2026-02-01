@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.utils;
+package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.request.RequestType;
@@ -25,37 +25,7 @@ public class MessageStats {
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static volatile boolean scheduled = false;
     private static final ScheduledExecutorService withdrawScheduler = Executors.newSingleThreadScheduledExecutor();
-
-    public static void startDailyReportScheduler() {
-        if (scheduled) return;
-        scheduled = true;
-
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "MsgStats-Scheduler");
-            t.setDaemon(true);
-            return t;
-        });
-        long initDelay = nextRunDelay();
-
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                autoReportAllGroups();
-            } catch (Exception e) {
-                log.error("定时任务异常 {}", e.getMessage());
-            }
-        }, initDelay, 24 * 60 * 60, TimeUnit.SECONDS);
-    }
-
-    private static long nextRunDelay() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next = now.toLocalDate().atTime(23, 59, 45);
-        if (!now.isBefore(next)) {
-            next = now.toLocalDate().plusDays(1).atTime(23, 59, 45);
-        }
-        return Duration.between(now, next).getSeconds();
-    }
 
     public static void autoReportAllGroups() {
         Set<Long> groups = findAllGroupsWithRecords();

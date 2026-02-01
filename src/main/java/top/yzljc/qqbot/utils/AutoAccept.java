@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 
@@ -39,6 +40,7 @@ public class AutoAccept {
         Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 approveFriendRequest(flag);
+                sendHelloMessage(userId);
             } catch (Exception e) {
                 log.warn("[INFO] 同意操作失败: {}", e.getMessage(), e);
             }
@@ -57,5 +59,11 @@ public class AutoAccept {
         } catch (Exception e) {
             log.warn("同意好友请求时发生异常 (Flag: {})，错误信息: {}", flag, e.getMessage());
         }
+    }
+
+    private static void sendHelloMessage(long userId) {
+        String myMessage = "老大你好，私聊发送 “赞我” 是没有用的，因为我没写实现:( 如果需要拉群请联系 3199590352 以加快受理速度，交流群：818804507，哔哩哔哩：https://space.bilibili.com/592616376";
+        MessageSender.sendPrivateMessage(userId, myMessage);
+        log.info("已向用户 {} 发送问候消息。", userId);
     }
 }

@@ -21,7 +21,7 @@ public class GroupList {
     public static Set<Long> fetchAllGroupIds() {
         Set<Long> groupIds = new HashSet<>();
 
-        log.info("开始联网同步群列表……");
+        log.info("接到群号获取请求，开始同步群列表……");
 
         try {
             JsonNode resp = PostRequest.getPostResult(RequestType.GET_GROUP_LIST);
