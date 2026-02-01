@@ -14,6 +14,7 @@ import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.feature.AutoSign;
+import top.yzljc.qqbot.utils.SetProjectInfo;
 import top.yzljc.qqbot.web.WebDashboardAPI;
 
 import java.util.concurrent.Executors;
@@ -55,6 +56,9 @@ public class YzLjcBot {
         SocketManager.start(socketPort);
         WebhookServer.start(webhookPort, webhookSecret);
         WebDashboardAPI.start(webDashboardPort);
+
+        // 同步commit信息
+        SetProjectInfo.setInfo();
 
         // 群功能开关及默认值
         GroupConfigManager.registerFeature("auto_sign", true);     // 自动签到

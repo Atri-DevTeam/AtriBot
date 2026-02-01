@@ -6,14 +6,13 @@
 
     <groupId>top.yzljc</groupId>
     <artifactId>Yzljc-qq-bot</artifactId>
-    <version>2.5.6-RELEASE</version>
+    <version>2.5.7-RELEASE</version>
 
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
 
     <dependencies>
         <dependency>
@@ -72,6 +71,13 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -83,6 +89,41 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <!-- 新增插件: 自动获取Git信息并打包进Jar -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.2</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- 将 git.properties 生成到 classpath 根目录下 (target/classes) -->
+                    <!-- 这样它会被自动打包进 JAR 文件的根目录 -->
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+
+                    <!-- 即使没有 .git 目录（如CI/CD下载的源码）也不报错，防止构建失败 -->
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+
+                    <!-- 优化日期格式 -->
+                    <dateFormat>yyyy-MM-dd HH:mm:ss z</dateFormat>
+
+                    <!-- 只包含需要的属性，减少文件大小（可选） -->
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.branch$</includeOnlyProperty>
+                    </includeOnlyProperties>
                 </configuration>
             </plugin>
 
