@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.debug.RecallLastMsg;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -76,7 +77,9 @@ public class MessageSender {
             JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_MSG, payloadMap);
 
             if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
-                return resp.get("data").get("message_id").asLong();
+                long messageId = resp.get("data").get("message_id").asLong();
+                RecallLastMsg.recordLastMsg(groupId, messageId);
+                return messageId;
             } else {
                 log.error("消息发送失败，返回内容: {}", resp);
             }

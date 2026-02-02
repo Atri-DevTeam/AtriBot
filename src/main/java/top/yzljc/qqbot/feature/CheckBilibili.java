@@ -111,22 +111,26 @@ public class CheckBilibili {
                 String desc = data.path("desc").asText();
                 if (desc == null || desc.isEmpty()) desc = "（该视频暂无简介）";
 
+                long mid = data.path("owner").path("mid").asLong();
+                String upStats = fetchUploaderStats(mid);
+
                 int duration = data.path("duration").asInt();
                 String link = "https://www.bilibili.com/video/" + bvid;
 
-                String sb = "📜 视频标题：" + title + "\n" +
-                        "👀 观看次数：" + formatNum(stat.path("view").asInt()) + "\n" +
-                        "👍 点赞次数：" + stat.path("like").asInt() + "\n" +
-                        "💰 投币次数：" + stat.path("coin").asInt() + "\n" +
-                        "📂 收藏次数：" + stat.path("favorite").asInt() + "\n" +
-                        "💬 弹幕量：" + stat.path("danmaku").asInt() + "\n" +
-                        "⏳ 视频时长：" + formatDuration(duration) + "\n" +
-                        "🧷 原始链接：" + link;
+                String sb = "视频标题：" + title + "\n" +
+                        "观看次数：" + formatNum(stat.path("view").asInt()) + "\n" +
+                        "点赞次数：" + stat.path("like").asInt() + "\n" +
+                        "投币次数：" + stat.path("coin").asInt() + "\n" +
+                        "收藏次数：" + stat.path("favorite").asInt() + "\n" +
+                        "弹幕量：" + stat.path("danmaku").asInt() + "\n" +
+                        "视频时长：" + formatDuration(duration) + "\n" +
+                        "原始链接：" + link;
 
                 List<Map<String, Object>> nodes = new ArrayList<>();
                 nodes.add(createImageNode(picUrl));
                 nodes.add(createTextNode(sb));
-                nodes.add(createTextNode("📝 视频简介：\n" + desc));
+                nodes.add(createTextNode("视频简介：\n" + desc));
+                nodes.add(createTextNode(upStats));
 
                 sendForwardMessage(groupId, nodes, title);
 
@@ -134,6 +138,58 @@ public class CheckBilibili {
                 log.warn("[Bili API] Processing Error: {}", e.getMessage());
             }
         });
+    }
+
+    private static String fetchUploaderStats(long mid) {
+        try {
+            String cardUrl = "https://api.bilibili.com/x/web-interface/card?mid=" + mid + "&photo=true";
+            JsonNode cardRoot = sendBilibiliRequest(cardUrl);
+
+            if (cardRoot == null || cardRoot.path("code").asInt() != 0) {
+                return "👤 UP主信息获取失败";
+            }
+
+            JsonNode data = cardRoot.path("data");
+            JsonNode card = data.path("card");
+
+            String name = card.path("name").asText();
+            String sign = card.path("sign").asText();
+            int level = card.path("level_info").path("current_level").asInt();
+
+            int fans = data.path("follower").asInt(); // 粉丝数
+            int totalLikes = data.path("like_num").asInt(); // 总获赞数
+
+            long totalViews = 0;
+            try {
+                String statUrl = "https://api.bilibili.com/x/space/upstat?mid=" + mid;
+                JsonNode statRoot = sendBilibiliRequest(statUrl);
+
+                if (statRoot != null && statRoot.path("code").asInt() == 0) {
+                    totalViews = statRoot.path("data").path("archive").path("view").asLong();
+                } else {
+                    log.warn("[Bili Up Stat] Failed to get view count: API returned error/no-auth");
+                }
+            } catch (Exception e) {
+                log.warn("[Bili Up Stat] Failed to get view count: {}", e.getMessage());
+            }
+
+            if (sign == null || sign.trim().isEmpty()) {
+                sign = "（暂无签名）";
+            } else {
+                sign = sign.replace("\n", " ");
+            }
+
+            String viewData = String.valueOf(totalViews);
+            return "UP主：" + name + " (Lv" + level + ")\n" +
+                    "UID: " + mid + "\n" +
+                    "粉丝：" + fans + " | 获赞：" + totalLikes + "\n" +
+                    "总播放：" + viewData + "\n" +
+                    "签名：" + sign;
+
+        } catch (Exception e) {
+            log.warn("[Bili Up Info] Error: {}", e.getMessage());
+        }
+        return "UP主信息获取失败";
     }
 
     private static Map<String, Object> createTextNode(String text) {
@@ -212,6 +268,8 @@ public class CheckBilibili {
 
             if (SESSDATA != null && !SESSDATA.isEmpty()) {
                 conn.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
+            } else {
+                log.debug("SESSDATA is empty, sending request without cookie: {}", urlStr);
             }
 
             if (conn.getResponseCode() == 200) {

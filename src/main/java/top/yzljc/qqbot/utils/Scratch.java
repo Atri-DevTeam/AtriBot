@@ -2,6 +2,7 @@ package top.yzljc.qqbot.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -15,7 +16,7 @@ public class Scratch {
     private static int huffCounts = 0;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static ScheduledFuture<?> autoSettleTask = null;
-    private static final long SETTLE_DELAY = 60L;
+    private static final long SETTLE_DELAY = 8L;
 
     public static synchronized void huffCount() {
         huffCounts++;
@@ -48,5 +49,12 @@ public class Scratch {
                 stopHuff();
             }
         }, SETTLE_DELAY, TimeUnit.SECONDS);
+    }
+
+    public static void shizoukiaGroupNameChange(Long userId, String newName){
+        String userName = GetUserName.getUserName(userId);
+        String resultMsg = userName + "修改了群名称为\"" + newName + "\"";
+        MessageSender.sendGroupMessage(820103390L, resultMsg);
+        log.info("已向群 820103390 通知用户 {} 修改群名称为 {}", userName, newName);
     }
 }

@@ -44,15 +44,21 @@ public class PacketEvent {
             long fromGroupId = json.path("group_id").asLong();
             String statusMsg;
             if (parts.length == 2) {
-                try {
-                    long targetGid = Long.parseLong(parts[1]);
+                if (parts[1].equals("this")){
                     isDebugEnabled.set(true);
-                    targetFilterGroupId = targetGid;
-                    statusMsg = "Debug 模式已开启 (过滤模式)！\n只监听来自群 " + targetGid + " 的数据包。\n数据将转发至群 " + debugGroupId;
-                } catch (NumberFormatException e) {
-                    statusMsg = "群号格式错误，请使用纯数字。";
+                    targetFilterGroupId = fromGroupId;
+                    statusMsg = "Debug 模式已开启 (过滤模式)！\n只监听来自群 " + fromGroupId + " 的数据包\n数据将转发至群 " + debugGroupId;
+                }else {
+                    try {
+                        long targetGid = Long.parseLong(parts[1]);
+                        isDebugEnabled.set(true);
+                        targetFilterGroupId = targetGid;
+                        statusMsg = "Debug 模式已开启 (过滤模式)！\n只监听来自群 " + targetGid + " 的数据包\n数据将转发至群 " + debugGroupId;
+                    } catch (NumberFormatException e) {
+                        statusMsg = "群号格式错误，请使用纯数字";
+                    }
                 }
-            } else {
+            }else {
                 boolean toggled;
                 while (true) {
                     boolean prev = isDebugEnabled.get();

@@ -24,17 +24,11 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Deprecated(since = "客户自研，此项目废弃不再提供任何修复")
-/**
- * 这人跟傻逼一样我都做完了跟我说要自己研究这不傻逼吗
- */
+@Deprecated(since = "客户自研，此项目废弃不再提供任何修复" , forRemoval = true)
 public class ServerStatusReport {
 
     private static final Logger log = LoggerFactory.getLogger(ServerStatusReport.class);
 
-    // ==== 配置区域 ====
-
-    // 限定群号
     private static final List<Long> ALLOWED_GROUPS = Arrays.asList(
             883993372L,
             978885201L,
@@ -42,42 +36,23 @@ public class ServerStatusReport {
             1039954708L
     );
 
-    // 固定目标 API
     private static final String API_URL = "https://api.mcstatus.io/v2/status/java/GordonHim.com";
-
-    // 触发关键词
     private static final String TRIGGER_CMD = "在线人数";
-
-    // 图片文件名配置
     private static final String BG_NORMAL = "gh_background.jpg"; // 普通背景
     private static final String BG_ONLINE = "gh_online.jpg";     // 开服通知图
     private static final String BG_OFFLINE = "gh_offline.jpg";   // 关服通知图
-
-    // 数据存储文件
     private static final File DATA_FILE = new File("status_data.json");
-
-    // 工具对象
     private static final ObjectMapper jsonMapper = new ObjectMapper();
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-    // 运行时数据持有对象
     private static StatusData currentData = new StatusData();
 
-    /**
-     * 初始化定时任务
-     */
     public static void init() {
-        // 1. 启动时先加载数据
         loadData();
 
-        // 2. 每15分钟执行一次检测
         scheduler.scheduleAtFixedRate(ServerStatusReport::executeScheduledCheck, 0, 15, TimeUnit.MINUTES);
         log.info("监控任务已启动，每15分钟检查一次，数据存储于：{}", DATA_FILE.getAbsolutePath());
     }
 
-    /**
-     * 消息处理入口
-     */
     public static void process(JsonNode json) {
         if (!"message".equals(json.path("post_type").asText())) return;
         if (!"group".equals(json.path("message_type").asText())) return;
@@ -92,22 +67,15 @@ public class ServerStatusReport {
         }
     }
 
-    /**
-     * 处理用户主动查询
-     */
     private static void handleManualQuery(long groupId) {
         try {
             ServerStatus status = fetchStatus();
 
             if (status.online) {
-                // 在线：发送人数渲染图
                 File imgFile = generateStatusImage(GenerateType.ONLINE_COUNT, status.onlinePlayers, BG_NORMAL);
                 sendImage(groupId, imgFile);
-                // 手动删除文件
                 if (imgFile != null) imgFile.delete();
             } else {
-                // 离线：计算时长
-                // 使用 offlineStartTime 计算
                 String durationStr = "未知时长";
                 if (currentData.offlineStartTime > 0) {
                     long diff = System.currentTimeMillis() - currentData.offlineStartTime;
@@ -123,13 +91,11 @@ public class ServerStatusReport {
                         durationStr = minutes + "分钟";
                     }
                 } else {
-                    durationStr = "刚刚"; // 还没记录到离线时间，说明刚掉线或者刚重启程序
+                    durationStr = "刚刚";
                 }
 
-                // 生成离线时长图片
                 File imgFile = generateOfflineDurationImage(durationStr, BG_NORMAL);
                 sendImage(groupId, imgFile);
-                // 手动删除文件
                 if (imgFile != null) imgFile.delete();
             }
         } catch (Exception e) {
@@ -138,54 +104,41 @@ public class ServerStatusReport {
         }
     }
 
-    /**
-     * 定时检测逻辑 (每15分钟)
-     */
     private static void executeScheduledCheck() {
         try {
             ServerStatus status = fetchStatus();
             long now = System.currentTimeMillis();
             boolean dataChanged = false;
 
-            // 首次运行，只记录状态
             if (currentData.lastKnownState == null) {
                 currentData.lastKnownState = status.online;
-                // 如果启动时就是离线，记录一下时间防止显示null
                 if (!status.online && currentData.offlineStartTime == 0) {
                     currentData.offlineStartTime = now;
                 }
-                saveData(); // 立即保存初始状态
+                saveData();
                 return;
             }
 
             boolean isOnlineNow = status.online;
             boolean wasOnline = currentData.lastKnownState;
 
-            // 1. 检测状态变化
             if (wasOnline && !isOnlineNow) {
-                // 状态变为离线 -> 发送 gh_offline.jpg
                 log.info("检测到服务器离线，全员推送……");
 
-                // 记录离线开始时间
                 currentData.offlineStartTime = now;
                 dataChanged = true;
 
                 broadcastImage(BG_OFFLINE);
             }
             else if (!wasOnline && isOnlineNow) {
-                // 状态变为在线 -> 发送 gh_online.jpg
                 log.info("检测到服务器开服，全员推送……");
 
-                // 重置离线时间
                 currentData.offlineStartTime = 0L;
                 dataChanged = true;
 
                 broadcastImage(BG_ONLINE);
             }
-
-            // 2. 在线人数播报逻辑
             if (isOnlineNow) {
-                // 人数 >= 25 且 冷却时间已过 (2小时)
                 if (status.onlinePlayers >= 25) {
                     if (now - currentData.lastBroadcastTime > 7200 * 1000) {
                         log.info("人数达标（{}），触发全员播报", status.onlinePlayers);
@@ -207,13 +160,11 @@ public class ServerStatusReport {
                 }
             }
 
-            // 更新状态缓存
             if (currentData.lastKnownState != isOnlineNow) {
                 currentData.lastKnownState = isOnlineNow;
                 dataChanged = true;
             }
 
-            // 如果数据有变动，保存到 JSON 文件
             if (dataChanged) {
                 saveData();
             }
@@ -222,8 +173,6 @@ public class ServerStatusReport {
             log.error("定时检测异常：{}", e.getMessage());
         }
     }
-
-    // ==== 数据持久化方法 ====
 
     private static void loadData() {
         try {
@@ -248,18 +197,13 @@ public class ServerStatusReport {
         }
     }
 
-    // ==== 核心功能方法 ====
-
     private static void broadcastImage(String bgFileName) {
         try {
             File imgFile = generateStatusImage(GenerateType.ONLY_WATERMARK, 0, bgFileName);
-
-            // 循环推送给所有允许的群
             for (Long gid : ALLOWED_GROUPS) {
                 sendImage(gid, imgFile);
             }
 
-            // 所有群发送完毕后，再删除文件
             if (imgFile != null && imgFile.exists()) {
                 imgFile.delete();
             }
@@ -355,18 +299,12 @@ public class ServerStatusReport {
         return new Font("Arial", Font.BOLD, 1);
     }
 
-    /**
-     * 发送图片
-     * 修改说明：移除了 file.delete() 操作，防止在循环发送时文件丢失。
-     * 文件的清理工作现在由调用者负责。
-     */
     private static void sendImage(long groupId, File file) {
         if (file == null || !file.exists()) return;
         try {
             byte[] bytes = Files.readAllBytes(file.toPath());
             String b64 = Base64.getEncoder().encodeToString(bytes);
             MessageSender.sendGroupMessage(groupId, null, b64);
-            // 警告：这里不要删除文件，因为如果是广播模式，其他群还没发呢
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -392,13 +330,11 @@ public class ServerStatusReport {
         return result;
     }
 
-    // 内部类用于传递状态
     private static class ServerStatus {
         boolean online = false;
         int onlinePlayers = 0;
     }
 
-    // 数据持久化类
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class StatusData {
         public Boolean lastKnownState = null;

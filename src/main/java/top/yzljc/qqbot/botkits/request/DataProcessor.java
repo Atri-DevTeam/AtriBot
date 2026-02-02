@@ -9,7 +9,6 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.groups.GroupModeManager;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.feature.*;
-import top.yzljc.qqbot.deprecated.ServerStatusReport;
 import top.yzljc.qqbot.feature.minecraft.specificserver.HBTPlayerData;
 import top.yzljc.qqbot.utils.FindRecall;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
@@ -29,6 +28,8 @@ public class DataProcessor {
         String postType = json.path("post_type").asText("");
         String messageType = json.path("message_type").asText();
         String noticeType = json.path("notice_type").asText("");
+        String subType = json.path("sub_type").asText("");
+        String newName = json.path("name_new").asText("");
         long userId = json.path("user_id").asLong();
         long groupId = json.path("group_id").asLong();
         String rawMessage = json.path("raw_message").asText();
@@ -48,6 +49,11 @@ public class DataProcessor {
             return;
         }
 
+
+        if (groupId == 820103390L && subType.equals("group_name")){
+            Scratch.shizoukiaGroupNameChange(userId, newName);
+        }
+
         // 下面的内容都只处理消息类型
         if (!"message".equals(postType) && !"group".equals(messageType)) {
             return;
@@ -58,7 +64,6 @@ public class DataProcessor {
         AnnoyUser.processMessage(json);
         MessageRecorder.processRecord(json);
         SearchRelevant.processCommand(json);
-        ServerStatusReport.process(json);
         HBTPlayerData.process(json);
         ServerRcon.processMessage(json);
 

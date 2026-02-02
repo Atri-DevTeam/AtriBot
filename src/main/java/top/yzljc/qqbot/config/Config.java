@@ -41,6 +41,7 @@ public class Config implements Settings{
     private int githubWebhookPort;
     private String githubWebhookSecret;
     private String wakeupImgLink;
+    private String commandPrefix;
 
     private Config() {
         load();
@@ -122,6 +123,7 @@ public class Config implements Settings{
                 this.debugMode = (boolean) data.getOrDefault("debug-mode", false);
                 this.githubWebhookPort = (int) data.getOrDefault("github-webhook-port", 54321);
                 this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
+                this.commandPrefix = (String) data.getOrDefault("command-prefix", "/");
 
                 this.ignoredUsers = new ArrayList<>();
                 Object ignoredUserObj = data.get("recall-ignore-user");
@@ -270,5 +272,10 @@ public class Config implements Settings{
     @Override
     public String getWakeupImgLink() {
         return wakeupImgLink;
+    }
+
+    @Override
+    public String getCommandPrefix() {
+        return commandPrefix;
     }
 }

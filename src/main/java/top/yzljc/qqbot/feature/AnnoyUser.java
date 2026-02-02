@@ -29,7 +29,7 @@ public class AnnoyUser {
 
     private static final Map<Long, Map<Long, String>> annoyMap = new ConcurrentHashMap<>();
     private static final Map<Long, Set<Long>> fuckOnceMap = new ConcurrentHashMap<>();
-    private static final ExecutorService PARALLEL_POOL = Executors.newCachedThreadPool();
+    private static final ExecutorService PARALLEL_POOL = Executors.newFixedThreadPool(15);
 
     static {
         loadRecord();

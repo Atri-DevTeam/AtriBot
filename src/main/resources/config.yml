@@ -1,3 +1,6 @@
+# 指令头
+command-prefix: "/"
+
 # Debug 模式开关
 debug-mode: false
 

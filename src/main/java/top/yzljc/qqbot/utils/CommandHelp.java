@@ -44,18 +44,18 @@ public class CommandHelp {
 
     private static void sendHelpMenu(long groupId) {
         StringBuilder sb = new StringBuilder();
-        sb.append("✨ YZ_Ljc_ Bot 指令菜单 ✨\n");
+        sb.append(" YZ_Ljc_ Bot 指令菜单 （半成品） \n");
         sb.append("----------------------------\n");
 
-        sb.append("💡 [普通指令]\n");
+        sb.append(" [普通指令]\n");
         commonCommands.forEach((cmd, desc) -> sb.append("▶ ").append(cmd).append(" : ").append(desc).append("\n"));
 
-        sb.append("\n👑 [管理指令]\n");
-        adminCommands.forEach((cmd, desc) -> sb.append("⭐ ").append(cmd).append(" : ").append(desc).append("\n"));
+        sb.append("\n [管理指令]\n");
+        adminCommands.forEach((cmd, desc) -> sb.append(" ").append(cmd).append(" : ").append(desc).append("\n"));
 
         sb.append("----------------------------\n");
-        sb.append("💡 使用配置菜单请发送 /cfg\n");
-        sb.append("💡 强制保存配置请发送 /save");
+        sb.append(" 使用配置菜单请发送 /cfg\n");
+        sb.append(" 强制保存配置请发送 /save");
 
         MessageSender.sendGroupMessage(groupId, sb.toString());
     }

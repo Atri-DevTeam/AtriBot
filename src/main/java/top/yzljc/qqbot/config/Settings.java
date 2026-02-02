@@ -45,4 +45,6 @@ public interface Settings {
     List<Long> getIgnoredUsers();
 
     String getWakeupImgLink();
+
+    String getCommandPrefix();
 }

@@ -22,7 +22,6 @@ public class FindRecall {
     private static final long DEBUG_GROUP_ID = settings.getDebugGroupId();
     private static final long BOT_ID = settings.getBotUid();
     private static final List<Long> IGNORE_USER_IDS = settings.getIgnoredUsers();
-    private static String CHECK_MSG;
 
     public static void processMessage(JsonNode json) {
 

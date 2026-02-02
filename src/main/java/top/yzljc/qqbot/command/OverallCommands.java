@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.debug.RecallLastMsg;
 import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.MojangStatus;
@@ -31,6 +32,7 @@ public class OverallCommands {
     private static final String[] KEYWORDS_LIKE_USER = settings.getKeywordsLikeUser();
     private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
     private static final long BOT_QQ = settings.getBotUid();
+    private static final String COMMAND_PREFIX = settings.getCommandPrefix();
 
     public static void processCommand(JsonNode json) {
         // 二次校验，虽然意义不大
@@ -44,52 +46,55 @@ public class OverallCommands {
         long groupId = json.path("group_id").asLong();
         long userId = json.path("user_id").asLong();
 
-        if ("/manodate".equals(rawMessage) && groupId == ManosabaGroup){
+        if ((COMMAND_PREFIX + "manodate").equals(rawMessage) && groupId == ManosabaGroup){
             ManosabaDate.receiveManodate(groupId);
         }
-        if ("/checkmcnews".equals(rawMessage) && admins.contains(userId)){
+        if ((COMMAND_PREFIX + "checkmcnews").equals(rawMessage) && admins.contains(userId)){
             MinecraftNews.processUpdate(groupId);
         }
-        if ("/checkhypnews".equals(rawMessage) && admins.contains(userId)){
+        if ((COMMAND_PREFIX + "checkhypnews").equals(rawMessage) && admins.contains(userId)){
             HypixelNews.processTestForHyp(groupId);
         }
         if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text")){
             Hitokoto.processHitokoto(groupId);
         }
-        if (admins.contains(userId) && "/reboot".equalsIgnoreCase(rawMessage)) {
+        if (admins.contains(userId) && (COMMAND_PREFIX + "reboot").equalsIgnoreCase(rawMessage)) {
             Reboot.processReboot(userId, groupId);
         }
-        if ("/happynewyear".equals(rawMessage)) {
+        if ((COMMAND_PREFIX + "happynewyear").equals(rawMessage)) {
             HappyNewYear.processHappyNewYear(groupId);
         }
-        if ("/mojang".equalsIgnoreCase(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"mojang_status")) {
+        if ((COMMAND_PREFIX + "mojang").equalsIgnoreCase(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"mojang_status")) {
             MojangStatus.processCheckMojangStatus(groupId);
         }
-        if (rawMessage.startsWith("/motd") && GroupConfigManager.isFeatureEnabled(groupId, "motd")) {
+        if (rawMessage.startsWith(COMMAND_PREFIX + "motd") && GroupConfigManager.isFeatureEnabled(groupId, "motd")) {
             Motd.processCommand(groupId, rawMessage);
         }
-        if (rawMessage.contains("[CQ:at,qq=" + BOT_QQ + "]") && rawMessage.toLowerCase().contains("/help")){
+        if (rawMessage.contains("[CQ:at,qq=" + BOT_QQ + "]") && rawMessage.toLowerCase().contains(COMMAND_PREFIX + "help")){
             CommandHelp.processHelp(groupId);
         }
         if (likeUserKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"like_user")){
             LikeUser.processCommand(userId, groupId);
         }
-        if (rawMessage.startsWith("/rollback") && admins.contains(userId)){
+        if (rawMessage.startsWith(COMMAND_PREFIX + "rollback") && admins.contains(userId)){
             RollbackMessages.processRollBack(groupId,rawMessage);
         }
-        if (admins.contains(userId) && "/signall".equals(rawMessage)){
+        if (admins.contains(userId) && (COMMAND_PREFIX + "signall").equals(rawMessage)){
             AutoSign.processAutoSign();
         }
-        if (rawMessage.startsWith("/github") && admins.contains(userId)){
+        if (admins.contains(userId) && rawMessage.startsWith(COMMAND_PREFIX + "recalllast")){
+            RecallLastMsg.recallLastMsg();
+        }
+        if (rawMessage.startsWith(COMMAND_PREFIX + "github") && admins.contains(userId)){
             WebhookServer.processCommand(groupId,rawMessage);
         }
-        if (rawMessage.startsWith("/stats")){
+        if (rawMessage.startsWith(COMMAND_PREFIX + "stats")){
             MessageStats.processCommand(groupId,rawMessage);
         }
-        if (rawMessage.startsWith("/serverstatus")) {
+        if (rawMessage.startsWith(COMMAND_PREFIX + "serverstatus")) {
             ServerStatus.processModeChange(userId,groupId,rawMessage);
         }
-        if (rawMessage.equals("/wakeup") && admins.contains(userId)){
+        if (rawMessage.equals(COMMAND_PREFIX + "wakeup") && admins.contains(userId)){
             WakeUp.debugSendImgToGroup(groupId);
         }
         if (electricKeyword(rawMessage)){

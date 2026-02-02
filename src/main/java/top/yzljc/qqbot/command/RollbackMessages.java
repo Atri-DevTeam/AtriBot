@@ -26,7 +26,6 @@ public class RollbackMessages {
     }
 
     /**
-     * 处理指令消息（假设主程序已判断是用户3199590352发送指令，此入口只需处理撤回逻辑）
      * @param groupId 当前群号
      * @param commandText 用户消息内容
      * @param dataSource 数据源（用 RecordGroupMessage 提供的连接池）

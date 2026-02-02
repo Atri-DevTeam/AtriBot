@@ -34,6 +34,7 @@ public class SocketManager {
     private static final String LIST_FILE = ConfigFile.SERVER_LIST.getFileName();
     private static final Map<String, ServerInfo> serverMap = new HashMap<>();
     private static final Map<String, Socket> activeConnections = new ConcurrentHashMap<>();
+    private static final ExecutorService SOCKET_THREAD_POOL = Executors.newFixedThreadPool(20);
 
     private static final Pattern STRICT_FILTER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\u4e00-\\u9fa5]");
 
@@ -86,13 +87,12 @@ public class SocketManager {
 
     public static void start(int port) {
         new Thread(() -> {
-            ExecutorService threadPool = Executors.newCachedThreadPool();
             try (ServerSocket serverSocket = new ServerSocket(port)) {
                 log.info("正在监听Socket端口：{}，等待插件连接……", port);
 
                 while (true) {
                     Socket client = serverSocket.accept();
-                    threadPool.submit(() -> handleClient(client));
+                    SOCKET_THREAD_POOL.submit(() -> handleClient(client));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
