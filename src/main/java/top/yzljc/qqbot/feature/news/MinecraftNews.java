@@ -46,7 +46,7 @@ public class MinecraftNews {
 
     public static void processUpdate(long groupId) {
         try{
-            MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新咨询...");
+            MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新资讯...");
             log.info("Minecraft 新闻手动检查触发，群号：{}", groupId);
             Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
         } catch (Exception e){
@@ -119,98 +119,127 @@ public class MinecraftNews {
 
     private static List<UnifiedArticle> fetchAndParsePrimary() {
         List<UnifiedArticle> list = new ArrayList<>();
+        HttpURLConnection connection = null;
         try {
-            JsonNode root = objectMapper.readTree(new URI(MinecraftNews.API_PRIMARY).toURL());
-            JsonNode resultNode = root.get("result");
-            if (resultNode == null) return list;
-            JsonNode results = resultNode.get("results");
+            // 使用 HttpURLConnection 替代直接 URL 读取，以便设置超时
+            URL url = new URI(MinecraftNews.API_PRIMARY).toURL();
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(10000); // 10秒连接超时
+            connection.setReadTimeout(30000);    // 30秒读取超时
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-            if (results != null && results.isArray()) {
-                for (JsonNode node : results) {
-                    UnifiedArticle article = new UnifiedArticle();
-                    article.title = node.has("title") ? node.get("title").asText() : "未知标题";
-                    article.tag = "Minecraft 资讯";
-                    article.url = node.has("url") ? node.get("url").asText() : "";
-                    article.id = article.url; // ID = URL
+            try (InputStream in = connection.getInputStream()) {
+                JsonNode root = objectMapper.readTree(in);
+                JsonNode resultNode = root.get("result");
+                if (resultNode == null) return list;
+                JsonNode results = resultNode.get("results");
 
-                    long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
-                    article.timestamp = timeSeconds * 1000;
-                    article.dateDisplay = formatTimestamp(article.timestamp);
+                if (results != null && results.isArray()) {
+                    for (JsonNode node : results) {
+                        UnifiedArticle article = new UnifiedArticle();
+                        article.title = node.has("title") ? node.get("title").asText() : "未知标题";
+                        article.tag = "Minecraft 资讯";
+                        article.url = node.has("url") ? node.get("url").asText() : "";
+                        article.id = article.url; // ID = URL
 
-                    article.description = node.has("description") ? node.get("description").asText() : "";
-                    article.author = node.has("author") ? node.get("author").asText() : "Staff";
+                        long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
+                        article.timestamp = timeSeconds * 1000;
+                        article.dateDisplay = formatTimestamp(article.timestamp);
 
-                    if (node.has("image")) {
-                        article.imageUrl = node.get("image").asText();
-                    } else {
-                        article.imageUrl = "";
-                    }
+                        article.description = node.has("description") ? node.get("description").asText() : "";
+                        article.author = node.has("author") ? node.get("author").asText() : "Staff";
 
-                    if (article.id != null && !article.id.isEmpty()) {
-                        list.add(article);
+                        if (node.has("image")) {
+                            article.imageUrl = node.get("image").asText();
+                        } else {
+                            article.imageUrl = "";
+                        }
+
+                        if (article.id != null && !article.id.isEmpty()) {
+                            list.add(article);
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             log.warn("主源解析失败：{}", e.getMessage());
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
         return list;
     }
 
     private static List<UnifiedArticle> fetchAndParseSecondary() {
         List<UnifiedArticle> list = new ArrayList<>();
+        HttpURLConnection connection = null;
         try {
-            JsonNode root = objectMapper.readTree(new URI(MinecraftNews.API_SECONDARY).toURL());
-            JsonNode grid = root.get("article_grid");
+            URL url = new URI(MinecraftNews.API_SECONDARY).toURL();
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(10000); // 10秒连接超时
+            connection.setReadTimeout(30000);    // 30秒读取超时
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-            if (grid != null && grid.isArray()) {
-                int limit = 5; // 如果还是他妈的漏新闻就给这个数值改大，我就不信了
-                for (JsonNode item : grid) {
-                    if (list.size() >= limit) break;
+            try (InputStream in = connection.getInputStream()) {
+                JsonNode root = objectMapper.readTree(in);
+                JsonNode grid = root.get("article_grid");
 
-                    UnifiedArticle article = new UnifiedArticle();
+                if (grid != null && grid.isArray()) {
+                    int limit = 5; // 如果还是他妈的漏新闻就给这个数值改大，我就不信了
+                    for (JsonNode item : grid) {
+                        if (list.size() >= limit) break;
 
-                    JsonNode tile = item.get("default_tile");
-                    if (tile == null) continue;
+                        UnifiedArticle article = new UnifiedArticle();
 
-                    article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
-                    article.tag = "Minecraft 快讯";
+                        JsonNode tile = item.get("default_tile");
+                        if (tile == null) continue;
 
-                    String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
-                    if (relUrl.startsWith("/")) {
-                        article.url = BASE_URL + relUrl;
-                    } else {
-                        article.url = relUrl;
-                    }
-                    article.id = article.url;
+                        article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
+                        article.tag = "Minecraft 快讯";
 
-                    article.timestamp = System.currentTimeMillis();
-                    article.dateDisplay = "未知时间";
-
-                    article.description = tile.has("sub_header") ? tile.get("sub_header").asText() : "";
-                    article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整咨询！";
-
-                    article.author = "未知作者";
-
-                    if (tile.has("image")) {
-                        JsonNode imgNode = tile.get("image");
-                        String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
-                        if (imgRel.startsWith("/")) {
-                            article.imageUrl = BASE_URL + imgRel;
+                        String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
+                        if (relUrl.startsWith("/")) {
+                            article.url = BASE_URL + relUrl;
                         } else {
-                            article.imageUrl = imgRel;
+                            article.url = relUrl;
                         }
-                    } else {
-                        article.imageUrl = "";
-                    }
+                        article.id = article.url;
 
-                    if (!article.id.isEmpty()) {
-                        list.add(article);
+                        article.timestamp = System.currentTimeMillis();
+                        article.dateDisplay = "未知时间";
+
+                        article.description = tile.has("sub_header") ? tile.get("sub_header").asText() : "";
+                        article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整资讯！";
+
+                        article.author = "未知作者";
+
+                        if (tile.has("image")) {
+                            JsonNode imgNode = tile.get("image");
+                            String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
+                            if (imgRel.startsWith("/")) {
+                                article.imageUrl = BASE_URL + imgRel;
+                            } else {
+                                article.imageUrl = imgRel;
+                            }
+                        } else {
+                            article.imageUrl = "";
+                        }
+
+                        if (!article.id.isEmpty()) {
+                            list.add(article);
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             log.warn("辅助源解析失败：{}", e.getMessage());
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
         return list;
     }
@@ -218,14 +247,14 @@ public class MinecraftNews {
     private static void pushToAllGroups(UnifiedArticle article) {
         StringBuilder sb = new StringBuilder();
         sb.append("【Minecraft 动态 | ").append(article.tag).append("】\n");
-        sb.append(article.title).append("\n");
+        sb.append(article.title).append("\n\n");
 
         if (article.author != null && !article.author.isEmpty()) {
             sb.append("作者: ").append(article.author).append("\n");
         }
 
         if (article.dateDisplay != null && !article.dateDisplay.isEmpty()) {
-            sb.append("时间: ").append(article.dateDisplay).append("\n");
+            sb.append("时间: ").append(article.dateDisplay).append("\n\n");
         }
 
         if (article.description != null && !article.description.isEmpty()) {

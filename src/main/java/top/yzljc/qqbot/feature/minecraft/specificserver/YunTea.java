@@ -36,7 +36,7 @@ public class YunTea {
         }
         ServerRcon.AuthInfo ytInfo = new ServerRcon.AuthInfo("yt", ytSecret);
 
-        String ytCmd = null;
+        String ytCmd;
         switch (action) {
             case "add":
                 if (parts.length < 3) {
@@ -99,7 +99,7 @@ public class YunTea {
 
         String[] parts = trimmed.split("\\s+");
         if (parts.length < 2) {
-            MessageSender.sendGroupMessage(groupId, "用法：白名单 <你的游戏名>（有空格）");
+            MessageSender.sendGroupMessage(groupId, "用法：白名单 <你的游戏名>（有空格，无书名号）");
             return;
         }
         String playerName = parts[1];
