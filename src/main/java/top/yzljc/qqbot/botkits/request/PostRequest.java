@@ -20,40 +20,6 @@ public class PostRequest {
     private static final String BASEURL = settings.getHttpUrl();
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    private static JsonNode executeRequest(RequestType type, Map<String, Object> params) {
-        HttpURLConnection conn = null;
-        try {
-            String postUrl = BASEURL + type.getRequestLink();
-            byte[] payload = jsonMapper.writeValueAsBytes(params != null ? params : new HashMap<>());
-
-            conn = (HttpURLConnection) new URI(postUrl).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(payload);
-                os.flush();
-            }
-
-            int code = conn.getResponseCode();
-            if (code >= 200 && code < 300) {
-                try (InputStream is = conn.getInputStream()) {
-                    return jsonMapper.readTree(is);
-                }
-            } else {
-                log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), code);
-            }
-        } catch (Exception e) {
-            log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
-        } finally {
-            if (conn != null) conn.disconnect();
-        }
-        return null;
-    }
-
     /**
      * 获取 API 返回结果 (多参)
      */
@@ -93,5 +59,39 @@ public class PostRequest {
         Map<String, Object> params = new HashMap<>();
         params.put(key, value);
         executeRequest(type, params);
+    }
+
+    private static JsonNode executeRequest(RequestType type, Map<String, Object> params) {
+        HttpURLConnection conn = null;
+        try {
+            String postUrl = BASEURL + type.getRequestLink();
+            byte[] payload = jsonMapper.writeValueAsBytes(params != null ? params : new HashMap<>());
+
+            conn = (HttpURLConnection) new URI(postUrl).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(payload);
+                os.flush();
+            }
+
+            int code = conn.getResponseCode();
+            if (code >= 200 && code < 300) {
+                try (InputStream is = conn.getInputStream()) {
+                    return jsonMapper.readTree(is);
+                }
+            } else {
+                log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), code);
+            }
+        } catch (Exception e) {
+            log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+        return null;
     }
 }

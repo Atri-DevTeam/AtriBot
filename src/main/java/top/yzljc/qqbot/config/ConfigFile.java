@@ -6,6 +6,7 @@ public enum ConfigFile {
     RCON_USER("adminuser.json"),
     RCON_SERVER_SECRET("server-secret.json"),
     FILTER_CONFIG("filter.yml"),
+    FRIEND_LIST("friendlist.json"),
     SERVER_LIST("serverlist.json"),
     ANNOY_RECORD("annoy_user_record.json"),
     GITHUB_REPOSITORY("github_repository.json"),

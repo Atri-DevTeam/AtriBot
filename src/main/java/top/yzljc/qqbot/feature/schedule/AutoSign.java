@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.config.groups.GroupList;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
 public class AutoSign {
 
@@ -17,7 +17,7 @@ public class AutoSign {
 
     private static void signAllGroups() {
         try {
-            Set<Long> groupIds = GroupList.fetchAllGroupIds();
+            Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
 
             if (groupIds.isEmpty()) {
                 log.warn("未获取到任何群号，自动打卡跳过");

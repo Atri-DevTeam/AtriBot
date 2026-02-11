@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.debug;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -18,7 +19,7 @@ public class PacketEvent {
 
     static final Settings settings = Config.getInstance();
     private static final List<Long> admins = settings.getAdminUids();
-    private static final long botUid = settings.getBotUid();
+    private static final long botUid = GetBotInfo.getBotId();
     private static final long debugGroupId = settings.getDebugGroupId();
 
     public static void process(JsonNode json) {

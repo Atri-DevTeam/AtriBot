@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.image.TextImage;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -20,7 +21,6 @@ import java.util.regex.Pattern;
 public class FindRecall {
     static Settings settings = Config.getInstance();
     private static final long DEBUG_GROUP_ID = settings.getDebugGroupId();
-    private static final long BOT_ID = settings.getBotUid();
     private static final List<Long> IGNORE_USER_IDS = settings.getIgnoredUsers();
 
     public static void processMessage(JsonNode json) {
@@ -31,11 +31,11 @@ public class FindRecall {
         long time = json.path("time").asLong();
 
         String formattedTime = formatTimestamp(time);
-        String foundMessage = MessageRecorder.searchMessage(groupId, messageId);
+        String foundMessage = FormatText.unescape(MessageRecorder.searchMessage(groupId, messageId));
         String foundUserName = GetUserName.getUserName(userId);
         String foundGroupName = GetGroupName.getGroupName(groupId);
 
-        if (userId == BOT_ID) {
+        if (userId == GetBotInfo.getBotId()) {
             return; // 不写会炸，别问我怎么知道的
         }
 
@@ -84,5 +84,4 @@ public class FindRecall {
         );
         return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
-
 }

@@ -3,7 +3,7 @@ package top.yzljc.qqbot.feature.schedule;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.config.groups.GroupList;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
 
 import java.awt.*;
@@ -25,13 +25,38 @@ public class HappyNewYear {
         public void generate(File outFile) throws IOException {
             initFromBackground(ConfigFile.IMG_MANOSABA.getFileName());
 
-            LocalDate targetDate = LocalDate.of(2026, 2, 17);
             LocalDate now = LocalDate.now();
-            long daysUntil = ChronoUnit.DAYS.between(now, targetDate);
-            if (daysUntil < 0) daysUntil = 0;
 
-            String line1 = String.format("距离 %s 年春节还有", now.getYear());
-            String line2 = daysUntil + " 天";
+            LocalDate[] cnyDates = {
+                    LocalDate.of(2026, 2, 17),
+                    LocalDate.of(2027, 2, 6),
+                    LocalDate.of(2028, 1, 26),
+                    LocalDate.of(2029, 2, 13),
+                    LocalDate.of(2030, 2, 3)
+            };
+
+            LocalDate targetDate = cnyDates[cnyDates.length - 1]; // 默认最后一个
+            for (LocalDate date : cnyDates) {
+                if (!date.isBefore(now)) { // date >= now
+                    targetDate = date;
+                    break;
+                }
+            }
+
+            long daysUntil = ChronoUnit.DAYS.between(now, targetDate);
+
+            String line1;
+            String line2;
+
+            if (daysUntil == 0) {
+                // 春节当天
+                line1 = targetDate.getYear() + " 农历新年";
+                line2 = "春节快乐";
+            } else {
+                // 倒计时模式
+                line1 = String.format("距离 %s 年春节还有", targetDate.getYear());
+                line2 = daysUntil + " 天";
+            }
 
             Color red = new Color(229, 31, 86);
             Color shadow = new Color(0, 0, 0, 128);
@@ -91,7 +116,7 @@ public class HappyNewYear {
             byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
             String base64Img = Base64.getEncoder().encodeToString(imgBytes);
 
-            Set<Long> groupIds = GroupList.fetchAllGroupIds();
+            Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
             if (groupIds.isEmpty()) {
                 log.info("未获取到任何群号，跳过推送");
                 return;
@@ -108,7 +133,6 @@ public class HappyNewYear {
             log.info("推送完成，共发送给 {} 个群", count);
         } catch (Exception ex) {
             log.error("群发图片异常：{}", ex.getMessage());
-            ex.printStackTrace();
         } finally {
             if (tempFile.exists()) tempFile.delete();
         }
@@ -124,7 +148,7 @@ public class HappyNewYear {
                 MessageSender.sendGroupMessage(targetGroupId, null, base64Img);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("发送新年图片到群[{}]失败：{}", targetGroupId, e.getMessage());
         } finally {
             if (tempFile.exists()) tempFile.delete();
         }

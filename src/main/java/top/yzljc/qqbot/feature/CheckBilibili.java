@@ -13,10 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,7 +31,8 @@ public class CheckBilibili {
 
     private static final String FAKE_UIN = "3614865692";
     private static final String FAKE_NAME = "YZ_Ljc_";
-
+    private static String LAST_BVID = "";
+    private static long LAST_GROUP = 0;
     private static final Pattern PATTERN_BV = Pattern.compile("BV[a-zA-Z0-9]{10}");
     private static final Pattern PATTERN_B23 = Pattern.compile("b23\\.tv[\\\\/]+([a-zA-Z0-9]+)");
 
@@ -49,7 +47,13 @@ public class CheckBilibili {
 
         if (bvid != null) {
             log.info("Detected Bilibili Video: {}", bvid);
+            if (bvid.equals(LAST_BVID) && groupId == LAST_GROUP) {
+                log.info("Duplicate Bilibili video request in the same group, ignoring.");
+                return;
+            }
             fetchVideoDetail(groupId, bvid);
+            LAST_BVID = bvid;
+            LAST_GROUP = groupId;
         }
     }
 

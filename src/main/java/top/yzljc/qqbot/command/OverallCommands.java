@@ -3,6 +3,7 @@ package top.yzljc.qqbot.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -31,7 +32,7 @@ public class OverallCommands {
     private static final String[] KEYWORDS_HITOKOTO = settings.getKeywordsHitokoto();
     private static final String[] KEYWORDS_LIKE_USER = settings.getKeywordsLikeUser();
     private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
-    private static final long BOT_QQ = settings.getBotUid();
+    private static final long BOT_QQ = GetBotInfo.getBotId();
     private static final String COMMAND_PREFIX = settings.getCommandPrefix();
 
     public static void processCommand(JsonNode json) {
@@ -90,6 +91,9 @@ public class OverallCommands {
         }
         if (rawMessage.startsWith(COMMAND_PREFIX + "stats")){
             MessageStats.processCommand(groupId,rawMessage);
+        }
+        if (rawMessage.equals("/groupinfo")){
+            GroupConfigManager.getGroupStatusDescription(groupId);
         }
         if (rawMessage.startsWith(COMMAND_PREFIX + "serverstatus")) {
             ServerStatus.processModeChange(userId,groupId,rawMessage);

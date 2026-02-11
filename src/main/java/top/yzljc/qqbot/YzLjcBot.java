@@ -1,6 +1,7 @@
 package top.yzljc.qqbot;
 
 import top.yzljc.qqbot.botkits.clock.RunScheduleTask;
+import top.yzljc.qqbot.botkits.findinfo.GetFriendList;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
@@ -32,6 +33,7 @@ public class YzLjcBot {
         RunScheduleTask.runAllTasks();
 
         GroupConfigManager.refreshAllConfigs();
+        GetFriendList.updateFriendList();
 
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();

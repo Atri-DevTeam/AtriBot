@@ -12,6 +12,11 @@ public interface Settings {
 
     List<Long> getAdminUids();
 
+    /**
+     * 不再通过配置文件手动填写
+     * 改为通过请求自动获取并储存
+     */
+    @Deprecated(since = "2.6.0")
     long getBotUid();
 
     long getDebugGroupId();

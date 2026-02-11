@@ -6,7 +6,7 @@ import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.groups.GroupList;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
 import java.util.Set;
 
@@ -14,7 +14,7 @@ public class WakeUp {
     private static final Logger log = LoggerFactory.getLogger(WakeUp.class);
     static Settings settings = Config.getInstance();
     private static final String WAKEUP_IMG_PATH = settings.getWakeupImgLink();
-    private static final Set<Long> GROUPS = GroupList.fetchAllGroupIds();
+    private static final Set<Long> GROUPS = GetGroupList.fetchAllGroupIds();
 
     public static void sendImgToGroup() {
         for (long groupId : GROUPS){
