@@ -93,7 +93,7 @@ public class CommitDisplay extends AbstractImage {
             String branchText = "变动分支 " + payload.branch;
             int nameW = g.getFontMetrics().stringWidth(payload.pusherName);
             g.setFont(getSmartFont(Font.PLAIN, 18));
-            g.setColor(new Color(147, 83, 221));
+            g.setColor(new Color(28, 219, 243));
             g.drawString(branchText, startX + avatarSize + 15 + nameW + 15, currentY);
 
             String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());

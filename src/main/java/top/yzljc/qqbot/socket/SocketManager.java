@@ -144,7 +144,7 @@ public class SocketManager {
 
                             if ("JOIN".equalsIgnoreCase(action)) {
                                 msg = String.format("[%s] 玩家 %s 加入了服务器", serverName, playerName);
-                                System.out.println(msg);
+                                log.info(msg);
                             } else if ("QUIT".equalsIgnoreCase(action)) {
                                 msg = String.format("[%s] 玩家 %s 离开了服务器", serverName, playerName);
                                 log.info(msg);

@@ -4,6 +4,8 @@ public enum RequestType {
     GET_USER_INFO("/get_stranger_info"),
     GET_GROUP_INFO("/get_group_info"),
     GET_GROUP_LIST("/get_group_list"),
+    GET_FRIEND_LIST("/get_friend_list"),
+    GET_LOGIN_INFO("/get_login_info"),
     SEND_LIKE("/send_like"),
     SEND_SIGN("/send_group_sign"),
     SEND_GROUP_MSG("/send_group_msg"),

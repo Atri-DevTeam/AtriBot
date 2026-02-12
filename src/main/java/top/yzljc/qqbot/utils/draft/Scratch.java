@@ -1,9 +1,10 @@
-package top.yzljc.qqbot.utils;
+package top.yzljc.qqbot.utils.draft;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -14,7 +15,6 @@ public class Scratch {
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
     private static int huffCounts = 0;
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static ScheduledFuture<?> autoSettleTask = null;
     private static final long SETTLE_DELAY = 8L;
 
@@ -44,7 +44,7 @@ public class Scratch {
         if (autoSettleTask != null) {
             autoSettleTask.cancel(false);
         }
-        autoSettleTask = scheduler.schedule(() -> {
+        autoSettleTask = ThreadManager.setSchedule(() -> {
             synchronized (Scratch.class) {
                 stopHuff();
             }

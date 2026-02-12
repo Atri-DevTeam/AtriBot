@@ -8,6 +8,8 @@ import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,8 +20,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +36,6 @@ public class SearchRelevant {
 
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private record CachedNickname(String nick, long time) {
     }
@@ -171,8 +170,7 @@ public class SearchRelevant {
             if (e.getErrorCode() == 1146) MessageSender.sendGroupMessage(groupId, "当前群聊暂无消息记录表。");
             else MessageSender.sendGroupMessage(groupId, "数据库错误：" + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            MessageSender.sendGroupMessage(groupId, "搜索异常。");
+            MessageSender.sendGroupMessage(groupId, "搜索异常");
         }
     }
 
@@ -185,7 +183,7 @@ public class SearchRelevant {
         try {
             Long messageId = MessageSender.sendGroupMessageGetId(groupId, message);
             if (messageId != null) {
-                scheduler.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+                ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             } else {
                 MessageSender.sendGroupMessage(groupId, message);
             }

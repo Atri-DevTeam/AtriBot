@@ -5,9 +5,16 @@ import top.yzljc.qqbot.botkits.message.MessageSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Reboot {
+public class Reboot implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(Reboot.class);
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()){
+            processReboot(ct.getUserId(),ct.getGroupId());
+        }
+    }
 
     public static void processReboot(long userId, long groupId) {
         log.info("收到管理员 {} 的终止指令", userId);

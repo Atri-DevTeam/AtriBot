@@ -18,14 +18,20 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
-public class MessageStats {
+public class MessageStats implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static final ScheduledExecutorService withdrawScheduler = Executors.newSingleThreadScheduledExecutor();
+    static Settings settings = Config.getInstance();
+    private static final List<Long> spyGroups = settings.getMessageSpyGroups();
 
     public static void autoReportAllGroups() {
         Set<Long> groups = findAllGroupsWithRecords();
@@ -54,6 +60,13 @@ public class MessageStats {
             log.error("取所有群号分表异常 {}", e.getMessage());
         }
         return groupIds;
+    }
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (spyGroups.contains(ct.getGroupId())) {
+            processCommand(ct.getGroupId(), ct.getRawMsg());
+        }
     }
 
     public static void processCommand(long groupId, String rawMsg) {
@@ -184,7 +197,7 @@ public class MessageStats {
             Long messageId = MessageSender.sendGroupMessageGetId(groupId, message);
 
             if (messageId != null) {
-                withdrawScheduler.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+                ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             } else {
                 MessageSender.sendGroupMessage(groupId, message);
             }

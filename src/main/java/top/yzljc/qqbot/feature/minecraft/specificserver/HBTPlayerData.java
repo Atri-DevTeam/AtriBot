@@ -17,6 +17,7 @@ import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 public class HBTPlayerData {
 
@@ -43,7 +44,7 @@ public class HBTPlayerData {
             }
 
             String playerName = parts[1].trim();
-            Executors.newSingleThreadExecutor().submit(() -> fetchAndSend(groupId, playerName));
+            ThreadManager.execute(() -> fetchAndSend(groupId, playerName));
         }
     }
 

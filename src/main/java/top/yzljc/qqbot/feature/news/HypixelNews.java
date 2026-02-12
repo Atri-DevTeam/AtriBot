@@ -7,10 +7,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.config.groups.GroupList;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,7 +25,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,21 +32,27 @@ import java.net.MalformedURLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.tools.FT;
 
-/**
- * Hypixel官网新闻自动推送
- */
-public class HypixelNews {
+public class HypixelNews implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(HypixelNews.class);
 
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = ConfigFile.HYPIXEL_NEWS.getFileName();
-    public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
+    public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
 
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()) {
+            ThreadManager.execute(() -> checkNews(true));
+            MessageSender.sendGroupMessage(ct.getGroupId(), "正在手动检查 Hypixel 官网资讯...");
+        }
+    }
 
     public static void checkNews(boolean isManualTrigger) {
         try {
@@ -53,14 +61,11 @@ public class HypixelNews {
             } else {
                 log.info("Hypixel 自动新闻检查中……");
             }
-            // 1. 拉取和解析官网新闻首页
             List<UnifiedArticle> candidateArticles = fetchAndParse();
 
-            // 2. 按发布时间新到旧排好
             candidateArticles.sort(Comparator.comparingLong(a -> -a.timestamp));
             List<UnifiedArticle> newArticlesFound = new ArrayList<>();
 
-            // 3. 检查未推送过的
             for (UnifiedArticle article : candidateArticles) {
                 if (article.id == null || article.id.isEmpty()) continue;
                 if (!pushedArticleIds.contains(article.id)) {
@@ -68,7 +73,6 @@ public class HypixelNews {
                 }
             }
 
-            // 4. 反转为旧到新推送
             Collections.reverse(newArticlesFound);
 
             int newCount = 0;
@@ -102,7 +106,7 @@ public class HypixelNews {
                 if (linkElem == null) continue;
                 String url = ARTICLE_BASE + linkElem.attr("href");
 
-                String title = linkElem.text();
+                String title = FT.unescape(linkElem.text());
 
                 Element metaElem = post.selectFirst(".structItem-parts time");
                 String dateStr = metaElem != null ? metaElem.attr("datetime") : "";
@@ -260,12 +264,6 @@ public class HypixelNews {
         } catch (Exception e) {
             return 0;
         }
-    }
-
-    public static void processTestForHyp(long groupId) {
-        MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
-        log.info("Hypixel 新闻手动检查触发，群号：{}", groupId);
-        Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
     }
 
     /** 统一文章结构 */

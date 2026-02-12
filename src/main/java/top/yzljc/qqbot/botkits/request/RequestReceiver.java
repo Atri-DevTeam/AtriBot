@@ -54,7 +54,7 @@ public class RequestReceiver {
             });
 
             // 设置线程池
-            server.setExecutor(Executors.newFixedThreadPool(4));
+            server.setExecutor(Executors.newFixedThreadPool(2));
             server.start();
             log.info("前端消息监听服务已启动，端口：{}", port);
         } catch (IOException e) {

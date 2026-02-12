@@ -5,10 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.debug.RecallLastMsg;
 
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class MessageSender {
     private static final Logger log = LoggerFactory.getLogger(MessageSender.class);
@@ -25,8 +25,8 @@ public class MessageSender {
 
     // 发送带http连接请求类型的图片的群消息
     public static void sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
-        Executors.newSingleThreadExecutor().submit(() -> {
-            Long messageId = sendGroupMsg(groupId, text, imageData, isBase64);
+        ThreadManager.execute(() -> {
+            Long messageId = handleGroupMsg(groupId, text, imageData, isBase64);
             if (messageId != null) {
                 log.info("消息发送成功{} -> 群: {}", (imageData != null ? " [含图片]" : ""), groupId);
             }
@@ -35,16 +35,22 @@ public class MessageSender {
 
     // 发送纯文本群消息并返回消息ID，如果之后我换了方法的话就给base64填上去再写一个新的函数
     public static Long sendGroupMessageGetId(long groupId, String content) {
-        return sendGroupMsg(groupId, content, null,true);
+        return handleGroupMsg(groupId, content, null,true);
     }
 
     // 发送私聊消息
     public static void sendPrivateMessage(long userId, String content) {
-        sendPrivateMsg(userId, content);
+        handlePrivateMsg(userId, content);
+    }
+
+    // 发送群聊聊天 - 数据格式
+    @SuppressWarnings("UnusedReturnValue")
+    public static Long sendGroupData(long groupId, List<Map<String, Object>> msgData) {
+        return handleGroupData(groupId, msgData);
     }
 
     // 私聊消息的上报实现，如果需要扩展获取message_id则将函数改为Long类型返回
-    private static void sendPrivateMsg(long userId, String text) {
+    private static void handlePrivateMsg(long userId, String text) {
         try {
             List<Map<String, Object>> messageNodes = getMaps(text, null, true); // imgData没写，直接null吧用到再说
             if (messageNodes.isEmpty()) return;
@@ -65,7 +71,7 @@ public class MessageSender {
         }
     }
 
-    private static Long sendGroupMsg(long groupId, String text, String imageData, boolean isBase64) {
+    private static Long handleGroupMsg(long groupId, String text, String imageData, boolean isBase64) {
         try {
             List<Map<String, Object>> messageNodes = getMaps(text, imageData, isBase64);
             if (messageNodes.isEmpty()) return null;
@@ -73,6 +79,29 @@ public class MessageSender {
             Map<String, Object> payloadMap = new HashMap<>();
             payloadMap.put("group_id", groupId);
             payloadMap.put("message", messageNodes);
+
+            JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_MSG, payloadMap);
+
+            if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
+                long messageId = resp.get("data").get("message_id").asLong();
+                RecallLastMsg.recordLastMsg(groupId, messageId);
+                return messageId;
+            } else {
+                log.error("消息发送失败，返回内容: {}", resp);
+            }
+        } catch (Exception ex) {
+            log.error("推送异常：{}", ex.getMessage(), ex);
+        }
+        return null;
+    }
+
+    private static Long handleGroupData(long groupId, List<Map<String, Object>> msgData) {
+        try {
+            if (msgData.isEmpty()) return null;
+
+            Map<String, Object> payloadMap = new HashMap<>();
+            payloadMap.put("group_id", groupId);
+            payloadMap.put("message", msgData);
 
             JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_MSG, payloadMap);
 

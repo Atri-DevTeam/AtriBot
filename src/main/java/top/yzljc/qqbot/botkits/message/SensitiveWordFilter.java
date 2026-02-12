@@ -13,10 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.ConfigFile;
 
-/**
- * 敏感词过滤工具类
- * 读取根目录下的 filter.yml 进行过滤
- */
 public class SensitiveWordFilter {
 
     private static final Logger log = LoggerFactory.getLogger(SensitiveWordFilter.class);
@@ -47,7 +43,6 @@ public class SensitiveWordFilter {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                // 简单的 YAML 解析：查找以 "- " 开头的行
                 if (line.startsWith("- ")) {
                     String word = line.substring(2).trim();
                     if (!word.isEmpty()) {

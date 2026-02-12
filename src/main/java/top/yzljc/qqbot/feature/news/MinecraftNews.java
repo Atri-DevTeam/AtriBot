@@ -3,10 +3,13 @@ package top.yzljc.qqbot.feature.news;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.config.groups.GroupList;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -19,7 +22,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,8 +29,9 @@ import java.net.MalformedURLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.tools.FT;
 
-public class MinecraftNews {
+public class MinecraftNews implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
@@ -40,17 +43,15 @@ public class MinecraftNews {
     private static final String HISTORY_FILE = ConfigFile.MINECRAFT_NEWS.getFileName();
     private static final String BASE_URL = "https://www.minecraft.net";
 
-    public static final Set<Long> TARGET_GROUPS = GroupList.fetchAllGroupIds();
+    public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static void processUpdate(long groupId) {
-        try{
-            MessageSender.sendGroupMessage(groupId, "正在手动检查 Minecraft 最新资讯...");
-            log.info("Minecraft 新闻手动检查触发，群号：{}", groupId);
-            Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
-        } catch (Exception e){
-            log.error("手动检查Minecraft新闻时发生错误：", e);
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()) {
+            ThreadManager.execute(() -> checkNews(true));
+            MessageSender.sendGroupMessage(ct.getGroupId(), "正在手动检查 Minecraft 最新资讯...");
         }
     }
 
@@ -138,7 +139,7 @@ public class MinecraftNews {
                 if (results != null && results.isArray()) {
                     for (JsonNode node : results) {
                         UnifiedArticle article = new UnifiedArticle();
-                        article.title = node.has("title") ? node.get("title").asText() : "未知标题";
+                        article.title = node.has("title") ? FT.unescape(node.get("title").asText()) : "未知标题";
                         article.tag = "Minecraft 资讯";
                         article.url = node.has("url") ? node.get("url").asText() : "";
                         article.id = article.url; // ID = URL
@@ -147,7 +148,7 @@ public class MinecraftNews {
                         article.timestamp = timeSeconds * 1000;
                         article.dateDisplay = formatTimestamp(article.timestamp);
 
-                        article.description = node.has("description") ? node.get("description").asText() : "";
+                        article.description = node.has("description") ? FT.unescape(node.get("description").asText()) : "";
                         article.author = node.has("author") ? node.get("author").asText() : "Staff";
 
                         if (node.has("image")) {
@@ -197,7 +198,7 @@ public class MinecraftNews {
                         JsonNode tile = item.get("default_tile");
                         if (tile == null) continue;
 
-                        article.title = tile.has("title") ? tile.get("title").asText() : "未知标题";
+                        article.title = tile.has("title") ? FT.unescape(tile.get("title").asText()) : "未知标题";
                         article.tag = "Minecraft 快讯";
 
                         String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
@@ -211,7 +212,7 @@ public class MinecraftNews {
                         article.timestamp = System.currentTimeMillis();
                         article.dateDisplay = "未知时间";
 
-                        article.description = tile.has("sub_header") ? tile.get("sub_header").asText() : "";
+                        article.description = tile.has("sub_header") ? FT.unescape(tile.get("sub_header").asText()) : "";
                         article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整资讯！";
 
                         article.author = "未知作者";
@@ -273,11 +274,14 @@ public class MinecraftNews {
         }
 
         for (Long groupId : TARGET_GROUPS) {
-            if (!GroupConfigManager.isFeatureEnabled(groupId,"mc_news")) {
+            if (!GroupConfigManager.isFeatureEnabled(groupId, "mc_news")) {
                 continue;
             }
             MessageSender.sendGroupMessage(groupId, textContent, base64Img);
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 

@@ -15,14 +15,17 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RollbackMessages {
+public class RollbackMessages implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(RollbackMessages.class);
     private static final Pattern ROLLBACK_PATTERN =
         Pattern.compile("^/rollback(?:\\s+-n\\s+(\\d+))?(?:\\s+-u\\s+(\\d+))?\\s*$");
 
-    public static void processRollBack(long groupId, String rawMsg) {
-        handleRollbackCommand(groupId, rawMsg);
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()) {
+            handleRollbackCommand(ct.getGroupId(), ct.getRawMsg());
+        }
     }
 
     /**

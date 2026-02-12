@@ -1,11 +1,17 @@
 package top.yzljc.qqbot.utils;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class CommandHelp {
+/**
+ * 懒得更
+ */
+@Deprecated(since = "2.6.0")
+public class CommandHelp implements ExecuteCommand {
     private static final Map<String, String> commonCommands = new LinkedHashMap<>();
     private static final Map<String, String> adminCommands = new LinkedHashMap<>();
 
@@ -36,6 +42,13 @@ public class CommandHelp {
         adminCommands.put("/testforhyp", "手动检查 Hypixel 新闻");
         adminCommands.put("/testforsign","群打卡测试");
         adminCommands.put("/rollback [-n 数量] [-u QQ号]", "撤回数据库中记录的消息");
+    }
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAtBot()) {
+            processHelp(ct.getGroupId());
+        }
     }
 
     public static void processHelp(long groupId) {

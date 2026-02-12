@@ -40,7 +40,15 @@ public class GroupModeManager {
         if ("/cfg".equalsIgnoreCase(rawMsg)) {
             userSession.remove(userId); // 重置会话
             groupSelectionCache.remove(userId);
-            sendFeatureList(groupId, userId);
+            sendFeatureList(groupId);
+            return;
+        }
+
+        if ("/gcfg".equalsIgnoreCase(rawMsg)) {
+            userSession.remove(userId);
+            groupSelectionCache.remove(userId);
+            userSession.put(userId, "GROUP_EDIT:" + groupId);
+            sendSingleGroupFeatureList(groupId);
             return;
         }
 
@@ -49,17 +57,29 @@ public class GroupModeManager {
 
             String currentFeature = userSession.get(userId);
 
+            if (currentFeature != null && currentFeature.startsWith("GROUP_EDIT:")) {
+                try {
+                    long targetGroupId = Long.parseLong(currentFeature.split(":")[1]);
+                    handleSingleGroupInput(groupId, targetGroupId, userId, content);
+                } catch (Exception e) {
+                    userSession.remove(userId);
+                    MessageSender.sendGroupMessage(groupId, "会话异常，已重置。");
+                }
+                return;
+            }
+
             if (currentFeature == null) {
                 try {
                     int index = Integer.parseInt(content);
                     selectFeature(groupId, userId, index);
                 } catch (NumberFormatException e) {
+                    // ignored
                 }
             } else {
                 if ("0".equals(content)) {
                     userSession.remove(userId);
                     groupSelectionCache.remove(userId);
-                    sendFeatureList(groupId, userId);
+                    sendFeatureList(groupId);
                 } else {
                     try {
                         int index = Integer.parseInt(content); // 这里现在解析的是序号
@@ -82,7 +102,7 @@ public class GroupModeManager {
         }
     }
 
-    private static void sendFeatureList(long fromGroup, long userId) {
+    private static void sendFeatureList(long fromGroup) {
         List<String> features = GroupConfigManager.getFeatureList();
         StringBuilder sb = new StringBuilder();
         sb.append("【Bot 功能配置菜单】\n");
@@ -96,6 +116,60 @@ public class GroupModeManager {
         sb.append("发送 /save 退出或重置");
 
         MessageSender.sendGroupMessage(fromGroup, sb.toString());
+    }
+
+    // --- 新增辅助方法：发送单群功能列表 ---
+    private static void sendSingleGroupFeatureList(long groupId) {
+        List<String> features = GroupConfigManager.getFeatureList();
+        String groupName = fetchGroupName(groupId);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("【群 ").append(groupName).append("(").append(groupId).append(") 功能概览】\n");
+        sb.append("发送 #序号 切换开关，#0 退出：\n");
+        sb.append("------------------\n");
+
+        for (int i = 0; i < features.size(); i++) {
+            String featureKey = features.get(i);
+            boolean isEnabled = GroupConfigManager.isFeatureEnabled(groupId, featureKey);
+
+            sb.append("#").append(i + 1).append(" ")
+                    .append(featureKey).append(" : ")
+                    .append(isEnabled ? "✅" : "❌")
+                    .append("\n");
+        }
+        sb.append("------------------");
+
+        MessageSender.sendGroupMessage(groupId, sb.toString());
+    }
+
+    private static void handleSingleGroupInput(long fromGroup, long targetGroupId, long userId, String content) {
+        if ("0".equals(content)) {
+            userSession.remove(userId);
+            MessageSender.sendGroupMessage(fromGroup, "已退出当前群配置模式。");
+            return;
+        }
+
+        try {
+            int index = Integer.parseInt(content);
+            List<String> features = GroupConfigManager.getFeatureList();
+
+            if (index > 0 && index <= features.size()) {
+                String featureName = features.get(index - 1);
+
+                // 执行切换
+                GroupConfigManager.toggleFeature(targetGroupId, featureName);
+                boolean newState = GroupConfigManager.isFeatureEnabled(targetGroupId, featureName);
+
+                String reply = String.format("已%s本群的 [%s] 功能。\n请继续输入 #序号 修改，或 #0 退出。",
+                        newState ? "开启" : "关闭", featureName);
+
+                MessageSender.sendGroupMessage(fromGroup, reply);
+            } else {
+                MessageSender.sendGroupMessage(fromGroup, "序号无效，请输入列表中的数字。");
+            }
+        } catch (NumberFormatException e) {
+            // 忽略非数字输入
+        }
     }
 
     private static void selectFeature(long fromGroup, long userId, int index) {

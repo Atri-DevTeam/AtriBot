@@ -3,6 +3,7 @@ package top.yzljc.qqbot.config.groups;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 import top.yzljc.qqbot.config.Config;
 
 import java.io.File;
@@ -30,6 +31,10 @@ public class GroupConfigManager {
         loadConfigFromFile();
     }
 
+    public static Map<String,Boolean> getRegisteredFeatures() {
+        return registeredFeatures;
+    }
+
     public static synchronized void registerFeature(String featureName, boolean defaultValue) {
         if (!registeredFeatures.containsKey(featureName)) {
             registeredFeatures.put(featureName, defaultValue);
@@ -39,14 +44,14 @@ public class GroupConfigManager {
     public static synchronized void refreshAllConfigs() {
         log.info("正在同步群配置（补全/清理）……");
 
-        Set<Long> currentOnlineGroups = GroupList.fetchAllGroupIds();
+        Set<Long> currentOnlineGroups = GetGroupList.fetchAllGroupIds();
 
         boolean isDebug = Config.getInstance().isDebugMode();
 
         boolean isUpdated = false;
 
         for (Long groupId : currentOnlineGroups) {
-            groupConfigCache.computeIfAbsent(groupId, k -> new HashMap<>());
+            groupConfigCache.computeIfAbsent(groupId, _ -> new HashMap<>());
             Map<String, Boolean> groupSettings = groupConfigCache.get(groupId);
 
             for (Map.Entry<String, Boolean> featureEntry : registeredFeatures.entrySet()) {
@@ -91,7 +96,7 @@ public class GroupConfigManager {
     }
 
     public static synchronized void toggleFeature(long groupId, String featureName) {
-        groupConfigCache.computeIfAbsent(groupId, k -> new HashMap<>());
+        groupConfigCache.computeIfAbsent(groupId, _ -> new HashMap<>());
         Map<String, Boolean> settings = groupConfigCache.get(groupId);
 
         boolean current = settings.getOrDefault(featureName, registeredFeatures.getOrDefault(featureName, false));

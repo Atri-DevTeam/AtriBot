@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.config.groups;
+package top.yzljc.qqbot.botkits.findinfo;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botkits.request.RequestType;
@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
-public class GroupList {
-    private static final Logger log = LoggerFactory.getLogger(GroupList.class);
+public class GetGroupList {
+    private static final Logger log = LoggerFactory.getLogger(GetGroupList.class);
 
     static Settings settings = Config.getInstance();
     private static final boolean isDebugMode = settings.isDebugMode();
