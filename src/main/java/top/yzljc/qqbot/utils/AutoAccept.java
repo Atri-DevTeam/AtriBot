@@ -7,10 +7,11 @@ import top.yzljc.qqbot.botkits.request.RequestType;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 public class AutoAccept {
 
@@ -37,14 +38,14 @@ public class AutoAccept {
         log.info("收到好友请求 -> 用户: {} | 验证消息: {} | Flag: {}", userId, comment, flag);
 
         // 异步执行同意操作
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.schedule(() -> {
             try {
                 approveFriendRequest(flag);
                 sendHelloMessage(userId);
             } catch (Exception e) {
-                log.warn("[INFO] 同意操作失败: {}", e.getMessage(), e);
+                log.warn("同意好友操作失败: {}", e.getMessage(), e);
             }
-        });
+        }, 10,TimeUnit.SECONDS);
     }
 
     private static void approveFriendRequest(String flag) {

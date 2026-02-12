@@ -7,6 +7,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -22,7 +25,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Executors;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,9 +32,9 @@ import java.net.MalformedURLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.utils.FormatText;
+import top.yzljc.qqbot.botkits.tools.FT;
 
-public class HypixelNews {
+public class HypixelNews implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(HypixelNews.class);
 
@@ -43,6 +45,14 @@ public class HypixelNews {
 
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()) {
+            ThreadManager.execute(() -> checkNews(true));
+            MessageSender.sendGroupMessage(ct.getGroupId(), "正在手动检查 Hypixel 官网资讯...");
+        }
+    }
 
     public static void checkNews(boolean isManualTrigger) {
         try {
@@ -96,7 +106,7 @@ public class HypixelNews {
                 if (linkElem == null) continue;
                 String url = ARTICLE_BASE + linkElem.attr("href");
 
-                String title = FormatText.unescape(linkElem.text());
+                String title = FT.unescape(linkElem.text());
 
                 Element metaElem = post.selectFirst(".structItem-parts time");
                 String dateStr = metaElem != null ? metaElem.attr("datetime") : "";
@@ -254,12 +264,6 @@ public class HypixelNews {
         } catch (Exception e) {
             return 0;
         }
-    }
-
-    public static void processTestForHyp(long groupId) {
-        MessageSender.sendGroupMessage(groupId, "正在手动检查 Hypixel 官网资讯...");
-        log.info("Hypixel 新闻手动检查触发，群号：{}", groupId);
-        Executors.newSingleThreadExecutor().submit(() -> checkNews(true));
     }
 
     /** 统一文章结构 */

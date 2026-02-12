@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
-import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.config.Config;
 
 import java.io.File;
@@ -32,6 +31,10 @@ public class GroupConfigManager {
         loadConfigFromFile();
     }
 
+    public static Map<String,Boolean> getRegisteredFeatures() {
+        return registeredFeatures;
+    }
+
     public static synchronized void registerFeature(String featureName, boolean defaultValue) {
         if (!registeredFeatures.containsKey(featureName)) {
             registeredFeatures.put(featureName, defaultValue);
@@ -48,7 +51,7 @@ public class GroupConfigManager {
         boolean isUpdated = false;
 
         for (Long groupId : currentOnlineGroups) {
-            groupConfigCache.computeIfAbsent(groupId, k -> new HashMap<>());
+            groupConfigCache.computeIfAbsent(groupId, _ -> new HashMap<>());
             Map<String, Boolean> groupSettings = groupConfigCache.get(groupId);
 
             for (Map.Entry<String, Boolean> featureEntry : registeredFeatures.entrySet()) {
@@ -92,27 +95,8 @@ public class GroupConfigManager {
         return settings.getOrDefault(featureName, registeredFeatures.getOrDefault(featureName, false));
     }
 
-    // 获取群功能开关情况
-    public static void getGroupStatusDescription(long groupId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== 群 ").append(groupId).append(" 功能配置 ===\n");
-
-        if (registeredFeatures.isEmpty()) {
-            sb.append("（暂无注册功能）");
-            return;
-        }
-
-        for (String featureName : registeredFeatures.keySet()) {
-            boolean isEnabled = isFeatureEnabled(groupId, featureName);
-            sb.append(isEnabled ? "✅ [开启] " : "❌ [关闭] ")
-                    .append(featureName)
-                    .append("\n");
-        }
-        MessageSender.sendGroupMessage(groupId,sb.toString().trim());
-    }
-
     public static synchronized void toggleFeature(long groupId, String featureName) {
-        groupConfigCache.computeIfAbsent(groupId, k -> new HashMap<>());
+        groupConfigCache.computeIfAbsent(groupId, _ -> new HashMap<>());
         Map<String, Boolean> settings = groupConfigCache.get(groupId);
 
         boolean current = settings.getOrDefault(featureName, registeredFeatures.getOrDefault(featureName, false));

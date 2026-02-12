@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -14,7 +15,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -98,7 +98,7 @@ public class CheckBilibili {
     }
 
     private static void fetchVideoDetail(long groupId, String bvid) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             try {
                 String viewUrl = "https://api.bilibili.com/x/web-interface/view?bvid=" + bvid;
                 JsonNode root = sendBilibiliRequest(viewUrl);

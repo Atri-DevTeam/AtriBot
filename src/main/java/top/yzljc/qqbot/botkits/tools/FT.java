@@ -1,8 +1,8 @@
-package top.yzljc.qqbot.utils;
+package top.yzljc.qqbot.botkits.tools;
 
 import org.apache.commons.text.StringEscapeUtils;
 
-public class FormatText {
+public class FT {
     /**
      * 将文本中的HTML实体转换回原始字符
      * @param text 需要转换的文本

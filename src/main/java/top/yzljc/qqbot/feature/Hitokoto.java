@@ -7,10 +7,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import java.nio.file.Path;
-import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.HttpRequest;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
 
 import java.util.*;
@@ -37,12 +37,12 @@ public class Hitokoto {
         try {
             Path path = Paths.get(LOCAL_JSON_PATH);
             if (!Files.exists(path)) {
-                log.info("未找到一言 json，自动释放资源到当前目录: " + LOCAL_JSON_PATH);
+                log.info("未找到一言 json，自动释放资源到当前目录: {}", LOCAL_JSON_PATH);
                 try (InputStream in = Hitokoto.class.getClassLoader().getResourceAsStream(LOCAL_JSON_PATH)) {
                     if (in != null) {
                         Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
                     } else {
-                        log.error("无法找到默认的一言文件资源: " + LOCAL_JSON_PATH + "，请联系开发者！");
+                        log.error("无法找到默认的一言文件资源: {}，请联系开发者！", LOCAL_JSON_PATH);
                     }
                 }
             }
@@ -52,7 +52,7 @@ public class Hitokoto {
     }
 
     public static void processHitokoto(long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             String feedback = fetchEitherHitokotoOrLocal();
             MessageSender.sendGroupMessage(groupId, feedback);
         });

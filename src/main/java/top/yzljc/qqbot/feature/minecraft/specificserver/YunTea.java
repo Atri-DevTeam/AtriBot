@@ -1,12 +1,12 @@
 package top.yzljc.qqbot.feature.minecraft.specificserver;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.socket.SocketManager;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -64,7 +64,7 @@ public class YunTea {
     }
 
     private static void executeWhiteListCommand(String targetServerId, String command, ServerRcon.AuthInfo info, long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
 
             if (!success) {
@@ -112,7 +112,7 @@ public class YunTea {
 
         String ytCmd = String.format("owhitelist check name %s", playerName);
 
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             boolean success = SocketManager.sendCommand("yt", ytCmd, ytInfo.secretKey);
             if (!success) {
                 MessageSender.sendGroupMessage(groupId, "[X] YunTEA 服务器未连接或鉴权失败");

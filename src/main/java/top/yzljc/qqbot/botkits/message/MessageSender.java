@@ -5,10 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.debug.RecallLastMsg;
 
 import java.util.*;
-import java.util.concurrent.Executors;
 
 public class MessageSender {
     private static final Logger log = LoggerFactory.getLogger(MessageSender.class);
@@ -25,7 +25,7 @@ public class MessageSender {
 
     // 发送带http连接请求类型的图片的群消息
     public static void sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             Long messageId = handleGroupMsg(groupId, text, imageData, isBase64);
             if (messageId != null) {
                 log.info("消息发送成功{} -> 群: {}", (imageData != null ? " [含图片]" : ""), groupId);

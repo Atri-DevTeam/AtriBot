@@ -3,11 +3,10 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 
-import java.util.concurrent.Executors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.HttpRequest;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 public class ElectricCheck {
 
@@ -16,7 +15,7 @@ public class ElectricCheck {
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
 
     public static void processElectric(long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             String feedback;
             try {
                 JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);

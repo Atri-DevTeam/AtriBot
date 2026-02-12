@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.feature.minecraft.specificserver;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.socket.SocketManager;
 
@@ -9,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class HypixelBanTest {
@@ -44,7 +44,7 @@ public class HypixelBanTest {
     }
 
     public static void executeUnbanMeLogic(String targetId, AuthInfo info, long groupId) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        ThreadManager.execute(() -> {
             SocketManager.sendCommand(info.serverId, "unban " + targetId, info.secretKey);
             String secondCmd = "pardon " + targetId;
             boolean success = SocketManager.sendCommand(info.serverId, secondCmd, info.secretKey);

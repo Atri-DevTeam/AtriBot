@@ -8,6 +8,9 @@ import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
@@ -25,7 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.Executors;
 
-public class WebhookServer {
+public class WebhookServer implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
     public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
@@ -43,14 +46,17 @@ public class WebhookServer {
             server.createContext("/github-webhook", new WebhookHandler(secret));
             server.setExecutor(Executors.newCachedThreadPool());
             server.start();
-            log.info("Webhook server started on port " + port);
+            log.info("Webhook server started on port {}", port);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to start webhook server", e);
         }
     }
 
-    public static void processCommand(long groupId, String rawMessage) {
-        String[] parts = rawMessage.split("\\s+");
+    @Override
+    public void execute(CommandContext ct) {
+        String[] parts = ct.getCommand().split("\\s+");
+        long groupId = ct.getGroupId();
+        if (!ct.getIsAdmin()) return;
 
         // 指令格式: /github 仓库名 群号1 群号2 ...
         if (parts.length >= 3) {
@@ -86,7 +92,8 @@ public class WebhookServer {
         if (!file.exists()) return;
         try {
             synchronized (repoConfig) {
-                Map<String, List<Long>> loaded = objectMapper.readValue(file, new TypeReference<Map<String, List<Long>>>() {});
+                Map<String, List<Long>> loaded = objectMapper.readValue(file, new TypeReference<>() {
+                });
                 if (loaded != null) {
                     repoConfig.clear();
                     // 确保key为小写
@@ -172,11 +179,7 @@ public class WebhookServer {
 
                 if (destinationGroups != null) {
                     for (Long groupId : destinationGroups) {
-                        MessageSender.sendGroupMessage(groupId, null, base64Image);
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException ignored) {
-                        }
+                        ThreadManager.execute(() -> MessageSender.sendGroupMessage(groupId, null, base64Image));
                     }
                 }
             }
@@ -186,7 +189,7 @@ public class WebhookServer {
             int repoIndex = json.indexOf("\"repository\":");
             if (repoIndex != -1) {
                 String repoPart = json.substring(repoIndex);
-                return extractString(repoPart, "\"name\":\"", "\"");
+                return extractString(repoPart, "\"name\":\"");
             }
             return null;
         }
@@ -194,28 +197,28 @@ public class WebhookServer {
         private CommitDisplay.GithubPayload parseJson(String json) {
             CommitDisplay.GithubPayload payload = new CommitDisplay.GithubPayload();
             try {
-                payload.repoName = extractString(json, "\"full_name\":\"", "\"");
-                String ref = extractString(json, "\"ref\":\"", "\"");
+                payload.repoName = extractString(json, "\"full_name\":\"");
+                String ref = extractString(json, "\"ref\":\"");
                 payload.branch = ref.contains("/") ? ref.substring(ref.lastIndexOf("/") + 1) : ref;
 
                 int senderIndex = json.indexOf("\"sender\":");
                 if (senderIndex != -1) {
-                    payload.avatarUrl = extractString(json.substring(senderIndex), "\"avatar_url\":\"", "\"");
+                    payload.avatarUrl = extractString(json.substring(senderIndex), "\"avatar_url\":\"");
                 }
 
                 int headCommitIndex = json.indexOf("\"head_commit\":");
                 if (headCommitIndex != -1) {
                     String headJson = json.substring(headCommitIndex);
-                    payload.hash = extractString(headJson, "\"id\":\"", "\"");
+                    payload.hash = extractString(headJson, "\"id\":\"");
 
-                    payload.message = extractString(headJson, "\"message\":\"", "\"")
+                    payload.message = extractString(headJson, "\"message\":\"")
                             .replace("\\n", "\n")
                             .replace("\\r", "\r")
                             .replace("\\\"", "\"");
 
                     int authorIndex = headJson.indexOf("\"author\":");
                     if (authorIndex != -1) {
-                        payload.pusherName = extractString(headJson.substring(authorIndex), "\"name\":\"", "\"");
+                        payload.pusherName = extractString(headJson.substring(authorIndex), "\"name\":\"");
                     }
 
                     payload.addedCount = countArrayElements(headJson, "\"added\":");
@@ -224,16 +227,16 @@ public class WebhookServer {
                     payload.changedFilesCount = payload.addedCount + payload.removedCount + modifiedCount;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Github Webhook JSON parsing error", e);
             }
             return payload;
         }
 
-        private String extractString(String source, String startToken, String endToken) {
+        private String extractString(String source, String startToken) {
             int start = source.indexOf(startToken);
             if (start == -1) return "unknown";
             start += startToken.length();
-            int end = source.indexOf(endToken, start);
+            int end = source.indexOf("\"", start);
             if (end == -1) return "unknown";
             return source.substring(start, end);
         }

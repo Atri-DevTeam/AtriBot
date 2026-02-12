@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.deprecated;
+package top.yzljc.qqbot.utils.deprecated;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

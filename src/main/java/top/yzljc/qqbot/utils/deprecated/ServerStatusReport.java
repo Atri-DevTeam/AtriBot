@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.deprecated;
+package top.yzljc.qqbot.utils.deprecated;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,8 +16,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.net.URI;
 
@@ -43,13 +41,12 @@ public class ServerStatusReport {
     private static final String BG_OFFLINE = "gh_offline.jpg";   // 关服通知图
     private static final File DATA_FILE = new File("status_data.json");
     private static final ObjectMapper jsonMapper = new ObjectMapper();
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static StatusData currentData = new StatusData();
 
     public static void init() {
         loadData();
 
-        scheduler.scheduleAtFixedRate(ServerStatusReport::executeScheduledCheck, 0, 15, TimeUnit.MINUTES);
+        // scheduler.scheduleAtFixedRate(ServerStatusReport::executeScheduledCheck, 0, 15, TimeUnit.MINUTES);
         log.info("监控任务已启动，每15分钟检查一次，数据存储于：{}", DATA_FILE.getAbsolutePath());
     }
 
@@ -63,7 +60,7 @@ public class ServerStatusReport {
         if (!ALLOWED_GROUPS.contains(groupId)) return;
 
         if (TRIGGER_CMD.equals(rawMsg)) {
-            Executors.newSingleThreadExecutor().submit(() -> handleManualQuery(groupId));
+            // ThreadManager.execute(() -> handleManualQuery(groupId));
         }
     }
 

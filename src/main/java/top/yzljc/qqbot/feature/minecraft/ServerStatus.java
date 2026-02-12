@@ -12,9 +12,11 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 
-public class ServerStatus {
+public class ServerStatus implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(ServerStatus.class);
     private static final String SERVER_LIST = ConfigFile.SERVER_LIST.getFileName();
@@ -113,6 +115,11 @@ public class ServerStatus {
             log.error("检查server_mode出错：{}", e.getMessage());
         }
         return false;
+    }
+
+    @Override
+    public void execute(CommandContext ct) {
+        processModeChange(ct.getUserId(), ct.getGroupId(), ct.getRawMsg());
     }
 
     public static void processModeChange(long userId,long groupId, String message) {

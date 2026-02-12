@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -99,7 +100,7 @@ public class AnnoyUser {
         }
 
         // 提交新任务
-        Future<?> future = EXECUTOR.submit(() -> {
+        Future<?> future = ThreadManager.setExecute(() -> {
             try {
                 switch (mode) {
                     case NORMAL:

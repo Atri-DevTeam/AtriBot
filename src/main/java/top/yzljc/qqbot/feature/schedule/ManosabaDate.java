@@ -1,5 +1,7 @@
 package top.yzljc.qqbot.feature.schedule;
 
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
@@ -17,12 +19,19 @@ import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ManosabaDate {
+public class ManosabaDate implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(ManosabaDate.class);
 
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getGroupId() == GROUP_ID) {
+            receiveManodate(ct.getGroupId());
+        }
+    }
 
     private static class ImageGen extends AbstractImage {
         public void generate(File outFile) throws IOException {

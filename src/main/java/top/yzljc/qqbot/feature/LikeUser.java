@@ -7,16 +7,14 @@ import top.yzljc.qqbot.botkits.findinfo.GetFriendList;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class LikeUser {
 
     private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private enum LikeStatus {
         SUCCESS,        // 200
@@ -28,7 +26,7 @@ public class LikeUser {
 
     public static void processCommand(long userId, long groupId) {
         boolean isFriend = GetFriendList.isFriend(userId);
-        executor.submit(() -> sendLike(userId, groupId, isFriend));
+        ThreadManager.execute(() -> sendLike(userId, groupId, isFriend));
     }
 
     private static void sendLike(long userId, long groupId, boolean isFriend) {

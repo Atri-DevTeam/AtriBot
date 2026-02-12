@@ -22,7 +22,11 @@ public class DataProcessor {
 
     static Settings settings = Config.getInstance();
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
+    private static final List<Long> admins = settings.getAdminUids();
     private static final long MANOSABA_GROUP = settings.getManosabaGroupId();
+    private static final String[] KEYWORDS_HITOKOTO = settings.getKeywordsHitokoto();
+    private static final String[] KEYWORDS_LIKE_USER = settings.getKeywordsLikeUser();
+    private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
 
     public static void processMessage(JsonNode json) {
         String postType = json.path("post_type").asText("");
@@ -104,7 +108,7 @@ public class DataProcessor {
             return;
         }
 
-        OverallCommands.processCommand(json);
+        CommandManager.processCommand(json);
         GroupModeManager.process(json);
         AnnoyUser.processMessage(json);
         MessageRecorder.processRecord(json);
@@ -128,5 +132,41 @@ public class DataProcessor {
                 Scratch.stopHuff();
             }
         }
+
+        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text")){
+            Hitokoto.processHitokoto(groupId);
+        }
+
+        if (likeUserKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"like_user")){
+            LikeUser.processCommand(userId, groupId);
+        }
+
+        if (electricKeyword(rawMessage)){
+            if (!admins.contains(userId)){
+                if (GroupConfigManager.isFeatureEnabled(groupId,"electric_check")) {
+                    ElectricCheck.processElectric(groupId);
+                }
+            }else{
+                ElectricCheck.processElectric(groupId);
+            }
+        }
+    }
+
+    private static boolean hitokotoKeyword(String msg) {
+        for (String kw : KEYWORDS_HITOKOTO)
+            if (msg.contains(kw)) return true;
+        return false;
+    }
+
+    private static boolean likeUserKeyword(String msg) {
+        for (String kw : KEYWORDS_LIKE_USER)
+            if (msg.equalsIgnoreCase(kw)) return true;
+        return false;
+    }
+
+    private static boolean electricKeyword(String msg) {
+        for (String kw : KEYWORDS_ELECTRIC)
+            if (msg.equalsIgnoreCase(kw)) return true;
+        return false;
     }
 }

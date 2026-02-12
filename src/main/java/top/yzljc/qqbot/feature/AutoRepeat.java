@@ -7,6 +7,7 @@ import java.util.concurrent.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 public class AutoRepeat {
 
@@ -37,11 +38,7 @@ public class AutoRepeat {
                 log.info("群 {} 消息复读触发，内容: {}", groupId, msgData);
 
                 recentlyRepeated.add(repeatKey);
-                ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-                service.schedule(() -> {
-                    recentlyRepeated.remove(repeatKey);
-                    service.shutdown();
-                }, REPEAT_COOLDOWN_MS, TimeUnit.MILLISECONDS);
+                ThreadManager.schedule(() -> recentlyRepeated.remove(repeatKey), REPEAT_COOLDOWN_MS, TimeUnit.MILLISECONDS);
             }
         }
     }

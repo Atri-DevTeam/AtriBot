@@ -7,6 +7,7 @@ import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
+import top.yzljc.qqbot.botkits.tools.FT;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -31,7 +32,7 @@ public class FindRecall {
         long time = json.path("time").asLong();
 
         String formattedTime = formatTimestamp(time);
-        String foundMessage = FormatText.unescape(MessageRecorder.searchMessage(groupId, messageId));
+        String foundMessage = FT.unescape(MessageRecorder.searchMessage(groupId, messageId));
         String foundUserName = GetUserName.getUserName(userId);
         String foundGroupName = GetGroupName.getGroupName(groupId);
 

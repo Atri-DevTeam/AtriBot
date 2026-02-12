@@ -1,5 +1,8 @@
 package top.yzljc.qqbot.feature.schedule;
 
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -18,9 +21,19 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HappyNewYear {
+public class HappyNewYear implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(HappyNewYear.class);
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsDebug()){
+            sendToSingleGroup(ct.getGroupId());
+        }else{
+            sendToAllGroups();
+        }
+    }
+
     private static class ImageGen extends AbstractImage {
         public void generate(File outFile) throws IOException {
             initFromBackground(ConfigFile.IMG_MANOSABA.getFileName());
@@ -110,32 +123,34 @@ public class HappyNewYear {
 
     public static void sendToAllGroups() {
         File tempFile = new File("tmp", "happynewyear.png");
-        try {
-            generateDevelopDayImage();
+        ThreadManager.execute(() -> {
+            try {
+                generateDevelopDayImage();
 
-            byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
-            String base64Img = Base64.getEncoder().encodeToString(imgBytes);
+                byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
+                String base64Img = Base64.getEncoder().encodeToString(imgBytes);
 
-            Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
-            if (groupIds.isEmpty()) {
-                log.info("未获取到任何群号，跳过推送");
-                return;
+                Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
+                if (groupIds.isEmpty()) {
+                    log.info("未获取到任何群号，跳过推送");
+                    return;
+                }
+
+                log.info("开始向 {} 个群推送图片……", groupIds.size());
+                int count = 0;
+                for (Long gid : groupIds) {
+                    if (!GroupConfigManager.isFeatureEnabled(gid,"new_year")) continue;
+                    MessageSender.sendGroupMessage(gid, null, base64Img);
+                    count++;
+                    try { Thread.sleep(200); } catch (InterruptedException e) {}
+                }
+                log.info("推送完成，共发送给 {} 个群", count);
+            } catch (Exception ex) {
+                log.error("群发图片异常：{}", ex.getMessage());
+            } finally {
+                if (tempFile.exists()) tempFile.delete();
             }
-
-            log.info("开始向 {} 个群推送图片……", groupIds.size());
-            int count = 0;
-            for (Long gid : groupIds) {
-                if (!GroupConfigManager.isFeatureEnabled(gid,"new_year")) continue;
-                MessageSender.sendGroupMessage(gid, null, base64Img);
-                count++;
-                try { Thread.sleep(200); } catch (InterruptedException e) {}
-            }
-            log.info("推送完成，共发送给 {} 个群", count);
-        } catch (Exception ex) {
-            log.error("群发图片异常：{}", ex.getMessage());
-        } finally {
-            if (tempFile.exists()) tempFile.delete();
-        }
+        });
     }
 
     public static void sendToSingleGroup(long targetGroupId) {

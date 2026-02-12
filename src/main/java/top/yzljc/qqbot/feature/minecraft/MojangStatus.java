@@ -17,17 +17,16 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.ConfigFile;
 
-/**
- * 检查 Mojang 官方服务状态 (自定义独立检测版)
- */
-public class MojangStatus {
+public class MojangStatus implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(MojangStatus.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -45,9 +44,6 @@ public class MojangStatus {
         }
     }
 
-    /**
-     * 内部生成器，继承抽象基类
-     */
     private static class ImageGen extends AbstractImage {
 
         public void generate(List<ServiceResult> results, File outFile) throws Exception {
@@ -104,10 +100,13 @@ public class MojangStatus {
         }
     }
 
-    public static void processCheckMojangStatus(long groupId) {
+    @Override
+    public void execute(CommandContext ct) {
+        long groupId = ct.getGroupId();
+        if (!ct.getIsEnabled()) return;
         MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
         log.info("开始检查 Mojang 服务状态 -> Group: {}", groupId);
-        Executors.newSingleThreadExecutor().submit(() -> performChecksAndSend(groupId));
+        ThreadManager.execute(() -> performChecksAndSend(groupId));
     }
 
     private static void performChecksAndSend(long groupId) {
@@ -133,13 +132,13 @@ public class MojangStatus {
 
             // Minecraft.net
             CompletableFuture<ServiceResult> checkMcNet = CompletableFuture.supplyAsync(() -> {
-                Status s = checkTcpConnect("minecraft.net", 443) ? Status.ONLINE : Status.OFFLINE;
+                Status s = checkTcpConnect("minecraft.net") ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Minecraft.net", s);
             });
 
             // Minecraft Services
             CompletableFuture<ServiceResult> checkServices = CompletableFuture.supplyAsync(() -> {
-                Status s = checkTcpConnect("sessionserver.mojang.com", 443) ? Status.ONLINE : Status.OFFLINE;
+                Status s = checkTcpConnect("sessionserver.mojang.com") ? Status.ONLINE : Status.OFFLINE;
                 return new ServiceResult("Minecraft Services", s);
             });
 
@@ -172,7 +171,6 @@ public class MojangStatus {
 
         } catch (Exception e) {
             log.error("处理异常：{}", e.getMessage());
-            e.printStackTrace();
             MessageSender.sendGroupMessage(groupId, "状态检查发生内部错误：" + e.getMessage());
         } finally {
             if (tempFile != null && tempFile.exists()) {
@@ -222,9 +220,9 @@ public class MojangStatus {
         }
     }
 
-    private static boolean checkTcpConnect(String host, int port) {
+    private static boolean checkTcpConnect(String host) {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), 3000); // 3秒超时
+            socket.connect(new InetSocketAddress(host, 443), 3000); // 3秒超时
             return true;
         } catch (Exception e) {
             return false;

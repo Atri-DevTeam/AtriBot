@@ -45,7 +45,7 @@ public class SendPoke {
                 params.put("group_id", groupId);
                 params.put("user_id", userId);
 
-                PostRequest.sendPost(RequestType.GROUP_POKE,params);
+                PostRequest.sendPost(RequestType.GROUP_POKE, params);
                 log.info("已向用户 {} 反戳！", userId);
             }
         }

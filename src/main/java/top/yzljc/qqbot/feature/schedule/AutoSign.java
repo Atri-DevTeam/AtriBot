@@ -2,6 +2,8 @@ package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.util.Set;
@@ -11,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
-public class AutoSign {
+public class AutoSign implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
 
@@ -36,6 +38,11 @@ public class AutoSign {
         } catch (Exception e) {
             log.warn("自动打卡异常", e);
         }
+    }
+
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsAdmin()) processAutoSign();
     }
 
     private static void sendGroupSign(long groupId) {

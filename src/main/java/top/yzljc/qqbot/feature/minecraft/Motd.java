@@ -2,10 +2,18 @@ package top.yzljc.qqbot.feature.minecraft;
 
 import top.yzljc.qqbot.botkits.image.DrawMotd;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.CommandContext;
+import top.yzljc.qqbot.command.ExecuteCommand;
 
-import java.util.concurrent.Executors;
+public class Motd implements ExecuteCommand {
 
-public class Motd {
+    @Override
+    public void execute(CommandContext ct) {
+        if (ct.getIsEnabled()){
+            processCommand(ct.getGroupId(),ct.getRawMsg());
+        }
+    }
 
     public static void processCommand(long groupId, String rawMessage) {
         String trimmed = rawMessage.trim();
@@ -23,6 +31,6 @@ public class Motd {
             return;
         }
 
-        Executors.newSingleThreadExecutor().submit(() -> DrawMotd.fetchAndSendMotd(groupId, hp));
+        ThreadManager.execute(() -> DrawMotd.fetchAndSendMotd(groupId, hp));
     }
 }
