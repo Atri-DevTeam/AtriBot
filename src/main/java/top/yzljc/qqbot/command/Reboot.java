@@ -4,16 +4,24 @@ import top.yzljc.qqbot.botkits.message.MessageSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 public class Reboot implements ExecuteCommand {
 
     private static final Logger log = LoggerFactory.getLogger(Reboot.class);
+    static Settings settings = Config.getInstance();
+    private static final long debugGroupId = settings.getDebugGroupId();
 
     @Override
     public void execute(CommandContext ct) {
         if (ct.getIsAdmin()){
             processReboot(ct.getUserId(),ct.getGroupId());
         }
+    }
+
+    public static void processReboot(){
+        processReboot(0,debugGroupId);
     }
 
     public static void processReboot(long userId, long groupId) {

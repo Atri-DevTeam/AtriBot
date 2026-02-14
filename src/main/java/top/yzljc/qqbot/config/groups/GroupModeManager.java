@@ -17,7 +17,8 @@ public class GroupModeManager {
     static Settings settings = Config.getInstance();
     private static final List<Long> ADMIN_LIST = settings.getAdminUids();
     private static final Map<Long, String> userSession = new ConcurrentHashMap<>();
-    private static final Map<Long, List<Long>> groupSelectionCache = new ConcurrentHashMap<>();
+
+    private static final Map<Long, List<?>> selectionCache = new ConcurrentHashMap<>();
 
     public static void process(JsonNode json) {
         String postType = json.path("post_type").asText();
@@ -31,202 +32,186 @@ public class GroupModeManager {
 
         if ("/save".equalsIgnoreCase(rawMsg)) {
             GroupConfigManager.manualSave();
-            userSession.remove(userId);
-            groupSelectionCache.remove(userId);
+            clearSession(userId);
             MessageSender.sendGroupMessage(groupId, "✅ 配置已保存，并退出了配置模式");
             return;
         }
 
         if ("/cfg".equalsIgnoreCase(rawMsg)) {
-            userSession.remove(userId); // 重置会话
-            groupSelectionCache.remove(userId);
-            sendFeatureList(groupId);
+            clearSession(userId);
+            userSession.put(userId, "FEATURE_ROOT");
+            sendFeatureRootList(groupId, userId);
             return;
         }
 
         if ("/gcfg".equalsIgnoreCase(rawMsg)) {
-            userSession.remove(userId);
-            groupSelectionCache.remove(userId);
-            userSession.put(userId, "GROUP_EDIT:" + groupId);
-            sendSingleGroupFeatureList(groupId);
+            clearSession(userId);
+            userSession.put(userId, "GROUP_ROOT");
+            sendGroupRootList(groupId, userId);
             return;
         }
 
         if (rawMsg.startsWith("#")) {
-            String content = rawMsg.substring(1).trim(); // 去掉 #
+            String session = userSession.get(userId);
+            if (session == null) return; // 未在配置模式中
 
-            String currentFeature = userSession.get(userId);
+            String content = rawMsg.substring(1).trim();
 
-            if (currentFeature != null && currentFeature.startsWith("GROUP_EDIT:")) {
-                try {
-                    long targetGroupId = Long.parseLong(currentFeature.split(":")[1]);
-                    handleSingleGroupInput(groupId, targetGroupId, userId, content);
-                } catch (Exception e) {
-                    userSession.remove(userId);
-                    MessageSender.sendGroupMessage(groupId, "会话异常，已重置。");
+            // 返回/退出
+            if ("0".equals(content)) {
+                if (session.startsWith("FEATURE:") || session.startsWith("GROUP:")) {
+                    // 如果在二级菜单，按0返回上一级
+                    if (session.startsWith("FEATURE:")) {
+                        userSession.put(userId, "FEATURE_ROOT");
+                        sendFeatureRootList(groupId, userId);
+                    } else {
+                        userSession.put(userId, "GROUP_ROOT");
+                        sendGroupRootList(groupId, userId);
+                    }
+                } else {
+                    // 如果在根菜单，按0退出
+                    clearSession(userId);
+                    MessageSender.sendGroupMessage(groupId, "已退出配置模式");
                 }
                 return;
             }
 
-            if (currentFeature == null) {
-                try {
-                    int index = Integer.parseInt(content);
-                    selectFeature(groupId, userId, index);
-                } catch (NumberFormatException e) {
-                    // ignored
-                }
-            } else {
-                if ("0".equals(content)) {
-                    userSession.remove(userId);
-                    groupSelectionCache.remove(userId);
-                    sendFeatureList(groupId);
-                } else {
-                    try {
-                        int index = Integer.parseInt(content); // 这里现在解析的是序号
+            try {
+                int index = Integer.parseInt(content);
+                List<?> cache = selectionCache.get(userId);
 
-                        // 获取该管理员当前的群列表缓存
-                        List<Long> cachedGroups = groupSelectionCache.get(userId);
-
-                        if (cachedGroups != null && index > 0 && index <= cachedGroups.size()) {
-                            // 通过序号找到真实的群号
-                            long targetGroupId = cachedGroups.get(index - 1);
-                            toggleGroup(groupId, targetGroupId, currentFeature);
-                        } else {
-                            MessageSender.sendGroupMessage(groupId, "序号无效，请输入列表中的数字。");
-                        }
-                    } catch (NumberFormatException e) {
-                        // 忽略
-                    }
+                if (cache == null || index < 1 || index > cache.size()) {
+                    MessageSender.sendGroupMessage(groupId, "序号无效，请输入列表中的数字");
+                    return;
                 }
+
+                Object selectedObj = cache.get(index - 1);
+
+                if ("FEATURE_ROOT".equals(session)) {
+                    String selectedFeature = (String) selectedObj;
+                    userSession.put(userId, "FEATURE:" + selectedFeature);
+                    sendGroupStatusForFeature(groupId, userId, selectedFeature);
+
+                } else if ("GROUP_ROOT".equals(session)) {
+                    Long selectedGroup = (Long) selectedObj;
+                    userSession.put(userId, "GROUP:" + selectedGroup);
+                    sendFeatureStatusForGroup(groupId, userId, selectedGroup);
+
+                } else if (session.startsWith("FEATURE:")) {
+                    String feature = session.split(":")[1];
+                    Long targetGroup = (Long) selectedObj;
+                    toggleAndRefresh(groupId, targetGroup, feature, true); // true表示刷新群列表
+
+                } else if (session.startsWith("GROUP:")) {
+                    long targetGroup = Long.parseLong(session.split(":")[1]);
+                    String targetFeature = (String) selectedObj;
+                    toggleAndRefresh(groupId, targetGroup, targetFeature, false); // false表示刷新功能列表
+                }
+
+            } catch (NumberFormatException e) {
+                // 忽略非数字
+            } catch (Exception e) {
+                log.error("Config process error", e);
+                clearSession(userId);
+                MessageSender.sendGroupMessage(groupId, "发生错误，会话已重置");
             }
         }
     }
 
-    private static void sendFeatureList(long fromGroup) {
-        List<String> features = GroupConfigManager.getFeatureList();
-        StringBuilder sb = new StringBuilder();
-        sb.append("【Bot 功能配置菜单】\n");
-        sb.append("请发送 #序号 进入对应管理：\n");
-        sb.append("------------------\n");
+    private static void clearSession(long userId) {
+        userSession.remove(userId);
+        selectionCache.remove(userId);
+    }
 
+    private static void sendFeatureRootList(long fromGroup, long userId) {
+        List<String> features = GroupConfigManager.getFeatureList();
+        selectionCache.put(userId, features);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("【功能配置模式 (/cfg)】\n");
+        sb.append("请发送 #序号 选择功能：\n");
+        sb.append("------------------\n");
         for (int i = 0; i < features.size(); i++) {
             sb.append("#").append(i + 1).append("  ").append(features.get(i)).append("\n");
         }
-        sb.append("------------------\n");
-        sb.append("发送 /save 退出或重置");
-
+        sb.append("------------------\n发送 #0 退出");
         MessageSender.sendGroupMessage(fromGroup, sb.toString());
     }
 
-    // --- 新增辅助方法：发送单群功能列表 ---
-    private static void sendSingleGroupFeatureList(long groupId) {
+    private static void sendGroupRootList(long fromGroup, long userId) {
+        // 聚合所有已知群号
+        Set<Long> allGroups = new HashSet<>();
         List<String> features = GroupConfigManager.getFeatureList();
-        String groupName = fetchGroupName(groupId);
+        for (String f : features) {
+            allGroups.addAll(GroupConfigManager.getStatusMapForFeature(f).keySet());
+        }
+
+        List<Long> groupList = new ArrayList<>(allGroups);
+        Collections.sort(groupList);
+        selectionCache.put(userId, groupList);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("【群 ").append(groupName).append("(").append(groupId).append(") 功能概览】\n");
-        sb.append("发送 #序号 切换开关，#0 退出：\n");
+        sb.append("【群聊配置模式 (/gcfg)】\n");
+        sb.append("请发送 #序号 选择群聊：\n");
         sb.append("------------------\n");
+        for (int i = 0; i < groupList.size(); i++) {
+            Long gid = groupList.get(i);
+            sb.append("#").append(i + 1).append("  ")
+                    .append(fetchGroupName(gid)).append("(").append(gid).append(")\n");
+        }
+        sb.append("------------------\n发送 #0 退出");
+        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+    }
 
+    private static void sendGroupStatusForFeature(long fromGroup, long userId, String feature) {
+        Map<Long, Boolean> map = GroupConfigManager.getStatusMapForFeature(feature);
+        List<Long> groups = new ArrayList<>(map.keySet());
+        Collections.sort(groups);
+        selectionCache.put(userId, groups);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("【配置功能：").append(feature).append("】\n");
+        sb.append("发送 #序号 切换开关，#0 返回：\n------------------\n");
+        for (int i = 0; i < groups.size(); i++) {
+            Long gid = groups.get(i);
+            boolean on = map.get(gid);
+            sb.append("#").append(i + 1).append(" ")
+                    .append(fetchGroupName(gid)).append(" : ").append(on ? "✅" : "❌").append("\n");
+        }
+        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+    }
+
+    private static void sendFeatureStatusForGroup(long fromGroup, long userId, long targetGroup) {
+        List<String> features = GroupConfigManager.getFeatureList();
+        selectionCache.put(userId, features);
+
+        String groupName = fetchGroupName(targetGroup);
+        StringBuilder sb = new StringBuilder();
+        sb.append("【配置群：").append(groupName).append("(").append(targetGroup).append(")").append("】\n");
+        sb.append("发送 #序号 切换开关，#0 返回：\n------------------\n");
         for (int i = 0; i < features.size(); i++) {
-            String featureKey = features.get(i);
-            boolean isEnabled = GroupConfigManager.isFeatureEnabled(groupId, featureKey);
-
+            String f = features.get(i);
+            boolean on = GroupConfigManager.isFeatureEnabled(targetGroup, f);
             sb.append("#").append(i + 1).append(" ")
-                    .append(featureKey).append(" : ")
-                    .append(isEnabled ? "✅" : "❌")
-                    .append("\n");
+                    .append(f).append(" : ").append(on ? "✅" : "❌").append("\n");
         }
-        sb.append("------------------");
-
-        MessageSender.sendGroupMessage(groupId, sb.toString());
-    }
-
-    private static void handleSingleGroupInput(long fromGroup, long targetGroupId, long userId, String content) {
-        if ("0".equals(content)) {
-            userSession.remove(userId);
-            MessageSender.sendGroupMessage(fromGroup, "已退出当前群配置模式。");
-            return;
-        }
-
-        try {
-            int index = Integer.parseInt(content);
-            List<String> features = GroupConfigManager.getFeatureList();
-
-            if (index > 0 && index <= features.size()) {
-                String featureName = features.get(index - 1);
-
-                // 执行切换
-                GroupConfigManager.toggleFeature(targetGroupId, featureName);
-                boolean newState = GroupConfigManager.isFeatureEnabled(targetGroupId, featureName);
-
-                String reply = String.format("已%s本群的 [%s] 功能。\n请继续输入 #序号 修改，或 #0 退出。",
-                        newState ? "开启" : "关闭", featureName);
-
-                MessageSender.sendGroupMessage(fromGroup, reply);
-            } else {
-                MessageSender.sendGroupMessage(fromGroup, "序号无效，请输入列表中的数字。");
-            }
-        } catch (NumberFormatException e) {
-            // 忽略非数字输入
-        }
-    }
-
-    private static void selectFeature(long fromGroup, long userId, int index) {
-        List<String> features = GroupConfigManager.getFeatureList();
-        if (index < 1 || index > features.size()) {
-            MessageSender.sendGroupMessage(fromGroup, "序号不存在，请重新输入。");
-            return;
-        }
-
-        String selectedFeature = features.get(index - 1);
-        userSession.put(userId, selectedFeature); // 更新会话状态
-
-        Map<Long, Boolean> statusMap = GroupConfigManager.getStatusMapForFeature(selectedFeature);
-
-        List<Long> groupIds = new ArrayList<>(statusMap.keySet());
-        Collections.sort(groupIds);
-        groupSelectionCache.put(userId, groupIds);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("【配置：").append(selectedFeature).append("】\n");
-        sb.append("发送 #群号 切换开关，发送 #0 返回：\n");
-        sb.append("------------------\n");
-
-        for (int i = 0; i < groupIds.size(); i++) {
-            Long gid = groupIds.get(i);
-            Boolean enabled = statusMap.get(gid);
-
-            String name = fetchGroupName(gid);
-
-            sb.append("#").append(i + 1).append(" ")
-                    .append(name).append("(").append(gid).append(") : ")
-                    .append(enabled ? "✅" : "❌")
-                    .append("\n");
-        }
-
         MessageSender.sendGroupMessage(fromGroup, sb.toString());
     }
 
-    private static void toggleGroup(long fromGroup, long targetGroupId, String featureName) {
-        // 执行切换
-        GroupConfigManager.toggleFeature(targetGroupId, featureName);
-        boolean newState = GroupConfigManager.isFeatureEnabled(targetGroupId, featureName);
+    private static void toggleAndRefresh(long fromGroup, long targetGroupId, String feature, boolean refreshGroupList) {
+        GroupConfigManager.toggleFeature(targetGroupId, feature);
+        boolean newState = GroupConfigManager.isFeatureEnabled(targetGroupId, feature);
 
-        String reply = String.format("已%s群 %d 的 [%s] 功能。",
-                newState ? "开启" : "关闭", targetGroupId, featureName);
+        String msg = String.format("已%s群 %d 的 [%s] 功能", newState ? "开启" : "关闭", targetGroupId, feature);
+        MessageSender.sendGroupMessage(fromGroup, msg);
 
-        MessageSender.sendGroupMessage(fromGroup, reply);
     }
 
     private static String fetchGroupName(long groupId) {
-        String groupName = "未知群聊";
-
         try {
-            groupName = GetGroupName.getGroupName(groupId);
+            return GetGroupName.getGroupName(groupId);
         } catch (Exception e) {
-            log.error("获取群 {} 名称失败：{}", groupId, e.getMessage());
+            return "未知群聊";
         }
-        return groupName;
     }
 }

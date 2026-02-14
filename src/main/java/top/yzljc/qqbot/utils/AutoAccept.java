@@ -38,14 +38,14 @@ public class AutoAccept {
         log.info("收到好友请求 -> 用户: {} | 验证消息: {} | Flag: {}", userId, comment, flag);
 
         // 异步执行同意操作
-        ThreadManager.schedule(() -> {
+        ThreadManager.execute(() -> {
             try {
                 approveFriendRequest(flag);
                 sendHelloMessage(userId);
             } catch (Exception e) {
                 log.warn("同意好友操作失败: {}", e.getMessage(), e);
             }
-        }, 10,TimeUnit.SECONDS);
+        });
     }
 
     private static void approveFriendRequest(String flag) {
@@ -64,7 +64,7 @@ public class AutoAccept {
 
     private static void sendHelloMessage(long userId) {
         String myMessage = "老大你好，私聊发送 “赞我” 是没有用的，因为我没写实现:( 如果需要拉群请联系 3199590352 以加快受理速度，交流群：818804507，哔哩哔哩：https://space.bilibili.com/592616376";
-        MessageSender.sendPrivateMessage(userId, myMessage);
+        ThreadManager.schedule(() -> MessageSender.sendPrivateMessage(userId, myMessage), 10, TimeUnit.SECONDS);
         log.info("已向用户 {} 发送问候消息。", userId);
     }
 }

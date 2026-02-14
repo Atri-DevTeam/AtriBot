@@ -1,54 +1,18 @@
 package top.yzljc.qqbot.utils;
 
+import top.yzljc.qqbot.botkits.findinfo.GetProjectInfo;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.command.CommandContext;
 import top.yzljc.qqbot.command.ExecuteCommand;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
- * 懒得更
+ * Bot 帮助/介绍信息
  */
-@Deprecated(since = "2.6.0")
 public class CommandHelp implements ExecuteCommand {
-    private static final Map<String, String> commonCommands = new LinkedHashMap<>();
-    private static final Map<String, String> adminCommands = new LinkedHashMap<>();
-
-    static {
-        // ==== 在这里添加普通用户指令 ====
-        commonCommands.put("/stats", "查看今日发言排行（仅开启有效）");
-        commonCommands.put("/statsoverall", "查看历史发言总计（仅开启有效）");
-        commonCommands.put("/bl BVxxxx", "解析B站视频信息（输入BV号）");
-        commonCommands.put("/mojang", "查询 Mojang 服务器状态");
-        commonCommands.put("赞我", "名片点赞 10 次");
-        commonCommands.put("一言", "随机一言");
-        commonCommands.put("/emj","贴表情刷屏");
-        commonCommands.put("/ayme","每条消息获得三个表情");
-        commonCommands.put("/ayrme","每条消息不再获取贴表情");
-        commonCommands.put("db", "查询宿舍电表信息（仅限特定群聊）");
-        commonCommands.put("/search \"text\" [-m a/p]","查询历史消息[模糊/精准]（仅开启有效）");
-        commonCommands.put("/happynewyear","查询新年倒计时");
-        commonCommands.put("/hbt <玩家名>", "查询玩家在Ban服中的统计数据");
-
-        // ==== 在这里添加管理员指令 ====
-        adminCommands.put("/manodate", "查看某项目开发进度");
-        adminCommands.put("/rc <Server> <Cmd>", "发送服务器控制台指令");
-        adminCommands.put("/ay(ayr) @user -s", "开启/关闭指定用户的超级贴表情");
-        adminCommands.put("/emj @user","为指定用户开启贴表情刷屏");
-        adminCommands.put("/debug [群号]", "开启/关闭数据包抓取");
-        adminCommands.put("/reboot", "重启机器人程序");
-        adminCommands.put("/testformc", "手动检查 MC 新闻");
-        adminCommands.put("/testforhyp", "手动检查 Hypixel 新闻");
-        adminCommands.put("/testforsign","群打卡测试");
-        adminCommands.put("/rollback [-n 数量] [-u QQ号]", "撤回数据库中记录的消息");
-    }
 
     @Override
     public void execute(CommandContext ct) {
-        if (ct.getIsAtBot()) {
-            processHelp(ct.getGroupId());
-        }
+        processHelp(ct.getGroupId());
     }
 
     public static void processHelp(long groupId) {
@@ -57,18 +21,41 @@ public class CommandHelp implements ExecuteCommand {
 
     private static void sendHelpMenu(long groupId) {
         StringBuilder sb = new StringBuilder();
-        sb.append(" YZ_Ljc_ Bot 指令菜单 （半成品） \n");
-        sb.append("----------------------------\n");
 
-        sb.append(" [普通指令]\n");
-        commonCommands.forEach((cmd, desc) -> sb.append("▶ ").append(cmd).append(" : ").append(desc).append("\n"));
+        sb.append("=== YZ_Ljc_ Bot 项目说明 ===\n\n");
+        sb.append("这是一个新手拿来练手的项目，并没有什么有用的功能。\n");
+        sb.append("但是既然你能看到这个消息，首先非常感谢你对该项目的支持！\n\n");
 
-        sb.append("\n [管理指令]\n");
-        adminCommands.forEach((cmd, desc) -> sb.append(" ").append(cmd).append(" : ").append(desc).append("\n"));
+        sb.append("Bot 的设计初衷是用来高度自定义连接 MC/QQ 群的\n");
+        sb.append("因此它有一个配套的MC插件能与 Bot 互联，与服务器交互，如果你有需求可以联系一下开发\n\n");
 
-        sb.append("----------------------------\n");
-        sb.append(" 使用配置菜单请发送 /cfg\n");
-        sb.append(" 强制保存配置请发送 /save");
+        sb.append("【Bot 功能介绍】\n");
+        sb.append("● 自动解析哔哩哔哩视频 [默认关闭]\n");
+        sb.append("● Hypixel/Minecraft 新闻自动检索推送\n");
+        sb.append("● 发送 \"赞我\" 获取名片赞\n");
+        sb.append("● 贴表情恶搞机制 (使用 /emj 查看)\n");
+        sb.append("● 新年倒计时推送\n");
+        sb.append("● 发送 \"一言\" 获得随机一言\n");
+        sb.append("● 每日 7 时发送起床表情包 [默认关闭]\n");
+        sb.append("● 每日自动群打卡\n");
+        sb.append("● 自动复读\n");
+        sb.append("● MOJANG 验证服务器状态查询 (/mojang)\n");
+        sb.append("● 自动回复戳一戳\n");
+        sb.append("● Github 仓库更新推送 [默认仅推送 Bot 更新]\n");
+
+        sb.append("● 见证/敏感词检测撤回/消息统计/批量撤回 [需联系开发]\n");
+        sb.append("● MOTD 查询 [需联系开发]\n\n");
+
+
+        sb.append("您可以发送 /groupinfo 查询本群功能开启情况\n");
+        sb.append("如需进行功能调整请联系开发，再次感谢您的支持！\n");
+        String buildTime = GetProjectInfo.getBuildTime();
+        String commitId = GetProjectInfo.getCommitId();
+        String branch = GetProjectInfo.getBranch();
+        String version = GetProjectInfo.getVersion();
+        String buildInfo = "版本信息 -> Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version + "\n";
+        sb.append(buildInfo);
+        sb.append("使用/update查看最新版本更新信息");
 
         MessageSender.sendGroupMessage(groupId, sb.toString());
     }

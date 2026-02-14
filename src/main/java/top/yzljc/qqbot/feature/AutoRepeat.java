@@ -17,7 +17,6 @@ public class AutoRepeat {
     private static final int REPEAT_THRESHOLD = 3;
     private static final Map<Long, LinkedList<List<Map<String, Object>>>> groupData = new ConcurrentHashMap<>();
     private static final Set<String> recentlyRepeated = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private static final long REPEAT_COOLDOWN_MS = 120000;
 
     public static void repeatGroupData(Long groupId, LinkedList<Map<String, Object>> msgData) {
         LinkedList<List<Map<String, Object>>> queue = groupData.computeIfAbsent(groupId, _ -> new LinkedList<>());
@@ -38,7 +37,6 @@ public class AutoRepeat {
                 log.info("群 {} 消息复读触发，内容: {}", groupId, msgData);
 
                 recentlyRepeated.add(repeatKey);
-                ThreadManager.schedule(() -> recentlyRepeated.remove(repeatKey), REPEAT_COOLDOWN_MS, TimeUnit.MILLISECONDS);
             }
         }
     }

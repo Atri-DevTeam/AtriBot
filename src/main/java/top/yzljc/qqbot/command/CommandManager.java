@@ -50,6 +50,7 @@ public class CommandManager {
         registerCommand("serverstatus", new ServerStatus(), null);
         registerCommand("groupinfo", new GroupConfigInfo(), null);
         registerCommand("help", new CommandHelp(), null);
+        registerCommand("update",new WebhookServer(),"github_info");
     }
 
     private static void registerCommand(String name, ExecuteCommand cmd, String featureKey) {

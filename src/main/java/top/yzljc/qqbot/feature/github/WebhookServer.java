@@ -17,12 +17,10 @@ import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -35,9 +33,11 @@ public class WebhookServer implements ExecuteCommand {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String CONFIG_FILE_PATH = ConfigFile.GITHUB_REPOSITORY.getFileName();
     private static final Map<String, List<Long>> repoConfig = new HashMap<>();
+    private static final String TEMP_IMAGE_PATH = "tmp/last_github_update.png";
 
     static {
         loadConfig();
+        new File("tmp").mkdirs();
     }
 
     public static void start(int port, String secret) {
@@ -56,10 +56,27 @@ public class WebhookServer implements ExecuteCommand {
     public void execute(CommandContext ct) {
         String[] parts = ct.getCommand().split("\\s+");
         long groupId = ct.getGroupId();
+
+        if (parts.length > 0 && "/update".equalsIgnoreCase(parts[0])) {
+            File imageFile = new File(TEMP_IMAGE_PATH);
+            if (imageFile.exists() && imageFile.isFile()) {
+                try {
+                    byte[] fileContent = Files.readAllBytes(imageFile.toPath());
+                    String base64 = Base64.getEncoder().encodeToString(fileContent);
+                    MessageSender.sendGroupMessage(groupId, "[GitHub] 最新一次推送详情：", base64);
+                } catch (IOException e) {
+                    log.error("Failed to read cached update image", e);
+                    MessageSender.sendGroupMessage(groupId, "获取更新详情失败，读取缓存错误。");
+                }
+            } else {
+                MessageSender.sendGroupMessage(groupId, "暂无最近的推送记录。");
+            }
+            return;
+        }
+
         if (!ct.getIsAdmin()) return;
 
-        // 指令格式: /github 仓库名 群号1 群号2 ...
-        if (parts.length >= 3) {
+        if (parts.length >= 3 && "/github".equalsIgnoreCase(parts[0])) {
             String targetRepo = parts[1];
             List<Long> targetGroupIds = new ArrayList<>();
 
@@ -68,7 +85,6 @@ public class WebhookServer implements ExecuteCommand {
                     targetGroupIds.add(Long.parseLong(parts[i]));
                 }
 
-                // 存入配置 (key转小写以忽略大小写)
                 synchronized (repoConfig) {
                     repoConfig.put(targetRepo.toLowerCase(), targetGroupIds);
                     saveConfig();
@@ -83,7 +99,7 @@ public class WebhookServer implements ExecuteCommand {
                 MessageSender.sendGroupMessage(groupId, "配置更新失败，发生内部错误。");
             }
         } else {
-            MessageSender.sendGroupMessage(groupId, "用法: /github <仓库名> <群号1> [群号2...]");
+            MessageSender.sendGroupMessage(groupId, "用法:\n1. /github <仓库名> <群号1> [群号2...]\n2. /update (查看最新推送)");
         }
     }
 
@@ -96,7 +112,6 @@ public class WebhookServer implements ExecuteCommand {
                 });
                 if (loaded != null) {
                     repoConfig.clear();
-                    // 确保key为小写
                     for (Map.Entry<String, List<Long>> entry : loaded.entrySet()) {
                         repoConfig.put(entry.getKey().toLowerCase(), entry.getValue());
                     }
@@ -165,6 +180,8 @@ public class WebhookServer implements ExecuteCommand {
             String base64Image = generator.generateBase64(data);
 
             if (base64Image != null) {
+                saveImageLocally(base64Image);
+
                 Collection<Long> destinationGroups = new ArrayList<>();
 
                 if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase())) {
@@ -182,6 +199,24 @@ public class WebhookServer implements ExecuteCommand {
                         ThreadManager.execute(() -> MessageSender.sendGroupMessage(groupId, null, base64Image));
                     }
                 }
+            }
+        }
+
+        private void saveImageLocally(String base64Image) {
+            try {
+                String base64Data = base64Image;
+                if (base64Data.contains(",")) {
+                    base64Data = base64Data.split(",")[1];
+                }
+
+                byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+                File outputFile = new File(TEMP_IMAGE_PATH);
+
+                try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                    fos.write(imageBytes);
+                }
+            } catch (Exception e) {
+                log.error("Failed to save github push image locally", e);
             }
         }
 

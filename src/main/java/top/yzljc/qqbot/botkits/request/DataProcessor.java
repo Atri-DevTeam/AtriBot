@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.botkits.request;
 
+import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.message.MessageFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.command.*;
@@ -133,7 +134,7 @@ public class DataProcessor {
             }
         }
 
-        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text")){
+        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text") && userId != GetBotInfo.getBotId()){
             Hitokoto.processHitokoto(groupId);
         }
 

@@ -2,6 +2,7 @@ package top.yzljc.qqbot.botkits.clock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.command.Reboot;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.feature.schedule.*;
@@ -29,6 +30,8 @@ public class RunScheduleTask {
 
         // 每天 23:59:45
         scheduleDailyTask(MessageStats::autoReportAllGroups, 23, 59, 45);
+
+        scheduleDailyTask(Reboot::processReboot, 5, 20, 0);
 
         // 每小时 00 分 00 秒
         scheduleHourlyTask(() -> MinecraftNews.checkNews(false), 0, 0);
