@@ -70,10 +70,10 @@ public class MessageStats implements ExecuteCommand {
     }
 
     public static void processCommand(long groupId, String rawMsg) {
-        String msgContent = rawMsg;
+        String msgContent;
         boolean overall = false;
         LocalDate targetDate = LocalDate.now();
-        Long qqAt = null;
+        Long qqAt;
 
         if (rawMsg.startsWith("/statsoverall")) {
             overall = true;
@@ -119,7 +119,7 @@ public class MessageStats implements ExecuteCommand {
 
     public static String buildGroupStatsMsg(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {
         Map<Long, Integer> statMap = statGroupSpeak(groupId, whichDay, overall, filterUserId);
-        if (statMap == null || statMap.isEmpty()) {
+        if (statMap.isEmpty()) {
             if (filterUserId != null) return "[统计] 该成员暂无发言记录";
             else return "[统计] 暂无可统计的发言记录";
         }
@@ -130,7 +130,7 @@ public class MessageStats implements ExecuteCommand {
         } else if (whichDay.equals(LocalDate.now())) {
             timePrefix = "今日";
         } else {
-            timePrefix = whichDay.toString() + " ";
+            timePrefix = whichDay + " ";
         }
 
         // 单人统计
@@ -160,19 +160,27 @@ public class MessageStats implements ExecuteCommand {
         } else if (whichDay.equals(LocalDate.now().minusDays(1))) {
             sb.append("[昨日发言统计]\n");
         } else {
-            sb.append("[").append(whichDay.toString()).append(" 发言统计]\n");
+            sb.append("[").append(whichDay).append(" 发言统计]\n");
         }
 
         int i = 1;
+        int hiddenUserCount = 0;
+        long hiddenMsgCount = 0;
 
         long nowTime = System.currentTimeMillis();
         nicknameCache.entrySet().removeIf(entry -> nowTime - entry.getValue().time > NICKNAME_CACHE_EXPIRE);
 
         for (Map.Entry<Long, Integer> entry : sorted) {
+            if (overall && i > 100) {
+                hiddenUserCount++;
+                hiddenMsgCount += entry.getValue();
+                continue;
+            }
+
             Long userId = entry.getKey();
             String nick = fetchNickname(userId);
 
-            if (nick != null && SensitiveWordFilter.containsSensitiveWord(nick)) {
+            if (SensitiveWordFilter.containsSensitiveWord(nick)) {
                 nick = null; // 强制置空，触发下方的 "QQ号:" 逻辑
             }
 
@@ -183,10 +191,14 @@ public class MessageStats implements ExecuteCommand {
                     .append("\n");
         }
 
+        if (hiddenUserCount > 0) {
+            sb.append("此外，还有 ").append(hiddenUserCount).append(" 位群友的消息未被显示，总计 ").append(hiddenMsgCount).append(" 条\n");
+        }
+
         sb.append("\n⚠️ 本统计消息将于1分钟后自动撤回");
 
         if (whichDay.equals(LocalDate.now())){
-            sb.append("\n使用/statsyesterday 或 /statsy 可查询昨日发言统计");
+            sb.append("\n使用/statsy 可查询昨日发言统计");
         }
 
         return sb.toString();
@@ -231,13 +243,7 @@ public class MessageStats implements ExecuteCommand {
         }
     }
 
-    private static class CachedNickname {
-        final String nick;
-        final long time;
-        CachedNickname(String n, long t) {
-            this.nick = n;
-            this.time = t;
-        }
+    private record CachedNickname(String nick, long time) {
     }
 
     public static Map<Long, Integer> statGroupSpeak(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {

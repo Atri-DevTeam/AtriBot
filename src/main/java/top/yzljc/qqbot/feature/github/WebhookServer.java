@@ -44,7 +44,7 @@ public class WebhookServer implements ExecuteCommand {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/github-webhook", new WebhookHandler(secret));
-            server.setExecutor(Executors.newCachedThreadPool());
+            server.setExecutor(ThreadManager.getExecutor());
             server.start();
             log.info("Webhook server started on port {}", port);
         } catch (IOException e) {

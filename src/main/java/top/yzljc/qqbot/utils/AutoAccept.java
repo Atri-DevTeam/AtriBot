@@ -16,6 +16,7 @@ import top.yzljc.qqbot.botkits.thread.ThreadManager;
 public class AutoAccept {
 
     private static final Logger log = LoggerFactory.getLogger(AutoAccept.class);
+    private static long lastUser = 0;
 
     public static void handle(JsonNode json) {
         // 二次校验，防止错误调用
@@ -37,11 +38,13 @@ public class AutoAccept {
 
         log.info("收到好友请求 -> 用户: {} | 验证消息: {} | Flag: {}", userId, comment, flag);
 
-        // 异步执行同意操作
         ThreadManager.execute(() -> {
             try {
                 approveFriendRequest(flag);
-                sendHelloMessage(userId);
+                if (lastUser != userId){
+                    sendHelloMessage(userId);
+                }
+                lastUser = userId;
             } catch (Exception e) {
                 log.warn("同意好友操作失败: {}", e.getMessage(), e);
             }

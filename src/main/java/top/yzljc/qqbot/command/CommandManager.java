@@ -47,6 +47,8 @@ public class CommandManager {
         registerCommand("signall", new AutoSign(), "auto_sign");
         registerCommand("rollback", new RollbackMessages(), null);
         registerCommand("stats", new MessageStats(), null);
+        registerCommand("statsy", new MessageStats(), null);
+        registerCommand("statsoverall", new MessageStats(), null);
         registerCommand("serverstatus", new ServerStatus(), null);
         registerCommand("groupinfo", new GroupConfigInfo(), null);
         registerCommand("help", new CommandHelp(), null);
@@ -70,6 +72,7 @@ public class CommandManager {
         String rawMessage = json.path("raw_message").asText("").trim();
         long groupId = json.path("group_id").asLong();
         long userId = json.path("user_id").asLong();
+        if (userId == GetBotInfo.getBotId()) return;
         boolean isAdmin = settings.getAdminUids().contains(userId);
         boolean isAtBot = rawMessage.contains("[CQ:at,qq=" + BOT_QQ + "]");
         boolean isDebug = false;

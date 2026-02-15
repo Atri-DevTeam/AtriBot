@@ -18,10 +18,11 @@ public class Broadcast implements ExecuteCommand {
 
     @Override
     public void execute(CommandContext ct) {
+        if (!ct.getIsAdmin()) return;
         if (ct.getIsDebug()){
-            debugBroadcastRequest(ct.getRawMsg());
+            debugBroadcastRequest(ct.getRawMsg().substring(3).trim());
         }else{
-            fecthToGroups(ct.getRawMsg());
+            fecthToGroups(ct.getRawMsg().substring(3).trim());
         }
     }
 
