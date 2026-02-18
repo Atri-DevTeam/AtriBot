@@ -6,7 +6,6 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
-import top.yzljc.qqbot.feature.minecraft.ServerStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -143,10 +142,10 @@ public class SocketManager {
                             String msg = "";
 
                             if ("JOIN".equalsIgnoreCase(action)) {
-                                msg = String.format("[%s] 玩家 %s 加入了服务器", serverName, playerName);
+                                msg = String.format("玩家 %s 加入了服务器", playerName);
                                 log.info(msg);
                             } else if ("QUIT".equalsIgnoreCase(action)) {
-                                msg = String.format("[%s] 玩家 %s 离开了服务器", serverName, playerName);
+                                msg = String.format("玩家 %s 离开了服务器", playerName);
                                 log.info(msg);
                             }
 
@@ -174,31 +173,10 @@ public class SocketManager {
                                 continue;
                             }
 
-                            String formattedMsg = String.format("[%s] %s: %s", serverName, playerName, chatMsg);
+                            String formattedMsg = String.format("%s: %s", playerName, chatMsg);
                             log.info("转发聊天：{}", formattedMsg);
 
                             sendToGroup(formattedMsg);
-                        }
-
-                    } else if ("ONLINE".equalsIgnoreCase(type) || "OFFLINE".equalsIgnoreCase(type)) {
-
-                        if (info != null) {
-                            boolean isOnline = "ONLINE".equalsIgnoreCase(type);
-                            if (isOnline) {
-                                log.info("[{}] 服务器上线，准备进行推送……", info.name);
-                            }
-
-                            ServerStatus.sendReport(
-                                    info.group_id,
-                                    info.name,
-                                    info.ip,
-                                    info.port,
-                                    info.id,
-                                    isOnline
-                            );
-                            log.info("[{}] 状态已处理: {}", info.name, type);
-                        } else {
-                            log.warn("收到未知服务器ID的数据：{}", receivedId);
                         }
                     }
                 }

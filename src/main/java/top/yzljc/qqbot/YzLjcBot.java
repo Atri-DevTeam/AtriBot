@@ -5,6 +5,7 @@ import top.yzljc.qqbot.botkits.findinfo.GetFriendList;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.feature.minecraft.HypixelReward;
 import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.botkits.request.DataProcessor;
@@ -64,5 +65,7 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("bv_check", false);
         GroupConfigManager.registerFeature("wakeup_send", false);
         GroupConfigManager.registerFeature("broadcast", true);
+        GroupConfigManager.registerFeature("calendar",true);
+        GroupConfigManager.registerFeature("get_hypixel_reward",false);
     }
 }

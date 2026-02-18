@@ -24,9 +24,9 @@ public class RunScheduleTask {
         // 每天 00:00:00
         scheduleDailyTask(AutoSign::processAutoSign, 0, 0, 1);
 
-        // 每天 00:00:01
         scheduleDailyTask(ManosabaDate::sendAndNotifyToGroup, 0, 0, 10);
-        scheduleDailyTask(HappyNewYear::sendToAllGroups, 0, 0, 11);
+        // scheduleDailyTask(HappyNewYear::sendToAllGroups, 0, 0, 11);
+        scheduleDailyTask(Calendar::sendToAllGroups, 0, 0, 25);
 
         // 每天 23:59:45
         scheduleDailyTask(MessageStats::autoReportAllGroups, 23, 59, 45);

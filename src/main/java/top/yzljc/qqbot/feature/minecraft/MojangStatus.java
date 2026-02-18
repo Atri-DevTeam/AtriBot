@@ -22,11 +22,12 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 
-public class MojangStatus implements ExecuteCommand {
+public class MojangStatus implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MojangStatus.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -101,12 +102,12 @@ public class MojangStatus implements ExecuteCommand {
     }
 
     @Override
-    public void execute(CommandContext ct) {
-        long groupId = ct.getGroupId();
-        if (!ct.getIsEnabled()) return;
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        long groupId = sender.getGroupId();
         MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
         log.info("开始检查 Mojang 服务状态 -> Group: {}", groupId);
         ThreadManager.execute(() -> performChecksAndSend(groupId));
+        return true;
     }
 
     private static void performChecksAndSend(long groupId) {

@@ -1,17 +1,19 @@
 package top.yzljc.qqbot.config.groups;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 
 import java.util.Map;
 
-public class GroupConfigInfo implements ExecuteCommand {
+public class GroupConfigInfo implements CommandExecutor {
     private static final Map<String,Boolean> registeredFeatures = GroupConfigManager.getRegisteredFeatures();
 
     @Override
-    public void execute(CommandContext ct) {
-        getGroupStatusDescription(ct.getGroupId());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        getGroupStatusDescription(sender.getGroupId());
+        return true;
     }
 
     public static void getGroupStatusDescription(long groupId) {

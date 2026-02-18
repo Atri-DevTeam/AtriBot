@@ -71,8 +71,8 @@ public class PostRequest {
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(20000);
 
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(payload);

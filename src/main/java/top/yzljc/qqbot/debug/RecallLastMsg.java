@@ -4,24 +4,28 @@ import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RecallLastMsg implements ExecuteCommand {
+public class RecallLastMsg implements CommandExecutor {
     private static final Map<Long, Long> latestGroupMessageMap = new ConcurrentHashMap<>();
     static Settings settings = Config.getInstance();
     private static final long DEBUG_GROUP = settings.getDebugGroupId();
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsAdmin()) {
-            recallLastMsg();
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()) {
+            sender.reply("你没有权限执行此命令", false);
+            return true;
         }
+        recallLastMsg();
+        return true;
     }
 
     public static void recordLastMsg(long groupId, long messageId) {

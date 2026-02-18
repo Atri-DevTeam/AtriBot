@@ -1,7 +1,8 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
@@ -19,7 +20,7 @@ import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ManosabaDate implements ExecuteCommand {
+public class ManosabaDate implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(ManosabaDate.class);
 
@@ -27,10 +28,13 @@ public class ManosabaDate implements ExecuteCommand {
     private static final long GROUP_ID = settings.getManosabaGroupId();
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getGroupId() == GROUP_ID) {
-            receiveManodate(ct.getGroupId());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender.getGroupId() == settings.getManosabaGroupId()) {
+            receiveManodate(sender.getGroupId());
+        } else {
+            sender.reply("此指令无法在该群聊调用！", false);
         }
+        return true;
     }
 
     private static class ImageGen extends AbstractImage {

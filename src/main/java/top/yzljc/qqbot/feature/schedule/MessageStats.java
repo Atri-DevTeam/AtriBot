@@ -19,12 +19,13 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
-public class MessageStats implements ExecuteCommand {
+public class MessageStats implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
@@ -44,63 +45,45 @@ public class MessageStats implements ExecuteCommand {
     }
 
     public static Set<Long> findAllGroupsWithRecords() {
-        Set<Long> groupIds = new HashSet<>();
-        try (Connection conn = MessageRecorder.getDataSource().getConnection();
-             ResultSet rs = conn.getMetaData().getTables(null, null, "qq_group_message_record_%", new String[]{"TABLE"})) {
-            while (rs.next()) {
-                String table = rs.getString("TABLE_NAME");
-                if (table.startsWith("qq_group_message_record_")) {
-                    String suffix = table.substring("qq_group_message_record_".length());
-                    try {
-                        groupIds.add(Long.valueOf(suffix));
-                    } catch (Exception ignored) {}
-                }
-            }
-        } catch (Exception e) {
-            log.error("取所有群号分表异常 {}", e.getMessage());
+        if (spyGroups == null) {
+            return new HashSet<>();
         }
-        return groupIds;
+        return new HashSet<>(spyGroups);
     }
 
     @Override
-    public void execute(CommandContext ct) {
-        if (spyGroups.contains(ct.getGroupId())) {
-            processCommand(ct.getGroupId(), ct.getRawMsg());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        String replyMsg;
+        if (args == null || args.length == 0) {
+            LocalDate  targetDate = LocalDate.now();
+            replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
+            getMessageContent(sender.getGroupId(), replyMsg);
+            return true;
         }
+        if (args.length == 1) {
+            if (args[0].equalsIgnoreCase("y")) {
+                LocalDate targetDate = LocalDate.now().minusDays(1);
+                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
+                getMessageContent(sender.getGroupId(), replyMsg);
+            }else if (args[0].equalsIgnoreCase("overall")) {
+                LocalDate targetDate = LocalDate.now();
+                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, true, null);
+                getMessageContent(sender.getGroupId(), replyMsg);
+            }else if (args[0].contains("[CQ:at,qq=")){
+                Long qqAt = extractAtUser(args[0]);
+                if (qqAt != null) {
+                    LocalDate targetDate = LocalDate.now();
+                    replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, qqAt);
+                    getMessageContent(sender.getGroupId(), replyMsg);
+                }
+            }else{
+                return false;
+            }
+        }
+        return true;
     }
 
-    public static void processCommand(long groupId, String rawMsg) {
-        String msgContent;
-        boolean overall = false;
-        LocalDate targetDate = LocalDate.now();
-        Long qqAt;
-
-        if (rawMsg.startsWith("/statsoverall")) {
-            overall = true;
-            // 如果长度正好等于指令长度，说明后面没参数，给空字符串即可
-            msgContent = rawMsg.length() > 13 ? rawMsg.substring(13).trim() : "";
-        }
-        else if (rawMsg.startsWith("/statsyesterday")) {
-            targetDate = LocalDate.now().minusDays(1);
-            msgContent = rawMsg.length() > 15 ? rawMsg.substring(15).trim() : "";
-        }
-        else if (rawMsg.startsWith("/statsy")) {
-            targetDate = LocalDate.now().minusDays(1);
-            msgContent = rawMsg.length() > 7 ? rawMsg.substring(7).trim() : "";
-        }
-        else {
-            // 对应普通的 /stats
-            msgContent = rawMsg.length() > 6 ? rawMsg.substring(6).trim() : "";
-        }
-        qqAt = extractAtUser(msgContent);
-
-        String replyMsg;
-        if (qqAt == null) {
-            replyMsg = buildGroupStatsMsg(groupId, targetDate, overall, null);
-        } else {
-            replyMsg = buildGroupStatsMsg(groupId, targetDate, overall, qqAt);
-        }
-
+    private static void getMessageContent(long groupId,String replyMsg){
         if (replyMsg != null && !replyMsg.isEmpty()) {
             sendAndScheduleWithdraw(groupId, replyMsg);
         }
@@ -142,7 +125,7 @@ public class MessageStats implements ExecuteCommand {
                 nick = null; // 触发后文的 fallback 显示QQ号
             }
 
-            return String.format("[统计]%s：%s发言%d次\n⚠️(1分钟后自动撤回)",
+            return String.format("[统计]%s：%s发言%d次",
                     nick == null ? "QQ:" + filterUserId : nick,
                     timePrefix,
                     count);
@@ -193,12 +176,6 @@ public class MessageStats implements ExecuteCommand {
 
         if (hiddenUserCount > 0) {
             sb.append("此外，还有 ").append(hiddenUserCount).append(" 位群友的消息未被显示，总计 ").append(hiddenMsgCount).append(" 条\n");
-        }
-
-        sb.append("\n⚠️ 本统计消息将于1分钟后自动撤回");
-
-        if (whichDay.equals(LocalDate.now())){
-            sb.append("\n使用/statsy 可查询昨日发言统计");
         }
 
         return sb.toString();

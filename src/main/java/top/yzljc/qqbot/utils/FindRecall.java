@@ -2,12 +2,12 @@ package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
-import top.yzljc.qqbot.botkits.image.TextImage;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
 import top.yzljc.qqbot.botkits.findinfo.GetUserName;
 import top.yzljc.qqbot.botkits.tools.FT;
+import top.yzljc.qqbot.botkits.tools.MM;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -15,9 +15,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
 
 public class FindRecall {
     static Settings settings = Config.getInstance();
@@ -43,39 +41,15 @@ public class FindRecall {
         if (IGNORE_USER_IDS.contains(userId)) {
             return; // 忽略机器人的撤回
         }
+        String myMessage = "[" + formattedTime + "] " + foundUserName + "在群 " + foundGroupName + " 撤回了一条消息：";
+        Map<String,Object> finalMsg = new HashMap<>();
+        finalMsg.put("type", "text");
+        finalMsg.put("data", Map.of("text", myMessage));
+        List<Map<String, Object>> spyMessage = MM.parse(foundMessage);
+        spyMessage.addFirst(finalMsg);
 
-        if (foundMessage != null) {
-            TextImage.Result findResult = TextImage.parseTextImage(foundMessage);
-            String myMessage = "[" + formattedTime + "] " + foundUserName + "在群 " + foundGroupName + " 撤回了一条消息：";
+        MessageSender.sendGroupData(DEBUG_GROUP_ID,spyMessage);
 
-            if (findResult.textMessage() != null && findResult.imgBase64() == null){
-                MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + findResult.textMessage());
-                return;
-            }
-
-            Pattern imgPattern = Pattern.compile("\\[CQ:image,([^]]+)]");
-            Matcher stillHaveImg;
-            int imgCount = 1;
-            if (findResult.textMessage() == null) {
-                MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage, findResult.imgBase64());
-                return;
-            }
-            stillHaveImg = imgPattern.matcher(findResult.textMessage());
-            MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + findResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片 " + imgCount++ + "]", findResult.imgBase64());
-            if (stillHaveImg.find()) {
-                TextImage.Result newFindResult = TextImage.parseTextImage(findResult.textMessage());
-                MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + newFindResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片 " + imgCount + "]", newFindResult.imgBase64());
-                while (true){
-                    imgCount++;
-                    stillHaveImg = imgPattern.matcher(newFindResult.textMessage());
-                    if (!stillHaveImg.find()) {
-                        return;
-                    }
-                    newFindResult = TextImage.parseTextImage(newFindResult.textMessage());
-                    MessageSender.sendGroupMessage(DEBUG_GROUP_ID, myMessage + newFindResult.textMessage().replaceAll("\\[CQ:image,([^]]+)]","") + " [图片: " + imgCount + "]", newFindResult.imgBase64());
-                }
-            }
-        }
     }
 
     public static String formatTimestamp(long timestamp) {

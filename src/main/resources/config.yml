@@ -1,5 +1,9 @@
 # 指令头
 command-prefix: "/"
+debug-command-suffix: "--debug"
+
+# Websocket服务器监听端口
+websocket-port: "ws://localhost:1111"
 
 # Debug 模式开关
 debug-mode: false

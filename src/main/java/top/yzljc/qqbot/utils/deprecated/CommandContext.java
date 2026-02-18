@@ -1,5 +1,9 @@
-package top.yzljc.qqbot.command;
+package top.yzljc.qqbot.utils.deprecated;
 
+/**
+ * @deprecated 旧版命令管理器，已废弃。请使用 {@link top.yzljc.qqbot.command.process.CommandSender} 和 {@link top.yzljc.qqbot.command.process.Command}替代
+ */
+@Deprecated(since = "2.6.1")
 public class CommandContext {
     private final String command;
     private final Long groupId;

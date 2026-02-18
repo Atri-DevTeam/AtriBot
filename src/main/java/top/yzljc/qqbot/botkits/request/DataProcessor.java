@@ -4,13 +4,14 @@ import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.message.MessageFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.command.*;
+import top.yzljc.qqbot.command.process.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.groups.GroupModeManager;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.feature.*;
-import top.yzljc.qqbot.feature.minecraft.specificserver.HBTPlayerData;
+import top.yzljc.qqbot.feature.minecraft.HypixelReward;
 import top.yzljc.qqbot.utils.FindRecall;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.utils.AutoAccept;
@@ -109,12 +110,11 @@ public class DataProcessor {
             return;
         }
 
+        HypixelReward.processMessage(json);
         CommandManager.processCommand(json);
         GroupModeManager.process(json);
         AnnoyUser.processMessage(json);
         MessageRecorder.processRecord(json);
-        SearchRelevant.processCommand(json);
-        HBTPlayerData.process(json);
         ServerRcon.processMessage(json);
 
         // 不是我管的群我查个集贸，浪费资源

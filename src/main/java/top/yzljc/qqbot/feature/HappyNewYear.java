@@ -1,8 +1,9 @@
-package top.yzljc.qqbot.feature.schedule;
+package top.yzljc.qqbot.feature;
 
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -21,17 +22,28 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HappyNewYear implements ExecuteCommand {
+/**
+ * 2026春节快乐
+ * 在未来的日子里，2027年春节到来之前，我们将以日历的方式进行推送
+ * “伊甸一号”，你可以休息了
+ */
+@Deprecated(since = "2.6.1")
+public class HappyNewYear implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(HappyNewYear.class);
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsDebug()){
-            sendToSingleGroup(ct.getGroupId());
-        }else{
-            sendToAllGroups();
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()){
+            sendToSingleGroup(sender.getGroupId());
+            return true;
         }
+        if (sender.isDebug()){
+            sendToAllGroups();
+        }else {
+            sendToSingleGroup(sender.getGroupId());
+        }
+        return true;
     }
 
     private static class ImageGen extends AbstractImage {

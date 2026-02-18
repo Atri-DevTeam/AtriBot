@@ -16,6 +16,7 @@ public enum ConfigFile {
     IMG_MOTD("manoyinxi.png"),
     IMG_GITHUB("github_background.png"),
     IMG_MOJANGSTATUS("mojangstatus.png"),
+    IMG_CALENDER("calendar.png"),
     IMG_MANOSABA("manosaba.png");
 
     private final String fileName;

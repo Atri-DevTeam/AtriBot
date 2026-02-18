@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -31,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.tools.FT;
 
-public class MinecraftNews implements ExecuteCommand {
+public class MinecraftNews implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
@@ -48,11 +49,14 @@ public class MinecraftNews implements ExecuteCommand {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsAdmin()) {
-            ThreadManager.execute(() -> checkNews(true));
-            MessageSender.sendGroupMessage(ct.getGroupId(), "正在手动检查 Minecraft 最新资讯...");
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()){
+            sender.reply("你没有权限执行此命令", false);
+            return true;
         }
+        ThreadManager.execute(() -> checkNews(true));
+        MessageSender.sendGroupMessage(sender.getGroupId(), "正在手动检查 Minecraft 最新资讯...");
+        return true;
     }
 
     public static void checkNews(boolean isManualTrigger) {

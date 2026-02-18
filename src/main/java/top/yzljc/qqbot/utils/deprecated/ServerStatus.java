@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.feature.minecraft;
+package top.yzljc.qqbot.utils.deprecated;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,15 +12,25 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
+import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.feature.minecraft.ServerStatusImage;
 
-public class ServerStatus implements ExecuteCommand {
+/**
+ * 无用的功能，已废弃
+ */
+@Deprecated(since = "2.6.1",forRemoval = true)
+public class ServerStatus implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(ServerStatus.class);
     private static final String SERVER_LIST = ConfigFile.SERVER_LIST.getFileName();
     private static final String ADMIN_FILE = ConfigFile.RCON_USER.getFileName();
+    static Settings settings = Config.getInstance();
+    private static final List<Long> adminIds = settings.getAdminUids();
 
     public static class ServerInfo {
         public long group_id;
@@ -118,49 +128,57 @@ public class ServerStatus implements ExecuteCommand {
     }
 
     @Override
-    public void execute(CommandContext ct) {
-        processModeChange(ct.getUserId(), ct.getGroupId(), ct.getRawMsg());
-    }
-
-    public static void processModeChange(long userId,long groupId, String message) {
-
-        String[] args = message.trim().split("\\s+");
-        if (args.length < 3) return;
-        String serverId = args[1];
-        String mode = args[2];
-        if (!("normal".equals(mode) || "maintenance".equals(mode))) return;
-        try {
-            List<ServerInfo> servers = loadServerList();
-            if (servers == null) return;
-            ServerInfo s = null;
-            for (ServerInfo si : servers) {
-                if (serverId.equals(si.id)) {
-                    s = si;
-                    break;
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length < 2) {
+            return false;
+        }
+        if (!(args[1].equalsIgnoreCase("normal") || args[1].equalsIgnoreCase("maintenance"))) {
+            return false;
+        }else{
+            String serverId = args[0];
+            String mode = args[1];
+            try {
+                List<ServerInfo> servers = loadServerList();
+                if (servers == null) {
+                    sender.reply("服务器列表加载失败，无法切换模式！", false);
+                    return true;
                 }
+                ServerInfo s = null;
+                for (ServerInfo si : servers) {
+                    if (serverId.equals(si.id)) {
+                        s = si;
+                        break;
+                    }
+                }
+                if (s == null) {
+                    sender.reply("未找到对应的服务器ID，无法切换模式！", false);
+                    return true;
+                }
+                if (!canAuth(sender.getUserId(), sender.getGroupId(), serverId)) {
+                    sender.reply("无操作权限！", false);
+                    return true;
+                }
+                s.server_mode = mode;
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.writerWithDefaultPrettyPrinter().writeValue(new File(SERVER_LIST), servers);
+                sender.reply("服务器 [" + s.name + "] 模式已切换为：" + mode, false);
+                return true;
+            } catch (Exception ex) {
+                log.error("管理指令处理出错: {}", ex.getMessage());
+                sender.reply("处理指令时发生错误: " + ex.getMessage(), false);
+                return true;
             }
-            if (s == null) return;
-            if (!canAuth(String.valueOf(userId), groupId, serverId)) {
-                MessageSender.sendGroupMessage(groupId, "无操作权限！", null);
-                return;
-            }
-            s.server_mode = mode;
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writerWithDefaultPrettyPrinter().writeValue(new File(SERVER_LIST), servers);
-            MessageSender.sendGroupMessage(groupId, "服务器 [" + s.name + "] 模式已切换为：" + mode, null);
-        } catch (Exception ex) {
-            log.error("管理指令处理出错: {}", ex.getMessage());
         }
     }
 
-    private static boolean canAuth(String userId, long groupId, String serverId) {
-        if ("3199590352".equals(userId)) return true;
+    private static boolean canAuth(long userId, long groupId, String serverId) {
+        if (adminIds.contains(userId)) return true;
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode arr = mapper.readTree(new File(ADMIN_FILE));
             for (JsonNode obj : arr) {
                 if (
-                        userId.equals(obj.path("user").asText())
+                        String.valueOf(userId).equals(obj.path("user").asText())
                                 && String.valueOf(groupId).equals(obj.path("group").asText())
                                 && serverId.equals(obj.path("server-id").asText())
                 ) return true;

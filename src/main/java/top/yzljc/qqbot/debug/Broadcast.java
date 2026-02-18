@@ -3,36 +3,49 @@ package top.yzljc.qqbot.debug;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.tools.FT;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.util.Set;
 
-public class Broadcast implements ExecuteCommand {
+public class Broadcast implements CommandExecutor {
     private static final Set<Long> GroupList = GetGroupList.fetchAllGroupIds();
     static Settings settings = Config.getInstance();
     private static final long DebugGroupId = settings.getDebugGroupId();
 
     @Override
-    public void execute(CommandContext ct) {
-        if (!ct.getIsAdmin()) return;
-        if (ct.getIsDebug()){
-            debugBroadcastRequest(ct.getRawMsg().substring(3).trim());
-        }else{
-            fecthToGroups(ct.getRawMsg().substring(3).trim());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()) {
+            sender.reply("你没有权限执行此命令", false);
+            return true;
         }
+        if (args.length < 1) {
+            return false;
+        }
+
+        if (sender.isDebug()) {
+            debugBroadcastRequest(String.join(" ", args));
+        } else {
+            debugBroadcastRequest(String.join(" ", args));
+            sender.reply("Debug: 这条消息本应是全局广播的", false);
+//            fecthToGroups(String.join(" ", args));
+        }
+        return true;
     }
 
-    private static void fecthToGroups(String message){
+    private static void fecthToGroups(String message) {
         for (long gid : GroupList) {
+            if (!GroupConfigManager.isFeatureEnabled(gid, "broadcast")) continue;
             ThreadManager.execute(() -> MessageSender.sendGroupMessage(gid, FT.unescape(message)));
         }
     }
 
-    private static void debugBroadcastRequest(String message){
+    private static void debugBroadcastRequest(String message) {
         MessageSender.sendGroupMessage(DebugGroupId, FT.unescape(message));
     }
 }

@@ -1,6 +1,5 @@
 package top.yzljc.qqbot.command;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
@@ -9,6 +8,9 @@ import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SearchRelevant {
-    private static final Pattern QUOTE_PATTERN = Pattern.compile("/search\\s+\"([^\"]+)\"(.*)");
+public class SearchRelevant implements CommandExecutor {
+    private static final Pattern QUOTE_PATTERN = Pattern.compile("\"([^\"]*)\"");
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)(?:,.*?)?]");
     private static final Pattern REPLY_PATTERN = Pattern.compile("\\[CQ:reply,id=(\\d+)(?:,.*?)?]");
     private static final Pattern IMAGE_PATTERN = Pattern.compile("\\[CQ:image,.*?]");
@@ -40,41 +42,57 @@ public class SearchRelevant {
     private record CachedNickname(String nick, long time) {
     }
 
-    public static void processCommand(JsonNode json) {
-        if (!json.has("message_type") || !"group".equals(json.path("message_type").asText())) return;
-        String rawMessage = json.path("raw_message").asText();
-        if (rawMessage == null || !rawMessage.startsWith("/search ")) return;
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            return false;
+        }
 
-        long groupId = json.path("group_id").asLong();
-        Matcher matcher = QUOTE_PATTERN.matcher(rawMessage);
+        String fullArgs = String.join(" ", args);
+
+        Matcher matcher = QUOTE_PATTERN.matcher(fullArgs);
         if (!matcher.find()) {
-            MessageSender.sendGroupMessage(groupId, "搜索格式错误。正确用法：/search \"关键词\" [-u QQ号] [-m p/a]");
-            return;
+            sender.reply("搜索格式错误。关键词必须使用双引号包裹，例如：/search \"关键词\"",false);
+            return true;
         }
 
         String keyword = matcher.group(1);
-        String paramsStr = matcher.group(2);
 
         if (SensitiveWordFilter.containsSensitiveWord(keyword) || isSqlKeywords(keyword)) {
-            MessageSender.sendGroupMessage(groupId, "搜索关键词不符合检索规则，拒绝执行!");
-            return;
+            sender.reply("搜索关键词不符合检索规则，拒绝执行!",false);
+            return true;
         }
+
+        String paramsStr = fullArgs.replace("\"" + keyword + "\"", "").trim();
 
         Long targetUserId = null;
         String mode = "a";
 
-        if (paramsStr != null && !paramsStr.trim().isEmpty()) {
-            String[] args = paramsStr.trim().split("\\s+");
-            for (int i = 0; i < args.length; i++) {
-                if ("-u".equals(args[i]) && i + 1 < args.length) {
-                    try { targetUserId = Long.parseLong(args[i + 1]); i++; } catch (NumberFormatException ignored) {}
-                } else if ("-m".equals(args[i]) && i + 1 < args.length) {
-                    String m = args[i + 1].toLowerCase();
-                    if ("p".equals(m) || "a".equals(m)) { mode = m; i++; }
+        if (!paramsStr.isEmpty()) {
+            String[] paramArgs = paramsStr.split("\\s+");
+
+            for (int i = 0; i < paramArgs.length; i++) {
+                String currentArg = paramArgs[i];
+
+                if ("-u".equals(currentArg) && i + 1 < paramArgs.length) {
+                    try {
+                        targetUserId = Long.parseLong(paramArgs[i + 1]);
+                        i++;
+                    } catch (NumberFormatException ignored) {}
+                }
+                else if ("-m".equals(currentArg) && i + 1 < paramArgs.length) {
+                    String m = paramArgs[i + 1].toLowerCase();
+                    if ("p".equals(m) || "a".equals(m)) {
+                        mode = m;
+                        i++;
+                    }
                 }
             }
         }
-        searchInDatabase(groupId, keyword, targetUserId, mode);
+
+        searchInDatabase(sender.getGroupId(), keyword, targetUserId, mode);
+
+        return true;
     }
 
     private static void searchInDatabase(long groupId, String keyword, Long targetUserId, String mode) {

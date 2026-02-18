@@ -4,7 +4,8 @@ import org.apache.commons.text.StringEscapeUtils;
 
 public class FT {
     /**
-     * 将文本中的HTML实体转换回原始字符
+     * @Author YZ_Ljc_
+     * @description 将文本中的HTML实体转换回原始字符
      * @param text 需要转换的文本
      * @return 转换后的文本
      */

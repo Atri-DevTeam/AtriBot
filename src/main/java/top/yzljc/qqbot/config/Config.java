@@ -42,6 +42,8 @@ public class Config implements Settings{
     private String githubWebhookSecret;
     private String wakeupImgLink;
     private String commandPrefix;
+    private String websocketUrl;
+    private String debugCommandSuffix;
 
     private Config() {
         load();
@@ -103,6 +105,8 @@ public class Config implements Settings{
                 this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 123456789L)).longValue();
                 this.httpUrl = (String) data.getOrDefault("napcat-data-url", "http://0.0.0.0:12345");
                 this.wakeupImgLink = (String) data.getOrDefault("wakeup-image-link", "null");
+                this.websocketUrl = (String) data.getOrDefault("websocket-url", "ws://locahost:1111");
+                this.debugCommandSuffix = (String) data.getOrDefault("debug-command-suffix", "--debug");
                 Object mysqlObj = data.get("mysql");
                 if (mysqlObj instanceof Map<?, ?> rawMap) {
                     Map<String, Object> mysqlConfig = new HashMap<>();
@@ -277,5 +281,15 @@ public class Config implements Settings{
     @Override
     public String getCommandPrefix() {
         return commandPrefix;
+    }
+
+    @Override
+    public String getWebsocketUrl() {
+        return websocketUrl;
+    }
+
+    @Override
+    public String getDebugCommandSuffix() {
+        return debugCommandSuffix;
     }
 }

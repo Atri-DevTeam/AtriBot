@@ -1,36 +1,25 @@
 package top.yzljc.qqbot.feature.minecraft;
 
 import top.yzljc.qqbot.botkits.image.DrawMotd;
-import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 
-public class Motd implements ExecuteCommand {
+public class Motd implements CommandExecutor {
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsEnabled()){
-            processCommand(ct.getGroupId(),ct.getRawMsg());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length != 1) {
+            return false;
         }
-    }
-
-    public static void processCommand(long groupId, String rawMessage) {
-        String trimmed = rawMessage.trim();
-        String[] parts = trimmed.split("\\s+", 2);
-        String arg = parts.length >= 2 ? parts[1].trim() : null;
-
-        if (arg == null || arg.isEmpty()) {
-            MessageSender.sendGroupMessage(groupId, "用法: /motd <ip>", null);
-            return;
-        }
-
-        DrawMotd.HostPort hp = DrawMotd.parseHostPort(arg);
+        String rawMessage = String.join(" ", args);
+        DrawMotd.HostPort hp = DrawMotd.parseHostPort(rawMessage);
         if (hp == null) {
-            MessageSender.sendGroupMessage(groupId, "无效地址，请使用 主机 或 主机:端口，如 mc.hypixel.net 或 mc.hypixel.net:12345");
-            return;
+            sender.reply("无效地址，请使用ip/ip:port的格式，如 mc.hypixel.net 或 mc.hypixel.net:12345", false);
+            return true;
         }
-
-        ThreadManager.execute(() -> DrawMotd.fetchAndSendMotd(groupId, hp));
+        ThreadManager.execute(() -> DrawMotd.fetchAndSendMotd(sender.getGroupId(), hp));
+        return true;
     }
 }

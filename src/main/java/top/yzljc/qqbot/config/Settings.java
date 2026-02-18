@@ -52,4 +52,8 @@ public interface Settings {
     String getWakeupImgLink();
 
     String getCommandPrefix();
+
+    String getWebsocketUrl();
+
+    String getDebugCommandSuffix();
 }

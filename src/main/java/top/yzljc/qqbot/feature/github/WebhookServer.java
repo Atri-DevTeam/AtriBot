@@ -9,8 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
@@ -24,9 +25,8 @@ import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.Executors;
 
-public class WebhookServer implements ExecuteCommand {
+public class WebhookServer implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
     public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
@@ -53,36 +53,18 @@ public class WebhookServer implements ExecuteCommand {
     }
 
     @Override
-    public void execute(CommandContext ct) {
-        String[] parts = ct.getCommand().split("\\s+");
-        long groupId = ct.getGroupId();
-
-        if (parts.length > 0 && "/update".equalsIgnoreCase(parts[0])) {
-            File imageFile = new File(TEMP_IMAGE_PATH);
-            if (imageFile.exists() && imageFile.isFile()) {
-                try {
-                    byte[] fileContent = Files.readAllBytes(imageFile.toPath());
-                    String base64 = Base64.getEncoder().encodeToString(fileContent);
-                    MessageSender.sendGroupMessage(groupId, "[GitHub] 最新一次推送详情：", base64);
-                } catch (IOException e) {
-                    log.error("Failed to read cached update image", e);
-                    MessageSender.sendGroupMessage(groupId, "获取更新详情失败，读取缓存错误。");
-                }
-            } else {
-                MessageSender.sendGroupMessage(groupId, "暂无最近的推送记录。");
-            }
-            return;
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()) {
+            sender.reply("你没有权限执行此命令", false);
+            return true;
         }
-
-        if (!ct.getIsAdmin()) return;
-
-        if (parts.length >= 3 && "/github".equalsIgnoreCase(parts[0])) {
-            String targetRepo = parts[1];
+        if (args.length > 1) {
+            String targetRepo = args[0];
             List<Long> targetGroupIds = new ArrayList<>();
 
             try {
-                for (int i = 2; i < parts.length; i++) {
-                    targetGroupIds.add(Long.parseLong(parts[i]));
+                for (int i = 1; i < args.length; i++) {
+                    targetGroupIds.add(Long.parseLong(args[i]));
                 }
 
                 synchronized (repoConfig) {
@@ -90,16 +72,16 @@ public class WebhookServer implements ExecuteCommand {
                     saveConfig();
                 }
 
-                MessageSender.sendGroupMessage(groupId, "配置成功！仓库 [" + targetRepo + "] 将仅推送到群: " + targetGroupIds);
-
+                sender.reply("配置成功！仓库 [" + targetRepo + "] 将仅推送到群: " + targetGroupIds, false);
             } catch (NumberFormatException e) {
-                MessageSender.sendGroupMessage(groupId, "指令错误：群号必须为数字。");
+                sender.reply("指令错误：群号必须为数字。", false);
             } catch (Exception e) {
                 log.warn("Failed to process /github command", e);
-                MessageSender.sendGroupMessage(groupId, "配置更新失败，发生内部错误。");
+                sender.reply("配置更新失败，发生内部错误。", false);
             }
+            return true;
         } else {
-            MessageSender.sendGroupMessage(groupId, "用法:\n1. /github <仓库名> <群号1> [群号2...]\n2. /update (查看最新推送)");
+            return false;
         }
     }
 

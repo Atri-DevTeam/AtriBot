@@ -17,7 +17,7 @@ public class SetProjectInfo {
         String buildTime = GetProjectInfo.getBuildTime();
         String version = GetProjectInfo.getVersion();
         Map<String, Object> projectInfo = new HashMap<>();
-        projectInfo.put("nickname","[" + commitId + "/" + branch + "] LavI LavI To-ya-ya");
+        projectInfo.put("nickname","ATRI - " + commitId);
         projectInfo.put("personal_note","Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version);
         projectInfo.put("sex","female");
         PostRequest.sendPost(RequestType.SET_PROFILE,projectInfo);

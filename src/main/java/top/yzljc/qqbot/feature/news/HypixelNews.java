@@ -8,8 +8,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -34,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.tools.FT;
 
-public class HypixelNews implements ExecuteCommand {
+public class HypixelNews implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(HypixelNews.class);
 
@@ -47,11 +48,14 @@ public class HypixelNews implements ExecuteCommand {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsAdmin()) {
-            ThreadManager.execute(() -> checkNews(true));
-            MessageSender.sendGroupMessage(ct.getGroupId(), "正在手动检查 Hypixel 官网资讯...");
+    public boolean onCommand(CommandSender sender, Command command,String label,String[] args){
+        if (!sender.isAdmin()) {
+            sender.reply("你没有权限执行此命令", false);
+            return true;
         }
+        ThreadManager.execute(() -> checkNews(true));
+        MessageSender.sendGroupMessage(sender.getGroupId(), "正在手动检查 Hypixel 官网资讯...");
+        return true;
     }
 
     public static void checkNews(boolean isManualTrigger) {

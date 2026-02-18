@@ -1,27 +1,35 @@
 package top.yzljc.qqbot.command;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
-public class Reboot implements ExecuteCommand {
+public class Reboot implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Reboot.class);
     static Settings settings = Config.getInstance();
     private static final long debugGroupId = settings.getDebugGroupId();
 
+
     @Override
-    public void execute(CommandContext ct) {
-        if (ct.getIsAdmin()){
-            processReboot(ct.getUserId(),ct.getGroupId());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.isAdmin()) {
+            sender.reply("你没有权限执行此命令",false);
+            return true;
         }
+
+        processReboot(sender.getUserId(), sender.getGroupId());
+
+        return true;
     }
 
     public static void processReboot(){
-        processReboot(0,debugGroupId);
+        processReboot(0, debugGroupId);
     }
 
     public static void processReboot(long userId, long groupId) {

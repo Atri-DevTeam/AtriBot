@@ -1,25 +1,23 @@
 package top.yzljc.qqbot.utils;
 
 import top.yzljc.qqbot.botkits.findinfo.GetProjectInfo;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.command.CommandContext;
-import top.yzljc.qqbot.command.ExecuteCommand;
+import top.yzljc.qqbot.botkits.tools.MT;
+import top.yzljc.qqbot.command.process.Command;
+import top.yzljc.qqbot.command.process.CommandExecutor;
+import top.yzljc.qqbot.command.process.CommandSender;
 
 /**
  * Bot 帮助/介绍信息
  */
-public class CommandHelp implements ExecuteCommand {
+public class AtriHelp implements CommandExecutor {
 
     @Override
-    public void execute(CommandContext ct) {
-        processHelp(ct.getGroupId());
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        sendHelpMenu(sender.getUserId(), sender.getGroupId(), sender.getMessageId());
+        return true;
     }
 
-    public static void processHelp(long groupId) {
-        sendHelpMenu(groupId);
-    }
-
-    private static void sendHelpMenu(long groupId) {
+    private static void sendHelpMenu(long userId,long groupId,long messageId) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("=== YZ_Ljc_ Bot 项目说明 ===\n\n");
@@ -34,7 +32,7 @@ public class CommandHelp implements ExecuteCommand {
         sb.append("● Hypixel/Minecraft 新闻自动检索推送\n");
         sb.append("● 发送 \"赞我\" 获取名片赞\n");
         sb.append("● 贴表情恶搞机制 (使用 /emj 查看)\n");
-        sb.append("● 新年倒计时推送\n");
+        sb.append("● 日历推送 (可用/calendar获取)\n");
         sb.append("● 发送 \"一言\" 获得随机一言\n");
         sb.append("● 每日 7 时发送起床表情包 [默认关闭]\n");
         sb.append("● 每日自动群打卡\n");
@@ -55,8 +53,7 @@ public class CommandHelp implements ExecuteCommand {
         String version = GetProjectInfo.getVersion();
         String buildInfo = "版本信息 -> Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version + "\n";
         sb.append(buildInfo);
-        sb.append("使用/update查看最新版本更新信息");
 
-        MessageSender.sendGroupMessage(groupId, sb.toString());
+        MT.replyMessage(userId,groupId,messageId,sb.toString());
     }
 }

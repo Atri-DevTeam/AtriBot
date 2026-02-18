@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.feature.minecraft.specificserver;
+package top.yzljc.qqbot.utils.deprecated;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +11,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.Executors;
 
 import java.net.URI;
 
@@ -19,6 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
+/**
+ * 没用
+ */
+@Deprecated(since = "2.6.1")
 public class HBTPlayerData {
 
     private static final Logger log = LoggerFactory.getLogger(HBTPlayerData.class);
