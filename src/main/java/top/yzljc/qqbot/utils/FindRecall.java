@@ -1,11 +1,11 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
-import top.yzljc.qqbot.botkits.findinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupName;
+import top.yzljc.qqbot.botkits.userinfo.GetUserName;
 import top.yzljc.qqbot.botkits.tools.FT;
 import top.yzljc.qqbot.botkits.tools.MM;
 import top.yzljc.qqbot.config.Config;

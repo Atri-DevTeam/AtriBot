@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 
 public class AutoSign implements CommandExecutor {
 

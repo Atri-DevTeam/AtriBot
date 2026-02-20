@@ -3,15 +3,17 @@ package top.yzljc.qqbot.command.process;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
 import top.yzljc.qqbot.command.Reboot;
 import top.yzljc.qqbot.command.RollbackMessages;
 import top.yzljc.qqbot.command.SearchRelevant;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigInfo;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.debug.Broadcast;
 import top.yzljc.qqbot.debug.RecallLastMsg;
+import top.yzljc.qqbot.feature.AnnoyUser;
 import top.yzljc.qqbot.feature.HappyNewYear;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.HypixelReward;
@@ -54,7 +56,8 @@ public class CommandManager {
         register("stats", new MessageStats(), "消息统计", "/stats 查询当日发言排行信息, /stats [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息", null, null);
         register("groupinfo", new GroupConfigInfo(), "查看群组配置", null, null, null);
         register("calendar", new Calendar(), "查看日历", null, null, "calendar");
-        register("help", new AtriHelp(), "显示帮助菜单", "/help [页码]", null, null);
+        register("atrihelp", new AtriHelp(), "显示帮助菜单", "/atrihelp", null, null);
+        register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [目标QQ]", null, "annoy_user");
     }
 
     /**
@@ -114,7 +117,7 @@ public class CommandManager {
         boolean executed = commandMap.dispatch(sender, commandContent);
         
         if (!executed) {
-            if (!adminUids.contains(sender.getUserId())) {
+            if (!adminUids.contains(sender.getUserId()) && GroupConfigManager.isFeatureEnabled(groupId,"help_tips")) {
                 sender.reply("未知命令,使用 /atrihelp 指令查看帮助",false);
             }
         }

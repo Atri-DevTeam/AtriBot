@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botkits.findinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetUserName;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;

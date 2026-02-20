@@ -44,6 +44,7 @@ public class Config implements Settings{
     private String commandPrefix;
     private String websocketUrl;
     private String debugCommandSuffix;
+    private String ttfFileName;
 
     private Config() {
         load();
@@ -128,6 +129,7 @@ public class Config implements Settings{
                 this.githubWebhookPort = (int) data.getOrDefault("github-webhook-port", 54321);
                 this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
                 this.commandPrefix = (String) data.getOrDefault("command-prefix", "/");
+                this.ttfFileName = (String) data.getOrDefault("ttf-file-name", "default.ttf");
 
                 this.ignoredUsers = new ArrayList<>();
                 Object ignoredUserObj = data.get("recall-ignore-user");
@@ -291,5 +293,10 @@ public class Config implements Settings{
     @Override
     public String getDebugCommandSuffix() {
         return debugCommandSuffix;
+    }
+
+    @Override
+    public String getTtfFileName() {
+        return ttfFileName;
     }
 }

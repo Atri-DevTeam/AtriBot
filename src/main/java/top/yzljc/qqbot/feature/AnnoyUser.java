@@ -5,11 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.command.process.*;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
@@ -17,30 +16,20 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
-public class AnnoyUser {
+public class AnnoyUser implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(AnnoyUser.class);
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String RECORD_FILE = ConfigFile.ANNOY_RECORD.getFileName();
     private static final Map<Long, Map<Long, AnnoyMode>> annoyMap = new ConcurrentHashMap<>();
     private static final Map<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
-
-    private static final ExecutorService EXECUTOR = new ThreadPoolExecutor(
-            Runtime.getRuntime().availableProcessors(),
-            200, // 最大并发
-            60L, TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
-            r -> {
-                Thread t = new Thread(r);
-                t.setName("Annoy-Worker-" + t.getId());
-                t.setDaemon(true);
-                return t;
-            }
-    );
 
     public enum AnnoyMode {
         NORMAL, MEDIUM, INSANE, ANIMATION;
@@ -61,6 +50,50 @@ public class AnnoyUser {
         loadRecord();
     }
 
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length < 1) {
+            return false;
+        }
+
+        String modeStr = args[0];
+        AnnoyMode mode = AnnoyMode.fromString(modeStr);
+
+        if (mode == null) {
+            sender.reply("❌ 模式错误！可用模式: normal, medium, insane, animation。\n再次输入相同模式可关闭。", false);
+            return true;
+        }
+
+        long targetId = sender.getUserId();
+
+        if (args.length >= 2) {
+            if (!sender.isAdmin()) {
+                sender.reply("❌ 只有管理员可以指定目标！", false);
+                return true;
+            }
+            try {
+                targetId = Long.parseLong(args[1]);
+            } catch (NumberFormatException e) {
+                sender.reply("❌ 目标QQ格式错误，请输入纯数字QQ号。", false);
+                return true;
+            }
+        }
+
+        long groupId = sender.getGroupId();
+        Map<Long, AnnoyMode> groupMap = annoyMap.get(groupId);
+        boolean isAlreadyInThisMode = (groupMap != null && groupMap.get(targetId) == mode);
+
+        if (isAlreadyInThisMode) {
+            removeAnnoy(groupId, targetId);
+            sender.reply("✅ 已关闭对 " + targetId + " 的 [" + mode + "] 模式。", false);
+        } else {
+            addAnnoy(groupId, targetId, mode);
+            sender.reply("😈 对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)", false);
+        }
+
+        return true;
+    }
+
     public static void processMessage(JsonNode json) {
         if (!"group".equals(json.path("message_type").asText())) return;
         long groupId = json.path("group_id").asLong();
@@ -69,21 +102,16 @@ public class AnnoyUser {
             return;
         }
 
-        long senderId = json.path("user_id").asLong();
-        String rawMsg = json.path("raw_message").asText("").trim();
+        // 移除原有的 startsWith("/emj") 判断，因为现在指令走 CommandManager
 
-        if (rawMsg.startsWith("/emj")) {
-            handleCommand(groupId, senderId, rawMsg, json);
-            return;
-        }
+        long senderId = json.path("user_id").asLong();
+        long botId = json.path("self_id").asLong();
+        if (senderId == botId) return;
 
         Map<Long, AnnoyMode> groupConfig = annoyMap.get(groupId);
         if (groupConfig == null || !groupConfig.containsKey(senderId)) {
             return;
         }
-
-        long botId = json.path("self_id").asLong();
-        if (senderId == botId) return;
 
         AnnoyMode mode = groupConfig.get(senderId);
         long msgId = json.path("message_id").asLong();
@@ -117,13 +145,11 @@ public class AnnoyUser {
                         break;
                 }
             } catch (Exception e) {
-                // 忽略被中断的异常
                 if (!(e instanceof InterruptedException)) {
                     log.error("Annoy execution error", e);
                 }
             } finally {
-                // 任务结束移除引用
-                runningTasks.remove(key, Thread.currentThread());
+                runningTasks.remove(key, Thread.currentThread()); // 只移除当前线程的引用
             }
         });
 
@@ -156,7 +182,7 @@ public class AnnoyUser {
         }
     }
 
-    private static void sendEmojis(long msgId, int count, boolean randomSelect) {
+    private static void sendEmojis(long msgId, int count, boolean randomSelect) throws InterruptedException {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         int[] emojis;
 
@@ -173,16 +199,11 @@ public class AnnoyUser {
         }
 
         for (int eid : emojis) {
-            if (Thread.currentThread().isInterrupted()) return;
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
             postEmoji(msgId, eid, true);
 
-            int delay = (count < 15) ? (200 + random.nextInt(200)) : 5;
-            try {
-                Thread.sleep(delay);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
+            int delay = (count < 15) ? (200 + random.nextInt(200)) : 50;
+            Thread.sleep(delay);
         }
     }
 
@@ -198,54 +219,10 @@ public class AnnoyUser {
         }
     }
 
-    private static void handleCommand(long groupId, long senderId, String rawMsg, JsonNode json) {
-        String[] parts = rawMsg.split("\\s+");
-        String modeStr = parts.length > 1 ? parts[1] : "";
-
-        long targetId = senderId;
-        if (parts.length > 2) {
-            if (!Config.getInstance().getAdminUids().contains(senderId)) {
-                return;
-            }
-            try {
-                targetId = Long.parseLong(parts[2]);
-            } catch (NumberFormatException e) {
-                targetId = parseAtTarget(json, targetId);
-            }
-        }
-
-        AnnoyMode mode = AnnoyMode.fromString(modeStr);
-        if (mode == null) {
-            MessageSender.sendGroupMessage(groupId, "指令错误。模式: normal, medium, insane, animation。\n再次输入相同模式可关闭。");
-            return;
-        }
-
-        Map<Long, AnnoyMode> groupMap = annoyMap.get(groupId);
-        boolean isAlreadyInThisMode = (groupMap != null && groupMap.get(targetId) == mode);
-
-        if (isAlreadyInThisMode) {
-            // 关闭逻辑
-            removeAnnoy(groupId, targetId);
-            MessageSender.sendGroupMessage(groupId, "已关闭对 " + targetId + " 的 [" + mode + "] 模式。");
-        } else {
-            // 开启/切换逻辑
-            addAnnoy(groupId, targetId, mode);
-            MessageSender.sendGroupMessage(groupId, "对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)");
-        }
-    }
-
-    private static long parseAtTarget(JsonNode json, long defaultId) {
-        for (JsonNode node : json.path("message")) {
-            if ("at".equals(node.path("type").asText())) {
-                try { return Long.parseLong(node.path("data").path("qq").asText()); }
-                catch (Exception e) { break; }
-            }
-        }
-        return defaultId;
-    }
+    // --- 数据存储 ---
 
     private static void addAnnoy(long groupId, long qq, AnnoyMode mode) {
-        annoyMap.computeIfAbsent(groupId, _ -> new ConcurrentHashMap<>()).put(qq, mode);
+        annoyMap.computeIfAbsent(groupId, k -> new ConcurrentHashMap<>()).put(qq, mode);
         saveRecord();
     }
 
@@ -254,7 +231,8 @@ public class AnnoyUser {
         if (group != null) {
             group.remove(qq);
             // 移除的同时，取消正在进行的任务
-            Future<?> f = runningTasks.remove(groupId + "_" + qq);
+            String key = groupId + "_" + qq;
+            Future<?> f = runningTasks.remove(key);
             if (f != null) f.cancel(true);
 
             if (group.isEmpty()) annoyMap.remove(groupId);

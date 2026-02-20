@@ -3,7 +3,7 @@ package top.yzljc.qqbot.command;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.findinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetUserName;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;

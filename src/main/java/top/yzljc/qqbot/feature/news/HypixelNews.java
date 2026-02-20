@@ -14,7 +14,7 @@ import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

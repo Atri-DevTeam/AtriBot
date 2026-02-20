@@ -12,7 +12,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -23,110 +23,108 @@ import java.util.regex.Pattern;
 public class CommitDisplay extends AbstractImage {
 
     private static final Logger log = LoggerFactory.getLogger(CommitDisplay.class);
-    private static Font CUSTOM_FONT;
-
-    static {
-        try {
-            File fontFile = new File("MinecraftAE.ttf");
-            if (fontFile.exists()) {
-                CUSTOM_FONT = Font.createFont(Font.TRUETYPE_FONT, fontFile);
-            }
-        } catch (Exception e) {
-            log.warn("自定义字体加载失败，将使用系统默认字体");
-        }
-    }
-
-    private Font getSmartFont(int style, float size) {
-        if (CUSTOM_FONT != null) {
-            return CUSTOM_FONT.deriveFont(style, size);
-        }
-        return new Font(Font.SANS_SERIF, style, (int) size);
-    }
 
     public String generateBase64(GithubPayload payload) {
         try {
             try {
                 initFromBackground(ConfigFile.IMG_GITHUB.getFileName());
-            } catch (IOException e) {
-                initBlank(900, 500);
+            } catch (Exception e) {
+                initBlank(1200, 700);
                 GradientPaint gp = new GradientPaint(0, 0, new Color(20, 23, 29), 0, height, new Color(10, 10, 10));
                 g.setPaint(gp);
                 g.fillRect(0, 0, width, height);
             }
 
-            int margin = 100;
-            int cardW = width - (margin * 2);
-            int cardH = height - (margin * 2);
+            int marginX = 40;
+            int cardW = width - (marginX * 2);
 
-            g.setColor(new Color(22, 27, 34, 210));
-            g.fill(new RoundRectangle2D.Float(margin, margin, cardW, cardH, 20, 20));
+            int card1Y = 30;
+            int card1H = 110;
 
-            g.setStroke(new BasicStroke(1.0f));
-            g.setColor(new Color(255, 255, 255, 40));
-            g.draw(new RoundRectangle2D.Float(margin, margin, cardW, cardH, 20, 20));
+            int card3H = 45;
+            int card3Y = height - 30 - card3H;
 
-            int padding = 35;
-            int startX = margin + padding;
-            int rightX = margin + cardW - padding;
-            int currentY = margin + padding + 10;
+            int gap = 20;
+            int card2Y = card1Y + card1H + gap;
+            int card2H = card3Y - gap - card2Y;
 
-            g.setFont(getSmartFont(Font.BOLD, 30));
-            g.setColor(new Color(230, 237, 243));
-            g.drawString(payload.repoName, startX, currentY);
+            Color cardBg = new Color(30, 35, 42, 210);
+            Color cardBorder = new Color(255, 255, 255, 30);
 
-            String shortHash = payload.hash.length() > 7 ? payload.hash.substring(0, 7) : payload.hash;
-            String hashText = "#" + shortHash;
-            g.setFont(getSmartFont(Font.PLAIN, 22));
-            g.setColor(new Color(139, 148, 158));
-            int hashW = g.getFontMetrics().stringWidth(hashText);
-            g.drawString(hashText, rightX - hashW, currentY);
+            g.setColor(cardBg);
+            g.fill(new RoundRectangle2D.Float(marginX, card1Y, cardW, card1H, 20, 20));
+            g.setColor(cardBorder);
+            g.draw(new RoundRectangle2D.Float(marginX, card1Y, cardW, card1H, 20, 20));
+            g.setColor(cardBg);
+            g.fill(new RoundRectangle2D.Float(marginX, card2Y, cardW, card2H, 20, 20));
+            g.setColor(cardBorder);
+            g.draw(new RoundRectangle2D.Float(marginX, card2Y, cardW, card2H, 20, 20));
+            g.setColor(cardBg);
+            g.fill(new RoundRectangle2D.Float(marginX, card3Y, cardW, card3H, 15, 15));
+            g.setColor(cardBorder);
+            g.draw(new RoundRectangle2D.Float(marginX, card3Y, cardW, card3H, 15, 15));
 
-            currentY += 45;
-            int avatarSize = 40;
-            drawAvatar(payload.avatarUrl, startX, currentY - 25, avatarSize);
+            int innerPaddingX = marginX + 30;
+            int rightAlignX = marginX + cardW - 30;
 
-            g.setFont(getSmartFont(Font.BOLD, 20));
+            int avatarSize = 76;
+            int avatarY = card1Y + (card1H - avatarSize) / 2;
+            drawAvatar(payload.avatarUrl, innerPaddingX, avatarY, avatarSize);
+
+            int textStartX = innerPaddingX + avatarSize + 25;
+            int nameBaselineY = avatarY + 32;
+            g.setFont(loadFont(Font.BOLD, 32));
             g.setColor(new Color(201, 209, 217));
-            g.drawString(payload.pusherName, startX + avatarSize + 15, currentY);
+            g.drawString(payload.pusherName, textStartX, nameBaselineY);
 
-
-            String branchText = "变动分支 " + payload.branch;
             int nameW = g.getFontMetrics().stringWidth(payload.pusherName);
-            g.setFont(getSmartFont(Font.PLAIN, 18));
+            String shortRepo = payload.repoName;
+            if (shortRepo != null && shortRepo.contains("/")) {
+                shortRepo = shortRepo.substring(shortRepo.lastIndexOf('/') + 1);
+            }
+            drawTag(shortRepo, textStartX + nameW + 15, nameBaselineY - 4, new Color(56, 139, 253, 180), loadFont(Font.BOLD, 22));
+
+            int branchBaselineY = nameBaselineY + 34;
+            g.setFont(loadFont(Font.PLAIN, 26));
             g.setColor(new Color(28, 219, 243));
-            g.drawString(branchText, startX + avatarSize + 15 + nameW + 15, currentY);
+            g.drawString("变动分支 " + payload.branch, textStartX, branchBaselineY);
+
+            String safeHash = payload.hash != null ? payload.hash : "";
+            String shortHash = safeHash.length() > 7 ? safeHash.substring(0, 7) : safeHash;
+            g.setFont(loadFont(Font.BOLD, 26));
+            g.setColor(new Color(139, 148, 158));
+            int hashW = g.getFontMetrics().stringWidth("#" + shortHash);
+            g.drawString("#" + shortHash, rightAlignX - hashW, nameBaselineY);
 
             String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
-            g.setFont(getSmartFont(Font.PLAIN, 18));
+            g.setFont(loadFont(Font.PLAIN, 24));
             g.setColor(new Color(139, 148, 158));
             int timeW = g.getFontMetrics().stringWidth(timeStr);
-            g.drawString(timeStr, rightX - timeW, currentY);
-
-            currentY += 30;
-            g.setColor(new Color(48, 54, 61));
-            g.drawLine(startX, currentY, rightX, currentY);
-
-            currentY += 45;
+            g.drawString(timeStr, rightAlignX - timeW, branchBaselineY);
 
             String cleanMessage = payload.message;
             if (cleanMessage != null) {
-                // 统一换行符
-                cleanMessage = cleanMessage.replace("\r\n", "\n");
-
-                // 暴力替换：将所有反斜杠 \ 替换为空格
-                cleanMessage = cleanMessage.replace("\\", " ");
-
-                // 暴力替换：将所有双引号 " 替换为空格
-                // 这样 "数字 \"2\"" 就会变成 "数字  2 "，彻底避免截断风险
-                cleanMessage = cleanMessage.replace("\"", " ");
+                cleanMessage = cleanMessage.replace("\r\n", "\n").replace("\\", " ").replace("\"", " ");
             }
 
-            int bodyStartY = drawCommitTitle(cleanMessage, startX, currentY);
+            int titleBaselineY = card2Y + 50;
+            int bodyStartY = drawCommitTitle(cleanMessage, innerPaddingX, titleBaselineY);
+            int statsBaselineY = card2Y + card2H - 25;
+            int maxBodyY = statsBaselineY - 35;
 
-            drawCommitBody(cleanMessage, startX, bodyStartY + 35, cardH - 180);
+            drawCommitBody(cleanMessage, innerPaddingX, bodyStartY + 50, maxBodyY);
 
-            int bottomY = margin + cardH - 25;
-            drawStats(payload, rightX, bottomY);
+            drawStats(payload, rightAlignX, statsBaselineY);
+
+            String copyRightText = "Copyrights © 2026 YZ_Ljc_. All Rights Reserved.";
+            g.setFont(loadFont(Font.BOLD, 20));
+            g.setColor(new Color(200, 205, 210));
+            FontMetrics copyFm = g.getFontMetrics();
+            int copyW = copyFm.stringWidth(copyRightText);
+            int copyX = marginX + (cardW - copyW) / 2;
+            int copyY = card3Y + (card3H / 2) + (copyFm.getAscent() / 2) - 3; // 绝对居中算法
+            g.drawString(copyRightText, copyX, copyY);
+
 
             if (g != null) g.dispose();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -134,7 +132,7 @@ public class CommitDisplay extends AbstractImage {
             return Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("生成 Github Commit 图片失败", e);
             return null;
         }
     }
@@ -147,22 +145,20 @@ public class CommitDisplay extends AbstractImage {
         Matcher matcher = pattern.matcher(firstLine);
 
         int currentX = x;
-        Font tagFont = getSmartFont(Font.BOLD, 16);
-        Font titleFont = getSmartFont(Font.BOLD, 24);
+        Font tagFont = loadFont(Font.BOLD, 22);
+        Font titleFont = loadFont(Font.BOLD, 30);
 
         if (matcher.find()) {
             String type = matcher.group(1);
             String scope = matcher.group(2);
             String subject = matcher.group(3);
 
-            // Type Tag
             int typeW = drawTag(type.toUpperCase(), currentX, y, getTypeColor(type), tagFont);
-            currentX += typeW + 12;
+            currentX += typeW + 15;
 
-            // Scope Tag
             if (scope != null) {
                 int scopeW = drawTag(scope.toUpperCase(), currentX, y, new Color(56, 139, 253), tagFont);
-                currentX += scopeW + 12;
+                currentX += scopeW + 15;
             }
 
             g.setFont(titleFont);
@@ -176,75 +172,71 @@ public class CommitDisplay extends AbstractImage {
         return y;
     }
 
-    private void drawCommitBody(String cleanMsg, int x, int y, int maxHeight) {
+    private void drawCommitBody(String cleanMsg, int x, int y, int maxY) {
         if (cleanMsg == null || cleanMsg.isEmpty()) return;
 
         String[] allLines = cleanMsg.split("\n");
+        if (allLines.length < 2) return;
 
-        if (allLines.length < 2) {
-            return;
-        }
-
-        g.setFont(getSmartFont(Font.PLAIN, 20));
+        g.setFont(loadFont(Font.PLAIN, 26));
         g.setColor(new Color(160, 165, 170));
 
-        int lineHeight = 28;
+        int lineHeight = 38;
         int currentY = y;
 
         for (int i = 1; i < allLines.length; i++) {
             String line = allLines[i];
 
-            if (currentY > maxHeight + y) {
-                g.drawString("...", x, currentY);
+            if (currentY + lineHeight > maxY && i < allLines.length - 1) {
+                g.drawString(line + " ...", x, currentY);
+                break;
+            } else if (currentY > maxY) {
                 break;
             }
+
             g.drawString(line, x, currentY);
             currentY += lineHeight;
         }
     }
 
     private void drawStats(GithubPayload payload, int rightX, int baselineY) {
-        g.setFont(getSmartFont(Font.BOLD, 22));
+        g.setFont(loadFont(Font.BOLD, 24));
+        FontMetrics fm = g.getFontMetrics();
 
         String removed = "-" + payload.removedCount;
         String added = "+" + payload.addedCount;
         String files = payload.changedFilesCount + " files changed";
 
+        int remW = fm.stringWidth(removed);
+        int addW = fm.stringWidth(added);
+        int fileW = fm.stringWidth(files);
+
+        int currentX = rightX - remW;
         g.setColor(new Color(248, 81, 73));
-        int remW = g.getFontMetrics().stringWidth(removed);
-        g.drawString(removed, rightX - remW, baselineY);
+        g.drawString(removed, currentX, baselineY);
 
+        currentX -= (addW + 10);
         g.setColor(new Color(63, 185, 80));
-        int addW = g.getFontMetrics().stringWidth(added);
-        g.drawString(added, rightX - remW - 10 - addW, baselineY);
+        g.drawString(added, currentX, baselineY);
 
+        currentX -= (fileW + 15);
         g.setColor(new Color(139, 148, 158));
-        int totalW = remW + 10 + addW + 15 + g.getFontMetrics().stringWidth(files);
-        int startX = rightX - totalW;
-
-        g.setColor(new Color(139, 148, 158));
-        g.drawString(files, startX, baselineY);
-
-        int fileW = g.getFontMetrics().stringWidth(files);
-        g.setColor(new Color(63, 185, 80));
-        g.drawString(added, startX + fileW + 15, baselineY);
-        g.setColor(new Color(248, 81, 73));
-        g.drawString(removed, startX + fileW + 15 + addW + 10, baselineY);
+        g.drawString(files, currentX, baselineY);
     }
 
     private int drawTag(String text, int x, int y, Color bg, Font font) {
         g.setFont(font);
         FontMetrics fm = g.getFontMetrics();
-        int w = fm.stringWidth(text) + 16;
-        int h = 26;
-        int rectY = y - 20;
+        int w = fm.stringWidth(text) + 20;
+        int h = fm.getHeight() + 8;
+        int rectY = y - fm.getAscent() - 4;
 
         g.setColor(bg);
-        g.fillRoundRect(x, rectY, w, h, 8, 8);
+        g.fillRoundRect(x, rectY, w, h, 10, 10);
 
         g.setColor(Color.WHITE);
         int textX = x + (w - fm.stringWidth(text)) / 2;
-        g.drawString(text, textX, y - 1);
+        g.drawString(text, textX, y);
         return w;
     }
 
@@ -268,15 +260,15 @@ public class CommitDisplay extends AbstractImage {
     private Color getTypeColor(String type) {
         if (type == null) return Color.GRAY;
         return switch (type.toUpperCase()) {
-            case "FEAT" -> new Color(35, 134, 54); // Green
-            case "FIX" -> new Color(218, 54, 51); // Red
-            case "TO" -> new Color(137, 87, 229); // Purple
-            case "DOCS" -> new Color(31, 111, 235); // Blue
-            case "STYLE" -> new Color(210, 153, 34); // Yellow
-            case "REFACTOR" -> new Color(247, 129, 102); // Orange
-            case "PERF" -> new Color(56, 219, 131); // Cyan
-            case "TEST" -> new Color(106, 115, 125); // Gray
-            case "CHORE" -> new Color(149, 157, 165); // Light Gray
+            case "FEAT" -> new Color(35, 134, 54);
+            case "FIX" -> new Color(218, 54, 51);
+            case "TO" -> new Color(137, 87, 229);
+            case "DOCS" -> new Color(31, 111, 235);
+            case "STYLE" -> new Color(210, 153, 34);
+            case "REFACTOR" -> new Color(247, 129, 102);
+            case "PERF" -> new Color(56, 219, 131);
+            case "TEST" -> new Color(106, 115, 125);
+            case "CHORE" -> new Color(149, 157, 165);
             case "MERGE" -> new Color(110, 84, 148);
             default -> new Color(110, 118, 129);
         };

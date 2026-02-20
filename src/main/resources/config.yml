@@ -2,6 +2,9 @@
 command-prefix: "/"
 debug-command-suffix: "--debug"
 
+# 根目录中字体的名字
+ttf-file-name: "default.ttf"
+
 # Websocket服务器监听端口
 websocket-port: "ws://localhost:1111"
 

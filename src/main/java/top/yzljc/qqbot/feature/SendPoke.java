@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 

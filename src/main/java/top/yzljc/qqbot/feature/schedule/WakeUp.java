@@ -10,7 +10,7 @@ import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 
 import java.util.Set;
 

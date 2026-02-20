@@ -56,4 +56,6 @@ public interface Settings {
     String getWebsocketUrl();
 
     String getDebugCommandSuffix();
+
+    String getTtfFileName();
 }

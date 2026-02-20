@@ -2,6 +2,8 @@ package top.yzljc.qqbot.botkits.image;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Settings;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -15,14 +17,13 @@ import java.io.InputStream;
  * 负责管理 Graphics2D 生命周期、字体加载、抗锯齿和通用绘图方法
  */
 public abstract class AbstractImage {
-
+    static Settings settings = Config.getInstance();
+    private static final String DEFAULT_FONT = settings.getTtfFileName();
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected BufferedImage image;
     protected Graphics2D g;
     protected int width;
     protected int height;
-
-    private static final String DEFAULT_FONT = "MinecraftAE.ttf";
 
     /**
      * 初始化：从现有背景图片加载
@@ -86,13 +87,22 @@ public abstract class AbstractImage {
 
     protected Font loadFont(int style, float size) {
         File fontFile = new File(DEFAULT_FONT);
-        if (fontFile.exists()) {
+        if (fontFile.exists() && fontFile.isFile()) {
             try {
                 return Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(style, size);
             } catch (Exception e) {
-                log.warn("自定义字体加载失败，使用默认字体", e);
+                log.warn("根目录自定义字体加载失败，尝试从 Resource 目录加载...", e);
             }
         }
+
+        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream("DefaultFont.ttf")) {
+            if (resourceStream != null) {
+                return Font.createFont(Font.TRUETYPE_FONT, resourceStream).deriveFont(style, size);
+            }
+        } catch (Exception e) {
+            log.warn("Resource 目录自定义字体加载失败", e);
+        }
+
         return new Font(Font.SANS_SERIF, style, (int) size);
     }
 

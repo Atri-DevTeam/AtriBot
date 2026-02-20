@@ -3,7 +3,7 @@ package top.yzljc.qqbot.config.groups;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 import top.yzljc.qqbot.config.Config;
 
 import java.io.File;

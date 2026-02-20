@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.config.groups;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.findinfo.GetGroupName;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupName;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;

@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.botkits.request;
 
-import top.yzljc.qqbot.botkits.findinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
 import top.yzljc.qqbot.botkits.message.MessageFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
-import top.yzljc.qqbot.command.*;
+import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.command.process.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -40,7 +40,7 @@ public class DataProcessor {
         long groupId = json.path("group_id").asLong();
         String rawMessage = json.path("raw_message").asText();
 
-        if ("message".equals(postType) && "group".equals(messageType)) {
+        if ("message".equals(postType)) {
             JsonNode msgData = json.path("message");
             LinkedList<Map<String, Object>> messageContent = new LinkedList<>();
 
@@ -79,8 +79,19 @@ public class DataProcessor {
                 msgList.put("data", rawMsgData);
                 messageContent.add(msgList);
             }
+            if ("private".equals(messageType)) {
+                Map<String,Object> atAdmin = new HashMap<>();
+                Map<String,Object> notifyText = new HashMap<>();
+                atAdmin.put("type", "at");
+                atAdmin.put("data", Map.of("qq", userId));
+                notifyText.put("type", "text");
+                notifyText.put("data", Map.of("text", "收到私聊消息: " ));
+                messageContent.addFirst(notifyText);
+                messageContent.addFirst(atAdmin);
+                MessageSender.sendGroupData(settings.getDebugGroupId(), messageContent);
+            }
             // 复读机消息拦截
-            if (GroupConfigManager.isFeatureEnabled(groupId, "repeat_msg")) {
+            if (GroupConfigManager.isFeatureEnabled(groupId, "repeat_msg") && "group".equals(messageType)) {
                 AutoRepeat.repeatGroupData(groupId, messageContent);
             }
         }

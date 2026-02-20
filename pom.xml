@@ -93,6 +93,24 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>png</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>jpg</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>jpeg</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>gif</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
@@ -104,7 +122,7 @@
                 </configuration>
             </plugin>
 
-            <!-- 新增插件: 自动获取Git信息并打包进Jar -->
+            <!-- 自动获取Git信息并打包进Jar -->
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
@@ -136,6 +154,27 @@
                         <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
                         <includeOnlyProperty>^git.branch$</includeOnlyProperty>
                     </includeOnlyProperties>
+                </configuration>
+            </plugin>
+
+            <!-- 生成 Javadoc 网页（官方既视感），输出到根目录 api-doc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <!-- 输出到根目录 api-doc，打开 index.html 即 Javadoc 既视感 -->
+                    <reportOutputDirectory>${project.basedir}/api-doc</reportOutputDirectory>
+                    <destDir>.</destDir>
+                    <encoding>UTF-8</encoding>
+                    <docencoding>UTF-8</docencoding>
+                    <charset>UTF-8</charset>
+                    <!-- 只生成 bot 包，避免扫到太多无关类 -->
+                    <subpackages>top.yzljc.qqbot</subpackages>
+                    <!-- 源码里没写注释也不报错，照样生成方法/参数列表 -->
+                    <doclint>none</doclint>
+                    <show>public</show>
+                    <nohelp>true</nohelp>
                 </configuration>
             </plugin>
 

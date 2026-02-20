@@ -6,6 +6,7 @@ import top.yzljc.qqbot.command.Reboot;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.feature.schedule.*;
+import top.yzljc.qqbot.utils.draft.Scratch;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ public class RunScheduleTask {
         scheduleDailyTask(ManosabaDate::sendAndNotifyToGroup, 0, 0, 10);
         // scheduleDailyTask(HappyNewYear::sendToAllGroups, 0, 0, 11);
         scheduleDailyTask(Calendar::sendToAllGroups, 0, 0, 25);
+        scheduleDailyTask(Scratch::scheduledAutoLike,0,2,0);
 
         // 每天 23:59:45
         scheduleDailyTask(MessageStats::autoReportAllGroups, 23, 59, 45);

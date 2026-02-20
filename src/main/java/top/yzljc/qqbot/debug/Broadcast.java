@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.debug;
 
-import top.yzljc.qqbot.botkits.findinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.command.process.Command;

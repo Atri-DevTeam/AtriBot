@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botkits.tools.MT;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -29,8 +30,6 @@ public class CheckBilibili {
     static Settings settings = Config.getInstance();
     private static final String SESSDATA = settings.getBilibiliCookie();
 
-    private static final String FAKE_UIN = "3614865692";
-    private static final String FAKE_NAME = "YZ_Ljc_";
     private static String LAST_BVID = "";
     private static long LAST_GROUP = 0;
     private static final Pattern PATTERN_BV = Pattern.compile("BV[a-zA-Z0-9]{10}");
@@ -170,6 +169,10 @@ public class CheckBilibili {
 
                 if (statRoot != null && statRoot.path("code").asInt() == 0) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
+                    if (totalViews <= 0) {
+                        MT.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
+                    }
                 } else {
                     log.warn("[Bili Up Stat] Failed to get view count: API returned error/no-auth");
                 }
@@ -197,43 +200,11 @@ public class CheckBilibili {
     }
 
     private static Map<String, Object> createTextNode(String text) {
-        Map<String, Object> node = new HashMap<>();
-        node.put("type", "node");
-        Map<String, Object> data = new HashMap<>();
-        data.put("uin", FAKE_UIN);
-        data.put("name", FAKE_NAME);
-
-        List<Map<String, Object>> contentList = new ArrayList<>();
-        Map<String, Object> textItem = new HashMap<>();
-        textItem.put("type", "text");
-        Map<String, Object> textData = new HashMap<>();
-        textData.put("text", text);
-        textItem.put("data", textData);
-        contentList.add(textItem);
-
-        data.put("content", contentList);
-        node.put("data", data);
-        return node;
+        return MT.createTextNode(text);
     }
 
     private static Map<String, Object> createImageNode(String url) {
-        Map<String, Object> node = new HashMap<>();
-        node.put("type", "node");
-        Map<String, Object> data = new HashMap<>();
-        data.put("uin", FAKE_UIN);
-        data.put("name", FAKE_NAME);
-
-        List<Map<String, Object>> contentList = new ArrayList<>();
-        Map<String, Object> imgItem = new HashMap<>();
-        imgItem.put("type", "image");
-        Map<String, Object> imgData = new HashMap<>();
-        imgData.put("file", url);
-        imgItem.put("data", imgData);
-        contentList.add(imgItem);
-
-        data.put("content", contentList);
-        node.put("data", data);
-        return node;
+        return MT.createImageNode(url);
     }
 
     private static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String title) {

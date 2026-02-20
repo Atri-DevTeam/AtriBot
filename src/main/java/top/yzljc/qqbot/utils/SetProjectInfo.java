@@ -2,7 +2,7 @@ package top.yzljc.qqbot.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.findinfo.GetProjectInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetProjectInfo;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 
@@ -17,7 +17,7 @@ public class SetProjectInfo {
         String buildTime = GetProjectInfo.getBuildTime();
         String version = GetProjectInfo.getVersion();
         Map<String, Object> projectInfo = new HashMap<>();
-        projectInfo.put("nickname","ATRI - " + commitId);
+        projectInfo.put("nickname","ATRI - " + commitId + " - /atrihelp查看帮助");
         projectInfo.put("personal_note","Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version);
         projectInfo.put("sex","female");
         PostRequest.sendPost(RequestType.SET_PROFILE,projectInfo);
