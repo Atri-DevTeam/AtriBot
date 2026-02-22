@@ -11,10 +11,13 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.List;
 import java.util.Base64;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.HttpRequest;
+import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botkits.tools.RM;
 import top.yzljc.qqbot.config.ConfigFile;
 
 public class DrawMotd {
@@ -94,7 +97,10 @@ public class DrawMotd {
             if (tmpFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tmpFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                MessageSender.sendGroupMessage(groupId, null, base64Img);
+                long msgID = MessageSender.sendGroupMessageGetId(groupId, null, base64Img);
+                ThreadManager.schedule(() -> {
+                    RM.recallMsg(msgID);
+                },60, TimeUnit.SECONDS);
                 log.info("MOTD 图片已发送 -> 群: {}, 地址: {}:{}", groupId, hp.host, hp.port);
             }
         } catch (Exception e) {

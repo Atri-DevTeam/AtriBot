@@ -9,12 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.command.process.Command;
 import top.yzljc.qqbot.command.process.CommandExecutor;
 import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -28,7 +28,7 @@ import java.util.*;
 public class WebhookServer implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
-    public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
+    public static final Set<Long> TARGET_GROUPS = GetGroupInfo.fetchAllGroupIds();
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String CONFIG_FILE_PATH = ConfigFile.GITHUB_REPOSITORY.getFileName();
     private static final Map<String, List<Long>> repoConfig = new HashMap<>();

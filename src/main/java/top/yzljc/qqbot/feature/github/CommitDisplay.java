@@ -11,8 +11,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -122,11 +120,9 @@ public class CommitDisplay extends AbstractImage {
             FontMetrics copyFm = g.getFontMetrics();
             int copyW = copyFm.stringWidth(copyRightText);
             int copyX = marginX + (cardW - copyW) / 2;
-            int copyY = card3Y + (card3H / 2) + (copyFm.getAscent() / 2) - 3; // 绝对居中算法
+            int copyY = card3Y + (card3H / 2) + (copyFm.getAscent() / 2) - 3;
             g.drawString(copyRightText, copyX, copyY);
 
-
-            if (g != null) g.dispose();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(image, "png", baos);
             return Base64.getEncoder().encodeToString(baos.toByteArray());
@@ -134,6 +130,15 @@ public class CommitDisplay extends AbstractImage {
         } catch (Exception e) {
             log.error("生成 Github Commit 图片失败", e);
             return null;
+        } finally {
+            if (g != null) {
+                g.dispose();
+                g = null;
+            }
+            if (image != null) {
+                image.flush();
+                image = null;
+            }
         }
     }
 
@@ -145,6 +150,7 @@ public class CommitDisplay extends AbstractImage {
         Matcher matcher = pattern.matcher(firstLine);
 
         int currentX = x;
+        // 因为父类 AbstractImage 已经全局缓存了字体，这里直接调用 loadFont(..) 非常快，不会有性能问题
         Font tagFont = loadFont(Font.BOLD, 22);
         Font titleFont = loadFont(Font.BOLD, 30);
 
@@ -241,8 +247,9 @@ public class CommitDisplay extends AbstractImage {
     }
 
     private void drawAvatar(String url, int x, int y, int size) {
+        BufferedImage img = null;
         try {
-            BufferedImage img = ImageIO.read(new URI(url).toURL());
+            img = ImageIO.read(new URI(url).toURL());
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setClip(new Ellipse2D.Float(x, y, size, size));
             g.drawImage(img, x, y, size, size, null);
@@ -252,8 +259,13 @@ public class CommitDisplay extends AbstractImage {
             g.setStroke(new BasicStroke(1.5f));
             g.drawOval(x, y, size, size);
         } catch (Exception e) {
+            g.setClip(null);
             g.setColor(new Color(40, 40, 40));
             g.fillOval(x, y, size, size);
+        } finally {
+            if (img != null) {
+                img.flush();
+            }
         }
     }
 

@@ -25,6 +25,12 @@ public abstract class AbstractImage {
     protected int width;
     protected int height;
 
+    private static Font BASE_FONT = null;
+
+    static {
+        ImageIO.setUseCache(false);
+    }
+
     /**
      * 初始化：从现有背景图片加载
      */
@@ -86,24 +92,34 @@ public abstract class AbstractImage {
     }
 
     protected Font loadFont(int style, float size) {
-        File fontFile = new File(DEFAULT_FONT);
-        if (fontFile.exists() && fontFile.isFile()) {
-            try {
-                return Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(style, size);
-            } catch (Exception e) {
-                log.warn("根目录自定义字体加载失败，尝试从 Resource 目录加载...", e);
+        if (BASE_FONT == null) {
+            synchronized (AbstractImage.class) {
+                if (BASE_FONT == null) {
+                    try {
+                        File fontFile = new File(DEFAULT_FONT);
+                        if (fontFile.exists() && fontFile.isFile()) {
+                            BASE_FONT = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+                            log.info("成功加载根目录自定义字体: {}", DEFAULT_FONT);
+                        } else {
+                            try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream("DefaultFont.ttf")) {
+                                if (resourceStream != null) {
+                                    BASE_FONT = Font.createFont(Font.TRUETYPE_FONT, resourceStream);
+                                    log.info("成功加载 Resource 目录自定义字体");
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("自定义字体加载失败，降级为系统默认字体", e);
+                    }
+
+                    if (BASE_FONT == null) {
+                        BASE_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
+                    }
+                }
             }
         }
 
-        try (InputStream resourceStream = getClass().getClassLoader().getResourceAsStream("DefaultFont.ttf")) {
-            if (resourceStream != null) {
-                return Font.createFont(Font.TRUETYPE_FONT, resourceStream).deriveFont(style, size);
-            }
-        } catch (Exception e) {
-            log.warn("Resource 目录自定义字体加载失败", e);
-        }
-
-        return new Font(Font.SANS_SERIF, style, (int) size);
+        return BASE_FONT.deriveFont(style, size);
     }
 
     /**
@@ -129,13 +145,20 @@ public abstract class AbstractImage {
      * 保存并释放资源
      */
     public void saveAndDispose(File outFile) throws IOException {
-        if (g != null) {
-            g.dispose();
-        }
-        ImageIO.write(image, "png", outFile);
-        if (!outFile.exists() || outFile.length() == 0) {
-            throw new IOException("图片保存失败: " + outFile.getAbsolutePath());
+        try {
+            if (g != null) {
+                g.dispose();
+            }
+            ImageIO.write(image, "png", outFile);
+            if (!outFile.exists() || outFile.length() == 0) {
+                throw new IOException("图片保存失败: " + outFile.getAbsolutePath());
+            }
+        } finally {
+            if (image != null) {
+                image.flush();
+                image = null; // 切断引用，帮助 GC 回收
+            }
+            g = null;
         }
     }
-
 }

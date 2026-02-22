@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botkits.userinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
@@ -209,7 +209,7 @@ public class MessageStats implements CommandExecutor {
             }
             nicknameCache.remove(userId);
 
-            String nick = GetUserName.getUserName(userId);
+            String nick = GetUserInfo.getUserName(userId);
 
             if (nick == null) return null;
 

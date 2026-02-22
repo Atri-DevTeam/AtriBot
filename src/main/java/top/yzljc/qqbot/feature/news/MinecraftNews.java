@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.command.process.Command;
 import top.yzljc.qqbot.command.process.CommandExecutor;
 import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -44,7 +44,7 @@ public class MinecraftNews implements CommandExecutor {
     private static final String HISTORY_FILE = ConfigFile.MINECRAFT_NEWS.getFileName();
     private static final String BASE_URL = "https://www.minecraft.net";
 
-    public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
+    public static final Set<Long> TARGET_GROUPS = GetGroupInfo.fetchAllGroupIds();
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
 

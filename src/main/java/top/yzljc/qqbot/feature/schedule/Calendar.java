@@ -2,7 +2,7 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
@@ -14,12 +14,10 @@ import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -152,8 +150,7 @@ public class Calendar implements CommandExecutor {
 
             drawOutlinedText(g2d, "图片PixivID: 138888613", g2d.getFont(), 15, height - 15, wmColor);
 
-            g2d.dispose();
-            ImageIO.write((BufferedImage) image, "png", outFile);
+            saveAndDispose(outFile);
         }
 
         private void drawOutlinedText(Graphics2D g, String text, Font font, int x, int y, Color color) {
@@ -343,7 +340,7 @@ public class Calendar implements CommandExecutor {
                 generateDevelopDayImage();
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                for (long gid : GetGroupList.fetchAllGroupIds()) {
+                for (long gid : GetGroupInfo.fetchAllGroupIds()) {
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
                     MessageSender.sendGroupMessage(gid, null, base64Img);
                 }

@@ -14,7 +14,7 @@ import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,7 +42,7 @@ public class HypixelNews implements CommandExecutor {
     private static final String NEWS_URL = "https://hypixel.net/forums/news-and-announcements.4/";
     private static final String ARTICLE_BASE = "https://hypixel.net";
     private static final String HISTORY_FILE = ConfigFile.HYPIXEL_NEWS.getFileName();
-    public static final Set<Long> TARGET_GROUPS = GetGroupList.fetchAllGroupIds();
+    public static final Set<Long> TARGET_GROUPS = GetGroupInfo.fetchAllGroupIds();
 
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();

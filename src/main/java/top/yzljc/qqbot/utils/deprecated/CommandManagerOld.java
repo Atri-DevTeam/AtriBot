@@ -3,7 +3,7 @@ package top.yzljc.qqbot.utils.deprecated;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -19,7 +19,7 @@ public class CommandManagerOld {
     private static final Logger log = LoggerFactory.getLogger(CommandManagerOld.class);
     private static final Settings settings = Config.getInstance();
     private static final String COMMAND_PREFIX = settings.getCommandPrefix();
-    private static final long BOT_QQ = GetBotInfo.getBotId();
+    private static final long BOT_QQ = GetUserInfo.getBotId();
     private static final String DEBUG_SUFFIX = "--debug";
 
     private static final Map<String, ExecuteCommand> commands = new HashMap<>();
@@ -66,7 +66,7 @@ public class CommandManagerOld {
         String rawMessage = json.path("raw_message").asText("").trim();
         long groupId = json.path("group_id").asLong();
         long userId = json.path("user_id").asLong();
-        if (userId == GetBotInfo.getBotId()) return;
+        if (userId == GetUserInfo.getBotId()) return;
         boolean isAdmin = settings.getAdminUids().contains(userId);
         boolean isAtBot = rawMessage.contains("[CQ:at,qq=" + BOT_QQ + "]");
         boolean isDebug = false;

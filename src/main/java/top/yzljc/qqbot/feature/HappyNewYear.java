@@ -7,7 +7,7 @@ import top.yzljc.qqbot.command.process.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
 
 import java.awt.*;
@@ -142,7 +142,7 @@ public class HappyNewYear implements CommandExecutor {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
 
-                Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
+                Set<Long> groupIds = GetGroupInfo.fetchAllGroupIds();
                 if (groupIds.isEmpty()) {
                     log.info("未获取到任何群号，跳过推送");
                     return;

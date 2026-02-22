@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.debug;
 
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.command.process.Command;
@@ -14,7 +14,7 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import java.util.Set;
 
 public class Broadcast implements CommandExecutor {
-    private static final Set<Long> GroupList = GetGroupList.fetchAllGroupIds();
+    private static final Set<Long> GroupList = GetGroupInfo.fetchAllGroupIds();
     static Settings settings = Config.getInstance();
     private static final long DebugGroupId = settings.getDebugGroupId();
 

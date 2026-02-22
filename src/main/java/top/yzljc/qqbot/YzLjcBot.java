@@ -65,6 +65,5 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("broadcast", true);
         GroupConfigManager.registerFeature("calendar",true);
         GroupConfigManager.registerFeature("get_hypixel_reward",false);
-        GroupConfigManager.registerFeature("help_tips", true);
     }
 }

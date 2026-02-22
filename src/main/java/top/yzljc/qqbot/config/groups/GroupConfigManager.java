@@ -3,7 +3,7 @@ package top.yzljc.qqbot.config.groups;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.config.Config;
 
 import java.io.File;
@@ -44,7 +44,7 @@ public class GroupConfigManager {
     public static synchronized void refreshAllConfigs() {
         log.info("正在同步群配置（补全/清理）……");
 
-        Set<Long> currentOnlineGroups = GetGroupList.fetchAllGroupIds();
+        Set<Long> currentOnlineGroups = GetGroupInfo.fetchAllGroupIds();
 
         boolean isDebug = Config.getInstance().isDebugMode();
 

@@ -3,7 +3,7 @@ package top.yzljc.qqbot.command;
 import com.zaxxer.hikari.HikariDataSource;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.userinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
@@ -248,7 +248,7 @@ public class SearchRelevant implements CommandExecutor {
             CachedNickname cached = nicknameCache.get(userId);
             if (cached != null && (now - cached.time) < NICKNAME_CACHE_EXPIRE) return cached.nick;
 
-            String nick = GetUserName.getUserName(userId);
+            String nick = GetUserInfo.getUserName(userId);
 
             if (nick != null && !nick.isEmpty()) {
                 nicknameCache.put(userId, new CachedNickname(nick, now));

@@ -57,6 +57,11 @@ public class Config implements Settings{
         return instance;
     }
 
+    public void reload() {
+        log.info("开始重新加载配置文件...");
+        load();
+    }
+
     private void load() {
         try {
             Path configPath = Paths.get(CONFIG_FILE);

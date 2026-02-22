@@ -1,11 +1,10 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupName;
-import top.yzljc.qqbot.botkits.userinfo.GetUserName;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botkits.tools.FT;
 import top.yzljc.qqbot.botkits.tools.MM;
 import top.yzljc.qqbot.config.Config;
@@ -31,10 +30,10 @@ public class FindRecall {
 
         String formattedTime = formatTimestamp(time);
         String foundMessage = FT.unescape(MessageRecorder.searchMessage(groupId, messageId));
-        String foundUserName = GetUserName.getUserName(userId);
-        String foundGroupName = GetGroupName.getGroupName(groupId);
+        String foundUserName = GetUserInfo.getUserName(userId);
+        String foundGroupName = GetGroupInfo.getGroupName(groupId);
 
-        if (userId == GetBotInfo.getBotId()) {
+        if (userId == GetUserInfo.getBotId()) {
             return; // 不写会炸，别问我怎么知道的
         }
 

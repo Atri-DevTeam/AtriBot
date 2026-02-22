@@ -98,7 +98,7 @@ public class LikeUser {
         return switch (status) {
             case SUCCESS -> {
                 log.info("点赞成功 => QQ: {} | 获得点赞数: 10", userId);
-                yield "点赞成功！(+10 Social Credits!)，没加好友可能无法收到点赞哦！";
+                yield "点赞成功！(+10 Social Credits!)";
             }
             case DAILY_LIMIT -> {
                 log.info("点赞失败 => QQ: {} | 用户今日获赞数量达到上限", userId);

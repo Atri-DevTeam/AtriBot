@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupList;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 
 public class AutoSign implements CommandExecutor {
 
@@ -31,7 +31,7 @@ public class AutoSign implements CommandExecutor {
 
     private static void signAllGroups() {
         try {
-            Set<Long> groupIds = GetGroupList.fetchAllGroupIds();
+            Set<Long> groupIds = GetGroupInfo.fetchAllGroupIds();
 
             if (groupIds.isEmpty()) {
                 log.warn("未获取到任何群号，自动打卡跳过");

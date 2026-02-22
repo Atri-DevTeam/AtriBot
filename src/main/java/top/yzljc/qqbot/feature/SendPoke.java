@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 
@@ -15,7 +15,7 @@ import java.util.Map;
 public class SendPoke {
 
     private static final Logger log = LoggerFactory.getLogger(SendPoke.class);
-    private static final long BOT_QQ = GetBotInfo.getBotId();
+    private static final long BOT_QQ = GetUserInfo.getBotId();
 
     public static void process(JsonNode json) {
         String postType = json.path("post_type").asText("");

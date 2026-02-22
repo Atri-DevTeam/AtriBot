@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.config.groups;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupName;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -209,7 +209,7 @@ public class GroupModeManager {
 
     private static String fetchGroupName(long groupId) {
         try {
-            return GetGroupName.getGroupName(groupId);
+            return GetGroupInfo.getGroupName(groupId);
         } catch (Exception e) {
             return "未知群聊";
         }

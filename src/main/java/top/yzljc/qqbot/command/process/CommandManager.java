@@ -3,16 +3,17 @@ package top.yzljc.qqbot.command.process;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.command.Reboot;
 import top.yzljc.qqbot.command.RollbackMessages;
 import top.yzljc.qqbot.command.SearchRelevant;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.Reload;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigInfo;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.debug.Broadcast;
-import top.yzljc.qqbot.debug.RecallLastMsg;
+import top.yzljc.qqbot.botkits.tools.RM;
 import top.yzljc.qqbot.feature.AnnoyUser;
 import top.yzljc.qqbot.feature.HappyNewYear;
 import top.yzljc.qqbot.feature.github.WebhookServer;
@@ -31,7 +32,7 @@ public class CommandManager {
     private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
     private static final Settings settings = Config.getInstance();
     private static final String COMMAND_PREFIX = settings.getCommandPrefix();
-    private static final long BOT_QQ = GetBotInfo.getBotId();
+    private static final long BOT_QQ = GetUserInfo.getBotId();
     private static final String DEBUG_SUFFIX = settings.getDebugCommandSuffix();
     private static final List<Long> adminUids = settings.getAdminUids();
 
@@ -43,7 +44,7 @@ public class CommandManager {
         register("wakeup", new WakeUp(), "唤醒Bot", null, null, "wakeup_send");
         register("reboot", new Reboot(), "重启Bot", null, null, null);
         register("search", new SearchRelevant(), "搜索聊天记录", "/search \"关键词\" [-u QQ] [-m p/a]", null, null);
-        register("recall", new RecallLastMsg(), "撤回上一条消息", null, null, null);
+        register("recall", new RM(), "撤回上一条消息", null, null, null);
         register("rollback", new RollbackMessages(), "批量撤回消息", "/rollback [-n 数量] [-u QQ号]", null, null);
         register("motd", new Motd(), "查询MC服务器状态", "/motd <服务器ip地址(端口号可选)>", null, "motd");
         register("mojang", new MojangStatus(), "查询Mojang服务状态", null, null, "mojang_status");
@@ -58,6 +59,7 @@ public class CommandManager {
         register("calendar", new Calendar(), "查看日历", null, null, "calendar");
         register("atrihelp", new AtriHelp(), "显示帮助菜单", "/atrihelp", null, null);
         register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [目标QQ]", null, "annoy_user");
+        register("reload", new Reload(), "重新加载配置", "/reload [all|cfg|f|g]", null, null);
     }
 
     /**
@@ -115,11 +117,9 @@ public class CommandManager {
         CommandSender sender = new CommandSender(userId, groupId, isAdmin, isDebug, messageId);
 
         boolean executed = commandMap.dispatch(sender, commandContent);
-        
+
         if (!executed) {
-            if (!adminUids.contains(sender.getUserId()) && GroupConfigManager.isFeatureEnabled(groupId,"help_tips")) {
-                sender.reply("未知命令,使用 /atrihelp 指令查看帮助",false);
-            }
+            // 命令未找到或执行失败，发送错误提示
         }
     }
     

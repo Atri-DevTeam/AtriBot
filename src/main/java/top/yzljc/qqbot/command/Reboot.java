@@ -34,7 +34,7 @@ public class Reboot implements CommandExecutor {
 
     public static void processReboot(long userId, long groupId) {
         log.info("收到管理员 {} 的终止指令", userId);
-        MessageSender.sendGroupMessage(groupId, "收到指令，正在终止进程...");
+        MessageSender.sendGroupMessage(groupId, "收到管理员 "+ userId + " 的终止指令，正在终止进程...");
 
         new Thread(() -> {
             try {

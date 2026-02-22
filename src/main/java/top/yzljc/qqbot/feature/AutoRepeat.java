@@ -7,7 +7,6 @@ import java.util.concurrent.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
 
 public class AutoRepeat {
 

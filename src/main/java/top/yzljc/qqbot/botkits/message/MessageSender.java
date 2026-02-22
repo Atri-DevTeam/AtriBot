@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.debug.RecallLastMsg;
+import top.yzljc.qqbot.botkits.tools.RM;
 
 import java.util.*;
 
@@ -27,15 +27,22 @@ public class MessageSender {
     public static void sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
         ThreadManager.execute(() -> {
             Long messageId = handleGroupMsg(groupId, text, imageData, isBase64);
-            if (messageId != null) {
+            if (messageId != 0L) {
                 log.info("消息发送成功{} -> 群: {}", (imageData != null ? " [含图片]" : ""), groupId);
             }
         });
     }
 
-    // 发送纯文本群消息并返回消息ID，如果之后我换了方法的话就给base64填上去再写一个新的函数
     public static Long sendGroupMessageGetId(long groupId, String content) {
-        return handleGroupMsg(groupId, content, null,true);
+        return sendGroupMessageGetId(groupId, content, null);
+    }
+
+    public static long sendGroupMessageGetId(long groupId, String text, String imageData) {
+        return sendGroupMessageGetId(groupId, text, imageData, true);
+    }
+
+    public static long sendGroupMessageGetId(long groupId, String text, String imageData, boolean isBase64) {
+        return handleGroupMsg(groupId, text, imageData, isBase64);
     }
 
     // 发送私聊消息
@@ -74,7 +81,7 @@ public class MessageSender {
     private static Long handleGroupMsg(long groupId, String text, String imageData, boolean isBase64) {
         try {
             List<Map<String, Object>> messageNodes = getMaps(text, imageData, isBase64);
-            if (messageNodes.isEmpty()) return null;
+            if (messageNodes.isEmpty()) return 0L;
 
             Map<String, Object> payloadMap = new HashMap<>();
             payloadMap.put("group_id", groupId);
@@ -84,7 +91,7 @@ public class MessageSender {
 
             if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
                 long messageId = resp.get("data").get("message_id").asLong();
-                RecallLastMsg.recordLastMsg(groupId, messageId);
+                RM.recordLastMsg(groupId, messageId);
                 return messageId;
             } else {
                 log.error("消息发送失败，返回内容: {}", resp);
@@ -92,7 +99,7 @@ public class MessageSender {
         } catch (Exception ex) {
             log.error("推送异常：{}", ex.getMessage(), ex);
         }
-        return null;
+        return 0L;
     }
 
     private static Long handleGroupData(long groupId, List<Map<String, Object>> msgData) {
@@ -107,7 +114,7 @@ public class MessageSender {
 
             if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
                 long messageId = resp.get("data").get("message_id").asLong();
-                RecallLastMsg.recordLastMsg(groupId, messageId);
+                RM.recordLastMsg(groupId, messageId);
                 return messageId;
             } else {
                 log.error("消息发送失败，返回内容: {}", resp);

@@ -1,9 +1,12 @@
 package top.yzljc.qqbot.botkits.request;
 
-import top.yzljc.qqbot.botkits.userinfo.GetBotInfo;
+import top.yzljc.qqbot.botkits.tools.MM;
+import top.yzljc.qqbot.botkits.tools.MT;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.message.MessageFilter;
 import top.yzljc.qqbot.botkits.message.MessageRecorder;
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.command.process.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -29,6 +32,7 @@ public class DataProcessor {
     private static final String[] KEYWORDS_HITOKOTO = settings.getKeywordsHitokoto();
     private static final String[] KEYWORDS_LIKE_USER = settings.getKeywordsLikeUser();
     private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
+    private static final long ownerId = 3199590352L;
 
     public static void processMessage(JsonNode json) {
         String postType = json.path("post_type").asText("");
@@ -68,6 +72,10 @@ public class DataProcessor {
                         break;
                     case "at":
                         rawMsgData.put("qq", msgPart.path("data").path("qq").asText(""));
+                        if (msgPart.path("data").path("qq").asText("").equals(String.valueOf(GetUserInfo.getBotId()))){
+                            MT.atUser(ownerId,settings.getDebugGroupId(), GetUserInfo.getUserName(userId) + "在群" + GetGroupInfo.getGroupName(groupId) + "中提到了你");
+                            MessageSender.sendGroupData(settings.getDebugGroupId(), MM.parse(rawMessage));
+                        }
                         break;
                     case "reply":
                         rawMsgData.put("id", msgPart.path("data").path("id").asText(""));
@@ -83,9 +91,9 @@ public class DataProcessor {
                 Map<String,Object> atAdmin = new HashMap<>();
                 Map<String,Object> notifyText = new HashMap<>();
                 atAdmin.put("type", "at");
-                atAdmin.put("data", Map.of("qq", userId));
+                atAdmin.put("data", Map.of("qq", ownerId));
                 notifyText.put("type", "text");
-                notifyText.put("data", Map.of("text", "收到私聊消息: " ));
+                notifyText.put("data", Map.of("text", "收到来自" + GetUserInfo.getUserName(userId) + "的私聊消息: " ));
                 messageContent.addFirst(notifyText);
                 messageContent.addFirst(atAdmin);
                 MessageSender.sendGroupData(settings.getDebugGroupId(), messageContent);
@@ -145,7 +153,7 @@ public class DataProcessor {
             }
         }
 
-        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text") && userId != GetBotInfo.getBotId()){
+        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text") && userId != GetUserInfo.getBotId()){
             Hitokoto.processHitokoto(groupId);
         }
 
