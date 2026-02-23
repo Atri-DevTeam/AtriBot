@@ -28,13 +28,7 @@ public class Broadcast implements CommandExecutor {
             return false;
         }
 
-        if (sender.isDebug()) {
-            debugBroadcastRequest(String.join(" ", args));
-        } else {
-            debugBroadcastRequest(String.join(" ", args));
-            sender.reply("Debug: 这条消息本应是全局广播的", false);
-//            fecthToGroups(String.join(" ", args));
-        }
+        fecthToGroups(String.join(" ", args));
         return true;
     }
 

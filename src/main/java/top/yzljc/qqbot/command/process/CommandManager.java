@@ -103,13 +103,13 @@ public class CommandManager {
         }
 
         long groupId = json.path("group_id").asLong();
-        boolean isAdmin = settings.getAdminUids().contains(userId);
+        boolean isAdmin = adminUids.contains(userId);
         boolean isDebug = false;
         int messageId = json.path("message_id").asInt(0);
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
 
-        if (isAdmin && commandContent.endsWith(DEBUG_SUFFIX)) {
+        if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
             isDebug = true;
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
         }

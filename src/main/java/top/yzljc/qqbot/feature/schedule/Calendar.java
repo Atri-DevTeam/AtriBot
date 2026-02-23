@@ -34,12 +34,7 @@ public class Calendar implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.isAdmin()) {
-            sendToSingleGroup(sender.getGroupId());
-            return true;
-        }
-
-        if (sender.isDebug()) {
+        if (sender.isDebug() && sender.isAdmin()) {
             sendToAllGroups();
         } else {
             sendToSingleGroup(sender.getGroupId());

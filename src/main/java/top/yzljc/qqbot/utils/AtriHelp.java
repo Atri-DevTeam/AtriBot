@@ -96,6 +96,7 @@ public class AtriHelp implements CommandExecutor {
         return """
                 您可以发送 /groupinfo 查询本群功能开启情况
                 如需进行功能调整请联系开发，再次感谢您的支持！
+                如有简单MC服务器插件需求也可以联系我!
                 联系方式:
                 ● QQ: 3199590352
                 ● B站: https://space.bilibili.com/592616376
