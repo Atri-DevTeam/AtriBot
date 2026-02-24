@@ -1,14 +1,12 @@
 package top.yzljc.qqbot.botkits.tools;
 
 import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botkits.request.PostRequest;
+import top.yzljc.qqbot.botkits.request.RequestType;
 
 import java.util.*;
 
 public class MT {
-    private static final LinkedList<Map<String,Object>> replayContent = new LinkedList<>();
-    private static final Map<String,Object> replyMsg = new HashMap<>();
-    private static final Map<String,Object> replyText = new HashMap<>();
-    private static final Map<String,Object> replyAt = new HashMap<>();
     private static final String FAKE_UIN = "3614865692";
     private static final String FAKE_NAME = "YZ_Ljc_";
 
@@ -16,38 +14,81 @@ public class MT {
         replyMessage(userId,groupId,messageId,false,text);
     }
 
-    public static void replyMessage(long userId,long groupId,long messageId,boolean whetherAt,String text){
-        if (whetherAt){
-            replyAt.put("qq",userId);
-            replayContent.add(Map.of("type","at","data",replyAt));
+    public static void replyMessage(long userId, long groupId, long messageId, boolean whetherAt, String text) {
+        List<Map<String, Object>> replayContent = new ArrayList<>();
+
+        if (whetherAt) {
+            Map<String, Object> replyAt = new HashMap<>();
+            replyAt.put("qq", userId);
+
+            Map<String, Object> atNode = new HashMap<>();
+            atNode.put("type", "at");
+            atNode.put("data", replyAt);
+            replayContent.add(atNode);
         }
 
-        replyMsg.put("id",messageId);
-        replayContent.add(Map.of("type", "reply","data",replyMsg));
+        Map<String, Object> replyMsg = new HashMap<>();
+        replyMsg.put("id", messageId);
 
-        replyText.put("text",text);
-        replayContent.add(Map.of("type","text","data",replyText));
+        Map<String, Object> replyNode = new HashMap<>();
+        replyNode.put("type", "reply");
+        replyNode.put("data", replyMsg);
+        replayContent.add(replyNode);
 
-        MessageSender.sendGroupData(groupId,replayContent);
+        Map<String, Object> replyText = new HashMap<>();
+        replyText.put("text", text);
 
-        replyAt.clear();
-        replyMsg.clear();
-        replyText.clear();
-        replayContent.clear();
+        Map<String, Object> textNode = new HashMap<>();
+        textNode.put("type", "text");
+        textNode.put("data", replyText);
+        replayContent.add(textNode);
+
+        MessageSender.sendGroupData(groupId, replayContent);
     }
 
-    public static void atUser(long userId,long groupId,String text){
-        replyAt.put("qq",userId);
-        replayContent.add(Map.of("type","at","data",replyAt));
+    public static void forwardSingleGroupMsg(long groupId, long messageId){
+        Map<String, Object> forwardMsg = new HashMap<>();
+        forwardMsg.put("message_id", messageId);
+        forwardMsg.put("group_id", groupId);
+        PostRequest.sendPost(RequestType.FORWARD_SINGLE_MSG, forwardMsg);
+    }
 
-        replyText.put("text",text);
-        replayContent.add(Map.of("type","text","data",replyText));
+    public static void sendSingleImageGroupMsg(long groupId, ImageType type, String imageData){
+        Map<String, Object> singleImageData = new HashMap<>();
+        singleImageData.put("type", "image");
+        Map<String, Object> data = new HashMap<>();
+        switch (type){
+            case FILE -> data.put("file", "file://" + imageData);
+            case URL -> data.put("url", imageData);
+            case BASE64 -> data.put("file", "base64://" + imageData);
+        }
+        singleImageData.put("data", data);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("group_id", groupId);
+        payload.put("message", singleImageData);
+        PostRequest.sendPost(RequestType.SEND_GROUP_MSG, payload);
+    }
 
-        MessageSender.sendGroupData(groupId,replayContent);
+    public static void atUser(long userId, long groupId, String text) {
+        List<Map<String, Object>> replayContent = new ArrayList<>();
 
-        replyAt.clear();
-        replyText.clear();
-        replayContent.clear();
+        Map<String, Object> replyAt = new HashMap<>();
+        replyAt.put("qq", userId);
+
+        Map<String, Object> atNode = new HashMap<>();
+        atNode.put("type", "at");
+        atNode.put("data", replyAt);
+        replayContent.add(atNode);
+
+        Map<String, Object> replyText = new HashMap<>();
+        replyText.put("text", text);
+
+        Map<String, Object> textNode = new HashMap<>();
+        textNode.put("type", "text");
+        textNode.put("data", replyText);
+        replayContent.add(textNode);
+
+        MessageSender.sendGroupData(groupId, replayContent);
     }
 
     public static Map<String, Object> createTextNode(String text) {
@@ -96,5 +137,9 @@ public class MT {
         data.put("content", contentList);
         node.put("data", data);
         return node;
+    }
+
+    public enum ImageType {
+        URL, BASE64, FILE
     }
 }

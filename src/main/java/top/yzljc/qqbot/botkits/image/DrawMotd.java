@@ -97,7 +97,7 @@ public class DrawMotd {
             if (tmpFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tmpFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                long msgID = MessageSender.sendGroupMessageGetId(groupId, null, base64Img);
+                long msgID = MessageSender.sendGroupMessage(groupId, null, base64Img).getMessageId();
                 ThreadManager.schedule(() -> {
                     RM.recallMsg(msgID);
                 },60, TimeUnit.SECONDS);

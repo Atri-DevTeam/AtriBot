@@ -9,58 +9,85 @@ import top.yzljc.qqbot.botkits.thread.ThreadManager;
 import top.yzljc.qqbot.botkits.tools.RM;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public class MessageSender {
     private static final Logger log = LoggerFactory.getLogger(MessageSender.class);
+    public static class MessageResult {
+        private final CompletableFuture<Long> future;
+
+        public MessageResult(CompletableFuture<Long> future) {
+            this.future = future;
+        }
+
+        public Long getMessageId() {
+            try {
+                Long id = future.join();
+                return id != null ? id : 0L;
+            } catch (Exception e) {
+                return 0L;
+            }
+        }
+
+        public boolean isSuccess() {
+            return getMessageId() != 0L;
+        }
+
+        public void then(Consumer<Long> action) {
+            future.thenAccept(id -> {
+                if (id != null && id != 0L) {
+                    action.accept(id);
+                }
+            });
+        }
+    }
 
     // 发送纯文本群消息
-    public static void sendGroupMessage(long groupId, String content) {
-        sendGroupMessage(groupId, content, null,true);
+    public static MessageResult sendGroupMessage(long groupId, String content) {
+        return sendGroupMessage(groupId, content, null, true);
     }
 
     // 发送带图片的群消息
-    public static void sendGroupMessage(long groupId, String text, String imageData) {
-        sendGroupMessage(groupId, text, imageData, true);
+    public static MessageResult sendGroupMessage(long groupId, String text, String imageData) {
+        return sendGroupMessage(groupId, text, imageData, true);
     }
 
     // 发送带http连接请求类型的图片的群消息
-    public static void sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
+    public static MessageResult sendGroupMessage(long groupId, String text, String imageData, boolean isBase64) {
+        CompletableFuture<Long> future = new CompletableFuture<>();
         ThreadManager.execute(() -> {
             Long messageId = handleGroupMsg(groupId, text, imageData, isBase64);
             if (messageId != 0L) {
                 log.info("消息发送成功{} -> 群: {}", (imageData != null ? " [含图片]" : ""), groupId);
             }
+            future.complete(messageId);
         });
+        return new MessageResult(future);
     }
 
-    public static Long sendGroupMessageGetId(long groupId, String content) {
-        return sendGroupMessageGetId(groupId, content, null);
-    }
-
-    public static long sendGroupMessageGetId(long groupId, String text, String imageData) {
-        return sendGroupMessageGetId(groupId, text, imageData, true);
-    }
-
-    public static long sendGroupMessageGetId(long groupId, String text, String imageData, boolean isBase64) {
-        return handleGroupMsg(groupId, text, imageData, isBase64);
-    }
-
-    // 发送私聊消息
-    public static void sendPrivateMessage(long userId, String content) {
-        handlePrivateMsg(userId, content);
-    }
-
-    // 发送群聊聊天 - 数据格式
     @SuppressWarnings("UnusedReturnValue")
-    public static Long sendGroupData(long groupId, List<Map<String, Object>> msgData) {
-        return handleGroupData(groupId, msgData);
+    public static MessageResult sendPrivateMessage(long userId, String content) {
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        ThreadManager.execute(() -> {
+            future.complete(handlePrivateMsg(userId, content));
+        });
+        return new MessageResult(future);
     }
 
-    // 私聊消息的上报实现，如果需要扩展获取message_id则将函数改为Long类型返回
-    private static void handlePrivateMsg(long userId, String text) {
+    @SuppressWarnings("UnusedReturnValue")
+    public static MessageResult sendGroupData(long groupId, List<Map<String, Object>> msgData) {
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        ThreadManager.execute(() -> {
+            future.complete(handleGroupData(groupId, msgData));
+        });
+        return new MessageResult(future);
+    }
+
+    private static Long handlePrivateMsg(long userId, String text) {
         try {
-            List<Map<String, Object>> messageNodes = getMaps(text, null, true); // imgData没写，直接null吧用到再说
-            if (messageNodes.isEmpty()) return;
+            List<Map<String, Object>> messageNodes = getMaps(text, null, true);
+            if (messageNodes.isEmpty()) return 0L;
 
             Map<String, Object> payloadMap = new HashMap<>();
             payloadMap.put("user_id", userId);
@@ -69,13 +96,14 @@ public class MessageSender {
             JsonNode resp = PostRequest.getPostResult(RequestType.SEND_PRIVATE_MSG, payloadMap);
 
             if (resp != null && resp.has("data") && resp.get("data").has("message_id")) {
-                resp.get("data").get("message_id").asLong();
+                return resp.get("data").get("message_id").asLong();
             } else {
                 log.error("私聊消息发送失败，返回内容: {}", resp);
             }
         } catch (Exception ex) {
             log.error("推送异常：{}", ex.getMessage(), ex);
         }
+        return 0L;
     }
 
     private static Long handleGroupMsg(long groupId, String text, String imageData, boolean isBase64) {
@@ -104,7 +132,7 @@ public class MessageSender {
 
     private static Long handleGroupData(long groupId, List<Map<String, Object>> msgData) {
         try {
-            if (msgData.isEmpty()) return null;
+            if (msgData.isEmpty()) return 0L;
 
             Map<String, Object> payloadMap = new HashMap<>();
             payloadMap.put("group_id", groupId);
@@ -122,7 +150,7 @@ public class MessageSender {
         } catch (Exception ex) {
             log.error("推送异常：{}", ex.getMessage(), ex);
         }
-        return null;
+        return 0L;
     }
 
     private static List<Map<String, Object>> getMaps(String text, String imageData, boolean isBase64) {

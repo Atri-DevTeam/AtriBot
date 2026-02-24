@@ -12,6 +12,7 @@ public enum RequestType {
     SEND_FORWARD_MSG("/send_forward_msg"),
     SEND_PRIVATE_MSG("/send_private_msg"),
     SET_PROFILE("/set_qq_profile"),
+    FORWARD_SINGLE_MSG("/forward_group_single_msg"),
     GROUP_POKE("/group_poke"),
     PUT_EMOJI("/set_msg_emoji_like"),
     ACCEPT_FRIEND_REQUEST("/set_friend_add_request"),

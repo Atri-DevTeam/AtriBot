@@ -199,7 +199,7 @@ public class SearchRelevant implements CommandExecutor {
 
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
-            Long messageId = MessageSender.sendGroupMessageGetId(groupId, message);
+            Long messageId = MessageSender.sendGroupMessage(groupId, message).getMessageId();
             if (messageId != null) {
                 ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             } else {

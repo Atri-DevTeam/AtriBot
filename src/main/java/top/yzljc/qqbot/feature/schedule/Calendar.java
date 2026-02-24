@@ -2,6 +2,7 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
+import top.yzljc.qqbot.botkits.tools.MT;
 import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botkits.image.AbstractImage;
 import top.yzljc.qqbot.botkits.message.MessageSender;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.command.process.Command;
 import top.yzljc.qqbot.command.process.CommandExecutor;
 import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
@@ -335,9 +337,28 @@ public class Calendar implements CommandExecutor {
                 generateDevelopDayImage();
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                for (long gid : GetGroupInfo.fetchAllGroupIds()) {
+                long messageId = MessageSender.sendGroupMessage(Config.getInstance().getDebugGroupId(), null, base64Img).getMessageId();
+
+                if (messageId != 0L) {
+                    log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getDebugGroupId(), messageId);
+                } else {
+                    log.warn("无法获取MessageID，将回退到逐个上传发送模式 (请检查代码实现)");
+                }
+
+                Set<Long> allGroups = GetGroupInfo.fetchAllGroupIds();
+                for (long gid : allGroups) {
+                    if (gid == Config.getInstance().getDebugGroupId()) continue;
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
-                    MessageSender.sendGroupMessage(gid, null, base64Img);
+
+                    if (messageId != 0L) {
+                        MT.forwardSingleGroupMsg(gid, messageId);
+                    } else {
+                        MessageSender.sendGroupMessage(gid, null, base64Img);
+                    }
+
+                    log.info("已推送日历到群 {}，{}", gid, (messageId != 0L ? "使用转发" : "直接发送"));
+
+                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
                 log.info("日历推送完成");
             } catch (Exception ex) {

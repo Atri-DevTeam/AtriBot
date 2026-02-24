@@ -102,8 +102,6 @@ public class AnnoyUser implements CommandExecutor {
             return;
         }
 
-        // 移除原有的 startsWith("/emj") 判断，因为现在指令走 CommandManager
-
         long senderId = json.path("user_id").asLong();
         long botId = json.path("self_id").asLong();
         if (senderId == botId) return;
