@@ -99,8 +99,10 @@ public class AtriHelp implements CommandExecutor {
                 如有简单MC服务器插件需求也可以联系我!
                 联系方式:
                 ● QQ: 3199590352
+                ● 交流群: 818804507
                 ● B站: https://space.bilibili.com/592616376
                 ● E-mail: contact@yzljc.top
+                ● 测试服: mc.yzljc.top
                 """;
     }
 
