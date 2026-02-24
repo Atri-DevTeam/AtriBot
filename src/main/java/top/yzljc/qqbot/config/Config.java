@@ -111,7 +111,7 @@ public class Config implements Settings{
                 this.debugGroupId = ((Number) data.getOrDefault("debug-group-id", 123456789L)).longValue();
                 this.httpUrl = (String) data.getOrDefault("napcat-data-url", "http://0.0.0.0:12345");
                 this.wakeupImgLink = (String) data.getOrDefault("wakeup-image-link", "null");
-                this.websocketUrl = (String) data.getOrDefault("websocket-url", "ws://locahost:1111");
+                this.websocketUrl = (String) data.getOrDefault("websocket-url", "ws://localhost:1111");
                 this.debugCommandSuffix = (String) data.getOrDefault("debug-command-suffix", "--debug");
                 Object mysqlObj = data.get("mysql");
                 if (mysqlObj instanceof Map<?, ?> rawMap) {
