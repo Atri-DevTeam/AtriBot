@@ -21,83 +21,119 @@
 
 ## 目录结构
 
-以下结构以 `src/main/java/top/yzljc/qqbot/` 为根：
+```
+src/main/java/top/yzljc/qqbot/
+├── botkits/          # 底层工具包
+│   ├── clock/        # 定时任务调度
+│   ├── image/        # 图片处理
+│   ├── message/      # 消息处理
+│   ├── request/      # HTTP请求处理
+│   ├── thread/       # 线程管理
+│   ├── tools/        # 工具类
+│   └── userinfo/     # 用户信息查询
+├── command/          # 命令系统
+├── config/           # 配置管理
+│   └── groups/       # 群配置
+├── debug/            # 调试工具
+├── feature/          # 功能模块
+│   ├── github/       # GitHub集成
+│   ├── minecraft/    # Minecraft相关
+│   ├── news/         # 新闻推送
+│   └── schedule/     # 定时任务
+├── socket/           # Socket通信
+└── utils/            # 工具类
 
-- **`botkits/`**：机器人底层能力（可复用的“工具箱”）
-    - **`botkits/request/`**：HTTP 接收与请求处理（事件进入点、数据预处理、类型分发）
-    - **`botkits/message/`**：消息发送/过滤/记录等通用组件
-    - **`botkits/image/`**：图片绘制抽象与具体实现（文本图、状态图等）
-    - **`botkits/findinfo/`**：用户/群信息查询辅助
-- **`feature/`**：具体业务特性（通常是“某个定时任务 + 某类消息触发处理 + 推送/图片”）
-    - **`feature/minecraft/`**：Minecraft 状态、RCON、MOTD 等
-    - **`feature/news/`**：各类资讯抓取/推送
-    - **`feature/github/`**：GitHub Webhook 与消息展示
-    - **其他特性**：如自动签到、复读、互动类功能等
-- **`command/`**：偏“命令式”的交互入口（例如总控/回滚/搜索类指令）
-- **`config/`**：配置读取与群配置管理
-    - **`config/groups/`**：群维度配置、群列表、群模式（以及功能开关）
-- **`socket/`**：与 Minecraft 侧 Socket 通信（连接管理、心跳、指令/数据通道）
-- **`utils/`**：与业务强相关但不适合放入 `botkits/` 的通用工具（统计、回溯等）
-- **`web/`**：Web Dashboard / API（供管理与查看）
-- **`debug/`**：调试相关工具与事件结构
-- **`deprecated/`**：历史实现/弃用模块（仅供参考）
+src/main/resources/   # 资源文件
+├── config.yml        # 配置文件
+├── logback.xml       # 日志配置
+└── OneText-Library.json  # 数据文件
 
-资源文件位于 `src/main/resources/`（`config.yml`、图片、`logback.xml` 等）。
+bot-python/           # Python脚本 (Hypixel相关)
+website/              # Web界面 (PHP)
+target/               # 编译输出
+```
 
----
+## 环境要求
 
-## 运行与构建
+- JDK 22 (启用preview features)
+- Maven 3.x
+- MySQL (可选，用于数据存储)
+- NapCat 或 OneBot 11 兼容的QQ客户端
 
-### 环境要求
+## 构建和运行
 
-- **JDK 22**（项目 `pom.xml` 使用 `maven.compiler.source/target=22` 且启用了 `--enable-preview`）
-- **NapCat / OneBot 11**：提供 HTTP 上报与 HTTP API
-- **可选：MySQL**（用于消息记录/统计等能力，见 `config.yml` 的 `mysql` 配置段）
-
-### 本地构建
-
+### 构建
 ```bash
 mvn clean package
 ```
 
-构建完成后会在 `target/` 生成可运行的 fat jar（shade），主类为 `top.yzljc.qqbot.YzLjcBot`。
-
 ### 运行
-
 ```bash
-java --enable-preview -jar target/Yzljc-qq-bot-*.jar
+java --enable-preview -jar target/Yzljc-qq-bot-2.6.1-RELEASE.jar
 ```
 
-说明：
-- 程序启动时会设置 `java.awt.headless=true`，以支持在无图形界面环境生成图片。
+## 配置
 
----
+编辑 `src/main/resources/config.yml` 或运行目录下的 `config.yml`:
 
-## 配置（`config.yml`）
+### 基本配置
+- `napcat-data-url`: NapCat API地址
+- `qq-bot-port`: 接收QQ事件的端口
+- `listen-port`: Minecraft Socket监听端口
+- `admin-uids`: 管理员QQ号列表
+- `bot-uid`: 机器人QQ号
+- `debug-group-id`: 调试群号
 
-`src/main/resources/config.yml` 提供了默认模板（实际部署通常会在运行目录放一份同名配置以覆盖默认值）。
+### 可选配置
+- `mysql`: 数据库连接信息
+- `github-webhook-port`: GitHub Webhook端口
+- `github-webhook-secret`: Webhook密钥
+- `bilibili-cookie`: B站Cookie
 
-### 必配项
+## 主要功能
 
-- **`napcat-data-url`**：NapCat HTTP API 地址（必须是 `http://host:port`）
-- **`qq-bot-port`**：本程序用于接收 NapCat 上报事件的端口
-- **`listen-port`**：Minecraft 侧连接到本程序的 Socket 监听端口
-- **`admin-uids` / `bot-uid` / `debug-group-id`**：管理员、机器人自身 QQ、调试群
-- **`message-spy-groups`**：启用消息监听/统计的群列表
+### 命令系统
+- `/reload`: 重新加载配置
+  - 无参数: 重新加载所有
+  - `g`: 刷新群配置
+  - `f`: 更新好友列表
+  - `cfg`: 重新加载全局配置
 
-### 可选项
+### 功能模块
+- **Minecraft集成**: 服务器状态监控、RCON控制、MOTD显示
+- **新闻推送**: Hypixel和Minecraft新闻
+- **GitHub集成**: Webhook接收和推送
+- **互动功能**: 自动回复、戳一戳、点赞等
+- **定时任务**: 每日签到、新闻推送等
 
-- **`mysql`**：消息记录与统计相关（host/port/database/username/password）
-- **`github-webhook-port` / `github-webhook-secret`**：GitHub Webhook 端口与签名密钥
-- **`web-dashboard-port`**：Web Dashboard 服务端口
-- **`bilibili-cookie`**：B 站查询相关（需要登录态时）
-- **关键字触发**：例如 `keywords-hitokoto`、`keywords-like-user` 等
+### 群功能开关
+支持按群启用/禁用特定功能，通过 `config/groups/` 配置。
 
----
+## 开发
 
-## 群功能开关
+### 依赖
+主要依赖见 `pom.xml`，包括:
+- Jackson: JSON处理
+- MySQL Connector: 数据库
+- HikariCP: 连接池
+- Jsoup: HTML解析
+- Java-WebSocket: WebSocket支持
 
-本项目支持“**按群维度**”控制特性开关（例如自动签到、新闻推送、互动功能等）。
+### 扩展
+- 实现 `CommandExecutor` 接口添加新命令
+- 在 `feature/` 下添加新功能模块
+- 使用 `GroupConfigManager` 管理群配置
+
+## 许可证
+
+[请添加许可证信息]
+
+## 贡献
+
+欢迎提交Issue和Pull Request。
+
+当前活跃分支: dev-doge
+活跃PR: [BUG-FIX] 修改config.java，修复reload.java
 
 - **默认开关注册**：见 `top.yzljc.qqbot.YzLjcBot` 中的 `GroupConfigManager.registerFeature(...)`
 - **群配置管理**：见 `config/groups/` 目录（具体落盘格式/位置以实现为准）
