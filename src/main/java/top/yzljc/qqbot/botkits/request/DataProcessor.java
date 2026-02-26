@@ -88,15 +88,14 @@ public class DataProcessor {
                 messageContent.add(msgList);
             }
             if ("private".equals(messageType)) {
-                Map<String,Object> atAdmin = new HashMap<>();
-                Map<String,Object> notifyText = new HashMap<>();
-                atAdmin.put("type", "at");
-                atAdmin.put("data", Map.of("qq", ownerId));
-                notifyText.put("type", "text");
-                notifyText.put("data", Map.of("text", "收到来自" + GetUserInfo.getUserName(userId) + "的私聊消息: " ));
-                messageContent.addFirst(notifyText);
-                messageContent.addFirst(atAdmin);
-                MessageSender.sendGroupData(settings.getDebugGroupId(), messageContent);
+                // 私聊转发到调试群并狠狠骚扰LJC
+                List<Map<String, Object>> forward = new ArrayList<>();
+                Map<String, Object> atAdmin = Map.of("type", "at","data", Map.of("qq", ownerId));
+                Map<String, Object> notifyText = Map.of("type", "text","data", Map.of("text", "收到来自" + GetUserInfo.getUserName(userId) + "的私聊消息: "));
+                forward.add(atAdmin);
+                forward.add(notifyText);
+                forward.addAll(messageContent);
+                MessageSender.sendGroupData(settings.getDebugGroupId(), forward);
             }
             // 复读机消息拦截
             if (GroupConfigManager.isFeatureEnabled(groupId, "repeat_msg") && "group".equals(messageType)) {
