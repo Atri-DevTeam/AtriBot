@@ -60,14 +60,14 @@ public class Scratch {
         log.info("已向群 820103390 通知用户 {} 修改群名称为 {}", userName, newName);
     }
 
-    private static final List<Long> beingAutoLikedUser = List.of(3199590352L, 1948308L, 1955248991L,3052381496L,3388215589L,1724175133L, 3414769292L);
-    public static void scheduledAutoLike(){
-        for (Long userId : beingAutoLikedUser) {
-            String userName = GetUserInfo.getUserName(userId);
-            String resultMsg = "自动点赞 " + userName + "！";
-            LikeUser.processCommand(userId, 818804507L);
-            MessageSender.sendGroupMessage(818804507L, resultMsg);
-            log.info("已向群 820103390 自动点赞用户 {}", userName);
-        }
-    }
+//    private static final List<Long> beingAutoLikedUser = List.of(3199590352L, 1948308L, 1955248991L,3052381496L,3388215589L,1724175133L, 3414769292L);
+//    public static void scheduledAutoLike(){
+//        for (Long userId : beingAutoLikedUser) {
+//            String userName = GetUserInfo.getUserName(userId);
+//            String resultMsg = "自动点赞 " + userName + "！";
+//            LikeUser.processCommand(userId, 818804507L);
+//            MessageSender.sendGroupMessage(818804507L, resultMsg);
+//            log.info("已向群 820103390 自动点赞用户 {}", userName);
+//        }
+//    }
 }

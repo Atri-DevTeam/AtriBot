@@ -4,17 +4,61 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botkits.userinfo.GetFriendList;
+import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botkits.message.MessageSender;
 import top.yzljc.qqbot.botkits.request.PostRequest;
 import top.yzljc.qqbot.botkits.request.RequestType;
 import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.config.DataStore;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LikeUser {
 
     private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
+
+    public static void addToAutoLikeList(long userId) {
+        List<Long> list = DataStore.loadLikeUserUids();
+        if (!list.contains(userId)) {
+            list.add(userId);
+            DataStore.saveLikeUserUids(list);
+        }
+    }
+
+    public static void removeFromAutoLikeList(long userId) {
+        List<Long> list = DataStore.loadLikeUserUids();
+        if (list.remove(userId)) {
+            DataStore.saveLikeUserUids(list);
+        }
+    }
+
+    public static List<Long> getAutoLikeList() {
+        return DataStore.loadLikeUserUids();
+    }
+
+    public static void likeAllinList() {
+        List<Long> list = getAutoLikeList();
+        if (list.isEmpty()) {
+            return;
+        }
+
+        for (Long userId : list) {
+            String userName = GetUserInfo.getUserName(userId);
+            if (userName == null) {
+                userName = String.valueOf(userId);
+            }
+
+            String resultMsg = "自动点赞 " + userName + "！";
+
+            LikeUser.processCommand(userId, 818804507L);
+            MessageSender.sendGroupMessage(818804507L, resultMsg);
+            log.info("已向群 818804507 自动点赞用户 {}", userName);
+
+            try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+        }
+    }
 
     private enum LikeStatus {
         SUCCESS,        // 200

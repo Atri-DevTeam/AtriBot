@@ -8,31 +8,46 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 public class Reload implements CommandExecutor {
 
+    private static final String GROUP = "g";
+    private static final String FRIEND = "f";
+    private static final String CONFIG = "cfg";
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.isAdmin()) {
             sender.reply("你没有权限这样做！", false);
             return true;
         }
+
         if (args.length == 0) {
-            Config.getInstance().reload();
-            GroupConfigManager.refreshAllConfigs();
-            GetFriendList.updateFriendList();
+            reloadAll();
+            sender.reply("所有配置已重新加载", false);
             return true;
         }
-        if (args.length > 1) {
-            if (args[0].equalsIgnoreCase("g")) {
+
+        String arg = args[0].toLowerCase();
+        switch (arg) {
+            case GROUP:
                 GroupConfigManager.refreshAllConfigs();
-            } else if (args[0].equalsIgnoreCase("f")) {
+                sender.reply("群组配置已刷新", false);
+                break;
+            case FRIEND:
                 GetFriendList.updateFriendList();
-            } else if (args[0].equalsIgnoreCase("cfg")) {
+                sender.reply("好友列表已更新", false);
+                break;
+            case CONFIG:
                 Config.getInstance().reload();
-            } else {
-                Config.getInstance().reload();
-                GroupConfigManager.refreshAllConfigs();
-                GetFriendList.updateFriendList();
-            }
+                sender.reply("全局配置已重新加载", false);
+                break;
+            default:
+                return false;
         }
+
         return true;
+    }
+
+    private void reloadAll() {
+        Config.getInstance().reload();
+        GroupConfigManager.refreshAllConfigs();
+        GetFriendList.updateFriendList();
     }
 }
