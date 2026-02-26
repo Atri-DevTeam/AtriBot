@@ -43,6 +43,9 @@ message-spy-groups:
 recall-ignore-user:
   - 123456
 
+# 自动点赞列表（/autolike add 会写入此处，仅群 818804507 可用）
+autolike-uids: []
+
 # Napcat HTTP 数据来源地址
 # 必须是http://xxx.xxx.xxx:port格式
 napcat-data-url: "http://localhost:12345"

@@ -11,7 +11,6 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Reload;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigInfo;
-import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.debug.Broadcast;
 import top.yzljc.qqbot.botkits.tools.RM;
 import top.yzljc.qqbot.feature.AnnoyUser;
@@ -24,6 +23,7 @@ import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.utils.AtriHelp;
+import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
 
 import java.util.Collections;
 import java.util.List;
@@ -58,8 +58,9 @@ public class CommandManager {
         register("groupinfo", new GroupConfigInfo(), "查看群组配置", null, null, null);
         register("calendar", new Calendar(), "查看日历", null, null, "calendar");
         register("atrihelp", new AtriHelp(), "显示帮助菜单", "/atrihelp", null, null);
-        register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [目标QQ]", null, "annoy_user");
+        register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [可选: User]", null, "annoy_user");
         register("reload", new Reload(), "重新加载配置", "/reload [all|cfg|f|g]", null, null);
+        register("autolike", new AutoLikeCommand(), "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
     }
 
     /**
