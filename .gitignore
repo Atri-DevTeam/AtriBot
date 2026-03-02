@@ -50,3 +50,5 @@ buildNumber.properties
 
 #vim.gitignore
 .vimrc
+
+.vscode/
