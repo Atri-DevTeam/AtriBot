@@ -3,12 +3,12 @@ package top.yzljc.qqbot.command;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.message.MessageRecorder;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.message.MessageRecorder;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.command.impl.Command;
+import top.yzljc.qqbot.command.impl.CommandExecutor;
+import top.yzljc.qqbot.command.impl.CommandSender;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

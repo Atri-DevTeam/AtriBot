@@ -1,13 +1,13 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.command.impl.Command;
+import top.yzljc.qqbot.command.impl.CommandExecutor;
+import top.yzljc.qqbot.command.impl.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.image.AbstractImage;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.image.AbstractImage;
 
 import java.awt.*;
 import java.io.File;

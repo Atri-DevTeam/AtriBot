@@ -1,16 +1,16 @@
 package top.yzljc.qqbot.command;
 
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.message.MessageRecorder;
-import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageRecorder;
+import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.command.impl.Command;
+import top.yzljc.qqbot.command.impl.CommandExecutor;
+import top.yzljc.qqbot.command.impl.CommandSender;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

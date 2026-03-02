@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.config.groups;
 
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.command.impl.Command;
+import top.yzljc.qqbot.command.impl.CommandExecutor;
+import top.yzljc.qqbot.command.impl.CommandSender;
 
 import java.util.Map;
 

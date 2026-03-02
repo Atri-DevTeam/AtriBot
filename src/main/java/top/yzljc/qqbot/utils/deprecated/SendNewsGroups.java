@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import java.io.File;
 import java.io.IOException;

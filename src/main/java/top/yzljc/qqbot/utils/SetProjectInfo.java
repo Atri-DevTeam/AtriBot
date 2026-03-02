@@ -2,9 +2,9 @@ package top.yzljc.qqbot.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetProjectInfo;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.request.RequestType;
+import top.yzljc.qqbot.botservice.userinfo.GetProjectInfo;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.request.RequestType;
 
 import java.util.HashMap;
 import java.util.Map;

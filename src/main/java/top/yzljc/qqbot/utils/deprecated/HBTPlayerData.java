@@ -2,7 +2,7 @@ package top.yzljc.qqbot.utils.deprecated;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -16,7 +16,7 @@ import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
 
 /**
  * 没用

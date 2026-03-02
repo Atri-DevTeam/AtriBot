@@ -1,12 +1,12 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.request.HttpRequest;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.request.HttpRequest;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
 
 public class ElectricCheck {
 

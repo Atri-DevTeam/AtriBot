@@ -6,7 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botkits.message.MessageRecorder;
+import top.yzljc.qqbot.botservice.message.MessageRecorder;
 
 import java.io.IOException;
 import java.io.OutputStream;
