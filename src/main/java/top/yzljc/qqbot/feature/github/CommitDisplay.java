@@ -106,11 +106,11 @@ public class CommitDisplay extends AbstractImage {
             }
 
             int titleBaselineY = card2Y + 50;
-            int bodyStartY = drawCommitTitle(cleanMessage, innerPaddingX, titleBaselineY);
+            int bodyStartY = drawCommitTitle(cleanMessage, innerPaddingX, titleBaselineY, rightAlignX - innerPaddingX);
             int statsBaselineY = card2Y + card2H - 25;
             int maxBodyY = statsBaselineY - 35;
 
-            drawCommitBody(cleanMessage, innerPaddingX, bodyStartY + 50, maxBodyY);
+            drawCommitBody(cleanMessage, innerPaddingX, bodyStartY + 50, maxBodyY, rightAlignX - innerPaddingX);
 
             drawStats(payload, rightAlignX, statsBaselineY);
 
@@ -142,7 +142,39 @@ public class CommitDisplay extends AbstractImage {
         }
     }
 
-    private int drawCommitTitle(String rawMsg, int x, int y) {
+    /**
+     * wrap text into multiple lines so that each line does not exceed maxWidth (pixels).
+     * splitting is done on a per-character basis; spaces are respected when possible.
+     */
+    private java.util.List<String> wrapText(String text, int maxWidth, FontMetrics fm) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        if (text == null || text.isEmpty()) {
+            return lines;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            sb.append(c);
+            if (fm.stringWidth(sb.toString()) > maxWidth) {
+                // remove last character and start new line
+                sb.setLength(sb.length() - 1);
+                if (sb.length() > 0) {
+                    lines.add(sb.toString());
+                }
+                sb.setLength(0);
+                sb.append(c);
+            }
+        }
+        if (sb.length() > 0) {
+            lines.add(sb.toString());
+        }
+        if (lines.isEmpty()) {
+            lines.add(text);
+        }
+        return lines;
+    }
+
+    private int drawCommitTitle(String rawMsg, int x, int y, int maxWidth) {
         if (rawMsg == null || rawMsg.isEmpty()) return y;
 
         String firstLine = rawMsg.split("\n")[0];
@@ -153,6 +185,7 @@ public class CommitDisplay extends AbstractImage {
         // 因为父类 AbstractImage 已经全局缓存了字体，这里直接调用 loadFont(..) 非常快，不会有性能问题
         Font tagFont = loadFont(Font.BOLD, 22);
         Font titleFont = loadFont(Font.BOLD, 30);
+        int lineHeight = 38; // same as body for line spacing
 
         if (matcher.find()) {
             String type = matcher.group(1);
@@ -169,16 +202,29 @@ public class CommitDisplay extends AbstractImage {
 
             g.setFont(titleFont);
             g.setColor(Color.WHITE);
-            g.drawString(subject, currentX, y);
+            FontMetrics fm = g.getFontMetrics();
+            int available = maxWidth - (currentX - x);
+            java.util.List<String> wrapped = wrapText(subject, available, fm);
+            for (int i = 0; i < wrapped.size(); i++) {
+                String line = wrapped.get(i);
+                g.drawString(line, currentX, y);
+                y += lineHeight;
+                currentX = x; // following lines start at left margin
+            }
         } else {
             g.setFont(titleFont);
             g.setColor(Color.WHITE);
-            g.drawString(firstLine, x, y);
+            FontMetrics fm = g.getFontMetrics();
+            java.util.List<String> wrapped = wrapText(firstLine, maxWidth, fm);
+            for (int i = 0; i < wrapped.size(); i++) {
+                g.drawString(wrapped.get(i), x, y);
+                y += lineHeight;
+            }
         }
         return y;
     }
 
-    private void drawCommitBody(String cleanMsg, int x, int y, int maxY) {
+    private void drawCommitBody(String cleanMsg, int x, int y, int maxY, int maxWidth) {
         if (cleanMsg == null || cleanMsg.isEmpty()) return;
 
         String[] allLines = cleanMsg.split("\n");
@@ -189,19 +235,26 @@ public class CommitDisplay extends AbstractImage {
 
         int lineHeight = 38;
         int currentY = y;
+        FontMetrics fm = g.getFontMetrics();
 
         for (int i = 1; i < allLines.length; i++) {
             String line = allLines[i];
+            java.util.List<String> wrapped = wrapText(line, maxWidth, fm);
 
-            if (currentY + lineHeight > maxY && i < allLines.length - 1) {
-                g.drawString(line + " ...", x, currentY);
-                break;
-            } else if (currentY > maxY) {
-                break;
+            for (int j = 0; j < wrapped.size(); j++) {
+                String wline = wrapped.get(j);
+                boolean isLastOriginal = (i == allLines.length - 1 && j == wrapped.size() - 1);
+
+                if (currentY + lineHeight > maxY && !isLastOriginal) {
+                    g.drawString(wline + " ...", x, currentY);
+                    return;
+                } else if (currentY > maxY) {
+                    return;
+                }
+
+                g.drawString(wline, x, currentY);
+                currentY += lineHeight;
             }
-
-            g.drawString(line, x, currentY);
-            currentY += lineHeight;
         }
     }
 
