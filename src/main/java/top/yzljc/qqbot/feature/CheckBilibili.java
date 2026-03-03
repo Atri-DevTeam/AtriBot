@@ -209,23 +209,8 @@ public class CheckBilibili {
 
     private static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String title) {
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("group_id", groupId);
-            payload.put("messages", nodes);
-
-            List<Map<String, String>> news = new ArrayList<>();
-            Map<String, String> newsItem = new HashMap<>();
-            newsItem.put("text", title);
-            news.add(newsItem);
-            payload.put("news", news);
-
-            payload.put("source", "B站视频解析结果");
-            payload.put("summary", "查看哔哩哔哩视频信息");
-
-            PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
-
+            MT.sendForwardMessage(groupId, nodes, title, "B站视频解析结果", "查看哔哩哔哩视频信息");
             log.info("Result request sending task was successfully transformed to PostRequest {}", groupId);
-
         } catch (Exception e) {
             log.error("Failed to send forward message", e);
         }

@@ -2,49 +2,160 @@ package top.yzljc.qqbot.botservice.clock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.command.Reboot;
-import top.yzljc.qqbot.feature.LikeUser;
-import top.yzljc.qqbot.feature.news.HypixelNews;
-import top.yzljc.qqbot.feature.news.MinecraftNews;
-import top.yzljc.qqbot.feature.schedule.*;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class RunScheduleTask {
     private static final Logger log = LoggerFactory.getLogger(RunScheduleTask.class);
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+    private static final String SCHEDULE_PACKAGE = "top.yzljc.qqbot.feature.schedule";
 
     public static void runAllTasks() {
-        // 每天 07:00:00
-        scheduleDailyTask(WakeUp::sendImgToGroup, 7, 0, 0);
-
-        // 每天 00:00:00
-        scheduleDailyTask(AutoSign::processAutoSign, 0, 0, 1);
-
-        scheduleDailyTask(ManosabaDate::sendAndNotifyToGroup, 0, 0, 10);
-        // scheduleDailyTask(HappyNewYear::sendToAllGroups, 0, 0, 11);
-        scheduleDailyTask(Calendar::sendToAllGroups, 0, 0, 25);
-        scheduleDailyTask(LikeUser::likeAllinList,0,0,2);
-
-        // 每天 23:59:45
-        scheduleDailyTask(MessageStats::autoReportAllGroups, 23, 59, 45);
-
-        scheduleDailyTask(Reboot::processReboot, 5, 20, 0);
-
-        // 每小时 00 分 00 秒
-        scheduleHourlyTask(() -> MinecraftNews.checkNews(false), 0, 0);
-        scheduleHourlyTask(() -> HypixelNews.checkNews(false), 0, 0);
-
+        List<Class<?>> taskClasses = findClassesInPackage(SCHEDULE_PACKAGE);
+        for (Class<?> clazz : taskClasses) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                Schedule ann = method.getAnnotation(Schedule.class);
+                if (ann == null) continue;
+                if (!method.trySetAccessible()) {
+                    log.warn("无法访问定时方法 {}.{}", clazz.getSimpleName(), method.getName());
+                    continue;
+                }
+                if (method.getParameterCount() != 0) {
+                    log.warn("定时任务方法必须无参: {}.{}", clazz.getSimpleName(), method.getName());
+                    continue;
+                }
+                register(method, ann);
+            }
+        }
         log.info("所有定时任务已启动");
+    }
+
+    /** 扫描包下所有类（支持目录 classpath 与 JAR） */
+    private static List<Class<?>> findClassesInPackage(String packageName) {
+        String path = packageName.replace('.', '/');
+        ClassLoader cl = RunScheduleTask.class.getClassLoader();
+        List<Class<?>> out = new ArrayList<>();
+        try {
+            var resources = cl.getResources(path);
+            while (resources.hasMoreElements()) {
+                URI uri = resources.nextElement().toURI();
+                if (uri.getScheme().equals("file")) {
+                    try (Stream<Path> walk = Files.walk(Path.of(uri), 1)) {
+                        walk.filter(p -> p.getFileName().toString().endsWith(".class"))
+                                .forEach(p -> addClass(out, packageName, p.getFileName().toString(), cl));
+                    }
+                } else if (uri.getScheme().equals("jar")) {
+                    try (var fs = FileSystems.newFileSystem(uri, Map.of())) {
+                        Path root = fs.getPath("/");
+                        try (Stream<Path> walk = Files.walk(root)) {
+                            walk.filter(p -> {
+                                String s = p.toString().replace('\\', '/');
+                                if (!s.endsWith(".class")) return false;
+                                String prefix = path + "/", prefixSlash = "/" + path + "/";
+                                if (!s.startsWith(prefix) && !s.startsWith(prefixSlash)) return false;
+                                int after = s.startsWith(prefixSlash) ? prefixSlash.length() : prefix.length();
+                                return s.substring(after).indexOf('/') < 0;
+                            })
+                                    .forEach(p -> {
+                                        String rel = p.toString().replace('/', '.').replace('\\', '.');
+                                        if (rel.startsWith(".")) rel = rel.substring(1);
+                                        String className = rel.substring(0, rel.length() - 6);
+                                        addClassByName(out, className, cl);
+                                    });
+                        }
+                    }
+                }
+            }
+        } catch (IOException | URISyntaxException e) {
+            log.warn("扫描 schedule 包失败，回退为空列表", e);
+        }
+        return out;
+    }
+
+    private static void addClass(List<Class<?>> out, String packageName, String fileName, ClassLoader cl) {
+        String className = packageName + '.' + fileName.substring(0, fileName.length() - 6);
+        addClassByName(out, className, cl);
+    }
+
+    private static void addClassByName(List<Class<?>> out, String className, ClassLoader cl) {
+        try {
+            out.add(Class.forName(className, false, cl));
+        } catch (ClassNotFoundException e) {
+            log.debug("无法加载类: {}", className);
+        }
+    }
+
+    private static void register(Method method, Schedule ann) {
+        Runnable task = () -> {
+            try {
+                method.invoke(null);
+            } catch (Exception e) {
+                log.error("定时任务执行异常: {}.{}", method.getDeclaringClass().getSimpleName(), method.getName(), e);
+            }
+        };
+        if (ann.type() == ScheduleType.DAILY) {
+            int[] hms = parseDailyTime(ann.time());
+            if (hms != null) {
+                scheduleDailyTask(task, hms[0], hms[1], hms[2]);
+            } else {
+                log.warn("无效的 DAILY time: {} @ {}.{}", ann.time(), method.getDeclaringClass().getSimpleName(), method.getName());
+            }
+        } else {
+            int[] ms = parseHourlyTime(ann.time());
+            if (ms != null) {
+                scheduleHourlyTask(task, ms[0], ms[1]);
+            } else {
+                log.warn("无效的 HOURLY time: {} @ {}.{}", ann.time(), method.getDeclaringClass().getSimpleName(), method.getName());
+            }
+        }
+    }
+
+    /** DAILY: "HH:mm:ss" -> [hour, min, sec] */
+    private static int[] parseDailyTime(String time) {
+        String[] parts = time.trim().split(":");
+        if (parts.length < 3) return null;
+        try {
+            int hour = Integer.parseInt(parts[0].trim());
+            int min = Integer.parseInt(parts[1].trim());
+            int sec = Integer.parseInt(parts[2].trim());
+            if (hour < 0 || hour > 23 || min < 0 || min > 59 || sec < 0 || sec > 59) return null;
+            return new int[]{hour, min, sec};
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** HOURLY: "mm:ss" -> [minute, second] */
+    private static int[] parseHourlyTime(String time) {
+        String[] parts = time.trim().split(":");
+        if (parts.length != 2) return null;
+        try {
+            int min = Integer.parseInt(parts[0].trim());
+            int sec = Integer.parseInt(parts[1].trim());
+            if (min < 0 || min > 59 || sec < 0 || sec > 59) return null;
+            return new int[]{min, sec};
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void scheduleDailyTask(Runnable task, int hour, int min, int sec) {
         long delayMillis = computeInitialDelayByDayMillis(hour, min, sec);
-
         scheduler.schedule(() -> {
             try {
                 task.run();
@@ -58,7 +169,6 @@ public class RunScheduleTask {
 
     private static void scheduleHourlyTask(Runnable task, int minute, int second) {
         long delayMillis = computeInitialDelayByHourMillis(minute, second);
-
         scheduler.schedule(() -> {
             try {
                 task.run();

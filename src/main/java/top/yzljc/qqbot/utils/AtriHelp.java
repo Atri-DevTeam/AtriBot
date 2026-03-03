@@ -42,21 +42,22 @@ public class AtriHelp implements CommandExecutor {
         help.add(MT.createTextNode(lastInfo(),"3199590352","YZ_Ljc_"));
         help.add(MT.createTextNode(versionInfo(),"3199590352","YZ_Ljc_"));
 
-        payload.put("group_id", groupId);
-        payload.put("messages", help);
+//        payload.put("group_id", groupId);
+//        payload.put("messages", help);
+//
+//        List<Map<String, String>> news = new ArrayList<>();
+//        Map<String, String> newsItem = new HashMap<>();
+//        newsItem.put("text", "项目开发说明");
+//        newsItem.put("text2","指令帮助");
+//        newsItem.put("text3","功能介绍");
+//
+//        news.add(newsItem);
+//        payload.put("news", news);
+//
+//        payload.put("source", "ATRI - YZ_Ljc_ Bot 帮助文档");
+//        payload.put("summary", "查看项目帮助信息");
 
-        List<Map<String, String>> news = new ArrayList<>();
-        Map<String, String> newsItem = new HashMap<>();
-        newsItem.put("text", "项目开发说明");
-        newsItem.put("text2","指令帮助");
-        newsItem.put("text3","功能介绍");
-
-        news.add(newsItem);
-        payload.put("news", news);
-
-        payload.put("source", "ATRI - YZ_Ljc_ Bot 帮助文档");
-        payload.put("summary", "查看项目帮助信息");
-
+        MT.sendForwardMessage(groupId, help, "项目开发说明", "指令帮助", "功能介绍", "ATRI - YZ_Ljc_ Bot 帮助文档","查看项目帮助信息");
         PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
     }
 

@@ -2,6 +2,8 @@ package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
 import top.yzljc.qqbot.command.impl.Command;
 import top.yzljc.qqbot.command.impl.CommandExecutor;
 import top.yzljc.qqbot.command.impl.CommandSender;
@@ -56,6 +58,7 @@ public class AutoSign implements CommandExecutor {
         PostRequest.sendSimplePost(RequestType.SEND_SIGN, "group_id", groupId);
     }
 
+    @Schedule(time = "00:00:01", type = ScheduleType.DAILY)
     public static void processAutoSign() {
         Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
     }

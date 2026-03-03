@@ -9,6 +9,8 @@ import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
 import top.yzljc.qqbot.command.impl.Command;
 import top.yzljc.qqbot.command.impl.CommandExecutor;
 import top.yzljc.qqbot.command.impl.CommandSender;
@@ -330,6 +332,7 @@ public class Calendar implements CommandExecutor {
         }
     }
 
+    @Schedule(time = "00:00:25", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
         File tempFile = new File("tmp", "daily_schedule.png");
         ThreadManager.execute(() -> {

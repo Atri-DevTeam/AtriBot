@@ -136,7 +136,7 @@ public class DataProcessor {
         ServerRcon.processMessage(json);
 
         // 不是我管的群我查个集贸，浪费资源
-        if (spyGroups.contains(groupId)) {
+        if (spyGroups.contains(groupId) || userId == GetUserInfo.getBotId()) {
             MessageFilter.checkAndRecall(json);
         }
 

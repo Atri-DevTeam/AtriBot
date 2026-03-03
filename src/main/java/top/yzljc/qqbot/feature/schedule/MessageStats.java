@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
 import top.yzljc.qqbot.command.impl.Command;
 import top.yzljc.qqbot.command.impl.CommandExecutor;
 import top.yzljc.qqbot.command.impl.CommandSender;
@@ -34,6 +36,7 @@ public class MessageStats implements CommandExecutor {
     static Settings settings = Config.getInstance();
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
 
+    @Schedule(time = "23:59:45", type = ScheduleType.DAILY)
     public static void autoReportAllGroups() {
         Set<Long> groups = findAllGroupsWithRecords();
         for (long groupId : groups) {

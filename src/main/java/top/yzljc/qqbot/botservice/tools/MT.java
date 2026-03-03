@@ -46,6 +46,43 @@ public class MT {
         MessageSender.sendGroupData(groupId, replayContent);
     }
 
+    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String title, String summary) {
+        sendForwardMessage(groupId, nodes, textvar1, null, null, title, summary);
+    }
+
+    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String textvar2, String title, String summary) {
+        sendForwardMessage(groupId, nodes, textvar1, textvar2, null, title, summary);
+    }
+
+    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String textvar2, String textvar3, String title, String summary) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("group_id", groupId);
+            payload.put("messages", nodes);
+
+            List<Map<String, String>> news = new ArrayList<>();
+            Map<String, String> newsItem1 = Map.of("text", textvar1);
+            news.add(newsItem1);
+            if (textvar2 != null) {
+                Map<String, String> newsItem2 = Map.of("text", textvar2);
+                news.add(newsItem2);
+            }
+            if (textvar3 != null) {
+                Map<String, String> newsItem3 = Map.of("text", textvar3);
+                news.add(newsItem3);
+            }
+            payload.put("news", news);
+
+            payload.put("source", title);
+            payload.put("summary", summary);
+
+            PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void forwardSingleGroupMsg(long groupId, long messageId){
         Map<String, Object> forwardMsg = new HashMap<>();
         forwardMsg.put("message_id", messageId);
@@ -123,8 +160,8 @@ public class MT {
         Map<String, Object> node = new HashMap<>();
         node.put("type", "node");
         Map<String, Object> data = new HashMap<>();
-        data.put("uin", FAKE_UIN);
-        data.put("name", FAKE_NAME);
+        data.put("uin", uin);
+        data.put("name", name);
 
         List<Map<String, Object>> contentList = new ArrayList<>();
         Map<String, Object> imgItem = new HashMap<>();

@@ -9,6 +9,8 @@ import top.yzljc.qqbot.command.impl.CommandExecutor;
 import top.yzljc.qqbot.command.impl.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 
@@ -34,6 +36,7 @@ public class WakeUp implements CommandExecutor {
         return true;
     }
 
+    @Schedule(time = "07:00:00", type = ScheduleType.DAILY)
     public static void sendImgToGroup() {
         ThreadManager.execute(() -> {
             for (long groupId : GROUPS){
