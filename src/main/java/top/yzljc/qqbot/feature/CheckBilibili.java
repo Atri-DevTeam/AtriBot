@@ -102,7 +102,9 @@ public class CheckBilibili {
                 String viewUrl = "https://api.bilibili.com/x/web-interface/view?bvid=" + bvid;
                 JsonNode root = sendBilibiliRequest(viewUrl);
 
-                if (root == null || root.path("code").asInt() != 0) {
+                if (root == null || root.path("code").asLong() != 0L) {
+                    sender.reply("视频信息获取失败！", false);
+                    log.warn("[Bili API] Failed to get video info: API returned error/no-auth");
                     return;
                 }
 
@@ -117,15 +119,15 @@ public class CheckBilibili {
                 long mid = data.path("owner").path("mid").asLong();
                 String upStats = fetchUploaderStats(mid);
 
-                int duration = data.path("duration").asInt();
+                long duration = data.path("duration").asLong();
                 String link = "https://www.bilibili.com/video/" + bvid;
 
                 String sb = "视频标题：" + title + "\n" +
-                        "观看次数：" + formatNum(stat.path("view").asInt()) + "\n" +
-                        "点赞次数：" + stat.path("like").asInt() + "\n" +
-                        "投币次数：" + stat.path("coin").asInt() + "\n" +
-                        "收藏次数：" + stat.path("favorite").asInt() + "\n" +
-                        "弹幕量：" + stat.path("danmaku").asInt() + "\n" +
+                        "观看次数：" + formatNum(stat.path("view").asLong()) + "\n" +
+                        "点赞次数：" + formatNum(stat.path("like").asLong()) + "\n" +
+                        "投币次数：" + formatNum(stat.path("coin").asLong()) + "\n" +
+                        "收藏次数：" + formatNum(stat.path("favorite").asLong()) + "\n" +
+                        "弹幕量：" + formatNum(stat.path("danmaku").asLong()) + "\n" +
                         "视频时长：" + formatDuration(duration) + "\n" +
                         "原始链接：" + link;
 
@@ -148,7 +150,7 @@ public class CheckBilibili {
             String cardUrl = "https://api.bilibili.com/x/web-interface/card?mid=" + mid + "&photo=true";
             JsonNode cardRoot = sendBilibiliRequest(cardUrl);
 
-            if (cardRoot == null || cardRoot.path("code").asInt() != 0) {
+            if (cardRoot == null || cardRoot.path("code").asLong() != 0L) {
                 return "👤 UP主信息获取失败";
             }
 
@@ -157,17 +159,17 @@ public class CheckBilibili {
 
             String name = card.path("name").asText();
             String sign = card.path("sign").asText();
-            int level = card.path("level_info").path("current_level").asInt();
+            long level = card.path("level_info").path("current_level").asLong();
 
-            int fans = data.path("follower").asInt(); // 粉丝数
-            int totalLikes = data.path("like_num").asInt(); // 总获赞数
+            long fans = data.path("follower").asLong(); // 粉丝数
+            long totalLikes = data.path("like_num").asLong(); // 总获赞数
 
             long totalViews = 0;
             try {
                 String statUrl = "https://api.bilibili.com/x/space/upstat?mid=" + mid;
                 JsonNode statRoot = sendBilibiliRequest(statUrl);
 
-                if (statRoot != null && statRoot.path("code").asInt() == 0) {
+                if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
                         MT.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
@@ -246,14 +248,14 @@ public class CheckBilibili {
         return null;
     }
 
-    private static String formatNum(int num) {
+    private static String formatNum(long num) {
         if (num >= 10000) return String.format("%.1f万", num / 10000.0);
         return String.valueOf(num);
     }
 
-    private static String formatDuration(int seconds) {
-        int min = seconds / 60;
-        int sec = seconds % 60;
+    private static String formatDuration(long seconds) {
+        long min = seconds / 60;
+        long sec = seconds % 60;
         return min + "分" + sec + "秒";
     }
 }
