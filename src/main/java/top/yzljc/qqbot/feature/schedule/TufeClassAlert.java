@@ -36,7 +36,7 @@ public class TufeClassAlert implements CommandExecutor {
     @Schedule(time = "14:50:05", type = ScheduleType.DAILY)
     @Schedule(time = "17:30:05", type = ScheduleType.DAILY)
     @Schedule(time = "19:30:05", type = ScheduleType.DAILY)
-    private void processNotify() {
+    private static void processNotify() {
         ProcessClassTable.getClassTableJson(getCurrentSession(LocalTime.now().plusMinutes(30)));
     }
 
