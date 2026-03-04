@@ -7,7 +7,7 @@ import top.yzljc.qqbot.botservice.message.MessageFilter;
 import top.yzljc.qqbot.botservice.message.MessageRecorder;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.command.impl.CommandManager;
+import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;

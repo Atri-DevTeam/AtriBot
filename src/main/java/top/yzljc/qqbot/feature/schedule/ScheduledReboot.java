@@ -2,7 +2,7 @@ package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botservice.clock.Schedule;
 import top.yzljc.qqbot.botservice.clock.ScheduleType;
-import top.yzljc.qqbot.command.Reboot;
+import top.yzljc.qqbot.command.impl.Reboot;
 
 public final class ScheduledReboot {
 

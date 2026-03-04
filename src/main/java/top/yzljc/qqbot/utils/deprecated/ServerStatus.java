@@ -12,9 +12,9 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.command.impl.Command;
-import top.yzljc.qqbot.command.impl.CommandExecutor;
-import top.yzljc.qqbot.command.impl.CommandSender;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;

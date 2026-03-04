@@ -29,8 +29,8 @@ public class RunScheduleTask {
         List<Class<?>> taskClasses = findClassesInPackage(SCHEDULE_PACKAGE);
         for (Class<?> clazz : taskClasses) {
             for (Method method : clazz.getDeclaredMethods()) {
-                Schedule ann = method.getAnnotation(Schedule.class);
-                if (ann == null) continue;
+                Schedule[] anns = method.getAnnotationsByType(Schedule.class);
+                if (anns == null || anns.length == 0) continue;
                 if (!method.trySetAccessible()) {
                     log.warn("无法访问定时方法 {}.{}", clazz.getSimpleName(), method.getName());
                     continue;
@@ -39,13 +39,14 @@ public class RunScheduleTask {
                     log.warn("定时任务方法必须无参: {}.{}", clazz.getSimpleName(), method.getName());
                     continue;
                 }
-                register(method, ann);
+                for (Schedule ann : anns) {
+                    register(method, ann);
+                }
             }
         }
         log.info("所有定时任务已启动");
     }
 
-    /** 扫描包下所有类（支持目录 classpath 与 JAR） */
     private static List<Class<?>> findClassesInPackage(String packageName) {
         String path = packageName.replace('.', '/');
         ClassLoader cl = RunScheduleTask.class.getClassLoader();

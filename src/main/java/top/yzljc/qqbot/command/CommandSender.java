@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.command.impl;
+package top.yzljc.qqbot.command;
 
 import top.yzljc.qqbot.botservice.tools.MT;
 

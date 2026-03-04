@@ -102,9 +102,7 @@ public class CheckBilibili {
                 String viewUrl = "https://api.bilibili.com/x/web-interface/view?bvid=" + bvid;
                 JsonNode root = sendBilibiliRequest(viewUrl);
 
-                if (root == null || root.path("code").asLong() != 0L) {
-                    sender.reply("视频信息获取失败！", false);
-                    log.warn("[Bili API] Failed to get video info: API returned error/no-auth");
+                if (root == null || root.path("code").asInt() != 0) {
                     return;
                 }
 

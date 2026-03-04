@@ -2,9 +2,9 @@ package top.yzljc.qqbot.feature.schedule;
 
 import top.yzljc.qqbot.botservice.clock.Schedule;
 import top.yzljc.qqbot.botservice.clock.ScheduleType;
-import top.yzljc.qqbot.command.impl.Command;
-import top.yzljc.qqbot.command.impl.CommandExecutor;
-import top.yzljc.qqbot.command.impl.CommandSender;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;

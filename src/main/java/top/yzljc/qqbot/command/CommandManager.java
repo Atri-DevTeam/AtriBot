@@ -1,12 +1,12 @@
-package top.yzljc.qqbot.command.impl;
+package top.yzljc.qqbot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
-import top.yzljc.qqbot.command.Reboot;
-import top.yzljc.qqbot.command.RollbackMessages;
-import top.yzljc.qqbot.command.SearchRelevant;
+import top.yzljc.qqbot.command.impl.Reboot;
+import top.yzljc.qqbot.command.impl.RollbackMessages;
+import top.yzljc.qqbot.command.impl.SearchRelevant;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Reload;
 import top.yzljc.qqbot.config.Settings;
@@ -63,6 +63,7 @@ public class CommandManager {
         register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [可选: User]", null, "annoy_user");
         register("reload", new Reload(), "重新加载配置", "/reload [all|cfg|f|g]", null, null);
         register("autolike", new AutoLikeCommand(), "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
+        register("tufe", new TufeClassAlert(), "查课", "/tufe查看下节课的上课地点", null, null);
     }
 
     /**

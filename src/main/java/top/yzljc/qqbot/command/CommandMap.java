@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.command.impl;
+package top.yzljc.qqbot.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
