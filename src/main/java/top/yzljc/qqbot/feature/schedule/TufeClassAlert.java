@@ -7,12 +7,17 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.data.ProcessClassTable;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class TufeClassAlert implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (LocalDate.now().getDayOfWeek() == java.time.DayOfWeek.SATURDAY || LocalDate.now().getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+            sender.reply("周末不支持查询，如有课程安排请等待自动播报", false);
+            return true;
+        }
         int time = getCurrentSession(LocalTime.now());
         if (time == 0) {
             int checkTargetSession;
@@ -30,14 +35,14 @@ public class TufeClassAlert implements CommandExecutor {
         return true;
     }
 
-    @Schedule(time = "07:30:05", type = ScheduleType.DAILY)
-    @Schedule(time = "09:30:05", type = ScheduleType.DAILY)
-    @Schedule(time = "12:50:05", type = ScheduleType.DAILY)
-    @Schedule(time = "14:50:05", type = ScheduleType.DAILY)
-    @Schedule(time = "17:30:05", type = ScheduleType.DAILY)
-    @Schedule(time = "19:30:05", type = ScheduleType.DAILY)
+    @Schedule(time = "07:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "09:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "12:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "14:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "17:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "19:25:05", type = ScheduleType.DAILY)
     private static void processNotify() {
-        ProcessClassTable.getClassTableJson(getCurrentSession(LocalTime.now().plusMinutes(30)));
+        ProcessClassTable.getClassTableJson(getCurrentSession(LocalTime.now().plusMinutes(35)));
     }
 
     public static int getCurrentSession(LocalTime time) {

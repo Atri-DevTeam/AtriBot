@@ -66,5 +66,6 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("calendar",true);
         GroupConfigManager.registerFeature("get_hypixel_reward",false);
         GroupConfigManager.registerFeature("bedwars_challenge", true);
+        GroupConfigManager.registerFeature("tufe_class_alert", false);
     }
 }

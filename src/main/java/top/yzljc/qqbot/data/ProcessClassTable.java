@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.config.Config;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -20,8 +19,8 @@ public class ProcessClassTable {
         return String.valueOf(LocalDateTime.now().getDayOfWeek().getValue());
     }
 
-    public static int getClassTableJson(int sessionId) {
-        return getClassTableJson(sessionId, Config.getInstance().getDebugGroupId());
+    public static void getClassTableJson(int sessionId) {
+        getClassTableJson(sessionId, 1065552660L);
     }
 
     public static int getClassTableJson(int sessionId, long groupId) {
@@ -52,7 +51,7 @@ public class ProcessClassTable {
                 sb.append("课程: ").append(sessionObj.getClassData().getClassNameShow()).append("\n");
                 sb.append("地点: ").append(sessionObj.getClassData().getLocation()).append(" ").append(sessionObj.getClassData().getFullLocation()).append("\n");
                 sb.append("教师: ").append(sessionObj.getClassData().getTeacher()).append("\n");
-                sb.append("节次: ").append(sessionObj.getClassData().getClassStartTime()).append("-").append(sessionObj.getClassData().getClassEndTime()).append("\n");
+                sb.append("节次: ").append(sessionObj.getClassData().getClassStartTime()).append("-").append(sessionObj.getClassData().getClassEndTime());
                 MessageSender.sendGroupMessage(groupId, sb.toString());
                 return 0;
             }else {

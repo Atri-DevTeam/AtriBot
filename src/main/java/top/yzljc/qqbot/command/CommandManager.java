@@ -63,7 +63,7 @@ public class CommandManager {
         register("emj", new AnnoyUser(), "表情轰炸", "/emj <normal/medium/insane/animation> [可选: User]", null, "annoy_user");
         register("reload", new Reload(), "重新加载配置", "/reload [all|cfg|f|g]", null, null);
         register("autolike", new AutoLikeCommand(), "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
-        register("tufe", new TufeClassAlert(), "查课", "/tufe查看下节课的上课地点", null, null);
+        register("tufe", new TufeClassAlert(), "查课", "/tufe查看下节课的上课地点", null, "tufe_class_alert");
     }
 
     /**
