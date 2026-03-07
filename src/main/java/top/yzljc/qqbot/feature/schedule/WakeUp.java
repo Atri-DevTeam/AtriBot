@@ -2,15 +2,17 @@ package top.yzljc.qqbot.feature.schedule;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 
 import java.util.Set;
 
@@ -34,6 +36,7 @@ public class WakeUp implements CommandExecutor {
         return true;
     }
 
+    @Schedule(time = "07:00:00", type = ScheduleType.DAILY)
     public static void sendImgToGroup() {
         ThreadManager.execute(() -> {
             for (long groupId : GROUPS){

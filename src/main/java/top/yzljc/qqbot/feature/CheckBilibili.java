@@ -2,10 +2,10 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.botkits.tools.MT;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.tools.MT;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -117,15 +117,15 @@ public class CheckBilibili {
                 long mid = data.path("owner").path("mid").asLong();
                 String upStats = fetchUploaderStats(mid);
 
-                int duration = data.path("duration").asInt();
+                long duration = data.path("duration").asLong();
                 String link = "https://www.bilibili.com/video/" + bvid;
 
                 String sb = "视频标题：" + title + "\n" +
-                        "观看次数：" + formatNum(stat.path("view").asInt()) + "\n" +
-                        "点赞次数：" + stat.path("like").asInt() + "\n" +
-                        "投币次数：" + stat.path("coin").asInt() + "\n" +
-                        "收藏次数：" + stat.path("favorite").asInt() + "\n" +
-                        "弹幕量：" + stat.path("danmaku").asInt() + "\n" +
+                        "观看次数：" + formatNum(stat.path("view").asLong()) + "\n" +
+                        "点赞次数：" + formatNum(stat.path("like").asLong()) + "\n" +
+                        "投币次数：" + formatNum(stat.path("coin").asLong()) + "\n" +
+                        "收藏次数：" + formatNum(stat.path("favorite").asLong()) + "\n" +
+                        "弹幕量：" + formatNum(stat.path("danmaku").asLong()) + "\n" +
                         "视频时长：" + formatDuration(duration) + "\n" +
                         "原始链接：" + link;
 
@@ -148,7 +148,7 @@ public class CheckBilibili {
             String cardUrl = "https://api.bilibili.com/x/web-interface/card?mid=" + mid + "&photo=true";
             JsonNode cardRoot = sendBilibiliRequest(cardUrl);
 
-            if (cardRoot == null || cardRoot.path("code").asInt() != 0) {
+            if (cardRoot == null || cardRoot.path("code").asLong() != 0L) {
                 return "👤 UP主信息获取失败";
             }
 
@@ -157,17 +157,17 @@ public class CheckBilibili {
 
             String name = card.path("name").asText();
             String sign = card.path("sign").asText();
-            int level = card.path("level_info").path("current_level").asInt();
+            long level = card.path("level_info").path("current_level").asLong();
 
-            int fans = data.path("follower").asInt(); // 粉丝数
-            int totalLikes = data.path("like_num").asInt(); // 总获赞数
+            long fans = data.path("follower").asLong(); // 粉丝数
+            long totalLikes = data.path("like_num").asLong(); // 总获赞数
 
             long totalViews = 0;
             try {
                 String statUrl = "https://api.bilibili.com/x/space/upstat?mid=" + mid;
                 JsonNode statRoot = sendBilibiliRequest(statUrl);
 
-                if (statRoot != null && statRoot.path("code").asInt() == 0) {
+                if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
                         MT.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
@@ -209,23 +209,8 @@ public class CheckBilibili {
 
     private static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String title) {
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("group_id", groupId);
-            payload.put("messages", nodes);
-
-            List<Map<String, String>> news = new ArrayList<>();
-            Map<String, String> newsItem = new HashMap<>();
-            newsItem.put("text", title);
-            news.add(newsItem);
-            payload.put("news", news);
-
-            payload.put("source", "B站视频解析结果");
-            payload.put("summary", "查看哔哩哔哩视频信息");
-
-            PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
-
+            MT.sendForwardMessage(groupId, nodes, title, "B站视频解析结果", "查看哔哩哔哩视频信息");
             log.info("Result request sending task was successfully transformed to PostRequest {}", groupId);
-
         } catch (Exception e) {
             log.error("Failed to send forward message", e);
         }
@@ -261,14 +246,14 @@ public class CheckBilibili {
         return null;
     }
 
-    private static String formatNum(int num) {
+    private static String formatNum(long num) {
         if (num >= 10000) return String.format("%.1f万", num / 10000.0);
         return String.valueOf(num);
     }
 
-    private static String formatDuration(int seconds) {
-        int min = seconds / 60;
-        int sec = seconds % 60;
+    private static String formatDuration(long seconds) {
+        long min = seconds / 60;
+        long sec = seconds % 60;
         return min + "分" + sec + "秒";
     }
 }

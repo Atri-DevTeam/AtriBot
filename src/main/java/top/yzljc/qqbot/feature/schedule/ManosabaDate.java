@@ -1,13 +1,15 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.image.AbstractImage;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.image.AbstractImage;
 
 import java.awt.*;
 import java.io.File;
@@ -89,6 +91,7 @@ public class ManosabaDate implements CommandExecutor {
         log.info("manodate 指令触发图片推送：{}", groupId);
     }
 
+    @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
     public static void sendAndNotifyToGroup() {
         sendAndNotifyToGroup(GROUP_ID);
     }

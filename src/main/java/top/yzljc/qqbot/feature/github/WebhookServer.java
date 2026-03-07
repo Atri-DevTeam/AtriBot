@@ -7,12 +7,12 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 

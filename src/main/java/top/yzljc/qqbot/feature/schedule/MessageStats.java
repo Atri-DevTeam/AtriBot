@@ -1,11 +1,11 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.message.SensitiveWordFilter;
-import top.yzljc.qqbot.botkits.message.MessageRecorder;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.botservice.message.MessageRecorder;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -18,10 +18,12 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -34,6 +36,7 @@ public class MessageStats implements CommandExecutor {
     static Settings settings = Config.getInstance();
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
 
+    @Schedule(time = "23:59:45", type = ScheduleType.DAILY)
     public static void autoReportAllGroups() {
         Set<Long> groups = findAllGroupsWithRecords();
         for (long groupId : groups) {

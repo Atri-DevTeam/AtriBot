@@ -2,16 +2,18 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
-import top.yzljc.qqbot.botkits.tools.MT;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botkits.image.AbstractImage;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.botservice.image.AbstractImage;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -330,6 +332,7 @@ public class Calendar implements CommandExecutor {
         }
     }
 
+    @Schedule(time = "00:00:25", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
         File tempFile = new File("tmp", "daily_schedule.png");
         ThreadManager.execute(() -> {

@@ -1,10 +1,12 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.clock.Schedule;
+import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.util.Set;
@@ -12,7 +14,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 
 public class AutoSign implements CommandExecutor {
 
@@ -56,6 +58,7 @@ public class AutoSign implements CommandExecutor {
         PostRequest.sendSimplePost(RequestType.SEND_SIGN, "group_id", groupId);
     }
 
+    @Schedule(time = "00:00:01", type = ScheduleType.DAILY)
     public static void processAutoSign() {
         Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
     }

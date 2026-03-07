@@ -3,13 +3,13 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetFriendList;
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.request.PostRequest;
-import top.yzljc.qqbot.botkits.request.RequestType;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.config.DataStore;
+import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.data.VarData;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,22 +20,22 @@ public class LikeUser {
     private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
 
     public static void addToAutoLikeList(long userId) {
-        List<Long> list = DataStore.loadLikeUserUids();
+        List<Long> list = VarData.loadLikeUserUids();
         if (!list.contains(userId)) {
             list.add(userId);
-            DataStore.saveLikeUserUids(list);
+            VarData.saveLikeUserUids(list);
         }
     }
 
     public static void removeFromAutoLikeList(long userId) {
-        List<Long> list = DataStore.loadLikeUserUids();
+        List<Long> list = VarData.loadLikeUserUids();
         if (list.remove(userId)) {
-            DataStore.saveLikeUserUids(list);
+            VarData.saveLikeUserUids(list);
         }
     }
 
     public static List<Long> getAutoLikeList() {
-        return DataStore.loadLikeUserUids();
+        return VarData.loadLikeUserUids();
     }
 
     public static void likeAllinList() {

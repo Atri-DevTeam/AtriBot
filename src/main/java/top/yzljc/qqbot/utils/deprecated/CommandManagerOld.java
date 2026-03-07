@@ -3,7 +3,8 @@ package top.yzljc.qqbot.utils.deprecated;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -12,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @deprecated 旧版命令管理器，已废弃。请使用 {@link top.yzljc.qqbot.command.process.CommandManager} 替代。
+ * @deprecated 旧版命令管理器，已废弃。请使用 {@link CommandManager} 替代。
  */
 @Deprecated(since = "2.6.1")
 public class CommandManagerOld {

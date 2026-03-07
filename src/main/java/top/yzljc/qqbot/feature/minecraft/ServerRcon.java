@@ -2,8 +2,8 @@ package top.yzljc.qqbot.feature.minecraft;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.feature.minecraft.specificserver.YunTea;
 import top.yzljc.qqbot.socket.SocketManager;

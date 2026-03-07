@@ -1,10 +1,10 @@
 package top.yzljc.qqbot.feature.minecraft;
 
-import top.yzljc.qqbot.botkits.image.DrawMotd;
-import top.yzljc.qqbot.botkits.thread.ThreadManager;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.image.DrawMotd;
+import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 
 public class Motd implements CommandExecutor {
 

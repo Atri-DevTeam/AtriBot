@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.utils.draft;
 
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.feature.LikeUser;
 
 import java.util.List;

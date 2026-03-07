@@ -1,10 +1,10 @@
 package top.yzljc.qqbot.debug;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;

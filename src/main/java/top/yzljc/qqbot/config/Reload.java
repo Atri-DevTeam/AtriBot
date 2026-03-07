@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.config;
 
-import top.yzljc.qqbot.botkits.userinfo.GetFriendList;
-import top.yzljc.qqbot.command.process.Command;
-import top.yzljc.qqbot.command.process.CommandExecutor;
-import top.yzljc.qqbot.command.process.CommandSender;
+import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 public class Reload implements CommandExecutor {

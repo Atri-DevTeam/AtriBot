@@ -1,13 +1,13 @@
 package top.yzljc.qqbot;
 
-import top.yzljc.qqbot.botkits.clock.RunScheduleTask;
-import top.yzljc.qqbot.botkits.userinfo.GetFriendList;
+import top.yzljc.qqbot.botservice.clock.RunScheduleTask;
+import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.feature.github.WebhookServer;
-import top.yzljc.qqbot.botkits.request.DataProcessor;
-import top.yzljc.qqbot.botkits.request.RequestReceiver;
+import top.yzljc.qqbot.botservice.request.DataProcessor;
+import top.yzljc.qqbot.botservice.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
@@ -65,5 +65,7 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("broadcast", true);
         GroupConfigManager.registerFeature("calendar",true);
         GroupConfigManager.registerFeature("get_hypixel_reward",false);
+        GroupConfigManager.registerFeature("bedwars_challenge", true);
+        GroupConfigManager.registerFeature("tufe_class_alert", false);
     }
 }

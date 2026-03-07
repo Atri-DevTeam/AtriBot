@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @deprecated 旧版文本图片解析器，已废弃。请使用 {@link top.yzljc.qqbot.botkits.tools.MM} 替代。
+ * @deprecated 旧版文本图片解析器，已废弃。请使用 {@link top.yzljc.qqbot.botservice.tools.MM} 替代。
  */
 @Deprecated(since = "2.6.1", forRemoval = true)
 public class TextImage {

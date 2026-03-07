@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.feature;
 
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import java.util.*;
 import java.util.concurrent.*;

@@ -1,12 +1,13 @@
 package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botkits.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botkits.message.MessageRecorder;
-import top.yzljc.qqbot.botkits.message.MessageSender;
-import top.yzljc.qqbot.botkits.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botkits.tools.FT;
-import top.yzljc.qqbot.botkits.tools.MM;
+import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.botservice.message.MessageRecorder;
+import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.botservice.tools.FT;
+import top.yzljc.qqbot.botservice.tools.MM;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -40,7 +41,12 @@ public class FindRecall {
         if (IGNORE_USER_IDS.contains(userId)) {
             return; // 忽略机器人的撤回
         }
-        String myMessage = "[" + formattedTime + "] " + foundUserName + "在群 " + foundGroupName + " 撤回了一条消息：";
+        String myMessage;
+        if (SensitiveWordFilter.containsSensitiveWord(foundMessage)) {
+            myMessage = "[" + formattedTime + "] " + foundUserName + " 在群 " + foundGroupName + " 因发送违规内容被撤回消息：";
+        } else {
+            myMessage = "[" + formattedTime + "] " + foundUserName + "在群 " + foundGroupName + " 撤回了一条消息：";
+        }
         Map<String,Object> finalMsg = new HashMap<>();
         finalMsg.put("type", "text");
         finalMsg.put("data", Map.of("text", myMessage));

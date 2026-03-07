@@ -3,7 +3,7 @@ package top.yzljc.qqbot.utils.deprecated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botkits.message.MessageSender;
+import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
