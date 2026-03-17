@@ -31,10 +31,13 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Calendar implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Calendar.class);
+    /** 防止定时任务重复注册或并发触发导致日历多次推送 */
+    private static final AtomicBoolean calendarPushInProgress = new AtomicBoolean(false);
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -108,7 +111,6 @@ public class Calendar implements CommandExecutor {
 
             int daysNumW = g2d.getFontMetrics(loadFont(Font.BOLD, 65f)).stringWidth(String.valueOf(daysUntil));
             drawOutlinedText(g2d, " 天", loadFont(Font.BOLD, 24f), leftMargin + daysNumW + 10, bottomY, TEXT_WHITE);
-
 
             int calW = 420;
             int calH = 350;
@@ -334,8 +336,12 @@ public class Calendar implements CommandExecutor {
 
     @Schedule(time = "00:00:25", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
-        File tempFile = new File("tmp", "daily_schedule.png");
         ThreadManager.execute(() -> {
+            if (!calendarPushInProgress.compareAndSet(false, true)) {
+                log.warn("日历推送已在进行中，触发重复推送保护");
+                return;
+            }
+            File tempFile = new File("tmp", "daily_schedule.png");
             try {
                 generateDevelopDayImage();
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
@@ -345,7 +351,9 @@ public class Calendar implements CommandExecutor {
                 if (messageId != 0L) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getDebugGroupId(), messageId);
                 } else {
-                    log.warn("无法获取MessageID，将回退到逐个上传发送模式 (请检查代码实现)");
+                    log.warn("无法获取MessageID，取消本次推送任务");
+                    MT.atUser(3199590352L,Config.getInstance().getDebugGroupId(), "日历推送失败，无法获取消息ID");
+                    return; // finally 会释放 calendarPushInProgress
                 }
 
                 Set<Long> allGroups = GetGroupInfo.fetchAllGroupIds();
@@ -353,13 +361,8 @@ public class Calendar implements CommandExecutor {
                     if (gid == Config.getInstance().getDebugGroupId()) continue;
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
 
-                    if (messageId != 0L) {
-                        MT.forwardSingleGroupMsg(gid, messageId);
-                    } else {
-                        MessageSender.sendGroupMessage(gid, null, base64Img);
-                    }
-
-                    log.info("已推送日历到群 {}，{}", gid, (messageId != 0L ? "使用转发" : "直接发送"));
+                    MT.forwardSingleGroupMsg(gid, messageId);
+                    log.info("已推送日历到群 {}，使用转发", gid);
 
                     try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
@@ -367,6 +370,7 @@ public class Calendar implements CommandExecutor {
             } catch (Exception ex) {
                 log.error("日历推送异常：", ex);
             } finally {
+                calendarPushInProgress.set(false);
                 if (tempFile.exists()) tempFile.delete();
             }
         });

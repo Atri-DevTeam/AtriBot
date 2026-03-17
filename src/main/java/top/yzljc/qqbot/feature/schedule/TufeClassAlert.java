@@ -37,8 +37,8 @@ public class TufeClassAlert implements CommandExecutor {
 
     @Schedule(time = "07:25:05", type = ScheduleType.DAILY)
     @Schedule(time = "09:25:05", type = ScheduleType.DAILY)
-    @Schedule(time = "12:25:05", type = ScheduleType.DAILY)
-    @Schedule(time = "14:25:05", type = ScheduleType.DAILY)
+    @Schedule(time = "12:45:05", type = ScheduleType.DAILY)
+    @Schedule(time = "14:45:05", type = ScheduleType.DAILY)
     @Schedule(time = "17:25:05", type = ScheduleType.DAILY)
     @Schedule(time = "19:25:05", type = ScheduleType.DAILY)
     private static void processNotify() {

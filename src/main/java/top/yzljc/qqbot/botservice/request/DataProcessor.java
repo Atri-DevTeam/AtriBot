@@ -157,7 +157,7 @@ public class DataProcessor {
         }
 
         if (likeUserKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"like_user")){
-            LikeUser.processCommand(userId, groupId);
+            LikeUser.processCommand(userId, groupId, false);
         }
 
         if (electricKeyword(rawMessage)){

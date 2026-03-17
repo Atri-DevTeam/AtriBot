@@ -13,8 +13,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +53,7 @@ public class RunScheduleTask {
         String path = packageName.replace('.', '/');
         ClassLoader cl = RunScheduleTask.class.getClassLoader();
         List<Class<?>> out = new ArrayList<>();
+        Set<String> addedClassNames = new HashSet<>();
         try {
             var resources = cl.getResources(path);
             while (resources.hasMoreElements()) {
@@ -58,7 +61,7 @@ public class RunScheduleTask {
                 if (uri.getScheme().equals("file")) {
                     try (Stream<Path> walk = Files.walk(Path.of(uri), 1)) {
                         walk.filter(p -> p.getFileName().toString().endsWith(".class"))
-                                .forEach(p -> addClass(out, packageName, p.getFileName().toString(), cl));
+                                .forEach(p -> addClass(out, addedClassNames, packageName, p.getFileName().toString(), cl));
                     }
                 } else if (uri.getScheme().equals("jar")) {
                     try (var fs = FileSystems.newFileSystem(uri, Map.of())) {
@@ -76,7 +79,7 @@ public class RunScheduleTask {
                                         String rel = p.toString().replace('/', '.').replace('\\', '.');
                                         if (rel.startsWith(".")) rel = rel.substring(1);
                                         String className = rel.substring(0, rel.length() - 6);
-                                        addClassByName(out, className, cl);
+                                        addClassByName(out, addedClassNames, className, cl);
                                     });
                         }
                     }
@@ -88,12 +91,14 @@ public class RunScheduleTask {
         return out;
     }
 
-    private static void addClass(List<Class<?>> out, String packageName, String fileName, ClassLoader cl) {
+    private static void addClass(List<Class<?>> out, Set<String> addedClassNames, String packageName, String fileName, ClassLoader cl) {
         String className = packageName + '.' + fileName.substring(0, fileName.length() - 6);
-        addClassByName(out, className, cl);
+        addClassByName(out, addedClassNames, className, cl);
     }
 
-    private static void addClassByName(List<Class<?>> out, String className, ClassLoader cl) {
+    /** 按类名去重，避免 classpath 下同一包对应多个 URL 时同一任务被注册多次 */
+    private static void addClassByName(List<Class<?>> out, Set<String> addedClassNames, String className, ClassLoader cl) {
+        if (!addedClassNames.add(className)) return;
         try {
             out.add(Class.forName(className, false, cl));
         } catch (ClassNotFoundException e) {

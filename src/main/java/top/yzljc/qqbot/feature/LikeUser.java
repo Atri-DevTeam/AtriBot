@@ -11,6 +11,8 @@ import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import top.yzljc.qqbot.data.VarData;
 
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,20 +46,22 @@ public class LikeUser {
             return;
         }
 
+        List<String> resultLines = new ArrayList<>();
         for (Long userId : list) {
             String userName = GetUserInfo.getUserName(userId);
             if (userName == null) {
                 userName = String.valueOf(userId);
             }
 
-            String resultMsg = "自动点赞 " + userName + "！";
-
-            LikeUser.processCommand(userId, 818804507L);
-            MessageSender.sendGroupMessage(818804507L, resultMsg);
+            String result = LikeUser.processCommand(userId, 818804507L, true);
+            resultLines.add("自动点赞" + userName + " " + (result != null ? result : ""));
             log.info("已向群 818804507 自动点赞用户 {}", userName);
 
             try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
         }
+
+        String combinedMsg = String.join("\n", resultLines);
+        MessageSender.sendGroupMessage(818804507L, combinedMsg);
     }
 
     private enum LikeStatus {
@@ -68,12 +72,21 @@ public class LikeUser {
         REQUEST_ERROR   // -1 (Exception)
     }
 
-    public static void processCommand(long userId, long groupId) {
+    public static String processCommand(long userId, long groupId, boolean isAuto) {
+        LocalTime limitEnd = LocalTime.of(0, 5,0);
         boolean isFriend = GetFriendList.isFriend(userId);
-        ThreadManager.execute(() -> sendLike(userId, groupId, isFriend));
+        if (isAuto) {
+            return sendLike(userId, groupId, isFriend, true);
+        }
+        if (LocalTime.now().isBefore(limitEnd) && groupId != 818804507L) {
+            MessageSender.sendGroupMessage(groupId, "稳定性调整阶段，暂不支持点赞，请稍等几分钟!");
+            return "";
+        }
+        ThreadManager.execute(() -> sendLike(userId, groupId, isFriend, false));
+        return null;
     }
 
-    private static void sendLike(long userId, long groupId, boolean isFriend) {
+    private static String sendLike(long userId, long groupId, boolean isFriend, boolean isAuto) {
         String feedback;
 
         if (isFriend) {
@@ -83,7 +96,10 @@ public class LikeUser {
             feedback = unfriendLike(userId);
         }
 
-        MessageSender.sendGroupMessage(groupId, feedback);
+        if (!isAuto) {
+            MessageSender.sendGroupMessage(groupId, feedback);
+        }
+        return feedback;
     }
 
     private static String unfriendLike(long userId) {

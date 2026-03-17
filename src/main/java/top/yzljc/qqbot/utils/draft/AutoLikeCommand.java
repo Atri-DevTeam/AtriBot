@@ -23,52 +23,54 @@ public class AutoLikeCommand implements CommandExecutor {
             return false;
         }
         String sub = args[0].trim().toLowerCase();
-        if ("add".equals(sub)) {
-            long targetUid;
-            if (sender.isAdmin() && args.length >= 2) {
-                try {
-                    targetUid = Long.parseLong(args[1].trim());
-                } catch (NumberFormatException e) {
-                    sender.reply("请填写有效的 QQ 号", false);
-                    return true;
+        switch (sub) {
+            case "add" -> {
+                long targetUid;
+                if (sender.isAdmin() && args.length >= 2) {
+                    try {
+                        targetUid = Long.parseLong(args[1].trim());
+                    } catch (NumberFormatException e) {
+                        sender.reply("请填写有效的 QQ 号", false);
+                        return true;
+                    }
+                } else {
+                    targetUid = sender.getUserId();
                 }
-            } else {
-                targetUid = sender.getUserId();
-            }
-            LikeUser.addToAutoLikeList(targetUid);
-            sender.reply("已加入自动点赞列表", false);
-            return true;
-        }
-        if ("remove".equals(sub)) {
-            long targetUid;
-            if (sender.isAdmin() && args.length >= 2) {
-                try {
-                    targetUid = Long.parseLong(args[1].trim());
-                } catch (NumberFormatException e) {
-                    sender.reply("请填写有效的 QQ 号", false);
-                    return true;
-                }
-            } else {
-                targetUid = sender.getUserId();
-            }
-            LikeUser.removeFromAutoLikeList(targetUid);
-            sender.reply("已移出自动点赞列表", false);
-            return true;
-        }
-        if ("list".equals(sub)) {
-            List<Long> list = LikeUser.getAutoLikeList();
-            if (list.isEmpty()) {
-                sender.reply("自动点赞列表为空", false);
+                LikeUser.addToAutoLikeList(targetUid);
+                sender.reply("已加入自动点赞列表", false);
                 return true;
             }
-            String oneLine = list.stream()
-                    .map(uid -> {
-                        String name = GetUserInfo.getUserName(uid);
-                        return name != null ? name + "(" + uid + ")" : String.valueOf(uid);
-                    })
-                    .collect(Collectors.joining(", "));
-            sender.reply("自动点赞列表：" + oneLine, false);
-            return true;
+            case "remove" -> {
+                long targetUid;
+                if (sender.isAdmin() && args.length >= 2) {
+                    try {
+                        targetUid = Long.parseLong(args[1].trim());
+                    } catch (NumberFormatException e) {
+                        sender.reply("请填写有效的 QQ 号", false);
+                        return true;
+                    }
+                } else {
+                    targetUid = sender.getUserId();
+                }
+                LikeUser.removeFromAutoLikeList(targetUid);
+                sender.reply("已移出自动点赞列表", false);
+                return true;
+            }
+            case "list" -> {
+                List<Long> list = LikeUser.getAutoLikeList();
+                if (list.isEmpty()) {
+                    sender.reply("自动点赞列表为空", false);
+                    return true;
+                }
+                String oneLine = list.stream()
+                        .map(uid -> {
+                            String name = GetUserInfo.getUserName(uid);
+                            return name != null ? name + "(" + uid + ")" : String.valueOf(uid);
+                        })
+                        .collect(Collectors.joining(", "));
+                sender.reply("自动点赞列表：" + oneLine, false);
+                return true;
+            }
         }
         if (sender.isAdmin() && "test".equals(sub)){
             LikeUser.likeAllinList();

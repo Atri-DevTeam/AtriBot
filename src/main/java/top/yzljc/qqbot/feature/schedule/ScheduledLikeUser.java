@@ -6,7 +6,7 @@ import top.yzljc.qqbot.feature.LikeUser;
 
 public final class ScheduledLikeUser {
 
-    @Schedule(time = "00:00:02", type = ScheduleType.DAILY)
+    @Schedule(time = "00:03:00", type = ScheduleType.DAILY)
     public static void run() {
         LikeUser.likeAllinList();
     }
