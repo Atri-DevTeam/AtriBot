@@ -10,7 +10,7 @@
 
 ## 系统概览
 
-- **入口**：`top.yzljc.qqbot.YzLjcBot`（负责加载配置、启动各模块定时任务与服务端）
+- **入口**：`top.yzljc.qqbot.AtriBot`（负责加载配置、启动各模块定时任务与服务端）
 - **QQ 对接**：HTTP 接收 NapCat 上报 + HTTP 调用 NapCat API 发送消息（`botservice/request` + `botservice/message`）
 - **MC 对接**：`socket/SocketManager` 监听并维护 Minecraft 侧连接（端口见 `config.yml`）
 - **配置中心**：`src/main/resources/config.yml`（运行时从工作目录读取，不存在时自动从 classpath 复制默认配置）
@@ -149,7 +149,7 @@ java --enable-preview -jar target/Yzljc-qq-bot-2.6.2-Release.jar
 
 ## 群功能开关
 
-所有群功能开关通过 `GroupConfigManager` 管理，在 `YzLjcBot.main` 中统一注册默认值，可在运行时通过管理指令按群修改。
+所有群功能开关通过 `GroupConfigManager` 管理，在 `AtriBot.main` 中统一注册默认值，可在运行时通过管理指令按群修改。
 
 | 功能键 | 说明 | 默认值 |
 |--------|------|--------|
@@ -200,7 +200,7 @@ java --enable-preview -jar target/Yzljc-qq-bot-2.6.2-Release.jar
 ### 新增功能模块
 1. 在 `feature/` 下创建新包，编写功能逻辑
 2. 若需定时任务，在 `feature/schedule/` 中添加调度类，并在 `RunScheduleTask` 中注册
-3. 若需群功能开关，在 `YzLjcBot.main` 中调用 `GroupConfigManager.registerFeature(key, defaultValue)`
+3. 若需群功能开关，在 `AtriBot.main` 中调用 `GroupConfigManager.registerFeature(key, defaultValue)`
 
 ---
 

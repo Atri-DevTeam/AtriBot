@@ -187,7 +187,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>top.yzljc.qqbot.YzLjcBot</mainClass>
+                                    <mainClass>top.yzljc.qqbot.AtriBot</mainClass>
                                 </transformer>
                                 <!-- SLF4J 绑定文件（解决日志问题） -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">

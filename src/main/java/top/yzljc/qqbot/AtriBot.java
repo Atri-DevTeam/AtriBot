@@ -14,11 +14,11 @@ import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.utils.SetProjectInfo;
 
-public class YzLjcBot {
+public class AtriBot {
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
-        System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
+        System.out.println("==== AtriBot ====");
 
         Settings settings = Config.getInstance();
 
