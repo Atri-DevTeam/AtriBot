@@ -58,4 +58,10 @@ public interface Settings {
     String getDebugCommandSuffix();
 
     String getTtfFileName();
+
+    int getVarietyPort();
+
+    String getVarietyHost();
+
+    String getVarietyKey();
 }

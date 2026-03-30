@@ -1,5 +1,6 @@
 package top.yzljc.qqbot;
 
+import lombok.Getter;
 import top.yzljc.qqbot.botservice.clock.RunScheduleTask;
 import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
 import top.yzljc.qqbot.config.Config;
@@ -11,14 +12,17 @@ import top.yzljc.qqbot.botservice.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
+import top.yzljc.qqbot.socket.MinecraftVariety;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.utils.SetProjectInfo;
 
-public class YzLjcBot {
+public class AtriBot {
+    @Getter
+    private static MinecraftVariety minecraftVariety;
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
-        System.out.println("==== YZ_Ljc_ QQ Bot Edition ====");
+        System.out.println("==== AtriBot ====");
 
         Settings settings = Config.getInstance();
 
@@ -63,9 +67,21 @@ public class YzLjcBot {
         GroupConfigManager.registerFeature("bv_check", false);
         GroupConfigManager.registerFeature("wakeup_send", false);
         GroupConfigManager.registerFeature("broadcast", true);
-        GroupConfigManager.registerFeature("calendar",true);
-        GroupConfigManager.registerFeature("get_hypixel_reward",false);
+        GroupConfigManager.registerFeature("calendar", true);
+        GroupConfigManager.registerFeature("get_hypixel_reward", false);
         GroupConfigManager.registerFeature("bedwars_challenge", true);
         GroupConfigManager.registerFeature("tufe_class_alert", false);
+        GroupConfigManager.registerFeature("variety_server", false);
+
+        try {
+            String mcIp = settings.getVarietyHost();
+            int mcPort = settings.getVarietyPort();
+            String pubKey = settings.getVarietyKey();
+
+            minecraftVariety = new MinecraftVariety(mcIp, mcPort, pubKey);
+            System.out.println("[Variety] 验证码发送器初始化成功！");
+        } catch (Exception e) {
+            System.err.println("[Variety] 发送器初始化失败，请检查公钥格式: " + e.getMessage());
+        }
     }
 }

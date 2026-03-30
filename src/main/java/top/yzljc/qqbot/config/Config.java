@@ -45,6 +45,9 @@ public class Config implements Settings{
     private String websocketUrl;
     private String debugCommandSuffix;
     private String ttfFileName;
+    private int varietyPort;
+    private String varietyHost;
+    private String varietyKey;
 
     private Config() {
         load();
@@ -135,6 +138,9 @@ public class Config implements Settings{
                 this.githubWebhookSecret = (String) data.getOrDefault("github-webhook-secret", "null");
                 this.commandPrefix = (String) data.getOrDefault("command-prefix", "/");
                 this.ttfFileName = (String) data.getOrDefault("ttf-file-name", "default.ttf");
+                this.varietyPort = (int) data.getOrDefault("variety-port", 8080);
+                this.varietyHost = (String) data.getOrDefault("variety-host", "127.0.0.1");
+                this.varietyKey = (String) data.getOrDefault("variety-key", "public-key");
 
                 this.ignoredUsers = new ArrayList<>();
                 Object ignoredUserObj = data.get("recall-ignore-user");
@@ -303,5 +309,20 @@ public class Config implements Settings{
     @Override
     public String getTtfFileName() {
         return ttfFileName;
+    }
+
+    @Override
+    public int getVarietyPort() {
+        return varietyPort;
+    }
+
+    @Override
+    public String getVarietyHost() {
+        return varietyHost;
+    }
+
+    @Override
+    public String getVarietyKey() {
+        return varietyKey;
     }
 }
