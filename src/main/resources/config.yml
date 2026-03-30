@@ -5,6 +5,11 @@ debug-command-suffix: "--debug"
 # 根目录中字体的名字
 ttf-file-name: "default.ttf"
 
+# 验证服务器Socket信息
+variety-port: 8080
+variety-host: "localhost"
+variety-key: "public-key"
+
 # Websocket服务器监听端口
 websocket-port: "ws://localhost:1111"
 
