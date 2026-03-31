@@ -12,13 +12,13 @@ import top.yzljc.qqbot.botservice.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
-import top.yzljc.qqbot.socket.MinecraftVariety;
+import top.yzljc.qqbot.socket.MinecraftVerify;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.utils.SetProjectInfo;
 
 public class AtriBot {
     @Getter
-    private static MinecraftVariety minecraftVariety;
+    private static MinecraftVerify minecraftVerify;
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "true");
@@ -71,17 +71,16 @@ public class AtriBot {
         GroupConfigManager.registerFeature("get_hypixel_reward", false);
         GroupConfigManager.registerFeature("bedwars_challenge", true);
         GroupConfigManager.registerFeature("tufe_class_alert", false);
-        GroupConfigManager.registerFeature("variety_server", false);
+        GroupConfigManager.registerFeature("verify_server", false);
 
         try {
             String mcIp = settings.getVarietyHost();
             int mcPort = settings.getVarietyPort();
             String pubKey = settings.getVarietyKey();
 
-            minecraftVariety = new MinecraftVariety(mcIp, mcPort, pubKey);
-            System.out.println("[Variety] 验证码发送器初始化成功！");
+            minecraftVerify = new MinecraftVerify(mcIp, mcPort, pubKey);
         } catch (Exception e) {
-            System.err.println("[Variety] 发送器初始化失败，请检查公钥格式: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

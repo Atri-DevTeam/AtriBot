@@ -12,7 +12,7 @@ import top.yzljc.qqbot.command.CommandSender;
  * @Project Yzljc-QQ-Bot
  * @Package top.yzljc.qqbot.feature.minecraft.specificserver
  */
-public class Variety implements CommandExecutor {
+public class Verify implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         var uid = sender.getUserId();
@@ -20,7 +20,7 @@ public class Variety implements CommandExecutor {
             return false;
         }
         String code = args[0].trim();
-        var result = AtriBot.getMinecraftVariety().sendRequest(uid, code);
+        var result = AtriBot.getMinecraftVerify().sendRequest(uid, code);
         switch (result) {
             case 200 -> sender.reply("✅ 绑定成功!", false);
             case 100 -> sender.reply("⚠️ 绑定失败：你游戏内的账号已经绑定过其他 QQ 了！", false);

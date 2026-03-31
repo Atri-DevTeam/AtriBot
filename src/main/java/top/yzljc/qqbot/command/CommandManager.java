@@ -20,7 +20,7 @@ import top.yzljc.qqbot.feature.minecraft.BedwarsChallenge;
 import top.yzljc.qqbot.feature.minecraft.HypixelReward;
 import top.yzljc.qqbot.feature.minecraft.MojangStatus;
 import top.yzljc.qqbot.feature.minecraft.Motd;
-import top.yzljc.qqbot.feature.minecraft.specificserver.Variety;
+import top.yzljc.qqbot.feature.minecraft.specificserver.Verify;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
 import top.yzljc.qqbot.feature.schedule.*;
@@ -65,7 +65,7 @@ public class CommandManager {
         register("reload", new Reload(), "重新加载配置", "/reload [all|cfg|f|g]", null, null);
         register("autolike", new AutoLikeCommand(), "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
         register("tufe", new TufeClassAlert(), "查课", "/tufe查看下节课的上课地点", null, "tufe_class_alert");
-        register("variety", new Variety(), "验证YZ_Ljc_ Network账号", "/variety <验证密钥>", null, "variety_server");
+        register("verify", new Verify(), "验证YZ_Ljc_ Network账号", "/verify <验证密钥>", null, "verify_server");
     }
 
     /**

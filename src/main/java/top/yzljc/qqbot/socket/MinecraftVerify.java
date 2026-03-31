@@ -10,13 +10,13 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-public class MinecraftVariety {
+public class MinecraftVerify {
 
     private final String serverIp;
     private final int serverPort;
     private final PublicKey publicKey;
 
-    public MinecraftVariety(String serverIp, int serverPort, String publicKeyBase64) throws Exception {
+    public MinecraftVerify(String serverIp, int serverPort, String publicKeyBase64) throws Exception {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
         byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64);
