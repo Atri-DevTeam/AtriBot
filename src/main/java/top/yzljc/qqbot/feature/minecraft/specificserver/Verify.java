@@ -15,7 +15,7 @@ import top.yzljc.qqbot.command.CommandSender;
 public class Verify implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var uid = sender.getUserId();
+        var uid = sender.userId();
         if (args.length < 1) {
             return false;
         }

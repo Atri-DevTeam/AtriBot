@@ -90,7 +90,7 @@ public class SearchRelevant implements CommandExecutor {
             }
         }
 
-        searchInDatabase(sender.getGroupId(), keyword, targetUserId, mode);
+        searchInDatabase(sender.groupId(), keyword, targetUserId, mode);
 
         return true;
     }

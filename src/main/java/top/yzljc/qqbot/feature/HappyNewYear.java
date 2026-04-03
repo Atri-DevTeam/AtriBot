@@ -35,13 +35,13 @@ public class HappyNewYear implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.isAdmin()){
-            sendToSingleGroup(sender.getGroupId());
+            sendToSingleGroup(sender.groupId());
             return true;
         }
         if (sender.isDebug()){
             sendToAllGroups();
         }else {
-            sendToSingleGroup(sender.getGroupId());
+            sendToSingleGroup(sender.groupId());
         }
         return true;
     }

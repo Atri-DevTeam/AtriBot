@@ -29,7 +29,7 @@ public class TufeClassAlert implements CommandExecutor {
             } while (checkTargetSession == 0);
             time = checkTargetSession;
         }
-        while (ProcessClassTable.getClassTableJson(time, sender.getGroupId()) == -1) {
+        while (ProcessClassTable.getClassTableJson(time, sender.groupId()) == -1) {
             time++;
         }
         return true;

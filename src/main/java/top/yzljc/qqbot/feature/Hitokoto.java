@@ -18,8 +18,14 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.config.Config;
 
-public class Hitokoto {
+public class Hitokoto implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(Hitokoto.class);
 
@@ -51,12 +57,37 @@ public class Hitokoto {
         }
     }
 
-    public static void processHitokoto(long groupId) {
-        ThreadManager.execute(() -> {
-            String feedback = fetchEitherHitokotoOrLocal();
-            MessageSender.sendGroupMessage(groupId, feedback);
-        });
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        long groupId = event.getGroupId();
+        long userId = event.getUserId();
+        String rawMessage = event.getRawMessage();
+
+        if (userId == GetUserInfo.getBotId()) {
+            return;
+        }
+
+        if (!GroupConfigManager.isFeatureEnabled(groupId, "one_text")) {
+            return;
+        }
+
+        boolean match = false;
+        String[] keywords = Config.getInstance().getKeywordsHitokoto();
+        for (String kw : keywords) {
+            if (rawMessage.contains(kw)) {
+                match = true;
+                break;
+            }
+        }
+
+        if (match) {
+            ThreadManager.execute(() -> {
+                String feedback = fetchEitherHitokotoOrLocal();
+                event.getSender().replay(feedback);
+            });
+        }
     }
+
 
     private static String fetchEitherHitokotoOrLocal() {
         // 0表示API，1表示本地

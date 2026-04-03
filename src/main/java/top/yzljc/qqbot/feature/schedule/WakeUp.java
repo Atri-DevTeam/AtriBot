@@ -31,7 +31,7 @@ public class WakeUp implements CommandExecutor {
         if (sender.isDebug()) {
             sendImgToGroup();
         }else{
-            debugSendImgToGroup(sender.getGroupId());
+            debugSendImgToGroup(sender.groupId());
         }
         return true;
     }

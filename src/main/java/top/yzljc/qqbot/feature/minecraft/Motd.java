@@ -19,7 +19,7 @@ public class Motd implements CommandExecutor {
             sender.reply("无效地址，请使用ip/ip:port的格式，如 mc.hypixel.net 或 mc.hypixel.net:12345", false);
             return true;
         }
-        ThreadManager.execute(() -> DrawMotd.fetchAndSendMotd(sender.getGroupId(), hp));
+        ThreadManager.execute(() -> DrawMotd.fetchAndSendMotd(sender.groupId(), hp));
         return true;
     }
 }

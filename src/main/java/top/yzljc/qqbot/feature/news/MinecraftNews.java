@@ -55,7 +55,7 @@ public class MinecraftNews implements CommandExecutor {
             return true;
         }
         ThreadManager.execute(() -> checkNews(true));
-        MessageSender.sendGroupMessage(sender.getGroupId(), "正在手动检查 Minecraft 最新资讯...");
+        MessageSender.sendGroupMessage(sender.groupId(), "正在手动检查 Minecraft 最新资讯...");
         return true;
     }
 

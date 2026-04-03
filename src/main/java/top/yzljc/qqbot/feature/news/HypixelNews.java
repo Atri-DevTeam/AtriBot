@@ -54,7 +54,7 @@ public class HypixelNews implements CommandExecutor {
             return true;
         }
         ThreadManager.execute(() -> checkNews(true));
-        MessageSender.sendGroupMessage(sender.getGroupId(), "正在手动检查 Hypixel 官网资讯...");
+        MessageSender.sendGroupMessage(sender.groupId(), "正在手动检查 Hypixel 官网资讯...");
         return true;
     }
 

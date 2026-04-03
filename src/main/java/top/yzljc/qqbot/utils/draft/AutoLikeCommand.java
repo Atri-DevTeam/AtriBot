@@ -15,7 +15,7 @@ public class AutoLikeCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getGroupId() != AUTOLIKE_GROUP_ID) {
+        if (sender.groupId() != AUTOLIKE_GROUP_ID) {
             sender.reply("该命令仅在指定群开放", false);
             return true;
         }
@@ -34,7 +34,7 @@ public class AutoLikeCommand implements CommandExecutor {
                         return true;
                     }
                 } else {
-                    targetUid = sender.getUserId();
+                    targetUid = sender.userId();
                 }
                 LikeUser.addToAutoLikeList(targetUid);
                 sender.reply("已加入自动点赞列表", false);
@@ -50,7 +50,7 @@ public class AutoLikeCommand implements CommandExecutor {
                         return true;
                     }
                 } else {
-                    targetUid = sender.getUserId();
+                    targetUid = sender.userId();
                 }
                 LikeUser.removeFromAutoLikeList(targetUid);
                 sender.reply("已移出自动点赞列表", false);

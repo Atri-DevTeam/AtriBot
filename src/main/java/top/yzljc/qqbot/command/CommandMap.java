@@ -19,6 +19,10 @@ public class CommandMap {
         }
     }
 
+    public Command getCommand(String name) {
+        return knownCommands.get(name.toLowerCase());
+    }
+
     public boolean dispatch(CommandSender sender, String cmdLine) {
         String[] parts = cmdLine.split("\\s+", 2); // 分割命令和参数
         String commandLabel = parts[0].toLowerCase();

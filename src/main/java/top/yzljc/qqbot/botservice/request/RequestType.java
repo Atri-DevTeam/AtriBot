@@ -9,13 +9,16 @@ public enum RequestType {
     SEND_LIKE("/send_like"),
     SEND_SIGN("/send_group_sign"),
     SEND_GROUP_MSG("/send_group_msg"),
-    SEND_FORWARD_MSG("/send_forward_msg"),
+    SEND_GROUP_FORWARD_MSG("/send_forward_msg"),
+    SEND_PRIVATE_FORWARD_MSG("/send_private_forward_msg"),
     SEND_PRIVATE_MSG("/send_private_msg"),
     SET_PROFILE("/set_qq_profile"),
     FORWARD_SINGLE_MSG("/forward_group_single_msg"),
     GROUP_POKE("/group_poke"),
     PUT_EMOJI("/set_msg_emoji_like"),
     ACCEPT_FRIEND_REQUEST("/set_friend_add_request"),
+    HANDLE_GROUP_PENDING_REQUEST("/set_group_add_request"),
+    QUIT_GROUP("/set_group_leave"),
     RECALL_MESSAGE("/delete_msg");
 
     private final String requestLink;

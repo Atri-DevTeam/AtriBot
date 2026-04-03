@@ -3,13 +3,19 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.request.PostRequest;
 import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.data.VarData;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -17,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LikeUser {
+public class LikeUser implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
 
@@ -46,22 +52,26 @@ public class LikeUser {
             return;
         }
 
-        List<String> resultLines = new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        int i = 0;
         for (Long userId : list) {
             String userName = GetUserInfo.getUserName(userId);
             if (userName == null) {
                 userName = String.valueOf(userId);
             }
 
-            String result = LikeUser.processCommand(userId, 818804507L, true);
-            resultLines.add("自动点赞" + userName + " " + (result != null ? result : ""));
+            String resultLine = sendLike(userId, 818804507L, GetFriendList.isFriend(userId), true);
+            result.add(MessageUtils.createTextNode("自动点赞 " + userName + " " + resultLine));
             log.info("已向群 818804507 自动点赞用户 {}", userName);
+            i++;
 
-            try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+            }
         }
 
-        String combinedMsg = String.join("\n", resultLines);
-        MessageSender.sendGroupMessage(818804507L, combinedMsg);
+        MessageUtils.sendGroupForwardMessage(818804507L, result, "自动点赞结果", "点击查看详细", "本次共点赞 " + i + " 位用户");
     }
 
     private enum LikeStatus {
@@ -72,18 +82,20 @@ public class LikeUser {
         REQUEST_ERROR   // -1 (Exception)
     }
 
-    public static String processCommand(long userId, long groupId, boolean isAuto) {
-        LocalTime limitEnd = LocalTime.of(0, 5,0);
-        boolean isFriend = GetFriendList.isFriend(userId);
-        if (isAuto) {
-            return sendLike(userId, groupId, isFriend, true);
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "like_user")) return;
+        if (LocalTime.now().isBefore(LocalTime.of(0, 5, 0)) && event.getGroupId() != 818804507L) {
+            event.getGroup().sendMessage("稳定性调整阶段，暂不支持点赞，请稍等几分钟!");
+            return;
         }
-        if (LocalTime.now().isBefore(limitEnd) && groupId != 818804507L) {
-            MessageSender.sendGroupMessage(groupId, "稳定性调整阶段，暂不支持点赞，请稍等几分钟!");
-            return "";
+        String msg = event.getRawMessage().trim();
+        boolean isFriend = GetFriendList.isFriend(event.getUserId());
+        for (String kw : Config.getInstance().getKeywordsLikeUser()) {
+            if (msg.equalsIgnoreCase(kw)) {
+                ThreadManager.execute(() -> sendLike(event.getUserId(), event.getGroupId(), isFriend, false));
+            }
         }
-        ThreadManager.execute(() -> sendLike(userId, groupId, isFriend, false));
-        return null;
     }
 
     private static String sendLike(long userId, long groupId, boolean isFriend, boolean isAuto) {
@@ -119,14 +131,14 @@ public class LikeUser {
         }
 
         if (successCount == 5) {
-            log.info("点赞成功 => QQ: {} | 获得点赞数: 50", userId);
-            return "点赞成功！(+50 Social Credits!)，没加好友可能无法收到点赞哦！";
+            log.info("得手 => {} | +50", userId);
+            return "已赞五次，增五十善。未加好友或不得见也";
         } else if (failCount == 5) {
-            log.info("点赞失败 => QQ: {} | 用户今日获赞数量达到上限", userId);
-            return "点赞失败，该用户今日已被赞过啦~";
+            log.info("受阻 => {} | 今日已极", userId);
+            return "今日已赞，不可复也";
         } else {
-            log.info("点赞部分成功 => QQ: {} | 成功: {} 次 | 失败: {} 次", userId, successCount * 10, failCount * 10);
-            return String.format("点赞部分成功！成功 %d 次，失败 %d 次，可能是由于该用户今日已被赞过啦~", successCount * 10 , failCount * 10);
+            log.info("半成 => {} | 成: {} | 败: {}", userId, successCount * 10, failCount * 10);
+            return String.format("半成。成 %d 次，败 %d 次。或为今日已赞故", successCount * 10, failCount * 10);
         }
     }
 
@@ -157,24 +169,24 @@ public class LikeUser {
     private static String generalResult(long userId, LikeStatus status) {
         return switch (status) {
             case SUCCESS -> {
-                log.info("点赞成功 => QQ: {} | 获得点赞数: 10", userId);
-                yield "点赞成功！(+10 Social Credits!)";
+                log.info("得手 => {} | +10", userId);
+                yield "已赞，增十善";
             }
             case DAILY_LIMIT -> {
-                log.info("点赞失败 => QQ: {} | 用户今日获赞数量达到上限", userId);
-                yield "点赞失败，该用户今日已被赞过啦~";
+                log.info("受阻 => {} | 今日已极", userId);
+                yield "今日已赞，不可复";
             }
             case UNKNOWN -> {
-                log.info("点赞未知响应 => QQ: {} | 原始: 接口返回未知状态", userId);
-                yield "点赞失败，接口返回未知状态";
+                log.info("不明 => {} | 接口无应", userId);
+                yield "接口无应，未成";
             }
             case FORMAT_ERROR -> {
-                log.warn("点赞接口返回非预期格式 => QQ: {} | 原始: 接口返回格式异常或无法解析", userId);
-                yield "点赞失败，接口返回格式异常或无法解析";
+                log.warn("谬乱 => {} | 格式误", userId);
+                yield "格式谬，赞未成";
             }
             default -> {
-                log.warn("点赞接口请求异常 => QQ: {} | 原始: 接口请求异常", userId);
-                yield "点赞失败，接口请求异常";
+                log.warn("失常 => {} | 请重试", userId);
+                yield "异常，姑且待之";
             }
         };
     }

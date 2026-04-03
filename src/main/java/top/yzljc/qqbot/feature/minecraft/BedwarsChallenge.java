@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -141,9 +141,9 @@ public class BedwarsChallenge implements CommandExecutor {
             }
             out.append("\n").append(String.format("%.2f", s)).append("/10(仅作参考，挑战难度因人而定)");
             List<Map<String,Object>> result = new ArrayList<>();
-            result.add(MT.createTextNode(out.toString(), "3199590352", "YZ_Ljc_"));
-            MT.sendForwardMessage(sender.getGroupId(), result, playerName + "挑战情况:", "总计完成数: " + tc, "评分: " + String.format("%.2f", s) + "/10 (仅作参考)", "起床战争挑战完成情况", "查看详细数据");
-        } catch (Exception e) {
+            result.add(MessageUtils.createTextNode(out.toString(), "3199590352", "YZ_Ljc_"));
+            MessageUtils.sendGroupForwardMessage(sender.groupId(), result, "起床战争挑战完成情况", "查看详细数据",
+                    playerName + "挑战情况:", "总计完成数: " + tc, "评分: " + String.format("%.2f", s) + "/10 (仅作参考)");        } catch (Exception e) {
             log.warn("BWC 查询异常: {}", e.getMessage(), e);
             sender.reply("查询时发生错误: " + e.getMessage(), false);
         }

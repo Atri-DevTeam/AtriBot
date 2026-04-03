@@ -8,7 +8,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -41,9 +41,9 @@ public class HypixelReward implements CommandExecutor {
             return false;
         }
 
-        messageId = sender.getMessageId();
-        long groupId = sender.getGroupId();
-        long userId = sender.getUserId();
+        messageId = sender.messageId();
+        long groupId = sender.groupId();
+        long userId = sender.userId();
         String content = args[0];
 
         Matcher matcher = URL_PATTERN.matcher(content);
@@ -96,7 +96,7 @@ public class HypixelReward implements CommandExecutor {
                 if (rawMessage.equals("0") || rawMessage.equals("1") || rawMessage.equals("2")) {
 
                     if (currentSession.securityToken == null) {
-                        MT.replyMessage(userId, groupId, msgId, false, "⚠️ 还未准备好，请稍等喵！");
+                        MessageUtils.replyMessage(userId, groupId, msgId, false, "⚠️ 还未准备好，请稍等喵！");
                         return;
                     }
 
@@ -215,7 +215,7 @@ public class HypixelReward implements CommandExecutor {
                     }
 
                     // 使用之前保存的 messageId 或者不需要引用
-                    MT.replyMessage(userId, groupId, messageId, false, sb.toString());
+                    MessageUtils.replyMessage(userId, groupId, messageId, false, sb.toString());
 
                 } else if ("result".equals(type)) {
                     // 最终领取结果

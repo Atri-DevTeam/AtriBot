@@ -90,7 +90,8 @@ public class PacketEvent {
         try {
             String jsonString = json.toPrettyString();
             long userId = json.path("user_id").asLong(0);
-            if (userId == botUid) return;
+            long groupid = json.path("group_id").asLong(0);
+            if (userId == botUid && groupid == debugGroupId) return;
             MessageSender.sendGroupMessage(debugGroupId, jsonString);
         } catch (Exception e) {
             log.error("转发失败：{}", e.getMessage());

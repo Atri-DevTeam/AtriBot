@@ -1,12 +1,9 @@
 package top.yzljc.qqbot.botservice.request;
 
-import top.yzljc.qqbot.botservice.tools.MM;
-import top.yzljc.qqbot.botservice.tools.MT;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botservice.message.MessageFilter;
 import top.yzljc.qqbot.botservice.message.MessageRecorder;
 import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -17,7 +14,6 @@ import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.minecraft.HypixelReward;
 import top.yzljc.qqbot.utils.FindRecall;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
-import top.yzljc.qqbot.utils.AutoAccept;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.utils.draft.Scratch;
 
@@ -29,12 +25,11 @@ public class DataProcessor {
     private static final List<Long> spyGroups = settings.getMessageSpyGroups();
     private static final List<Long> admins = settings.getAdminUids();
     private static final long MANOSABA_GROUP = settings.getManosabaGroupId();
-    private static final String[] KEYWORDS_HITOKOTO = settings.getKeywordsHitokoto();
-    private static final String[] KEYWORDS_LIKE_USER = settings.getKeywordsLikeUser();
     private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
     private static final long ownerId = 3199590352L;
 
     public static void processMessage(JsonNode json) {
+        PacketEvent.process(json);
         String postType = json.path("post_type").asText("");
         String messageType = json.path("message_type").asText();
         String noticeType = json.path("notice_type").asText("");
@@ -50,44 +45,13 @@ public class DataProcessor {
 
             for (JsonNode msgPart : msgData) {
                 String msgType = msgPart.path("type").asText();
-                Map<String, Object> msgList = new HashMap<>();
-                Map<String, Object> rawMsgData = new HashMap<>();
-                msgList.put("type", msgType);
-
-                switch (msgType) {
-                    case "text":
-                        rawMsgData.put("text", msgPart.path("data").path("text").asText(""));
-                        break;
-                    case "face":
-                        rawMsgData.put("id", msgPart.path("data").path("id").asText(""));
-                        break;
-                    case "json":
-                        rawMsgData.put("data", msgPart.path("data").path("data").asText(""));
-                        break;
-                    case "image":
-                        rawMsgData.put("file", msgPart.path("data").path("url").asText(""));
-                        break;
-                    case "video":
-                        rawMsgData.put("file", msgPart.path("data").path("url").asText(""));
-                        break;
-                    case "at":
-                        rawMsgData.put("qq", msgPart.path("data").path("qq").asText(""));
-                        if (msgPart.path("data").path("qq").asText("").equals(String.valueOf(GetUserInfo.getBotId()))){
-                            MT.atUser(ownerId,settings.getDebugGroupId(), GetUserInfo.getUserName(userId) + "在群" + GetGroupInfo.getGroupName(groupId) + "中提到了你");
-                            MessageSender.sendGroupData(settings.getDebugGroupId(), MM.parse(rawMessage));
-                        }
-                        break;
-                    case "reply":
-                        rawMsgData.put("id", msgPart.path("data").path("id").asText(""));
-                        break;
-                    default:
-                        break;
-                }
-                if (rawMsgData.isEmpty()) continue;
-                msgList.put("data", rawMsgData);
-                messageContent.add(msgList);
+                Map<String, Object> partMap = new HashMap<>();
+                partMap.put("type", msgType);
+                partMap.put("data", msgPart.path("data"));
+                messageContent.add(partMap);
             }
-            if ("private".equals(messageType)) {
+
+            if ("group".equals(messageType) && GroupConfigManager.isFeatureEnabled(groupId,"msg_record")) {
                 // 私聊转发到调试群并狠狠骚扰LJC
                 List<Map<String, Object>> forward = new ArrayList<>();
                 Map<String, Object> atAdmin = Map.of("type", "at","data", Map.of("qq", ownerId));
@@ -104,7 +68,6 @@ public class DataProcessor {
         }
 
         // 这俩是爹不能放后面
-        PacketEvent.process(json);
         SendPoke.process(json);
 
         // 撤回内容消息上报处理
@@ -114,7 +77,7 @@ public class DataProcessor {
 
         // 处理加群/好友请求
         if ("request".equals(postType)) {
-            AutoAccept.handle(json);
+            // AutoAccept.handle(json);
             return;
         }
 
@@ -129,7 +92,7 @@ public class DataProcessor {
         }
 
         HypixelReward.processMessage(json);
-        CommandManager.processCommand(json);
+        // CommandManager.processCommand(json);
         GroupModeManager.process(json);
         AnnoyUser.processMessage(json);
         MessageRecorder.processRecord(json);
@@ -152,13 +115,9 @@ public class DataProcessor {
             }
         }
 
-        if (hitokotoKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId, "one_text") && userId != GetUserInfo.getBotId()){
-            Hitokoto.processHitokoto(groupId);
-        }
-
-        if (likeUserKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"like_user")){
-            LikeUser.processCommand(userId, groupId, false);
-        }
+//        if (likeUserKeyword(rawMessage) && GroupConfigManager.isFeatureEnabled(groupId,"like_user")){
+//            LikeUser.processCommand(userId, groupId, false);
+//        }
 
         if (electricKeyword(rawMessage)){
             if (!admins.contains(userId)){
@@ -169,18 +128,6 @@ public class DataProcessor {
                 ElectricCheck.processElectric(groupId);
             }
         }
-    }
-
-    private static boolean hitokotoKeyword(String msg) {
-        for (String kw : KEYWORDS_HITOKOTO)
-            if (msg.contains(kw)) return true;
-        return false;
-    }
-
-    private static boolean likeUserKeyword(String msg) {
-        for (String kw : KEYWORDS_LIKE_USER)
-            if (msg.equalsIgnoreCase(kw)) return true;
-        return false;
     }
 
     private static boolean electricKeyword(String msg) {

@@ -1,15 +1,12 @@
 package top.yzljc.qqbot.utils;
 
 import top.yzljc.qqbot.botservice.userinfo.GetProjectInfo;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,12 +17,13 @@ public class AtriHelp implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        atriHelp(sender.getGroupId());
+        MessageUtils.sendGroupForwardMessage(sender.groupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+                "项目开发说明", "指令帮助", "功能介绍");
         return true;
     }
 
-    private static void atriHelp(long groupId){
-        Map<String, Object> payload = new HashMap<>();
+    public static List<Map<String, Object>> getAtriHelp(){
+        // Map<String, Object> payload = new HashMap<>();
         List<Map<String,Object>> help = new ArrayList<>();
         String sb = """
                 这是一个新手拿来练手的项目，并没有什么有用的功能。
@@ -35,30 +33,14 @@ public class AtriHelp implements CommandExecutor {
                 Bot 的设计初衷是用来高度自定义连接 MC/QQ 群的
                 因此它有一个配套的MC插件能与 Bot 互联，与服务器交互，如果你有需求可以联系一下开发
                 """;
-        help.add(MT.createTextNode(sb,"3199590352","YZ_Ljc_"));
-        help.add(MT.createTextNode(subSb,"3199590352","YZ_Ljc_"));
-        help.add(MT.createTextNode(featureHelp(),"3199590352","YZ_Ljc_"));
-        help.add(MT.createTextNode(commandHelp(),"3199590352","YZ_Ljc_"));
-        help.add(MT.createTextNode(lastInfo(),"3199590352","YZ_Ljc_"));
-        help.add(MT.createTextNode(versionInfo(),"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(sb,"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(subSb,"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(featureHelp(),"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(commandHelp(),"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(lastInfo(),"3199590352","YZ_Ljc_"));
+        help.add(MessageUtils.createTextNode(versionInfo(),"3199590352","YZ_Ljc_"));
 
-//        payload.put("group_id", groupId);
-//        payload.put("messages", help);
-//
-//        List<Map<String, String>> news = new ArrayList<>();
-//        Map<String, String> newsItem = new HashMap<>();
-//        newsItem.put("text", "项目开发说明");
-//        newsItem.put("text2","指令帮助");
-//        newsItem.put("text3","功能介绍");
-//
-//        news.add(newsItem);
-//        payload.put("news", news);
-//
-//        payload.put("source", "ATRI - YZ_Ljc_ Bot 帮助文档");
-//        payload.put("summary", "查看项目帮助信息");
-
-        MT.sendForwardMessage(groupId, help, "项目开发说明", "指令帮助", "功能介绍", "ATRI - YZ_Ljc_ Bot 帮助文档","查看项目帮助信息");
-        PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
+        return help;
     }
 
     private static String featureHelp(){

@@ -2,10 +2,8 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -170,7 +168,7 @@ public class CheckBilibili {
                 if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
-                        MT.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        MessageUtils.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
                         log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
                     }
                 } else {
@@ -200,16 +198,16 @@ public class CheckBilibili {
     }
 
     private static Map<String, Object> createTextNode(String text) {
-        return MT.createTextNode(text);
+        return MessageUtils.createTextNode(text);
     }
 
     private static Map<String, Object> createImageNode(String url) {
-        return MT.createImageNode(url);
+        return MessageUtils.createImageNode(url);
     }
 
     private static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String title) {
         try {
-            MT.sendForwardMessage(groupId, nodes, title, "B站视频解析结果", "查看哔哩哔哩视频信息");
+            MessageUtils.sendGroupForwardMessage(groupId, nodes, "B站视频解析结果", "查看哔哩哔哩视频信息", title);
             log.info("Result request sending task was successfully transformed to PostRequest {}", groupId);
         } catch (Exception e) {
             log.error("Failed to send forward message", e);

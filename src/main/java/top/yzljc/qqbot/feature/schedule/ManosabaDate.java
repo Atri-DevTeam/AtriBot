@@ -31,8 +31,8 @@ public class ManosabaDate implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getGroupId() == settings.getManosabaGroupId()) {
-            receiveManodate(sender.getGroupId());
+        if (sender.groupId() == settings.getManosabaGroupId()) {
+            receiveManodate(sender.groupId());
         } else {
             sender.reply("此指令无法在该群聊调用！", false);
         }

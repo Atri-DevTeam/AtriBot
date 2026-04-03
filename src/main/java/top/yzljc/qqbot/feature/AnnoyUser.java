@@ -66,7 +66,7 @@ public class AnnoyUser implements CommandExecutor {
             return true;
         }
 
-        long targetId = sender.getUserId();
+        long targetId = sender.userId();
 
         if (args.length >= 2) {
             if (!sender.isAdmin()) {
@@ -81,7 +81,7 @@ public class AnnoyUser implements CommandExecutor {
             }
         }
 
-        long groupId = sender.getGroupId();
+        long groupId = sender.groupId();
         Map<Long, AnnoyMode> groupMap = annoyMap.get(groupId);
         boolean isAlreadyInThisMode = (groupMap != null && groupMap.get(targetId) == mode);
 

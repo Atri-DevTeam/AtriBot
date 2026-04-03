@@ -23,7 +23,7 @@ public class Reboot implements CommandExecutor {
             return true;
         }
 
-        processReboot(sender.getUserId(), sender.getGroupId());
+        processReboot(sender.userId(), sender.groupId());
 
         return true;
     }

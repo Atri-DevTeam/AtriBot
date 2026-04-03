@@ -1,14 +1,19 @@
 package top.yzljc.qqbot.command;
 
+import lombok.Getter;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.util.List;
 
 public abstract class Command {
+    @Getter
     private final String uid;
+    @Getter
     private final String description;
     private final String usageMessage;
+    @Getter
     private final List<String> aliases;
+    @Getter
     private final String enableFeature; // 对应原本的 featureKey
 
     protected Command(String uid, String description, String usageMessage, List<String> aliases, String enableFeature) {
@@ -21,20 +26,8 @@ public abstract class Command {
 
     public abstract boolean execute(CommandSender sender, String commandLabel, String[] args);
 
-    public String getUid() {
-        return uid;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
     public String getUsage() {
         return usageMessage;
-    }
-
-    public List<String> getAliases() {
-        return aliases;
     }
 
     // null = true
@@ -42,10 +35,7 @@ public abstract class Command {
         if (enableFeature == null || enableFeature.isEmpty()) {
             return true;
         }
-        return GroupConfigManager.isFeatureEnabled(sender.getGroupId(), enableFeature);
+        return GroupConfigManager.isFeatureEnabled(sender.groupId(), enableFeature);
     }
 
-    public String getEnableFeature() {
-        return enableFeature;
-    }
 }

@@ -12,7 +12,7 @@ public class GroupConfigInfo implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        getGroupStatusDescription(sender.getGroupId());
+        getGroupStatusDescription(sender.groupId());
         return true;
     }
 

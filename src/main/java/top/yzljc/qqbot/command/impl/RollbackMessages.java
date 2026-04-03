@@ -53,7 +53,7 @@ public class RollbackMessages implements CommandExecutor {
             }
         }
         
-        int count = performRollback(sender.getGroupId(), targetUserId, limit);
+        int count = performRollback(sender.groupId(), targetUserId, limit);
         
         if (count > 0) {
             sender.reply("已尝试撤回 " + count + " 条消息", false);

@@ -68,13 +68,13 @@ public class RunScheduleTask {
                         Path root = fs.getPath("/");
                         try (Stream<Path> walk = Files.walk(root)) {
                             walk.filter(p -> {
-                                String s = p.toString().replace('\\', '/');
-                                if (!s.endsWith(".class")) return false;
-                                String prefix = path + "/", prefixSlash = "/" + path + "/";
-                                if (!s.startsWith(prefix) && !s.startsWith(prefixSlash)) return false;
-                                int after = s.startsWith(prefixSlash) ? prefixSlash.length() : prefix.length();
-                                return s.substring(after).indexOf('/') < 0;
-                            })
+                                        String s = p.toString().replace('\\', '/');
+                                        if (!s.endsWith(".class")) return false;
+                                        String prefix = path + "/", prefixSlash = "/" + path + "/";
+                                        if (!s.startsWith(prefix) && !s.startsWith(prefixSlash)) return false;
+                                        int after = s.startsWith(prefixSlash) ? prefixSlash.length() : prefix.length();
+                                        return s.substring(after).indexOf('/') < 0;
+                                    })
                                     .forEach(p -> {
                                         String rel = p.toString().replace('/', '.').replace('\\', '.');
                                         if (rel.startsWith(".")) rel = rel.substring(1);
@@ -96,7 +96,6 @@ public class RunScheduleTask {
         addClassByName(out, addedClassNames, className, cl);
     }
 
-    /** 按类名去重，避免 classpath 下同一包对应多个 URL 时同一任务被注册多次 */
     private static void addClassByName(List<Class<?>> out, Set<String> addedClassNames, String className, ClassLoader cl) {
         if (!addedClassNames.add(className)) return;
         try {
@@ -131,7 +130,9 @@ public class RunScheduleTask {
         }
     }
 
-    /** DAILY: "HH:mm:ss" -> [hour, min, sec] */
+    /**
+     * DAILY: "HH:mm:ss" -> [hour, min, sec]
+     */
     private static int[] parseDailyTime(String time) {
         String[] parts = time.trim().split(":");
         if (parts.length < 3) return null;
@@ -146,7 +147,9 @@ public class RunScheduleTask {
         }
     }
 
-    /** HOURLY: "mm:ss" -> [minute, second] */
+    /**
+     * HOURLY: "mm:ss" -> [minute, second]
+     */
     private static int[] parseHourlyTime(String time) {
         String[] parts = time.trim().split(":");
         if (parts.length != 2) return null;

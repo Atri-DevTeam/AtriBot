@@ -1,13 +1,13 @@
-package top.yzljc.qqbot.botservice.tools;
+package top.yzljc.qqbot.botservice.message;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.request.PostRequest;
 import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.utils.Logger;
 
 import java.util.*;
 
-public class MT {
-    private static final String FAKE_UIN = "3614865692";
+public class MessageUtils {
+    private static final String FAKE_UIN = "3199590352";
     private static final String FAKE_NAME = "YZ_Ljc_";
 
     public static void replyMessage(long userId, long groupId,long messageId,String text){
@@ -46,40 +46,55 @@ public class MT {
         MessageSender.sendGroupData(groupId, replayContent);
     }
 
-    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String title, String summary) {
-        sendForwardMessage(groupId, nodes, textvar1, null, null, title, summary);
-    }
-
-    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String textvar2, String title, String summary) {
-        sendForwardMessage(groupId, nodes, textvar1, textvar2, null, title, summary);
-    }
-
-    public static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String textvar1, String textvar2, String textvar3, String title, String summary) {
+    public static void sendPrivateForwardMessage(long userId, List<Map<String, Object>> nodes, String title, String summary, String... textVars) {
         try {
             Map<String, Object> payload = new HashMap<>();
-            payload.put("group_id", groupId);
+            payload.put("user_id", userId);
             payload.put("messages", nodes);
 
             List<Map<String, String>> news = new ArrayList<>();
-            Map<String, String> newsItem1 = Map.of("text", textvar1);
-            news.add(newsItem1);
-            if (textvar2 != null) {
-                Map<String, String> newsItem2 = Map.of("text", textvar2);
-                news.add(newsItem2);
-            }
-            if (textvar3 != null) {
-                Map<String, String> newsItem3 = Map.of("text", textvar3);
-                news.add(newsItem3);
+            if (textVars != null) {
+                for (String textVar : textVars) {
+                    if (textVar != null && !textVar.isEmpty()) {
+                        news.add(Map.of("text", textVar));
+                    }
+                }
             }
             payload.put("news", news);
 
             payload.put("source", title);
             payload.put("summary", summary);
 
-            PostRequest.sendPost(RequestType.SEND_FORWARD_MSG, payload);
+            PostRequest.sendPost(RequestType.SEND_PRIVATE_FORWARD_MSG, payload);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.warn("发送好友转发消息失败: {}", e.getMessage());
+        }
+    }
+
+    public static void sendGroupForwardMessage(long groupId, List<Map<String, Object>> nodes, String title, String summary, String... textVars) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("group_id", groupId);
+            payload.put("messages", nodes);
+
+            List<Map<String, String>> news = new ArrayList<>();
+            if (textVars != null) {
+                for (String textVar : textVars) {
+                    if (textVar != null && !textVar.isEmpty()) {
+                        news.add(Map.of("text", textVar));
+                    }
+                }
+            }
+            payload.put("news", news);
+
+            payload.put("source", title);
+            payload.put("summary", summary);
+
+            PostRequest.sendPost(RequestType.SEND_GROUP_FORWARD_MSG, payload);
+
+        } catch (Exception e) {
+            Logger.warn("发送群转发消息失败: {}", e.getMessage());
         }
     }
 
@@ -174,6 +189,22 @@ public class MT {
         data.put("content", contentList);
         node.put("data", data);
         return node;
+    }
+
+    public static void handleGroupRequest(boolean approve, String flag, String reason) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("flag", flag);
+        payload.put("sub_type", "add");
+        payload.put("approve", approve);
+        if (reason != null) {
+            payload.put("reason", reason);
+        }
+        PostRequest.sendPost(RequestType.HANDLE_GROUP_PENDING_REQUEST, payload);
+        Logger.info("已{}群请求，flag: {}", approve ? "批准" : "拒绝", flag);
+    }
+
+    public static void recallMessage(long messageId) {
+        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
     }
 
     public enum ImageType {

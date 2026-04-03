@@ -2,7 +2,7 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
-import top.yzljc.qqbot.botservice.tools.MT;
+import top.yzljc.qqbot.botservice.message.MessageUtils;
 import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botservice.image.AbstractImage;
 import top.yzljc.qqbot.botservice.message.MessageSender;
@@ -44,7 +44,7 @@ public class Calendar implements CommandExecutor {
         if (sender.isDebug() && sender.isAdmin()) {
             sendToAllGroups();
         } else {
-            sendToSingleGroup(sender.getGroupId());
+            sendToSingleGroup(sender.groupId());
         }
         return true;
     }
@@ -352,7 +352,7 @@ public class Calendar implements CommandExecutor {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getDebugGroupId(), messageId);
                 } else {
                     log.warn("无法获取MessageID，取消本次推送任务");
-                    MT.atUser(3199590352L,Config.getInstance().getDebugGroupId(), "日历推送失败，无法获取消息ID");
+                    MessageUtils.atUser(3199590352L,Config.getInstance().getDebugGroupId(), "日历推送失败，无法获取消息ID");
                     return; // finally 会释放 calendarPushInProgress
                 }
 
@@ -361,7 +361,7 @@ public class Calendar implements CommandExecutor {
                     if (gid == Config.getInstance().getDebugGroupId()) continue;
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
 
-                    MT.forwardSingleGroupMsg(gid, messageId);
+                    MessageUtils.forwardSingleGroupMsg(gid, messageId);
                     log.info("已推送日历到群 {}，使用转发", gid);
 
                     try { Thread.sleep(200); } catch (InterruptedException ignored) {}

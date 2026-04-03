@@ -1,24 +1,16 @@
 package top.yzljc.qqbot.botservice.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.utils.Logger;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 public class PostRequest {
-    private static final Logger log = LoggerFactory.getLogger(PostRequest.class);
-    private static final Settings settings = Config.getInstance();
-    private static final String BASEURL = settings.getHttpUrl();
-    private static final ObjectMapper jsonMapper = new ObjectMapper();
+    private static final RestTemplate restTemplate = new RestTemplate();
 
     /**
      * 获取 API 返回结果 (多参)
@@ -62,35 +54,20 @@ public class PostRequest {
     }
 
     private static JsonNode executeRequest(RequestType type, Map<String, Object> params) {
-        HttpURLConnection conn = null;
         try {
+            String BASEURL = Config.getInstance().getHttpUrl();
             String postUrl = BASEURL + type.getRequestLink();
-            byte[] payload = jsonMapper.writeValueAsBytes(params != null ? params : new HashMap<>());
+            Map<String, Object> requestBody = params != null ? params : new HashMap<>();
 
-            conn = (HttpURLConnection) new URI(postUrl).toURL().openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setConnectTimeout(20000);
-            conn.setReadTimeout(20000);
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(postUrl, requestBody, JsonNode.class);
 
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(payload);
-                os.flush();
-            }
-
-            int code = conn.getResponseCode();
-            if (code >= 200 && code < 300) {
-                try (InputStream is = conn.getInputStream()) {
-                    return jsonMapper.readTree(is);
-                }
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return response.getBody();
             } else {
-                log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), code);
+                Logger.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), response.getStatusCode().value());
             }
         } catch (Exception e) {
-            log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
-        } finally {
-            if (conn != null) conn.disconnect();
+            Logger.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
         }
         return null;
     }

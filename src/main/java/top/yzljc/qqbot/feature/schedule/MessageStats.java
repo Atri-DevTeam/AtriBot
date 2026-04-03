@@ -59,25 +59,25 @@ public class MessageStats implements CommandExecutor {
         String replyMsg;
         if (args == null || args.length == 0) {
             LocalDate  targetDate = LocalDate.now();
-            replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
-            getMessageContent(sender.getGroupId(), replyMsg);
+            replyMsg = buildGroupStatsMsg(sender.groupId(), targetDate, false, null);
+            getMessageContent(sender.groupId(), replyMsg);
             return true;
         }
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("y")) {
                 LocalDate targetDate = LocalDate.now().minusDays(1);
-                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
-                getMessageContent(sender.getGroupId(), replyMsg);
+                replyMsg = buildGroupStatsMsg(sender.groupId(), targetDate, false, null);
+                getMessageContent(sender.groupId(), replyMsg);
             }else if (args[0].equalsIgnoreCase("overall")) {
                 LocalDate targetDate = LocalDate.now();
-                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, true, null);
-                getMessageContent(sender.getGroupId(), replyMsg);
+                replyMsg = buildGroupStatsMsg(sender.groupId(), targetDate, true, null);
+                getMessageContent(sender.groupId(), replyMsg);
             }else if (args[0].contains("[CQ:at,qq=")){
                 Long qqAt = extractAtUser(args[0]);
                 if (qqAt != null) {
                     LocalDate targetDate = LocalDate.now();
-                    replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, qqAt);
-                    getMessageContent(sender.getGroupId(), replyMsg);
+                    replyMsg = buildGroupStatsMsg(sender.groupId(), targetDate, false, qqAt);
+                    getMessageContent(sender.groupId(), replyMsg);
                 }
             }else{
                 return false;

@@ -103,7 +103,7 @@ public class MojangStatus implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        long groupId = sender.getGroupId();
+        long groupId = sender.groupId();
         MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
         log.info("开始检查 Mojang 服务状态 -> Group: {}", groupId);
         ThreadManager.execute(() -> performChecksAndSend(groupId));

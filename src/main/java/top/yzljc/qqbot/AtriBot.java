@@ -1,26 +1,100 @@
 package top.yzljc.qqbot;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import lombok.Getter;
 import top.yzljc.qqbot.botservice.clock.RunScheduleTask;
 import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
+import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.event.EventManager;
+import top.yzljc.qqbot.feature.Hitokoto;
+import top.yzljc.qqbot.feature.LikeUser;
 import top.yzljc.qqbot.feature.github.WebhookServer;
-import top.yzljc.qqbot.botservice.request.DataProcessor;
-import top.yzljc.qqbot.botservice.request.RequestReceiver;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.news.MinecraftNews;
+import top.yzljc.qqbot.command.impl.Reboot;
+import top.yzljc.qqbot.command.impl.RollbackMessages;
+import top.yzljc.qqbot.command.impl.SearchRelevant;
+import top.yzljc.qqbot.config.Reload;
+import top.yzljc.qqbot.config.groups.GroupConfigInfo;
+import top.yzljc.qqbot.debug.Broadcast;
+import top.yzljc.qqbot.botservice.tools.RM;
+import top.yzljc.qqbot.feature.AnnoyUser;
+import top.yzljc.qqbot.feature.HappyNewYear;
+import top.yzljc.qqbot.feature.minecraft.BedwarsChallenge;
+import top.yzljc.qqbot.feature.minecraft.HypixelReward;
+import top.yzljc.qqbot.feature.minecraft.MojangStatus;
+import top.yzljc.qqbot.feature.minecraft.Motd;
+import top.yzljc.qqbot.feature.minecraft.specificserver.Verify;
+import top.yzljc.qqbot.feature.schedule.*;
+import top.yzljc.qqbot.utils.AtriHelp;
+import top.yzljc.qqbot.utils.Logger;
+import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
+import top.yzljc.qqbot.functions.DenyFuckGuys;
+import top.yzljc.qqbot.functions.UnknownInvitation;
 import top.yzljc.qqbot.socket.MinecraftVerify;
 import top.yzljc.qqbot.socket.SocketManager;
+import top.yzljc.qqbot.functions.AutoAccept;
 import top.yzljc.qqbot.utils.SetProjectInfo;
 
+import java.util.Collections;
+import java.util.Scanner;
+
+@SpringBootApplication
 public class AtriBot {
     @Getter
     private static MinecraftVerify minecraftVerify;
+    @Getter
+    private static AtriBot instance;
 
-    public static void main(String[] args) {
+    public AtriBot() {
+        if (instance != null) {
+            throw new RuntimeException("AtriBot 已在运行");
+        }
+        instance = this;
+        Runtime.getRuntime().addShutdownHook(new Thread(this::onDisable));
+    }
+
+    public void onEnable() {
+        System.out.println("====== ATRI IS STARTING ======");
+        EventManager.getInstance().registerEvents(new Hitokoto());
+        EventManager.getInstance().registerEvents(new AutoAccept());
+        EventManager.getInstance().registerEvents(new CommandManager());
+        EventManager.getInstance().registerEvents(new DenyFuckGuys());
+        EventManager.getInstance().registerEvents(new UnknownInvitation());
+        EventManager.getInstance().registerEvents(new LikeUser());
+
+        CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
+        CommandManager.getCommand("bc").setExecutor(new Broadcast());
+        CommandManager.getCommand("wakeup").setExecutor(new WakeUp());
+        CommandManager.getCommand("reboot").setExecutor(new Reboot());
+        CommandManager.getCommand("search").setExecutor(new SearchRelevant());
+        CommandManager.getCommand("recall").setExecutor(new RM());
+        CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
+        CommandManager.getCommand("motd").setExecutor(new Motd());
+        CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
+        CommandManager.getCommand("cl").setExecutor(new HypixelReward());
+        CommandManager.getCommand("bwc").setExecutor(new BedwarsChallenge());
+        CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
+        CommandManager.getCommand("checkhypnews").setExecutor(new HypixelNews());
+        CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
+        CommandManager.getCommand("github").setExecutor(new WebhookServer());
+        CommandManager.getCommand("signall").setExecutor(new AutoSign());
+        CommandManager.getCommand("stats").setExecutor(new MessageStats());
+        CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
+        CommandManager.getCommand("calendar").setExecutor(new Calendar());
+        CommandManager.getCommand("atrihelp").setExecutor(new AtriHelp());
+        CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
+        CommandManager.getCommand("reload").setExecutor(new Reload());
+        CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
+        CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
+        CommandManager.getCommand("verify").setExecutor(new Verify());
+
         System.setProperty("java.awt.headless", "true");
         System.out.println("==== AtriBot ====");
 
@@ -41,7 +115,7 @@ public class AtriBot {
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();
 
-        RequestReceiver.start(qqBotPort, DataProcessor::processMessage);
+        // RequestReceiver is now controlled by Spring Boot Controller
 
         SocketManager.loadConfig();
         SocketManager.start(socketPort);
@@ -52,15 +126,15 @@ public class AtriBot {
 
         // 群功能开关及默认值
         GroupConfigManager.registerFeature("auto_sign", true);
-        GroupConfigManager.registerFeature("mc_news", true);
-        GroupConfigManager.registerFeature("hyp_news", true);
+        GroupConfigManager.registerFeature("mc_news", false);
+        GroupConfigManager.registerFeature("hyp_news", false);
         GroupConfigManager.registerFeature("electric_check", false);
         GroupConfigManager.registerFeature("annoy_user", true);
         GroupConfigManager.registerFeature("new_year", true);
         GroupConfigManager.registerFeature("one_text", true);
-        GroupConfigManager.registerFeature("repeat_msg", true);
+        GroupConfigManager.registerFeature("repeat_msg", false);
         GroupConfigManager.registerFeature("send_poke", true);
-        GroupConfigManager.registerFeature("like_user", true);
+        GroupConfigManager.registerFeature("like_user", false);
         GroupConfigManager.registerFeature("mojang_status", true);
         GroupConfigManager.registerFeature("motd", false);
         GroupConfigManager.registerFeature("github_info", false);
@@ -80,7 +154,38 @@ public class AtriBot {
 
             minecraftVerify = new MinecraftVerify(mcIp, mcPort, pubKey);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
+    }
+
+    public void onDisable() {
+        System.out.println("====== ATRI IS SHUTTING DOWN ======");
+        System.out.println("==== AtriBot Disabled ====");
+    }
+
+    public static void main(String[] args) {
+        SpringApplication app = new SpringApplication(AtriBot.class);
+
+        // Define port pragmatically from config
+        int qqBotPort = Config.getInstance().getQqBotPort();
+        app.setDefaultProperties(Collections.singletonMap("server.port", qqBotPort));
+
+        ApplicationContext context = app.run(args);
+
+        AtriBot bot = context.getBean(AtriBot.class);
+        bot.onEnable();
+
+        new Thread(() -> {
+            java.util.Scanner scanner = new Scanner(System.in);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if ("stop".equalsIgnoreCase(line.trim())) {
+                    System.out.println("正在关闭 AtriBot...");
+                    SpringApplication.exit(context, () -> 0);
+                    System.exit(0);
+                    break;
+                }
+            }
+        }, "Console-Listener").start();
     }
 }
