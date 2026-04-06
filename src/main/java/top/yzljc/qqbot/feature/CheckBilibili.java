@@ -3,7 +3,7 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -19,8 +19,12 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
-public class CheckBilibili {
+public class CheckBilibili implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(CheckBilibili.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -33,12 +37,12 @@ public class CheckBilibili {
     private static final Pattern PATTERN_BV = Pattern.compile("BV[a-zA-Z0-9]{10}");
     private static final Pattern PATTERN_B23 = Pattern.compile("b23\\.tv[\\\\/]+([a-zA-Z0-9]+)");
 
-    public static void process(JsonNode json) {
-        String messageType = json.path("message_type").asText();
-        if (!"group".equals(messageType)) return;
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "bv_check")) return;
 
-        String rawMessage = json.path("raw_message").asText();
-        long groupId = json.path("group_id").asLong();
+        String rawMessage = event.getRawMessage();
+        long groupId = event.getGroupId();
 
         String bvid = findBvid(rawMessage);
 
@@ -168,7 +172,7 @@ public class CheckBilibili {
                 if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
-                        MessageUtils.atUser(3199590352L,settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        MessageUtils.atUser(3199590352L, settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
                         log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
                     }
                 } else {

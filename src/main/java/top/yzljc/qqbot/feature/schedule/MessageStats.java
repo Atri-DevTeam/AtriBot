@@ -3,7 +3,7 @@ package top.yzljc.qqbot.feature.schedule;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.config.LoadIllegalWords;
 import top.yzljc.qqbot.botservice.message.MessageRecorder;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 
@@ -124,7 +124,7 @@ public class MessageStats implements CommandExecutor {
             int count = statMap.getOrDefault(filterUserId, 0);
             String nick = fetchNickname(filterUserId);
 
-            if (SensitiveWordFilter.containsSensitiveWord(nick)) {
+            if (LoadIllegalWords.containsSensitiveWord(nick)) {
                 nick = null; // 触发后文的 fallback 显示QQ号
             }
 
@@ -166,7 +166,7 @@ public class MessageStats implements CommandExecutor {
             Long userId = entry.getKey();
             String nick = fetchNickname(userId);
 
-            if (SensitiveWordFilter.containsSensitiveWord(nick)) {
+            if (LoadIllegalWords.containsSensitiveWord(nick)) {
                 nick = null; // 强制置空，触发下方的 "QQ号:" 逻辑
             }
 

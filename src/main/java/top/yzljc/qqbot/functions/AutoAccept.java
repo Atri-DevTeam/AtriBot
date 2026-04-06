@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.FriendRequestEvent;

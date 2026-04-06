@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;

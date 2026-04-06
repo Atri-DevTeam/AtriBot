@@ -19,11 +19,12 @@ public enum GroupMemberChangeType {
     ME_PASSIVE_KICK("kick_me");
 
     private final String noticeType;
-    GroupMemberChangeType (String noticeType) {
+
+    GroupMemberChangeType(String noticeType) {
         this.noticeType = noticeType;
     }
 
-     public static GroupMemberChangeType fromNoticeType(String noticeType) {
+    public static GroupMemberChangeType fromNoticeType(String noticeType) {
         for (GroupMemberChangeType type : GroupMemberChangeType.values()) {
             if (type.getNoticeType().equals(noticeType)) {
                 return type;

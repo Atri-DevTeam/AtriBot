@@ -66,6 +66,7 @@ public class MessageSender {
         return new MessageResult(future);
     }
 
+    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
     public static MessageResult sendPrivateMessage(long userId, String content) {
         CompletableFuture<Long> future = new CompletableFuture<>();
@@ -75,6 +76,7 @@ public class MessageSender {
         return new MessageResult(future);
     }
 
+    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
     public static MessageResult sendGroupData(long groupId, List<Map<String, Object>> msgData) {
         CompletableFuture<Long> future = new CompletableFuture<>();
@@ -84,6 +86,7 @@ public class MessageSender {
         return new MessageResult(future);
     }
 
+    @Deprecated
     private static Long handlePrivateMsg(long userId, String text) {
         try {
             List<Map<String, Object>> messageNodes = getMaps(text, null, true);
@@ -130,6 +133,7 @@ public class MessageSender {
         return 0L;
     }
 
+    @Deprecated
     private static Long handleGroupData(long groupId, List<Map<String, Object>> msgData) {
         try {
             if (msgData.isEmpty()) return 0L;

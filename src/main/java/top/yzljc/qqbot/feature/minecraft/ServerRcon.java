@@ -2,9 +2,13 @@ package top.yzljc.qqbot.feature.minecraft;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 import top.yzljc.qqbot.feature.minecraft.specificserver.YunTea;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.feature.minecraft.specificserver.HypixelBanTest;
@@ -19,15 +23,18 @@ import java.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerRcon {
+public class ServerRcon implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(ServerRcon.class);
 
     private static final String ADMIN_FILE = ConfigFile.RCON_USER.getFileName();
     private static final String SERVER_SECRET_FILE = ConfigFile.RCON_SERVER_SECRET.getFileName();
     private static final ObjectMapper jsonMapper = new ObjectMapper();
+    @Getter
     private static Map<String, List<String>> adminRules = new HashMap<>();
+    @Getter
     private static Map<String, String> serverSecretMap = new HashMap<>();
+    @Getter
     public static final ConcurrentHashMap<String, CompletableFuture<String>> pendingCommandResponses = new ConcurrentHashMap<>();
 
     public static class AuthInfo {
@@ -40,15 +47,6 @@ public class ServerRcon {
         }
     }
 
-    public static Map<String, List<String>> getAdminRules() {
-        return adminRules;
-    }
-    public static Map<String, String> getServerSecretMap() {
-        return serverSecretMap;
-    }
-    public static ConcurrentHashMap<String, CompletableFuture<String>> getPendingCommandResponses() {
-        return pendingCommandResponses;
-    }
     public static String cleanLog(String log) {
         if (log == null) return "";
         return log.replaceAll("\\x1B\\[[;\\d]*m", "");
@@ -95,28 +93,26 @@ public class ServerRcon {
     }
 
     // server子包指令传入的核心逻辑，所有与服务器相关的内容都在这里分发
-    public static void processMessage(JsonNode json) {
-        if (!"group".equals(json.path("message_type").asText(""))) return;
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        long groupId = event.getGroupId();
+        long userId = event.getUserId();
+        String msg = event.getRawMessage().trim();
 
-        long groupId = json.path("group_id").asLong();
-        String rawMsg = json.path("raw_message").asText("");
-        long userId = json.path("user_id").asLong();
-        String rawTrimmed = rawMsg.trim();
-
-        if (rawTrimmed.startsWith("/unbanme")) {
-            HypixelBanTest.handleUnbanMeCommand(groupId, rawTrimmed, serverSecretMap.get("hbt"));
+        if (msg.startsWith("/unbanme")) {
+            HypixelBanTest.handleUnbanMeCommand(groupId, msg, serverSecretMap.get("hbt"));
         }
 
-        if (rawTrimmed.startsWith("/rc")) {
-            handle(userId, groupId, rawTrimmed);
+        if (msg.startsWith("/rc")) {
+            handle(userId, groupId, msg);
         }
 
-        if (rawTrimmed.startsWith("/wl")){
-            YunTea.handleWhiteListCommand(userId, groupId, rawTrimmed);
+        if (msg.startsWith("/wl")){
+            YunTea.handleWhiteListCommand(userId, groupId, msg);
         }
 
-        if (rawTrimmed.startsWith("白名单") && groupId == 715842297L){
-            YunTea.handleWhiteListSelfCheck(groupId, rawTrimmed);
+        if (msg.startsWith("白名单") && groupId == 715842297L){
+            YunTea.handleWhiteListSelfCheck(groupId, msg);
         }
     }
 

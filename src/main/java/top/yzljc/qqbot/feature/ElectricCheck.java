@@ -3,47 +3,58 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.request.HttpRequest;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.utils.Logger;
 
-public class ElectricCheck {
-
-    private static final Logger log = LoggerFactory.getLogger(ElectricCheck.class);
-
+public class ElectricCheck implements Listener {
+    private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
 
-    public static void processElectric(long groupId) {
-        ThreadManager.execute(() -> {
-            String feedback;
-            try {
-                JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        long groupId = event.getGroupId();
+        if (!GroupConfigManager.isFeatureEnabled(groupId, "electric_check")) {
+            return;
+        }
+        for (String k : KEYWORDS_ELECTRIC) {
+            if (event.getRawMessage().equalsIgnoreCase(k)) {
+                ThreadManager.execute(() -> {
+                    String feedback;
+                    try {
+                        JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);
 
-                if (respJson != null) {
-                    String rec = respJson.path("rec").asText();
-                    String rsmd = respJson.path("rsmd").asText();
-                    String rsfd = respJson.path("rsfd").asText();
-                    String rljd = respJson.path("rljd").asText();
-                    String rtzd = respJson.path("rtzd").asText();
-                    String rgzzt = respJson.path("rgzzt").asText();
+                        if (respJson != null) {
+                            String rec = respJson.path("rec").asText();
+                            String rsmd = respJson.path("rsmd").asText();
+                            String rsfd = respJson.path("rsfd").asText();
+                            String rljd = respJson.path("rljd").asText();
+                            String rtzd = respJson.path("rtzd").asText();
+                            String rgzzt = respJson.path("rgzzt").asText();
 
-                    String status = decodeUnicode(rgzzt);
+                            String status = decodeUnicode(rgzzt);
 
-                    feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s",
-                            rec, rsmd, rsfd, rljd, rtzd, status);
-                    log.info("电表数据发送 => {}", feedback.replace("\n", " | "));
-                } else {
-                    feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
-                    log.warn("返回内容无法解析为JSON对象");
-                }
-            } catch (Exception ex) {
-                feedback = "[电表查询失败] 网络异常或远端接口错误。";
-                log.warn("查询异常：{}", ex.getMessage());
+                            feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s",
+                                    rec, rsmd, rsfd, rljd, rtzd, status);
+                            Logger.info("电表数据发送 => {}", feedback.replace("\n", " | "));
+                        } else {
+                            feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
+                            Logger.warn("返回内容无法解析为JSON对象");
+                        }
+                    } catch (Exception ex) {
+                        feedback = "[电表查询失败] 网络异常或远端接口错误。";
+                        Logger.warn("查询异常：{}", ex.getMessage());
+                    }
+
+                    MessageSender.sendGroupMessage(groupId, feedback);
+                });
+                break;
             }
-
-            MessageSender.sendGroupMessage(groupId, feedback);
-        });
+        }
     }
 
     private static String decodeUnicode(String unicodeStr) {

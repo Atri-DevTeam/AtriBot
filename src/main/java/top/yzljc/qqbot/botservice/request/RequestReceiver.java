@@ -6,17 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventManager;
-import top.yzljc.qqbot.event.MessageSegment;
+import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
-import top.yzljc.qqbot.event.impl.FriendRequestEvent;
-import top.yzljc.qqbot.event.impl.GroupMemberChangeEvent;
-import top.yzljc.qqbot.event.impl.GroupRequestEvent;
-import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.event.impl.PrivateMessageEvent;
+import top.yzljc.qqbot.event.impl.*;
 import top.yzljc.qqbot.utils.Logger;
-
-import java.util.List;
 
 @RestController
 public class RequestReceiver {
@@ -100,7 +95,33 @@ public class RequestReceiver {
                     FriendRequestEvent event = new FriendRequestEvent(time, selfId, userId, flag);
                     EventManager.getInstance().callEvent(event);
                 }
-                DataProcessor.processMessage(root);
+                // 戳一戳事件监听
+                if ("notice".equals(postType) && "notify".equals(root.path("notice_type").asText()) && "poke".equals(root.path("sub_type").asText())) {
+                    long time = root.path("time").asLong();
+                    long groupId = root.path("group_id").asLong();
+                    long userId = root.path("user_id").asLong();
+                    long selfId = root.path("self_id").asLong();
+                    long targetId = root.path("target_id").asLong();
+
+                    if (userId != selfId) {
+                        GetPokeEvent event = new GetPokeEvent(time, selfId, targetId, userId, groupId);
+                        EventManager.getInstance().callEvent(event);
+                    }
+                }
+                // 撤回事件监听
+                if ("notice".equals(postType) && (("group_recall".equals(root.path("notice_type").asText()) && Config.getInstance().getMessageSpyGroups().contains(root.path("group_id").asLong())) || "friend_recall".equals(root.path("notice_type").asText()))) {
+                    long time = root.path("time").asLong();
+                    long groupId = root.path("group_id").asLong();
+                    long userId = root.path("user_id").asLong();
+                    long selfId = root.path("self_id").asLong();
+                    long messageId = root.path("message_id").asLong();
+                    long operatorId = root.path("operator_id").asLong();
+                    String noticeType = root.path("notice_type").asText();
+
+                    RecallMessageEvent event = new RecallMessageEvent(time, selfId, groupId, userId, operatorId, messageId, noticeType);
+                    EventManager.getInstance().callEvent(event);
+                }
+
             } catch (Exception e) {
                 Logger.error("JSON 解析或处理异常：{}", e.getMessage());
             }

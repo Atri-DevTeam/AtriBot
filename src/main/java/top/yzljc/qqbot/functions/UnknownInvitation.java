@@ -32,7 +32,7 @@ public class UnknownInvitation implements Listener {
             Map<String, Object> data = new HashMap<>();
             data.put("group_id", String.valueOf(groupId));
             data.put("is_dismiss", "false");
-            event.getGroup().sendMessage("本次进群信息未经同意，为避免一些潜在风险，已主动退出，如有需求，请联系开发者申请！");
+            event.getGroup().sendSingleText("本次进群信息未经同意，为避免一些潜在风险，已主动退出，如有需求，请联系开发者申请！");
             ThreadManager.schedule(() -> PostRequest.sendPost(RequestType.QUIT_GROUP, data), 5, TimeUnit.SECONDS);
             Logger.info("已自动退出未知邀请的群聊，群ID: " + groupId);
         }

@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.utils;
 
 import top.yzljc.qqbot.botservice.userinfo.GetProjectInfo;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;

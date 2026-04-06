@@ -8,13 +8,16 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
 import java.net.URI;
 import java.util.concurrent.Executors;
@@ -23,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class HypixelReward implements CommandExecutor {
+public class HypixelReward implements CommandExecutor, Listener {
     private static final Logger log = LoggerFactory.getLogger(HypixelReward.class);
     static Settings settings = Config.getInstance();
     private static final String WS_URL = settings.getWebsocketUrl();
@@ -82,11 +85,12 @@ public class HypixelReward implements CommandExecutor {
         return true;
     }
 
-    public static synchronized void processMessage(JsonNode json) {
-        String rawMessage = json.path("raw_message").asText().trim();
-        long groupId = json.path("group_id").asLong();
-        long userId = json.path("user_id").asLong();
-        long msgId = json.path("message_id").asLong();
+    @EventHandler
+    public static synchronized void onGroupMessage(GroupMessageEvent event) {
+        String rawMessage = event.getRawMessage().trim();
+        long groupId = event.getGroupId();
+        long userId = event.getUserId();
+        long msgId = event.getMessageId();
 
         if (!GroupConfigManager.isFeatureEnabled(groupId, "get_hypixel_reward")) return;
 

@@ -8,9 +8,10 @@ import java.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AutoRepeat {
+@Deprecated(forRemoval = true)
+public class Repeater {
 
-    private static final Logger log = LoggerFactory.getLogger(AutoRepeat.class);
+    private static final Logger log = LoggerFactory.getLogger(Repeater.class);
     
     private static final int MEMORY_SIZE = 10;
     private static final int REPEAT_THRESHOLD = 3;

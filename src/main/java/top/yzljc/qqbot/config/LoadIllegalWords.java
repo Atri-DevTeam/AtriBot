@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.message;
+package top.yzljc.qqbot.config;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,11 +11,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.config.ConfigFile;
 
-public class SensitiveWordFilter {
+public class LoadIllegalWords {
 
-    private static final Logger log = LoggerFactory.getLogger(SensitiveWordFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(LoadIllegalWords.class);
     private static final String CONFIG_FILE = ConfigFile.FILTER_CONFIG.getFileName();
     private static final List<String> BLACKLIST = new CopyOnWriteArrayList<>();
     private static long lastModifiedTime = 0;

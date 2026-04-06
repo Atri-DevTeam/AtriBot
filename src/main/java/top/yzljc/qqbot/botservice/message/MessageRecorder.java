@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import lombok.Getter;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -15,8 +16,11 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
-public class MessageRecorder {
+public class MessageRecorder implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(MessageRecorder.class);
     
@@ -30,6 +34,7 @@ public class MessageRecorder {
     private static final String DB_URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE + "?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
     private static final String BASE_TABLE = "qq_group_message_record";
 
+    @Getter
     private static HikariDataSource dataSource;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final List<Long> groups = settings.getMessageSpyGroups();
@@ -79,6 +84,25 @@ public class MessageRecorder {
         }
     }
 
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        long groupId = event.getGroupId();
+        if (!Config.getInstance().getMessageSpyGroups().contains(groupId)) {
+            return;
+        }
+        long time = event.getTime();
+        long userId = event.getUserId();
+        long messageId = event.getMessageId();
+        String rawMessage = event.getRawMessage();
+
+        try{
+            saveToDatabase(userId, time, messageId, groupId, rawMessage);
+        } catch (Exception e) {
+            top.yzljc.qqbot.utils.Logger.error("消息入库失败: {}", e.getMessage());
+        }
+    }
+
+    @Deprecated
     public static void processRecord(JsonNode jsonInput) {
         if (jsonInput == null) return;
         try {
@@ -99,6 +123,7 @@ public class MessageRecorder {
     }
 
     // 这是一个备用的方法，暂时用不到，但是别删
+    @Deprecated(forRemoval = true)
     public static void processRecord(String jsonString) {
         try {
             JsonNode node = objectMapper.readTree(jsonString);
@@ -135,10 +160,6 @@ public class MessageRecorder {
 
     public static String getDynamicTableName(long groupId) {
         return "qq_group_message_record_" + groupId;
-    }
-
-    public static HikariDataSource getDataSource() {
-        return dataSource;
     }
 
     public static String searchMessage(long groupId, long messageId) {

@@ -1,14 +1,14 @@
 package top.yzljc.qqbot.event.impl;
 
 import lombok.Getter;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.event.Event;
 
 /**
  * @Author YZ_Ljc_
  * @ClassName GroupRequestEvent
  * @Created_at 2026/04/03
- * @Project Yzljc-QQ-Bot
+ * @Project AtriBot
  * @Package top.yzljc.qqbot.event
  */
 @Getter

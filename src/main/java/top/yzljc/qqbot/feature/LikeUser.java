@@ -3,7 +3,7 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botservice.message.MessageSender;
@@ -17,7 +17,6 @@ import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,10 +84,6 @@ public class LikeUser implements Listener {
     @EventHandler
     public void onGroupMessage(GroupMessageEvent event) {
         if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "like_user")) return;
-        if (LocalTime.now().isBefore(LocalTime.of(0, 5, 0)) && event.getGroupId() != 818804507L) {
-            event.getGroup().sendMessage("稳定性调整阶段，暂不支持点赞，请稍等几分钟!");
-            return;
-        }
         String msg = event.getRawMessage().trim();
         boolean isFriend = GetFriendList.isFriend(event.getUserId());
         for (String kw : Config.getInstance().getKeywordsLikeUser()) {
@@ -132,13 +127,13 @@ public class LikeUser implements Listener {
 
         if (successCount == 5) {
             log.info("得手 => {} | +50", userId);
-            return "已赞五次，增五十善。未加好友或不得见也";
+            return "赞成，增五十善，然未与友者或不得见也！";
         } else if (failCount == 5) {
             log.info("受阻 => {} | 今日已极", userId);
-            return "今日已赞，不可复也";
+            return "今日已赞，不可复也！";
         } else {
             log.info("半成 => {} | 成: {} | 败: {}", userId, successCount * 10, failCount * 10);
-            return String.format("半成。成 %d 次，败 %d 次。或为今日已赞故", successCount * 10, failCount * 10);
+            return String.format("半成。成 %d 次，败 %d 次，或为今日已赞故！", successCount * 10, failCount * 10);
         }
     }
 

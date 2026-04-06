@@ -3,7 +3,7 @@ package top.yzljc.qqbot.event.impl;
 import lombok.Getter;
 import top.yzljc.qqbot.event.Cancellable;
 import top.yzljc.qqbot.event.Event;
-import top.yzljc.qqbot.event.MessageSegment;
+import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
 
 import java.util.LinkedList;

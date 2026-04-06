@@ -1,13 +1,13 @@
 package top.yzljc.qqbot.botservice.tools;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import top.yzljc.qqbot.chat.MessageSegment;
 
-public class MM {
-    public static List<Map<String, Object>> parse(String rawMessage) {
-        List<Map<String, Object>> resultList = new ArrayList<>();
+import java.util.*;
+
+public class StructRawMessage {
+
+    public static LinkedList<MessageSegment> parse(String rawMessage) {
+        LinkedList<MessageSegment> resultList = new LinkedList<>();
 
         if (rawMessage == null || rawMessage.isEmpty()) {
             return resultList;
@@ -18,10 +18,11 @@ public class MM {
 
         while (cursor < length) {
             int cqStart = rawMessage.indexOf("[CQ:", cursor);
+
             if (cqStart == -1) {
                 String text = rawMessage.substring(cursor);
                 if (!text.isEmpty()) {
-                    resultList.add(buildTextNode(text));
+                    resultList.add(new MessageSegment("text", Map.of("text", text)));
                 }
                 break;
             }
@@ -29,7 +30,7 @@ public class MM {
             if (cqStart > cursor) {
                 String text = rawMessage.substring(cursor, cqStart);
                 if (!text.isEmpty()) {
-                    resultList.add(buildTextNode(text));
+                    resultList.add(new MessageSegment("text", Map.of("text", text)));
                 }
             }
 
@@ -38,9 +39,8 @@ public class MM {
 
             for (int i = cqStart; i < length; i++) {
                 char c = rawMessage.charAt(i);
-                if (c == '[') {
-                    bracketLevel++;
-                } else if (c == ']') {
+                if (c == '[') bracketLevel++;
+                else if (c == ']') {
                     bracketLevel--;
                     if (bracketLevel == 0) {
                         cqEnd = i;
@@ -48,31 +48,23 @@ public class MM {
                     }
                 }
             }
+
             if (cqEnd == -1) {
-                String text = rawMessage.substring(cursor);
-                resultList.add(buildTextNode(text));
+                resultList.add(new MessageSegment("text",
+                        Map.of("text", rawMessage.substring(cursor))));
                 break;
             }
 
             String content = rawMessage.substring(cqStart + 4, cqEnd);
-
             parseCqContent(content, resultList);
+
             cursor = cqEnd + 1;
         }
 
         return resultList;
     }
 
-    private static Map<String, Object> buildTextNode(String text) {
-        Map<String, Object> root = new LinkedHashMap<>();
-        root.put("type", "text");
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("text", text);
-        root.put("data", data);
-        return root;
-    }
-
-    private static void parseCqContent(String content, List<Map<String, Object>> resultList) {
+    private static void parseCqContent(String content, List<MessageSegment> resultList) {
         int firstComma = content.indexOf(',');
 
         String type;
@@ -85,28 +77,49 @@ public class MM {
             paramsPart = content.substring(firstComma + 1);
         }
 
-        Map<String, Object> root = new LinkedHashMap<>();
-        root.put("type", type);
-
         Map<String, Object> data = new LinkedHashMap<>();
 
         if (!paramsPart.isEmpty()) {
-            String[] pairs = paramsPart.split(",");
+            // 使用正则分割，防止 URL 中可能自带的普通逗号被误切
+            String[] pairs = paramsPart.split(",(?=[a-zA-Z0-9_]+=)");
 
             for (String pair : pairs) {
                 int eqIdx = pair.indexOf('=');
                 if (eqIdx > 0) {
                     String key = pair.substring(0, eqIdx).trim();
                     String val = pair.substring(eqIdx + 1);
-
-                    if ("url".equals(key)) {
-                        data.put(key, val);
-                    }
+                    data.put(key, val);
                 }
             }
         }
 
-        root.put("data", data);
-        resultList.add(root);
+        normalize(type, data);
+        resultList.add(new MessageSegment(type, data));
+    }
+
+    private static void normalize(String type, Map<String, Object> data) {
+        switch (type) {
+            case "image", "video" -> {
+                String url = (String) data.get("url");
+                String file = (String) data.get("file");
+                data.clear();
+
+                if (url != null && !url.isEmpty()) {
+                    data.put("url", url);
+                } else if (file != null && !file.isEmpty()) {
+                    data.put("url", file);
+                }
+            }
+            case "at" -> {
+                if (data.containsKey("qq")) {
+                    data.put("user_id", data.remove("qq"));
+                }
+            }
+            case "reply" -> {
+                if (data.containsKey("id")) {
+                    data.put("message_id", data.remove("id"));
+                }
+            }
+        }
     }
 }

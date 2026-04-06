@@ -7,10 +7,13 @@ import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
 import java.util.concurrent.*;
 
-public class Scratch {
+public class Scratch implements Listener {
     private static final Logger log = LoggerFactory.getLogger(Scratch.class);
     static Settings settings = Config.getInstance();
     private static final long GROUP_ID = settings.getManosabaGroupId();
@@ -51,12 +54,23 @@ public class Scratch {
         }, SETTLE_DELAY, TimeUnit.SECONDS);
     }
 
-    public static void shizoukiaGroupNameChange(Long userId, String newName){
-        String userName = GetUserInfo.getUserName(userId);
-        String resultMsg = userName + "修改了群名称为\"" + newName + "\"";
-        MessageSender.sendGroupMessage(820103390L, resultMsg);
-        log.info("已向群 820103390 通知用户 {} 修改群名称为 {}", userName, newName);
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        if (event.getGroupId() == Config.getInstance().getManosabaGroupId() && event.getUserId() == 3180644904L) {
+            if (event.getRawMessage().contains("[CQ:image")) {
+                Scratch.huffCount();
+            } else {
+                Scratch.stopHuff();
+            }
+        }
     }
+
+//    public static void shizoukiaGroupNameChange(Long userId, String newName){
+//        String userName = GetUserInfo.getUserName(userId);
+//        String resultMsg = userName + "修改了群名称为\"" + newName + "\"";
+//        MessageSender.sendGroupMessage(820103390L, resultMsg);
+//        log.info("已向群 820103390 通知用户 {} 修改群名称为 {}", userName, newName);
+//    }
 
 //    private static final List<Long> beingAutoLikedUser = List.of(3199590352L, 1948308L, 1955248991L,3052381496L,3388215589L,1724175133L, 3414769292L);
 //    public static void scheduledAutoLike(){

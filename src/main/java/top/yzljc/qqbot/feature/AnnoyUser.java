@@ -1,10 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.botservice.request.PostRequest;
 import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
@@ -13,6 +10,10 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.utils.Logger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -25,9 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
-public class AnnoyUser implements CommandExecutor {
+public class AnnoyUser implements CommandExecutor, Listener {
 
-    private static final Logger log = LoggerFactory.getLogger(AnnoyUser.class);
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String RECORD_FILE = ConfigFile.ANNOY_RECORD.getFileName();
     private static final Map<Long, Map<Long, AnnoyMode>> annoyMap = new ConcurrentHashMap<>();
@@ -93,19 +93,21 @@ public class AnnoyUser implements CommandExecutor {
             sender.reply("😈 对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)", false);
         }
 
+        Logger.info("{} {} {} annoy mode [{}] for user {}", sender.isAdmin() ? "Admin" : "User", sender.userId(), isAlreadyInThisMode ? "removed" : "set", mode, targetId);
+
         return true;
     }
 
-    public static void processMessage(JsonNode json) {
-        if (!"group".equals(json.path("message_type").asText())) return;
-        long groupId = json.path("group_id").asLong();
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
+        long groupId = event.getGroupId();
 
         if (!GroupConfigManager.isFeatureEnabled(groupId, "annoy_user")) {
             return;
         }
 
-        long senderId = json.path("user_id").asLong();
-        long botId = json.path("self_id").asLong();
+        long senderId = event.getUserId();
+        long botId = event.getSelfId();
         if (senderId == botId) return;
 
         Map<Long, AnnoyMode> groupConfig = annoyMap.get(groupId);
@@ -114,7 +116,7 @@ public class AnnoyUser implements CommandExecutor {
         }
 
         AnnoyMode mode = groupConfig.get(senderId);
-        long msgId = json.path("message_id").asLong();
+        long msgId = event.getMessageId();
 
         submitTask(groupId, senderId, msgId, mode);
     }
@@ -146,7 +148,7 @@ public class AnnoyUser implements CommandExecutor {
                 }
             } catch (Exception e) {
                 if (!(e instanceof InterruptedException)) {
-                    log.error("Annoy execution error", e);
+                    Logger.error("Annoy execution error", e);
                 }
             } finally {
                 runningTasks.remove(key, Thread.currentThread()); // 只移除当前线程的引用
@@ -215,11 +217,9 @@ public class AnnoyUser implements CommandExecutor {
             req.put("set", set);
             PostRequest.sendPost(RequestType.PUT_EMOJI, req);
         } catch (Exception e) {
-            log.warn("Emoji API fail: {}", e.getMessage());
+            Logger.warn("Emoji API fail: {}", e.getMessage());
         }
     }
-
-    // --- 数据存储 ---
 
     private static void addAnnoy(long groupId, long qq, AnnoyMode mode) {
         annoyMap.computeIfAbsent(groupId, k -> new ConcurrentHashMap<>()).put(qq, mode);
@@ -257,7 +257,7 @@ public class AnnoyUser implements CommandExecutor {
                 if (!uMap.isEmpty()) annoyMap.put(gid, uMap);
             }
         } catch (Exception e) {
-            log.error("Load annoy record error", e);
+            Logger.error("Load annoy record error", e);
         }
     }
 
@@ -273,7 +273,7 @@ public class AnnoyUser implements CommandExecutor {
         try (FileWriter writer = new FileWriter(RECORD_FILE, false)) {
             mapper.writeValue(writer, raw);
         } catch (IOException e) {
-            log.error("Save annoy record error", e);
+            Logger.error("Save annoy record error", e);
         }
     }
 }

@@ -1,5 +1,6 @@
-package top.yzljc.qqbot.botservice.message;
+package top.yzljc.qqbot.chat.impl;
 
+import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.request.PostRequest;
 import top.yzljc.qqbot.botservice.request.RequestType;
 import top.yzljc.qqbot.utils.Logger;

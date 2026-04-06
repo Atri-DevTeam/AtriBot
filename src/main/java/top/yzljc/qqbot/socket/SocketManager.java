@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.socket;
 
 import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.config.LoadIllegalWords;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
@@ -160,11 +160,11 @@ public class SocketManager {
                             String playerName = details[0];
                             String chatMsg = details[1];
 
-                            boolean isDirty = SensitiveWordFilter.containsSensitiveWord(chatMsg);
+                            boolean isDirty = LoadIllegalWords.containsSensitiveWord(chatMsg);
 
                             if (!isDirty) {
                                 String cleanedMsg = STRICT_FILTER_PATTERN.matcher(chatMsg).replaceAll("");
-                                isDirty = SensitiveWordFilter.containsSensitiveWord(cleanedMsg);
+                                isDirty = LoadIllegalWords.containsSensitiveWord(cleanedMsg);
                             }
 
                             if (isDirty) {

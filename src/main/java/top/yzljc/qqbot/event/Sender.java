@@ -2,7 +2,12 @@ package top.yzljc.qqbot.event;
 
 import lombok.Setter;
 import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.MessageSegment;
+import top.yzljc.qqbot.chat.SendPrivateMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Sender {
     private final long userId;
@@ -35,7 +40,7 @@ public class Sender {
     }
 
     public void sendMessage(String message) {
-        MessageSender.sendPrivateMessage(userId, message);
+        SendPrivateMessage.singleTextMessage(this.userId, message);
     }
 
     public long userId() {

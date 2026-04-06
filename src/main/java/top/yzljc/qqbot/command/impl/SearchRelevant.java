@@ -6,7 +6,7 @@ import top.yzljc.qqbot.botservice.request.PostRequest;
 import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import top.yzljc.qqbot.botservice.message.MessageRecorder;
-import top.yzljc.qqbot.botservice.message.SensitiveWordFilter;
+import top.yzljc.qqbot.config.LoadIllegalWords;
 import top.yzljc.qqbot.botservice.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
@@ -58,7 +58,7 @@ public class SearchRelevant implements CommandExecutor {
 
         String keyword = matcher.group(1);
 
-        if (SensitiveWordFilter.containsSensitiveWord(keyword) || isSqlKeywords(keyword)) {
+        if (LoadIllegalWords.containsSensitiveWord(keyword) || isSqlKeywords(keyword)) {
             sender.reply("搜索关键词不符合检索规则，拒绝执行!",false);
             return true;
         }
@@ -137,7 +137,7 @@ public class SearchRelevant implements CommandExecutor {
                 try (ResultSet rs = pstmt.executeQuery()) {
                     while (rs.next()) {
                         String rawMsg = rs.getString("raw_message");
-                        if (isMessyMessage(rawMsg) || SensitiveWordFilter.containsSensitiveWord(rawMsg)) continue;
+                        if (isMessyMessage(rawMsg) || LoadIllegalWords.containsSensitiveWord(rawMsg)) continue;
                         String displayMsg = cleanMessageContent(rawMsg);
                         long userId = rs.getLong("user_id");
                         long timeSec = rs.getLong("msg_time");

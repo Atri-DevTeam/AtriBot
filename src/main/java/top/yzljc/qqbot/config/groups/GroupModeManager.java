@@ -3,30 +3,27 @@ package top.yzljc.qqbot.config.groups;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.botservice.message.MessageSender;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.utils.Logger;
 
-public class GroupModeManager {
+public class GroupModeManager implements Listener {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupModeManager.class);
-    static Settings settings = Config.getInstance();
-    private static final List<Long> ADMIN_LIST = settings.getAdminUids();
+    private static final List<Long> ADMIN_LIST = Config.getInstance().getAdminUids();
     private static final Map<Long, String> userSession = new ConcurrentHashMap<>();
-
     private static final Map<Long, List<?>> selectionCache = new ConcurrentHashMap<>();
 
-    public static void process(JsonNode json) {
-        String postType = json.path("post_type").asText();
-        if (!"message".equals(postType)) return;
+    @EventHandler
+    public void onGroupMessage(GroupMessageEvent event) {
 
-        long userId = json.path("user_id").asLong();
-        long groupId = json.path("group_id").asLong();
-        String rawMsg = json.path("raw_message").asText().trim();
+        long userId = event.getUserId();
+        long groupId = event.getGroupId();
+        String rawMsg = event.getRawMessage().trim();
 
         if (!ADMIN_LIST.contains(userId)) return;
 
@@ -111,7 +108,7 @@ public class GroupModeManager {
             } catch (NumberFormatException e) {
                 // 忽略非数字
             } catch (Exception e) {
-                log.error("Config process error", e);
+                Logger.error("处理配置选择时发生错误: " + e.getMessage(), e);
                 clearSession(userId);
                 MessageSender.sendGroupMessage(groupId, "发生错误，会话已重置");
             }

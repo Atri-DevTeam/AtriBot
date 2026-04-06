@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.event;
+package top.yzljc.qqbot.chat;
 
 import java.util.Map;
 

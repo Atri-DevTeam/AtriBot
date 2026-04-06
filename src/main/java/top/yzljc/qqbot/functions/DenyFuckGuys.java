@@ -15,7 +15,7 @@ public class DenyFuckGuys implements Listener {
     @EventHandler
     public void onGroupRequest(GroupRequestEvent event) {
         if (event.getComment().contains("进群交流，请同意，谢谢") || event.getComment().contains("请同意") ||
-                event.getComment().contains("通过谢谢") || event.getComment().contains("请通过")) {
+                event.getComment().contains("通过谢谢") || event.getComment().contains("请通过") || event.getComment().contains("通过下")){
             event.reject("疑似人机验证信息，如误判请更换重试");
         }
     }

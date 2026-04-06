@@ -1,5 +1,8 @@
 package top.yzljc.qqbot.botservice.request;
 
+import lombok.Getter;
+
+@Getter
 public enum RequestType {
     GET_USER_INFO("/get_stranger_info"),
     GET_GROUP_INFO("/get_group_info"),
@@ -27,7 +30,4 @@ public enum RequestType {
         this.requestLink = requestLink;
     }
 
-    public String getRequestLink() {
-        return requestLink;
-    }
 }

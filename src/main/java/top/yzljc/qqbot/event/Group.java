@@ -1,18 +1,19 @@
 package top.yzljc.qqbot.event;
 
-import lombok.Getter;
 import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.MessageSegment;
+import top.yzljc.qqbot.chat.SendGroupMessage;
 
-@Getter
-public class Group {
-    private final long groupId;
+import java.util.List;
 
-    public Group(long groupId) {
-        this.groupId = groupId;
+public record Group(long groupId) {
+
+    public void sendSingleText(String message) {
+        MessageSender.sendGroupMessage(groupId, message);
     }
 
-    public void sendMessage(String message) {
-        MessageSender.sendGroupMessage(groupId, message);
+    public void sendUnionMessage(List<MessageSegment> data) {
+        SendGroupMessage.unionChatMessage(groupId, data);
     }
 }
 

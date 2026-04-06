@@ -2,7 +2,7 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
-import top.yzljc.qqbot.botservice.message.MessageUtils;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.botservice.image.AbstractImage;
 import top.yzljc.qqbot.botservice.message.MessageSender;
