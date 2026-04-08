@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.event.impl;
 
 import lombok.Getter;
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.PrivateMessage;
 import top.yzljc.qqbot.event.Event;
 
 /**
@@ -26,7 +26,7 @@ public class FriendRequestEvent extends Event {
     }
 
     public void sendMessage(String message) {
-        MessageSender.sendPrivateMessage(userId, message);
+        PrivateMessage.chatMessage(userId, message);
     }
 }
 /*

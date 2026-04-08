@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature.minecraft;
 
-import top.yzljc.qqbot.botservice.image.AbstractImage;
-import top.yzljc.qqbot.botservice.image.DrawMotd;
+import top.yzljc.qqbot.service.image.AbstractImage;
+import top.yzljc.qqbot.service.image.DrawMotd;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

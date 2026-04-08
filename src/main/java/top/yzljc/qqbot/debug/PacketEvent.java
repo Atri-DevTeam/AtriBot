@@ -1,10 +1,10 @@
 package top.yzljc.qqbot.debug;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botservice.message.MessageSender;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -77,7 +77,7 @@ public class PacketEvent {
             log.info(statusMsg);
 
             if (fromGroupId > 0) {
-                MessageSender.sendGroupMessage(fromGroupId, statusMsg);
+                GroupMessage.chatMessage(fromGroupId, statusMsg);
             } else {
                 log.warn("无效的群号，无法发送状态提示");
             }
@@ -92,7 +92,7 @@ public class PacketEvent {
             long userId = json.path("user_id").asLong(0);
             long groupid = json.path("group_id").asLong(0);
             if (userId == botUid && groupid == debugGroupId) return;
-            MessageSender.sendGroupMessage(debugGroupId, jsonString);
+            GroupMessage.chatMessage(debugGroupId, jsonString);
         } catch (Exception e) {
             log.error("转发失败：{}", e.getMessage());
         }

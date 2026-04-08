@@ -1,14 +1,14 @@
 package top.yzljc.qqbot.functions;
 
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.chat.PrivateMessage;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.FriendRequestEvent;
@@ -31,7 +31,7 @@ public class AutoAccept implements Listener {
             // 1
         }
         if (lastUser != event.getUserId()) {
-            ThreadManager.schedule(() -> MessageUtils.sendPrivateForwardMessage(event.getUserId(), AtriHelp.getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+            ThreadManager.schedule(() -> PrivateMessage.forwardMessage(event.getUserId(), AtriHelp.getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
                     "项目开发说明", "指令帮助", "功能介绍"), 10, TimeUnit.SECONDS);
             Logger.info("已自动接受好友请求，用户ID: " + event.getUserId());
         }

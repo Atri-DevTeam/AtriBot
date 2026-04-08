@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.userinfo;
+package top.yzljc.qqbot.service.userinfo;
 
 import java.io.InputStream;
 import java.util.Properties;

@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.image;
+package top.yzljc.qqbot.service.image;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -6,7 +6,7 @@
 
     <groupId>top.yzljc</groupId>
     <artifactId>AtriBot</artifactId>
-    <version>2.7.0-Test</version>
+    <version>2.7.0-Release</version>
 
     <properties>
         <maven.compiler.source>22</maven.compiler.source>

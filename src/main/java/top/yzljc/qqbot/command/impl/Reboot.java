@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.command.impl;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.GroupMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.command.Command;
@@ -34,7 +34,7 @@ public class Reboot implements CommandExecutor {
 
     public static void processReboot(long userId, long groupId) {
         log.info("收到管理员 {} 的终止指令", userId);
-        MessageSender.sendGroupMessage(groupId, "收到管理员 "+ userId + " 的终止指令，正在终止进程...");
+        GroupMessage.chatMessage(groupId, "收到管理员 "+ userId + " 的终止指令，正在终止进程...");
 
         new Thread(() -> {
             try {
@@ -43,7 +43,7 @@ public class Reboot implements CommandExecutor {
                 System.exit(0);
             } catch (Exception e) {
                 log.warn("终止进程时发生异常: {}", e.getMessage());
-                MessageSender.sendGroupMessage(groupId, "终止失败: " + e.getMessage());
+                GroupMessage.chatMessage(groupId, "终止失败: " + e.getMessage());
             }
         }).start();
     }

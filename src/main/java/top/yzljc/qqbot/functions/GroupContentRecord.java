@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.message;
+package top.yzljc.qqbot.functions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,9 +20,9 @@ import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 
-public class MessageRecorder implements Listener {
+public class GroupContentRecord implements Listener {
 
-    private static final Logger log = LoggerFactory.getLogger(MessageRecorder.class);
+    private static final Logger log = LoggerFactory.getLogger(GroupContentRecord.class);
     
     static Settings settings = Config.getInstance();
     private static final String HOST = settings.getMysqlHost();

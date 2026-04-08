@@ -1,12 +1,11 @@
 package top.yzljc.qqbot.command;
 
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.feature.schedule.*;
 
 import java.util.Collections;
 import java.util.List;

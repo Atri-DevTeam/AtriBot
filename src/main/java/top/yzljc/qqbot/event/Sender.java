@@ -1,13 +1,8 @@
 package top.yzljc.qqbot.event;
 
 import lombok.Setter;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.chat.MessageSegment;
-import top.yzljc.qqbot.chat.SendPrivateMessage;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
-
-import java.util.ArrayList;
-import java.util.List;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.PrivateMessage;
 
 public class Sender {
     private final long userId;
@@ -32,15 +27,15 @@ public class Sender {
 
     public void reply(String message, boolean at) {
         if (replyGroupId != -1 && replyMessageId != -1) {
-            MessageUtils.replyMessage(this.userId, this.replyGroupId, replyMessageId, at, message);
+            GroupMessage.replyMessage(this.userId, this.replyGroupId, replyMessageId, at, message);
         }
         if (replyGroupId == -1 && replyMessageId != -1) {
-            MessageUtils.replyMessage(this.userId, replyMessageId, replyMessageId, at, message);
+            PrivateMessage.replyMessage(this.userId, replyMessageId, message);
         }
     }
 
     public void sendMessage(String message) {
-        SendPrivateMessage.singleTextMessage(this.userId, message);
+        PrivateMessage.chatMessage(this.userId, message);
     }
 
     public long userId() {

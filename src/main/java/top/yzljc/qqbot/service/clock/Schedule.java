@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.clock;
+package top.yzljc.qqbot.service.clock;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

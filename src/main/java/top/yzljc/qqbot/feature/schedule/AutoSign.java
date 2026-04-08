@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
 public class AutoSign implements CommandExecutor {
 

@@ -1,10 +1,10 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.GroupMessage;
 
-import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
@@ -50,7 +50,7 @@ public class ElectricCheck implements Listener {
                         Logger.warn("查询异常：{}", ex.getMessage());
                     }
 
-                    MessageSender.sendGroupMessage(groupId, feedback);
+                    GroupMessage.chatMessage(groupId, feedback);
                 });
                 break;
             }

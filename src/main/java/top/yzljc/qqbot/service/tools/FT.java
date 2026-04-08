@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.tools;
+package top.yzljc.qqbot.service.tools;
 
 import org.apache.commons.text.StringEscapeUtils;
 

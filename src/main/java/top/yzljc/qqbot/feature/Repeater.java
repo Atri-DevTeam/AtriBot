@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.feature;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.MessageSegment;
+import top.yzljc.qqbot.chat.GroupMessage;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,7 +34,22 @@ public class Repeater {
             String repeatKey = groupId + "|" + msgData;
 
             if (!recentlyRepeated.contains(repeatKey)) {
-                MessageSender.sendGroupData(groupId, msgData);
+                List<MessageSegment> segments = new ArrayList<>();
+                for (Map<String, Object> node : msgData) {
+                    if (node == null) continue;
+                    Object typeObj = node.get("type");
+                    Object dataObj = node.get("data");
+                    if (typeObj instanceof String type && dataObj instanceof Map<?, ?> rawData) {
+                        Map<String, Object> data = new HashMap<>();
+                        for (Map.Entry<?, ?> entry : rawData.entrySet()) {
+                            if (entry.getKey() instanceof String key) {
+                                data.put(key, entry.getValue());
+                            }
+                        }
+                        segments.add(new MessageSegment(type, data));
+                    }
+                }
+                GroupMessage.chatMessage(groupId, segments);
                 log.info("群 {} 消息复读触发，内容: {}", groupId, msgData);
 
                 recentlyRepeated.add(repeatKey);

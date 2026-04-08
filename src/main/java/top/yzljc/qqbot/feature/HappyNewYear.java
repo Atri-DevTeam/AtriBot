@@ -1,14 +1,15 @@
 package top.yzljc.qqbot.feature;
 
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botservice.image.AbstractImage;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.image.AbstractImage;
 
 import java.awt.*;
 import java.io.File;
@@ -152,7 +153,7 @@ public class HappyNewYear implements CommandExecutor {
                 int count = 0;
                 for (Long gid : groupIds) {
                     if (!GroupConfigManager.isFeatureEnabled(gid,"new_year")) continue;
-                    MessageSender.sendGroupMessage(gid, null, base64Img);
+                    GroupMessage.chatMessage(gid, base64Img, MessageUtils.ImageType.BASE64);
                     count++;
                     try { Thread.sleep(200); } catch (InterruptedException e) {}
                 }
@@ -172,7 +173,7 @@ public class HappyNewYear implements CommandExecutor {
             if (tempFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                MessageSender.sendGroupMessage(targetGroupId, null, base64Img);
+                GroupMessage.chatMessage(targetGroupId, base64Img, MessageUtils.ImageType.BASE64);
             }
         } catch (Exception e) {
             log.error("发送新年图片到群[{}]失败：{}", targetGroupId, e.getMessage());

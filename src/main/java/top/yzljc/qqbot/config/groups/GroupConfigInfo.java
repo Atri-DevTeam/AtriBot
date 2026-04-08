@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.config.groups;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -31,6 +31,6 @@ public class GroupConfigInfo implements CommandExecutor {
                     .append(featureName)
                     .append("\n");
         }
-        MessageSender.sendGroupMessage(groupId,sb.toString().trim());
+        GroupMessage.chatMessage(groupId, sb.toString().trim());
     }
 }

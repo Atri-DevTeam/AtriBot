@@ -1,8 +1,8 @@
 package top.yzljc.qqbot.functions;
 
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;

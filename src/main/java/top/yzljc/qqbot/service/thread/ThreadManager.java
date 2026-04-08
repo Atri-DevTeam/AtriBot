@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.thread;
+package top.yzljc.qqbot.service.thread;
 
 import java.util.concurrent.*;
 

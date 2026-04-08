@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.clock;
+package top.yzljc.qqbot.service.clock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

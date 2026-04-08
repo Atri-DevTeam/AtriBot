@@ -2,15 +2,15 @@ package top.yzljc.qqbot.feature.schedule;
 
 import com.nlf.calendar.Lunar;
 import com.nlf.calendar.Solar;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.impl.MessageUtils;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botservice.image.AbstractImage;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.image.AbstractImage;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Calendar implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Calendar.class);
-    /** 防止定时任务重复注册或并发触发导致日历多次推送 */
     private static final AtomicBoolean calendarPushInProgress = new AtomicBoolean(false);
 
     @Override
@@ -325,7 +324,7 @@ public class Calendar implements CommandExecutor {
             if (tempFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                MessageSender.sendGroupMessage(targetGroupId, null, base64Img);
+                GroupMessage.chatMessage(targetGroupId, base64Img, MessageUtils.ImageType.BASE64);
             }
         } catch (Exception e) {
             log.error("发送失败", e);
@@ -346,13 +345,13 @@ public class Calendar implements CommandExecutor {
                 generateDevelopDayImage();
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                long messageId = MessageSender.sendGroupMessage(Config.getInstance().getDebugGroupId(), null, base64Img).getMessageId();
+                long messageId = GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), base64Img, MessageUtils.ImageType.BASE64);
 
                 if (messageId != 0L) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getDebugGroupId(), messageId);
                 } else {
                     log.warn("无法获取MessageID，取消本次推送任务");
-                    MessageUtils.atUser(3199590352L,Config.getInstance().getDebugGroupId(), "日历推送失败，无法获取消息ID");
+                    GroupMessage.atUser(3199590352L, Config.getInstance().getDebugGroupId(), "日历推送失败，无法获取消息ID");
                     return; // finally 会释放 calendarPushInProgress
                 }
 
@@ -361,7 +360,7 @@ public class Calendar implements CommandExecutor {
                     if (gid == Config.getInstance().getDebugGroupId()) continue;
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
 
-                    MessageUtils.forwardSingleGroupMsg(gid, messageId);
+                    GroupMessage.forwardTo(gid, messageId);
                     log.info("已推送日历到群 {}，使用转发", gid);
 
                     try { Thread.sleep(200); } catch (InterruptedException ignored) {}

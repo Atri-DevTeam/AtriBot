@@ -2,8 +2,9 @@ package top.yzljc.qqbot.feature.minecraft;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.image.AbstractImage;
+import top.yzljc.qqbot.service.image.AbstractImage;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 
 import java.awt.*;
 import java.io.File;
@@ -21,7 +22,7 @@ import java.net.URI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -104,7 +105,7 @@ public class MojangStatus implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         long groupId = sender.groupId();
-        MessageSender.sendGroupMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
+        GroupMessage.chatMessage(groupId, "正在检查 Mojang 服务状态，请稍候...");
         log.info("开始检查 Mojang 服务状态 -> Group: {}", groupId);
         ThreadManager.execute(() -> performChecksAndSend(groupId));
         return true;
@@ -166,13 +167,13 @@ public class MojangStatus implements CommandExecutor {
             if (tempFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                MessageSender.sendGroupMessage(groupId, null, base64Img);
+                GroupMessage.chatMessage(groupId, base64Img, MessageUtils.ImageType.BASE64);
                 log.info("图片发送成功 -> Group: {}", groupId);
             }
 
         } catch (Exception e) {
             log.error("处理异常：{}", e.getMessage());
-            MessageSender.sendGroupMessage(groupId, "状态检查发生内部错误：" + e.getMessage());
+            GroupMessage.chatMessage(groupId, "状态检查发生内部错误：" + e.getMessage());
         } finally {
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();

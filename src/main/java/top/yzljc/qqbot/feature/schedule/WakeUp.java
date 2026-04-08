@@ -2,17 +2,18 @@ package top.yzljc.qqbot.feature.schedule;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
 import java.util.Set;
 
@@ -41,7 +42,7 @@ public class WakeUp implements CommandExecutor {
         ThreadManager.execute(() -> {
             for (long groupId : GROUPS){
                 if (GroupConfigManager.isFeatureEnabled(groupId, "wakeup_send")){
-                    MessageSender.sendGroupMessage(groupId,"早上好孩子们",WAKEUP_IMG_PATH,false);
+                    GroupMessage.chatMessage(groupId, "早上好孩子们", WAKEUP_IMG_PATH, MessageUtils.ImageType.URL);
                 }
                 log.info("已向群 {} 发送早安起床图片推送", groupId);
             }
@@ -49,7 +50,7 @@ public class WakeUp implements CommandExecutor {
     }
 
     public static void debugSendImgToGroup(long groupId){
-        MessageSender.sendGroupMessage(groupId,"早上好孩子们",WAKEUP_IMG_PATH,false);
+        GroupMessage.chatMessage(groupId, "早上好孩子们", WAKEUP_IMG_PATH, MessageUtils.ImageType.URL);
         log.info("已定向于 {} 发送早安起床图片推送", groupId);
     }
 }

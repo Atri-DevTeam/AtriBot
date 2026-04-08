@@ -1,4 +1,4 @@
-package top.yzljc.qqbot.botservice.request;
+package top.yzljc.qqbot.service.request;
 
 import lombok.Getter;
 

@@ -1,9 +1,9 @@
-package top.yzljc.qqbot.botservice.tools;
+package top.yzljc.qqbot.service.tools;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -34,7 +34,7 @@ public class RM implements CommandExecutor {
 
     public static void recallLastMsg() {
         ThreadManager.execute(() -> latestGroupMessageMap.forEach((_, messageId) -> PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId)));
-        MessageSender.sendGroupMessage(DEBUG_GROUP, "已撤回所有记录的群最后一条消息");
+        GroupMessage.chatMessage(DEBUG_GROUP, "已撤回所有记录的群最后一条消息");
     }
 
     public static void recallMsg(long messageId) {

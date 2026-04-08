@@ -1,8 +1,8 @@
-package top.yzljc.qqbot.botservice.userinfo;
+package top.yzljc.qqbot.service.userinfo;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
 
 public class GetUserInfo {
     private static Long cachedBotId = null;

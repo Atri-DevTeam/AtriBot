@@ -1,7 +1,8 @@
-package top.yzljc.qqbot.botservice.image;
+package top.yzljc.qqbot.service.image;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -15,9 +16,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.tools.RM;
+import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.service.tools.RM;
 import top.yzljc.qqbot.config.ConfigFile;
 
 public class DrawMotd {
@@ -97,15 +98,15 @@ public class DrawMotd {
             if (tmpFile.exists()) {
                 byte[] imgBytes = Files.readAllBytes(tmpFile.toPath());
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-                long msgID = MessageSender.sendGroupMessage(groupId, null, base64Img).getMessageId();
-                ThreadManager.schedule(() -> {
-                    RM.recallMsg(msgID);
-                },60, TimeUnit.SECONDS);
+                long msgID = GroupMessage.chatMessage(groupId, base64Img, MessageUtils.ImageType.BASE64);
+                if (msgID != 0L) {
+                    ThreadManager.schedule(() -> RM.recallMsg(msgID), 60, TimeUnit.SECONDS);
+                }
                 log.info("MOTD 图片已发送 -> 群: {}, 地址: {}:{}", groupId, hp.host, hp.port);
             }
         } catch (Exception e) {
             log.error("MOTD 图片生成或发送异常: {}", e.getMessage());
-            MessageSender.sendGroupMessage(groupId, "MOTD 图片生成失败: " + e.getMessage(), null);
+            GroupMessage.chatMessage(groupId, "MOTD 图片生成失败: " + e.getMessage());
         } finally {
             if (tmpFile.exists()) tmpFile.delete();
         }

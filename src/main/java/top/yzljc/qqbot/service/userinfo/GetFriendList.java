@@ -1,10 +1,10 @@
-package top.yzljc.qqbot.botservice.userinfo;
+package top.yzljc.qqbot.service.userinfo;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +23,10 @@ public class GetFriendList {
 
     public static String getFriendNickname(long userId) {
         return friendList.get(userId);
+    }
+
+    public static int getFriendCount() {
+        return friendList.size();
     }
 
     public static void updateFriendList() {

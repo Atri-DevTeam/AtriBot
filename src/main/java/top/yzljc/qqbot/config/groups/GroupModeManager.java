@@ -1,9 +1,8 @@
 package top.yzljc.qqbot.config.groups;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.botservice.message.MessageSender;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,7 +29,7 @@ public class GroupModeManager implements Listener {
         if ("/save".equalsIgnoreCase(rawMsg)) {
             GroupConfigManager.manualSave();
             clearSession(userId);
-            MessageSender.sendGroupMessage(groupId, "✅ 配置已保存，并退出了配置模式");
+            GroupMessage.chatMessage(groupId, "✅ 配置已保存，并退出了配置模式");
             return;
         }
 
@@ -68,7 +67,7 @@ public class GroupModeManager implements Listener {
                 } else {
                     // 如果在根菜单，按0退出
                     clearSession(userId);
-                    MessageSender.sendGroupMessage(groupId, "已退出配置模式");
+                    GroupMessage.chatMessage(groupId, "已退出配置模式");
                 }
                 return;
             }
@@ -78,7 +77,7 @@ public class GroupModeManager implements Listener {
                 List<?> cache = selectionCache.get(userId);
 
                 if (cache == null || index < 1 || index > cache.size()) {
-                    MessageSender.sendGroupMessage(groupId, "序号无效，请输入列表中的数字");
+                    GroupMessage.chatMessage(groupId, "序号无效，请输入列表中的数字");
                     return;
                 }
 
@@ -110,7 +109,7 @@ public class GroupModeManager implements Listener {
             } catch (Exception e) {
                 Logger.error("处理配置选择时发生错误: " + e.getMessage(), e);
                 clearSession(userId);
-                MessageSender.sendGroupMessage(groupId, "发生错误，会话已重置");
+                GroupMessage.chatMessage(groupId, "发生错误，会话已重置");
             }
         }
     }
@@ -132,7 +131,7 @@ public class GroupModeManager implements Listener {
             sb.append("#").append(i + 1).append("  ").append(features.get(i)).append("\n");
         }
         sb.append("------------------\n发送 #0 退出");
-        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+        GroupMessage.chatMessage(fromGroup, sb.toString());
     }
 
     private static void sendGroupRootList(long fromGroup, long userId) {
@@ -157,7 +156,7 @@ public class GroupModeManager implements Listener {
                     .append(fetchGroupName(gid)).append("(").append(gid).append(")\n");
         }
         sb.append("------------------\n发送 #0 退出");
-        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+        GroupMessage.chatMessage(fromGroup, sb.toString());
     }
 
     private static void sendGroupStatusForFeature(long fromGroup, long userId, String feature) {
@@ -175,7 +174,7 @@ public class GroupModeManager implements Listener {
             sb.append("#").append(i + 1).append(" ")
                     .append(fetchGroupName(gid)).append(" : ").append(on ? "✅" : "❌").append("\n");
         }
-        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+        GroupMessage.chatMessage(fromGroup, sb.toString());
     }
 
     private static void sendFeatureStatusForGroup(long fromGroup, long userId, long targetGroup) {
@@ -192,7 +191,7 @@ public class GroupModeManager implements Listener {
             sb.append("#").append(i + 1).append(" ")
                     .append(f).append(" : ").append(on ? "✅" : "❌").append("\n");
         }
-        MessageSender.sendGroupMessage(fromGroup, sb.toString());
+        GroupMessage.chatMessage(fromGroup, sb.toString());
     }
 
     private static void toggleAndRefresh(long fromGroup, long targetGroupId, String feature, boolean refreshGroupList) {
@@ -200,7 +199,7 @@ public class GroupModeManager implements Listener {
         boolean newState = GroupConfigManager.isFeatureEnabled(targetGroupId, feature);
 
         String msg = String.format("已%s群 %d 的 [%s] 功能", newState ? "开启" : "关闭", targetGroupId, feature);
-        MessageSender.sendGroupMessage(fromGroup, msg);
+        GroupMessage.chatMessage(fromGroup, msg);
 
     }
 

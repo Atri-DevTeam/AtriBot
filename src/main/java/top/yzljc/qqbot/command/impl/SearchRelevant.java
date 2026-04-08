@@ -1,13 +1,13 @@
 package top.yzljc.qqbot.command.impl;
 
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.message.MessageRecorder;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.functions.GroupContentRecord;
 import top.yzljc.qqbot.config.LoadIllegalWords;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -96,13 +96,13 @@ public class SearchRelevant implements CommandExecutor {
     }
 
     private static void searchInDatabase(long groupId, String keyword, Long targetUserId, String mode) {
-        HikariDataSource dataSource = MessageRecorder.getDataSource();
+        HikariDataSource dataSource = GroupContentRecord.getDataSource();
         if (dataSource == null) {
-            MessageSender.sendGroupMessage(groupId, "数据库未初始化，无法搜索。");
+            GroupMessage.chatMessage(groupId, "数据库未初始化，无法搜索。");
             return;
         }
 
-        String tableName = MessageRecorder.getDynamicTableName(groupId);
+        String tableName = GroupContentRecord.getDynamicTableName(groupId);
         long nowSeconds = System.currentTimeMillis() / 1000L;
         long sevenDaysAgoTs = nowSeconds - (7 * 24 * 60 * 60); // 7天前的时间戳
 
@@ -185,10 +185,10 @@ public class SearchRelevant implements CommandExecutor {
             sendAndScheduleWithdraw(groupId, reply.toString().trim());
 
         } catch (SQLException e) {
-            if (e.getErrorCode() == 1146) MessageSender.sendGroupMessage(groupId, "当前群聊暂无消息记录表。");
-            else MessageSender.sendGroupMessage(groupId, "数据库错误：" + e.getMessage());
+            if (e.getErrorCode() == 1146) GroupMessage.chatMessage(groupId, "当前群聊暂无消息记录表。");
+            else GroupMessage.chatMessage(groupId, "数据库错误：" + e.getMessage());
         } catch (Exception e) {
-            MessageSender.sendGroupMessage(groupId, "搜索异常");
+            GroupMessage.chatMessage(groupId, "搜索异常");
         }
     }
 
@@ -199,14 +199,14 @@ public class SearchRelevant implements CommandExecutor {
 
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
-            Long messageId = MessageSender.sendGroupMessage(groupId, message).getMessageId();
-            if (messageId != null) {
+            long messageId = GroupMessage.chatMessage(groupId, message);
+            if (messageId != 0L) {
                 ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             } else {
-                MessageSender.sendGroupMessage(groupId, message);
+                GroupMessage.chatMessage(groupId, message);
             }
         } catch (Exception e) {
-            MessageSender.sendGroupMessage(groupId, message);
+            GroupMessage.chatMessage(groupId, message);
         }
     }
 

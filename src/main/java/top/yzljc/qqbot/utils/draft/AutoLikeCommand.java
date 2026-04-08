@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.utils.draft;
 
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -37,7 +37,7 @@ public class AutoLikeCommand implements CommandExecutor {
                     targetUid = sender.userId();
                 }
                 LikeUser.addToAutoLikeList(targetUid);
-                sender.reply("已加入自动点赞列表", false);
+                sender.reply("已将 " + GetUserInfo.getUserName(targetUid) + "(" + targetUid + ") 加入自动点赞列表", false);
                 return true;
             }
             case "remove" -> {
@@ -53,7 +53,7 @@ public class AutoLikeCommand implements CommandExecutor {
                     targetUid = sender.userId();
                 }
                 LikeUser.removeFromAutoLikeList(targetUid);
-                sender.reply("已移出自动点赞列表", false);
+                sender.reply("已将 " + GetUserInfo.getUserName(targetUid) + "(" + targetUid + ") 从自动点赞列表移除", false);
                 return true;
             }
             case "list" -> {
@@ -72,7 +72,7 @@ public class AutoLikeCommand implements CommandExecutor {
                 return true;
             }
         }
-        if (sender.isAdmin() && "test".equals(sub)){
+        if (sender.isAdmin() && "test".equals(sub)) {
             LikeUser.likeAllinList();
             return true;
         }

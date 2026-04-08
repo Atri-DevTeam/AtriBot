@@ -1,7 +1,7 @@
-package top.yzljc.qqbot.chat.impl;
+package top.yzljc.qqbot.functions;
 
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.LoadIllegalWords;
 import top.yzljc.qqbot.event.EventHandler;
@@ -12,7 +12,7 @@ import top.yzljc.qqbot.utils.Logger;
 public class GroupMessageCheck implements Listener {
     @EventHandler
     public void onGroupMessage(GroupMessageEvent event) {
-        if (Config.getInstance().getMessageSpyGroups().contains(event.getGroupId()) || event.getUserId() == event.getSelfId()) return;
+        if (!Config.getInstance().getMessageSpyGroups().contains(event.getGroupId()) || event.getUserId() == event.getSelfId()) return;
 
         if (LoadIllegalWords.containsSensitiveWord(event.getRawMessage())) {
             if (event.getGroupId() == Config.getInstance().getDebugGroupId()) return;

@@ -1,11 +1,11 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.request.PostRequest;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.config.LoadIllegalWords;
-import top.yzljc.qqbot.botservice.message.MessageRecorder;
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.functions.GroupContentRecord;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -18,9 +18,9 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -186,16 +186,16 @@ public class MessageStats implements CommandExecutor {
 
     private static void sendAndScheduleWithdraw(long groupId, String message) {
         try {
-            Long messageId = MessageSender.sendGroupMessage(groupId, message).getMessageId();
+            long messageId = GroupMessage.chatMessage(groupId, message);
 
-            if (messageId != null) {
+            if (messageId != 0L) {
                 ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
             } else {
-                MessageSender.sendGroupMessage(groupId, message);
+                GroupMessage.chatMessage(groupId, message);
             }
         } catch (Exception e) {
             log.warn("自动撤回发送流程异常: {}", e.getMessage());
-            MessageSender.sendGroupMessage(groupId, message);
+            GroupMessage.chatMessage(groupId, message);
         }
     }
 
@@ -228,7 +228,7 @@ public class MessageStats implements CommandExecutor {
 
     public static Map<Long, Integer> statGroupSpeak(long groupId, LocalDate whichDay, boolean overall, Long filterUserId) {
         Map<Long, Integer> result = new HashMap<>();
-        String tableName = MessageRecorder.getDynamicTableName(groupId);
+        String tableName = GroupContentRecord.getDynamicTableName(groupId);
 
         String base = "SELECT user_id, COUNT(*) as cnt FROM " + tableName + " WHERE group_id=?";
         List<Object> params = new ArrayList<>();
@@ -249,7 +249,7 @@ public class MessageStats implements CommandExecutor {
         }
         base += " GROUP BY user_id";
 
-        try (Connection conn = MessageRecorder.getDataSource().getConnection();
+        try (Connection conn = GroupContentRecord.getDataSource().getConnection();
              PreparedStatement ps = conn.prepareStatement(base)) {
             for (int i = 0; i < params.size(); i++) {
                 Object p = params.get(i);
