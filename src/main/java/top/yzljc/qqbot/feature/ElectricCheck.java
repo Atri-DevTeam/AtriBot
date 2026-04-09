@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.qqbot.chat.GroupMessage;
 
 import top.yzljc.qqbot.service.request.HttpRequest;
@@ -26,7 +27,14 @@ public class ElectricCheck implements Listener {
                 ThreadManager.execute(() -> {
                     String feedback;
                     try {
-                        JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);
+                        String respJsonStr = HttpRequest.getRequestStr(QUERY_URL);
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode respJson = null;
+                        try {
+                            respJson = mapper.readTree(respJsonStr);
+                        } catch (Exception e) {
+                            Logger.warn("解析电表查询结果失败，返回内容：{}", respJsonStr);
+                        }
 
                         if (respJson != null) {
                             String rec = respJson.path("rec").asText();

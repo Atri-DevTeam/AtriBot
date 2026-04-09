@@ -35,16 +35,18 @@ public class HttpRequest {
         return null;
     }
 
-    public static JsonNode sendPostRequest(String url, Object body) {
+    public static String getRequestStr(String url) {
         try {
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(url, body, JsonNode.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
             if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
+                String result = response.getBody();
+                Logger.info("Request success, response: {}", result);
+                return result;
             } else {
-                Logger.warn("POST Request failed, HTTP code: {}", response.getStatusCode().value());
+                Logger.warn("GET Request failed, HTTP code: {}", response.getStatusCode().value());
             }
         } catch (Exception e) {
-            Logger.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            Logger.warn("GET Request Error! URL: {}, Error: {}", url, e.getMessage());
         }
         return null;
     }
