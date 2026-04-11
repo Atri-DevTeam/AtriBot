@@ -161,6 +161,7 @@ public class MessageUtils {
             if (forwardMessageId != 0L) {
                 RM.recordLastMsg(groupId, forwardMessageId);
             }
+//            Logger.debug("发送群转发消息，groupId: {}, title: {}, summary: {}, textVars: {}, 返回: {}", groupId, title, summary, Arrays.toString(textVars), resp);
             return forwardMessageId;
 
         } catch (Exception e) {
@@ -203,6 +204,30 @@ public class MessageUtils {
         data.put("uin", uin);
         data.put("name", name);
         data.put("content", List.of(textSegment(text)));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createTextNodeSegment(MessageSegment rawMessage) {
+        return createTextNodeSegment(rawMessage, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createTextNodeSegment(MessageSegment rawMessage,String uid, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uid);
+        data.put("name", name);
+        data.put("content", List.of(rawMessage));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createTextNodeSegment(LinkedList<MessageSegment> arrayMessage) {
+        return createTextNodeSegment(arrayMessage, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createTextNodeSegment(LinkedList<MessageSegment> arrayMessage, String uid, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uid);
+        data.put("name", name);
+        data.put("content", arrayMessage);
         return new MessageSegment("node", data);
     }
 

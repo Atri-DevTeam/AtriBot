@@ -3,6 +3,7 @@ package top.yzljc.qqbot.chat;
 import top.yzljc.qqbot.chat.impl.MessageUtils;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -119,6 +120,22 @@ public class GroupMessage {
     }
 
     public static MessageSegment createTextNode(String text, String uin, String name) {
+        return MessageUtils.createTextNodeSegment(text, uin, name);
+    }
+
+    public static MessageSegment createTextNode(MessageSegment text) {
+        return MessageUtils.createTextNodeSegment(text);
+    }
+
+    public static MessageSegment createTextNode(MessageSegment text, String uin, String name) {
+        return MessageUtils.createTextNodeSegment(text, uin, name);
+    }
+
+    public static MessageSegment createTextNode(LinkedList<MessageSegment> text) {
+        return MessageUtils.createTextNodeSegment(text);
+    }
+
+    public static MessageSegment createTextNode(LinkedList<MessageSegment> text, String uin, String name) {
         return MessageUtils.createTextNodeSegment(text, uin, name);
     }
 

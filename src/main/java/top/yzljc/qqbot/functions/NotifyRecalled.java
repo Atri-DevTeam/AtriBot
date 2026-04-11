@@ -16,8 +16,10 @@ import top.yzljc.qqbot.event.impl.PrivateMessageEvent;
 import top.yzljc.qqbot.event.impl.RecallMessageEvent;
 import top.yzljc.qqbot.event.impl.RecallType;
 import top.yzljc.qqbot.utils.FormatTools;
+import top.yzljc.qqbot.utils.Logger;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,11 +46,14 @@ public class NotifyRecalled implements Listener {
         if (event.getUserId() == event.getSelfId()) return;
         if (event.getType() != RecallType.PRIVATE) return;
         LinkedList<MessageSegment> recalledMessage = privateMessageCache.getIfPresent(event.getMessageId());
-        String time = "[" + FormatTools.formatTimestamp(event.getTime()) + "] ";
-        String userName = "[" + GetUserInfo.getUserName(event.getUserId()) + "]";
+        String time = FormatTools.formatTimestamp(event.getTime());
+        String userName = GetUserInfo.getUserName(event.getUserId());
         if (recalledMessage != null) {
-            GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(),  "[私聊]" + time + userName + "撤回了一条消息: ");
-            ThreadManager.schedule(() -> GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), recalledMessage), 1, TimeUnit.SECONDS);
+            List<MessageSegment> toSend = new LinkedList<>();
+            toSend.add(GroupMessage.createTextNode("[私聊][" + time + "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getUserId()), userName));
+            toSend.add(GroupMessage.createTextNode(recalledMessage, String.valueOf(event.getGroupId()), userName));
+            GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName);
+//            Logger.debug("检测到撤回消息，用户: {}, 消息 ID: {}, 内容: {}", userName, event.getMessageId(), recalledMessage);
         }
     }
 
@@ -57,15 +62,17 @@ public class NotifyRecalled implements Listener {
         if (!Config.getInstance().getMessageSpyGroups().contains(event.getGroupId())) return;
         if (event.getUserId() == event.getSelfId() || Config.getInstance().getIgnoredUsers().contains(event.getUserId())) return;
         if (event.getType() != RecallType.GROUP) return;
-        String time = "[" + FormatTools.formatTimestamp(event.getTime()) + "] ";
-        String userName = "[" + GetUserInfo.getUserName(event.getUserId()) + "]";
-        String groupName = "[" + GetGroupInfo.getGroupName(event.getGroupId()) + "]";
+        String time = FormatTools.formatTimestamp(event.getTime());
+        String userName = GetUserInfo.getUserName(event.getUserId());
+        String groupName = GetGroupInfo.getGroupName(event.getGroupId());
         String foundMessage = FT.unescape(GroupContentRecord.searchMessage(event.getGroupId(), event.getMessageId()));
         if (foundMessage != null) {
-            LinkedList<MessageSegment> s = StructRawMessage.parse(foundMessage);
-            GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), "[群聊]" + time + groupName + userName + "撤回了一条消息: ");
-            ThreadManager.schedule(() -> GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), s), 1, TimeUnit.SECONDS);
-            // Logger.debug("检测到撤回消息，群: {}, 用户: {}, 消息 ID: {}, 内容: {}", groupName, userName, event.getMessageId(), s);
+            List<MessageSegment> toSend = new LinkedList<>();
+            toSend.add(GroupMessage.createTextNode("[群聊][" + time + "][" + groupName +  "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getGroupId()), userName));
+            toSend.add(GroupMessage.createTextNode(StructRawMessage.parse(foundMessage), String.valueOf(event.getUserId()), userName));
+            GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
+//            Logger.debug("检测到撤回消息，群: {}, 用户: {}, 消息 ID: {}, 内容: {}", groupName, userName, event.getMessageId(), foundMessage);
+//            Logger.debug(toSend.toString());
         }
     }
 }

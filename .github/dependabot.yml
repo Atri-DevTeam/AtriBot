@@ -10,6 +10,9 @@ updates:
       maven-all:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "org.springframework.boot:spring-boot-starter-web"
+      - dependency-name: "org.springframework.boot:spring-boot-dependencies"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
