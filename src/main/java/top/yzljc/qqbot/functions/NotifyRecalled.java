@@ -51,7 +51,7 @@ public class NotifyRecalled implements Listener {
         if (recalledMessage != null) {
             List<MessageSegment> toSend = new LinkedList<>();
             toSend.add(GroupMessage.createTextNode("[私聊][" + time + "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getUserId()), userName));
-            toSend.add(GroupMessage.createTextNode(recalledMessage, String.valueOf(event.getGroupId()), userName));
+            toSend.add(GroupMessage.createTextNode(recalledMessage, String.valueOf(event.getUserId()), userName));
             GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName);
 //            Logger.debug("检测到撤回消息，用户: {}, 消息 ID: {}, 内容: {}", userName, event.getMessageId(), recalledMessage);
         }
@@ -68,7 +68,7 @@ public class NotifyRecalled implements Listener {
         String foundMessage = FT.unescape(GroupContentRecord.searchMessage(event.getGroupId(), event.getMessageId()));
         if (foundMessage != null) {
             List<MessageSegment> toSend = new LinkedList<>();
-            toSend.add(GroupMessage.createTextNode("[群聊][" + time + "][" + groupName +  "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getGroupId()), userName));
+            toSend.add(GroupMessage.createTextNode("[群聊][" + time + "][" + groupName +  "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getUserId()), userName));
             toSend.add(GroupMessage.createTextNode(StructRawMessage.parse(foundMessage), String.valueOf(event.getUserId()), userName));
             GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
 //            Logger.debug("检测到撤回消息，群: {}, 用户: {}, 消息 ID: {}, 内容: {}", groupName, userName, event.getMessageId(), foundMessage);
