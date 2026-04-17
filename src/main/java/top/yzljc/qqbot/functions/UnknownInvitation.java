@@ -27,7 +27,7 @@ public class UnknownInvitation implements Listener {
 
     @EventHandler
     public void onUserInviteBot(GroupMemberChangeEvent event) {
-        if (event.getOperateType() == GroupMemberChangeType.ME_PASSIVE_INVITE && !allowed_users.contains(event.getOperatorId())) {
+        if (event.getOperateType() == GroupMemberChangeType.ME_PASSIVE_INVITE && !(allowed_users.contains(event.getOperatorId()) || event.getOperatorId() == event.getSelfId())) {
             long groupId = event.getGroupId();
             Map<String, Object> data = new HashMap<>();
             data.put("group_id", String.valueOf(groupId));

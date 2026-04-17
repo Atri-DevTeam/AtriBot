@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationContext;
 import lombok.Getter;
 import top.yzljc.qqbot.service.clock.RunScheduleTask;
 import top.yzljc.qqbot.functions.GroupContentRecord;
+import top.yzljc.qqbot.service.scheduler.Scheduler;
 import top.yzljc.qqbot.service.userinfo.GetFriendList;
 import top.yzljc.qqbot.functions.GroupMessageCheck;
 import top.yzljc.qqbot.command.CommandManager;
@@ -35,6 +36,7 @@ import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
 import top.yzljc.qqbot.utils.AtriHelp;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 import top.yzljc.qqbot.utils.Logger;
 import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
 import top.yzljc.qqbot.socket.MinecraftVerify;
@@ -51,6 +53,8 @@ public class AtriBot {
     private static MinecraftVerify minecraftVerify;
     @Getter
     private static AtriBot instance;
+    @Getter
+    private Scheduler scheduler;
 
     public AtriBot() {
         if (instance != null) {
@@ -81,6 +85,7 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new ElectricCheck());
         EventManager.getInstance().registerEvents(new ServerRcon());
         EventManager.getInstance().registerEvents(new Scratch());
+        EventManager.getInstance().registerEvents(new BotRuntimeData());
 
         CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
@@ -107,6 +112,13 @@ public class AtriBot {
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
         CommandManager.getCommand("verify").setExecutor(new Verify());
+
+        this.scheduler = new Scheduler();
+        try {
+            BotRuntimeData.init();
+        } catch (Exception e) {
+            Logger.error("BotRuntimeData 初始化失败: {}", e.getMessage());
+        }
 
         System.setProperty("java.awt.headless", "true");
         System.out.println("==== AtriBot ====");
@@ -172,6 +184,7 @@ public class AtriBot {
     }
 
     public void onDisable() {
+        scheduler.cancelTask(BotRuntimeData.getTask());
         System.out.println("====== ATRI IS SHUTTING DOWN ======");
         System.out.println("==== AtriBot Disabled ====");
     }

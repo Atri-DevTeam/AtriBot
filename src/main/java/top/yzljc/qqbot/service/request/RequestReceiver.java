@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.event.EventManager;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
@@ -21,6 +22,7 @@ public class RequestReceiver {
     @PostMapping("/")
     public String handleRequest(@RequestBody JsonNode root) {
         if (root != null) {
+            PacketEvent.process(root);
             try {
                 String postType = root.path("post_type").asText("");
                 // 群聊/私聊
