@@ -1,23 +1,28 @@
-package top.yzljc.qqbot.feature.news;
+package top.yzljc.qqbot.functions.minecraftnews;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import top.yzljc.qqbot.service.thread.ThreadManager;
-import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
-import top.yzljc.qqbot.chat.GroupMessage;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.service.tools.FT;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,21 +30,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.MalformedURLException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.service.tools.FT;
-
 public class MinecraftNews implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
-    // 主 API (搜索接口)
     private static final String API_PRIMARY = "https://net-secondary.web.minecraft-services.net/api/v1.0/zh-cn/search?pageSize=5&sortType=Recent&category=News&newsOnly=true";
-    // 辅助 API (CMS 内容接口)
     private static final String API_SECONDARY = "https://www.minecraft.net/content/minecraftnet/language-masters/en-us/_jcr_content.articles.page-1.json";
 
     private static final String HISTORY_FILE = ConfigFile.MINECRAFT_NEWS.getFileName();
@@ -51,7 +46,7 @@ public class MinecraftNews implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.isAdmin()){
+        if (!sender.isAdmin()) {
             sender.reply("你没有权限执行此命令", false);
             return true;
         }
@@ -69,7 +64,6 @@ public class MinecraftNews implements CommandExecutor {
             }
 
             List<UnifiedArticle> primaryList = fetchAndParsePrimary();
-
             List<UnifiedArticle> secondaryList = fetchAndParseSecondary();
 
             List<UnifiedArticle> candidateArticles = new ArrayList<>();
@@ -84,9 +78,7 @@ public class MinecraftNews implements CommandExecutor {
             for (UnifiedArticle article : candidateArticles) {
                 if (article.id == null || article.id.isEmpty()) continue;
 
-                // 去重判断
                 if (!pushedArticleIds.contains(article.id)) {
-                    // 二次去重：防止本次检查中主源和辅助源查到同一篇新文章，导致重复添加
                     boolean alreadyInList = false;
                     for (UnifiedArticle added : newArticlesFound) {
                         if (added.id.equals(article.id)) {
@@ -104,7 +96,6 @@ public class MinecraftNews implements CommandExecutor {
 
             for (UnifiedArticle article : newArticlesFound) {
                 log.info("发现新文章：[{}] {}", article.tag, article.title);
-
                 pushedArticleIds.add(article.id);
                 pushToAllGroups(article);
                 newCount++;
@@ -127,11 +118,10 @@ public class MinecraftNews implements CommandExecutor {
         List<UnifiedArticle> list = new ArrayList<>();
         HttpURLConnection connection = null;
         try {
-            // 使用 HttpURLConnection 替代直接 URL 读取，以便设置超时
             URL url = new URI(MinecraftNews.API_PRIMARY).toURL();
             connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(10000); // 10秒连接超时
-            connection.setReadTimeout(30000);    // 30秒读取超时
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(30000);
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
@@ -147,7 +137,7 @@ public class MinecraftNews implements CommandExecutor {
                         article.title = node.has("title") ? FT.unescape(node.get("title").asText()) : "未知标题";
                         article.tag = "Minecraft 资讯";
                         article.url = node.has("url") ? node.get("url").asText() : "";
-                        article.id = article.url; // ID = URL
+                        article.id = article.url;
 
                         long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
                         article.timestamp = timeSeconds * 1000;
@@ -184,8 +174,8 @@ public class MinecraftNews implements CommandExecutor {
         try {
             URL url = new URI(MinecraftNews.API_SECONDARY).toURL();
             connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(10000); // 10秒连接超时
-            connection.setReadTimeout(30000);    // 30秒读取超时
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(30000);
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
@@ -194,7 +184,7 @@ public class MinecraftNews implements CommandExecutor {
                 JsonNode grid = root.get("article_grid");
 
                 if (grid != null && grid.isArray()) {
-                    int limit = 5; // 如果还是他妈的漏新闻就给这个数值改大，我就不信了
+                    int limit = 5;
                     for (JsonNode item : grid) {
                         if (list.size() >= limit) break;
 
@@ -251,71 +241,105 @@ public class MinecraftNews implements CommandExecutor {
     }
 
     private static void pushToAllGroups(UnifiedArticle article) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("【Minecraft 动态 | ").append(article.tag).append("】\n");
-        sb.append(article.title).append("\n\n");
-
-        if (article.author != null && !article.author.isEmpty()) {
-            sb.append("作者: ").append(article.author).append("\n");
+        log.info(">>> 1. 开始提取网页纯文本: {}", article.url);
+        String articleText = ArticleScraper.fetchPureText(article.url);
+        if (articleText.isEmpty()) {
+            log.warn(">>> [注意] 提取网页正文为空，使用描述兜底");
+            articleText = article.description;
+        } else {
+            log.info(">>> [成功] 网页正文提取完毕，长度: {}", articleText.length());
         }
 
+        log.info(">>> 2. 开始请求 AI 进行总结...");
+        List<String> aiMessages = AtriNewsSummarizer.summarize(article.title, articleText);
+        log.info(">>> [成功] AI 总结完毕，共分成 {} 段", aiMessages.size());
+
+        log.info(">>> 3. 开始构建 MessageSegment Nodes...");
+        List<MessageSegment> nodes = new ArrayList<>();
+        String atriUin = "3199590352";
+        String atriName = "YZ_Ljc_";
+
+        StringBuilder headerMsg = new StringBuilder();
+        headerMsg.append("【Minecraft 动态 | Minecraft 资讯】\n");
+        headerMsg.append("标题：").append(article.title).append("\n");
         if (article.dateDisplay != null && !article.dateDisplay.isEmpty()) {
-            sb.append("时间: ").append(article.dateDisplay).append("\n\n");
+            headerMsg.append("时间：").append(article.dateDisplay).append("\n");
         }
+        headerMsg.append("原文链接：").append(article.url);
 
-        if (article.description != null && !article.description.isEmpty()) {
-            sb.append(article.description).append("\n\n");
-        }
-        sb.append("链接: ").append(article.url);
-        String textContent = sb.toString();
+        nodes.add(GroupMessage.createTextNode(headerMsg.toString(), atriUin, atriName));
 
-        String base64Img = null;
         if (article.imageUrl != null && !article.imageUrl.isEmpty()) {
-            try {
-                base64Img = downloadImageAsBase64(article.imageUrl);
-            } catch (Exception e) {
-                log.warn("图片下载失败：{}", e.getMessage());
+            String base64Img = downloadImageAsBase64(article.imageUrl);
+            if (base64Img != null) {
+                nodes.add(GroupMessage.createImageNode("base64://" + base64Img, atriUin, atriName));
             }
+        }
+
+        for (String msg : aiMessages) {
+            nodes.add(GroupMessage.createTextNode(msg, atriUin, atriName));
+        }
+
+        String[] textVars = {
+                "标题: " + article.title,
+                "时间: " + article.dateDisplay,
+                "作者: " + article.author,
+                "简介: " + article.description
+        };
+
+        log.info(">>> 4. 准备遍历群聊发送，总群数: {}", TARGET_GROUPS.size());
+        log.info(">>> 5. 正在执行第一次转发: {}", Config.getInstance().getDebugGroupId());
+
+        long messageId = GroupMessage.forwardMessage(
+                Config.getInstance().getDebugGroupId(),
+                nodes,
+                "【Minecraft 动态 | Minecraft 资讯】",
+                "点击查看详细总结",
+                textVars
+        );
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException ignored) {
         }
 
         for (Long groupId : TARGET_GROUPS) {
+            if (groupId == Config.getInstance().getDebugGroupId()) continue;
             if (!GroupConfigManager.isFeatureEnabled(groupId, "mc_news")) {
                 continue;
             }
-            GroupMessage.chatMessage(groupId, textContent, base64Img, MessageUtils.ImageType.BASE64);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-            }
+
+            GroupMessage.forwardTo(groupId, messageId);
+            log.info(">>> 6. 正在转发到群 {}...", groupId);
+
         }
+        log.info(">>> 7. 本条新闻转发执行结束");
     }
 
     private static String downloadImageAsBase64(String imageUrl) {
         try {
             URL url = new URI(imageUrl).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(15000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            conn.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
 
             try (InputStream in = conn.getInputStream();
                  ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[4096];
                 int n;
                 while ((n = in.read(buffer)) != -1) {
                     out.write(buffer, 0, n);
                 }
-                byte[] imgBytes = out.toByteArray();
-                return Base64.getEncoder().encodeToString(imgBytes);
+                return Base64.getEncoder().encodeToString(out.toByteArray());
             } finally {
                 conn.disconnect();
             }
-        } catch (URISyntaxException | MalformedURLException e) {
-            log.error("URL格式错误：{}", imageUrl, e);
-            return null;  // 或者返回空字符串、默认图片等
-        } catch (IOException e) {
-            log.error("下载图片失败：{}", imageUrl, e);
+        } catch (Exception e) {
+            log.warn("Base64 图片下载失败：{}", e.getMessage());
             return null;
         }
     }

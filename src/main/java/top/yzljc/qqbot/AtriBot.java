@@ -19,7 +19,7 @@ import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
-import top.yzljc.qqbot.feature.news.MinecraftNews;
+import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
 import top.yzljc.qqbot.command.impl.Reboot;
 import top.yzljc.qqbot.command.impl.RollbackMessages;
 import top.yzljc.qqbot.command.impl.SearchRelevant;

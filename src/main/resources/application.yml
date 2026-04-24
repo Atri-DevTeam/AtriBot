@@ -1,0 +1,11 @@
+# AI 配置
+atri:
+  ai:
+    # 填入你的 API Key，这里以 DeepSeek 为例，其他模型同理
+    api-key: "sk-xxxxxx"
+    # API 基础地址（注意后面要有 /v1/chat/completions）
+    base-url: "https://xxxxx/compatible-mode/v1/chat/completions"
+    # 使用的模型名称
+    model: "qwen3.5-flash"
+    # 请求超时时间(毫秒)
+    timeout: 30000000
