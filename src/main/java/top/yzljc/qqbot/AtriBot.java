@@ -208,7 +208,8 @@ public class AtriBot {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 if ("stop".equalsIgnoreCase(line.trim())) {
-                    System.out.println("正在关闭 AtriBot...");
+                    BotRuntimeData.save();
+                    Logger.info("正在关闭 AtriBot...");
                     SpringApplication.exit(context, () -> 0);
                     System.exit(0);
                     break;

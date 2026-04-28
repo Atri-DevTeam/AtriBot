@@ -138,7 +138,7 @@ public class MinecraftNews implements CommandExecutor {
                 for (JsonNode node : results) {
                     UnifiedArticle article = new UnifiedArticle();
                     article.title = node.has("title") ? FT.unescape(node.get("title").asText()) : "未知标题";
-                    article.tag = "Minecraft 资讯";
+                    article.tag = "新闻资讯";
                     article.url = node.has("url") ? node.get("url").asText() : "";
                     article.id = article.url;
 
@@ -178,7 +178,7 @@ public class MinecraftNews implements CommandExecutor {
                     if (tile == null) continue;
 
                     article.title = tile.has("title") ? FT.unescape(tile.get("title").asText()) : "未知标题";
-                    article.tag = "Minecraft 快讯";
+                    article.tag = "新闻快讯";
 
                     String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
                     article.url = relUrl.startsWith("/") ? BASE_URL + relUrl : relUrl;
@@ -230,7 +230,7 @@ public class MinecraftNews implements CommandExecutor {
         String atriName = "YZ_Ljc_";
 
         StringBuilder headerMsg = new StringBuilder();
-        headerMsg.append("【Minecraft 动态 | Minecraft 资讯】\n");
+        headerMsg.append("【Minecraft 动态 | 新闻资讯】\n");
         headerMsg.append("标题：").append(article.title).append("\n");
         if (article.dateDisplay != null && !article.dateDisplay.isEmpty()) {
             headerMsg.append("时间：").append(article.dateDisplay).append("\n");
