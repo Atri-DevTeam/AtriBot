@@ -3,9 +3,10 @@ package top.yzljc.qqbot.command.impl;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.message.MessageRecorder;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.functions.GroupContentRecord;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -65,14 +66,13 @@ public class RollbackMessages implements CommandExecutor {
     }
 
     private int performRollback(long groupId, Long targetUserId, int limit) {
-        HikariDataSource dataSource = MessageRecorder.getDataSource();
+        HikariDataSource dataSource = GroupContentRecord.getDataSource();
         List<Long> msgIdList = fetchMessageIds(groupId, targetUserId, limit, dataSource);
 
         int successCount = 0;
         for (Long msgId : msgIdList) {
-            if (sendDeleteMessage(msgId)) {
-                successCount++;
-            }
+            GroupMessage.recallMessage(msgId);
+            successCount++;
             try { Thread.sleep(50); } catch (InterruptedException ignored) {}
         }
         return successCount;
@@ -80,7 +80,7 @@ public class RollbackMessages implements CommandExecutor {
 
     private List<Long> fetchMessageIds(long groupId, Long userId, int limit, HikariDataSource dataSource) {
         List<Long> list = new ArrayList<>();
-        String tableName = MessageRecorder.getDynamicTableName(groupId);
+        String tableName = GroupContentRecord.getDynamicTableName(groupId);
 
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("SELECT message_id FROM ").append(tableName)
@@ -113,15 +113,5 @@ public class RollbackMessages implements CommandExecutor {
             log.error("查询数据库失败：{}", e.getMessage());
         }
         return list;
-    }
-
-    private boolean sendDeleteMessage(Long messageId) {
-        try {
-            PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
-            return true;
-        } catch (Exception e) {
-            log.warn("发送撤回包失败，message_id = {}：{}", messageId, e.getMessage());
-            return false;
-        }
     }
 }

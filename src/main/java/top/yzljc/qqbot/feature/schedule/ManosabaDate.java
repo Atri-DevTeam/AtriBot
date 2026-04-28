@@ -1,15 +1,16 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.image.AbstractImage;
+import top.yzljc.qqbot.service.image.AbstractImage;
 
 import java.awt.*;
 import java.io.File;
@@ -103,7 +104,7 @@ public class ManosabaDate implements CommandExecutor {
 
             byte[] imgBytes = Files.readAllBytes(tempFile.toPath());
             String base64Img = Base64.getEncoder().encodeToString(imgBytes);
-            MessageSender.sendGroupMessage(targetGroupId, null, base64Img);
+            GroupMessage.chatMessage(targetGroupId, base64Img, MessageUtils.ImageType.BASE64);
 
         } catch (Exception ex) {
             log.error("推送图片异常: {}", ex.getMessage());

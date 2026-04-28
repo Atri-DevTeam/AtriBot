@@ -7,14 +7,15 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,7 +34,7 @@ import java.net.MalformedURLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.tools.FT;
+import top.yzljc.qqbot.service.tools.FT;
 
 public class HypixelNews implements CommandExecutor {
 
@@ -54,7 +55,7 @@ public class HypixelNews implements CommandExecutor {
             return true;
         }
         ThreadManager.execute(() -> checkNews(true));
-        MessageSender.sendGroupMessage(sender.groupId(), "正在手动检查 Hypixel 官网资讯...");
+        GroupMessage.chatMessage(sender.groupId(), "正在手动检查 Hypixel 官网资讯...");
         return true;
     }
 
@@ -180,7 +181,7 @@ public class HypixelNews implements CommandExecutor {
                 continue;
             }
 
-            MessageSender.sendGroupMessage(groupId, textContent, base64Img);
+            GroupMessage.chatMessage(groupId, textContent, base64Img, MessageUtils.ImageType.BASE64);
             try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
         }
     }

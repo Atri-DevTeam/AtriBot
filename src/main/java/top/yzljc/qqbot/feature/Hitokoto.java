@@ -4,13 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import top.yzljc.qqbot.botservice.message.MessageSender;
 
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
 
 import java.util.*;
@@ -22,7 +21,7 @@ import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 
 public class Hitokoto implements Listener {

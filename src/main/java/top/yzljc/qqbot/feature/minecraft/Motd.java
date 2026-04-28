@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature.minecraft;
 
-import top.yzljc.qqbot.botservice.image.DrawMotd;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.image.DrawMotd;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;

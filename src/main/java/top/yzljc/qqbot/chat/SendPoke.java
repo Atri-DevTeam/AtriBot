@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.chat;
 
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.utils.Logger;
 

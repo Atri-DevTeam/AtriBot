@@ -3,6 +3,7 @@ package top.yzljc.qqbot.functions;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupRequestEvent;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 /**
  * @Author YZ_Ljc_
@@ -15,8 +16,9 @@ public class DenyFuckGuys implements Listener {
     @EventHandler
     public void onGroupRequest(GroupRequestEvent event) {
         if (event.getComment().contains("进群交流，请同意，谢谢") || event.getComment().contains("请同意") ||
-                event.getComment().contains("通过谢谢") || event.getComment().contains("请通过") || event.getComment().contains("通过下")){
+                event.getComment().contains("通过谢谢") || event.getComment().contains("请通过") || event.getComment().contains("通过下") || event.getComment().contains("通过")){
             event.reject("疑似人机验证信息，如误判请更换重试");
+            BotRuntimeData.callAntiBotAction();
         }
     }
 }

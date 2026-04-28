@@ -1,8 +1,8 @@
 package top.yzljc.qqbot.functions;
 
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
@@ -27,12 +27,12 @@ public class UnknownInvitation implements Listener {
 
     @EventHandler
     public void onUserInviteBot(GroupMemberChangeEvent event) {
-        if (event.getOperateType() == GroupMemberChangeType.ME_PASSIVE_INVITE && !allowed_users.contains(event.getOperatorId())) {
+        if (event.getOperateType() == GroupMemberChangeType.ME_PASSIVE_INVITE && !(allowed_users.contains(event.getOperatorId()) || event.getOperatorId() == event.getSelfId())) {
             long groupId = event.getGroupId();
             Map<String, Object> data = new HashMap<>();
             data.put("group_id", String.valueOf(groupId));
             data.put("is_dismiss", "false");
-            event.getGroup().sendSingleText("本次进群信息未经同意，为避免一些潜在风险，已主动退出，如有需求，请联系开发者申请！");
+            event.getGroup().sendSingleText("本次进群信息未经同意，为避免一些潜在风险，已主动退出，如有需求，请联系开发者主动加群！");
             ThreadManager.schedule(() -> PostRequest.sendPost(RequestType.QUIT_GROUP, data), 5, TimeUnit.SECONDS);
             Logger.info("已自动退出未知邀请的群聊，群ID: " + groupId);
         }

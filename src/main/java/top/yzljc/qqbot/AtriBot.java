@@ -4,10 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import lombok.Getter;
-import top.yzljc.qqbot.botservice.clock.RunScheduleTask;
-import top.yzljc.qqbot.botservice.message.MessageRecorder;
-import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
-import top.yzljc.qqbot.chat.impl.GroupMessageCheck;
+import top.yzljc.qqbot.service.clock.RunScheduleTask;
+import top.yzljc.qqbot.functions.GroupContentRecord;
+import top.yzljc.qqbot.service.scheduler.Scheduler;
+import top.yzljc.qqbot.service.userinfo.GetFriendList;
+import top.yzljc.qqbot.functions.GroupMessageCheck;
 import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
@@ -18,14 +19,14 @@ import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.feature.news.HypixelNews;
-import top.yzljc.qqbot.feature.news.MinecraftNews;
+import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
 import top.yzljc.qqbot.command.impl.Reboot;
 import top.yzljc.qqbot.command.impl.RollbackMessages;
 import top.yzljc.qqbot.command.impl.SearchRelevant;
 import top.yzljc.qqbot.config.Reload;
 import top.yzljc.qqbot.config.groups.GroupConfigInfo;
 import top.yzljc.qqbot.debug.Broadcast;
-import top.yzljc.qqbot.botservice.tools.RM;
+import top.yzljc.qqbot.service.tools.RM;
 import top.yzljc.qqbot.feature.minecraft.BedwarsChallenge;
 import top.yzljc.qqbot.feature.minecraft.HypixelReward;
 import top.yzljc.qqbot.feature.minecraft.MojangStatus;
@@ -35,6 +36,7 @@ import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
 import top.yzljc.qqbot.utils.AtriHelp;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 import top.yzljc.qqbot.utils.Logger;
 import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
 import top.yzljc.qqbot.socket.MinecraftVerify;
@@ -51,6 +53,8 @@ public class AtriBot {
     private static MinecraftVerify minecraftVerify;
     @Getter
     private static AtriBot instance;
+    @Getter
+    private Scheduler scheduler;
 
     public AtriBot() {
         if (instance != null) {
@@ -77,10 +81,11 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new GroupModeManager());
         EventManager.getInstance().registerEvents(new AnnoyUser());
         EventManager.getInstance().registerEvents(new HypixelReward());
-        EventManager.getInstance().registerEvents(new MessageRecorder());
+        EventManager.getInstance().registerEvents(new GroupContentRecord());
         EventManager.getInstance().registerEvents(new ElectricCheck());
         EventManager.getInstance().registerEvents(new ServerRcon());
         EventManager.getInstance().registerEvents(new Scratch());
+        EventManager.getInstance().registerEvents(new BotRuntimeData());
 
         CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
@@ -107,6 +112,13 @@ public class AtriBot {
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
         CommandManager.getCommand("verify").setExecutor(new Verify());
+
+        this.scheduler = new Scheduler();
+        try {
+            BotRuntimeData.init();
+        } catch (Exception e) {
+            Logger.error("BotRuntimeData 初始化失败: {}", e.getMessage());
+        }
 
         System.setProperty("java.awt.headless", "true");
         System.out.println("==== AtriBot ====");
@@ -169,9 +181,12 @@ public class AtriBot {
         } catch (Exception e) {
             Logger.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
+
+        BotRuntimeData.callStartUp();
     }
 
     public void onDisable() {
+        scheduler.cancelTask(BotRuntimeData.getTask());
         System.out.println("====== ATRI IS SHUTTING DOWN ======");
         System.out.println("==== AtriBot Disabled ====");
     }
@@ -193,7 +208,8 @@ public class AtriBot {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 if ("stop".equalsIgnoreCase(line.trim())) {
-                    System.out.println("正在关闭 AtriBot...");
+                    BotRuntimeData.save();
+                    Logger.info("正在关闭 AtriBot...");
                     SpringApplication.exit(context, () -> 0);
                     System.exit(0);
                     break;

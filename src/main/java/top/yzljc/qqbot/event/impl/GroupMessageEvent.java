@@ -1,12 +1,13 @@
 package top.yzljc.qqbot.event.impl;
 
 import lombok.Getter;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.event.Cancellable;
 import top.yzljc.qqbot.event.Event;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
 import top.yzljc.qqbot.event.Group;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.LinkedList;
 
@@ -53,7 +54,7 @@ public class GroupMessageEvent extends Event implements Cancellable {
     }
 
     public void recall() {
-        MessageUtils.recallMessage(this.messageId);
+        GroupMessage.recallMessage(this.messageId);
     }
 
     @Override

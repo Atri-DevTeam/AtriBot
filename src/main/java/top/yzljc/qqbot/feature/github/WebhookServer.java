@@ -7,9 +7,10 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -177,7 +178,7 @@ public class WebhookServer implements CommandExecutor {
 
                 if (destinationGroups != null) {
                     for (Long groupId : destinationGroups) {
-                        ThreadManager.execute(() -> MessageSender.sendGroupMessage(groupId, null, base64Image));
+                        ThreadManager.execute(() -> GroupMessage.chatMessage(groupId, base64Image, MessageUtils.ImageType.BASE64));
                     }
                 }
             }

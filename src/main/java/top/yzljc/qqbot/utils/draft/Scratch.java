@@ -2,9 +2,8 @@ package top.yzljc.qqbot.utils.draft;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.event.EventHandler;
@@ -28,7 +27,7 @@ public class Scratch implements Listener {
 
     private static void huffResult(int num){
         String result = "喜报！你此次共哈气 " + num + " 次！";
-        MessageSender.sendGroupMessage(GROUP_ID, result);
+        GroupMessage.chatMessage(GROUP_ID, result);
         log.info("用户在群 {} 哈气 {} 次。", GROUP_ID, num);
     }
 

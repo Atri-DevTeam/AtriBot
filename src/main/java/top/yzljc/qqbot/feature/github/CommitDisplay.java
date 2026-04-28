@@ -2,7 +2,7 @@ package top.yzljc.qqbot.feature.github;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.image.AbstractImage;
+import top.yzljc.qqbot.service.image.AbstractImage;
 import top.yzljc.qqbot.config.ConfigFile;
 
 import javax.imageio.ImageIO;

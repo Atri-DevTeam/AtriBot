@@ -1,14 +1,14 @@
 package top.yzljc.qqbot.debug;
 
-import top.yzljc.qqbot.botservice.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.botservice.tools.FT;
+import top.yzljc.qqbot.service.tools.FT;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
 import java.util.Set;
@@ -35,11 +35,11 @@ public class Broadcast implements CommandExecutor {
     private static void fecthToGroups(String message) {
         for (long gid : GroupList) {
             if (!GroupConfigManager.isFeatureEnabled(gid, "broadcast")) continue;
-            ThreadManager.execute(() -> MessageSender.sendGroupMessage(gid, FT.unescape(message)));
+            ThreadManager.execute(() -> GroupMessage.chatMessage(gid, FT.unescape(message)));
         }
     }
 
     private static void debugBroadcastRequest(String message) {
-        MessageSender.sendGroupMessage(DebugGroupId, FT.unescape(message));
+        GroupMessage.chatMessage(DebugGroupId, FT.unescape(message));
     }
 }

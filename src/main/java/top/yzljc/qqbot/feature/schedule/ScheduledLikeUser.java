@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature.schedule;
 
-import top.yzljc.qqbot.botservice.clock.Schedule;
-import top.yzljc.qqbot.botservice.clock.ScheduleType;
+import top.yzljc.qqbot.service.clock.Schedule;
+import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.feature.LikeUser;
 
 public final class ScheduledLikeUser {

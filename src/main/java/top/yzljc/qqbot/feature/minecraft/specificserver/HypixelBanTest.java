@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.feature.minecraft.specificserver;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.feature.minecraft.ServerRcon;
 import top.yzljc.qqbot.socket.SocketManager;
 
@@ -27,7 +27,7 @@ public class HypixelBanTest {
     public static void handleUnbanMeCommand(long groupId, String rawTrimmed, String hbtSecret) {
         String[] parts = rawTrimmed.split("\\s+");
         if (parts.length < 2) {
-            MessageSender.sendGroupMessage(groupId, "用法: /unbanme <ID>");
+            GroupMessage.chatMessage(groupId, "用法: /unbanme <ID>");
             return;
         }
         String targetId = parts[1];
@@ -39,7 +39,7 @@ public class HypixelBanTest {
                     groupId
             );
         } else {
-            MessageSender.sendGroupMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封");
+            GroupMessage.chatMessage(groupId, "[!] 未找到hbt服务器的密钥配置，无法执行解封");
         }
     }
 
@@ -50,7 +50,7 @@ public class HypixelBanTest {
             boolean success = SocketManager.sendCommand(info.serverId, secondCmd, info.secretKey);
 
             if (!success) {
-                MessageSender.sendGroupMessage(groupId, "[X] hbt 服务器未连接或鉴权失败");
+                GroupMessage.chatMessage(groupId, "[X] hbt 服务器未连接或鉴权失败");
                 return;
             }
 
@@ -73,7 +73,7 @@ public class HypixelBanTest {
             String cleanLogContent = ServerRcon.cleanLog(consoleLog);
             String replyMsg = String.format("[√] 自助解封申请已提交至服务器\n目标ID: %s\n----------------\n控制台返回:\n%s",
                     targetId, cleanLogContent);
-            MessageSender.sendGroupMessage(groupId, replyMsg);
+            GroupMessage.chatMessage(groupId, replyMsg);
         });
     }
 }

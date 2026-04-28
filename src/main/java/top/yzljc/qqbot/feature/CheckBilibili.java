@@ -2,8 +2,9 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.service.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
@@ -131,7 +132,7 @@ public class CheckBilibili implements Listener {
                         "视频时长：" + formatDuration(duration) + "\n" +
                         "原始链接：" + link;
 
-                List<Map<String, Object>> nodes = new ArrayList<>();
+                List<MessageSegment> nodes = new ArrayList<>();
                 nodes.add(createImageNode(picUrl));
                 nodes.add(createTextNode(sb));
                 nodes.add(createTextNode("视频简介：\n" + desc));
@@ -172,7 +173,7 @@ public class CheckBilibili implements Listener {
                 if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
-                        MessageUtils.atUser(3199590352L, settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        GroupMessage.atUser(3199590352L, settings.getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
                         log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
                     }
                 } else {
@@ -201,17 +202,17 @@ public class CheckBilibili implements Listener {
         return "UP主信息获取失败";
     }
 
-    private static Map<String, Object> createTextNode(String text) {
-        return MessageUtils.createTextNode(text);
+    private static MessageSegment createTextNode(String text) {
+        return GroupMessage.createTextNode(text);
     }
 
-    private static Map<String, Object> createImageNode(String url) {
-        return MessageUtils.createImageNode(url);
+    private static MessageSegment createImageNode(String url) {
+        return GroupMessage.createImageNode(url);
     }
 
-    private static void sendForwardMessage(long groupId, List<Map<String, Object>> nodes, String title) {
+    private static void sendForwardMessage(long groupId, List<MessageSegment> nodes, String title) {
         try {
-            MessageUtils.sendGroupForwardMessage(groupId, nodes, "B站视频解析结果", "查看哔哩哔哩视频信息", title);
+            GroupMessage.forwardMessage(groupId, nodes, "B站视频解析结果", "查看哔哩哔哩视频信息", title);
             log.info("Result request sending task was successfully transformed to PostRequest {}", groupId);
         } catch (Exception e) {
             log.error("Failed to send forward message", e);

@@ -3,8 +3,8 @@ package top.yzljc.qqbot.feature.minecraft;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
@@ -125,7 +125,7 @@ public class ServerRcon implements Listener {
         if (String.valueOf(userId).equals("3199590352")) {
             String[] parts = rawMessage.trim().split("\\s+", 3);
             if (parts.length < 3) {
-                MessageSender.sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
+                GroupMessage.chatMessage(groupId, "格式错误: /rc <ServerID> <Command>");
                 return;
             }
             String targetServerId = parts[1];
@@ -135,7 +135,7 @@ public class ServerRcon implements Listener {
             if (secretKey != null) {
                 executeRcCommand(targetServerId, command, new AuthInfo(targetServerId, secretKey), groupId);
             } else {
-                MessageSender.sendGroupMessage(groupId, "[!] 未找到目标服务器的密钥: " + targetServerId);
+                GroupMessage.chatMessage(groupId, "[!] 未找到目标服务器的密钥: " + targetServerId);
             }
             return;
         }
@@ -144,7 +144,7 @@ public class ServerRcon implements Listener {
             List<String> userServers = adminRules.get(key);
             String[] parts = rawMessage.trim().split("\\s+", 3);
             if (parts.length < 3) {
-                MessageSender.sendGroupMessage(groupId, "格式错误: /rc <ServerID> <Command>");
+                GroupMessage.chatMessage(groupId, "格式错误: /rc <ServerID> <Command>");
                 return;
             }
             String targetServerId = parts[1];
@@ -166,12 +166,12 @@ public class ServerRcon implements Listener {
                 executeRcCommand(targetServerId, command, matchedInfo, groupId);
             } else {
                 log.info("[AUTH] 鉴权失败：用户 {} 无权控制 {}", userId, targetServerId);
-                MessageSender.sendGroupMessage(groupId, "[!] 权限不足: 您在当前群未绑定服务器 " + targetServerId);
+                GroupMessage.chatMessage(groupId, "[!] 权限不足: 您在当前群未绑定服务器 " + targetServerId);
             }
 
         } else {
             log.info("[AUTH] 鉴权拒绝：{}", key);
-            MessageSender.sendGroupMessage(groupId, "You don't have permission to do that!");
+            GroupMessage.chatMessage(groupId, "You don't have permission to do that!");
         }
     }
 
@@ -180,7 +180,7 @@ public class ServerRcon implements Listener {
             boolean success = SocketManager.sendCommand(targetServerId, command, info.secretKey);
 
             if (!success) {
-                MessageSender.sendGroupMessage(groupId, "[X] 目标服务器未连接或鉴权失败");
+                GroupMessage.chatMessage(groupId, "[X] 目标服务器未连接或鉴权失败");
                 return;
             }
 
@@ -203,7 +203,7 @@ public class ServerRcon implements Listener {
 
             String replyMsg = String.format("[√] 指令已送达\n目标: %s\n内容: %s\n----------------\n控制台返回:\n%s",
                     targetServerId, command, cleanLogContent);
-            MessageSender.sendGroupMessage(groupId, replyMsg);
+            GroupMessage.chatMessage(groupId, replyMsg);
         });
     }
 }

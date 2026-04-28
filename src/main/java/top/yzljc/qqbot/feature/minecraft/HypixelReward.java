@@ -7,8 +7,7 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -100,7 +99,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                 if (rawMessage.equals("0") || rawMessage.equals("1") || rawMessage.equals("2")) {
 
                     if (currentSession.securityToken == null) {
-                        MessageUtils.replyMessage(userId, groupId, msgId, false, "⚠️ 还未准备好，请稍等喵！");
+                        GroupMessage.replyMessage(userId, groupId, msgId, false, "⚠️ 还未准备好，请稍等喵！");
                         return;
                     }
 
@@ -159,7 +158,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                     if (System.currentTimeMillis() - currentSession.timestamp > 60000) {
                         log.warn("领奖操作超时，自动释放锁");
                         if (currentSession.groupId > 0) {
-                            MessageSender.sendGroupMessage(currentSession.groupId, "⚠️ 领奖操作超时，请重新获取!");
+                            GroupMessage.chatMessage(currentSession.groupId, "⚠️ 领奖操作超时，请重新获取!");
                         }
                         resetSession();
                     }
@@ -219,7 +218,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                     }
 
                     // 使用之前保存的 messageId 或者不需要引用
-                    MessageUtils.replyMessage(userId, groupId, messageId, false, sb.toString());
+                    GroupMessage.replyMessage(userId, groupId, messageId, false, sb.toString());
 
                 } else if ("result".equals(type)) {
                     // 最终领取结果
@@ -227,13 +226,13 @@ public class HypixelReward implements CommandExecutor, Listener {
                     String msg = response.path("msg").asText();
                     String prefix = success ? "🎉 " : "😭 ";
 
-                    MessageSender.sendGroupMessage(groupId, prefix + msg);
+                    GroupMessage.chatMessage(groupId, prefix + msg);
                     resetSession();
                     log.info("领奖流程完成，锁已释放 (Success: {}, Message: {})", success, msg);
 
                 } else if ("error".equals(type)) {
                     String msg = response.path("msg").asText();
-                    MessageSender.sendGroupMessage(groupId, "❌ 出错啦: " + msg);
+                    GroupMessage.chatMessage(groupId, "❌ 出错啦: " + msg);
                     resetSession();
                 }
 

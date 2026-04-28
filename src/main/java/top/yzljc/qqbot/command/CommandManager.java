@@ -1,12 +1,12 @@
 package top.yzljc.qqbot.command;
 
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.feature.schedule.*;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.Collections;
 import java.util.List;
@@ -123,6 +123,7 @@ public class CommandManager implements Listener {
         CommandSender sender = new CommandSender(userId, groupId, isAdmin, isDebug, messageId);
 
         boolean executed = commandMap.dispatch(sender, commandContent);
+        BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
             // 命令未找到或执行失败，发送错误提示

@@ -1,14 +1,14 @@
 package top.yzljc.qqbot.utils;
 
-import top.yzljc.qqbot.botservice.userinfo.GetProjectInfo;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.service.userinfo.GetProjectInfo;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Bot 帮助/介绍信息
@@ -17,14 +17,14 @@ public class AtriHelp implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        MessageUtils.sendGroupForwardMessage(sender.groupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+        GroupMessage.forwardMessage(sender.groupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
                 "项目开发说明", "指令帮助", "功能介绍");
         return true;
     }
 
-    public static List<Map<String, Object>> getAtriHelp(){
+    public static List<MessageSegment> getAtriHelp(){
         // Map<String, Object> payload = new HashMap<>();
-        List<Map<String,Object>> help = new ArrayList<>();
+        List<MessageSegment> help = new ArrayList<>();
         String sb = """
                 这是一个新手拿来练手的项目，并没有什么有用的功能。
                 但是既然你能看到这个消息，首先非常感谢你对该项目的支持！
@@ -33,12 +33,12 @@ public class AtriHelp implements CommandExecutor {
                 Bot 的设计初衷是用来高度自定义连接 MC/QQ 群的
                 因此它有一个配套的MC插件能与 Bot 互联，与服务器交互，如果你有需求可以联系一下开发
                 """;
-        help.add(MessageUtils.createTextNode(sb,"3199590352","YZ_Ljc_"));
-        help.add(MessageUtils.createTextNode(subSb,"3199590352","YZ_Ljc_"));
-        help.add(MessageUtils.createTextNode(featureHelp(),"3199590352","YZ_Ljc_"));
-        help.add(MessageUtils.createTextNode(commandHelp(),"3199590352","YZ_Ljc_"));
-        help.add(MessageUtils.createTextNode(lastInfo(),"3199590352","YZ_Ljc_"));
-        help.add(MessageUtils.createTextNode(versionInfo(),"3199590352","YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(sb, "3199590352", "YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(subSb, "3199590352", "YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(featureHelp(), "3199590352", "YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(commandHelp(), "3199590352", "YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(lastInfo(), "3199590352", "YZ_Ljc_"));
+        help.add(GroupMessage.createTextNode(versionInfo(), "3199590352", "YZ_Ljc_"));
 
         return help;
     }

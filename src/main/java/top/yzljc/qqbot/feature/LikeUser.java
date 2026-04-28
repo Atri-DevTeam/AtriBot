@@ -3,19 +3,20 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
-import top.yzljc.qqbot.botservice.userinfo.GetFriendList;
-import top.yzljc.qqbot.botservice.userinfo.GetUserInfo;
-import top.yzljc.qqbot.botservice.message.MessageSender;
-import top.yzljc.qqbot.botservice.request.PostRequest;
-import top.yzljc.qqbot.botservice.request.RequestType;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.chat.MessageSegment;
+import top.yzljc.qqbot.service.userinfo.GetFriendList;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import top.yzljc.qqbot.service.request.PostRequest;
+import top.yzljc.qqbot.service.request.RequestType;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.data.VarData;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +52,7 @@ public class LikeUser implements Listener {
             return;
         }
 
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<MessageSegment> result = new ArrayList<>();
         int i = 0;
         for (Long userId : list) {
             String userName = GetUserInfo.getUserName(userId);
@@ -60,7 +61,7 @@ public class LikeUser implements Listener {
             }
 
             String resultLine = sendLike(userId, 818804507L, GetFriendList.isFriend(userId), true);
-            result.add(MessageUtils.createTextNode("自动点赞 " + userName + " " + resultLine));
+            result.add(GroupMessage.createTextNode("自动点赞 " + userName + " " + resultLine));
             log.info("已向群 818804507 自动点赞用户 {}", userName);
             i++;
 
@@ -70,7 +71,7 @@ public class LikeUser implements Listener {
             }
         }
 
-        MessageUtils.sendGroupForwardMessage(818804507L, result, "自动点赞结果", "点击查看详细", "本次共点赞 " + i + " 位用户");
+        GroupMessage.forwardMessage(818804507L, result, "自动点赞结果", "点击查看详细", "本次共点赞 " + i + " 位用户");
     }
 
     private enum LikeStatus {
@@ -104,8 +105,9 @@ public class LikeUser implements Listener {
         }
 
         if (!isAuto) {
-            MessageSender.sendGroupMessage(groupId, feedback);
+            GroupMessage.chatMessage(groupId, feedback);
         }
+        BotRuntimeData.callLikeUser();
         return feedback;
     }
 

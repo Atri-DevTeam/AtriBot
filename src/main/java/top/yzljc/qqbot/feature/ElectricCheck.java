@@ -1,10 +1,11 @@
 package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.qqbot.chat.GroupMessage;
 
-import top.yzljc.qqbot.botservice.request.HttpRequest;
-import top.yzljc.qqbot.botservice.thread.ThreadManager;
+import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
@@ -26,7 +27,14 @@ public class ElectricCheck implements Listener {
                 ThreadManager.execute(() -> {
                     String feedback;
                     try {
-                        JsonNode respJson = HttpRequest.sendGetRequest(QUERY_URL);
+                        String respJsonStr = HttpRequest.getRequestStr(QUERY_URL);
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode respJson = null;
+                        try {
+                            respJson = mapper.readTree(respJsonStr);
+                        } catch (Exception e) {
+                            Logger.warn("解析电表查询结果失败，返回内容：{}", respJsonStr);
+                        }
 
                         if (respJson != null) {
                             String rec = respJson.path("rec").asText();
@@ -50,7 +58,7 @@ public class ElectricCheck implements Listener {
                         Logger.warn("查询异常：{}", ex.getMessage());
                     }
 
-                    MessageSender.sendGroupMessage(groupId, feedback);
+                    GroupMessage.chatMessage(groupId, feedback);
                 });
                 break;
             }

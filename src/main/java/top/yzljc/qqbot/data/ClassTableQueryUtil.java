@@ -5,8 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +20,7 @@ import java.util.Map;
 public class ClassTableQueryUtil {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Logger log = LoggerFactory.getLogger(ClassTableQueryUtil.class);
 
     @Getter
     @Setter
@@ -62,10 +68,17 @@ public class ClassTableQueryUtil {
      */
     public static List<ClassSession> getClasses(JsonNode rootNode, String majorKey, String weekday, int currentSession) {
         List<ClassSession> result = new ArrayList<>();
-        if (rootNode == null || rootNode.isMissingNode()) return result;
+        if (rootNode == null || rootNode.isMissingNode() || currentSession <= 0) {
+            return result;
+        }
 
-        JsonNode dayNode = rootNode.path(majorKey).path(weekday);
-        if (dayNode.isMissingNode() || !dayNode.isObject()) return result;
+        String resolvedMajorKey = resolveMajorKey(rootNode, majorKey);
+
+        JsonNode majorNode = rootNode.path(resolvedMajorKey);
+        JsonNode dayNode = majorNode.path(weekday);
+        if (dayNode.isMissingNode() || !dayNode.isObject()) {
+            return result;
+        }
 
         Iterator<Map.Entry<String, JsonNode>> fields = dayNode.fields();
         while (fields.hasNext()) {
@@ -75,16 +88,45 @@ public class ClassTableQueryUtil {
                     try {
                         ClassSession sessionObj = MAPPER.treeToValue(classNode, ClassSession.class);
                         ClassData data = sessionObj.getClassData();
+                        if (data == null) continue;
+                        if (sessionObj.getWithInWeek() == null) {
+                            sessionObj.setWithInWeek(Collections.emptyList());
+                        }
+                        int start = data.getClassStartTime();
+                        int end = data.getClassEndTime();
+                        if (start <= 0 || end <= 0 || start > end) continue;
                         // 筛选出包含当前节次的课
-                        if (data != null && currentSession >= data.getClassStartTime() && currentSession <= data.getClassEndTime()) {
+                        if (currentSession >= start && currentSession <= end) {
                             result.add(sessionObj);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.warn("解析单条课程数据失败: {}", e.getMessage());
                     }
                 }
             }
         }
         return result;
+    }
+
+    private static String resolveMajorKey(JsonNode rootNode, String majorKey) {
+        if (rootNode.has(majorKey)) {
+            return majorKey;
+        }
+        Iterator<String> keys = rootNode.fieldNames();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            if (majorKey.equals(decodeUtf8(key))) {
+                return key;
+            }
+        }
+        return majorKey;
+    }
+
+    private static String decodeUtf8(String s) {
+        try {
+            return URLDecoder.decode(s, StandardCharsets.UTF_8);
+        } catch (Exception ignored) {
+            return s;
+        }
     }
 }

@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.socket;
 
-import top.yzljc.qqbot.botservice.message.MessageSender;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.config.LoadIllegalWords;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
@@ -196,7 +196,7 @@ public class SocketManager {
     }
 
     private static void sendToGroup(String message) {
-        MessageSender.sendGroupMessage(SocketManager.debugGroupId,message);
+        GroupMessage.chatMessage(SocketManager.debugGroupId, message);
         log.info("Minecraft服务器消息转发成功，目标群号 {}，目标消息内容：{}", SocketManager.debugGroupId, message);
     }
 }

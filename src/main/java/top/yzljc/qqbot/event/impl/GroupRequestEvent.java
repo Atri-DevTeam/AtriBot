@@ -1,7 +1,7 @@
 package top.yzljc.qqbot.event.impl;
 
 import lombok.Getter;
-import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.event.Event;
 
 /**
@@ -32,10 +32,10 @@ public class GroupRequestEvent extends Event {
     }
 
     public void reject() {
-        MessageUtils.handleGroupRequest(false, this.flag, null);
+        GroupMessage.handleRequest(false, this.flag, null);
     }
 
     public void reject(String reason) {
-        MessageUtils.handleGroupRequest(false, this.flag, reason);
+        GroupMessage.handleRequest(false, this.flag, reason);
     }
 }
