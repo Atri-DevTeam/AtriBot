@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.chat;
 
 import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -35,31 +36,37 @@ import java.util.LinkedList;
 public class PrivateMessage {
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, Collection<MessageSegment> data) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.privateMessage(userId, data);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, String text) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.privateMessage(userId, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, String imgData, MessageUtils.ImageType type) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.privateMessage(userId, imgData, type);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long userId, long messageId, String text) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.replyPrivateMessage(userId, messageId, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long userId, long messageId, Collection<MessageSegment> messageSegments) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.replyPrivateMessage(userId, messageId, messageSegments);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long forwardMessage(long userId, Collection<MessageSegment> nodes, String title, String summary, String... textVars) {
+        BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.sendPrivateForwardMessage(userId, nodes, title, summary, textVars);
     }
 

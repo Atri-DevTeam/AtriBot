@@ -79,7 +79,7 @@ public class BotRuntimeData implements Listener {
     public void onGroupMessageReceived(GroupMessageEvent event) {
         long groupId = event.getGroupId();
         String groupName = GetGroupInfo.getGroupName(groupId);
-        callGroupMessageReceive(groupId, groupName);
+        callGroupMessageReceive(groupId);
     }
 
     @EventHandler
@@ -87,17 +87,17 @@ public class BotRuntimeData implements Listener {
         callPrivateMessageReceive();
     }
 
-    public static synchronized void callGroupMessageReceive(long groupId, String groupName) {
+    public static synchronized void callGroupMessageReceive(long groupId) {
         RuntimeData data = cache;
         data.setTotal_group_message_received(data.getTotal_group_message_received() + 1);
-        RuntimeData.GroupMessageData group = data.getOrCreateGroup(groupId, groupName);
+        RuntimeData.GroupMessageData group = data.getOrCreateGroup(groupId, GetGroupInfo.getGroupName(groupId));
         group.setMessage_received(group.getMessage_received() + 1);
     }
 
-    public static synchronized void callGroupMessageSend(long groupId, String groupName) {
+    public static synchronized void callGroupMessageSend(long groupId) {
         RuntimeData data = cache;
         data.setTotal_group_message_send(data.getTotal_group_message_send() + 1);
-        RuntimeData.GroupMessageData group = data.getOrCreateGroup(groupId, groupName);
+        RuntimeData.GroupMessageData group = data.getOrCreateGroup(groupId, GetGroupInfo.getGroupName(groupId));
         group.setMessage_send(group.getMessage_send() + 1);
     }
 

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.command.Command;
@@ -17,13 +19,13 @@ import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.service.tools.FT;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,6 +45,17 @@ public class MinecraftNews implements CommandExecutor {
     public static final Set<Long> TARGET_GROUPS = GetGroupInfo.fetchAllGroupIds();
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final RestClient restClient = RestClient.builder()
+            .requestFactory(new JdkClientHttpRequestFactory(
+                    HttpClient.newBuilder()
+                            .version(HttpClient.Version.HTTP_2)
+                            .followRedirects(HttpClient.Redirect.NORMAL)
+                            .connectTimeout(Duration.ofSeconds(10))
+                            .build()
+            ))
+            .defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .build();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -116,126 +129,83 @@ public class MinecraftNews implements CommandExecutor {
 
     private static List<UnifiedArticle> fetchAndParsePrimary() {
         List<UnifiedArticle> list = new ArrayList<>();
-        HttpURLConnection connection = null;
         try {
-            URL url = new URI(MinecraftNews.API_PRIMARY).toURL();
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(30000);
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+            JsonNode root = restClient.get().uri(API_PRIMARY).retrieve().body(JsonNode.class);
+            if (root == null || !root.has("result")) return list;
 
-            try (InputStream in = connection.getInputStream()) {
-                JsonNode root = objectMapper.readTree(in);
-                JsonNode resultNode = root.get("result");
-                if (resultNode == null) return list;
-                JsonNode results = resultNode.get("results");
+            JsonNode results = root.get("result").get("results");
+            if (results != null && results.isArray()) {
+                for (JsonNode node : results) {
+                    UnifiedArticle article = new UnifiedArticle();
+                    article.title = node.has("title") ? FT.unescape(node.get("title").asText()) : "未知标题";
+                    article.tag = "Minecraft 资讯";
+                    article.url = node.has("url") ? node.get("url").asText() : "";
+                    article.id = article.url;
 
-                if (results != null && results.isArray()) {
-                    for (JsonNode node : results) {
-                        UnifiedArticle article = new UnifiedArticle();
-                        article.title = node.has("title") ? FT.unescape(node.get("title").asText()) : "未知标题";
-                        article.tag = "Minecraft 资讯";
-                        article.url = node.has("url") ? node.get("url").asText() : "";
-                        article.id = article.url;
+                    long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
+                    article.timestamp = timeSeconds * 1000;
+                    article.dateDisplay = formatTimestamp(article.timestamp);
 
-                        long timeSeconds = node.has("time") ? node.get("time").asLong() : 0;
-                        article.timestamp = timeSeconds * 1000;
-                        article.dateDisplay = formatTimestamp(article.timestamp);
+                    article.description = node.has("description") ? FT.unescape(node.get("description").asText()) : "";
+                    article.author = node.has("author") ? node.get("author").asText() : "Staff";
+                    article.imageUrl = node.has("image") ? node.get("image").asText() : "";
 
-                        article.description = node.has("description") ? FT.unescape(node.get("description").asText()) : "";
-                        article.author = node.has("author") ? node.get("author").asText() : "Staff";
-
-                        if (node.has("image")) {
-                            article.imageUrl = node.get("image").asText();
-                        } else {
-                            article.imageUrl = "";
-                        }
-
-                        if (article.id != null && !article.id.isEmpty()) {
-                            list.add(article);
-                        }
+                    if (article.id != null && !article.id.isEmpty()) {
+                        list.add(article);
                     }
                 }
             }
         } catch (Exception e) {
             log.warn("主源解析失败：{}", e.getMessage());
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
         return list;
     }
 
     private static List<UnifiedArticle> fetchAndParseSecondary() {
         List<UnifiedArticle> list = new ArrayList<>();
-        HttpURLConnection connection = null;
         try {
-            URL url = new URI(MinecraftNews.API_SECONDARY).toURL();
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(30000);
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+            JsonNode root = restClient.get().uri(API_SECONDARY).retrieve().body(JsonNode.class);
+            if (root == null) return list;
 
-            try (InputStream in = connection.getInputStream()) {
-                JsonNode root = objectMapper.readTree(in);
-                JsonNode grid = root.get("article_grid");
+            JsonNode grid = root.get("article_grid");
+            if (grid != null && grid.isArray()) {
+                int limit = 5;
+                for (JsonNode item : grid) {
+                    if (list.size() >= limit) break;
 
-                if (grid != null && grid.isArray()) {
-                    int limit = 5;
-                    for (JsonNode item : grid) {
-                        if (list.size() >= limit) break;
+                    UnifiedArticle article = new UnifiedArticle();
+                    JsonNode tile = item.get("default_tile");
+                    if (tile == null) continue;
 
-                        UnifiedArticle article = new UnifiedArticle();
+                    article.title = tile.has("title") ? FT.unescape(tile.get("title").asText()) : "未知标题";
+                    article.tag = "Minecraft 快讯";
 
-                        JsonNode tile = item.get("default_tile");
-                        if (tile == null) continue;
+                    String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
+                    article.url = relUrl.startsWith("/") ? BASE_URL + relUrl : relUrl;
+                    article.id = article.url;
 
-                        article.title = tile.has("title") ? FT.unescape(tile.get("title").asText()) : "未知标题";
-                        article.tag = "Minecraft 快讯";
+                    article.timestamp = System.currentTimeMillis();
+                    article.dateDisplay = "未知时间";
 
-                        String relUrl = item.has("article_url") ? item.get("article_url").asText() : "";
-                        if (relUrl.startsWith("/")) {
-                            article.url = BASE_URL + relUrl;
-                        } else {
-                            article.url = relUrl;
-                        }
-                        article.id = article.url;
+                    article.description = tile.has("sub_header") ? FT.unescape(tile.get("sub_header").asText()) : "";
+                    article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整资讯！";
+                    article.author = "未知作者";
 
-                        article.timestamp = System.currentTimeMillis();
-                        article.dateDisplay = "未知时间";
+                    if (tile.has("image")) {
+                        JsonNode imgNode = tile.get("image");
+                        String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
+                        article.imageUrl = imgRel.startsWith("/") ? BASE_URL + imgRel : imgRel;
+                    } else {
+                        article.imageUrl = "";
+                    }
 
-                        article.description = tile.has("sub_header") ? FT.unescape(tile.get("sub_header").asText()) : "";
-                        article.description += "\n\n注：此消息为新闻快讯，内容较为简略，几小时之后会再次推送完整资讯！";
-
-                        article.author = "未知作者";
-
-                        if (tile.has("image")) {
-                            JsonNode imgNode = tile.get("image");
-                            String imgRel = imgNode.has("imageURL") ? imgNode.get("imageURL").asText() : "";
-                            if (imgRel.startsWith("/")) {
-                                article.imageUrl = BASE_URL + imgRel;
-                            } else {
-                                article.imageUrl = imgRel;
-                            }
-                        } else {
-                            article.imageUrl = "";
-                        }
-
-                        if (!article.id.isEmpty()) {
-                            list.add(article);
-                        }
+                    if (!article.id.isEmpty()) {
+                        list.add(article);
                     }
                 }
             }
         } catch (Exception e) {
             log.warn("辅助源解析失败：{}", e.getMessage());
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
         return list;
     }
@@ -311,37 +281,40 @@ public class MinecraftNews implements CommandExecutor {
 
             GroupMessage.forwardTo(groupId, messageId);
             log.info(">>> 6. 正在转发到群 {}...", groupId);
-
         }
         log.info(">>> 7. 本条新闻转发执行结束");
     }
 
     private static String downloadImageAsBase64(String imageUrl) {
         try {
-            URL url = new URI(imageUrl).toURL();
+            String safeUrl = imageUrl.replace(" ", "%20");
+            URL url = new URI(safeUrl).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(10000);
+
+            conn.setConnectTimeout(5000);
             conn.setReadTimeout(15000);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            conn.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
-            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-            try (InputStream in = conn.getInputStream();
-                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            try (java.io.InputStream in = conn.getInputStream();
+                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
                 byte[] buffer = new byte[4096];
                 int n;
                 while ((n = in.read(buffer)) != -1) {
                     out.write(buffer, 0, n);
                 }
-                return Base64.getEncoder().encodeToString(out.toByteArray());
+
+                byte[] imgBytes = out.toByteArray();
+                if (imgBytes.length > 100) {
+                    return Base64.getEncoder().encodeToString(imgBytes);
+                }
             } finally {
                 conn.disconnect();
             }
         } catch (Exception e) {
-            log.warn("Base64 图片下载失败：{}", e.getMessage());
-            return null;
+            log.warn("流式图片下载失败: {}，原因: {}", imageUrl, e.getMessage());
         }
+        return null;
     }
 
     public static void loadHistory() {

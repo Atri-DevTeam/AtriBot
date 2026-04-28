@@ -3,6 +3,7 @@ package top.yzljc.qqbot.command.impl;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.functions.GroupContentRecord;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
@@ -70,9 +71,8 @@ public class RollbackMessages implements CommandExecutor {
 
         int successCount = 0;
         for (Long msgId : msgIdList) {
-            if (sendDeleteMessage(msgId)) {
-                successCount++;
-            }
+            GroupMessage.recallMessage(msgId);
+            successCount++;
             try { Thread.sleep(50); } catch (InterruptedException ignored) {}
         }
         return successCount;
@@ -113,15 +113,5 @@ public class RollbackMessages implements CommandExecutor {
             log.error("查询数据库失败：{}", e.getMessage());
         }
         return list;
-    }
-
-    private boolean sendDeleteMessage(Long messageId) {
-        try {
-            PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
-            return true;
-        } catch (Exception e) {
-            log.warn("发送撤回包失败，message_id = {}：{}", messageId, e.getMessage());
-            return false;
-        }
     }
 }

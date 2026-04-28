@@ -7,6 +7,7 @@ import top.yzljc.qqbot.event.Event;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
 import top.yzljc.qqbot.event.Group;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.LinkedList;
 

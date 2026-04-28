@@ -100,7 +100,7 @@ public class DrawMotd {
                 String base64Img = Base64.getEncoder().encodeToString(imgBytes);
                 long msgID = GroupMessage.chatMessage(groupId, base64Img, MessageUtils.ImageType.BASE64);
                 if (msgID != 0L) {
-                    ThreadManager.schedule(() -> RM.recallMsg(msgID), 60, TimeUnit.SECONDS);
+                    ThreadManager.schedule(() -> GroupMessage.recallMessage(msgID), 60, TimeUnit.SECONDS);
                 }
                 log.info("MOTD 图片已发送 -> 群: {}, 地址: {}:{}", groupId, hp.host, hp.port);
             }

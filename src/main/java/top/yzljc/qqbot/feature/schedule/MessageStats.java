@@ -189,7 +189,7 @@ public class MessageStats implements CommandExecutor {
             long messageId = GroupMessage.chatMessage(groupId, message);
 
             if (messageId != 0L) {
-                ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+                ThreadManager.schedule(() -> GroupMessage.recallMessage(messageId), 60, TimeUnit.SECONDS);
             } else {
                 GroupMessage.chatMessage(groupId, message);
             }
@@ -197,10 +197,6 @@ public class MessageStats implements CommandExecutor {
             log.warn("自动撤回发送流程异常: {}", e.getMessage());
             GroupMessage.chatMessage(groupId, message);
         }
-    }
-
-    private static void withdrawMessage(long messageId) {
-        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
     }
 
     private static String fetchNickname(Long userId) {

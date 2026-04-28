@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.chat;
 
 import top.yzljc.qqbot.chat.impl.MessageUtils;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -44,74 +45,89 @@ import java.util.Map;
 public class GroupMessage {
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long groupId, String text) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.groupMessage(groupId, List.of(new MessageSegment("text", Map.of("text", text))));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, long groupId, String text, boolean whetherAt) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.chatMessage(userId, groupId, text, whetherAt);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long groupId, List<MessageSegment> data) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.groupMessage(groupId, data);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, long groupId, List<MessageSegment> data, boolean whetherAt) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.chatMessage(userId, groupId, data, whetherAt);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long groupId, String imgData, MessageUtils.ImageType type) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.sendSingleImageGroupMessage(groupId, imgData, type);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long groupId, String text, String imgData, MessageUtils.ImageType type) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.groupTextImageMessage(groupId, text, imgData, type);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long chatMessage(long userId, long groupId, String imgData, MessageUtils.ImageType type, boolean whetherAt) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.chatMessage(userId, groupId, imgData, type, whetherAt);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long groupId, long messageId, String text) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.replyMessage(0, groupId, messageId, false, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long groupId, long messageId, Collection<MessageSegment> messageSegment) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.replyMessage(0, groupId, messageId, false, messageSegment);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long userId, long groupId, long messageId, boolean whetherAt, String text) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long replyMessage(long userId, long groupId, long messageId, boolean whetherAt, Collection<MessageSegment> messageSegment) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, messageSegment);
     }
 
     public static void recallMessage(long messageId) {
+        BotRuntimeData.callRecallMessage();
         MessageUtils.recallMessage(messageId);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long forwardTo(long groupId, long messageId) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.forwardSingleGroupMsg(groupId, messageId);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static long forwardMessage(long groupId, Collection<MessageSegment> nodes, String title, String summary, String... textVars) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         return MessageUtils.sendGroupForwardMessage(groupId, nodes, title, summary, textVars);
     }
 
     public static void atUser(long userId, long groupId, String text) {
+        BotRuntimeData.callGroupMessageSend(groupId);
         MessageUtils.atUser(userId, groupId, text);
     }
 

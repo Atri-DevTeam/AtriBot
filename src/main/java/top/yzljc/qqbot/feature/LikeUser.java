@@ -16,6 +16,7 @@ import top.yzljc.qqbot.data.VarData;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,6 +107,7 @@ public class LikeUser implements Listener {
         if (!isAuto) {
             GroupMessage.chatMessage(groupId, feedback);
         }
+        BotRuntimeData.callLikeUser();
         return feedback;
     }
 

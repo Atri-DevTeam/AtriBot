@@ -33,11 +33,11 @@ public class RM implements CommandExecutor {
     }
 
     public static void recallLastMsg() {
-        ThreadManager.execute(() -> latestGroupMessageMap.forEach((_, messageId) -> PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId)));
+        ThreadManager.execute(() -> latestGroupMessageMap.forEach((_, messageId) -> GroupMessage.recallMessage(messageId)));
         GroupMessage.chatMessage(DEBUG_GROUP, "已撤回所有记录的群最后一条消息");
     }
 
     public static void recallMsg(long messageId) {
-        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
+        GroupMessage.recallMessage(messageId);
     }
 }

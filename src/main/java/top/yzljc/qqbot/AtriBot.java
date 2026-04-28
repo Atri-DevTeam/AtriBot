@@ -181,6 +181,8 @@ public class AtriBot {
         } catch (Exception e) {
             Logger.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
+
+        BotRuntimeData.callStartUp();
     }
 
     public void onDisable() {

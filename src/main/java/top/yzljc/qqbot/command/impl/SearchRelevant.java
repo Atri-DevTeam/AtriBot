@@ -201,19 +201,13 @@ public class SearchRelevant implements CommandExecutor {
         try {
             long messageId = GroupMessage.chatMessage(groupId, message);
             if (messageId != 0L) {
-                ThreadManager.schedule(() -> withdrawMessage(messageId), 60, TimeUnit.SECONDS);
+                ThreadManager.schedule(() -> GroupMessage.recallMessage(messageId), 100, TimeUnit.SECONDS);
             } else {
                 GroupMessage.chatMessage(groupId, message);
             }
         } catch (Exception e) {
             GroupMessage.chatMessage(groupId, message);
         }
-    }
-
-    private static void withdrawMessage(long messageId) {
-        try {
-            PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
-        } catch (Exception ignored) {}
     }
 
     private static boolean isMessyMessage(String msg) {

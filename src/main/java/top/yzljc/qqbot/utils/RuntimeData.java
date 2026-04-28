@@ -60,6 +60,9 @@ public class RuntimeData {
             group.setGroup_name(groupName);
             group.setMessage_send(0);
             group.setMessage_received(0);
+            if (!groupName.equals(group.getGroup_name())) {
+                group.setGroup_name(groupName);
+            }
             return group;
         });
     }
