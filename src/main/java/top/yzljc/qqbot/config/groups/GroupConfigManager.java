@@ -3,6 +3,7 @@ package top.yzljc.qqbot.config.groups;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.Getter;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.config.Config;
 
@@ -25,14 +26,11 @@ public class GroupConfigManager {
     private static final String CONFIG_FILE = ConfigFile.GROUP_CONFIG.getFileName();
     private static final ObjectMapper jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     private static Map<Long, Map<String, Boolean>> groupConfigCache = new ConcurrentHashMap<>();
+    @Getter
     private static final Map<String, Boolean> registeredFeatures = new LinkedHashMap<>();
 
     static {
         loadConfigFromFile();
-    }
-
-    public static Map<String,Boolean> getRegisteredFeatures() {
-        return registeredFeatures;
     }
 
     public static synchronized void registerFeature(String featureName, boolean defaultValue) {
@@ -101,6 +99,15 @@ public class GroupConfigManager {
 
         boolean current = settings.getOrDefault(featureName, registeredFeatures.getOrDefault(featureName, false));
         settings.put(featureName, !current);
+
+        saveConfigToFile();
+    }
+
+    public static synchronized void setFeature(long groupId, String featureName, boolean enabled) {
+        groupConfigCache.computeIfAbsent(groupId, _ -> new HashMap<>());
+        Map<String, Boolean> settings = groupConfigCache.get(groupId);
+
+        settings.put(featureName, enabled);
 
         saveConfigToFile();
     }

@@ -4,21 +4,26 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import lombok.Data;
 import lombok.Getter;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.config.webui.WebUIController;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 
 public class GroupContentRecord implements Listener {
 
@@ -177,5 +182,37 @@ public class GroupContentRecord implements Listener {
             log.error("查询原始消息失败: {}", e.getMessage());
         }
         return null;
+    }
+
+    public static LinkedList<WebUIController.GroupMessageDTO> fetchMessages(long groupId, int page) {
+        LinkedList<WebUIController.GroupMessageDTO> result = new LinkedList<>();
+        if (dataSource == null) {
+            log.warn("数据源未初始化，无法查询消息");
+            return result;
+        }
+
+        String tableName = getTableNameForGroup(groupId);
+        int offset = (page - 1) * 25;
+        String sql = "SELECT user_id, message_id, raw_message, msg_time FROM `" + tableName + "` ORDER BY id DESC LIMIT 25 OFFSET ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, offset);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    WebUIController.GroupMessageDTO data = new WebUIController.GroupMessageDTO();
+                    data.setUserId(rs.getLong("user_id"));
+                    data.setMessageId(rs.getLong("message_id"));
+                    data.setContent(rs.getString("raw_message"));
+                    data.setTime(rs.getLong("msg_time"));
+                    data.setUserName(GetUserInfo.getUserName(data.getUserId()));
+                    data.setAdmin(GetUserInfo.isGroupAdmin(groupId, data.getUserId()));
+                    result.add(data);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("分页查询消息失败: {}", e.getMessage());
+        }
+        return result;
     }
 }

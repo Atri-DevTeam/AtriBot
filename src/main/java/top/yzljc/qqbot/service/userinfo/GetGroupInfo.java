@@ -24,7 +24,7 @@ public class GetGroupInfo {
         if (json != null) {
             return json.path("data").path("group_name").asText();
         }
-        return null;
+        return String.valueOf(groupId);
     }
 
     public static Set<Long> fetchAllGroupIds() {
