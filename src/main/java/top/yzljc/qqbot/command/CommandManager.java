@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.command;
 
+import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
 import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
@@ -32,20 +33,6 @@ public class CommandManager implements Listener {
         commandMap.register("atri-core", command);
     }
 
-    public static void registerCommand(String name, CommandExecutor executor, String description, String usage, List<String> aliases, String featureKey) {
-        if (usage == null) {
-            usage = "/" + name;
-        }
-        if (aliases == null) {
-            aliases = Collections.emptyList();
-        }
-
-        CommandFeature command = new CommandFeature(name, description, usage, aliases, featureKey);
-        command.setExecutor(executor);
-
-        commandMap.register("atri-core", command);
-    }
-
     static {
         registerCommand("happynewyear", "发送新年快乐", null, null, "new_year");
         registerCommand("bc", "全服广播", "/bc <内容>", Collections.singletonList("broadcast"), "broadcast");
@@ -72,6 +59,8 @@ public class CommandManager implements Listener {
         registerCommand("autolike", "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
         registerCommand("tufe", "查课", "/tufe查看下节课的上课地点", null, "tufe_class_alert");
         registerCommand("verify", "验证YZ_Ljc_ Network账号", "/verify <验证密钥>", null, "verify_server");
+
+        registerCommand("account", "", "", null, null);
     }
 
     /**
@@ -83,7 +72,7 @@ public class CommandManager implements Listener {
      * @param aliases 别名列表 (传 null 则无别名)
      * @param featureKey 对应 config.yml 中的功能开关 key (传 null 则默认开启)
      */
-    private static void register(String name, CommandExecutor executor, String description, String usage, List<String> aliases, String featureKey) {
+    private static void registerCommand(String name, CommandExecutor executor, String description, String usage, List<String> aliases, String featureKey) {
         if (usage == null) {
             usage = "/" + name;
         }
@@ -120,9 +109,40 @@ public class CommandManager implements Listener {
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
         }
 
-        CommandSender sender = new CommandSender(userId, groupId, isAdmin, isDebug, messageId);
+        CommandSender sender = CommandSender.of(userId, groupId, isAdmin, isDebug, messageId);
 
-        boolean executed = commandMap.dispatch(sender, commandContent);
+        boolean executed = commandMap.dispatch(sender, commandContent, 0);
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            // 命令未找到或执行失败，发送错误提示
+        }
+    }
+
+    @EventHandler
+    public void onOfficialPrivateCommand(OfficialPrivateChatEvent event) {
+
+        String rawMessage = event.getContent().trim();
+
+        if (!rawMessage.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+
+        boolean isAdmin = false;
+        boolean isDebug = false;
+        String msgId = event.getMsgId();
+        String userOpenId = event.getOpenId();
+
+        String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
+
+        if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
+            isDebug = true;
+            commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
+        }
+
+        CommandSender sender = CommandSender.of(userOpenId, isAdmin, isDebug, msgId);
+
+        boolean executed = commandMap.dispatch(sender, commandContent, 1);
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {

@@ -27,11 +27,6 @@ public class Test implements Listener {
         this.aiService = aiService;
     }
 
-    /**
-     * 神级注解 @PostConstruct：
-     * Spring 在把这个 Test 类实例化并把 AiService 塞进来之后，会自动执行这个方法。
-     * 我们在这里把它注册到你的 EventManager 里面去！主类就不需要写 registerEvents 了！
-     */
     @PostConstruct
     public void init() {
         EventManager.getInstance().registerEvents(this);

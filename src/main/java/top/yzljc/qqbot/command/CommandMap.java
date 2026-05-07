@@ -23,7 +23,8 @@ public class CommandMap {
         return knownCommands.get(name.toLowerCase());
     }
 
-    public boolean dispatch(CommandSender sender, String cmdLine) {
+    // method = 0 -> Napcat群聊 method = 1 -> 官方机器人私聊 method = 2 -> 官方机器人群聊
+    public boolean dispatch(CommandSender sender, String cmdLine, int label) {
         String[] parts = cmdLine.split("\\s+", 2); // 分割命令和参数
         String commandLabel = parts[0].toLowerCase();
         String[] args = parts.length > 1 ? parts[1].split("\\s+") : new String[0];
@@ -34,11 +35,15 @@ public class CommandMap {
         }
 
         try {
-            target.execute(sender, commandLabel, args);
+            target.execute(sender, label, args);
             return true;
         } catch (Exception e) {
-            log.error("执行命令 {} 时发生异常", commandLabel, e);
-            sender.reply("执行命令时发生内部错误",false);
+            log.error("执行命令 {} 时发生异常，方法{}", commandLabel, label, e);
+            if (label == 0) {
+                sender.reply("执行命令时发生内部错误",false);
+            } else if (label == 1) {
+
+            }
             return false;
         }
     }

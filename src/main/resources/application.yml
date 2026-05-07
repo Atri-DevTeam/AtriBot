@@ -9,3 +9,14 @@ atri:
     model: "qwen3.5-flash"
     # 请求超时时间(毫秒)
     timeout: 30000000
+#qqbot:
+#  app-id: "102808581"
+#  client-secret: "4AHPXgpz9KVhu7LZo3JZq7Pi1Lf0Lh3Q"
+#  # 注意：沙箱环境使用 https://sandbox.api.sgroup.qq.com
+#  api-base-url: "https://sandbox.api.sgroup.qq.com"
+
+qqbot:
+  app-id: "1903750627"
+  client-secret: "VKA0rjbUOID952zxwvvwxz148CHNTaiq"
+  # 注意：沙箱环境使用 https://sandbox.api.sgroup.qq.com
+  api-base-url: "https://sandbox.api.sgroup.qq.com"

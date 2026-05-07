@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import lombok.Getter;
+import top.yzljc.qqbot.official.impl.AccountInfo;
 import top.yzljc.qqbot.service.clock.RunScheduleTask;
 import top.yzljc.qqbot.functions.GroupContentRecord;
 import top.yzljc.qqbot.service.scheduler.Scheduler;
@@ -112,6 +113,7 @@ public class AtriBot {
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
         CommandManager.getCommand("verify").setExecutor(new Verify());
+        CommandManager.getCommand("account").setExecutor(new AccountInfo());
 
         this.scheduler = new Scheduler();
         try {

@@ -24,7 +24,7 @@ public abstract class Command {
         this.enableFeature = enableFeature;
     }
 
-    public abstract boolean execute(CommandSender sender, String commandLabel, String[] args);
+    public abstract boolean execute(CommandSender sender, int commandLabel, String[] args);
 
     public String getUsage() {
         return usageMessage;

@@ -1,7 +1,10 @@
 package top.yzljc.qqbot.command;
 
+import lombok.Setter;
+
 import java.util.List;
 
+@Setter
 public class CommandFeature extends Command {
     private CommandExecutor executor;
 
@@ -9,12 +12,8 @@ public class CommandFeature extends Command {
         super(name, description, usage, aliases, featureKey);
     }
 
-    public void setExecutor(CommandExecutor executor) {
-        this.executor = executor;
-    }
-
     @Override
-    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+    public boolean execute(CommandSender sender, int commandLabel, String[] args) {
         if (!checkEnable(sender)) {
             return true;
         }
