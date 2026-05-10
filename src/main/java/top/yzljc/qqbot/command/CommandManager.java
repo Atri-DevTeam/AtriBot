@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.command;
 
+import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
 import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.Settings;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
@@ -11,13 +11,14 @@ import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class CommandManager implements Listener {
-    private static final Settings settings = Config.getInstance();
-    private static final String COMMAND_PREFIX = settings.getCommandPrefix();
+    private static final String COMMAND_PREFIX = Config.getInstance().getCommandPrefix();
     private static final long BOT_QQ = GetUserInfo.getBotId();
-    private static final String DEBUG_SUFFIX = settings.getDebugCommandSuffix();
-    private static final List<Long> adminUids = settings.getAdminUids();
+    private static final String DEBUG_SUFFIX = Config.getInstance().getDebugCommandSuffix();
+    private static final List<Long> adminUids = Config.getInstance().getAdminUids();
+    private static final Map<String, String> officialAdmins = Config.getInstance().getOfficialAdmins();
 
     private static final CommandMap commandMap = new CommandMap();
 
@@ -60,7 +61,9 @@ public class CommandManager implements Listener {
         registerCommand("tufe", "查课", "/tufe查看下节课的上课地点", null, "tufe_class_alert");
         registerCommand("verify", "验证YZ_Ljc_ Network账号", "/verify <验证密钥>", null, "verify_server");
 
-        registerCommand("account", "", "", null, null);
+        registerCommand("stats", "", "", null, null);
+        registerCommand("total", "", "", null, null);
+        registerCommand("myinfo", "", "", null, null);
     }
 
     /**
@@ -111,7 +114,7 @@ public class CommandManager implements Listener {
 
         CommandSender sender = CommandSender.of(userId, groupId, isAdmin, isDebug, messageId);
 
-        boolean executed = commandMap.dispatch(sender, commandContent, 0);
+        boolean executed = commandMap.dispatch(sender, commandContent, "0");
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
@@ -142,7 +145,39 @@ public class CommandManager implements Listener {
 
         CommandSender sender = CommandSender.of(userOpenId, isAdmin, isDebug, msgId);
 
-        boolean executed = commandMap.dispatch(sender, commandContent, 1);
+        boolean executed = commandMap.dispatch(sender, commandContent, "1");
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            // 命令未找到或执行失败，发送错误提示
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGroupCommand(OfficialGroupChatEvent event) {
+
+        String rawMessage = event.getContent().trim();
+
+        if (!rawMessage.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+
+        boolean isAdmin = false;
+        boolean isDebug = false;
+        String msgId = event.getMsgId();
+        String userOpenId = event.getMemberOpenId();
+        String groupOpenId = event.getGroupOpenId();
+
+        String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
+
+        if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
+            isDebug = true;
+            commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
+        }
+
+        CommandSender sender = CommandSender.of(userOpenId, groupOpenId, isAdmin, isDebug, msgId);
+
+        boolean executed = commandMap.dispatch(sender, commandContent, "2");
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {

@@ -1,9 +1,9 @@
 package top.yzljc.qqbot.chat;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.Map;
 
@@ -14,6 +14,7 @@ import java.util.Map;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.chat
  */
+@Slf4j
 public class SendPoke {
     public static void poke(long targetId, long groupId) {
         if (targetId == Config.getInstance().getBotUid()) return;
@@ -22,6 +23,6 @@ public class SendPoke {
                 "user_id", targetId
         );
         PostRequest.sendPost(RequestType.GROUP_POKE, params);
-        Logger.info("已向用户 {} 反戳！", targetId);
+        log.info("已向用户 {} 反戳！", targetId);
     }
 }

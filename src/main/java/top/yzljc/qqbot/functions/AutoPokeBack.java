@@ -1,10 +1,10 @@
 package top.yzljc.qqbot.functions;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GetPokeEvent;
-import top.yzljc.qqbot.utils.Logger;
 
 /**
  * @Author YZ_Ljc_
@@ -13,6 +13,7 @@ import top.yzljc.qqbot.utils.Logger;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.feature
  */
+@Slf4j
 public class AutoPokeBack implements Listener {
     @EventHandler
     public void onReceivePoke(GetPokeEvent event) {
@@ -22,7 +23,7 @@ public class AutoPokeBack implements Listener {
         }
         if (event.getTargetId() == event.getSelfId()) {
             event.pokeBack();
-            Logger.info("收到来自 {} 的戳一戳，已自动回戳", event.getUserId());
+            log.info("收到来自 {} 的戳一戳，已自动回戳", event.getUserId());
         }
     }
 

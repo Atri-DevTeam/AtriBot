@@ -1,11 +1,11 @@
 package top.yzljc.qqbot.functions;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.functions
  */
+@Slf4j
 public class Repeater implements Listener {
 
     private static final int MEMORY_SIZE = 10;
@@ -51,7 +52,7 @@ public class Repeater implements Listener {
         if (count >= REPEAT_THRESHOLD) {
             if (lastMsg == null || !lastMsg.equals(currentMessage)) {
                 event.getGroup().sendUnionMessage(currentMessage);
-                Logger.info("群 {} 的消息被复读了！", groupId);
+                log.info("群 {} 的消息被复读了！", groupId);
 
                 lastRepeated.put(groupId, currentMessage);
             }

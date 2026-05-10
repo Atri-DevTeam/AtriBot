@@ -1,28 +1,28 @@
 package top.yzljc.qqbot.official.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import top.yzljc.qqbot.service.request.HttpService;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Component
 public class QQBotTokenManager {
 
-    @Value("${qqbot.app-id}")
-    private String appId;
+    private final String appId;
+    private final String clientSecret;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${qqbot.client-secret}")
-    private String clientSecret;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    
     private String currentAccessToken;
     private long expireTime = 0;
+
+    public QQBotTokenManager(String appId, String clientSecret) {
+        this.appId = appId;
+        this.clientSecret = clientSecret;
+    }
 
     public synchronized String getAccessToken() {
         if (currentAccessToken == null || System.currentTimeMillis() > expireTime) {
@@ -34,13 +34,17 @@ public class QQBotTokenManager {
 
     private void refreshToken() {
         String tokenUrl = "https://bots.qq.com/app/getAppAccessToken";
-        
+
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("appId", appId);
         requestBody.put("clientSecret", clientSecret);
 
+        log.debug(requestBody.toString());
+
         try {
-            JsonNode response = restTemplate.postForObject(tokenUrl, requestBody, JsonNode.class);
+            String json = objectMapper.writeValueAsString(requestBody);
+            JsonNode response = HttpService.postJson(tokenUrl, json);
+
             if (response != null && response.has("access_token")) {
                 this.currentAccessToken = response.get("access_token").asText();
                 long expiresIn = response.get("expires_in").asLong() - 600;
@@ -49,8 +53,8 @@ public class QQBotTokenManager {
             } else {
                 log.error("获取 Token 失败，接口返回: {}", response);
             }
-        } catch (Exception e) {
-            log.error("请求腾讯 Token 接口异常", e);
+        } catch (JsonProcessingException e) {
+            log.error("请求腾讯 Token 接口序列化失败", e);
         }
     }
 }

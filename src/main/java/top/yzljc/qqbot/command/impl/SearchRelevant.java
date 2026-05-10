@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.command.impl;
 
 import com.zaxxer.hikari.HikariDataSource;
+import top.yzljc.qqbot.database.DatabaseManager;
 import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.userinfo.GetUserInfo;
@@ -96,7 +97,7 @@ public class SearchRelevant implements CommandExecutor {
     }
 
     private static void searchInDatabase(long groupId, String keyword, Long targetUserId, String mode) {
-        HikariDataSource dataSource = GroupContentRecord.getDataSource();
+        HikariDataSource dataSource = DatabaseManager.getDataSource();
         if (dataSource == null) {
             GroupMessage.chatMessage(groupId, "数据库未初始化，无法搜索。");
             return;

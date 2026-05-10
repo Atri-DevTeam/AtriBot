@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.chat.GroupMessage;
-import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.request.HttpService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -61,7 +61,7 @@ public class ProcessClassTable {
             return RESULT_NOT_FOUND;
         }
 
-        JsonNode rootNode = HttpRequest.sendPostRequestFollowRedirect(CLASS_TABLE_URL);
+        JsonNode rootNode = HttpService.sendPostRequestFollowRedirect(CLASS_TABLE_URL);
         if (rootNode == null) {
             log.warn("课表获取失败，接口返回为空");
             return RESULT_REQUEST_FAILED;

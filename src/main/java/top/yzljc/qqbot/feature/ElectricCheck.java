@@ -2,16 +2,17 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.chat.GroupMessage;
 
-import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.utils.Logger;
 
+@Slf4j
 public class ElectricCheck implements Listener {
     private static final String[] KEYWORDS_ELECTRIC = {"电表", "dianbiao", "db"};
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec=903004&xq=1";
@@ -27,13 +28,13 @@ public class ElectricCheck implements Listener {
                 ThreadManager.execute(() -> {
                     String feedback;
                     try {
-                        String respJsonStr = HttpRequest.getRequestStr(QUERY_URL);
+                        String respJsonStr = HttpService.getRequestStr(QUERY_URL);
                         ObjectMapper mapper = new ObjectMapper();
                         JsonNode respJson = null;
                         try {
                             respJson = mapper.readTree(respJsonStr);
                         } catch (Exception e) {
-                            Logger.warn("解析电表查询结果失败，返回内容：{}", respJsonStr);
+                            log.warn("解析电表查询结果失败，返回内容：{}", respJsonStr);
                         }
 
                         if (respJson != null) {
@@ -48,14 +49,14 @@ public class ElectricCheck implements Listener {
 
                             feedback = String.format("[电表信息]\n电表号：%s\n剩余免费电量：%s 度\n剩余收费电量：%s 度\n累计电量：%s 度\n透支电量：%s 度\n当前工作状态：%s",
                                     rec, rsmd, rsfd, rljd, rtzd, status);
-                            Logger.info("电表数据发送 => {}", feedback.replace("\n", " | "));
+                            log.info("电表数据发送 => {}", feedback.replace("\n", " | "));
                         } else {
                             feedback = "[电表查询失败] 后台接口返回格式异常或无法解析。";
-                            Logger.warn("返回内容无法解析为JSON对象");
+                            log.warn("返回内容无法解析为JSON对象");
                         }
                     } catch (Exception ex) {
                         feedback = "[电表查询失败] 网络异常或远端接口错误。";
-                        Logger.warn("查询异常：{}", ex.getMessage());
+                        log.warn("查询异常：{}", ex.getMessage());
                     }
 
                     GroupMessage.chatMessage(groupId, feedback);

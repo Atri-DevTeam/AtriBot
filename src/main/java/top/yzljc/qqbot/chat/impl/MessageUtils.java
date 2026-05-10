@@ -1,14 +1,15 @@
 package top.yzljc.qqbot.chat.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.service.tools.RM;
 import top.yzljc.qqbot.chat.MessageSegment;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.*;
 
+@Slf4j
 public class MessageUtils {
     private static final String FAKE_UIN = "3199590352";
     private static final String FAKE_NAME = "YZ_Ljc_";
@@ -29,9 +30,9 @@ public class MessageUtils {
                 return messageId;
             }
 
-            Logger.error("消息发送失败，返回内容: {}", resp);
+            log.error("消息发送失败，返回内容: {}", resp);
         } catch (Exception e) {
-            Logger.error("推送异常：{}", e.getMessage(), e);
+            log.error("推送异常：{}", e.getMessage(), e);
         }
 
         return 0L;
@@ -46,9 +47,9 @@ public class MessageUtils {
             );
             long messageId = resp.path("data").path("message_id").asLong(0L);
             if (messageId != 0L) return messageId;
-            Logger.error("私聊消息发送失败，返回内容: {}", resp);
+            log.error("私聊消息发送失败，返回内容: {}", resp);
         } catch (Exception e) {
-            Logger.error("私聊推送异常：{}", e.getMessage(), e);
+            log.error("私聊推送异常：{}", e.getMessage(), e);
         }
         return 0L;
     }
@@ -141,7 +142,7 @@ public class MessageUtils {
             JsonNode resp = PostRequest.getPostResult(RequestType.SEND_PRIVATE_FORWARD_MSG, payload);
             return resp.path("data").path("message_id").asLong(0L);
         } catch (Exception e) {
-            Logger.warn("发送好友转发消息失败: {}", e.getMessage());
+            log.warn("发送好友转发消息失败: {}", e.getMessage());
         }
         return 0L;
     }
@@ -161,11 +162,11 @@ public class MessageUtils {
             if (forwardMessageId != 0L) {
                 RM.recordLastMsg(groupId, forwardMessageId);
             }
-//            Logger.debug("发送群转发消息，groupId: {}, title: {}, summary: {}, textVars: {}, 返回: {}", groupId, title, summary, Arrays.toString(textVars), resp);
+//            log.debug("发送群转发消息，groupId: {}, title: {}, summary: {}, textVars: {}, 返回: {}", groupId, title, summary, Arrays.toString(textVars), resp);
             return forwardMessageId;
 
         } catch (Exception e) {
-            Logger.warn("发送群转发消息失败: {}", e.getMessage());
+            log.warn("发送群转发消息失败: {}", e.getMessage());
         }
         return 0L;
     }
@@ -295,7 +296,7 @@ public class MessageUtils {
             payload.put("reason", reason);
         }
         PostRequest.sendPost(RequestType.HANDLE_GROUP_PENDING_REQUEST, payload);
-        Logger.info("已{}群请求，flag: {}", approve ? "批准" : "拒绝", flag);
+        log.info("已{}群请求，flag: {}", approve ? "批准" : "拒绝", flag);
     }
 
     public static void recallMessage(long messageId) {

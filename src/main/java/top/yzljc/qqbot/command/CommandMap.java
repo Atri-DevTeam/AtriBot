@@ -2,6 +2,7 @@ package top.yzljc.qqbot.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.AtriBot;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class CommandMap {
     }
 
     // method = 0 -> Napcat群聊 method = 1 -> 官方机器人私聊 method = 2 -> 官方机器人群聊
-    public boolean dispatch(CommandSender sender, String cmdLine, int label) {
+    public boolean dispatch(CommandSender sender, String cmdLine, String label) {
         String[] parts = cmdLine.split("\\s+", 2); // 分割命令和参数
         String commandLabel = parts[0].toLowerCase();
         String[] args = parts.length > 1 ? parts[1].split("\\s+") : new String[0];
@@ -39,10 +40,14 @@ public class CommandMap {
             return true;
         } catch (Exception e) {
             log.error("执行命令 {} 时发生异常，方法{}", commandLabel, label, e);
-            if (label == 0) {
-                sender.reply("执行命令时发生内部错误",false);
-            } else if (label == 1) {
-
+            if (label.equalsIgnoreCase("0")) {
+                sender.reply("执行命令时发生内部错误", false);
+            } else if (label.equalsIgnoreCase("1")) {
+                AtriBot.getInstance().getMessageService().replyPrivateTextMessage(sender.userOpenId(), sender.messageOpenId(), "执行命令时发生内部错误");
+            } else if (label.equalsIgnoreCase("2")) {
+                AtriBot.getInstance().getMessageService().replyGroupTextMessage(sender.groupOpenId(), sender.messageOpenId(), "执行命令时发生内部错误");
+            } else {
+                log.warn("未知的消息来源标签: {}", label);
             }
             return false;
         }

@@ -1,16 +1,19 @@
 package top.yzljc.qqbot.service.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.utils.Logger;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class PostRequest {
-    private static final RestTemplate restTemplate = new RestTemplate();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * 获取 API 返回结果 (多参)
@@ -59,15 +62,26 @@ public class PostRequest {
             String postUrl = BASEURL + type.getRequestLink();
             Map<String, Object> requestBody = params != null ? params : new HashMap<>();
 
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(postUrl, requestBody, JsonNode.class);
+            String json = mapper.writeValueAsString(requestBody);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(postUrl))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
 
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
+            HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
             } else {
-                Logger.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), response.getStatusCode().value());
+                log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), response.statusCode());
             }
         } catch (Exception e) {
-            Logger.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
+            log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
         }
         return null;
     }

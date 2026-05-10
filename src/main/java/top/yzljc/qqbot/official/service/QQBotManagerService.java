@@ -1,33 +1,29 @@
 package top.yzljc.qqbot.official.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import top.yzljc.qqbot.service.request.HttpService;
 
 import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-public class QQBotManagerService implements CommandLineRunner {
+public class QQBotManagerService {
 
-    @Value("${qqbot.api-base-url}")
-    private String apiBaseUrl;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-
+    private final String apiBaseUrl;
     private final QQBotTokenManager tokenManager;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private QQBotWebSocketClient webSocketClient;
 
-    @Override
-    public void run(String... args) throws Exception {
+    public QQBotManagerService(String apiBaseUrl, QQBotTokenManager tokenManager) {
+        this.apiBaseUrl = apiBaseUrl;
+        this.tokenManager = tokenManager;
+    }
+
+    public void start() throws Exception {
         log.info("正在初始化 QQ Bot...");
 
         String accessToken = tokenManager.getAccessToken();
@@ -39,23 +35,21 @@ public class QQBotManagerService implements CommandLineRunner {
         webSocketClient.connect();
     }
 
-    private String getGateway(String accessToken) {
+    private String getGateway(String accessToken) throws Exception {
         String gatewayApi = apiBaseUrl + "/gateway";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "QQBot " + accessToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(gatewayApi))
+                .header("Authorization", "QQBot " + accessToken)
+                .GET()
+                .build();
 
-        JsonNode response = restTemplate.exchange(
-                gatewayApi,
-                org.springframework.http.HttpMethod.GET,
-                entity,
-                JsonNode.class
-        ).getBody();
+        HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode responseNode = objectMapper.readTree(response.body());
 
-        if (response != null && response.has("url")) {
-            return response.get("url").asText();
+        if (responseNode.has("url")) {
+            return responseNode.get("url").asText();
         }
-        throw new RuntimeException("获取 Gateway 失败: " + response);
+        throw new RuntimeException("获取 Gateway 失败: " + responseNode);
     }
 }

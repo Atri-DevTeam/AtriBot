@@ -1,6 +1,6 @@
 package top.yzljc.qqbot.event;
 
-import top.yzljc.qqbot.utils.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@Slf4j
 public class EventManager {
 
     private static final EventManager INSTANCE = new EventManager();
@@ -66,7 +67,7 @@ public class EventManager {
             try {
                 regListener.method().invoke(regListener.listener(), event);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                Logger.error("调用事件处理器失败: " + e.getMessage());
+                log.error("调用事件处理器失败: " + e.getMessage());
             }
         }
     }

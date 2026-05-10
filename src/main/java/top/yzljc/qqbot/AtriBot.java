@@ -1,54 +1,59 @@
 package top.yzljc.qqbot;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.Javalin;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import lombok.Getter;
-import top.yzljc.qqbot.official.impl.AccountInfo;
-import top.yzljc.qqbot.service.clock.RunScheduleTask;
-import top.yzljc.qqbot.functions.GroupContentRecord;
-import top.yzljc.qqbot.service.scheduler.Scheduler;
-import top.yzljc.qqbot.service.userinfo.GetFriendList;
-import top.yzljc.qqbot.functions.GroupMessageCheck;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.command.CommandManager;
-import top.yzljc.qqbot.config.Config;
-import top.yzljc.qqbot.config.groups.GroupConfigManager;
-import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.config.groups.GroupModeManager;
-import top.yzljc.qqbot.event.EventManager;
-import top.yzljc.qqbot.feature.*;
-import top.yzljc.qqbot.feature.github.WebhookServer;
-import top.yzljc.qqbot.feature.minecraft.ServerRcon;
-import top.yzljc.qqbot.feature.news.HypixelNews;
-import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
 import top.yzljc.qqbot.command.impl.Reboot;
 import top.yzljc.qqbot.command.impl.RollbackMessages;
 import top.yzljc.qqbot.command.impl.SearchRelevant;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Reload;
 import top.yzljc.qqbot.config.groups.GroupConfigInfo;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.config.groups.GroupModeManager;
+import top.yzljc.qqbot.config.webui.WebUIController;
+import top.yzljc.qqbot.config.webui.exception.ExceptionController;
+import top.yzljc.qqbot.config.webui.exception.FeatureNotFoundException;
 import top.yzljc.qqbot.debug.Broadcast;
-import top.yzljc.qqbot.service.tools.RM;
-import top.yzljc.qqbot.feature.minecraft.BedwarsChallenge;
-import top.yzljc.qqbot.feature.minecraft.HypixelReward;
-import top.yzljc.qqbot.feature.minecraft.MojangStatus;
-import top.yzljc.qqbot.feature.minecraft.Motd;
-import top.yzljc.qqbot.feature.minecraft.specificserver.Verify;
+import top.yzljc.qqbot.event.EventManager;
+import top.yzljc.qqbot.feature.*;
+import top.yzljc.qqbot.feature.github.WebhookServer;
+import top.yzljc.qqbot.feature.minecraft.*;
+import top.yzljc.qqbot.official.function.VerifyMinecraftCommand;
+import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
-import top.yzljc.qqbot.utils.AtriHelp;
-import top.yzljc.qqbot.utils.BotRuntimeData;
-import top.yzljc.qqbot.utils.Logger;
-import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
+import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
+import top.yzljc.qqbot.official.function.AccountInfo;
+import top.yzljc.qqbot.official.function.PlayerProfile;
+import top.yzljc.qqbot.official.function.TotalPlayers;
+import top.yzljc.qqbot.official.impl.BindMinecraft;
+import top.yzljc.qqbot.official.service.QQBotManagerService;
+import top.yzljc.qqbot.official.service.QQBotMessageService;
+import top.yzljc.qqbot.official.service.QQBotTokenManager;
+import top.yzljc.qqbot.service.ai.AiService;
+import top.yzljc.qqbot.service.clock.RunScheduleTask;
+import top.yzljc.qqbot.service.request.RequestReceiver;
+import top.yzljc.qqbot.service.scheduler.Scheduler;
+import top.yzljc.qqbot.service.tools.RM;
+import top.yzljc.qqbot.service.userinfo.GetFriendList;
 import top.yzljc.qqbot.socket.MinecraftVerify;
 import top.yzljc.qqbot.socket.SocketManager;
+import top.yzljc.qqbot.test.Test;
+import top.yzljc.qqbot.utils.AtriHelp;
+import top.yzljc.qqbot.utils.BotRuntimeData;
 import top.yzljc.qqbot.utils.SetProjectInfo;
+import top.yzljc.qqbot.utils.draft.AutoLikeCommand;
 import top.yzljc.qqbot.utils.draft.Scratch;
 
-import java.util.Collections;
 import java.util.Scanner;
 
-@SpringBootApplication
+@Slf4j
 public class AtriBot {
     @Getter
     private static MinecraftVerify minecraftVerify;
@@ -56,6 +61,17 @@ public class AtriBot {
     private static AtriBot instance;
     @Getter
     private Scheduler scheduler;
+    @Getter
+    private QQBotMessageService messageService;
+    @Getter
+    private AiService aiService;
+    @Getter
+    private QQBotTokenManager tokenManager;
+
+    private final Javalin server;
+    private final QQBotManagerService qqBotManagerService;
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public AtriBot() {
         if (instance != null) {
@@ -63,6 +79,36 @@ public class AtriBot {
         }
         instance = this;
         Runtime.getRuntime().addShutdownHook(new Thread(this::onDisable));
+
+        Config config = Config.getInstance();
+
+        this.aiService = new AiService(config.getAiBotProperties(), objectMapper);
+        this.tokenManager = new QQBotTokenManager(config.getQqAppId(), config.getQqClientSecret());
+        this.messageService = new QQBotMessageService(config.getQqApiBaseUrl(), tokenManager);
+        this.qqBotManagerService = new QQBotManagerService(config.getQqApiBaseUrl(), tokenManager);
+
+        int qqBotPort = Config.getInstance().getQqBotPort();
+
+        server = Javalin.create(cfg -> cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost))).start(config.getQqBotPort());
+
+        // Register routes
+        server.post("/", ctx -> {
+            JsonNode body = ctx.bodyAsClass(JsonNode.class);
+            String result = RequestReceiver.handle(body);
+            ctx.result(result).contentType("application/json");
+        });
+
+        String base = "/webui/v1/atribot/settings";
+        server.get(base + "/get/{groupId}", WebUIController::getGroupSettings);
+        server.post(base + "/set/{groupId}", WebUIController::setGroupSetting);
+        server.get(base + "/listgroups", WebUIController::listGroups);
+        server.post(base + "/fetchmessages", WebUIController::fetchMessages);
+        server.post(base + "/recallmessage", WebUIController::recallMessage);
+
+        // Exception handler
+        server.exception(FeatureNotFoundException.class, ExceptionController::handleFeatureNotFound);
+
+        log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
     }
 
     public void onEnable() {
@@ -87,6 +133,8 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new ServerRcon());
         EventManager.getInstance().registerEvents(new Scratch());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
+        EventManager.getInstance().registerEvents(new Test());
+        EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
 
         CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
@@ -112,23 +160,25 @@ public class AtriBot {
         CommandManager.getCommand("reload").setExecutor(new Reload());
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
-        CommandManager.getCommand("verify").setExecutor(new Verify());
-        CommandManager.getCommand("account").setExecutor(new AccountInfo());
+        CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
+
+        CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
+        CommandManager.getCommand("total").setExecutor(new TotalPlayers());
+        CommandManager.getCommand("myinfo").setExecutor(new AccountInfo());
 
         this.scheduler = new Scheduler();
         try {
             BotRuntimeData.init();
         } catch (Exception e) {
-            Logger.error("BotRuntimeData 初始化失败: {}", e.getMessage());
+            log.error("BotRuntimeData 初始化失败: {}", e.getMessage());
         }
 
         System.setProperty("java.awt.headless", "true");
         System.out.println("==== AtriBot ====");
 
-        Settings settings = Config.getInstance();
+        Config settings = Config.getInstance();
 
         int socketPort = settings.getListenPort();
-        int qqBotPort = settings.getQqBotPort();
         int webhookPort = settings.getGithubWebhookPort();
         String webhookSecret = settings.getGithubWebhookSecret();
 
@@ -142,16 +192,14 @@ public class AtriBot {
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();
 
-        // RequestReceiver is now controlled by Spring Boot Controller
-
         SocketManager.loadConfig();
         SocketManager.start(socketPort);
         WebhookServer.start(webhookPort, webhookSecret);
 
-        // 同步commit信息
+        BindMinecraft.init();
+
         SetProjectInfo.setInfo();
 
-        // 群功能开关及默认值
         GroupConfigManager.registerFeature("auto_sign", true);
         GroupConfigManager.registerFeature("mc_news", false);
         GroupConfigManager.registerFeature("hyp_news", false);
@@ -181,7 +229,7 @@ public class AtriBot {
 
             minecraftVerify = new MinecraftVerify(mcIp, mcPort, pubKey);
         } catch (Exception e) {
-            Logger.error("MinecraftVerify 初始化失败: {}", e.getMessage());
+            log.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
 
         BotRuntimeData.callStartUp();
@@ -189,30 +237,30 @@ public class AtriBot {
 
     public void onDisable() {
         scheduler.cancelTask(BotRuntimeData.getTask());
-        System.out.println("====== ATRI IS SHUTTING DOWN ======");
+        if (server != null) {
+            server.stop();
+        }
         System.out.println("==== AtriBot Disabled ====");
     }
 
     public static void main(String[] args) {
-        SpringApplication app = new SpringApplication(AtriBot.class);
-
-        // Define port pragmatically from config
-        int qqBotPort = Config.getInstance().getQqBotPort();
-        app.setDefaultProperties(Collections.singletonMap("server.port", qqBotPort));
-
-        ApplicationContext context = app.run(args);
-
-        AtriBot bot = context.getBean(AtriBot.class);
+        AtriBot bot = new AtriBot();
         bot.onEnable();
 
+        try {
+            bot.qqBotManagerService.start();
+        } catch (Exception e) {
+            log.error("QQ Bot 初始化失败: {}", e.getMessage());
+        }
+
         new Thread(() -> {
-            java.util.Scanner scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in);
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 if ("stop".equalsIgnoreCase(line.trim())) {
                     BotRuntimeData.save();
-                    Logger.info("正在关闭 AtriBot...");
-                    SpringApplication.exit(context, () -> 0);
+                    System.out.println("正在关闭 AtriBot...");
+                    bot.onDisable();
                     System.exit(0);
                     break;
                 }

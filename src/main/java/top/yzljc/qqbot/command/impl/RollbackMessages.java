@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.database.DatabaseManager;
 import top.yzljc.qqbot.functions.GroupContentRecord;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
@@ -66,7 +67,7 @@ public class RollbackMessages implements CommandExecutor {
     }
 
     private int performRollback(long groupId, Long targetUserId, int limit) {
-        HikariDataSource dataSource = GroupContentRecord.getDataSource();
+        HikariDataSource dataSource = DatabaseManager.getDataSource();
         List<Long> msgIdList = fetchMessageIds(groupId, targetUserId, limit, dataSource);
 
         int successCount = 0;

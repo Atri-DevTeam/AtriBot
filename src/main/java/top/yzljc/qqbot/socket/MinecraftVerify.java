@@ -1,5 +1,10 @@
 package top.yzljc.qqbot.socket;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import top.yzljc.qqbot.official.impl.BindResponse;
+
 import javax.crypto.Cipher;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -10,11 +15,13 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
+@Slf4j
 public class MinecraftVerify {
 
     private final String serverIp;
     private final int serverPort;
     private final PublicKey publicKey;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public MinecraftVerify(String serverIp, int serverPort, String publicKeyBase64) throws Exception {
         this.serverIp = serverIp;
@@ -25,21 +32,14 @@ public class MinecraftVerify {
         this.publicKey = keyFactory.generatePublic(spec);
     }
 
-    /**
-     * 发送验证请求给 MC 服务器并获取处理结果
-     *
-     * @param qq   玩家的 QQ 号
-     * @param code 玩家输入的 6 位验证码
-     * @return 200(成功) | 100(已绑定) | 400(无效验证码) | 500(网络/服务器错误)
-     */
-    public int sendRequest(long qq, String code) {
+    public BindResponse sendRequest(String code) {
         try (Socket socket = new Socket(serverIp, serverPort);
              DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
              DataInputStream dis = new DataInputStream(socket.getInputStream())) {
-            socket.setSoTimeout(5000);
-            String message = code + ":" + qq;
-            byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
 
+            socket.setSoTimeout(5000);
+
+            byte[] messageBytes = code.getBytes(StandardCharsets.UTF_8);
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             byte[] encryptedData = cipher.doFinal(messageBytes);
@@ -47,10 +47,30 @@ public class MinecraftVerify {
             dos.writeInt(encryptedData.length);
             dos.write(encryptedData);
             dos.flush();
-            return dis.readInt();
+
+            // 读取长度 + JSON 数据
+            int length = dis.readInt();
+            if (length <= 0 || length > 1024) {
+                return new BindResponse(500, null);
+            }
+
+            byte[] jsonBytes = new byte[length];
+            dis.readFully(jsonBytes);
+            String jsonStr = new String(jsonBytes, StandardCharsets.UTF_8);
+
+            // Jackson 解析 JSON
+            JsonNode jsonNode = objectMapper.readTree(jsonStr);
+            int statusCode = jsonNode.get("code").asInt();
+            String uuid = (jsonNode.has("uuid") && !jsonNode.get("uuid").asText().isEmpty())
+                    ? jsonNode.get("uuid").asText()
+                    : null;
+
+            log.info("Minecraft 验证请求完成，状态码: {}, UUID: {}", statusCode, uuid);
+            return new BindResponse(statusCode, uuid);
 
         } catch (Exception e) {
-            return 500;
+            log.error("Minecraft 验证请求失败", e);
+            return new BindResponse(500, null);
         }
     }
 }

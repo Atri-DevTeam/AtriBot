@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.feature.schedule;
 
+import top.yzljc.qqbot.database.DatabaseManager;
 import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.service.request.RequestType;
@@ -245,7 +246,7 @@ public class MessageStats implements CommandExecutor {
         }
         base += " GROUP BY user_id";
 
-        try (Connection conn = GroupContentRecord.getDataSource().getConnection();
+        try (Connection conn = DatabaseManager.getDataSource().getConnection();
              PreparedStatement ps = conn.prepareStatement(base)) {
             for (int i = 0; i < params.size(); i++) {
                 Object p = params.get(i);

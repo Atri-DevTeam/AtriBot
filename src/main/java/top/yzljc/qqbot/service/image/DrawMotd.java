@@ -16,9 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.thread.ThreadManager;
-import top.yzljc.qqbot.service.tools.RM;
 import top.yzljc.qqbot.config.ConfigFile;
 
 public class DrawMotd {
@@ -115,7 +114,7 @@ public class DrawMotd {
     public static MotdResult fetchMotdData(String host, int port) {
         String ipPort = host + ":" + port;
         String url = API_BASE + ipPort;
-        JsonNode root = HttpRequest.sendGetRequest(url);
+        JsonNode root = HttpService.sendGetRequest(url);
         if (root == null) {
             log.debug("MOTD API 请求失败或响应非 200: {}", url);
             return null;

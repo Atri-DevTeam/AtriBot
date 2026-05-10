@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
-import org.springframework.web.client.RestClient;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.command.Command;
@@ -15,6 +13,7 @@ import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
+import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.service.tools.FT;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
@@ -24,8 +23,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.net.http.HttpClient;
-import java.time.Duration;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -45,17 +44,6 @@ public class MinecraftNews implements CommandExecutor {
     public static final Set<Long> TARGET_GROUPS = GetGroupInfo.fetchAllGroupIds();
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    private static final RestClient restClient = RestClient.builder()
-            .requestFactory(new JdkClientHttpRequestFactory(
-                    HttpClient.newBuilder()
-                            .version(HttpClient.Version.HTTP_2)
-                            .followRedirects(HttpClient.Redirect.NORMAL)
-                            .connectTimeout(Duration.ofSeconds(10))
-                            .build()
-            ))
-            .defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .build();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -127,10 +115,28 @@ public class MinecraftNews implements CommandExecutor {
         }
     }
 
+    private static JsonNode fetchJson(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return objectMapper.readTree(response.body());
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("HTTP GET failed for {}: {}", url, e.getMessage());
+            return null;
+        }
+    }
+
     private static List<UnifiedArticle> fetchAndParsePrimary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = restClient.get().uri(API_PRIMARY).retrieve().body(JsonNode.class);
+            JsonNode root = fetchJson(API_PRIMARY);
             if (root == null || !root.has("result")) return list;
 
             JsonNode results = root.get("result").get("results");
@@ -164,7 +170,7 @@ public class MinecraftNews implements CommandExecutor {
     private static List<UnifiedArticle> fetchAndParseSecondary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
-            JsonNode root = restClient.get().uri(API_SECONDARY).retrieve().body(JsonNode.class);
+            JsonNode root = fetchJson(API_SECONDARY);
             if (root == null) return list;
 
             JsonNode grid = root.get("article_grid");

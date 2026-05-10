@@ -2,6 +2,7 @@ package top.yzljc.qqbot.feature;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.service.thread.ThreadManager;
@@ -13,7 +14,6 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
+@Slf4j
 public class AnnoyUser implements CommandExecutor, Listener {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -93,7 +94,7 @@ public class AnnoyUser implements CommandExecutor, Listener {
             sender.reply("😈 对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)", false);
         }
 
-        Logger.info("{} {} {} annoy mode [{}] for user {}", sender.isAdmin() ? "Admin" : "User", sender.userId(), isAlreadyInThisMode ? "removed" : "set", mode, targetId);
+        log.info("{} {} {} annoy mode [{}] for user {}", sender.isAdmin() ? "Admin" : "User", sender.userId(), isAlreadyInThisMode ? "removed" : "set", mode, targetId);
 
         return true;
     }
@@ -148,7 +149,7 @@ public class AnnoyUser implements CommandExecutor, Listener {
                 }
             } catch (Exception e) {
                 if (!(e instanceof InterruptedException)) {
-                    Logger.error("Annoy execution error", e);
+                    log.error("Annoy execution error", e);
                 }
             } finally {
                 runningTasks.remove(key, Thread.currentThread()); // 只移除当前线程的引用
@@ -217,7 +218,7 @@ public class AnnoyUser implements CommandExecutor, Listener {
             req.put("set", set);
             PostRequest.sendPost(RequestType.PUT_EMOJI, req);
         } catch (Exception e) {
-            Logger.warn("Emoji API fail: {}", e.getMessage());
+            log.warn("Emoji API fail: {}", e.getMessage());
         }
     }
 
@@ -257,7 +258,7 @@ public class AnnoyUser implements CommandExecutor, Listener {
                 if (!uMap.isEmpty()) annoyMap.put(gid, uMap);
             }
         } catch (Exception e) {
-            Logger.error("Load annoy record error", e);
+            log.error("Load annoy record error", e);
         }
     }
 
@@ -273,7 +274,7 @@ public class AnnoyUser implements CommandExecutor, Listener {
         try (FileWriter writer = new FileWriter(RECORD_FILE, false)) {
             mapper.writeValue(writer, raw);
         } catch (IOException e) {
-            Logger.error("Save annoy record error", e);
+            log.error("Save annoy record error", e);
         }
     }
 }

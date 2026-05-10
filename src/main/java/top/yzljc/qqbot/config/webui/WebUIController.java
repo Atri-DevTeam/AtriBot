@@ -1,7 +1,8 @@
 package top.yzljc.qqbot.config.webui;
 
+import io.javalin.http.Context;
 import lombok.Data;
-import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Result;
@@ -9,19 +10,18 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.config.webui.exception.FeatureNotFoundException;
 import top.yzljc.qqbot.functions.GroupContentRecord;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.*;
 
-@RestController
-@RequestMapping("/webui/v1/atribot/settings")
+@Slf4j
 public class WebUIController {
 
-    @GetMapping("/get/{groupId}")
-    public Result<GroupSettingsDTO> getGroupSettings(@PathVariable("groupId") long groupId) {
+    public static void getGroupSettings(Context ctx) {
+        long groupId = Long.parseLong(ctx.pathParam("groupId"));
 
         if (!GetGroupInfo.fetchAllGroupIds().contains(groupId)) {
-            return Result.fail(404, "群聊不在服务范围内");
+            ctx.json(Result.fail(404, "群聊不在服务范围内"));
+            return;
         }
 
         Map<String, Boolean> settings = new LinkedHashMap<>();
@@ -33,11 +33,13 @@ public class WebUIController {
         dto.setGroupId(groupId);
         dto.setFeatures(settings);
 
-        return Result.success(dto);
+        ctx.json(Result.success(dto));
     }
 
-    @PostMapping("/set/{groupId}")
-    public Result<SetFeatureResponseDTO> setGroupSetting(@PathVariable("groupId") long groupId, @RequestBody ToggleFeatureDTO dto) {
+    public static void setGroupSetting(Context ctx) {
+        long groupId = Long.parseLong(ctx.pathParam("groupId"));
+        ToggleFeatureDTO dto = ctx.bodyAsClass(ToggleFeatureDTO.class);
+
         if (!GroupConfigManager.getRegisteredFeatures().containsKey(dto.getFeature())) {
             throw new FeatureNotFoundException("未知的功能: " + dto.getFeature());
         }
@@ -51,34 +53,42 @@ public class WebUIController {
         result.setGroupId(groupId);
         result.setFeature(dto);
 
-        return Result.success(result);
+        ctx.json(Result.success(result));
     }
 
-    @GetMapping("/listgroups")
-    public Result<Map<Long, String>> fetchGroupList() {
+    public static void listGroups(Context ctx) {
         Map<Long, String> groupIds = new HashMap<>();
         for (long g : GetGroupInfo.fetchAllGroupIds()) {
             groupIds.put(g, GetGroupInfo.getGroupName(g));
         }
-        if (groupIds.isEmpty()) return Result.fail(404, "群聊数据获取失败");
-        return Result.success(groupIds);
-    }
-
-    @PostMapping("/fetchmessages")
-    public Result<LinkedList<GroupMessageDTO>> fetchMessages(@RequestBody MessageRequestDTO dto) {
-        if (!Config.getInstance().getMessageSpyGroups().contains(dto.groupId)) {
-            return Result.fail(404, "未开启该群的消息监听");
+        if (groupIds.isEmpty()) {
+            ctx.json(Result.fail(404, "群聊数据获取失败"));
+            return;
         }
-        return Result.success(GroupContentRecord.fetchMessages(dto.groupId, dto.page));
+        ctx.json(Result.success(groupIds));
     }
 
-    @PostMapping("/recallmessage")
-    public Result<String> recallMessage(@RequestBody Set<Long> messages) {
+    public static void fetchMessages(Context ctx) {
+        MessageRequestDTO dto = ctx.bodyAsClass(MessageRequestDTO.class);
+        if (!Config.getInstance().getMessageSpyGroups().contains(dto.groupId)) {
+            ctx.json(Result.fail(404, "未开启该群的消息监听"));
+            return;
+        }
+        ctx.json(Result.success(GroupContentRecord.fetchMessages(dto.groupId, dto.page)));
+    }
+
+    public static void recallMessage(Context ctx) {
+        @SuppressWarnings("unchecked")
+        Set<Integer> rawMessages = ctx.bodyAsClass(Set.class);
+        Set<Long> messages = new HashSet<>();
+        for (Object raw : rawMessages) {
+            messages.add(((Number) raw).longValue());
+        }
         for (long messageId : messages) {
             GroupMessage.recallMessage(messageId);
         }
-        Logger.info("远程撤回消息成功：" + messages);
-        return Result.success("远程撤回消息成功：" + messages);
+        log.info("远程撤回消息成功：" + messages);
+        ctx.json(Result.success("远程撤回消息成功：" + messages));
     }
 
     @Data

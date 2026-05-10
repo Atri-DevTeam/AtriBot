@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
-import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
@@ -81,7 +81,7 @@ public class BedwarsChallenge implements CommandExecutor {
 //            String displayName = mojangResp.has("name") ? mojangResp.path("name").asText() : playerName;
 
             String hypixelUrl = "https://api.hypixel.net/player?key=" + apiKey + "&name=" + playerName;
-            JsonNode hypixelResp = HttpRequest.sendGetRequest(hypixelUrl);
+            JsonNode hypixelResp = HttpService.sendGetRequest(hypixelUrl);
             if (hypixelResp == null || !hypixelResp.path("success").asBoolean(false)) {
                 sender.reply("Hypixel API 请求失败或该玩家未游玩过 Bedwars（或 API Key 无效/过期）", false);
                 return;

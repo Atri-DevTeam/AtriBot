@@ -3,29 +3,25 @@ package top.yzljc.qqbot.service.request;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.debug.PacketEvent;
 import top.yzljc.qqbot.event.EventManager;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.event.Sender;
 import top.yzljc.qqbot.event.impl.*;
-import top.yzljc.qqbot.utils.Logger;
 
-@RestController
+@Slf4j
 public class RequestReceiver {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @PostMapping("/")
-    public String handleRequest(@RequestBody JsonNode root) {
+    public static String handle(JsonNode root) {
         if (root != null) {
             PacketEvent.process(root);
             try {
                 String postType = root.path("post_type").asText("");
-                // 群聊/私聊
+
                 if ("message".equals(postType)) {
                     long messageId = root.path("message_id").asLong();
                     long time = root.path("time").asLong();
@@ -34,7 +30,6 @@ public class RequestReceiver {
                     String rawMessage = root.path("raw_message").asText();
                     String messageType = root.path("message_type").asText();
 
-                    // 解析 Sender
                     JsonNode senderNode = root.path("sender");
                     Sender senderObj = null;
                     if (!senderNode.isMissingNode() && !senderNode.isNull()) {
@@ -48,8 +43,7 @@ public class RequestReceiver {
 
                     java.util.LinkedList<MessageSegment> segmentList = MAPPER.convertValue(
                             root.path("message"),
-                            new TypeReference<>() {
-                            }
+                            new TypeReference<>() {}
                     );
 
                     // 触发对应的事件
@@ -125,7 +119,7 @@ public class RequestReceiver {
                 }
 
             } catch (Exception e) {
-                Logger.error("JSON 解析或处理异常：{}", e.getMessage());
+                log.error("JSON 解析或处理异常：{}", e.getMessage());
             }
         }
         return "{\"status\":\"ok\"}";

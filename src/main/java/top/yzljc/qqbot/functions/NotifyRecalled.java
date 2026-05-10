@@ -2,7 +2,6 @@ package top.yzljc.qqbot.functions;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.service.tools.FT;
 import top.yzljc.qqbot.service.tools.StructRawMessage;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
@@ -16,7 +15,6 @@ import top.yzljc.qqbot.event.impl.PrivateMessageEvent;
 import top.yzljc.qqbot.event.impl.RecallMessageEvent;
 import top.yzljc.qqbot.event.impl.RecallType;
 import top.yzljc.qqbot.utils.FormatTools;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.LinkedList;
 import java.util.List;

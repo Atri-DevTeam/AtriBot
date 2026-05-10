@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.service.request.HttpRequest;
+import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.thread.ThreadManager;
 import top.yzljc.qqbot.config.ConfigFile;
 
@@ -102,7 +102,7 @@ public class Hitokoto implements Listener {
 
     private static String fetchHitokoto() {
         try {
-            JsonNode respJson = HttpRequest.sendGetRequest(API_URL);
+            JsonNode respJson = HttpService.sendGetRequest(API_URL);
 
             if (respJson == null) {
                 log.warn("一言获取异常: 接口未返回数据");

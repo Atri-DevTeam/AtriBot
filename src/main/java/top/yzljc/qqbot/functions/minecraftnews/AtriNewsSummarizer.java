@@ -1,22 +1,16 @@
 package top.yzljc.qqbot.functions.minecraftnews;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import top.yzljc.qqbot.AtriBot;
 import top.yzljc.qqbot.service.ai.AiService;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Slf4j
 public class AtriNewsSummarizer {
 
-    private static AiService aiService;
-
-    @Autowired
-    public void setAiService(AiService aiService) {
-        AtriNewsSummarizer.aiService = aiService;
-    }
+    private static final AiService aiService = AtriBot.getInstance().getAiService();
 
     private static final String SYSTEM_PROMPT =
             "你是亚托莉（ATRI），一名高性能机器人。你的表达风格简洁、理性、有条理。" +
@@ -83,7 +77,7 @@ public class AtriNewsSummarizer {
             }
             return result;
         } catch (Exception e) {
-            Logger.error("调用 AI 进行新闻总结失败: ", e);
+            log.error("调用 AI 进行新闻总结失败: ", e);
             return List.of("亚托莉的脑回路好像卡住了……总结新闻失败了，请稍后再试呀！我是高性能的嘛！");
         }
     }

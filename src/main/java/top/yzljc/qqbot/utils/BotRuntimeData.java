@@ -2,6 +2,7 @@ package top.yzljc.qqbot.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.AtriBot;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
@@ -21,6 +22,7 @@ import java.util.concurrent.ScheduledFuture;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.utils
  */
+@Slf4j
 public class BotRuntimeData implements Listener {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -71,7 +73,7 @@ public class BotRuntimeData implements Listener {
             }
 
         } catch (Exception e) {
-            Logger.error("保存运行时数据失败: " + e.getMessage());
+            log.error("保存运行时数据失败: " + e.getMessage());
         }
     }
 

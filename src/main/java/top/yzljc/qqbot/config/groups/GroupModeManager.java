@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.config.groups;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.config.Config;
@@ -9,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.utils.Logger;
 
+@Slf4j
 public class GroupModeManager implements Listener {
 
     private static final List<Long> ADMIN_LIST = Config.getInstance().getAdminUids();
@@ -107,7 +108,7 @@ public class GroupModeManager implements Listener {
             } catch (NumberFormatException e) {
                 // 忽略非数字
             } catch (Exception e) {
-                Logger.error("处理配置选择时发生错误: " + e.getMessage(), e);
+                log.error("处理配置选择时发生错误: " + e.getMessage(), e);
                 clearSession(userId);
                 GroupMessage.chatMessage(groupId, "发生错误，会话已重置");
             }

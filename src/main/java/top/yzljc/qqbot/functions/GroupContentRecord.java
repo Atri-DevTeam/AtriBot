@@ -2,12 +2,16 @@ package top.yzljc.qqbot.functions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import lombok.Data;
-import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
+import top.yzljc.qqbot.config.webui.WebUIController;
+import top.yzljc.qqbot.database.DatabaseManager;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,54 +21,14 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import top.yzljc.qqbot.config.webui.WebUIController;
-import top.yzljc.qqbot.event.EventHandler;
-import top.yzljc.qqbot.event.Listener;
-import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.service.userinfo.GetUserInfo;
-
 public class GroupContentRecord implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(GroupContentRecord.class);
-    
-    static Settings settings = Config.getInstance();
-    private static final String HOST = settings.getMysqlHost();
-    private static final int PORT = settings.getMysqlPort();
-    private static final String DATABASE = settings.getMysqlDatabase();
-    private static final String DB_USER = settings.getMysqlUsername();
-    private static final String DB_PASSWORD = settings.getMysqlPassword();
 
-    private static final String DB_URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE + "?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
+    private static final Settings settings = Config.getInstance();
     private static final String BASE_TABLE = "qq_group_message_record";
-
-    @Getter
-    private static HikariDataSource dataSource;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final List<Long> groups = settings.getMessageSpyGroups();
-
-    static {
-        try {
-            initDataSource();
-        } catch (Exception e) {
-            log.error("初始化数据库连接失败: {}", e.getMessage());
-        }
-    }
-
-    private static void initDataSource() {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(DB_URL);
-        config.setUsername(DB_USER);
-        config.setPassword(DB_PASSWORD);
-
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(2);
-        dataSource = new HikariDataSource(config);
-    }
 
     private static String getTableNameForGroup(long groupId) {
         return BASE_TABLE + "_" + groupId;
@@ -83,7 +47,8 @@ public class GroupContentRecord implements Listener {
                 "record_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间', " +
                 "UNIQUE KEY `idx_msg_id` (`message_id`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
-        try (Connection conn = dataSource.getConnection();
+
+        try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         }
@@ -92,7 +57,7 @@ public class GroupContentRecord implements Listener {
     @EventHandler
     public void onGroupMessage(GroupMessageEvent event) {
         long groupId = event.getGroupId();
-        if (!Config.getInstance().getMessageSpyGroups().contains(groupId)) {
+        if (!groups.contains(groupId)) {
             return;
         }
         long time = event.getTime();
@@ -100,10 +65,10 @@ public class GroupContentRecord implements Listener {
         long messageId = event.getMessageId();
         String rawMessage = event.getRawMessage();
 
-        try{
+        try {
             saveToDatabase(userId, time, messageId, groupId, rawMessage);
         } catch (Exception e) {
-            top.yzljc.qqbot.utils.Logger.error("消息入库失败: {}", e.getMessage());
+            log.error("消息入库失败: {}", e.getMessage());
         }
     }
 
@@ -150,7 +115,7 @@ public class GroupContentRecord implements Listener {
         }
 
         String insertSql = "INSERT INTO `" + tableName + "` (user_id, msg_time, message_id, group_id, raw_message) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
             pstmt.setLong(1, userId);
             pstmt.setLong(2, time);
@@ -170,10 +135,10 @@ public class GroupContentRecord implements Listener {
     public static String searchMessage(long groupId, long messageId) {
         String tableName = getTableNameForGroup(groupId);
         String sql = "SELECT raw_message FROM `" + tableName + "` WHERE message_id = ? ORDER BY id DESC LIMIT 1";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, messageId);
-            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+            try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getString("raw_message");
                 }
@@ -186,16 +151,11 @@ public class GroupContentRecord implements Listener {
 
     public static LinkedList<WebUIController.GroupMessageDTO> fetchMessages(long groupId, int page) {
         LinkedList<WebUIController.GroupMessageDTO> result = new LinkedList<>();
-        if (dataSource == null) {
-            log.warn("数据源未初始化，无法查询消息");
-            return result;
-        }
-
         String tableName = getTableNameForGroup(groupId);
         int offset = (page - 1) * 25;
         String sql = "SELECT user_id, message_id, raw_message, msg_time FROM `" + tableName + "` ORDER BY id DESC LIMIT 25 OFFSET ?";
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, offset);
             try (ResultSet rs = pstmt.executeQuery()) {

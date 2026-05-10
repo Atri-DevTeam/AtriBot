@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.config;
 
+import lombok.Getter;
 import org.yaml.snakeyaml.Yaml;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -48,6 +49,20 @@ public class Config implements Settings{
     private int varietyPort;
     private String varietyHost;
     private String varietyKey;
+    @Getter
+    private Map<String, String> officialAdmins = new HashMap<>();
+
+    // From application.yml
+    private String aiApiKey;
+    private String aiBaseUrl;
+    private String aiModel;
+    private int aiTimeout = 30000;
+    @Getter
+    private String qqAppId;
+    @Getter
+    private String qqClientSecret;
+    @Getter
+    private String qqApiBaseUrl = "https://sandbox.api.sgroup.qq.com";
 
     private Config() {
         load();
@@ -179,11 +194,58 @@ public class Config implements Settings{
                 } else {
                     this.keywordsLikeUser = new String[0];
                 }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> aiConfig = (Map<String, Object>) data.get("ai");
+                if (aiConfig != null) {
+                    this.aiApiKey = (String) aiConfig.getOrDefault("api-key", "");
+                    this.aiBaseUrl = (String) aiConfig.getOrDefault("base-url", "");
+                    this.aiModel = (String) aiConfig.getOrDefault("model", "qwen3.5-flash");
+                    Object aiTimeoutObj = aiConfig.get("timeout");
+                    if (aiTimeoutObj instanceof Number) {
+                        this.aiTimeout = ((Number) aiTimeoutObj).intValue();
+                    } else {
+                        this.aiTimeout = 30000000;
+                    }
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> qqConfig = (Map<String, Object>) data.get("qq");
+                if (qqConfig != null) {
+                    this.qqAppId = (String) qqConfig.getOrDefault("app-id", "");
+                    this.qqClientSecret = (String) qqConfig.getOrDefault("client-secret", "");
+                    this.qqApiBaseUrl = (String) qqConfig.getOrDefault("api-base-url", "https://sandbox.api.sgroup.qq.com");
+                }
+
+                if (data.containsKey("official-admins")) {
+                    Object officialAdminsObj = data.get("official-admins");
+                    if (officialAdminsObj instanceof Map<?, ?>) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> rawAdmins = (Map<String, Object>) officialAdminsObj;
+                        rawAdmins.forEach((k, v) -> {
+                            if (v instanceof String) {
+                                officialAdmins.put(k, (String) v);
+                            } else {
+                                log.error("配置文件中官方管理员列表中出现无效信息：{}: {}", k, v);
+                            }
+                        });
+                    } else {
+                        log.error("配置文件中官方管理员列表格式错误，应为键值对形式");
+                    }
+                }
+
                 log.info("配置文件加载成功");
             }
         } catch (Exception e) {
             log.warn("加载配置文件时出现错误", e);
         }
+    }
+
+    public AiBotProperties getAiBotProperties() {
+        AiBotProperties props = new AiBotProperties();
+        props.setApiKey(aiApiKey);
+        props.setBaseUrl(aiBaseUrl);
+        props.setModel(aiModel);
+        props.setTimeout(aiTimeout);
+        return props;
     }
 
     @Override

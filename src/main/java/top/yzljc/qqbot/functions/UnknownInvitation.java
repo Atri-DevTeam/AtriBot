@@ -1,5 +1,6 @@
 package top.yzljc.qqbot.functions;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.service.request.PostRequest;
 import top.yzljc.qqbot.service.request.RequestType;
 import top.yzljc.qqbot.service.thread.ThreadManager;
@@ -8,7 +9,6 @@ import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMemberChangeEvent;
 import top.yzljc.qqbot.event.impl.GroupMemberChangeType;
-import top.yzljc.qqbot.utils.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @Project Yzljc-QQ-Bot
  * @Package top.yzljc.qqbot.functions
  */
+@Slf4j
 public class UnknownInvitation implements Listener {
     private static final List<Long> allowed_users = Config.getInstance().getAdminUids();
 
@@ -34,7 +35,7 @@ public class UnknownInvitation implements Listener {
             data.put("is_dismiss", "false");
             event.getGroup().sendSingleText("本次进群信息未经同意，为避免一些潜在风险，已主动退出，如有需求，请联系开发者主动加群！");
             ThreadManager.schedule(() -> PostRequest.sendPost(RequestType.QUIT_GROUP, data), 5, TimeUnit.SECONDS);
-            Logger.info("已自动退出未知邀请的群聊，群ID: " + groupId);
+            log.info("已自动退出未知邀请的群聊，群ID: {}", groupId);
         }
     }
 }
