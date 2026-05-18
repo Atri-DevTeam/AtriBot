@@ -51,7 +51,7 @@ public class CommandManager implements Listener {
         registerCommand("manodate", "Manosaba日期查询", null, null, null);
         registerCommand("github", "/github [群号1] [群号2]...", null, null, "github_info");
         registerCommand("signall", "自动签到", null, null, "auto_sign");
-        registerCommand("stats", "消息统计", "/stats 查询当日发言排行信息, /stats [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息", null, null);
+        registerCommand("chat", "消息统计", "/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息", null, null);
         registerCommand("groupinfo", "查看群组配置", null, null, null);
         registerCommand("calendar", "查看日历", null, null, "calendar");
         registerCommand("atrihelp", "显示帮助菜单", "/atrihelp", null, null);
@@ -62,8 +62,11 @@ public class CommandManager implements Listener {
         registerCommand("verify", "验证YZ_Ljc_ Network账号", "/verify <验证密钥>", null, "verify_server");
 
         registerCommand("stats", "", "", null, null);
-        registerCommand("total", "", "", null, null);
+        registerCommand("rc", "", "", null, null);
         registerCommand("myinfo", "", "", null, null);
+        registerCommand("mc", "Minecraft相关", null, null, null);
+        registerCommand("test", "测试命令", null, null, null);
+        registerCommand("feedback", "提交反馈", "/feedback <反馈内容>", null, null);
     }
 
     /**

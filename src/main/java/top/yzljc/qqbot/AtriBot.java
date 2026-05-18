@@ -1,5 +1,6 @@
 package top.yzljc.qqbot;
 
+import cn.dev33.satoken.sign.SaSignManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
@@ -23,15 +24,12 @@ import top.yzljc.qqbot.event.EventManager;
 import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.*;
-import top.yzljc.qqbot.official.function.VerifyMinecraftCommand;
+import top.yzljc.qqbot.official.function.*;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
 import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
-import top.yzljc.qqbot.official.function.AccountInfo;
-import top.yzljc.qqbot.official.function.PlayerProfile;
-import top.yzljc.qqbot.official.function.TotalPlayers;
 import top.yzljc.qqbot.official.impl.BindMinecraft;
 import top.yzljc.qqbot.official.service.QQBotManagerService;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
@@ -109,6 +107,8 @@ public class AtriBot {
         server.exception(FeatureNotFoundException.class, ExceptionController::handleFeatureNotFound);
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
+
+        SaSignManager.getConfig().setSecretKey(Config.getInstance().getSaSignSecretKey());
     }
 
     public void onEnable() {
@@ -152,7 +152,7 @@ public class AtriBot {
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
         CommandManager.getCommand("github").setExecutor(new WebhookServer());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
-        CommandManager.getCommand("stats").setExecutor(new MessageStats());
+        CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
         CommandManager.getCommand("calendar").setExecutor(new Calendar());
         CommandManager.getCommand("atrihelp").setExecutor(new AtriHelp());
@@ -163,8 +163,11 @@ public class AtriBot {
         CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
 
         CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
-        CommandManager.getCommand("total").setExecutor(new TotalPlayers());
+        CommandManager.getCommand("rc").setExecutor(new RconController());
         CommandManager.getCommand("myinfo").setExecutor(new AccountInfo());
+        CommandManager.getCommand("mc").setExecutor(new MinecraftUtils());
+        CommandManager.getCommand("test").setExecutor(new Test());
+        CommandManager.getCommand("feedback").setExecutor(new Feedback());
 
         this.scheduler = new Scheduler();
         try {
@@ -221,6 +224,7 @@ public class AtriBot {
         GroupConfigManager.registerFeature("bedwars_challenge", true);
         GroupConfigManager.registerFeature("tufe_class_alert", false);
         GroupConfigManager.registerFeature("verify_server", false);
+        GroupConfigManager.registerFeature("illegal_words_check", false);
 
         try {
             String mcIp = settings.getVarietyHost();

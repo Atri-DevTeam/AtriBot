@@ -42,12 +42,8 @@ public class CommandMap {
             log.error("执行命令 {} 时发生异常，方法{}", commandLabel, label, e);
             if (label.equalsIgnoreCase("0")) {
                 sender.reply("执行命令时发生内部错误", false);
-            } else if (label.equalsIgnoreCase("1")) {
-                AtriBot.getInstance().getMessageService().replyPrivateTextMessage(sender.userOpenId(), sender.messageOpenId(), "执行命令时发生内部错误");
-            } else if (label.equalsIgnoreCase("2")) {
-                AtriBot.getInstance().getMessageService().replyGroupTextMessage(sender.groupOpenId(), sender.messageOpenId(), "执行命令时发生内部错误");
             } else {
-                log.warn("未知的消息来源标签: {}", label);
+                sender.replyMarkdown(label, "> 执行命令时发生内部错误，请联系开发者处理！");
             }
             return false;
         }
