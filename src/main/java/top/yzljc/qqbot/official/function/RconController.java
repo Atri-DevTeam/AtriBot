@@ -8,15 +8,25 @@ import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.service.request.HttpService;
 
 @Slf4j
-public class TotalPlayers implements CommandExecutor {
+public class RconController implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        switch (label) {
-            case "0" -> sender.reply(getTotalPlayers(label));
-            case "1" -> sender.officialPrivateReplyMarkdown(getTotalPlayers(label));
-            case "2" -> sender.officialGroupReplyMarkdown(getTotalPlayers(label));
+        if (label.equals("0")) return true;
+        if (args.length < 1) {
+            sender.replyText(label, "无效指令，请检查输入内容");
+            return true;
         }
+
+        String cmd = args[0];
+
+        if (cmd.equalsIgnoreCase("total")) {
+            String feedback = getTotalPlayers(label);
+            sender.replyMarkdown(label, feedback);
+        } else {
+            sender.replyText(label, "未知子命令: " + cmd);
+        }
+
         return true;
     }
 

@@ -59,7 +59,7 @@ public class HypixelNews implements CommandExecutor {
         return true;
     }
 
-    public static void checkNews(boolean isManualTrigger) {
+    public static synchronized void checkNews(boolean isManualTrigger) {
         try {
             if (isManualTrigger) {
                 log.info("正在执行 Hypixel 手动检查……");

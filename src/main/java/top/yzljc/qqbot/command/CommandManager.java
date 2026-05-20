@@ -1,84 +1,69 @@
 package top.yzljc.qqbot.command;
 
-import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
-import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
-import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 import top.yzljc.qqbot.config.Config;
+import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
+import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.utils.BotRuntimeData;
 
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class CommandManager implements Listener {
+    private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
+    private static final String COMMAND_FILE = ConfigFile.ATRIBOT.getFileName();
     private static final String COMMAND_PREFIX = Config.getInstance().getCommandPrefix();
     private static final long BOT_QQ = GetUserInfo.getBotId();
     private static final String DEBUG_SUFFIX = Config.getInstance().getDebugCommandSuffix();
     private static final List<Long> adminUids = Config.getInstance().getAdminUids();
     private static final Map<String, String> officialAdmins = Config.getInstance().getOfficialAdmins();
+    private static final String FALLBACK_PREFIX = "atri-core";
 
     private static final CommandMap commandMap = new CommandMap();
+    private static volatile List<CommandDefinition> registeredDefinitions = List.of();
+
+    static {
+        reload();
+    }
 
     public static CommandFeature getCommand(String name) {
         return (CommandFeature) commandMap.getCommand(name);
     }
 
+    public static synchronized void reload() {
+        Map<String, CommandExecutor> executors = commandMap.snapshotExecutors();
+        List<CommandDefinition> definitions = loadDefinitions();
+        registeredDefinitions = List.copyOf(definitions);
+
+        commandMap.clear();
+        for (CommandDefinition definition : definitions) {
+            CommandFeature command = new CommandFeature(definition);
+            CommandExecutor executor = executors.get(definition.name().toLowerCase());
+            if (executor != null) {
+                command.setExecutor(executor);
+            }
+            commandMap.register(FALLBACK_PREFIX, command);
+        }
+
+        log.info("命令配置已加载，共 {} 个命令", definitions.size());
+    }
+
+    public static List<CommandDefinition> getDefinitions() {
+        return List.copyOf(registeredDefinitions);
+    }
+
     public static void registerCommand(String name, String description, String usage, List<String> aliases, String featureKey) {
-        if (usage == null) usage = "/" + name;
-        if (aliases == null) aliases = Collections.emptyList();
-
-        CommandFeature command = new CommandFeature(name, description, usage, aliases, featureKey);
-        commandMap.register("atri-core", command);
-    }
-
-    static {
-        registerCommand("happynewyear", "发送新年快乐", null, null, "new_year");
-        registerCommand("bc", "全服广播", "/bc <内容>", Collections.singletonList("broadcast"), "broadcast");
-        registerCommand("wakeup", "唤醒Bot", null, null, "wakeup_send");
-        registerCommand("reboot", "重启Bot", null, null, null);
-        registerCommand("search", "搜索聊天记录", "/search \"关键词\" [-u QQ] [-m p/a]", null, null);
-        registerCommand("recall", "撤回上一条消息", null, null, null);
-        registerCommand("rollback", "批量撤回消息", "/rollback [-n 数量] [-u QQ号]", null, null);
-        registerCommand("motd", "查询MC服务器状态", "/motd <服务器ip地址(端口号可选)>", null, "motd");
-        registerCommand("mojang", "查询Mojang服务状态", null, null, "mojang_status");
-        registerCommand("cl", "领取Hypixel奖励", "/cl <Hypixel每日签到链接>", null, "get_hypixel_reward");
-        registerCommand("bwc", "起床战争挑战查询", "/bwc <玩家名> 或 /bwc api <API Key>", null, "bedwars_challenge");
-        registerCommand("checkmcnews", "获取MC新闻", null, null, "mc_news");
-        registerCommand("checkhypnews", "获取Hypixel新闻", null, null, "hyp_news");
-        registerCommand("manodate", "Manosaba日期查询", null, null, null);
-        registerCommand("github", "/github [群号1] [群号2]...", null, null, "github_info");
-        registerCommand("signall", "自动签到", null, null, "auto_sign");
-        registerCommand("chat", "消息统计", "/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息", null, null);
-        registerCommand("groupinfo", "查看群组配置", null, null, null);
-        registerCommand("calendar", "查看日历", null, null, "calendar");
-        registerCommand("atrihelp", "显示帮助菜单", "/atrihelp", null, null);
-        registerCommand("emj", "表情轰炸", "/emj <normal/medium/insane/animation> [可选: User]", null, "annoy_user");
-        registerCommand("reload", "重新加载配置", "/reload [all|cfg|f|g]", null, null);
-        registerCommand("autolike", "自动点赞列表", "/autolike add|remove|list [可选: User]", null, null);
-        registerCommand("tufe", "查课", "/tufe查看下节课的上课地点", null, "tufe_class_alert");
-        registerCommand("verify", "验证YZ_Ljc_ Network账号", "/verify <验证密钥>", null, "verify_server");
-
-        registerCommand("stats", "", "", null, null);
-        registerCommand("rc", "", "", null, null);
-        registerCommand("myinfo", "", "", null, null);
-        registerCommand("mc", "Minecraft相关", null, null, null);
-        registerCommand("test", "测试命令", null, null, null);
-        registerCommand("feedback", "提交反馈", "/feedback <反馈内容>", null, null);
-    }
-
-    /**
-     * 注册命令的辅助方法
-     * @param name 命令名称 (例如 "motd")
-     * @param executor 命令执行逻辑类
-     * @param description 命令描述
-     * @param usage 用法提示 (传 null 则默认为 /<name>)
-     * @param aliases 别名列表 (传 null 则无别名)
-     * @param featureKey 对应 config.yml 中的功能开关 key (传 null 则默认开启)
-     */
-    private static void registerCommand(String name, CommandExecutor executor, String description, String usage, List<String> aliases, String featureKey) {
         if (usage == null) {
             usage = "/" + name;
         }
@@ -87,18 +72,54 @@ public class CommandManager implements Listener {
         }
 
         CommandFeature command = new CommandFeature(name, description, usage, aliases, featureKey);
-        command.setExecutor(executor);
+        commandMap.register(FALLBACK_PREFIX, command);
+    }
 
-        commandMap.register("atri-core",command);
+    private static List<CommandDefinition> loadDefinitions() {
+        try (InputStream in = CommandManager.class.getClassLoader().getResourceAsStream(COMMAND_FILE)) {
+            if (in == null) {
+                log.warn("未找到命令配置资源 {}", COMMAND_FILE);
+                return List.of();
+            }
+            Yaml yaml = new Yaml();
+            Map<String, Object> data = yaml.load(in);
+            if (data == null) {
+                return List.of();
+            }
+
+            Object commandsObj = data.get("commands");
+            if (!(commandsObj instanceof Map<?, ?> rawCommands)) {
+                log.warn("命令配置 {} 中缺少 commands 节点", COMMAND_FILE);
+                return List.of();
+            }
+
+            List<CommandDefinition> definitions = new ArrayList<>();
+            for (Map.Entry<?, ?> entry : rawCommands.entrySet()) {
+                if (entry.getKey() instanceof String name && entry.getValue() instanceof Map<?, ?> rawDefinition) {
+                    Map<String, Object> definition = new LinkedHashMap<>();
+                    rawDefinition.forEach((key, value) -> {
+                        if (key instanceof String actualKey) {
+                            definition.put(actualKey, value);
+                        }
+                    });
+                    definitions.add(CommandDefinition.from(name, definition));
+                }
+            }
+            return definitions;
+        } catch (Exception e) {
+            log.error("加载命令配置 {} 失败", COMMAND_FILE, e);
+            return List.of();
+        }
     }
 
     @EventHandler
     public void processCommand(GroupMessageEvent event) {
         long userId = event.getUserId();
-        if (userId == BOT_QQ) return;
+        if (userId == BOT_QQ) {
+            return;
+        }
 
         String rawMessage = event.getRawMessage().trim();
-
         if (!rawMessage.startsWith(COMMAND_PREFIX)) {
             return;
         }
@@ -109,7 +130,6 @@ public class CommandManager implements Listener {
         long messageId = event.getMessageId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
-
         if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
             isDebug = true;
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
@@ -121,15 +141,13 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            // 命令未找到或执行失败，发送错误提示
+            // command not found
         }
     }
 
     @EventHandler
     public void onOfficialPrivateCommand(OfficialPrivateChatEvent event) {
-
         String rawMessage = event.getContent().trim();
-
         if (!rawMessage.startsWith(COMMAND_PREFIX)) {
             return;
         }
@@ -140,7 +158,6 @@ public class CommandManager implements Listener {
         String userOpenId = event.getOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
-
         if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
             isDebug = true;
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
@@ -152,15 +169,13 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            // 命令未找到或执行失败，发送错误提示
+            // command not found
         }
     }
 
     @EventHandler
     public void onOfficialGroupCommand(OfficialGroupChatEvent event) {
-
         String rawMessage = event.getContent().trim();
-
         if (!rawMessage.startsWith(COMMAND_PREFIX)) {
             return;
         }
@@ -172,7 +187,6 @@ public class CommandManager implements Listener {
         String groupOpenId = event.getGroupOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
-
         if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
             isDebug = true;
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
@@ -184,7 +198,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            // 命令未找到或执行失败，发送错误提示
+            // command not found
         }
     }
 }

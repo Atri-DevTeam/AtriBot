@@ -21,7 +21,7 @@ public class Sender {
         this.role = role;
     }
 
-    public void replay(String message) {
+    public void reply(String message) {
         reply(message, false);
     }
 

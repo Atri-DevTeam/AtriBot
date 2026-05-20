@@ -119,6 +119,69 @@ public class HypixelReward implements CommandExecutor, Listener {
             return true;
         }
 
+        // === 添加测试数据：跑通全流程 ===
+        if (args.length >= 1 && args[0].equalsIgnoreCase("test")) {
+            // 只需要label为1 2时过，0不需要
+            if ("0".equals(label)) return true;
+
+            if (client == null || !client.isOpen()) {
+                String errorText = "> ❌ 服务未连接，请联系管理员启动请求发送端喵！";
+                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
+                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                return true;
+            }
+
+            RewardSession existingSession = getSessionByUserId(userOpenId);
+            if (existingSession != null) {
+                String errorText = "> ⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！";
+                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
+                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                return true;
+            }
+
+            String sessionId = "test-" + UUID.randomUUID().toString();
+            RewardSession session = new RewardSession(
+                    sessionId, groupId, userId, messageId,
+                    userOpenId, groupOpenId, messageOpenId, type
+            );
+            activeSessions.put(sessionId, session);
+
+            log.info("用户 {} (Type:{}) 触发[测试流程]，分配 SessionID: {}", userOpenId, type, sessionId);
+
+            // 延时 1 秒，模拟 Python 端返回"解析到奖励，请选择"
+            scheduler.schedule(() -> {
+                ObjectNode mockSelection = mapper.createObjectNode();
+                mockSelection.put("type", "selection_needed");
+                mockSelection.put("session_id", sessionId);
+                mockSelection.put("security_token", "test_token_123");
+                mockSelection.put("reward_id", "test_rid_123");
+                mockSelection.put("original_url", "https://rewards.hypixel.net/claim-reward/test");
+                mockSelection.putArray("rewards")
+                        .add("100,000 街机硬币 (测试数据)")
+                        .add("10 个史诗级神秘礼盒 (测试数据)")
+                        .add("5 个锦标赛票据 (测试数据)");
+
+                // 复用底层的消息接收机制渲染 Markdown + 按钮
+                client.onMessage(mockSelection.toString());
+
+                // 再延时 3 秒，模拟自动跑完了领奖流程
+                scheduler.schedule(() -> {
+                    if (activeSessions.containsKey(sessionId)) {
+                        ObjectNode mockResult = mapper.createObjectNode();
+                        mockResult.put("type", "result");
+                        mockResult.put("session_id", sessionId);
+                        mockResult.put("success", true);
+                        mockResult.put("msg", "测试流程跑通：成功领取 100,000 街机硬币 (测试数据)！");
+
+                        client.onMessage(mockResult.toString());
+                    }
+                }, 3, TimeUnit.SECONDS);
+
+            }, 1, TimeUnit.SECONDS);
+
+            return true;
+        }
+
         String content = args[0];
         Matcher matcher = URL_PATTERN.matcher(content);
 

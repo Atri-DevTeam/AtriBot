@@ -56,7 +56,7 @@ public class MinecraftNews implements CommandExecutor {
         return true;
     }
 
-    public static void checkNews(boolean isManualTrigger) {
+    public static synchronized void checkNews(boolean isManualTrigger) {
         try {
             if (isManualTrigger) {
                 log.info("正在执行手动检查……");
@@ -269,7 +269,7 @@ public class MinecraftNews implements CommandExecutor {
         long messageId = GroupMessage.forwardMessage(
                 Config.getInstance().getDebugGroupId(),
                 nodes,
-                "【Minecraft 动态 | Minecraft 资讯】",
+                "【Minecraft 动态 | 新闻资讯】",
                 "点击查看详细总结",
                 textVars
         );

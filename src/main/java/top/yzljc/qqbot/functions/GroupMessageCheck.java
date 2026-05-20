@@ -1,6 +1,7 @@
 package top.yzljc.qqbot.functions;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 import top.yzljc.qqbot.service.userinfo.GetUserInfo;
 import top.yzljc.qqbot.config.Config;
@@ -13,7 +14,7 @@ import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 public class GroupMessageCheck implements Listener {
     @EventHandler
     public void onGroupMessage(GroupMessageEvent event) {
-        if (!Config.getInstance().getMessageSpyGroups().contains(event.getGroupId()) || event.getUserId() == event.getSelfId()) return;
+        if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "illegal_words_check") || event.getUserId() == event.getSelfId()) return;
 
         if (LoadIllegalWords.containsSensitiveWord(event.getRawMessage())) {
             if (event.getGroupId() == Config.getInstance().getDebugGroupId()) return;

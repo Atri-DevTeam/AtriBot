@@ -3,6 +3,7 @@ package top.yzljc.qqbot.config;
 import top.yzljc.qqbot.service.userinfo.GetFriendList;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 
@@ -47,6 +48,7 @@ public class Reload implements CommandExecutor {
 
     private void reloadAll() {
         Config.getInstance().reload();
+        CommandManager.reload();
         GroupConfigManager.refreshAllConfigs();
         GetFriendList.updateFriendList();
     }

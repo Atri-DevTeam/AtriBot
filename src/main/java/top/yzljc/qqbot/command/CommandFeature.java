@@ -1,15 +1,21 @@
 package top.yzljc.qqbot.command;
 
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
 
 @Setter
 public class CommandFeature extends Command {
+    @Getter
     private CommandExecutor executor;
 
     public CommandFeature(String name, String description, String usage, List<String> aliases, String featureKey) {
         super(name, description, usage, aliases, featureKey);
+    }
+
+    public CommandFeature(CommandDefinition definition) {
+        this(definition.name(), definition.description(), definition.usage(), definition.aliases(), definition.featureKey());
     }
 
     @Override

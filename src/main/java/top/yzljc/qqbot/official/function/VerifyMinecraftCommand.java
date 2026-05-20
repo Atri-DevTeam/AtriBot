@@ -2,9 +2,11 @@ package top.yzljc.qqbot.official.function;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.AtriBot;
+import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
+import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
@@ -13,7 +15,6 @@ import top.yzljc.qqbot.official.impl.BindResponse;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.service.request.HttpService;
-import top.yzljc.qqbot.service.thread.ThreadManager;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -49,6 +50,15 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
         }
 
         String code = args[0].trim();
+
+        // === 添加测试数据：跑通验证流程 ===
+        if (code.equalsIgnoreCase("testcode")) {
+            log.info("触发测试验证流程，模拟绑定成功...");
+            GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(),  "触发测试验证流程，模拟绑定成功...", true);
+            BindResponse mockResult = new BindResponse(200, "bab7c231-38a1-488b-8109-5f9735e3910b");
+            return handleBindResponse(sender, label, mockResult);
+        }
+        // ==============================
 
         long possibleQQNum = -1;
         if (pendingPossibleQQNum.containsKey(code)) {
@@ -118,8 +128,6 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
         long userId = event.getUserId();
         String message = stripCQCode(event.getRawMessage());
         message = stripMentions(message);
-
-        log.debug(message);
 
         if (message.startsWith("/verify")) {
             String[] parts = message.split("\\s+");

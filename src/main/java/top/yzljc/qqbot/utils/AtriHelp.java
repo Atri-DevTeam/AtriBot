@@ -3,16 +3,15 @@ package top.yzljc.qqbot.utils;
 import top.yzljc.qqbot.service.userinfo.GetProjectInfo;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
+import top.yzljc.qqbot.command.CommandDefinition;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.command.CommandSender;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Bot 帮助/介绍信息
- */
 public class AtriHelp implements CommandExecutor {
 
     @Override
@@ -60,18 +59,22 @@ public class AtriHelp implements CommandExecutor {
     }
 
     private static String commandHelp() {
-
-        return """
-                【指令帮助信息】
-                ● 发送 "赞我" 获取名片赞
-                ● 发送 "一言" 获得随机一言
-                ● /emj 贴表情恶搞机制相关
-                ● /calendar 日历推送
-                ● /mojang MOJANG 验证服务器状态查询
-                ● /motd MOTD 查询 [默认关闭]
-                ● /cl <url> 领取Hypixel每日签到 [默认关闭]
-                ● /rc <服务器编号> <指令> MC服务器关联指令 [默认关闭]
-                """;
+        StringBuilder sb = new StringBuilder("【指令帮助信息】\n");
+        List<CommandDefinition> definitions = CommandManager.getDefinitions();
+        if (definitions.isEmpty()) {
+            return sb.append("（暂无可用指令）").toString();
+        }
+        for (CommandDefinition definition : definitions) {
+            sb.append("● ").append(definition.usage());
+            if (!definition.description().isBlank()) {
+                sb.append(" - ").append(definition.description());
+            }
+            if (!definition.aliases().isEmpty()) {
+                sb.append(" [别名: ").append(String.join(", ", definition.aliases())).append("]");
+            }
+            sb.append('\n');
+        }
+        return sb.toString().trim();
     }
 
     private static String lastInfo(){

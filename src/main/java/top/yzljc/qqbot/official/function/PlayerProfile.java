@@ -17,6 +17,7 @@ import top.yzljc.qqbot.official.impl.MinecraftUserData;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.service.request.HttpService;
+import top.yzljc.qqbot.service.request.SaSignHeader;
 import top.yzljc.qqbot.utils.FormatTools;
 
 import java.net.URI;
@@ -96,19 +97,10 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
         try {
 
-            String urlName = "https://www.yzljc.top/data/api/v1/playerdata/name/{name}?display=card&secret=xYNXZAxRKJScFXJx@-wgHUGIWqa&" + System.currentTimeMillis();
-            String urlUuid = "https://www.yzljc.top/data/api/v1/playerdata/uuid/{uuid}?display=card&secret=xYNXZAxRKJScFXJx@-wgHUGIWqa&" + System.currentTimeMillis();
+            String url = "https://www.yzljc.top/data/api/v2/player/card/" + key + "?key=atri-player-card-2026@yzljc.top&timestamp=" + System.currentTimeMillis();
 
-            String finalUrl;
-
-            if (key.length() > 16) {
-                finalUrl = urlUuid.replace("{uuid}", key);
-            } else {
-                finalUrl = urlName.replace("{name}", key);
-            }
-
-            log.info("开始预热请求图片: {}", finalUrl);
-            HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(finalUrl)).GET().build();
+            log.info("开始预热请求图片: {}", url);
+            HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
             HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() != 200) {
                 if (response.statusCode() == 404) {
@@ -123,9 +115,9 @@ public class PlayerProfile implements Listener, CommandExecutor {
             String text = "玩家 **" + key + "** 的在档数据如下";
             String finalMarkdown;
             if (label.equals("2")) {
-                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + finalUrl + ")\n<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
+                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + url + ")\n<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
             } else {
-                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + finalUrl + ")";
+                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + url + ")";
             }
             sender.replyMarkdown(label, finalMarkdown, keyboard);
 
@@ -167,20 +159,20 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 return true;
             }
 
-            String markdown = "玩家 **" + key + "** 的成就数据如下：\n\n";
+            StringBuilder markdown = new StringBuilder("玩家 **" + key + "** 的成就数据如下：\n\n");
             for (Achievement ach : resultObject.getData()) {
                 String statusEmoji = ach.finished() ? "✅" : "❌";
                 String title = (ach.hidden && !ach.finished) ? "**隐藏成就**" : String.format("**%s** %s ", ach.name(), statusEmoji);
                 String body = (ach.hidden && !ach.finished) ? "> ???" : "> " + ach.description() + " (+" + ach.rewardPoints() + "成就点数)";
-                String resultPart = title + "\n" + body + "\n";
-                markdown += resultPart;
+                String resultPart = title + "\n" + body + "\n\n";
+                markdown.append(resultPart);
             }
 
             if (label.equals("2")) {
-                markdown += "<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
+                markdown.append("<qqbot-at-user id=\"").append(sender.userOpenId()).append("\" />");
             }
 
-            sender.replyMarkdown(label, markdown, keyboard);
+            sender.replyMarkdown(label, markdown.toString(), keyboard);
 
             return true;
         } catch (Exception e) {

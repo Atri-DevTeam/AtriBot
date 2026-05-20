@@ -3,6 +3,7 @@ package top.yzljc.qqbot.config;
 public enum ConfigFile {
     GROUP_CONFIG("groupconfig.json"),
     CONFIG("config.yml"),
+    ATRIBOT("atribot.yml"),
     RCON_USER("adminuser.json"),
     RCON_SERVER_SECRET("server-secret.json"),
     FILTER_CONFIG("filter.yml"),

@@ -10,13 +10,12 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.config.Settings;
-import top.yzljc.qqbot.service.clock.Schedule;
-import top.yzljc.qqbot.service.clock.ScheduleType;
 import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
 
 import java.util.Set;
 
+@Deprecated(since = "2026-05-17")
 public class WakeUp implements CommandExecutor {
     private static final Logger log = LoggerFactory.getLogger(WakeUp.class);
     static Settings settings = Config.getInstance();
@@ -37,7 +36,6 @@ public class WakeUp implements CommandExecutor {
         return true;
     }
 
-    @Schedule(time = "07:00:00", type = ScheduleType.DAILY)
     public static void sendImgToGroup() {
         ThreadManager.execute(() -> {
             for (long groupId : GROUPS){

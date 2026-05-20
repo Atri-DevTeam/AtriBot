@@ -1,17 +1,31 @@
 package top.yzljc.qqbot.test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.AtriBot;
+import top.yzljc.qqbot.command.Command;
+import top.yzljc.qqbot.command.CommandExecutor;
+import top.yzljc.qqbot.command.CommandSender;
+import top.yzljc.qqbot.config.Result;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 import top.yzljc.qqbot.service.ai.AiService;
+import top.yzljc.qqbot.service.request.HttpService;
+import top.yzljc.qqbot.service.request.SaSignHeader;
 import top.yzljc.qqbot.service.thread.ThreadManager;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class Test implements Listener {
+@Slf4j
+public class Test implements Listener, CommandExecutor {
 
     private final AiService aiService = AtriBot.getInstance().getAiService();
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @EventHandler
     public void onGroupMessage(GroupMessageEvent event) {
@@ -31,12 +45,18 @@ public class Test implements Listener {
                         );
                     }, ThreadManager.getExecutor())
                     .thenAccept(answer -> {
-                        event.getSender().replay(answer);
+                        event.getSender().reply(answer);
                     })
                     .exceptionally(ex -> {
-                        event.getSender().replay("亚托莉的脑回路好像卡住了……请稍后再试呀！我是高性能的嘛！");
+                        event.getSender().reply("亚托莉的脑回路好像卡住了……请稍后再试呀！我是高性能的嘛！");
                         return null;
                     });
         }
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        return true;
     }
 }

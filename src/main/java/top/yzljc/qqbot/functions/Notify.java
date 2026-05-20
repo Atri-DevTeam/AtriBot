@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class Notify implements Listener {
     @EventHandler
     public void onMention(GroupMessageEvent event) {
-        if (event.getRawMessage().contains("[CQ:at,qq=970717559]") && event.getUserId() != event.getSelfId()) {
+        if (event.getRawMessage().contains("[CQ:at,qq=" + event.getSelfId() + "]") && event.getUserId() != event.getSelfId()) {
             String groupName = GetGroupInfo.getGroupName(event.getGroupId());
             String userName = event.getSender().nickname();
             String time = FormatTools.formatTimestamp(event.getTime());

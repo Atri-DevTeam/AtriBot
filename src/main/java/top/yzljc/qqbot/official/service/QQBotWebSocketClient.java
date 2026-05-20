@@ -181,7 +181,7 @@ public class QQBotWebSocketClient extends WebSocketClient {
                 String content = eventData.get("content").asText();
                 String msgId = eventData.get("id").asText();
                 String groupOpenId = eventData.get("group_openid").asText();
-                long timestamp = eventData.get("timestamp").asLong();
+                String timestamp = eventData.get("timestamp").asText();
                 String memberId = eventData.path("author").get("member_openid").asText();
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
 
@@ -196,7 +196,7 @@ public class QQBotWebSocketClient extends WebSocketClient {
             try {
                 String content = eventData.get("content").asText();
                 String msgId = eventData.get("id").asText();
-                long timestamp = eventData.get("timestamp").asLong();
+                String timestamp = eventData.get("timestamp").asText();
                 String memberId = eventData.path("author").get("user_openid").asText();
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
 

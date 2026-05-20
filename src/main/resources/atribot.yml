@@ -1,0 +1,99 @@
+name: AtriBot
+version: 2.8.0-Release
+main: top.yzljc.qqbot.AtriBot
+
+commands:
+  happynewyear:
+    description: 发送新年快乐
+    feature: new_year
+  bc:
+    description: 全服广播
+    usage: /bc <内容>
+    aliases:
+      - broadcast
+    feature: broadcast
+  wakeup:
+    description: 发送起床嘲讽图片
+    feature: wakeup_send
+  reboot:
+    description: 重启Bot
+  search:
+    description: 搜索聊天记录
+    usage: '/search "关键词" [-u QQ] [-m p/a]'
+  recall:
+    description: 撤回上一条消息
+  rollback:
+    description: 批量撤回消息
+    usage: /rollback [-n 数量] [-u QQ号]
+  motd:
+    description: 查询MC服务器状态
+    usage: /motd <服务器ip地址(端口号可选)>
+    feature: motd
+  mojang:
+    description: 查询Mojang服务器状态
+    feature: mojang_status
+  cl:
+    description: 领取Hypixel奖励
+    usage: /cl <Hypixel每日签到链接>
+    feature: get_hypixel_reward
+  bwc:
+    description: 起床战争挑战查询
+    usage: /bwc <玩家名> 或 /bwc api <API Key>
+    feature: bedwars_challenge
+  checkmcnews:
+    description: 获取MC新闻
+    feature: mc_news
+  checkhypnews:
+    description: 获取Hypixel新闻
+    feature: hyp_news
+  manodate:
+    description: Manosaba日期查询
+  github:
+    description: Github相关功能
+    usage: /github [群号1] [群号2]...
+    feature: github_info
+  signall:
+    description: 自动签到
+    feature: auto_sign
+  chat:
+    description: 消息统计
+    usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息'
+  groupinfo:
+    description: 查看群组配置
+  calendar:
+    description: 查看日历
+    feature: calendar
+  atrihelp:
+    description: 显示帮助菜单
+    usage: /atrihelp
+  emj:
+    description: 表情轰炸
+    usage: /emj <normal/medium/insane/animation> [可选 User]
+    feature: annoy_user
+  reload:
+    description: 重新加载配置
+    usage: /reload [all|cfg|f|g]
+  autolike:
+    description: 自动点赞列表
+    usage: /autolike add|remove|list [可选 User]
+  tufe:
+    description: 查询
+    usage: /tufe查看下节课的上课地点
+    feature: tufe_class_alert
+  verify:
+    description: 验证YZ_Ljc_ Network账号
+    usage: /verify <验证码>
+    feature: verify_server
+  stats:
+    description: 玩家资料查询
+  rc:
+    description: 服务器 RCON 控制
+  myinfo:
+    description: 我的账号信息
+  mc:
+    description: Minecraft相关
+  test:
+    description: 测试命令
+  feedback:
+    description: 提交反馈
+    usage: /feedback <反馈内容>

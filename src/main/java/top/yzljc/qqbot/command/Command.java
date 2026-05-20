@@ -7,17 +7,17 @@ import java.util.List;
 
 public abstract class Command {
     @Getter
-    private final String uid;
+    private final String name;
     @Getter
     private final String description;
     private final String usageMessage;
     @Getter
     private final List<String> aliases;
     @Getter
-    private final String enableFeature; // 对应原本的 featureKey
+    private final String enableFeature;
 
-    protected Command(String uid, String description, String usageMessage, List<String> aliases, String enableFeature) {
-        this.uid = uid;
+    protected Command(String name, String description, String usageMessage, List<String> aliases, String enableFeature) {
+        this.name = name;
         this.description = description;
         this.usageMessage = usageMessage;
         this.aliases = aliases;
@@ -30,6 +30,15 @@ public abstract class Command {
         return usageMessage;
     }
 
+    @Deprecated
+    public String getUid() {
+        return name;
+    }
+
+    public String getFeatureKey() {
+        return enableFeature;
+    }
+
     // null = true
     public boolean checkEnable(CommandSender sender) {
         if (enableFeature == null || enableFeature.isEmpty()) {
@@ -37,5 +46,4 @@ public abstract class Command {
         }
         return GroupConfigManager.isFeatureEnabled(sender.groupId(), enableFeature);
     }
-
 }

@@ -102,6 +102,7 @@ public class AtriBot {
         server.get(base + "/listgroups", WebUIController::listGroups);
         server.post(base + "/fetchmessages", WebUIController::fetchMessages);
         server.post(base + "/recallmessage", WebUIController::recallMessage);
+        server.post("/api/v1/response/feedback", Feedback::notifyReply);
 
         // Exception handler
         server.exception(FeatureNotFoundException.class, ExceptionController::handleFeatureNotFound);
@@ -135,6 +136,8 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
+
+        CommandManager.reload();
 
         CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());

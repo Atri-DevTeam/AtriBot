@@ -52,7 +52,9 @@ public class Config implements Settings{
     @Getter
     private Map<String, String> officialAdmins = new HashMap<>();
 
-    // From application.yml
+    @Getter
+    private String saSignSecretKey;
+
     private String aiApiKey;
     private String aiBaseUrl;
     private String aiModel;
@@ -156,6 +158,7 @@ public class Config implements Settings{
                 this.varietyPort = (int) data.getOrDefault("variety-port", 8080);
                 this.varietyHost = (String) data.getOrDefault("variety-host", "127.0.0.1");
                 this.varietyKey = (String) data.getOrDefault("variety-key", "public-key");
+                this.saSignSecretKey = (String) data.getOrDefault("sa-sign-key", "null");
 
                 this.ignoredUsers = new ArrayList<>();
                 Object ignoredUserObj = data.get("recall-ignore-user");
