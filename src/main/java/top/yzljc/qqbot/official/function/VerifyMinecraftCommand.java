@@ -10,8 +10,10 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.official.AtText;
 import top.yzljc.qqbot.official.impl.BindMinecraft;
 import top.yzljc.qqbot.official.impl.BindResponse;
+import top.yzljc.qqbot.official.permission.GroupList;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.service.request.HttpService;
@@ -44,21 +46,17 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
             return true;
         }
 
+        if (!GroupList.isWhitelist(sender.groupOpenId())) {
+            sender.replyText(label, "该指令仅供YZ_Ljc_ Network社区使用喵！");
+            return true;
+        }
+
         if (args.length != 1) {
-            sender.replyMarkdown(label, "> ❌ 参数错误！请提供游戏内生成的验证码，格式: @亚托莉喵 /verify <验证码>");
+            sender.replyText(label, "❌ 参数错误！请提供游戏内生成的验证码，格式: @亚托莉喵 /verify <验证码>");
             return true;
         }
 
         String code = args[0].trim();
-
-        // === 添加测试数据：跑通验证流程 ===
-        if (code.equalsIgnoreCase("testcode")) {
-            log.info("触发测试验证流程，模拟绑定成功...");
-            GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(),  "触发测试验证流程，模拟绑定成功...", true);
-            BindResponse mockResult = new BindResponse(200, "bab7c231-38a1-488b-8109-5f9735e3910b");
-            return handleBindResponse(sender, label, mockResult);
-        }
-        // ==============================
 
         long possibleQQNum = -1;
         if (pendingPossibleQQNum.containsKey(code)) {
@@ -95,16 +93,16 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
                 break;
 
             case 100:
-                sender.replyMarkdown(label, "> ⚠️ 绑定失败：你游戏内的账号已经绑定过其他 QQ 了！");
+                sender.replyText(label, "⚠️ 绑定失败：你游戏内的账号已经绑定过其他 QQ 了！");
                 break;
             case 400:
-                sender.replyMarkdown(label, "> ❌ 验证码错误或已过期(有效时间5分钟)，请在游戏内重新生成");
+                sender.replyText(label, "❌ 验证码错误或已过期(有效时间5分钟)，请在游戏内重新生成");
                 break;
             case 500:
-                sender.replyMarkdown(label, "> 🔧 服务器未开启或网络异常，请稍后再试!");
+                sender.replyText(label, "🔧 服务器未开启或网络异常，请稍后再试!");
                 break;
             default:
-                sender.replyMarkdown(label, "> ❓ 未知错误代码: " + result);
+                sender.replyText(label, "❓ 未知错误代码: " + result);
                 break;
         }
         return true;

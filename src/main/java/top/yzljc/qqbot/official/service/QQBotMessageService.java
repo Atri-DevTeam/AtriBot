@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.qqbot.official.AtText;
 import top.yzljc.qqbot.official.MessageBody;
 import top.yzljc.qqbot.service.request.HttpService;
 
@@ -24,7 +25,6 @@ public class QQBotMessageService {
     private final QQBotTokenManager tokenManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 使用 Guava Cache，写入后 5 分钟自动过期清理
     private final Cache<String, AtomicInteger> msgSeqCache = CacheBuilder.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
@@ -37,7 +37,6 @@ public class QQBotMessageService {
     private int getNextMsgSeq(String msgId) {
         if (msgId == null) return 1;
         try {
-            // 如果缓存中没有该 msgId，则初始化为 0，然后 incrementAndGet 变成 1
             return msgSeqCache.get(msgId, () -> new AtomicInteger(0)).incrementAndGet();
         } catch (Exception e) {
             log.error("获取 msg_seq 异常, msgId: {}", msgId, e);
@@ -45,42 +44,20 @@ public class QQBotMessageService {
         }
     }
 
-    public void sendGroupMessage(String groupOpenId, MessageBody request) {
-        String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
-        doSendMessage(url, request, "群聊");
-    }
-
-    public void replyGroupTextMessage(String groupOpenId, String msgId, String replyText) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.TEXT.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .content(replyText)
-                .build();
-
-        sendGroupMessage(groupOpenId, request);
-    }
-
-    public void replyGroupMarkdownMessage(String groupOpenId, String msgId, String markdownContent) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
-
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .markdown(markdownObj)
-                .build();
-
-        sendGroupMessage(groupOpenId, request);
-    }
-
-    public void sendPrivateMessage(String openId, MessageBody request) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendPrivateMessage(String openId, MessageBody request) {
         String url = apiBaseUrl + "/v2/users/" + openId + "/messages";
-        doSendMessage(url, request, "单聊");
+        return doSendMessage(url, request, "单聊");
     }
 
-    public void replyPrivateTextMessage(String openId, String msgId, String replyText) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendGroupMessage(String groupOpenId, MessageBody request) {
+        String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
+        return doSendMessage(url, request, "群聊");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyGroupTextMessage(String groupOpenId, String msgId, String replyText) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .msgId(msgId)
@@ -88,10 +65,38 @@ public class QQBotMessageService {
                 .content(replyText)
                 .build();
 
-        sendPrivateMessage(openId, request);
+        return sendGroupMessage(groupOpenId, request);
     }
 
-    public void replyPrivateMarkdownMessage(String openId, String msgId, String markdownContent) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, String markdownContent) {
+        Map<String, Object> markdownObj = new HashMap<>();
+        markdownObj.put("content", AtText.at(userOpenId) + markdownContent);
+
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .msgId(msgId)
+                .msgSeq(getNextMsgSeq(msgId))
+                .markdown(markdownObj)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyPrivateTextMessage(String openId, String msgId, String replyText) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .msgId(msgId)
+                .msgSeq(getNextMsgSeq(msgId))
+                .content(replyText)
+                .build();
+
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyPrivateMarkdownMessage(String openId, String msgId, String markdownContent) {
         Map<String, Object> markdownObj = new HashMap<>();
         markdownObj.put("content", markdownContent);
 
@@ -102,7 +107,7 @@ public class QQBotMessageService {
                 .markdown(markdownObj)
                 .build();
 
-        sendPrivateMessage(openId, request);
+        return sendPrivateMessage(openId, request);
     }
 
     public Object buildCmdKeyboard(List<List<CommandButton>> layout) {
@@ -145,7 +150,8 @@ public class QQBotMessageService {
         return keyboard;
     }
 
-    public void replyPrivateImageMessage(String openId, String msgId, String base64Content) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyPrivateImageMessage(String openId, String msgId, String base64Content) {
         String uploadUrl = apiBaseUrl + "/v2/users/" + openId + "/files";
 
         Map<String, Object> uploadData = new HashMap<>();
@@ -160,13 +166,13 @@ public class QQBotMessageService {
 
             if (uploadRes == null || uploadRes.isBlank()) {
                 log.error("单聊-图片上传失败，服务器返回为空");
-                return;
+                return null;
             }
 
             JsonNode resNode = objectMapper.readTree(uploadRes);
             if (!resNode.has("file_info")) {
                 log.error("单聊-图片上传失败，未返回 file_info: {}", uploadRes);
-                return;
+                return null;
             }
             String fileInfo = resNode.get("file_info").asText();
 
@@ -180,14 +186,16 @@ public class QQBotMessageService {
                     .media(mediaObj)
                     .build();
 
-            sendPrivateMessage(openId, request);
+            return sendPrivateMessage(openId, request);
 
         } catch (Exception e) {
             log.error("发送单聊图片异常: ", e);
+            return null;
         }
     }
 
-    public void replyPrivateMarkdownWithKeyboard(String openId, String msgId, String markdownContent, Object keyboard) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyPrivateMarkdownWithKeyboard(String openId, String msgId, String markdownContent, Object keyboard) {
         Map<String, Object> markdownObj = new HashMap<>();
         markdownObj.put("content", markdownContent);
 
@@ -199,12 +207,13 @@ public class QQBotMessageService {
                 .keyboard(keyboard)
                 .build();
 
-        sendPrivateMessage(openId, request);
+        return sendPrivateMessage(openId, request);
     }
 
-    public void replyGroupMarkdownWithKeyboard(String groupId, String msgId, String markdownContent, Object keyboard) {
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyGroupMarkdownWithKeyboard(String groupOpenId, String userOpenId, String msgId, String markdownContent, Object keyboard) {
         Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
+        markdownObj.put("content", AtText.at(userOpenId) + markdownContent);
 
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
@@ -214,17 +223,46 @@ public class QQBotMessageService {
                 .keyboard(keyboard)
                 .build();
 
-        sendGroupMessage(groupId, request);
+        return sendGroupMessage(groupOpenId, request);
     }
 
-    private void doSendMessage(String url, MessageBody request, String logType) {
+    public void recall(String label, String openId, String messageOpenId) {
+        if (label.equals("1")) recallPrivateMessage(openId, messageOpenId);
+        if (label.equals("2")) recallGroupMessage(openId, messageOpenId);
+    }
+
+    public void recallPrivateMessage(String userOpenId, String messageId) {
+        String url = apiBaseUrl + "/v2/users/" + userOpenId + "/messages/" + messageId;
+        try {
+            String result = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            log.info("撤回单聊消息成功, userOpenId: {}, messageId: {}, result: {}", userOpenId, messageId, result);
+        } catch (Exception e) {
+            log.error("撤回单聊消息失败, userOpenId: {}, messageId: {}", userOpenId, messageId, e);
+        }
+    }
+
+    public void recallGroupMessage(String groupOpenId, String messageId) {
+        String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
+        try {
+            String result = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            log.info("撤回群聊消息成功, groupOpenId: {}, messageId: {}, result: {}", groupOpenId, messageId, result);
+        } catch (Exception e) {
+            log.error("撤回群聊消息失败, groupOpenId: {}, messageId: {}", groupOpenId, messageId, e);
+        }
+    }
+
+    private String doSendMessage(String url, MessageBody request, String logType) {
         try {
             String json = objectMapper.writeValueAsString(request);
-            String result = HttpService.postJsonForString(url, json,
+            JsonNode result = HttpService.postJson(url, json,
                     "Authorization", "QQBot " + tokenManager.getAccessToken());
-            log.info("{}消息发送成功: {}", logType, result);
+            if (result != null) {
+                return result.get("id").asText() != null ? result.get("id").asText() : null;
+            }
+            return null;
         } catch (JsonProcessingException e) {
             log.error("{}消息序列化失败: ", logType, e);
+            return null;
         }
     }
 }

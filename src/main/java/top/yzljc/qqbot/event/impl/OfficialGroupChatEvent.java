@@ -22,15 +22,18 @@ public class OfficialGroupChatEvent extends Event {
     private final String memberOpenId;
     private final Object attachments;
 
-    public void replyText(String text) {
-        AtriBot.getInstance().getMessageService().replyGroupTextMessage(this.groupOpenId, this.msgId, text);
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyText(String text) {
+        return AtriBot.getInstance().getMessageService().replyGroupTextMessage(this.groupOpenId, this.msgId, text);
     }
 
-    public void replyMarkdown(String markdownContent) {
-        AtriBot.getInstance().getMessageService().replyGroupMarkdownMessage(this.groupOpenId, this.msgId, markdownContent);
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMarkdown(String markdownContent) {
+        return AtriBot.getInstance().getMessageService().replyGroupMarkdownMessage(this.groupOpenId, this.memberOpenId, this.msgId, markdownContent);
     }
 
-    public void replyMarkdown(String markdownContent, Object keyboard) {
-        AtriBot.getInstance().getMessageService().replyGroupMarkdownWithKeyboard(this.groupOpenId, this.msgId, markdownContent, keyboard);
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMarkdown(String markdownContent, Object keyboard) {
+        return AtriBot.getInstance().getMessageService().replyGroupMarkdownWithKeyboard(this.groupOpenId, this.memberOpenId, this.msgId, markdownContent, keyboard);
     }
 }

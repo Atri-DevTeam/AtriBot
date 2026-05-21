@@ -199,9 +199,6 @@ public class Hitokoto implements Listener, CommandExecutor {
             if (entry.time != null && !entry.time.isEmpty()) {
                 sb.append("时间：").append(String.join(" ", entry.time)).append("\n");
             }
-            if (label.equals("2")) {
-                sb.append("<qqbot-at-user id=").append(userOpenId).append(" />");
-            }
             log.info("一言发送成功(本地-官机) => {}", sb);
             return sb.toString();
         } catch (Exception ex) {

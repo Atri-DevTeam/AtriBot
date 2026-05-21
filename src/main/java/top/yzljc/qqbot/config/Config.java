@@ -50,7 +50,7 @@ public class Config implements Settings{
     private String varietyHost;
     private String varietyKey;
     @Getter
-    private Map<String, String> officialAdmins = new HashMap<>();
+    private List<String> officialAdmins = new ArrayList<>();
 
     @Getter
     private String saSignSecretKey;
@@ -218,20 +218,19 @@ public class Config implements Settings{
                     this.qqApiBaseUrl = (String) qqConfig.getOrDefault("api-base-url", "https://sandbox.api.sgroup.qq.com");
                 }
 
+                this.officialAdmins = new ArrayList<>();
                 if (data.containsKey("official-admins")) {
                     Object officialAdminsObj = data.get("official-admins");
-                    if (officialAdminsObj instanceof Map<?, ?>) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> rawAdmins = (Map<String, Object>) officialAdminsObj;
-                        rawAdmins.forEach((k, v) -> {
-                            if (v instanceof String) {
-                                officialAdmins.put(k, (String) v);
+                    if (officialAdminsObj instanceof List<?>) {
+                        for (Object admin : (List<?>) officialAdminsObj) {
+                            if (admin instanceof String) {
+                                this.officialAdmins.add((String) admin);
                             } else {
-                                log.error("配置文件中官方管理员列表中出现无效信息：{}: {}", k, v);
+                                log.error("配置文件中官方管理员列表中出现无效信息：{}", admin);
                             }
-                        });
+                        }
                     } else {
-                        log.error("配置文件中官方管理员列表格式错误，应为键值对形式");
+                        log.error("配置文件中官方管理员列表格式错误，应为列表形式");
                     }
                 }
 

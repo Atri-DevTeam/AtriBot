@@ -12,8 +12,10 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Result;
 import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.official.AtText;
 import top.yzljc.qqbot.official.impl.BindMinecraft;
 import top.yzljc.qqbot.official.impl.MinecraftUserData;
+import top.yzljc.qqbot.official.permission.GroupList;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.service.request.HttpService;
@@ -41,10 +43,15 @@ public class PlayerProfile implements Listener, CommandExecutor {
             return true;
         }
 
+        if (!GroupList.isWhitelist(sender.groupOpenId())) {
+            sender.replyText(label, "该指令仅供YZ_Ljc_ Network社区使用喵！");
+            return true;
+        }
+
         if (args.length < 1) {
             MinecraftUserData data = BindMinecraft.getDataByOpenId(sender.userOpenId());
             if (data.memberOpenId().equals("-1")) {
-                sender.replyMarkdown(label, "> ❌ 你还没有绑定游戏内账号喵！请先加入服务器使用`/verify`绑定账号！");
+                sender.replyText(label, "❌ 你还没有绑定游戏内账号喵！请先加入服务器使用`/verify`绑定账号！");
                 return true;
             }
 
@@ -95,31 +102,33 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
         if (key == null) return false;
 
+        String messageId = sender.replyText(label, "正在获取玩家数据喵，请稍等片刻！");
+
         try {
 
             String url = "https://www.yzljc.top/data/api/v2/player/card/" + key + "?key=atri-player-card-2026@yzljc.top&timestamp=" + System.currentTimeMillis();
 
-            log.info("开始预热请求图片: {}", url);
             HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
             HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
+            HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
+
+            if (label.equals("1")) {
+                AtriBot.getInstance().getMessageService().recallPrivateMessage(sender.userOpenId(), messageId);
+            } else {
+                AtriBot.getInstance().getMessageService().recallGroupMessage(sender.groupOpenId(), messageId);
+            }
+
             if (response.statusCode() != 200) {
                 if (response.statusCode() == 404) {
-                    sender.replyMarkdown(label, "> 未找到玩家数据，请检查玩家名或UUID是否正确喵！");
+                    sender.replyText(label, "未找到玩家数据，请检查玩家名或UUID是否正确喵！");
                 } else {
-                    sender.replyMarkdown(label, "> 无法获取玩家数据，服务器返回状态码: " + response.statusCode() + "，大概率是服务器死了喵");
+                    sender.replyText(label, "无法获取玩家数据，服务器返回状态码: " + response.statusCode() + "，大概率是服务器死了喵");
                 }
                 return true;
             }
-            HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
 
             String text = "玩家 **" + key + "** 的在档数据如下";
-            String finalMarkdown;
-            if (label.equals("2")) {
-                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + url + ")\n<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
-            } else {
-                finalMarkdown = text + "\n" + "![图片 #1188px #1188px](" + url + ")";
-            }
-            sender.replyMarkdown(label, finalMarkdown, keyboard);
+            sender.replyMarkdown(label, text + "\n" + "![图片 #1188px #1188px](" + url + ")", keyboard);
 
         } catch (Exception e) {
             log.error("发生异常: ", e);
@@ -152,9 +161,9 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
             if (responseCode != 200) {
                 if (responseCode == 404) {
-                    sender.replyMarkdown(label, "> 未找到玩家数据，请检查玩家名或UUID是否正确喵！");
+                    sender.replyText(label, "未找到玩家数据，请检查玩家名或UUID是否正确喵！");
                 } else {
-                    sender.replyMarkdown(label, "> 无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
+                    sender.replyText(label, "无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
                 }
                 return true;
             }
@@ -166,10 +175,6 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 String body = (ach.hidden && !ach.finished) ? "> ???" : "> " + ach.description() + " (+" + ach.rewardPoints() + "成就点数)";
                 String resultPart = title + "\n" + body + "\n\n";
                 markdown.append(resultPart);
-            }
-
-            if (label.equals("2")) {
-                markdown.append("<qqbot-at-user id=\"").append(sender.userOpenId()).append("\" />");
             }
 
             sender.replyMarkdown(label, markdown.toString(), keyboard);
@@ -206,11 +211,11 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
             if (responseCode != 200) {
                 if (responseCode == 404) {
-                    sender.replyMarkdown(label, "> 未找到玩家数据，请检查玩家名或UUID是否正确喵！");
+                    sender.replyText(label, "未找到玩家数据，请检查玩家名或UUID是否正确喵！");
                 } else if (responseCode == 201) {
-                    sender.replyMarkdown(label, "> 该玩家没有好友喵！");
+                    sender.replyText(label, "该玩家没有好友喵！");
                 } else {
-                    sender.replyMarkdown(label, "> 无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
+                    sender.replyText(label, "无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
                 }
                 return true;
             }
@@ -219,7 +224,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
             FriendsData data = resultObject.getData();
             if (data.friendList() == null || data.friendList().isEmpty()) {
-                sender.replyMarkdown(label, "> 该玩家没有好友喵！");
+                sender.replyText(label, "该玩家没有好友喵！");
                 return true;
             }
 
@@ -227,10 +232,6 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 String name = "**" + friend.friendName() + "**";
                 String body = "> UUID: `" + friend.friendUuid() + "`\n> 添加时间: `" + FormatTools.formatTimestampMilli(friend.addTime()) + "`";
                 markdown += name + "\n" + body + "\n\n";
-            }
-
-            if (label.equals("2")) {
-                markdown += "<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
             }
 
             sender.replyMarkdown(label, markdown, keyboard);
@@ -267,9 +268,9 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
             if (responseCode != 200) {
                 if (responseCode == 404) {
-                    sender.replyMarkdown(label, "> 未找到玩家数据，请检查玩家名或UUID是否正确喵！");
+                    sender.replyText(label, "未找到玩家数据，请检查玩家名或UUID是否正确喵！");
                 } else {
-                    sender.replyMarkdown(label, "> 无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
+                    sender.replyText(label, "无法获取玩家数据，服务器返回状态码: " + responseCode + "，大概率是服务器死了喵");
                 }
                 return true;
             }
@@ -288,10 +289,6 @@ public class PlayerProfile implements Listener, CommandExecutor {
             }
             markdown += String.format("\n**街机游戏综合**\n击鸡即急寄\n> 最佳存活：%d轮, 最佳得分：%d, 总击杀数：%d\n",
                     data.arcadeGameData.maxRound(), data.arcadeGameData.maxScore(), data.arcadeGameData.totalKills());
-
-            if (label.equals("2")) {
-                markdown += "<qqbot-at-user id=\"" + sender.userOpenId() + "\" />";
-            }
 
             sender.replyMarkdown(label, markdown, keyboard);
 

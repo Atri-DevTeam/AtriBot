@@ -8,7 +8,10 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import top.yzljc.qqbot.event.EventManager;
 import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupDelEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupJoinEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
+import top.yzljc.qqbot.utils.FormatTools;
 
 import java.net.URI;
 import java.util.Timer;
@@ -138,7 +141,6 @@ public class QQBotWebSocketClient extends WebSocketClient {
             payload.put("op", 6);
 
             ObjectNode d = payload.putObject("d");
-            // 【重点】每次恢复会话时，实时获取最新 Token
             d.put("token", "QQBot " + tokenManager.getAccessToken());
             d.put("session_id", sessionId);
             d.put("seq", lastSeq);
@@ -204,6 +206,32 @@ public class QQBotWebSocketClient extends WebSocketClient {
                 EventManager.getInstance().callEvent(event);
             } catch (Exception e) {
                 log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
+            }
+        }
+
+        if ("GROUP_ADD_ROBOT".equals(eventType)) {
+            try {
+                String groupOpenId = eventData.get("group_openid").asText();
+                String timestamp = eventData.get("timestamp").asText();
+                String opMemberGroupId = eventData.path("op_member_openid").asText();
+
+                OfficialGroupJoinEvent event = new OfficialGroupJoinEvent(groupOpenId, opMemberGroupId, timestamp);
+                EventManager.getInstance().callEvent(event);
+            } catch (Exception e) {
+                log.error("在解析官方机器人接收到的加群事件时发生错误：", e);
+            }
+        }
+
+        if ("GROUP_DEL_ROBOT".equals(eventType)) {
+            try {
+                String groupOpenId = eventData.get("group_openid").asText();
+                String timestamp = eventData.get("timestamp").asText();
+                String opMemberGroupId = eventData.get("op_member_openid").asText();
+
+                OfficialGroupDelEvent event = new OfficialGroupDelEvent(groupOpenId, opMemberGroupId, timestamp);
+                EventManager.getInstance().callEvent(event);
+            } catch (Exception e) {
+                log.error("在解析官方机器人接收到的退群事件时发生错误：", e);
             }
         }
     }

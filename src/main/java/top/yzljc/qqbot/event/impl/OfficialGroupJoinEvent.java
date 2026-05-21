@@ -1,0 +1,20 @@
+package top.yzljc.qqbot.event.impl;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import top.yzljc.qqbot.event.Event;
+
+/**
+ * @Author YZ_Ljc_
+ * @ClassName OfficialGroupJoinEvent
+ * @Created_at 2026/05/21
+ * @Project AtriBot
+ * @Package top.yzljc.qqbot.event.impl
+ */
+@Getter
+@AllArgsConstructor
+public class OfficialGroupJoinEvent extends Event {
+    private final String groupOpenId;
+    private final String opMemberOpenId;
+    private final String timestamp;
+}

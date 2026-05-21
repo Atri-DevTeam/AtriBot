@@ -26,6 +26,11 @@ public class FormatTools {
         return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 
+    public static String formatTimestamp(String timestamp) {
+        long timestampLong = Long.parseLong(timestamp);
+        return formatTimestamp(timestampLong);
+    }
+
     public static String formatTimestampMilli(long timestamp) {
         LocalDateTime dateTime = LocalDateTime.ofInstant(
                 Instant.ofEpochMilli(timestamp),

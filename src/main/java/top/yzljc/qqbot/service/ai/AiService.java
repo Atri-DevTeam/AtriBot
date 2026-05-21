@@ -5,11 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.qqbot.config.AiBotProperties;
+import top.yzljc.qqbot.service.request.HttpService;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,14 +19,10 @@ public class AiService {
 
     private final AiBotProperties properties;
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient;
 
     public AiService(AiBotProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(properties.getTimeout()))
-                .build();
     }
 
     public String ask(String userMessage) {
@@ -48,16 +41,16 @@ public class AiService {
 
             String json = objectMapper.writeValueAsString(requestBody);
 
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(URI.create(properties.getBaseUrl()))
-                    .timeout(Duration.ofMillis(properties.getTimeout()))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + properties.getApiKey())
-                    .POST(BodyPublishers.ofString(json))
-                    .build();
+            String responseStr = HttpService.postJsonForString(
+                    properties.getBaseUrl(),
+                    json,
+                    Duration.ofMillis(properties.getTimeout()),
+                    "Authorization", "Bearer " + properties.getApiKey()
+            );
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            String responseStr = response.body();
+            if (responseStr == null) {
+                return "网络似乎出了点小差错，请稍后再试呀~";
+            }
 
             JsonNode rootNode = objectMapper.readTree(responseStr);
             JsonNode choicesNode = rootNode.path("choices");

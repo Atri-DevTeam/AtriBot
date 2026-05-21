@@ -3,10 +3,8 @@ package top.yzljc.qqbot.utils;
 import top.yzljc.qqbot.service.userinfo.GetProjectInfo;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
-import top.yzljc.qqbot.command.CommandDefinition;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
-import top.yzljc.qqbot.command.CommandManager;
 import top.yzljc.qqbot.command.CommandSender;
 
 import java.util.ArrayList;
@@ -27,6 +25,9 @@ public class AtriHelp implements CommandExecutor {
         String sb = """
                 这是一个新手拿来练手的项目，并没有什么有用的功能。
                 但是既然你能看到这个消息，首先非常感谢你对该项目的支持！
+                
+                注意！我们部分内容已转接到官方机器人，如果你想了解更多关于官方机器人的信息可以加入交流群或者联系开发！官方机器人也有一些独特的功能哦！
+                联系开发者的最快方式是使用 /feedback 指令，或者直接联系开发者 QQ: 3199590352
                 """;
         String subSb = """
                 Bot 的设计初衷是用来高度自定义连接 MC/QQ 群的
@@ -59,22 +60,18 @@ public class AtriHelp implements CommandExecutor {
     }
 
     private static String commandHelp() {
-        StringBuilder sb = new StringBuilder("【指令帮助信息】\n");
-        List<CommandDefinition> definitions = CommandManager.getDefinitions();
-        if (definitions.isEmpty()) {
-            return sb.append("（暂无可用指令）").toString();
-        }
-        for (CommandDefinition definition : definitions) {
-            sb.append("● ").append(definition.usage());
-            if (!definition.description().isBlank()) {
-                sb.append(" - ").append(definition.description());
-            }
-            if (!definition.aliases().isEmpty()) {
-                sb.append(" [别名: ").append(String.join(", ", definition.aliases())).append("]");
-            }
-            sb.append('\n');
-        }
-        return sb.toString().trim();
+
+        return """
+                【指令帮助信息】
+                ● 发送 "赞我" 获取名片赞
+                ● 发送 "一言" 获得随机一言
+                ● /emj 贴表情恶搞机制相关
+                ● /calendar 日历推送
+                ● /mojang MOJANG 验证服务器状态查询
+                ● /motd MOTD 查询 [默认关闭]
+                ● /cl <url> 领取Hypixel每日签到 [默认关闭]
+                ● /rc <服务器编号> <指令> MC服务器关联指令 [默认关闭]
+                """;
     }
 
     private static String lastInfo(){

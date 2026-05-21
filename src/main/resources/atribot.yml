@@ -97,3 +97,7 @@ commands:
   feedback:
     description: 提交反馈
     usage: /feedback <反馈内容>
+  permission:
+    description: 权限管理
+  whitelist:
+    description: 白名单管理

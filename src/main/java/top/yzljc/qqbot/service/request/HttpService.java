@@ -50,9 +50,7 @@ public class HttpService {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                String result = response.body();
-                log.info("Request success, response: {}", result);
-                return result;
+                return response.body();
             } else {
                 log.warn("GET Request failed, HTTP code: {}", response.statusCode());
             }
@@ -114,25 +112,74 @@ public class HttpService {
     }
 
     public static String postJsonForString(String url, String jsonBody, String... headers) {
+        return postJsonForString(url, jsonBody, null, headers);
+    }
+
+    public static String postJsonForString(String url, String jsonBody, Duration duration, String... headers) {
         try {
-            Builder builder = java.net.http.HttpRequest.newBuilder()
+            Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json");
             for (int i = 0; i < headers.length; i += 2) {
                 builder.header(headers[i], headers[i + 1]);
             }
-            builder.POST(java.net.http.HttpRequest.BodyPublishers.ofString(jsonBody));
+            if (duration != null) {
+                builder.timeout(duration);
+            }
+            builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             }
             log.warn("POST Request non-2xx, HTTP code: {}", response.statusCode());
-            log.debug("POST Request response body: {}", response.body());
             return null;
         } catch (Exception e) {
             log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
             return null;
         }
+    }
+
+    public static JsonNode sendDeleteRequest(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
+            } else {
+                log.warn("DELETE Request failed, HTTP code: {}", response.statusCode());
+            }
+        } catch (Exception e) {
+            log.warn("DELETE Request Error! URL: {}, Error: {}", url, e.getMessage());
+        }
+        return null;
+    }
+
+    public static String deleteRequestStr(String url, String... headers) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE();
+            for (int i = 0; i < headers.length; i += 2) {
+                builder.header(headers[i], headers[i + 1]);
+            }
+            HttpRequest request = builder.build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return response.body();
+            } else {
+                log.warn("DELETE Request failed, HTTP code: {}, {}", response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            log.warn("DELETE Request Error! URL: {}, Error: {}", url, e.getMessage());
+        }
+        return null;
     }
 }

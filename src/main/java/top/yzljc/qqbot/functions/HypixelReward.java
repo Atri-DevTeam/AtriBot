@@ -70,11 +70,10 @@ public class HypixelReward implements CommandExecutor, Listener {
         String userOpenId = sender.userOpenId();
         String groupOpenId = sender.groupOpenId();
         String messageOpenId = sender.messageOpenId();
-        String type = label;
 
         // === 处理 /cl claim <0|1|2> 指令领奖逻辑 (仅限官方端) ===
         if (args.length >= 2 && args[0].equalsIgnoreCase("claim")) {
-            if ("0".equals(type)) {
+            if ("0".equals(label)) {
                 return true;
             }
 
@@ -82,16 +81,12 @@ public class HypixelReward implements CommandExecutor, Listener {
             RewardSession session = getSessionByUserId(userOpenId);
 
             if (session == null) {
-                String errorText = "> ⚠️ 你没有正在进行的领奖任务喵！";
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                sender.replyText(label, "⚠️ 你没有正在进行的领奖任务喵！");
                 return true;
             }
 
             if (session.securityToken == null) {
-                String errorText = "> ⚠️ 还未准备好，请稍等喵！";
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                sender.replyText(label, "⚠️ 还未准备好，请稍等喵！");
                 return true;
             }
 
@@ -100,9 +95,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                 choice = Integer.parseInt(args[1]);
                 if (choice < 0 || choice > 2) throw new NumberFormatException();
             } catch (NumberFormatException e) {
-                String errorText = "> ⚠️ 奖励编号无效，请输入 0、1 或 2 喵！";
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                sender.replyText(label, "⚠️ 奖励编号无效，请输入 0、1 或 2 喵！");
                 return true;
             }
 
@@ -115,70 +108,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             request.put("original_url", session.originalUrl);
 
             client.send(request.toString());
-            log.info("用户 {} (Type:{}) 选择奖励 {} (通过指令)，SessionID: {}", userOpenId, type, choice, session.sessionId);
-            return true;
-        }
-
-        // === 添加测试数据：跑通全流程 ===
-        if (args.length >= 1 && args[0].equalsIgnoreCase("test")) {
-            // 只需要label为1 2时过，0不需要
-            if ("0".equals(label)) return true;
-
-            if (client == null || !client.isOpen()) {
-                String errorText = "> ❌ 服务未连接，请联系管理员启动请求发送端喵！";
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
-                return true;
-            }
-
-            RewardSession existingSession = getSessionByUserId(userOpenId);
-            if (existingSession != null) {
-                String errorText = "> ⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！";
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
-                return true;
-            }
-
-            String sessionId = "test-" + UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(
-                    sessionId, groupId, userId, messageId,
-                    userOpenId, groupOpenId, messageOpenId, type
-            );
-            activeSessions.put(sessionId, session);
-
-            log.info("用户 {} (Type:{}) 触发[测试流程]，分配 SessionID: {}", userOpenId, type, sessionId);
-
-            // 延时 1 秒，模拟 Python 端返回"解析到奖励，请选择"
-            scheduler.schedule(() -> {
-                ObjectNode mockSelection = mapper.createObjectNode();
-                mockSelection.put("type", "selection_needed");
-                mockSelection.put("session_id", sessionId);
-                mockSelection.put("security_token", "test_token_123");
-                mockSelection.put("reward_id", "test_rid_123");
-                mockSelection.put("original_url", "https://rewards.hypixel.net/claim-reward/test");
-                mockSelection.putArray("rewards")
-                        .add("100,000 街机硬币 (测试数据)")
-                        .add("10 个史诗级神秘礼盒 (测试数据)")
-                        .add("5 个锦标赛票据 (测试数据)");
-
-                // 复用底层的消息接收机制渲染 Markdown + 按钮
-                client.onMessage(mockSelection.toString());
-
-                // 再延时 3 秒，模拟自动跑完了领奖流程
-                scheduler.schedule(() -> {
-                    if (activeSessions.containsKey(sessionId)) {
-                        ObjectNode mockResult = mapper.createObjectNode();
-                        mockResult.put("type", "result");
-                        mockResult.put("session_id", sessionId);
-                        mockResult.put("success", true);
-                        mockResult.put("msg", "测试流程跑通：成功领取 100,000 街机硬币 (测试数据)！");
-
-                        client.onMessage(mockResult.toString());
-                    }
-                }, 3, TimeUnit.SECONDS);
-
-            }, 1, TimeUnit.SECONDS);
-
+            log.info("用户 {} (Type:{}) 选择奖励 {} (通过指令)，SessionID: {}", userOpenId, label, choice, session.sessionId);
             return true;
         }
 
@@ -204,17 +134,14 @@ public class HypixelReward implements CommandExecutor, Listener {
             // 判断该用户是否已经在领奖了
             RewardSession existingSession = label.equals("0") ? getSessionByUserId(userId) : getSessionByUserId(userOpenId);
             if (existingSession != null) {
-                String errorText = "> ⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！";
-                if (label.equals("0")) sender.reply("⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！", false);
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText);
+                sender.replyText(label, "⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
                 return true;
             }
 
             String sessionId = UUID.randomUUID().toString();
             RewardSession session = new RewardSession(
                     sessionId, groupId, userId, messageId,
-                    userOpenId, groupOpenId, messageOpenId, type
+                    userOpenId, groupOpenId, messageOpenId, label
             );
             activeSessions.put(sessionId, session);
 
@@ -225,12 +152,10 @@ public class HypixelReward implements CommandExecutor, Listener {
 
             client.send(request.toString());
             log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}",
-                    label.equals("0") ? userId : userOpenId, type, sessionId);
+                    label.equals("0") ? userId : userOpenId, label, sessionId);
 
         } else {
-            if (label.equals("0")) sender.reply("⚠️ 链接格式错误或未检测到链接喵！", false);
-            if (label.equals("2")) sender.officialGroupReplyMarkdown("> ⚠️ 链接格式错误或未检测到链接喵！");
-            if (label.equals("1")) sender.officialPrivateReplyMarkdown("> ⚠️ 链接格式错误或未检测到链接喵！");
+            sender.replyText(label, "⚠️ 链接格式错误或未检测到链接喵！");
         }
         return true;
     }
@@ -327,9 +252,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                         switch (session.type) {
                             case "0" -> GroupMessage.chatMessage(session.groupId, "⚠️ 领奖操作超时，请重新获取!");
                             case "2" ->
-                                    service.replyGroupMarkdownMessage(session.groupOpenId, session.messageOpenId, "> ⚠️ 领奖操作超时，请重新获取!");
+                                    service.replyGroupTextMessage(session.groupOpenId, session.messageOpenId, "⚠️ 领奖操作超时，请重新获取!");
                             case "1" ->
-                                    service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, "> ⚠️ 领奖操作超时，请重新获取!");
+                                    service.replyPrivateTextMessage(session.userOpenId, session.messageOpenId, "⚠️ 领奖操作超时，请重新获取!");
                         }
                         return true;
                     }
@@ -399,12 +324,12 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        service.replyGroupMarkdownWithKeyboard(session.groupOpenId, session.messageOpenId, sb.toString(),
+                        service.replyGroupMarkdownWithKeyboard(session.groupOpenId, session.userOpenId, session.messageOpenId, sb.toString(),
                                 service.buildCmdKeyboard(List.of(
                                         List.of(
-                                                new CommandButton("c1", "领取奖励 [0]", "/cl claim 0", true, 1, 2),
-                                                new CommandButton("c2", "领取奖励 [1]", "/cl claim 1", true, 1, 2),
-                                                new CommandButton("c3", "领取奖励 [2]", "/cl claim 2", true, 1, 2)
+                                                new CommandButton("c1", "奖励 [0]", "/cl claim 0", true, 1, 2),
+                                                new CommandButton("c2", "奖励 [1]", "/cl claim 1", true, 1, 2),
+                                                new CommandButton("c3", "奖励 [2]", "/cl claim 2", true, 1, 2)
                                         )
                                 ))
                         );
@@ -415,9 +340,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                         service.replyPrivateMarkdownWithKeyboard(session.userOpenId, session.messageOpenId, sb.toString(),
                                 service.buildCmdKeyboard(List.of(
                                         List.of(
-                                                new CommandButton("c1", "领取奖励 [0]", "/cl claim 0", true, 1, 2),
-                                                new CommandButton("c2", "领取奖励 [1]", "/cl claim 1", true, 1, 2),
-                                                new CommandButton("c3", "领取奖励 [2]", "/cl claim 2", true, 1, 2)
+                                                new CommandButton("c1", "奖励 [0]", "/cl claim 0", true, 1, 2),
+                                                new CommandButton("c2", "奖励 [1]", "/cl claim 1", true, 1, 2),
+                                                new CommandButton("c3", "奖励 [2]", "/cl claim 2", true, 1, 2)
                                         )
                                 ))
                         );
@@ -431,9 +356,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                     switch (session.type) {
                         case "0" -> GroupMessage.chatMessage(groupId, prefix + msg);
                         case "2" ->
-                                service.replyGroupMarkdownMessage(session.groupOpenId, session.messageOpenId, prefix + msg);
+                                service.replyGroupTextMessage(session.groupOpenId, session.messageOpenId, prefix + msg);
                         case "1" ->
-                                service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, prefix + msg);
+                                service.replyPrivateTextMessage(session.userOpenId, session.messageOpenId, prefix + msg);
                     }
                     activeSessions.remove(sessionId);
 
@@ -441,9 +366,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                     String text = "❌ 出错啦: " + response.path("msg").asText();
                     switch (session.type) {
                         case "0" -> GroupMessage.chatMessage(groupId, text);
-                        case "2" -> service.replyGroupMarkdownMessage(session.groupOpenId, session.messageOpenId, text);
+                        case "2" -> service.replyGroupTextMessage(session.groupOpenId, session.messageOpenId, text);
                         case "1" ->
-                                service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, text);
+                                service.replyPrivateTextMessage(session.userOpenId, session.messageOpenId, text);
                     }
                     activeSessions.remove(sessionId);
                 }

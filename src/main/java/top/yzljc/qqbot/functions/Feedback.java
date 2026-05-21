@@ -15,6 +15,10 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.data.FeedbackData;
+import top.yzljc.qqbot.event.EventHandler;
+import top.yzljc.qqbot.event.Listener;
+import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
 import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.request.SaSignHeader;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
@@ -26,15 +30,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @Author YZ_Ljc_
@@ -44,11 +45,14 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.qqbot.functions
  */
 @Slf4j
-public class Feedback implements CommandExecutor {
+public class Feedback implements CommandExecutor, Listener {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Path REPLY_STORE_FILE = Path.of("feedback_reply_store.json");
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
+
+    private static final CopyOnWriteArrayList<FeedbackData> cachedReplies = new CopyOnWriteArrayList<>();
+    private static volatile boolean cacheLoaded = false;
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -77,6 +81,8 @@ public class Feedback implements CommandExecutor {
             return true;
         }
 
+        int code = 0;
+
         if (args.length > 0) {
             if (label.equals("0")) {
                 ObjectNode info = mapper.createObjectNode();
@@ -89,7 +95,7 @@ public class Feedback implements CommandExecutor {
                 info.put("is_debug_mode", isDebugMode);
 
                 FeedbackRequest data = new FeedbackRequest(content, String.valueOf(userId), 0, info);
-                submitFeedback(data);
+                code = submitFeedback(data);
             }
 
             if (label.equals("1")) {
@@ -100,7 +106,7 @@ public class Feedback implements CommandExecutor {
                 info.put("is_debug_mode", isDebugMode);
 
                 FeedbackRequest data = new FeedbackRequest(content, userOpenId, 1, info);
-                submitFeedback(data);
+                code = submitFeedback(data);
             }
 
             if (label.equals("2")) {
@@ -112,16 +118,20 @@ public class Feedback implements CommandExecutor {
                 info.put("is_debug_mode", isDebugMode);
 
                 FeedbackRequest data = new FeedbackRequest(content, userOpenId, 1, info);
-                submitFeedback(data);
+                code = submitFeedback(data);
             }
-            sender.replyText(label, "反馈已收到！我们会尽快处理的~");
+            switch (code) {
+                case 200 -> sender.replyText(label, "反馈已收到！我们会尽快处理的~");
+                case 201 -> sender.replyText(label, "你已经提交过反馈了哦，请先等待上一条反馈被受理！");
+                default -> sender.replyText(label, "反馈提交失败了呢，请稍后再试！");
+            }
             GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(), "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")", true);
         }
 
         return true;
     }
 
-    private static void submitFeedback(FeedbackRequest data) {
+    private static int submitFeedback(FeedbackRequest data) {
         String url = "https://www.yzljc.top/data/api/v2/open-api/feedback/submit";
         String signedUrl = SaSignHeader.sign(url);
 
@@ -129,12 +139,24 @@ public class Feedback implements CommandExecutor {
             String jsonBody = mapper.writeValueAsString(data);
             JsonNode response = HttpService.postJson(signedUrl, jsonBody);
             if (response != null) {
+                if (response.get("status").asInt() != 200) {
+                    if (response.get("status").asInt() == 201) {
+                        log.warn("Feedback submission failed: already existed");
+                        return 201;
+                    } else {
+                        log.warn("Feedback submission failed: {}", response.toString());
+                        return 500;
+                    }
+                }
                 log.info("Feedback submitted successfully");
+                return 200;
             } else {
                 log.warn("Feedback submission returned null response");
+                return 500;
             }
         } catch (Exception e) {
             log.warn("Failed to submit feedback, error: {}", e.getMessage());
+            return 500;
         }
     }
 
@@ -203,18 +225,17 @@ public class Feedback implements CommandExecutor {
         }
     }
 
-    public static synchronized FeedbackData consumeReplyByProvider(String provider) {
+    public static FeedbackData consumeReplyByProvider(String provider) {
         if (provider == null || provider.isBlank()) {
             return null;
         }
 
         try {
-            List<FeedbackData> notifications = loadStoredReplies();
-            for (Iterator<FeedbackData> it = notifications.iterator(); it.hasNext(); ) {
-                FeedbackData notification = it.next();
+            ensureCacheLoaded();
+            for (FeedbackData notification : cachedReplies) {
                 if (provider.equals(notification.getProvider())) {
-                    it.remove();
-                    saveStoredReplies(notifications);
+                    cachedReplies.remove(notification);
+                    asyncSaveStoredReplies();
                     return notification;
                 }
             }
@@ -250,37 +271,50 @@ public class Feedback implements CommandExecutor {
         return notification;
     }
 
-    private static synchronized void storeReplyNotification(FeedbackData notification) throws IOException {
-        List<FeedbackData> notifications = loadStoredReplies();
-        notifications.add(notification);
-        saveStoredReplies(notifications);
+    private static void storeReplyNotification(FeedbackData notification) throws IOException {
+        ensureCacheLoaded();
+        cachedReplies.add(notification);
+        asyncSaveStoredReplies();
     }
 
-    private static List<FeedbackData> loadStoredReplies() throws IOException {
-        if (!Files.exists(REPLY_STORE_FILE)) {
-            return new ArrayList<>();
+    private static synchronized void ensureCacheLoaded() {
+        if (cacheLoaded) {
+            return;
         }
-
-        if (Files.size(REPLY_STORE_FILE) == 0L) {
-            return new ArrayList<>();
-        }
-
-        List<FeedbackData> notifications = mapper.readValue(
-                REPLY_STORE_FILE.toFile(),
-                new TypeReference<List<FeedbackData>>() {}
-        );
-        return notifications == null ? new ArrayList<>() : notifications;
-    }
-
-    private static void saveStoredReplies(List<FeedbackData> notifications) throws IOException {
-        Path tempFile = Path.of(REPLY_STORE_FILE.toString() + ".tmp");
-        mapper.writerWithDefaultPrettyPrinter().writeValue(tempFile.toFile(), notifications);
-
         try {
-            Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            if (!Files.exists(REPLY_STORE_FILE) || Files.size(REPLY_STORE_FILE) == 0L) {
+                cacheLoaded = true;
+                return;
+            }
+            List<FeedbackData> notifications = mapper.readValue(
+                    REPLY_STORE_FILE.toFile(),
+                    new TypeReference<List<FeedbackData>>() {}
+            );
+            if (notifications != null) {
+                cachedReplies.addAll(notifications);
+            }
+            cacheLoaded = true;
         } catch (IOException e) {
-            Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING);
+            log.error("加载反馈缓存失败", e);
         }
+    }
+
+    private static void asyncSaveStoredReplies() {
+        List<FeedbackData> snapshot = new ArrayList<>(cachedReplies);
+        CompletableFuture.runAsync(() -> {
+            try {
+                Path tempFile = Path.of(REPLY_STORE_FILE + ".tmp");
+                mapper.writerWithDefaultPrettyPrinter().writeValue(tempFile.toFile(), snapshot);
+
+                try {
+                    Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException e) {
+                    Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (Exception e) {
+                log.error("异步保存反馈数据失败", e);
+            }
+        });
     }
 
     private static String textValue(JsonNode root, String... keys) {
@@ -304,5 +338,48 @@ public class Feedback implements CommandExecutor {
         private String provider;
         private int uploadedWay;
         private JsonNode info;
+    }
+
+    @EventHandler
+    public void onGroupChat(OfficialGroupChatEvent event) {
+        FeedbackData remaining = consumeReplyByProvider(event.getMemberOpenId());
+        if (remaining != null) {
+            String reply = "您的反馈已被受理\n\n" +
+                    "---\n\n" +
+                    "反馈编号: `" + remaining.getId() + "`\n\n" +
+                    "UUID: `" + remaining.getUuid() + "`\n\n" +
+                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
+                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
+                    "---\n\n" +
+                    "回复人: `" + remaining.getReplier() + "`\n\n" +
+                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
+                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
+                    "---\n\n" +
+                    "如有任何问题欢迎继续联系我们！";
+
+            event.replyMarkdown(reply);
+            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getMemberOpenId(), remaining.getUuid());
+        }
+    }
+    @EventHandler
+    public void onPrivateChat(OfficialPrivateChatEvent event) {
+        FeedbackData remaining = consumeReplyByProvider(event.getOpenId());
+        if (remaining != null) {
+            String reply = "您的反馈已被受理\n\n" +
+                    "---\n\n" +
+                    "反馈编号: `" + remaining.getId() + "`\n\n" +
+                    "UUID: `" + remaining.getUuid() + "`\n\n" +
+                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
+                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
+                    "---\n\n" +
+                    "回复人: `" + remaining.getReplier() + "`\n\n" +
+                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
+                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
+                    "---\n\n" +
+                    "如有任何问题欢迎继续联系我们！";
+
+            event.replyMarkdown(reply);
+            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getOpenId(), remaining.getUuid());
+        }
     }
 }

@@ -31,6 +31,9 @@ import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
 import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
 import top.yzljc.qqbot.official.impl.BindMinecraft;
+import top.yzljc.qqbot.official.permission.EventRecord;
+import top.yzljc.qqbot.official.permission.GroupList;
+import top.yzljc.qqbot.official.permission.PermissionGroup;
 import top.yzljc.qqbot.official.service.QQBotManagerService;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.official.service.QQBotTokenManager;
@@ -136,6 +139,8 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
+        EventManager.getInstance().registerEvents(new EventRecord());
+        EventManager.getInstance().registerEvents(new Feedback());
 
         CommandManager.reload();
 
@@ -171,6 +176,8 @@ public class AtriBot {
         CommandManager.getCommand("mc").setExecutor(new MinecraftUtils());
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
+        CommandManager.getCommand("whitelist").setExecutor(new WhitelistCommand());
+        CommandManager.getCommand("permission").setExecutor(new PermissionCommand());
 
         this.scheduler = new Scheduler();
         try {
@@ -203,6 +210,8 @@ public class AtriBot {
         WebhookServer.start(webhookPort, webhookSecret);
 
         BindMinecraft.init();
+        GroupList.init();
+        PermissionGroup.init();
 
         SetProjectInfo.setInfo();
 

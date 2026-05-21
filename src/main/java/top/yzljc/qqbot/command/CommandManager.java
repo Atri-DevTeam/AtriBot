@@ -10,7 +10,8 @@ import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
 import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
-import top.yzljc.qqbot.service.userinfo.GetUserInfo;
+import top.yzljc.qqbot.official.permission.PermissionGroup;
+import top.yzljc.qqbot.official.permission.PermissionRole;
 import top.yzljc.qqbot.utils.BotRuntimeData;
 
 import java.io.InputStream;
@@ -24,10 +25,8 @@ public class CommandManager implements Listener {
     private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
     private static final String COMMAND_FILE = ConfigFile.ATRIBOT.getFileName();
     private static final String COMMAND_PREFIX = Config.getInstance().getCommandPrefix();
-    private static final long BOT_QQ = GetUserInfo.getBotId();
     private static final String DEBUG_SUFFIX = Config.getInstance().getDebugCommandSuffix();
     private static final List<Long> adminUids = Config.getInstance().getAdminUids();
-    private static final Map<String, String> officialAdmins = Config.getInstance().getOfficialAdmins();
     private static final String FALLBACK_PREFIX = "atri-core";
 
     private static final CommandMap commandMap = new CommandMap();
@@ -115,7 +114,7 @@ public class CommandManager implements Listener {
     @EventHandler
     public void processCommand(GroupMessageEvent event) {
         long userId = event.getUserId();
-        if (userId == BOT_QQ) {
+        if (userId == event.getSelfId()) {
             return;
         }
 
@@ -152,16 +151,14 @@ public class CommandManager implements Listener {
             return;
         }
 
-        boolean isAdmin = false;
+        if (PermissionGroup.hasRole(event.getOpenId(), PermissionRole.BLACKLIST)) return;
+
+        boolean isAdmin = PermissionGroup.isAdmin(event.getOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
         String userOpenId = event.getOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
-        if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
-            isDebug = true;
-            commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
-        }
 
         CommandSender sender = CommandSender.of(userOpenId, isAdmin, isDebug, msgId);
 
@@ -169,7 +166,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            // command not found
+            sender.replyText("1", "未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }
 
@@ -180,17 +177,15 @@ public class CommandManager implements Listener {
             return;
         }
 
-        boolean isAdmin = false;
+        if (PermissionGroup.hasRole(event.getMemberOpenId(), PermissionRole.BLACKLIST)) return;
+
+        boolean isAdmin = PermissionGroup.isAdmin(event.getMemberOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
         String userOpenId = event.getMemberOpenId();
         String groupOpenId = event.getGroupOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
-        if (isAdmin && rawMessage.endsWith(DEBUG_SUFFIX)) {
-            isDebug = true;
-            commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
-        }
 
         CommandSender sender = CommandSender.of(userOpenId, groupOpenId, isAdmin, isDebug, msgId);
 
@@ -198,7 +193,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            // command not found
+            sender.replyText("2", "未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }
 }
