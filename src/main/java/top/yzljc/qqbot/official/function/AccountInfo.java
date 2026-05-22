@@ -18,17 +18,6 @@ public class AccountInfo implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         switch (label) {
-            case "0" -> {
-                String info = "user_id: " + sender.userId() + "\n" +
-                        "user_name: " + GetUserInfo.getUserName(sender.userId()) + "\n" +
-                        "group_id: " + sender.groupId() + "\n" +
-                        "group_name: " + GetGroupInfo.getGroupName(sender.groupId()) + "\n" +
-                        "message_id: " + sender.messageId() + "\n" +
-                        "is_admin: " + sender.isAdmin() + "\n" +
-                        "is_debug: " + sender.isDebug() + "\n\n" +
-                        "注意，本条指令专为官机测试使用，第三方机器人仅作占位，无实际意义";
-                sender.reply(info);
-            }
             case "2" -> {
                 String markdownInfo = "```\n" +
                         "user_openId: " + sender.userOpenId() + "\n" +

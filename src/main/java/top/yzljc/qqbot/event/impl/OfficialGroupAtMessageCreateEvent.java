@@ -14,12 +14,21 @@ import top.yzljc.qqbot.event.Event;
  */
 @Getter
 @AllArgsConstructor
-public class OfficialGroupChatEvent extends Event {
+public class OfficialGroupAtMessageCreateEvent extends Event {
+    private final boolean bot;
+    // 此字段意义不明，但官方接口中确实存在，暂时保留
+    private final String id;
     private final String msgId;
+    // 此字段意义不明，但官方接口中确实存在，暂时保留
+    private final String groupId;
     private final String groupOpenId;
     private final String content;
     private final String timestamp;
+    private final String username;
+    // 此字段意义不明，但官方接口中确实存在，暂时保留
     private final String memberOpenId;
+    // 统一使用 unionOpenId
+    private final String unionOpenId;
     private final Object attachments;
 
     @SuppressWarnings("UnusedReturnValue")
@@ -29,11 +38,11 @@ public class OfficialGroupChatEvent extends Event {
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyMarkdown(String markdownContent) {
-        return AtriBot.getInstance().getMessageService().replyGroupMarkdownMessage(this.groupOpenId, this.memberOpenId, this.msgId, markdownContent);
+        return AtriBot.getInstance().getMessageService().replyGroupMarkdownMessage(this.groupOpenId, this.unionOpenId, this.msgId, markdownContent);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyMarkdown(String markdownContent, Object keyboard) {
-        return AtriBot.getInstance().getMessageService().replyGroupMarkdownWithKeyboard(this.groupOpenId, this.memberOpenId, this.msgId, markdownContent, keyboard);
+        return AtriBot.getInstance().getMessageService().replyGroupMarkdownWithKeyboard(this.groupOpenId, this.unionOpenId, this.msgId, markdownContent, keyboard);
     }
 }

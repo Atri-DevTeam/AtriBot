@@ -56,7 +56,9 @@ public class Test implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-
+        if (label.equals("0")) return true;
+        if (label.equals("1")) return true;
+        AtriBot.getInstance().getMessageService().sendActiveGroupTextMessage(sender.groupOpenId(), "你好，这是一条主动消息");
         return true;
     }
 }

@@ -22,7 +22,7 @@ public class GroupList {
 
         String sql = "CREATE TABLE IF NOT EXISTS `group_whitelist` (" +
                 "  `group_openId` VARCHAR(256) NOT NULL," +
-                "  `op_member_openId` VARCHAR(256) NOT NULL," +
+                "  `op_member_openId` VARCHAR(256) NULL," +
                 "  `timestamp` BIGINT NOT NULL," +
                 "  `is_whitelist` BOOLEAN NOT NULL," +
                 "  PRIMARY KEY (`group_openId`)" +

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.official.impl.BindResponse;
+import top.yzljc.qqbot.official.impl.MinecraftNetwork;
 
 import javax.crypto.Cipher;
 import java.io.DataInputStream;
@@ -16,14 +17,14 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 @Slf4j
-public class MinecraftVerify {
+public class MinecraftSocket {
 
     private final String serverIp;
     private final int serverPort;
     private final PublicKey publicKey;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public MinecraftVerify(String serverIp, int serverPort, String publicKeyBase64) throws Exception {
+    public MinecraftSocket(String serverIp, int serverPort, String publicKeyBase64) throws Exception {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
         byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64);
@@ -33,6 +34,13 @@ public class MinecraftVerify {
     }
 
     public BindResponse sendRequest(String code) {
+        // 优先走 AES 长连接
+        BindResponse aesResponse = MinecraftNetwork.sendVerify(code);
+        if (aesResponse != null) {
+            return aesResponse;
+        }
+
+        // 回退 RSA 短连接
         try (Socket socket = new Socket(serverIp, serverPort);
              DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
              DataInputStream dis = new DataInputStream(socket.getInputStream())) {

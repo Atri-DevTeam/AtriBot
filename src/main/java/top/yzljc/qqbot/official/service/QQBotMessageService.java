@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -54,6 +53,220 @@ public class QQBotMessageService {
     public String sendGroupMessage(String groupOpenId, MessageBody request) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
         return doSendMessage(url, request, "群聊");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActiveGroupTextMessage(String groupOpenId, String text) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .content(text)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateTextMessage(String openId, String text) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .content(text)
+                .build();
+
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActiveGroupMarkdownMessage(String groupOpenId, String markdownContent) {
+        Map<String, Object> markdownObj = new HashMap<>();
+        markdownObj.put("content", markdownContent);
+
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .markdown(markdownObj)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateMarkdownMessage(String openId, String markdownContent) {
+        Map<String, Object> markdownObj = new HashMap<>();
+        markdownObj.put("content", markdownContent);
+
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .markdown(markdownObj)
+                .build();
+
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateImageMessage(String openId, String base64Content) {
+        String uploadUrl = apiBaseUrl + "/v2/users/" + openId + "/files";
+
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("file_type", 1);
+        uploadData.put("file_data", base64Content);
+        uploadData.put("srv_send_msg", false);
+
+        try {
+            String uploadJson = objectMapper.writeValueAsString(uploadData);
+            String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
+                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+
+            if (uploadRes == null || uploadRes.isBlank()) {
+                log.error("单聊主动-图片上传失败，服务器返回为空");
+                return null;
+            }
+
+            JsonNode resNode = objectMapper.readTree(uploadRes);
+            if (!resNode.has("file_info")) {
+                log.error("单聊主动-图片上传失败，未返回 file_info: {}", uploadRes);
+                return null;
+            }
+            String fileInfo = resNode.get("file_info").asText();
+
+            Map<String, Object> mediaObj = new HashMap<>();
+            mediaObj.put("file_info", fileInfo);
+
+            MessageBody request = MessageBody.builder()
+                    .msgType(GroupMessageType.MEDIA.getValue())
+                    .media(mediaObj)
+                    .build();
+
+            return sendPrivateMessage(openId, request);
+
+        } catch (Exception e) {
+            log.error("发送单聊主动图片异常: ", e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActiveGroupImageMessage(String groupOpenId, String base64Content) {
+        String uploadUrl = apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
+
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("file_type", 1);
+        uploadData.put("file_data", base64Content);
+        uploadData.put("srv_send_msg", false);
+
+        try {
+            String uploadJson = objectMapper.writeValueAsString(uploadData);
+            String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
+                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+
+            if (uploadRes == null || uploadRes.isBlank()) {
+                log.error("群聊主动-图片上传失败，服务器返回为空");
+                return null;
+            }
+
+            JsonNode resNode = objectMapper.readTree(uploadRes);
+            if (!resNode.has("file_info")) {
+                log.error("群聊主动-图片上传失败，未返回 file_info: {}", uploadRes);
+                return null;
+            }
+            String fileInfo = resNode.get("file_info").asText();
+
+            Map<String, Object> mediaObj = new HashMap<>();
+            mediaObj.put("file_info", fileInfo);
+
+            MessageBody request = MessageBody.builder()
+                    .msgType(GroupMessageType.MEDIA.getValue())
+                    .media(mediaObj)
+                    .build();
+
+            return sendGroupMessage(groupOpenId, request);
+
+        } catch (Exception e) {
+            log.error("发送群聊主动图片异常: ", e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateImageMessageByUrl(String openId, String imageUrl) {
+        String uploadUrl = apiBaseUrl + "/v2/users/" + openId + "/files";
+
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("file_type", 1);
+        uploadData.put("url", imageUrl);
+        uploadData.put("srv_send_msg", false);
+
+        try {
+            String uploadJson = objectMapper.writeValueAsString(uploadData);
+            String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
+                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+
+            if (uploadRes == null || uploadRes.isBlank()) {
+                log.error("单聊主动-链接图片上传失败，服务器返回为空");
+                return null;
+            }
+
+            JsonNode resNode = objectMapper.readTree(uploadRes);
+            if (!resNode.has("file_info")) {
+                log.error("单聊主动-链接图片上传失败，未返回 file_info: {}", uploadRes);
+                return null;
+            }
+            String fileInfo = resNode.get("file_info").asText();
+
+            Map<String, Object> mediaObj = new HashMap<>();
+            mediaObj.put("file_info", fileInfo);
+
+            MessageBody request = MessageBody.builder()
+                    .msgType(GroupMessageType.MEDIA.getValue())
+                    .media(mediaObj)
+                    .build();
+
+            return sendPrivateMessage(openId, request);
+
+        } catch (Exception e) {
+            log.error("发送单聊主动链接图片异常: ", e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActiveGroupImageMessageByUrl(String groupOpenId, String imageUrl) {
+        String uploadUrl = apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
+
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("file_type", 1);
+        uploadData.put("url", imageUrl);
+        uploadData.put("srv_send_msg", false);
+
+        try {
+            String uploadJson = objectMapper.writeValueAsString(uploadData);
+            String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
+                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+
+            if (uploadRes == null || uploadRes.isBlank()) {
+                log.error("群聊主动-链接图片上传失败，服务器返回为空");
+                return null;
+            }
+
+            JsonNode resNode = objectMapper.readTree(uploadRes);
+            if (!resNode.has("file_info")) {
+                log.error("群聊主动-链接图片上传失败，未返回 file_info: {}", uploadRes);
+                return null;
+            }
+            String fileInfo = resNode.get("file_info").asText();
+
+            Map<String, Object> mediaObj = new HashMap<>();
+            mediaObj.put("file_info", fileInfo);
+
+            MessageBody request = MessageBody.builder()
+                    .msgType(GroupMessageType.MEDIA.getValue())
+                    .media(mediaObj)
+                    .build();
+
+            return sendGroupMessage(groupOpenId, request);
+
+        } catch (Exception e) {
+            log.error("发送群聊主动链接图片异常: ", e);
+            return null;
+        }
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -234,8 +447,7 @@ public class QQBotMessageService {
     public void recallPrivateMessage(String userOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/users/" + userOpenId + "/messages/" + messageId;
         try {
-            String result = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
-            log.info("撤回单聊消息成功, userOpenId: {}, messageId: {}, result: {}", userOpenId, messageId, result);
+            HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
         } catch (Exception e) {
             log.error("撤回单聊消息失败, userOpenId: {}, messageId: {}", userOpenId, messageId, e);
         }
@@ -244,8 +456,7 @@ public class QQBotMessageService {
     public void recallGroupMessage(String groupOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
         try {
-            String result = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
-            log.info("撤回群聊消息成功, groupOpenId: {}, messageId: {}, result: {}", groupOpenId, messageId, result);
+            HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
         } catch (Exception e) {
             log.error("撤回群聊消息失败, groupOpenId: {}, messageId: {}", groupOpenId, messageId, e);
         }

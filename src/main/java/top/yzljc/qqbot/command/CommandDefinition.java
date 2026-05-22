@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public record CommandDefinition(String name, String description, String usage, List<String> aliases, String featureKey) {
+public record CommandDefinition(String name, String description, String usage, List<String> aliases, String featureKey,
+                                boolean officialOnly) {
 
     public CommandDefinition {
         aliases = aliases == null ? List.of() : List.copyOf(aliases);
@@ -17,6 +18,7 @@ public record CommandDefinition(String name, String description, String usage, L
         String description = stringValue(data.get("description"), "");
         String usage = stringValue(data.get("usage"), null);
         String featureKey = stringValue(data.get("feature"), null);
+        boolean officialOnly = booleanValue(data.get("official-only"));
 
         List<String> aliases = new ArrayList<>();
         Object aliasesObj = data.get("aliases");
@@ -28,7 +30,14 @@ public record CommandDefinition(String name, String description, String usage, L
             }
         }
 
-        return new CommandDefinition(name, description, usage, aliases, featureKey);
+        return new CommandDefinition(name, description, usage, aliases, featureKey, officialOnly);
+    }
+
+    private static boolean booleanValue(Object value) {
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        return false;
     }
 
     private static String stringValue(Object value, String defaultValue) {

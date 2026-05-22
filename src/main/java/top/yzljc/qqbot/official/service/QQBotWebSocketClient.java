@@ -7,13 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import top.yzljc.qqbot.event.EventManager;
-import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
-import top.yzljc.qqbot.event.impl.OfficialGroupDelEvent;
-import top.yzljc.qqbot.event.impl.OfficialGroupJoinEvent;
-import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
-import top.yzljc.qqbot.utils.FormatTools;
+import top.yzljc.qqbot.event.impl.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -170,8 +168,6 @@ public class QQBotWebSocketClient extends WebSocketClient {
     }
 
     private void handleEvent(String eventType, JsonNode eventData) {
-        log.info("收到事件: {}", eventType);
-
         if ("READY".equals(eventType)) {
             sessionId = eventData.get("session_id").asText();
             log.info("鉴权成功！获取到 session_id: {}", sessionId);
@@ -185,9 +181,14 @@ public class QQBotWebSocketClient extends WebSocketClient {
                 String groupOpenId = eventData.get("group_openid").asText();
                 String timestamp = eventData.get("timestamp").asText();
                 String memberId = eventData.path("author").get("member_openid").asText();
+                boolean isBot = eventData.path("author").get("bot").asBoolean(false);
+                String id = eventData.path("author").get("id").asText();
+                String username = eventData.path("author").get("username").asText();
+                String unionOpenId = eventData.path("author").get("union_openid").asText();
+                String groupId = eventData.path("group_id").asText();
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
 
-                OfficialGroupChatEvent event = new OfficialGroupChatEvent(msgId, groupOpenId, content, timestamp, memberId, attachment);
+                OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(isBot, id, msgId, groupId, groupOpenId, content, timestamp, username, memberId, unionOpenId, attachment);
                 EventManager.getInstance().callEvent(event);
             } catch (Exception e) {
                 log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
@@ -199,11 +200,76 @@ public class QQBotWebSocketClient extends WebSocketClient {
                 String content = eventData.get("content").asText();
                 String msgId = eventData.get("id").asText();
                 String timestamp = eventData.get("timestamp").asText();
-                String memberId = eventData.path("author").get("user_openid").asText();
+                String userId = eventData.path("author").get("user_openid").asText();
+                String id = eventData.path("author").get("id").asText();
+                String unionOpenId = eventData.path("author").get("union_openid").asText();
+                String username = eventData.path("author").get("username").asText();
+                boolean isBot = eventData.path("author").get("bot").asBoolean(false);
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
 
-                OfficialPrivateChatEvent event = new OfficialPrivateChatEvent(msgId, content, timestamp, memberId, attachment);
+                OfficialPrivateChatEvent event = new OfficialPrivateChatEvent(isBot, userId, id, username, msgId, content, timestamp, unionOpenId, attachment);
                 EventManager.getInstance().callEvent(event);
+            } catch (Exception e) {
+                log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
+            }
+        }
+
+        if ("GROUP_MESSAGE_CREATE".equals(eventType)) {
+            try {
+
+                JsonNode authorNode = eventData.path("author");
+
+                OfficialGroupMessageCreateEvent.Author author = new OfficialGroupMessageCreateEvent.Author(
+                                authorNode.path("bot").asBoolean(false),
+                                authorNode.path("id").asText(null),
+                                authorNode.path("member_openid").asText(null),
+                                authorNode.path("union_openid").asText(null),
+                                authorNode.path("username").asText(null)
+                        );
+
+                List<OfficialGroupMessageCreateEvent.Mention> mentions = new ArrayList<>();
+
+                JsonNode mentionsNode = eventData.path("mentions");
+
+                if (mentionsNode.isArray()) {
+                    for (JsonNode mentionNode : mentionsNode) {
+                        mentions.add(new OfficialGroupMessageCreateEvent.Mention(mentionNode.path("bot").asBoolean(false),
+                                mentionNode.path("id").asText(null), mentionNode.path("is_you").asBoolean(false),
+                                mentionNode.path("member_openid").asText(null), mentionNode.path("scope").asText(null),
+                                mentionNode.path("username").asText(null))
+                        );
+                    }
+                }
+
+                JsonNode sceneNode = eventData.path("message_scene");
+                List<String> ext = new ArrayList<>();
+                JsonNode extNode = sceneNode.path("ext");
+                if (extNode.isArray()) {
+
+                    for (JsonNode node : extNode) {
+                        ext.add(node.asText());
+                    }
+                }
+
+                OfficialGroupMessageCreateEvent.MessageScene messageScene = new OfficialGroupMessageCreateEvent.MessageScene(ext, sceneNode.path("source").asText(null));
+
+                OfficialGroupMessageCreateEvent event =
+                        new OfficialGroupMessageCreateEvent(
+                                author,
+                                eventData.path("content").asText(null),
+                                eventData.path("group_id").asText(null),
+                                eventData.path("group_openid").asText(null),
+                                eventData.path("id").asText(null),
+                                mentions,
+                                messageScene,
+                                eventData.has("message_type") ? eventData.path("message_type").asInt() : null,
+                                eventData.path("timestamp").asText(null),
+                                eventData.path("attachments").isMissingNode() ? null : eventData.path("attachments"),
+                                eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data")
+                        );
+
+                EventManager.getInstance().callEvent(event);
+
             } catch (Exception e) {
                 log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
             }

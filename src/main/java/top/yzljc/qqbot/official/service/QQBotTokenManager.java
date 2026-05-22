@@ -47,8 +47,17 @@ public class QQBotTokenManager {
 
             if (response != null && response.has("access_token")) {
                 this.currentAccessToken = response.get("access_token").asText();
-                long expiresIn = response.get("expires_in").asLong() - 600;
-                this.expireTime = System.currentTimeMillis() + (expiresIn * 1000);
+
+                long expiresIn = response.get("expires_in").asLong();
+
+                long buffer = 600;
+                if (expiresIn <= buffer) {
+                    buffer = expiresIn / 2;
+                }
+
+                long validSeconds = expiresIn - buffer;
+
+                this.expireTime = System.currentTimeMillis() + (validSeconds * 1000);
                 log.info("新 Token 获取成功！有效期至: {}", this.expireTime);
             } else {
                 log.error("获取 Token 失败，接口返回: {}", response);

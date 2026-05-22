@@ -15,13 +15,17 @@ public abstract class Command {
     private final List<String> aliases;
     @Getter
     private final String enableFeature;
+    @Getter
+    private final boolean officialOnly;
 
-    protected Command(String name, String description, String usageMessage, List<String> aliases, String enableFeature) {
+    protected Command(String name, String description, String usageMessage, List<String> aliases, String enableFeature,
+                      boolean officialOnly) {
         this.name = name;
         this.description = description;
         this.usageMessage = usageMessage;
         this.aliases = aliases;
         this.enableFeature = enableFeature;
+        this.officialOnly = officialOnly;
     }
 
     public abstract boolean execute(CommandSender sender, String commandLabel, String[] args);

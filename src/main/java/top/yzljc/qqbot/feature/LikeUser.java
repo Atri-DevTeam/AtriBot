@@ -3,6 +3,7 @@ package top.yzljc.qqbot.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.qqbot.AtriBot;
 import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.chat.MessageSegment;
 import top.yzljc.qqbot.service.userinfo.GetFriendList;
@@ -105,7 +106,8 @@ public class LikeUser implements Listener {
         }
 
         if (!isAuto) {
-            GroupMessage.chatMessage(groupId, feedback);
+            long messageId = GroupMessage.chatMessage(groupId, feedback);
+            AtriBot.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(messageId), 15 * 1000L);
         }
         BotRuntimeData.callLikeUser();
         return feedback;

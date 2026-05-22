@@ -8,7 +8,8 @@ import top.yzljc.qqbot.config.ConfigFile;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupAtMessageCreateEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
 import top.yzljc.qqbot.official.permission.PermissionGroup;
 import top.yzljc.qqbot.official.permission.PermissionRole;
@@ -70,7 +71,7 @@ public class CommandManager implements Listener {
             aliases = Collections.emptyList();
         }
 
-        CommandFeature command = new CommandFeature(name, description, usage, aliases, featureKey);
+        CommandFeature command = new CommandFeature(name, description, usage, aliases, featureKey, false);
         commandMap.register(FALLBACK_PREFIX, command);
     }
 
@@ -151,12 +152,12 @@ public class CommandManager implements Listener {
             return;
         }
 
-        if (PermissionGroup.hasRole(event.getOpenId(), PermissionRole.BLACKLIST)) return;
+        if (PermissionGroup.hasRole(event.getUnionOpenId(), PermissionRole.BLACKLIST)) return;
 
-        boolean isAdmin = PermissionGroup.isAdmin(event.getOpenId());
+        boolean isAdmin = PermissionGroup.isAdmin(event.getUnionOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
-        String userOpenId = event.getOpenId();
+        String userOpenId = event.getUnionOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
 
@@ -171,23 +172,56 @@ public class CommandManager implements Listener {
     }
 
     @EventHandler
-    public void onOfficialGroupCommand(OfficialGroupChatEvent event) {
+    public void onOfficialGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
         String rawMessage = event.getContent().trim();
         if (!rawMessage.startsWith(COMMAND_PREFIX)) {
             return;
         }
 
-        if (PermissionGroup.hasRole(event.getMemberOpenId(), PermissionRole.BLACKLIST)) return;
+        if (PermissionGroup.hasRole(event.getUnionOpenId(), PermissionRole.BLACKLIST)) return;
 
-        boolean isAdmin = PermissionGroup.isAdmin(event.getMemberOpenId());
+        boolean isAdmin = PermissionGroup.isAdmin(event.getUnionOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
-        String userOpenId = event.getMemberOpenId();
+        String userOpenId = event.getUnionOpenId();
         String groupOpenId = event.getGroupOpenId();
 
         String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
 
         CommandSender sender = CommandSender.of(userOpenId, groupOpenId, isAdmin, isDebug, msgId);
+
+        boolean executed = commandMap.dispatch(sender, commandContent, "2");
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            sender.replyText("2", "未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGroupMessageCreate(OfficialGroupMessageCreateEvent event) {
+        String rawMessage = event.getContent().trim();
+        boolean isAtAndCommandMessage = rawMessage.contains("/") && event.isAtBotMessage();
+        if (!(rawMessage.startsWith(COMMAND_PREFIX) || isAtAndCommandMessage)) {
+            return;
+        }
+
+        if (isAtAndCommandMessage) {
+            rawMessage = rawMessage.replaceFirst("^<@[^>]+>\\s*", "").trim();
+        }
+
+        String user = event.getAuthor().getUnionOpenId();
+
+        if (PermissionGroup.hasRole(user, PermissionRole.BLACKLIST)) return;
+
+        boolean isAdmin = PermissionGroup.isAdmin(user);
+        boolean isDebug = false;
+        String msgId = event.getMessageId();
+        String groupOpenId = event.getGroupOpenId();
+
+        String commandContent = rawMessage.substring(COMMAND_PREFIX.length());
+
+        CommandSender sender = CommandSender.of(user, groupOpenId, isAdmin, isDebug, msgId);
 
         boolean executed = commandMap.dispatch(sender, commandContent, "2");
         BotRuntimeData.callCommandExecuted();

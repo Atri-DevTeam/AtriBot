@@ -2,16 +2,13 @@ package top.yzljc.qqbot.official.function;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.AtriBot;
-import top.yzljc.qqbot.chat.GroupMessage;
 import top.yzljc.qqbot.command.Command;
 import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
-import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
-import top.yzljc.qqbot.official.AtText;
-import top.yzljc.qqbot.official.impl.BindMinecraft;
+import top.yzljc.qqbot.official.impl.MinecraftServer;
 import top.yzljc.qqbot.official.impl.BindResponse;
 import top.yzljc.qqbot.official.permission.GroupList;
 import top.yzljc.qqbot.official.service.CommandButton;
@@ -42,7 +39,6 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (label.equals("0")) {
-            sender.reply("请转官方机器人指令查询玩家数据喵！格式: @亚托莉喵 /verify <验证码>");
             return true;
         }
 
@@ -63,7 +59,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
             possibleQQNum = pendingPossibleQQNum.remove(code);
         }
 
-        var result = BindMinecraft.bindAccount(sender.userOpenId(), possibleQQNum, code, sender.groupOpenId());
+        var result = MinecraftServer.bindAccount(sender.userOpenId(), possibleQQNum, code, sender.groupOpenId());
         return handleBindResponse(sender, label, result);
     }
 

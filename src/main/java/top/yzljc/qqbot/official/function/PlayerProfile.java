@@ -12,14 +12,12 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.config.Result;
 import top.yzljc.qqbot.event.Listener;
-import top.yzljc.qqbot.official.AtText;
-import top.yzljc.qqbot.official.impl.BindMinecraft;
+import top.yzljc.qqbot.official.impl.MinecraftServer;
 import top.yzljc.qqbot.official.impl.MinecraftUserData;
 import top.yzljc.qqbot.official.permission.GroupList;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 import top.yzljc.qqbot.service.request.HttpService;
-import top.yzljc.qqbot.service.request.SaSignHeader;
 import top.yzljc.qqbot.utils.FormatTools;
 
 import java.net.URI;
@@ -39,7 +37,6 @@ public class PlayerProfile implements Listener, CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (label.equals("0")) {
-            sender.reply("请转官方机器人指令查询玩家数据喵！格式: @亚托莉喵 /stats <玩家名>");
             return true;
         }
 
@@ -49,9 +46,9 @@ public class PlayerProfile implements Listener, CommandExecutor {
         }
 
         if (args.length < 1) {
-            MinecraftUserData data = BindMinecraft.getDataByOpenId(sender.userOpenId());
+            MinecraftUserData data = MinecraftServer.getDataByOpenId(sender.userOpenId());
             if (data.memberOpenId().equals("-1")) {
-                sender.replyText(label, "❌ 你还没有绑定游戏内账号喵！请先加入服务器使用`/verify`绑定账号！");
+                sender.replyText(label, "❌ 你还没有绑定游戏内账号喵！请先加入服务器使用 /verify 绑定账号！");
                 return true;
             }
 
@@ -93,7 +90,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 new CommandButton("c4", "查询玩家在档数据", "/stats ", false, 1, 2)
         ));
         layout.add(List.of(
-                new CommandButton("c5", "网页数据查询", "https://www.yzljc.top/query/", true, 1, 0)
+                new CommandButton("c5", "网页数据查询", "https://www.yzljc.top/mc/query/", true, 1, 0)
         ));
         return service.buildCmdKeyboard(layout);
     }

@@ -18,6 +18,7 @@ import top.yzljc.qqbot.config.groups.GroupConfigManager;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
 import top.yzljc.qqbot.event.impl.GroupMessageEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.qqbot.official.service.CommandButton;
 import top.yzljc.qqbot.official.service.QQBotMessageService;
 
@@ -119,13 +120,13 @@ public class HypixelReward implements CommandExecutor, Listener {
             String url = matcher.group();
 
             if (client == null || !client.isOpen()) {
-                String errorText = "> ❌ 服务未连接，请联系管理员启动请求发送端喵！";
+                String errorText = "❌ 服务未连接，请联系管理员启动请求发送端喵！";
                 List<List<CommandButton>> layout = List.of(
                         List.of(new CommandButton("c1", "领取新的签到奖励", "/cl ", false, 1, 2))
                 );
                 Object keyboard = service.buildCmdKeyboard(layout);
 
-                if (label.equals("0")) sender.reply("❌ 服务未连接，请联系管理员启动请求发送端喵！", false);
+                if (label.equals("0")) sender.reply(errorText, false);
                 if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText, keyboard);
                 if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText, keyboard);
                 return true;
@@ -151,8 +152,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             request.put("session_id", sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}",
-                    label.equals("0") ? userId : userOpenId, label, sessionId);
+            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", label.equals("0") ? userId : userOpenId, label, sessionId);
 
         } else {
             sender.replyText(label, "⚠️ 链接格式错误或未检测到链接喵！");
@@ -195,6 +195,44 @@ public class HypixelReward implements CommandExecutor, Listener {
                 client.send(request.toString());
                 log.info("用户 {} 选择奖励 {} (直接回复)，SessionID: {}", userId, choice, session.sessionId);
             }
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGroupMessageCreate(OfficialGroupMessageCreateEvent event) {
+        Matcher findLink = URL_PATTERN.matcher(event.getContent().trim());
+        if (findLink.find()) {
+            String url = findLink.group();
+
+            if (client == null || !client.isOpen()) {
+                String errorText = "> ❌ 服务未连接，请联系管理员启动请求发送端喵！";
+                List<List<CommandButton>> layout = List.of(
+                        List.of(new CommandButton("c1", "领取新的签到奖励", "/cl ", false, 1, 2))
+                );
+                Object keyboard = service.buildCmdKeyboard(layout);
+
+                event.replyMarkdown(errorText, keyboard);
+                return;
+            }
+
+            // 判断该用户是否已经在领奖了
+            RewardSession existingSession = getSessionByUserId(event.getAuthor().getUnionOpenId());
+            if (existingSession != null) {
+                event.replyText("⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
+                return;
+            }
+
+            String sessionId = UUID.randomUUID().toString();
+            RewardSession session = new RewardSession(sessionId, -1, -1, -1, event.getAuthor().getUnionOpenId(), event.getGroupOpenId(), event.getMessageId(), "2");
+            activeSessions.put(sessionId, session);
+
+            ObjectNode request = mapper.createObjectNode();
+            request.put("action", "fetch");
+            request.put("url", url);
+            request.put("session_id", sessionId);
+
+            client.send(request.toString());
+            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getAuthor().getUsername(), "2", sessionId);
         }
     }
 

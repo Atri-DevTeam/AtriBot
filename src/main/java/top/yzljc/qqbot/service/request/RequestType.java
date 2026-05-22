@@ -23,6 +23,7 @@ public enum RequestType {
     ACCEPT_FRIEND_REQUEST("/set_friend_add_request"),
     HANDLE_GROUP_PENDING_REQUEST("/set_group_add_request"),
     QUIT_GROUP("/set_group_leave"),
+    SET_GROUP_KICK_MEMBER("/set_group_kick_members"),
     RECALL_MESSAGE("/delete_msg");
 
     private final String requestLink;

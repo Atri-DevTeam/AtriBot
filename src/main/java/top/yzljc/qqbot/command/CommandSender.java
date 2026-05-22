@@ -2,6 +2,7 @@ package top.yzljc.qqbot.command;
 
 import top.yzljc.qqbot.AtriBot;
 import top.yzljc.qqbot.chat.GroupMessage;
+import top.yzljc.qqbot.official.permission.PermissionGroup;
 
 /**
  * @Author YZ_Ljc_
@@ -95,5 +96,10 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
             case "2" -> { return officialGroupReplyText(content); }
             default -> throw new IllegalArgumentException("未知的消息类型: " + label);
         }
+    }
+
+    public boolean hasPermission(String permission) {
+        if (isAdmin) return true;
+        return PermissionGroup.hasPermission(this.userOpenId, permission);
     }
 }

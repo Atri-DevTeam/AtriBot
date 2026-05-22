@@ -81,3 +81,11 @@ keywords-like-user:
 
 # 雪莉叫起床的表情包在你的收藏表情中的链接（用/fetch_custom_face抓）
 wakeup-image-link: "default_link"
+
+#============ 以下内容均为特殊群专用内容 ============
+
+# 加群验证部分
+group-join-verify-group-id:
+group-join-verify-message:
+group-join-verify-timeout-seconds:
+group-join-verify-answer:

@@ -7,6 +7,7 @@ import top.yzljc.qqbot.command.CommandExecutor;
 import top.yzljc.qqbot.command.CommandSender;
 import top.yzljc.qqbot.service.request.HttpService;
 
+@Deprecated(since = "这只是个用来过审的空壳，实际功能已废弃，后续可能会完全移除")
 @Slf4j
 public class RconController implements CommandExecutor {
 

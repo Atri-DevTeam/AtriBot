@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
-import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.qqbot.event.impl.OfficialGroupDelEvent;
 import top.yzljc.qqbot.event.impl.OfficialGroupJoinEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
@@ -45,7 +45,7 @@ public class EventRecord implements Listener {
     }
 
     @EventHandler
-    public void onGroupMessage(OfficialGroupChatEvent event) {
+    public void onGroupMessage(OfficialGroupAtMessageCreateEvent event) {
         if (!event.getContent().trim().startsWith(Config.getInstance().getCommandPrefix())) {
             event.replyText("你好！我是亚托莉喵，感谢你在群里@我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
         }

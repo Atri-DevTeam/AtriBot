@@ -21,11 +21,6 @@ public class PermissionCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-
-        if (label.equals("0")) {
-            return true;
-        }
-
         if (!sender.isAdmin()) {
             sender.replyText(label, "❌ 权限不足！只有管理员可以使用此命令！");
             return true;
@@ -63,20 +58,12 @@ public class PermissionCommand implements CommandExecutor {
 
             String userOpenId = args[1];
 
-            PermissionRole role =
-                    PermissionRole.fromString(args[2]);
+            PermissionRole role = PermissionRole.fromString(args[2]);
 
-            PermissionGroup.PermissionData data =
-                    PermissionGroup.getData(userOpenId);
+            PermissionGroup.PermissionData data = PermissionGroup.getData(userOpenId);
 
-            boolean success = PermissionGroup.setPermissionGroup(
-                    userOpenId,
-                    role,
-                    data.permissions()
-            );
-
-            sender.replyText(label,
-                    success ? "权限组设置成功" : "权限组设置失败");
+            boolean success = PermissionGroup.setPermissionGroup(userOpenId, role, data.permissions());
+            sender.replyText(label, success ? "权限组设置成功" : "权限组设置失败");
 
             return true;
         }
@@ -95,8 +82,7 @@ public class PermissionCommand implements CommandExecutor {
 
             String userOpenId = args[1];
 
-            Set<String> permissions =
-                    new HashSet<>(Arrays.asList(args[2].split(",")));
+            Set<String> permissions = new HashSet<>(Arrays.asList(args[2].split(",")));
 
             boolean success = true;
 
@@ -113,8 +99,7 @@ public class PermissionCommand implements CommandExecutor {
                 }
             }
 
-            sender.replyText(label,
-                    success ? "权限节点添加成功" : "部分权限节点添加失败");
+            sender.replyText(label, success ? "权限节点添加成功" : "部分权限节点添加失败");
 
             return true;
         }
@@ -133,8 +118,7 @@ public class PermissionCommand implements CommandExecutor {
 
             String userOpenId = args[1];
 
-            Set<String> permissions =
-                    new HashSet<>(Arrays.asList(args[2].split(",")));
+            Set<String> permissions = new HashSet<>(Arrays.asList(args[2].split(",")));
 
             boolean success = true;
 
@@ -164,15 +148,13 @@ public class PermissionCommand implements CommandExecutor {
         if (action.equalsIgnoreCase("query")) {
 
             if (args.length < 2) {
-                sender.replyText(label,
-                        "用法：/permission query <userOpenId>");
+                sender.replyText(label, "用法：/permission query <userOpenId>");
                 return true;
             }
 
             String userOpenId = args[1];
 
-            PermissionGroup.PermissionData data =
-                    PermissionGroup.getData(userOpenId);
+            PermissionGroup.PermissionData data = PermissionGroup.getData(userOpenId);
 
             sender.replyMarkdown(label,
                     """

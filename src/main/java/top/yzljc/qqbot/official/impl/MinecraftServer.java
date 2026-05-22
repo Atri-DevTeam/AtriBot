@@ -1,6 +1,5 @@
 package top.yzljc.qqbot.official.impl;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.qqbot.AtriBot;
 import top.yzljc.qqbot.database.DatabaseManager;
@@ -16,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Package top.yzljc.qqbot.official.impl
  */
 @Slf4j
-public class BindMinecraft {
+public class MinecraftServer {
 
     private static final Map<String, MinecraftUserData> cache = new ConcurrentHashMap<>();
 
@@ -58,7 +57,7 @@ public class BindMinecraft {
     }
 
     public static BindResponse bindAccount(String openId, long possibleQqNum, String verifyCode, String groupOpenId) {
-        BindResponse response = AtriBot.getMinecraftVerify().sendRequest(verifyCode);
+        BindResponse response = AtriBot.getMinecraftSocket().sendRequest(verifyCode);
 
         if (response == null || response.code() != 200) {
             return response;

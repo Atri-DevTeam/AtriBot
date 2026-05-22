@@ -24,13 +24,16 @@ import top.yzljc.qqbot.event.EventManager;
 import top.yzljc.qqbot.feature.*;
 import top.yzljc.qqbot.feature.github.WebhookServer;
 import top.yzljc.qqbot.feature.minecraft.*;
+import top.yzljc.qqbot.feature.schedule.Calendar;
+import top.yzljc.qqbot.functions.thirdpartservice.GroupJoinVerify;
 import top.yzljc.qqbot.official.function.*;
 import top.yzljc.qqbot.feature.news.HypixelNews;
 import top.yzljc.qqbot.feature.schedule.*;
 import top.yzljc.qqbot.functions.*;
 import top.yzljc.qqbot.functions.Repeater;
 import top.yzljc.qqbot.functions.minecraftnews.MinecraftNews;
-import top.yzljc.qqbot.official.impl.BindMinecraft;
+import top.yzljc.qqbot.official.impl.MinecraftNetwork;
+import top.yzljc.qqbot.official.impl.MinecraftServer;
 import top.yzljc.qqbot.official.permission.EventRecord;
 import top.yzljc.qqbot.official.permission.GroupList;
 import top.yzljc.qqbot.official.permission.PermissionGroup;
@@ -43,7 +46,7 @@ import top.yzljc.qqbot.service.request.RequestReceiver;
 import top.yzljc.qqbot.service.scheduler.Scheduler;
 import top.yzljc.qqbot.service.tools.RM;
 import top.yzljc.qqbot.service.userinfo.GetFriendList;
-import top.yzljc.qqbot.socket.MinecraftVerify;
+import top.yzljc.qqbot.socket.MinecraftSocket;
 import top.yzljc.qqbot.socket.SocketManager;
 import top.yzljc.qqbot.test.Test;
 import top.yzljc.qqbot.utils.AtriHelp;
@@ -57,7 +60,7 @@ import java.util.Scanner;
 @Slf4j
 public class AtriBot {
     @Getter
-    private static MinecraftVerify minecraftVerify;
+    private static MinecraftSocket minecraftSocket;
     @Getter
     private static AtriBot instance;
     @Getter
@@ -141,6 +144,7 @@ public class AtriBot {
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
         EventManager.getInstance().registerEvents(new Feedback());
+        EventManager.getInstance().registerEvents(new GroupJoinVerify());
 
         CommandManager.reload();
 
@@ -171,13 +175,16 @@ public class AtriBot {
         CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
 
         CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
-        CommandManager.getCommand("rc").setExecutor(new RconController());
+        CommandManager.getCommand("rc").setExecutor(new NetworkHandler());
         CommandManager.getCommand("myinfo").setExecutor(new AccountInfo());
         CommandManager.getCommand("mc").setExecutor(new MinecraftUtils());
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("whitelist").setExecutor(new WhitelistCommand());
         CommandManager.getCommand("permission").setExecutor(new PermissionCommand());
+        CommandManager.getCommand("today").setExecutor(new top.yzljc.qqbot.official.function.Calendar());
+
+        CommandManager.getCommand("tufe-electric-check-903004").setExecutor(new ElectricCheck());
 
         this.scheduler = new Scheduler();
         try {
@@ -195,7 +202,7 @@ public class AtriBot {
         int webhookPort = settings.getGithubWebhookPort();
         String webhookSecret = settings.getGithubWebhookSecret();
 
-        ServerRcon.loadAdminConfig();
+//        ServerRcon.loadAdminConfig();
 
         RunScheduleTask.runAllTasks();
 
@@ -205,11 +212,11 @@ public class AtriBot {
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();
 
-        SocketManager.loadConfig();
-        SocketManager.start(socketPort);
+//        SocketManager.loadConfig();
+//        SocketManager.start(socketPort);
         WebhookServer.start(webhookPort, webhookSecret);
 
-        BindMinecraft.init();
+        MinecraftServer.init();
         GroupList.init();
         PermissionGroup.init();
 
@@ -243,7 +250,8 @@ public class AtriBot {
             int mcPort = settings.getVarietyPort();
             String pubKey = settings.getVarietyKey();
 
-            minecraftVerify = new MinecraftVerify(mcIp, mcPort, pubKey);
+            minecraftSocket = new MinecraftSocket(mcIp, mcPort, pubKey);
+            MinecraftNetwork.connect("atri", mcIp, mcPort, Config.getInstance().getDebugGroupId(), pubKey);
         } catch (Exception e) {
             log.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }

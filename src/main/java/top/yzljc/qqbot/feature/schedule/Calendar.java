@@ -139,16 +139,15 @@ public class Calendar implements CommandExecutor {
             // 日期网格
             drawCalendarGrid(g2d, now, calX, startHeaderY + 15, cellW, 38);
 
-            String watermark = "ATRI - 哔哩哔哩 BV1GrZTBDEJt";
-            g2d.setFont(loadFont(Font.PLAIN, 20f));
+            String watermark = "Made by YZ_Ljc_";
+            g2d.setFont(loadFont(Font.PLAIN, 16f));
             FontMetrics fm = g2d.getFontMetrics();
             int wmWidth = fm.stringWidth(watermark);
-            drawOutlinedText(g2d, watermark, g2d.getFont(), width - wmWidth - 15, height - 15, new Color(9, 215, 239, 150));
+            drawOutlinedText(g2d, watermark, g2d.getFont(), width - wmWidth - 15, height - 15, new Color(255, 255, 255, 150));
 
             g2d.setFont(loadFont(Font.PLAIN, 16f)); // 设置12号字体
             Color wmColor = new Color(255, 255, 255, 150); // 半透明白色
 
-            drawOutlinedText(g2d, "图片PixivID: 138888613", g2d.getFont(), 15, height - 15, wmColor);
 
             saveAndDispose(outFile);
         }
@@ -254,6 +253,8 @@ public class Calendar implements CommandExecutor {
             holidays.add(new Holiday("劳动节", LocalDate.of(year, 5, 1)));
             holidays.add(new Holiday("青年节", LocalDate.of(year, 5, 4)));
             holidays.add(new Holiday("儿童节", LocalDate.of(year, 6, 1)));
+            holidays.add(new Holiday("普通高等学校招生全国统一考试", LocalDate.of(year, 6, 7)));
+            holidays.add(new Holiday("全国高考结束", LocalDate.of(year, 6, 10)));
             holidays.add(new Holiday("建党节", LocalDate.of(year, 7, 1)));
             holidays.add(new Holiday("建军节", LocalDate.of(year, 8, 1)));
             holidays.add(new Holiday("教师节", LocalDate.of(year, 9, 10)));
@@ -333,8 +334,9 @@ public class Calendar implements CommandExecutor {
         }
     }
 
-    @Schedule(time = "00:00:25", type = ScheduleType.DAILY)
+    @Schedule(time = "00:00:00", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
+        top.yzljc.qqbot.official.function.Calendar.sendCalendar();
         ThreadManager.execute(() -> {
             if (!calendarPushInProgress.compareAndSet(false, true)) {
                 log.warn("日历推送已在进行中，触发重复推送保护");

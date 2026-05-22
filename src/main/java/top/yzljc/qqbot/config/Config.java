@@ -49,8 +49,6 @@ public class Config implements Settings{
     private int varietyPort;
     private String varietyHost;
     private String varietyKey;
-    @Getter
-    private List<String> officialAdmins = new ArrayList<>();
 
     @Getter
     private String saSignSecretKey;
@@ -59,12 +57,25 @@ public class Config implements Settings{
     private String aiBaseUrl;
     private String aiModel;
     private int aiTimeout = 30000;
+
     @Getter
     private String qqAppId;
     @Getter
     private String qqClientSecret;
     @Getter
     private String qqApiBaseUrl = "https://sandbox.api.sgroup.qq.com";
+
+    // 下面的配置为加群验证功能的定制配置（第三方机器人）
+    @Getter
+    private String groupJoinVerifyMessage;
+    @Getter
+    private String groupJoinVerifyAnswer;
+    @Getter
+    private long groupJoinVerifyGroupId;
+    @Getter
+    private int groupJoinVerifyTimeoutSeconds;
+    @Getter
+    private List<String> activeMessageGroups;
 
     private Config() {
         load();
@@ -218,19 +229,17 @@ public class Config implements Settings{
                     this.qqApiBaseUrl = (String) qqConfig.getOrDefault("api-base-url", "https://sandbox.api.sgroup.qq.com");
                 }
 
-                this.officialAdmins = new ArrayList<>();
-                if (data.containsKey("official-admins")) {
-                    Object officialAdminsObj = data.get("official-admins");
-                    if (officialAdminsObj instanceof List<?>) {
-                        for (Object admin : (List<?>) officialAdminsObj) {
-                            if (admin instanceof String) {
-                                this.officialAdmins.add((String) admin);
-                            } else {
-                                log.error("配置文件中官方管理员列表中出现无效信息：{}", admin);
-                            }
+                this.groupJoinVerifyGroupId = ((Number) data.getOrDefault("group-join-verify-group-id", 123456789L)).longValue();
+                this.groupJoinVerifyMessage = (String) data.getOrDefault("group-join-verify-message", "欢迎加入，请在30秒内发送验证消息，否则将被移出群聊");
+                this.groupJoinVerifyTimeoutSeconds = (int) data.getOrDefault("group-join-verify-timeout-seconds", 60);
+                this.groupJoinVerifyAnswer = (String) data.getOrDefault("group-join-verify-answer", "验证");
+                Object activeGroupsObj = data.get("official-active-message-groups");
+                this.activeMessageGroups = new ArrayList<>();
+                if (activeGroupsObj instanceof List<?>) {
+                    for (Object group : (List<?>) activeGroupsObj) {
+                        if (group instanceof String) {
+                            this.activeMessageGroups.add((String) group);
                         }
-                    } else {
-                        log.error("配置文件中官方管理员列表格式错误，应为列表形式");
                     }
                 }
 

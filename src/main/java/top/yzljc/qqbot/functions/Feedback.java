@@ -17,8 +17,9 @@ import top.yzljc.qqbot.config.Config;
 import top.yzljc.qqbot.data.FeedbackData;
 import top.yzljc.qqbot.event.EventHandler;
 import top.yzljc.qqbot.event.Listener;
-import top.yzljc.qqbot.event.impl.OfficialGroupChatEvent;
+import top.yzljc.qqbot.event.impl.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.qqbot.event.impl.OfficialPrivateChatEvent;
+import top.yzljc.qqbot.official.AtText;
 import top.yzljc.qqbot.service.request.HttpService;
 import top.yzljc.qqbot.service.request.SaSignHeader;
 import top.yzljc.qqbot.service.userinfo.GetGroupInfo;
@@ -57,7 +58,7 @@ public class Feedback implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.replyText(label, "请提供反馈内容！\n用法：/feedback <反馈内容>");
+            sender.replyText(label, "请提供反馈内容！用法：/feedback <反馈内容>");
         }
 
         long groupId = sender.groupId();
@@ -125,7 +126,15 @@ public class Feedback implements CommandExecutor, Listener {
                 case 201 -> sender.replyText(label, "你已经提交过反馈了哦，请先等待上一条反馈被受理！");
                 default -> sender.replyText(label, "反馈提交失败了呢，请稍后再试！");
             }
-            GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(), "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")", true);
+
+            String alertStr;
+            if (label.equals("0")) {
+                alertStr = "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")";
+            } else {
+                alertStr = "收到反馈: " + content + " 来自用户: " + userOpenId + " (QQ: " + AtText.at(userOpenId) + ")，来源于群聊: " + sender.groupOpenId();
+            }
+
+            GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(), alertStr, true);
         }
 
         return true;
@@ -341,8 +350,8 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void onGroupChat(OfficialGroupChatEvent event) {
-        FeedbackData remaining = consumeReplyByProvider(event.getMemberOpenId());
+    public void onGroupChat(OfficialGroupAtMessageCreateEvent event) {
+        FeedbackData remaining = consumeReplyByProvider(event.getUnionOpenId());
         if (remaining != null) {
             String reply = "您的反馈已被受理\n\n" +
                     "---\n\n" +
@@ -358,12 +367,12 @@ public class Feedback implements CommandExecutor, Listener {
                     "如有任何问题欢迎继续联系我们！";
 
             event.replyMarkdown(reply);
-            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getMemberOpenId(), remaining.getUuid());
+            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUnionOpenId(), remaining.getUuid());
         }
     }
     @EventHandler
     public void onPrivateChat(OfficialPrivateChatEvent event) {
-        FeedbackData remaining = consumeReplyByProvider(event.getOpenId());
+        FeedbackData remaining = consumeReplyByProvider(event.getUnionOpenId());
         if (remaining != null) {
             String reply = "您的反馈已被受理\n\n" +
                     "---\n\n" +
@@ -379,7 +388,7 @@ public class Feedback implements CommandExecutor, Listener {
                     "如有任何问题欢迎继续联系我们！";
 
             event.replyMarkdown(reply);
-            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getOpenId(), remaining.getUuid());
+            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUnionOpenId(), remaining.getUuid());
         }
     }
 }

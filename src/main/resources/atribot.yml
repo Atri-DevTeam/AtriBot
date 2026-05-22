@@ -84,14 +84,21 @@ commands:
     description: 验证YZ_Ljc_ Network账号
     usage: /verify <验证码>
     feature: verify_server
+    official-only: true
   stats:
     description: 玩家资料查询
+    official-only: true
   rc:
     description: 服务器 RCON 控制
+    usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
+    official-only: true
   myinfo:
     description: 我的账号信息
+    official-only: true
   mc:
     description: Minecraft相关
+    usage: 当前可用子命令有 /mc dice <数量> - Hypixel Skyblock掷骰子
+    official-only: true
   test:
     description: 测试命令
   feedback:
@@ -99,5 +106,13 @@ commands:
     usage: /feedback <反馈内容>
   permission:
     description: 权限管理
+    official-only: true
   whitelist:
     description: 白名单管理
+    official-only: true
+  tufe-electric-check-903004:
+    description: 903004
+    official-only: true
+  today:
+    description: 每日日历
+    official-only: true
