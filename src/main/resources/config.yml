@@ -1,16 +1,16 @@
-# 指令头
+# 指令头，onebot机器人和官方机器人的识别指令头均用这个
 command-prefix: "/"
 debug-command-suffix: "--debug"
 
-# 根目录中字体的名字
+# 根目录中字体的名字，若不指明默认使用自带的字体（鸿蒙开源字体）
 ttf-file-name: "default.ttf"
 
-# 验证服务器Socket信息
+# 验证服务器Socket信息（对MC个人MC服务器使用）
 variety-port: 8080
 variety-host: "localhost"
 variety-key: "public-key"
 
-# Websocket服务器监听端口
+# Websocket服务器监听端口（Github更新推送通知）
 websocket-port: "ws://localhost:1111"
 
 # Debug 模式开关
@@ -44,14 +44,11 @@ message-spy-groups:
   - 123456
   - 234567
 
-# 消息撤回监听屏蔽用户列表
+# 消息撤回监听屏蔽用户列表（仅对开启了消息监听的群有效）
 recall-ignore-user:
   - 123456
 
-# 自动点赞列表（/autolike add 会写入此处，仅群 818804507 可用）
-autolike-uids: []
-
-# Napcat HTTP 数据来源地址
+# Napcat HTTP 数据来源地址（消息接收入口）
 # 必须是http://xxx.xxx.xxx:port格式
 napcat-data-url: "http://localhost:12345"
 
@@ -78,6 +75,27 @@ keywords-like-user:
     - "likeme"
     - "zanwo"
     - "赞我"
+
+ai:
+  # 不建议使用任何AI聊天功能，死号速度极快，建议对接官方机器人使用AI功能
+
+  # 填入你的 API Key，OpenAI的Key格式
+  api-key: "sk-xxxxx"
+  # API 基础地址（注意后面要有 /v1/chat/completions）
+  base-url: "https://xxxxxxxx/v1/chat/completions"
+  # 使用的模型名称
+  model: "神威太湖之光直连超级计算模型"
+  # 请求超时时间(毫秒)，这里最好写大一些不然MC的新闻推送会超时
+  timeout: 30000000
+
+qq:
+  # 官机的AppID
+  app-id: ""
+  # 官机的密钥
+  client-secret: ""
+  # 注意：沙箱环境使用 https://sandbox.api.sgroup.qq.com
+  # 正式环境使用 https://api.sgroup.qq.com
+  api-base-url: "https://sandbox.api.sgroup.qq.com"
 
 # 雪莉叫起床的表情包在你的收藏表情中的链接（用/fetch_custom_face抓）
 wakeup-image-link: "default_link"

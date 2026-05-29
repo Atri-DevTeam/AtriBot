@@ -10,7 +10,7 @@
 
 ## 系统概览
 
-- **入口**：`top.yzljc.qqbot.AtriBot`（负责加载配置、启动各模块定时任务与服务端）
+- **入口**：`top.yzljc.atribot.Atri`（负责加载配置、启动各模块定时任务与服务端）
 - **QQ 对接**：HTTP 接收 NapCat 上报 + HTTP 调用 NapCat API 发送消息（`botservice/request` + `botservice/message`）
 - **MC 对接**：`socket/SocketManager` 监听并维护 Minecraft 侧连接（端口见 `config.yml`）
 - **配置中心**：`src/main/resources/config.yml`（运行时从工作目录读取，不存在时自动从 classpath 复制默认配置）

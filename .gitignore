@@ -60,3 +60,6 @@ news_history.json
 OneText-Library.json
 project-info.json
 atribot.yml
+.gradle
+build
+/logs/

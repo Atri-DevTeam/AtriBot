@@ -1,18 +1,15 @@
 version: 2
 updates:
-  # Maven dependencies (Java main project)
-  - package-ecosystem: "maven"
+  # Gradle dependencies (Java main project)
+  - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
-      maven-all:
+      gradle-all:
         patterns:
           - "*"
-    ignore:
-      - dependency-name: "org.springframework.boot:spring-boot-starter-web"
-      - dependency-name: "org.springframework.boot:spring-boot-dependencies"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"

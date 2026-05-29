@@ -1,30 +1,36 @@
 name: AtriBot
-version: 2.8.0-Release
+version: 3.0.0-Release
 main: top.yzljc.qqbot.AtriBot
 
 commands:
   happynewyear:
     description: 发送新年快乐
     feature: new_year
+    onebot-only: true
   bc:
     description: 全服广播
     usage: /bc <内容>
     aliases:
       - broadcast
     feature: broadcast
+    onebot-only: true
   wakeup:
     description: 发送起床嘲讽图片
     feature: wakeup_send
   reboot:
     description: 重启Bot
+    onebot-only: true
   search:
     description: 搜索聊天记录
     usage: '/search "关键词" [-u QQ] [-m p/a]'
+    onebot-only: true
   recall:
     description: 撤回上一条消息
+    onebot-only: true
   rollback:
     description: 批量撤回消息
     usage: /rollback [-n 数量] [-u QQ号]
+    onebot-only: true
   motd:
     description: 查询MC服务器状态
     usage: /motd <服务器ip地址(端口号可选)>
@@ -40,46 +46,60 @@ commands:
     description: 起床战争挑战查询
     usage: /bwc <玩家名> 或 /bwc api <API Key>
     feature: bedwars_challenge
+    onebot-only: true
   checkmcnews:
     description: 获取MC新闻
     feature: mc_news
+    onebot-only: true
   checkhypnews:
     description: 获取Hypixel新闻
     feature: hyp_news
+    onebot-only: true
   manodate:
     description: Manosaba日期查询
+    onebot-only: true
   github:
     description: Github相关功能
     usage: /github [群号1] [群号2]...
     feature: github_info
+    onebot-only: true
   signall:
     description: 自动签到
     feature: auto_sign
+    onebot-only: true
   chat:
     description: 消息统计
     usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息'
+    onebot-only: true
   groupinfo:
     description: 查看群组配置
+    onebot-only: true
   calendar:
     description: 查看日历
     feature: calendar
+    onebot-only: true
   atrihelp:
     description: 显示帮助菜单
     usage: /atrihelp
+    onebot-only: true
   emj:
     description: 表情轰炸
     usage: /emj <normal/medium/insane/animation> [可选 User]
     feature: annoy_user
+    onebot-only: true
   reload:
     description: 重新加载配置
     usage: /reload [all|cfg|f|g]
+    onebot-only: true
   autolike:
     description: 自动点赞列表
     usage: /autolike add|remove|list [可选 User]
+    onebot-only: true
   tufe:
     description: 查询
     usage: /tufe查看下节课的上课地点
     feature: tufe_class_alert
+    onebot-only: true
   verify:
     description: 验证YZ_Ljc_ Network账号
     usage: /verify <验证码>
@@ -92,12 +112,12 @@ commands:
     description: 服务器 RCON 控制
     usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
     official-only: true
-  myinfo:
+  whoami:
     description: 我的账号信息
     official-only: true
   mc:
     description: Minecraft相关
-    usage: 当前可用子命令有 /mc dice <数量> - Hypixel Skyblock掷骰子
+    usage: "当前可用子命令有 /mc dice <数量> - Hypixel Skyblock掷骰子 \n\n /mc news - 推送Minecraft新闻设置 \n\n /mc ver 查看Minecraft的最新版本信息"
     official-only: true
   test:
     description: 测试命令
@@ -107,12 +127,30 @@ commands:
   permission:
     description: 权限管理
     official-only: true
-  whitelist:
+  ogroup:
     description: 白名单管理
     official-only: true
-  tufe-electric-check-903004:
-    description: 903004
+  elec:
+    description: Tufe - Student Dormitory Electricity Usage
     official-only: true
   today:
     description: 每日日历
     official-only: true
+  help:
+    description: 显示帮助菜单
+    usage: /help
+    official-only: true
+  hitokoto:
+    description: 随机一言
+    aliases:
+      - 一言
+      - yiyan
+    usage: /hitokoto 获取随机一言，群授权获取全部消息后可用“一言”触发
+  minesweeper:
+    description: 扫雷游戏
+    aliases:
+      - 扫雷
+      - sl
+    official-only: true
+  贡献名单:
+    description: 查看贡献名单
