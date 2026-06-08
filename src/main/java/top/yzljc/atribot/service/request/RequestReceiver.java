@@ -8,8 +8,12 @@ import top.yzljc.atribot.config.Config;
 import top.yzljc.atribot.debug.OneBotPacket;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.chat.onebot.impl.MessageSegment;
+import top.yzljc.atribot.event.Mention;
 import top.yzljc.atribot.event.Sender;
 import top.yzljc.atribot.event.impl.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class RequestReceiver {
@@ -46,10 +50,28 @@ public class RequestReceiver {
                             new TypeReference<>() {}
                     );
 
+                    List<Mention> mentionList = new ArrayList<>();
+                    if (rawMessage.contains("[CQ:at")) {
+                        JsonNode rawNode = root.path("raw");
+                        if (!rawNode.isMissingNode()) {
+                            JsonNode elements = rawNode.path("elements");
+                            for (JsonNode element : elements) {
+                                JsonNode textElement = element.path("textElement");
+                                String atNtUid = textElement.path("atNtUid").asText("");
+                                if (!atNtUid.isEmpty()) {
+                                    long uin = textElement.path("atUid").asLong(0);
+                                    String content = textElement.path("content").asText("");
+                                    Mention mention = new Mention(uin, atNtUid, content);
+                                    mentionList.add(mention);
+                                }
+                            }
+                        }
+                    }
+
                     // 触发对应的事件
                     if ("group".equals(messageType)) {
                         long groupId = root.path("group_id").asLong();
-                        GroupMessageEvent event = new GroupMessageEvent(messageId, groupId, userId, rawMessage, segmentList, time, selfId, senderObj);
+                        GroupMessageEvent event = new GroupMessageEvent(messageId, groupId, userId, rawMessage, segmentList, time, selfId, senderObj, mentionList);
                         EventManager.getInstance().callEvent(event);
                     } else if ("private".equals(messageType)) {
                         PrivateMessageEvent event = new PrivateMessageEvent(messageId, userId, rawMessage, segmentList, time, selfId, senderObj);

@@ -1,6 +1,7 @@
 package top.yzljc.atribot.functions.overall;
 
-import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.ImageType;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
 import top.yzljc.atribot.chat.onebot.impl.MessageUtils;
@@ -57,11 +58,19 @@ public class MojangStatus implements CommandExecutor {
 
                 if (response != 200) {
                     sender.replyText(label, "检查 Mojang 服务状态失败，API 返回状态码: " + response);
-                    Atri.getInstance().getChatService().recallGroupMessage(sender.groupOpenId(), messageId);
+                    if (label.equals("2")) {
+                        GroupChat.recallMessage(sender.groupOpenId(), messageId);
+                    } else {
+                        C2CChat.recallMessage(sender.unionOpenId(), messageId);
+                    }
                     return true;
                 }
 
-                Atri.getInstance().getChatService().recallGroupMessage(sender.groupOpenId(), messageId);
+                if (label.equals("2")) {
+                    GroupChat.recallMessage(sender.groupOpenId(), messageId);
+                } else {
+                    C2CChat.recallMessage(sender.unionOpenId(), messageId);
+                }
                 sender.replyImage(label, url, ImageType.URL);
                 return true;
             } catch (Exception e) {

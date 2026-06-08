@@ -12,7 +12,7 @@ import top.yzljc.atribot.event.impl.GroupMessageEvent;
 import top.yzljc.atribot.event.impl.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.impl.OfficialC2CMessageEvent;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.functions.official.permission.C2CList;
 import top.yzljc.atribot.utils.BotRuntimeData;
 
 import java.io.InputStream;
@@ -123,7 +123,7 @@ public class CommandManager implements Listener {
             commandContent = commandContent.substring(0, commandContent.length() - DEBUG_SUFFIX.length()).trim();
         }
 
-        CommandSender sender = CommandSender.of(userId, groupId, isAdmin, isDebug, messageId, "0");
+        CommandSender sender = CommandSender.of(userId, groupId, isAdmin, isDebug, messageId, "0", event.getMentions());
 
         boolean executed = commandMap.dispatch(sender, commandContent, "0");
         BotRuntimeData.callCommandExecuted();
@@ -142,7 +142,7 @@ public class CommandManager implements Listener {
 
         Author author = event.getAuthor();
 
-        boolean isAdmin = PermissionGroup.isAdmin(author.getUnionOpenId());
+        boolean isAdmin = C2CList.isAdmin(author.getUnionOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
 
@@ -172,7 +172,7 @@ public class CommandManager implements Listener {
 
         Author author = event.getAuthor();
 
-        boolean isAdmin = PermissionGroup.isAdmin(author.getUnionOpenId());
+        boolean isAdmin = C2CList.isAdmin(author.getUnionOpenId());
         boolean isDebug = false;
         String msgId = event.getMsgId();
         String groupOpenId = event.getGroupOpenId();
@@ -208,7 +208,7 @@ public class CommandManager implements Listener {
 
         Author author = event.getAuthor();
 
-        boolean isAdmin = PermissionGroup.isAdmin(author.getUnionOpenId());
+        boolean isAdmin = C2CList.isAdmin(author.getUnionOpenId());
         boolean isDebug = false;
         String msgId = event.getMessageId();
         String groupOpenId = event.getGroupOpenId();

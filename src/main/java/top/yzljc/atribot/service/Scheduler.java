@@ -11,7 +11,7 @@ public class Scheduler {
     }
 
     public ScheduledFuture<?> runTaskAsynchronously(Runnable run) {
-        return scheduler.schedule(run, 0, TimeUnit.MILLISECONDS);
+        return scheduler.schedule(() -> ThreadManager.execute(run), 0, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -22,7 +22,7 @@ public class Scheduler {
     }
 
     public ScheduledFuture<?> runTaskLaterAsynchronously(Runnable run, long delayMillis) {
-        return scheduler.schedule(run, delayMillis, TimeUnit.MILLISECONDS);
+        return scheduler.schedule(() -> ThreadManager.execute(run), delayMillis, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -34,13 +34,17 @@ public class Scheduler {
     }
 
     public ScheduledFuture<?> runTaskTimerAsynchronously(Runnable run, long delayMillis, long periodMillis) {
-        return scheduler.scheduleAtFixedRate(run, delayMillis, periodMillis, TimeUnit.MILLISECONDS);
+        return scheduler.scheduleAtFixedRate(() -> ThreadManager.execute(run), delayMillis, periodMillis, TimeUnit.MILLISECONDS);
     }
 
     public void cancelTask(ScheduledFuture<?> taskId) {
         if (taskId != null) {
             taskId.cancel(false);
         }
+    }
+
+    public void shutdown() {
+        scheduler.shutdownNow();
     }
 }
 

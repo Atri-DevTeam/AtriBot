@@ -63,3 +63,6 @@ atribot.yml
 .gradle
 build
 /logs/
+/minecraft_version.json
+/webui/dist/
+/webui/node_modules/

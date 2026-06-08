@@ -103,8 +103,9 @@ tasks.processResources {
     filesMatching("**/*") {
         val isBinary = nonFilteredExtensions.any { name.endsWith(".$it", ignoreCase = true) }
         val isGitProps = name == "git.properties"
+        val isOfficialWebuiAsset = path.startsWith("official-webui/")
 
-        if (!isBinary && !isGitProps) {
+        if (!isBinary && !isGitProps && !isOfficialWebuiAsset) {
             expand(
                 "version" to projVersion
             )

@@ -3,7 +3,7 @@ package top.yzljc.atribot.debug;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.functions.official.permission.C2CList;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,7 +21,7 @@ public class OfficialBotDebug implements Listener {
     @EventHandler
     public void onGroupAtMessage(OfficialGroupMessageCreateEvent event) {
         if (!event.isAtBotMessage()) return;
-        if (!PermissionGroup.isAdmin(event.getAuthor().getMemberOpenId())) return;
+        if (!C2CList.isAdmin(event.getAuthor().getMemberOpenId())) return;
         if (event.getContent().trim().contains("!debug")) {
             if (isOfficialDebugEnabled.compareAndSet(false, true)) {
                 event.sendMessage("已启用官机调试模式，已监听全局官机事件");

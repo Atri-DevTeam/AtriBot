@@ -4,6 +4,7 @@ import cn.dev33.satoken.sign.SaSignManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
+import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.bundled.CorsPluginConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +18,8 @@ import top.yzljc.atribot.config.Reload;
 import top.yzljc.atribot.config.groups.GroupConfigInfo;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
 import top.yzljc.atribot.config.groups.GroupModeManager;
-import top.yzljc.atribot.config.webui.WebUIController;
-import top.yzljc.atribot.config.webui.exception.ExceptionController;
-import top.yzljc.atribot.config.webui.exception.FeatureNotFoundException;
+import top.yzljc.atribot.webui.onebot.OneBotWebUIRouter;
+import top.yzljc.atribot.functions.official.ChatContentRecord;
 import top.yzljc.atribot.feature.Broadcast;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.feature.*;
@@ -44,7 +44,7 @@ import top.yzljc.atribot.functions.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.functions.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.functions.official.EventRecord;
 import top.yzljc.atribot.functions.official.permission.GroupList;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.functions.official.permission.C2CList;
 import top.yzljc.atribot.service.official.OfficialManager;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.service.official.OfficialTokenManager;
@@ -52,6 +52,7 @@ import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.service.request.RequestReceiver;
 import top.yzljc.atribot.service.Scheduler;
+import top.yzljc.atribot.service.ThreadManager;
 import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.chat.onebot.FriendList;
 import top.yzljc.atribot.socket.MinecraftSocket;
@@ -61,8 +62,10 @@ import top.yzljc.atribot.utils.BotRuntimeData;
 import top.yzljc.atribot.utils.SetProjectInfo;
 import top.yzljc.atribot.feature.like.AutoLikeCommand;
 import top.yzljc.atribot.test.draft.Scratch;
+import top.yzljc.atribot.webui.official.OfficialWebUIRouter;
 
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class Atri {
@@ -81,6 +84,7 @@ public class Atri {
 
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
+    private final AtomicBoolean disabled = new AtomicBoolean(false);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -100,25 +104,38 @@ public class Atri {
 
         int qqBotPort = config.getQqBotPort();
 
-        server = Javalin.create(cfg -> cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost))).start(config.getQqBotPort());
+        server = Javalin.create(cfg -> {
+            cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
+            cfg.staticFiles.add(staticFiles -> {
+                staticFiles.hostedPath = "/official-webui";
+                staticFiles.directory = "/official-webui";
+                staticFiles.location = Location.CLASSPATH;
+            });
+            cfg.staticFiles.add(staticFiles -> {
+                staticFiles.hostedPath = "/webui";
+                staticFiles.directory = "/official-webui";
+                staticFiles.location = Location.CLASSPATH;
+            });
+            cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
+                    new org.eclipse.jetty.server.ForwardedRequestCustomizer()
+            ));
+        }).start(config.getQqBotPort());
 
-        // Register routes
+        server.before("/official-webui/*", ctx -> {
+            log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
+        });
+        server.before("/webui/*", ctx -> {
+            log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
+        });
+
         server.post("/", ctx -> {
             JsonNode body = ctx.bodyAsClass(JsonNode.class);
             String result = RequestReceiver.handle(body);
             ctx.result(result).contentType("application/json");
         });
 
-        String base = "/webui/v1/atribot/settings";
-        server.get(base + "/get/{groupId}", WebUIController::getGroupSettings);
-        server.post(base + "/set/{groupId}", WebUIController::setGroupSetting);
-        server.get(base + "/listgroups", WebUIController::listGroups);
-        server.post(base + "/fetchmessages", WebUIController::fetchMessages);
-        server.post(base + "/recallmessage", WebUIController::recallMessage);
-        server.post("/api/v1/response/feedback", Feedback::notifyReply);
-
-        // Exception handler
-        server.exception(FeatureNotFoundException.class, ExceptionController::handleFeatureNotFound);
+        OneBotWebUIRouter.register(server);
+        OfficialWebUIRouter.register(server);
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
 
@@ -149,9 +166,12 @@ public class Atri {
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
+        EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
         EventManager.getInstance().registerEvents(new GroupJoinVerify());
         EventManager.getInstance().registerEvents(new OfficialBotDebug());
+        EventManager.getInstance().registerEvents(new WebUICommand());
+        EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
 
         CommandManager.reload();
 
@@ -180,11 +200,12 @@ public class Atri {
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
         CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
+        CommandManager.getCommand("info").setExecutor(new SizeNtUid());
 
         CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
         CommandManager.getCommand("rc").setExecutor(new RconHandler());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmI());
-        CommandManager.getCommand("mc").setExecutor(new MinecraftUtils());
+        CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("ogroup").setExecutor(new GroupCommand());
@@ -194,6 +215,8 @@ public class Atri {
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
         CommandManager.getCommand("hitokoto").setExecutor(new Hitokoto());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
+        CommandManager.getCommand("webui").setExecutor(new WebUICommand());
+        CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
 
@@ -216,16 +239,18 @@ public class Atri {
 
         GroupConfigManager.refreshAllConfigs();
         FriendList.updateFriendList();
+        ChatContentRecord.init();
 
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();
 
-        WebhookServer.start(webhookPort, webhookSecret);
-
-        MinecraftBind.init();
-        GroupList.init();
-        PermissionGroup.init();
-        TufeElecBind.init();
+        if (!Config.getInstance().isDebugMode()) {
+            WebhookServer.start(webhookPort, webhookSecret);
+            MinecraftBind.init();
+            GroupList.init();
+            C2CList.init();
+            TufeElecBind.init();
+        }
 
         SetProjectInfo.setInfo();
 
@@ -253,12 +278,14 @@ public class Atri {
         GroupConfigManager.registerFeature("illegal_words_check", false);
 
         try {
-            String mcIp = settings.getVarietyHost();
-            int mcPort = settings.getVarietyPort();
-            String pubKey = settings.getVarietyKey();
+            if (!Config.getInstance().isDebugMode()) {
+                String mcIp = settings.getVarietyHost();
+                int mcPort = settings.getVarietyPort();
+                String pubKey = settings.getVarietyKey();
 
-            minecraftSocket = new MinecraftSocket(mcIp, mcPort, pubKey);
-            MinecraftRemote.connect("atri", mcIp, mcPort, Config.getInstance().getDebugGroupId(), pubKey);
+                minecraftSocket = new MinecraftSocket(mcIp, mcPort, pubKey);
+                MinecraftRemote.connect("atri", mcIp, mcPort, Config.getInstance().getDebugGroupId(), pubKey);
+            }
         } catch (Exception e) {
             log.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
@@ -267,10 +294,25 @@ public class Atri {
     }
 
     public void onDisable() {
-        scheduler.cancelTask(BotRuntimeData.getTask());
+        if (!disabled.compareAndSet(false, true)) {
+            return;
+        }
+
+        if (scheduler != null) {
+            scheduler.cancelTask(BotRuntimeData.getTask());
+        }
+        MinecraftRemote.disconnect();
+        qqBotManagerService.stop();
+        WebhookServer.stop();
+        HypixelReward.shutdown();
+        RunScheduleTask.shutdown();
         if (server != null) {
             server.stop();
         }
+        if (scheduler != null) {
+            scheduler.shutdown();
+        }
+        ThreadManager.shutdown();
         System.out.println("==== AtriBot Disabled ====");
     }
 

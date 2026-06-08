@@ -31,11 +31,12 @@ public class OfficialGroupMessageCreateEvent extends Event {
     private final String timestamp;
     private final JsonNode attachments;
     private final JsonNode arkData;
+    private final JsonNode messageReference;
     private final boolean isAtBotMessage;
 
     public OfficialGroupMessageCreateEvent(Author author, String content, String groupId, String groupOpenId, String messageId,
                                            List<Mention> mentions, MessageScene messageScene, Integer messageType, String timestamp,
-                                           JsonNode attachments, JsonNode arkData) {
+                                           JsonNode attachments, JsonNode arkData, JsonNode messageReference) {
         this.author = author;
         this.content = content;
         this.groupId = groupId;
@@ -48,6 +49,7 @@ public class OfficialGroupMessageCreateEvent extends Event {
         this.isAtBotMessage = mentions.stream().anyMatch(Mention::isYou);
         this.attachments = attachments;
         this.arkData = arkData;
+        this.messageReference = messageReference;
     }
 
     @Getter
@@ -70,30 +72,18 @@ public class OfficialGroupMessageCreateEvent extends Event {
         private String source;
     }
 
-    private String replyText(String text) {
-        return Atri.getInstance().getChatService().replyGroupTextMessage(this.groupOpenId, this.messageId, text);
-    }
-
-    private String replyMarkdown(String markdownContent) {
-        return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.messageId, markdownContent);
-    }
-
-    private String replyMarkdown(String markdownContent, Object keyboard) {
-        return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.messageId, markdownContent, keyboard);
-    }
-
     @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String content) {
-        return replyText(content);
+    public String sendMessage(String text) {
+        return Atri.getInstance().getChatService().replyGroupTextMessage(this.groupOpenId, this.messageId, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(Markdown content) {
-        return replyMarkdown(content.getText());
+        return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.messageId, content);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(Markdown content, Object keyboard) {
-        return replyMarkdown(content.getText(), keyboard);
+        return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.messageId, content, keyboard);
     }
 }

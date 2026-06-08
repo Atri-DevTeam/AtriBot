@@ -1,5 +1,6 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -131,9 +132,9 @@ public class GroupCommand implements CommandExecutor {
 
             String groupOpenId = resolveGroupOpenId(sender, args[1]);
 
-            GroupList.WhitelistData data = GroupList.getData(groupOpenId);
+            GroupList.GroupData data = GroupList.getData(groupOpenId);
 
-            sender.replyMarkdown(label,
+            sender.replyMarkdown(label, TC.md(
                     """
                             ### 群信息
 
@@ -159,7 +160,7 @@ public class GroupCommand implements CommandExecutor {
                             data.isBlacklisted() ? "是" : "否",
                             data.opMemberOpenId(),
                             FormatTools.formatTimestamp(data.timestamp())
-                    ));
+                    )));
 
             return true;
         }

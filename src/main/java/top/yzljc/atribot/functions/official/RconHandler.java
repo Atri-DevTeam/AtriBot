@@ -1,5 +1,6 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -26,12 +27,12 @@ public class RconHandler implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length < 1) {
-            sender.replyMarkdown(label, """
+            sender.replyMarkdown(label, TC.md("""
                     **未输入服务器编号！**
                     
                     该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系
                     
-                    ![show_img #540px #606px](https://www.yzljc.top/img/rcon-shower.png)""");
+                    ![show_img #540px #606px](https://www.yzljc.top/img/rcon-shower.png)"""));
             return true;
         }
         String server = args[0];
@@ -39,9 +40,9 @@ public class RconHandler implements CommandExecutor {
         if (registeredServer.get(server) != null) {
             return registeredServer.get(server).handleCommand(sender, command, label, args);
         } else {
-            sender.replyMarkdown(label, "无效的服务器编号: `" + server + "`\n\n" +
+            sender.replyMarkdown(label, TC.md("无效的服务器编号: `" + server + "`\n\n" +
                     "该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系\n\n" +
-                    "![show_img #540px #606px](https://www.yzljc.top/img/rcon-shower.png)");
+                    "![show_img #540px #606px](https://www.yzljc.top/img/rcon-shower.png)"));
             return true;
         }
     }

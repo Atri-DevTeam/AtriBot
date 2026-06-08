@@ -8,13 +8,13 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
-
-import java.util.Set;
-import java.util.concurrent.Executors;
+import top.yzljc.atribot.service.ThreadManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.onebot.GroupInformation;
+
+import java.util.Set;
 
 public class AutoSign implements CommandExecutor {
 
@@ -60,6 +60,6 @@ public class AutoSign implements CommandExecutor {
 
     @Schedule(time = "00:00:01", type = ScheduleType.DAILY)
     public static void processAutoSign() {
-        Executors.newSingleThreadExecutor().submit(AutoSign::signAllGroups);
+        ThreadManager.execute(AutoSign::signAllGroups);
     }
 }

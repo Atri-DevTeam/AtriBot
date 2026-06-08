@@ -8,6 +8,7 @@ import top.yzljc.atribot.command.CommandSender;
  * @Created_at 2026/05/21
  * @Project AtriBot
  * @Package top.yzljc.qqbot.official
+ * @deprecated 使用 {@link Markdown#at(String)}、{@link Markdown#at(CommandSender)} 和 {@link Markdown#atAll()} 代替，新的工具函数不再自带换行符
  */
 public class At {
 
@@ -19,7 +20,7 @@ public class At {
         return "<qqbot-at-user id=\"" + sender.unionOpenId() + "\" /> \n";
     }
 
-     public static String atAll() {
+    public static String atAll() {
         return "<qqbot-at-everyone /> \n";
     }
 }

@@ -5,7 +5,11 @@ import top.yzljc.atribot.chat.official.ImageType;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
 import top.yzljc.atribot.event.Author;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.event.Mention;
+import top.yzljc.atribot.functions.official.permission.C2CList;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @Author YZ_Ljc_
@@ -16,26 +20,26 @@ import top.yzljc.atribot.functions.official.permission.PermissionGroup;
  */
 public record CommandSender(long userId, long groupId, boolean isAdmin, boolean isDebug, long messageId,
                             String groupOpenId, String unionOpenId, String messageOpenId, Author author,
-                            String label) {
+                            String label, List<Mention> mentions) {
 
-    public static CommandSender of(long userId, long groupId, boolean isAdmin, boolean isDebug, long messageId, String label) {
-        return new CommandSender(userId, groupId, isAdmin, isDebug, messageId, null, null, null, null, label);
+    public static CommandSender of(long userId, long groupId, boolean isAdmin, boolean isDebug, long messageId, String label, List<Mention> mentions) {
+        return new CommandSender(userId, groupId, isAdmin, isDebug, messageId, null, null, null, null, label, mentions);
     }
 
     public static CommandSender of(String userOpenId, String groupOpenId, boolean isAdmin, boolean isDebug, String messageOpenId, String label) {
-        return new CommandSender(-1, -1, isAdmin, isDebug, -1, groupOpenId, userOpenId, messageOpenId, null, label);
+        return new CommandSender(-1, -1, isAdmin, isDebug, -1, groupOpenId, userOpenId, messageOpenId, null, label, Collections.emptyList());
     }
 
     public static CommandSender of(String userOpenId, String groupOpenId, boolean isAdmin, boolean isDebug, String messageOpenId, Author author, String label) {
-        return new CommandSender(-1, -1, isAdmin, isDebug, -1, groupOpenId, userOpenId, messageOpenId, author, label);
+        return new CommandSender(-1, -1, isAdmin, isDebug, -1, groupOpenId, userOpenId, messageOpenId, author, label, Collections.emptyList());
     }
 
     public static CommandSender of(String userOpenId, boolean isAdmin, boolean isDebug, String messageOpenId, String label) {
-        return new CommandSender(-1, -1, isAdmin, isDebug, -1, null, userOpenId, messageOpenId, null, label);
+        return new CommandSender(-1, -1, isAdmin, isDebug, -1, null, userOpenId, messageOpenId, null, label, Collections.emptyList());
     }
 
     public static CommandSender of(String userOpenId, boolean isAdmin, boolean isDebug, String messageOpenId, Author author, String label) {
-        return new CommandSender(-1, -1, isAdmin, isDebug, -1, null, userOpenId, messageOpenId, author, label);
+        return new CommandSender(-1, -1, isAdmin, isDebug, -1, null, userOpenId, messageOpenId, author, label, Collections.emptyList());
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -51,12 +55,12 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     // 以下方法均为官机使用
 
     @SuppressWarnings("UnusedReturnValue")
-    public String officialGroupReplyMarkdown(String content) {
+    public String officialGroupReplyMarkdown(Markdown content) {
         return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.unionOpenId, this.messageOpenId, content);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String officialGroupReplyMarkdown(String content, Object keyboard) {
+    public String officialGroupReplyMarkdown(Markdown content, Object keyboard) {
         return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.unionOpenId, this.messageOpenId, content, keyboard);
     }
 
@@ -66,12 +70,12 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String officialPrivateReplyMarkdown(String content) {
+    public String officialPrivateReplyMarkdown(Markdown content) {
         return Atri.getInstance().getChatService().replyPrivateMarkdownMessage(this.unionOpenId, this.messageOpenId, content);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String officialPrivateReplyMarkdown(String content, Object keyboard) {
+    public String officialPrivateReplyMarkdown(Markdown content, Object keyboard) {
         return Atri.getInstance().getChatService().replyPrivateMarkdownMessage(this.unionOpenId, this.messageOpenId, content, keyboard);
     }
 
@@ -91,7 +95,7 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String label, String content) {
+    public String replyMarkdown(String label, Markdown content) {
         if (label.equals("0")) throw new UnsupportedOperationException("第三方机器人不支持Markdown消息喵");
         switch (label) {
             case "1" -> { return officialPrivateReplyMarkdown(content); }
@@ -101,7 +105,7 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String label, String content, Object keyboard) {
+    public String replyMarkdown(String label, Markdown content, Object keyboard) {
         if (label.equals("0")) throw new UnsupportedOperationException("第三方机器人不支持Markdown消息喵");
         switch (label) {
             case "1" -> { return officialPrivateReplyMarkdown(content, keyboard); }
@@ -130,7 +134,7 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
 
     public boolean hasPermission(String permission) {
         if (isAdmin) return true;
-        return PermissionGroup.hasPermission(this.unionOpenId, permission);
+        return C2CList.hasPermission(this.unionOpenId, permission);
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -150,10 +154,10 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     public String sendMessage(Markdown content) {
         switch (label) {
             case "1" -> {
-                return officialPrivateReplyMarkdown(content.getText());
+                return officialPrivateReplyMarkdown(content);
             }
             case "2" -> {
-                return officialGroupReplyMarkdown(content.getText());
+                return officialGroupReplyMarkdown(content);
             }
         }
         throw new UnsupportedOperationException("你使用了一个不支持的消息类型，该函数仅供官方机器人使用，类型：" + label);
@@ -163,10 +167,10 @@ public record CommandSender(long userId, long groupId, boolean isAdmin, boolean 
     public String sendMessage(Markdown content, Object keyboard) {
         switch (label) {
             case "1" -> {
-                return officialPrivateReplyMarkdown(content.getText(), keyboard);
+                return officialPrivateReplyMarkdown(content, keyboard);
             }
             case "2" -> {
-                return officialGroupReplyMarkdown(content.getText(), keyboard);
+                return officialGroupReplyMarkdown(content, keyboard);
             }
         }
         throw new UnsupportedOperationException("你使用了一个不支持的消息类型，该函数仅供官方机器人使用，类型：" + label);

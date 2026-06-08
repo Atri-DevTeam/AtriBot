@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.config.Config;
-import top.yzljc.atribot.config.webui.WebUIController;
+import top.yzljc.atribot.webui.onebot.WebUIController;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;

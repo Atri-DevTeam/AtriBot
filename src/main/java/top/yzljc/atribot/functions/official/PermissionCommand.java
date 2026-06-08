@@ -1,9 +1,10 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.functions.official.permission.C2CList;
 import top.yzljc.atribot.functions.official.permission.PermissionRole;
 
 import java.util.Arrays;
@@ -60,9 +61,9 @@ public class PermissionCommand implements CommandExecutor {
 
             PermissionRole role = PermissionRole.fromString(args[2]);
 
-            PermissionGroup.PermissionData data = PermissionGroup.getData(userOpenId);
+            C2CList.UserData data = C2CList.getData(userOpenId);
 
-            boolean success = PermissionGroup.setPermissionGroup(userOpenId, role, data.permissions());
+            boolean success = C2CList.setPermissionGroup(userOpenId, role, data.permissions());
             sender.replyText(label, success ? "权限组设置成功" : "权限组设置失败");
 
             return true;
@@ -94,7 +95,7 @@ public class PermissionCommand implements CommandExecutor {
                     continue;
                 }
 
-                if (!PermissionGroup.addPermission(userOpenId, permission)) {
+                if (!C2CList.addPermission(userOpenId, permission)) {
                     success = false;
                 }
             }
@@ -130,7 +131,7 @@ public class PermissionCommand implements CommandExecutor {
                     continue;
                 }
 
-                if (!PermissionGroup.removePermission(userOpenId, permission)) {
+                if (!C2CList.removePermission(userOpenId, permission)) {
                     success = false;
                 }
             }
@@ -154,9 +155,9 @@ public class PermissionCommand implements CommandExecutor {
 
             String userOpenId = args[1];
 
-            PermissionGroup.PermissionData data = PermissionGroup.getData(userOpenId);
+            C2CList.UserData data = C2CList.getData(userOpenId);
 
-            sender.replyMarkdown(label,
+            sender.replyMarkdown(label, TC.md(
                     """
                             ### 权限信息
 
@@ -176,7 +177,7 @@ public class PermissionCommand implements CommandExecutor {
                             data.userOpenId(),
                             data.role().name(),
                             data.permissions().isEmpty() ? "暂无权限节点" : String.join("\n", data.permissions())
-                    ));
+                    )));
 
             return true;
         }

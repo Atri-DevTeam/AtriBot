@@ -111,6 +111,12 @@ public class Config {
     private String yunlandConnectKey;
     @Getter
     private String atribotKeySecret;
+    @Getter
+    private String officialWebuiToken;
+    @Getter
+    private String officialOpenId;
+    @Getter
+    private String officialUsername;
 
     private Config() {
         load();
@@ -205,6 +211,9 @@ public class Config {
             this.yunlandConnectKey = yaml.getString("yunland.connect-key", "null");
 
             this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
+            this.officialWebuiToken = yaml.getString("official-webui-token", "null");
+            this.officialOpenId = yaml.getString("official-openId", "null");
+            this.officialUsername = yaml.getString("official-username", "null");
 
             log.info("配置文件加载成功");
 

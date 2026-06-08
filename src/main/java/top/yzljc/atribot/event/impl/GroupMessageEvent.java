@@ -2,13 +2,11 @@ package top.yzljc.atribot.event.impl;
 
 import lombok.Getter;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
-import top.yzljc.atribot.event.Cancellable;
-import top.yzljc.atribot.event.Event;
+import top.yzljc.atribot.event.*;
 import top.yzljc.atribot.chat.onebot.impl.MessageSegment;
-import top.yzljc.atribot.event.Sender;
-import top.yzljc.atribot.event.Group;
 
 import java.util.LinkedList;
+import java.util.List;
 
 public class GroupMessageEvent extends Event implements Cancellable {
     private boolean cancelled;
@@ -31,10 +29,12 @@ public class GroupMessageEvent extends Event implements Cancellable {
     private final Sender sender;
     @Getter
     private final Group group;
+    @Getter
+    private final List<Mention> mentions;
 
     public GroupMessageEvent(long messageId, long groupId, long userId, String rawMessage,
                              LinkedList<MessageSegment> message,
-                             long time, long selfId, Sender sender) {
+                             long time, long selfId, Sender sender, List<Mention> mentions) {
         this.messageId = messageId;
         this.groupId = groupId;
         this.userId = userId;
@@ -50,6 +50,7 @@ public class GroupMessageEvent extends Event implements Cancellable {
             this.sender.setReplyMessageId(messageId);
         }
         this.group = new Group(groupId);
+        this.mentions = mentions;
     }
 
     public void recall() {

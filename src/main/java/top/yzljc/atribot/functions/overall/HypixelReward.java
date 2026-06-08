@@ -8,7 +8,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -17,10 +17,13 @@ import top.yzljc.atribot.config.Config;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
+import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.event.impl.GroupMessageEvent;
 import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.event.impl.OfficialInteractionEvent;
+import top.yzljc.atribot.functions.official.permission.GroupList;
+import top.yzljc.atribot.functions.official.permission.VerifyFullMessageGroup;
 import top.yzljc.atribot.service.official.CommandButton;
-import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.net.URI;
@@ -73,47 +76,6 @@ public class HypixelReward implements CommandExecutor, Listener {
         String groupOpenId = sender.groupOpenId();
         String messageOpenId = sender.messageOpenId();
 
-        // === 处理 /cl claim <0|1|2> 指令领奖逻辑 (仅限官方端) ===
-        if (args.length >= 2 && args[0].equalsIgnoreCase("claim")) {
-            if ("0".equals(label)) {
-                return true;
-            }
-
-            // 官方端指令领奖逻辑
-            RewardSession session = getSessionByUserId(userOpenId);
-
-            if (session == null) {
-                sender.replyText(label, "⚠️ 你没有正在进行的领奖任务喵！");
-                return true;
-            }
-
-            if (session.securityToken == null) {
-                sender.replyText(label, "⚠️ 还未准备好，请稍等喵！");
-                return true;
-            }
-
-            int choice;
-            try {
-                choice = Integer.parseInt(args[1]);
-                if (choice < 0 || choice > 2) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                sender.replyText(label, "⚠️ 奖励编号无效，请输入 0、1 或 2 喵！");
-                return true;
-            }
-
-            ObjectNode request = mapper.createObjectNode();
-            request.put("action", "claim");
-            request.put("session_id", session.sessionId);
-            request.put("choice", choice);
-            request.put("security_token", session.securityToken);
-            request.put("reward_id", session.rewardId);
-            request.put("original_url", session.originalUrl);
-
-            client.send(request.toString());
-            log.info("用户 {} (Type:{}) 选择奖励 {} (通过指令)，SessionID: {}", userOpenId, label, choice, session.sessionId);
-            return true;
-        }
-
         String content = args[0];
         Matcher matcher = URL_PATTERN.matcher(content);
 
@@ -128,8 +90,8 @@ public class HypixelReward implements CommandExecutor, Listener {
                 Object keyboard = service.buildCmdKeyboard(layout);
 
                 if (label.equals("0")) sender.reply(errorText, false);
-                if (label.equals("2")) sender.officialGroupReplyMarkdown(errorText, keyboard);
-                if (label.equals("1")) sender.officialPrivateReplyMarkdown(errorText, keyboard);
+                if (label.equals("2")) sender.officialGroupReplyMarkdown(TC.md(errorText), keyboard);
+                if (label.equals("1")) sender.officialPrivateReplyMarkdown(TC.md(errorText), keyboard);
                 return true;
             }
 
@@ -274,6 +236,64 @@ public class HypixelReward implements CommandExecutor, Listener {
         }
     }
 
+    public static boolean claimReward(RewardSession session, int choice) {
+        if (session == null || session.securityToken == null) return false;
+        if (choice < 0 || choice > 2) return false;
+        if (client == null || !client.isOpen()) return false;
+
+        ObjectNode request = mapper.createObjectNode();
+        request.put("action", "claim");
+        request.put("session_id", session.sessionId);
+        request.put("choice", choice);
+        request.put("security_token", session.securityToken);
+        request.put("reward_id", session.rewardId);
+        request.put("original_url", session.originalUrl);
+
+        client.send(request.toString());
+
+        String identifier = "0".equals(session.type) ? String.valueOf(session.userId) : session.userOpenId;
+        log.info("用户 {} (Type:{}) 选择奖励 {}，SessionID: {}", identifier, session.type, choice, session.sessionId);
+        return true;
+    }
+
+    @EventHandler
+    public void callback(OfficialInteractionEvent event) {
+        if (event.getType() != 11) return;
+        if (!event.getButtonValue().equals("reward_claim")) return;
+
+        String buttonId = event.getButtonId();
+        RewardSession session = getSessionByUserId(event.getUnionOpenId());
+        if (session == null) {
+            event.answer(AnswerCode.FAIL);
+        }
+        switch (buttonId) {
+            case "c0" -> {
+                boolean result = claimReward(session, 0);
+                if (result) {
+                    event.answer(AnswerCode.SUCCESS);
+                } else {
+                    event.answer(AnswerCode.FAIL);
+                }
+            }
+            case "c1" -> {
+                boolean result = claimReward(session, 1);
+                if (result) {
+                    event.answer(AnswerCode.SUCCESS);
+                } else {
+                    event.answer(AnswerCode.FAIL);
+                }
+            }
+            case "c2" -> {
+                boolean result = claimReward(session, 2);
+                if (result) {
+                    event.answer(AnswerCode.SUCCESS);
+                } else {
+                    event.answer(AnswerCode.FAIL);
+                }
+            }
+        }
+    }
+
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     static {
@@ -304,6 +324,14 @@ public class HypixelReward implements CommandExecutor, Listener {
                 // ignore
             }
         }, 0, 5, TimeUnit.SECONDS);
+    }
+
+    public static void shutdown() {
+        scheduler.shutdownNow();
+        if (client != null) {
+            client.close();
+        }
+        activeSessions.clear();
     }
 
     private static synchronized void connect() {
@@ -364,12 +392,15 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        service.replyGroupMarkdownMessage(session.groupOpenId, session.userOpenId, session.messageOpenId, sb.toString(),
+                        if (!GroupList.isAllowedFullMessages(session.groupOpenId)) {
+                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息 群号")).append(" 授权后可省去`/cl`前缀，直接解析链接");
+                        }
+                        service.replyGroupMarkdownMessage(session.groupOpenId, session.userOpenId, session.messageOpenId, TC.md(sb.toString()),
                                 service.buildCmdKeyboard(List.of(
                                         List.of(
-                                                new CommandButton("c1", "奖励 [0]", "/cl claim 0", true, 1, 2),
-                                                new CommandButton("c2", "奖励 [1]", "/cl claim 1", true, 1, 2),
-                                                new CommandButton("c3", "奖励 [2]", "/cl claim 2", true, 1, 2)
+                                                new CommandButton("c0", "奖励 [0]", "reward_claim", true, 1, 1),
+                                                new CommandButton("c1", "奖励 [1]", "reward_claim", true, 1, 1),
+                                                new CommandButton("c2", "奖励 [2]", "reward_claim", true, 1, 1)
                                         )
                                 ))
                         );
@@ -377,12 +408,12 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, sb.toString(),
+                        service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, TC.md(sb.toString()),
                                 service.buildCmdKeyboard(List.of(
                                         List.of(
-                                                new CommandButton("c1", "奖励 [0]", "/cl claim 0", true, 1, 2),
-                                                new CommandButton("c2", "奖励 [1]", "/cl claim 1", true, 1, 2),
-                                                new CommandButton("c3", "奖励 [2]", "/cl claim 2", true, 1, 2)
+                                                new CommandButton("c0", "奖励 [0]", "reward_claim", true, 1, 1),
+                                                new CommandButton("c1", "奖励 [1]", "reward_claim", true, 1, 1),
+                                                new CommandButton("c2", "奖励 [2]", "reward_claim", true, 1, 1)
                                         )
                                 ))
                         );
@@ -401,20 +432,24 @@ public class HypixelReward implements CommandExecutor, Listener {
                         finalUrl = dumpUrl + "/" + resp.path("data").path("uuid").asText();
                     }
 
+                    Object keyboard = Keyboard.build(List.of(List.of(
+                            new CommandButton("c0", "再领取一个", "/cl", false, 1, 2)
+                    )));
+
                     switch (session.type) {
                         case "0" -> GroupMessage.chatMessage(groupId, prefix + msg);
                         case "2" -> {
                             if (finalUrl != null) {
-                                service.replyGroupMarkdownMessage(session.groupOpenId, session.userOpenId, session.messageOpenId, prefix + msg + "\n\n" + TC.img(finalUrl, 764, 399));
+                                GroupChat.replyMessage(session.groupOpenId, session.userOpenId, session.messageOpenId, TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                service.replyGroupTextMessage(session.groupOpenId, session.messageOpenId, prefix + msg);
+                                GroupChat.replyMessage(session.groupOpenId, session.userOpenId, session.messageOpenId, TC.md(prefix + msg), keyboard);
                             }
                         }
                         case "1" -> {
                             if (finalUrl != null) {
-                                service.replyPrivateMarkdownMessage(session.userOpenId, session.messageOpenId, prefix + msg + "\n\n" + TC.img(finalUrl, 764, 399));
+                                C2CChat.replyMessage(session.userOpenId, session.messageOpenId, TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                service.replyPrivateTextMessage(session.userOpenId, session.messageOpenId, prefix + msg);
+                                C2CChat.replyMessage(session.userOpenId, session.messageOpenId, TC.md(prefix + msg), keyboard);
                             }
                         }
                     }

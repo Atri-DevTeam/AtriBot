@@ -1,10 +1,11 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.functions.official.permission.GroupList;
-import top.yzljc.atribot.functions.official.permission.PermissionGroup;
+import top.yzljc.atribot.functions.official.permission.C2CList;
 
 /**
  * @Author YZ_Ljc_
@@ -25,11 +26,11 @@ public class WhoAmI implements CommandExecutor {
                         "message_openId: " + sender.messageOpenId() + "\n" +
                         "is_admin: " + sender.isAdmin() + "\n" +
                         "is_debug: " + sender.isDebug() + "\n" +
-                        "permission_group:" + PermissionGroup.getRole(sender.unionOpenId()) + "\n" +
+                        "permission_group:" + C2CList.getRole(sender.unionOpenId()) + "\n" +
                         "is_group_whitelisted: " + GroupList.isWhitelist(sender.groupOpenId()) + "\n" +
                         "```\n\n" +
                         "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义";
-                sender.officialGroupReplyMarkdown(markdownInfo);
+                sender.officialGroupReplyMarkdown(TC.md(markdownInfo));
             }
             case "1" -> {
                 String markdownInfo = "```json\n" +
@@ -37,10 +38,10 @@ public class WhoAmI implements CommandExecutor {
                         "message_openId: " + sender.messageOpenId() + "\n" +
                         "is_admin: " + sender.isAdmin() + "\n" +
                         "is_debug: " + sender.isDebug() + "\n" +
-                        "permission_group:" + PermissionGroup.getRole(sender.unionOpenId()) + "\n" +
+                        "permission_group: " + C2CList.getRole(sender.unionOpenId()) + "\n" +
                         "```\n\n" +
                         "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义";
-                sender.officialPrivateReplyMarkdown(markdownInfo);
+                sender.officialPrivateReplyMarkdown(TC.md(markdownInfo));
             }
         }
         return true;

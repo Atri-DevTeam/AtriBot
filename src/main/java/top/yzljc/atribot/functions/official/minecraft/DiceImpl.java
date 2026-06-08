@@ -1,9 +1,10 @@
 package top.yzljc.atribot.functions.official.minecraft;
 
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Keyboard;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.chat.official.At;
-import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.service.official.CommandButton;
 
 import java.math.BigDecimal;
@@ -18,8 +19,6 @@ import java.util.Random;
  * @Package top.yzljc.atribot.functions.official
  */
 public class DiceImpl {
-
-    private static final ChatService service = Atri.getInstance().getChatService();
 
     private static final double[] PROBABILITIES = {
             0.1872, // 1点
@@ -84,14 +83,14 @@ public class DiceImpl {
 
         List<List<CommandButton>> buttons = List.of(
                 List.of(
-                        new CommandButton("c1", "再掷 1 次", "/mc dice", false, 1, 2),
-                        new CommandButton("c2", "掷 10 次", "/mc dice 10", false, 1, 2),
-                        new CommandButton("c3", "掷 100 次", "/mc dice 100", false, 1, 2)
+                        new CommandButton("c1", "再掷 1 次", "/mc dice", true, 1, 2),
+                        new CommandButton("c2", "掷 10 次", "/mc dice 10", true, 1, 2),
+                        new CommandButton("c3", "掷 100 次", "/mc dice 100", true, 1, 2)
                 )
         );
 
-        Object button = service.buildCmdKeyboard(buttons);
-        sender.replyMarkdown(label, markdown, button);
+        Object button = Keyboard.build(buttons);
+        sender.replyMarkdown(label, TC.md(markdown), button);
     }
 
     public static void rollMultiple(CommandSender sender, String label, long times) {
@@ -133,14 +132,14 @@ public class DiceImpl {
 
         List<List<CommandButton>> buttons = List.of(
                 List.of(
-                        new CommandButton("c1", "再掷 1 次", "/mc dice", false, 1, 2),
-                        new CommandButton("c2", "再掷 10 次", "/mc dice 10", false, 1, 2),
-                        new CommandButton("c3", "再掷 100 次", "/mc dice 100", false, 1, 2)
+                        new CommandButton("c1", "再掷 1 次", "/mc dice", true, 1, 2),
+                        new CommandButton("c2", "再掷 10 次", "/mc dice 10", true, 1, 2),
+                        new CommandButton("c3", "再掷 100 次", "/mc dice 100", true, 1, 2)
                 )
         );
 
         Object button = Atri.getInstance().getChatService().buildCmdKeyboard(buttons);
-        sender.replyMarkdown(label, sb.toString(), button);
+        sender.replyMarkdown(label, TC.md(sb.toString()), button);
     }
 
     static int getRolledNumber() {

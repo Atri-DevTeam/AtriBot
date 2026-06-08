@@ -29,6 +29,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
     private Timer heartbeatTimer;
     private Integer lastSeq = null;
     private String sessionId = null;
+    private volatile boolean closing;
 
     public OfficialWebSocketClient(URI serverUri, OfficialTokenManager tokenManager) {
         super(serverUri);
@@ -92,6 +93,10 @@ public class OfficialWebSocketClient extends WebSocketClient {
         if (heartbeatTimer != null) {
             heartbeatTimer.cancel();
             heartbeatTimer = null;
+        }
+
+        if (closing) {
+            return;
         }
 
         ThreadManager.execute(() -> {
@@ -172,6 +177,15 @@ public class OfficialWebSocketClient extends WebSocketClient {
         }, interval, interval);
     }
 
+    public void shutdown() {
+        closing = true;
+        if (heartbeatTimer != null) {
+            heartbeatTimer.cancel();
+            heartbeatTimer = null;
+        }
+        close();
+    }
+
     private void handleEvent(String eventType, JsonNode eventData) {
         if ("READY".equals(eventType)) {
             sessionId = eventData.get("session_id").asText();
@@ -192,8 +206,9 @@ public class OfficialWebSocketClient extends WebSocketClient {
                 String unionOpenId = eventData.path("author").get("union_openid").asText();
                 String groupId = eventData.path("group_id").asText();
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
+                Object msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
 
-                OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(isBot, id, msgId, groupId, groupOpenId, content, timestamp, username, memberId, unionOpenId, attachment);
+                OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(isBot, id, msgId, groupId, groupOpenId, content, timestamp, username, memberId, unionOpenId, attachment, msgRef);
                 EventManager.getInstance().callEvent(event);
             } catch (Exception e) {
                 log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
@@ -212,7 +227,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
                 boolean isBot = eventData.path("author").get("bot").asBoolean(false);
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
 
-                OfficialC2CMessageEvent event = new OfficialC2CMessageEvent(isBot, userId, id, username, msgId, content, timestamp, unionOpenId, attachment);
+                OfficialC2CMessageEvent event = new OfficialC2CMessageEvent(isBot, userId, username, id, msgId, content, timestamp, unionOpenId, attachment);
                 EventManager.getInstance().callEvent(event);
             } catch (Exception e) {
                 log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
@@ -270,7 +285,8 @@ public class OfficialWebSocketClient extends WebSocketClient {
                                 eventData.has("message_type") ? eventData.path("message_type").asInt() : null,
                                 eventData.path("timestamp").asText(null),
                                 eventData.path("attachments").isMissingNode() ? null : eventData.path("attachments"),
-                                eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data")
+                                eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data"),
+                                eventData.has("msg_elements") ? eventData.get("msg_elements") : null
                         );
 
                 EventManager.getInstance().callEvent(event);
@@ -330,12 +346,43 @@ public class OfficialWebSocketClient extends WebSocketClient {
             }
         }
 
+        if ("INTERACTION_CREATE".equals(eventType)) {
+            try {
+                JsonNode dataNode = eventData.path("data");
+
+                OfficialInteractionEvent event = new OfficialInteractionEvent(
+                        eventData.path("chat_type").asInt(-1),
+                        new OfficialInteractionEvent.Data(
+                                dataNode.path("resolved"),
+                                dataNode.path("type").asInt(-1)
+                        ),
+                        eventData.path("group_openid").asText(null),
+                        eventData.path("group_member_openid").asText(
+                                eventData.path("user_openid").asText(null)
+                        ),
+                        eventData.path("id").asText(null),
+                        eventData.path("scene").asText(null),
+                        eventData.path("timestamp").asText(null),
+                        eventData.path("type").asInt(-1)
+                );
+
+                EventManager.getInstance().callEvent(event);
+
+            } catch (Exception e) {
+                log.error("在解析官方机器人接收到的交互事件时发生错误：", e);
+            }
+        }
+
         if (OfficialBotDebug.isOfficialDebugEnabled.get()) {
             if ("GROUP_MESSAGE_CREATE".equals(eventType) && eventData.path("author").path("union_openid").asText(null).equalsIgnoreCase("68FA9563EC62B0F43E9BE5B3023B860F")) {
                 return;
             }
             log.debug(eventData.toString());
             GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), "事件类型: " + eventType + "\n事件数据: " + eventData);
+        }
+
+        if (Config.getInstance().isDebugMode()) {
+            log.debug("{}\n{}", eventType, eventData);
         }
     }
 }

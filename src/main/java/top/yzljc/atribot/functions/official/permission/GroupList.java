@@ -26,7 +26,7 @@ public class GroupList {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static final Map<String, WhitelistData> cache = new ConcurrentHashMap<>();
+    private static final Map<String, GroupData> cache = new ConcurrentHashMap<>();
 
     public static void init() {
 
@@ -36,6 +36,8 @@ public class GroupList {
                 "  `timestamp` BIGINT NOT NULL," +
                 "  `is_whitelist` BOOLEAN NOT NULL," +
                 "  `is_blacklisted` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `is_allowed_active` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `real_group_id` BIGINT NULL," +
                 "  PRIMARY KEY (`group_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -50,7 +52,7 @@ public class GroupList {
 
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(
-                     "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted FROM group_whitelist")) {
+                     "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id FROM group_whitelist")) {
 
             var rs = stmt.executeQuery();
 
@@ -61,8 +63,10 @@ public class GroupList {
                 long timestamp = rs.getLong("timestamp");
                 boolean isWhitelist = rs.getBoolean("is_whitelist");
                 boolean isBlacklisted = rs.getBoolean("is_blacklisted");
+                boolean isAllowedActive = rs.getBoolean("is_allowed_active");
+                Long realGroupId = (Long) rs.getObject("real_group_id");
 
-                cache.put(groupOpenId, new WhitelistData(groupOpenId, opMemberOpenId, timestamp, isWhitelist, isBlacklisted));
+                cache.put(groupOpenId, new GroupData(groupOpenId, opMemberOpenId, timestamp, isWhitelist, isBlacklisted, isAllowedActive, realGroupId));
             }
 
         } catch (Exception e) {
@@ -121,7 +125,7 @@ public class GroupList {
 
             stmt.executeUpdate();
 
-            cache.put(groupOpenId, new WhitelistData(groupOpenId, opMemberOpenId, timestamp, false, false));
+            cache.put(groupOpenId, new GroupData(groupOpenId, opMemberOpenId, timestamp, false, false, false, null));
 
             return true;
 
@@ -158,8 +162,12 @@ public class GroupList {
     /**
      * 获取群数据
      */
-    public static WhitelistData getData(String groupOpenId) {
-        return cache.getOrDefault(groupOpenId, new WhitelistData(groupOpenId, null, -1, false, false));
+    public static GroupData getData(String groupOpenId) {
+        return cache.getOrDefault(groupOpenId, new GroupData(groupOpenId, null, -1, false, false, false, null));
+    }
+
+    public static List<GroupData> listGroups() {
+        return new ArrayList<>(cache.values());
     }
 
     /**
@@ -174,7 +182,7 @@ public class GroupList {
      */
     public static boolean setWhitelist(String groupOpenId, boolean isWhitelist) {
 
-        WhitelistData oldData = getData(groupOpenId);
+        GroupData oldData = getData(groupOpenId);
 
         long timestamp = System.currentTimeMillis() / 1000;
 
@@ -195,7 +203,7 @@ public class GroupList {
 
             stmt.executeUpdate();
 
-            cache.put(groupOpenId, new WhitelistData(groupOpenId, oldData.opMemberOpenId(), timestamp, isWhitelist, oldData.isBlacklisted()));
+            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), timestamp, isWhitelist, oldData.isBlacklisted(), oldData.isAllowedActive(), oldData.realGroupId()));
 
             return true;
 
@@ -219,7 +227,78 @@ public class GroupList {
         return setWhitelist(groupOpenId, false);
     }
 
-    // ===================== Blacklist methods =====================
+    /**
+     * 获取真实群号
+     */
+    public static Long getRealGroupId(String groupOpenId) {
+        return getData(groupOpenId).realGroupId();
+    }
+
+    /**
+     * 设置真实群号
+     */
+    public static boolean setRealGroupId(String groupOpenId, Long realGroupId) {
+        GroupData oldData = getData(groupOpenId);
+
+        String sql = "INSERT INTO group_whitelist " +
+                "(group_openId, op_member_openId, timestamp, is_whitelist, real_group_id) " +
+                "VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE real_group_id = VALUES(real_group_id)";
+
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, groupOpenId);
+            stmt.setString(2, oldData.opMemberOpenId());
+            stmt.setLong(3, oldData.timestamp());
+            stmt.setBoolean(4, oldData.isWhitelist());
+            if (realGroupId == null) stmt.setNull(5, java.sql.Types.BIGINT);
+            else stmt.setLong(5, realGroupId);
+            stmt.executeUpdate();
+
+            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
+                    oldData.isWhitelist(), oldData.isBlacklisted(), oldData.isAllowedActive(), realGroupId));
+            return true;
+        } catch (Exception e) {
+            log.error("设置真实群号失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 设置主动推送状态
+     */
+    public static boolean setAllowedFullMessage(String groupOpenId, boolean allowedActive) {
+        GroupData oldData = getData(groupOpenId);
+
+        String sql = "INSERT INTO group_whitelist " +
+                "(group_openId, op_member_openId, timestamp, is_whitelist, is_allowed_active) " +
+                "VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE is_allowed_active = VALUES(is_allowed_active)";
+
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, groupOpenId);
+            stmt.setString(2, oldData.opMemberOpenId());
+            stmt.setLong(3, oldData.timestamp());
+            stmt.setBoolean(4, oldData.isWhitelist());
+            stmt.setBoolean(5, allowedActive);
+            stmt.executeUpdate();
+
+            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
+                    oldData.isWhitelist(), oldData.isBlacklisted(), allowedActive, oldData.realGroupId()));
+            return true;
+        } catch (Exception e) {
+            log.error("设置主动推送失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 是否允许主动推送（已缓存，启动时加载）
+     */
+    public static boolean isAllowedFullMessages(String groupOpenId) {
+        return getData(groupOpenId).isAllowedActive();
+    }
 
     /**
      * 是否为黑名单群（已缓存，启动时加载）
@@ -233,7 +312,7 @@ public class GroupList {
      */
     public static boolean setGroupBlacklisted(String groupOpenId, boolean isBlacklisted) {
 
-        WhitelistData oldData = getData(groupOpenId);
+        GroupData oldData = getData(groupOpenId);
 
         long timestamp = System.currentTimeMillis() / 1000;
 
@@ -254,7 +333,7 @@ public class GroupList {
 
             stmt.executeUpdate();
 
-            cache.put(groupOpenId, new WhitelistData(groupOpenId, oldData.opMemberOpenId(), timestamp, oldData.isWhitelist(), isBlacklisted));
+            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), timestamp, oldData.isWhitelist(), isBlacklisted, oldData.isAllowedActive(), oldData.realGroupId()));
 
             return true;
 
@@ -423,7 +502,7 @@ public class GroupList {
         return new FunctionInfo(enabled, operator, time);
     }
 
-    public record WhitelistData(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean isBlacklisted) {
+    public record GroupData(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean isBlacklisted, boolean isAllowedActive, Long realGroupId) {
     }
 
     public record FunctionInfo(boolean enabled, String operator, String time) {

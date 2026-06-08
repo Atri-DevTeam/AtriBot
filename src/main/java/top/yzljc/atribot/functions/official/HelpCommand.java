@@ -1,8 +1,8 @@
 package top.yzljc.atribot.functions.official;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.Keyboard;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -26,8 +26,6 @@ import java.util.List;
 @Slf4j
 public class HelpCommand implements CommandExecutor {
 
-    private static final ChatService service = Atri.getInstance().getChatService();
-
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 
     @Override
@@ -48,12 +46,12 @@ public class HelpCommand implements CommandExecutor {
 
                 List<List<CommandButton>> buttons = List.of(
                         List.of(
-                                new CommandButton("s1", "提交反馈", "/feedback ", true, 1, 2)
+                                new CommandButton("s1", "提交反馈", "/feedback", true, 1, 2)
                         )
                 );
-                Object keyboard = service.buildCmdKeyboard(buttons);
+                Object keyboard = Keyboard.build(buttons);
 
-                sender.replyMarkdown(label, help, keyboard);
+                sender.replyMarkdown(label, TC.md(help), keyboard);
 
             } catch (Exception e) {
                 log.error("获取帮助信息 API 失败: ", e);

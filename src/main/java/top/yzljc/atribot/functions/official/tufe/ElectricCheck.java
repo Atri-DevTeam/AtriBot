@@ -66,7 +66,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
             }
 
             if ("help".equalsIgnoreCase(args[0])) {
-                sender.replyMarkdown(label, HELP_INFO,
+                sender.replyMarkdown(label, TC.md(HELP_INFO),
                         Atri.getInstance().getChatService().buildCmdKeyboard(
                                 List.of(List.of(
                                                 new CommandButton("c1", "绑定", "/elec bind", true, 1, 2),
@@ -91,7 +91,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
 
             if ("private-check".equals(args[0])) {
                 String queryResult = handlePrivateModule();
-                sender.replyMarkdown(label, info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult), getKeys("903004", "1", false, false, "/elec 903004 1 0"));
+                sender.replyMarkdown(label, TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)), getKeys("903004", "1", false, false, "/elec 903004 1 0"));
                 return;
             }
 
@@ -220,9 +220,9 @@ public class ElectricCheck implements Listener, CommandExecutor {
             target = type0 != null ? type0 : type1;
             feedback = "当前已绑定" + (target.type() == 0 ? "宿舍" : "空调") + "电表信息，默认查询" + (target.type() == 0 ? "宿舍" : "空调") + "电表信息";
         } else {
-            sender.replyMarkdown(label,
+            sender.replyMarkdown(label, TC.md(
                     info.replace("{placeholder_feedback}", "当前未绑定任何电表信息，请使用/elec help查看帮助")
-                            .replace("{placeholder_data}\n\n", ""),
+                            .replace("{placeholder_data}\n\n", "")),
                     getKeys("", "", false, false, "/elec "));
             return;
         }
@@ -340,7 +340,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         boolean hasDorm = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 0) != null;
         boolean hasAirCon = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 1) != null;
 
-        sender.replyMarkdown(label, info.replace("{placeholder_feedback}", feedback).replace("{placeholder_data}", queryResult),
+        sender.replyMarkdown(label, TC.md(info.replace("{placeholder_feedback}", feedback).replace("{placeholder_data}", queryResult)),
                 getKeys(String.valueOf(roomNum), String.valueOf(schoolRegion), hasDorm, hasAirCon, command)
         );
     }

@@ -8,7 +8,7 @@ import lombok.Data;
 public class CommandButton {
         private String id;
         private String label;
-        private String command;
+        private String data;
         private boolean enter;
         private int style;
         private int type;

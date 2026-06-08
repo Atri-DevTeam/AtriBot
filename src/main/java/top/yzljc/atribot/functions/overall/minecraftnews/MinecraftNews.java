@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
 import top.yzljc.atribot.chat.onebot.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
@@ -278,7 +279,7 @@ public class MinecraftNews implements CommandExecutor {
 
             List<String> activeGroups = GroupList.enabledGroups("mc_news");
             for (String groupOpenId : activeGroups) {
-                Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(groupOpenId, markdown);
+                Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(groupOpenId, TC.md(markdown));
             }
 
         } catch (Exception e) {

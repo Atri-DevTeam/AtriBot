@@ -2,6 +2,7 @@ package top.yzljc.atribot.functions.official;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -23,7 +24,7 @@ public class RconController implements CommandExecutor {
 
         if (cmd.equalsIgnoreCase("total")) {
             String feedback = getTotalPlayers(label);
-            sender.replyMarkdown(label, feedback);
+            sender.replyMarkdown(label, TC.md(feedback));
         } else {
             sender.replyText(label, "未知子命令: " + cmd);
         }

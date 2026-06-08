@@ -2,11 +2,13 @@ package top.yzljc.atribot.functions.official;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.config.Config;
 import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
@@ -49,7 +51,7 @@ public class Calendar implements CommandExecutor {
             }
 
             String today = "![today #1642px #958px](" + url + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
-            sender.replyMarkdown(label, today);
+            sender.replyMarkdown(label, TC.md(today));
 
         } catch (Exception e) {
             log.error("获取日历 API 失败: ", e);
@@ -73,7 +75,7 @@ public class Calendar implements CommandExecutor {
                 String today = "![today #1642px #958px](" + url + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n\n> 夜已深，世界安静了。早点休息，好梦。";
 
                 for (String gid : Config.getInstance().getActiveMessageGroups()) {
-                    service.sendActiveGroupMarkdownMessage(gid, today);
+                    GroupChat.sendMessage(gid, TC.md(today));
                 }
 
             } catch (Exception e) {

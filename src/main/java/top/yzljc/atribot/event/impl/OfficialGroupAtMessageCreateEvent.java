@@ -2,6 +2,7 @@ package top.yzljc.atribot.event.impl;
 
 import lombok.Getter;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Author;
 import top.yzljc.atribot.event.Event;
 
@@ -21,17 +22,19 @@ public class OfficialGroupAtMessageCreateEvent extends Event {
     private final String content;
     private final String timestamp;
     private final Object attachments;
+    private final Object messageReference;
     private final Author author;
 
     public OfficialGroupAtMessageCreateEvent(boolean bot, String id, String msgId, String groupId, String groupOpenId,
                                              String content, String timestamp, String username, String memberOpenId,
-                                             String unionOpenId, Object attachments) {
+                                             String unionOpenId, Object attachments, Object messageReference) {
         this.msgId = msgId;
         this.groupId = groupId;
         this.groupOpenId = groupOpenId;
         this.content = content;
         this.timestamp = timestamp;
         this.attachments = attachments;
+        this.messageReference = messageReference;
         this.author = new Author(bot, id, memberOpenId, unionOpenId, username);
     }
 
@@ -44,17 +47,17 @@ public class OfficialGroupAtMessageCreateEvent extends Event {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyText(String text) {
+    public String sendMessage(String text) {
         return Atri.getInstance().getChatService().replyGroupTextMessage(this.groupOpenId, this.msgId, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String markdownContent) {
+    public String sendMessage(Markdown markdownContent) {
         return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.msgId, markdownContent);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String markdownContent, Object keyboard) {
+    public String sendMessage(Markdown markdownContent, Object keyboard) {
         return Atri.getInstance().getChatService().replyGroupMarkdownMessage(this.groupOpenId, this.author.getUnionOpenId(), this.msgId, markdownContent, keyboard);
     }
 }

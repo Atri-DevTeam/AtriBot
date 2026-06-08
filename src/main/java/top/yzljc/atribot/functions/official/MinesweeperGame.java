@@ -2,7 +2,7 @@ package top.yzljc.atribot.functions.official;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -16,8 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class MinesweeperGame implements Listener, CommandExecutor {
-
-    private final ChatService service = Atri.getInstance().getChatService();
 
     private static final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
 
@@ -103,8 +101,8 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         layout.add(List.of(new CommandButton("btn_start", "开始游戏 (默认5雷)", "/扫雷 start 5", true, 1, 2)));
         layout.add(List.of(new CommandButton("btn_custom", "自定义雷数并开始", "/扫雷 start", false, 0, 2)));
 
-        Object keyboard = service.buildCmdKeyboard(layout);
-        sender.replyMarkdown(label, markdown, keyboard);
+        Object keyboard = Keyboard.build(layout);
+        sender.replyMarkdown(label, TC.md(markdown), keyboard);
     }
 
     private void handleStartGame(String sessionId, String label, CommandSender sender, int minesCount) {
@@ -302,17 +300,17 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             layout.add(rowBtn);
         }
 
-        Object keyboard = service.buildCmdKeyboard(layout);
+        Object keyboard = Keyboard.build(layout);
 
-        String newMessageId = sender.replyMarkdown(label, markdown, keyboard);
+        String newMessageId = sender.replyMarkdown(label, TC.md(markdown), keyboard);
 
         if (game.lastMessageId != null) {
             String recordedMessageId = game.lastMessageId;
             try {
                 if (label.equals("1")) {
-                    Atri.getInstance().getScheduler().runTaskLater(() -> service.recallPrivateMessage(sender.unionOpenId(), recordedMessageId), 15 * 1000);
+                    Atri.getInstance().getScheduler().runTaskLater(() -> C2CChat.recallMessage(sender.unionOpenId(), recordedMessageId), 15 * 1000);
                 } else {
-                    Atri.getInstance().getScheduler().runTaskLater(() -> service.recallGroupMessage(sender.groupOpenId(), recordedMessageId), 15 * 1000);
+                    Atri.getInstance().getScheduler().runTaskLater(() -> GroupChat.recallMessage(sender.groupOpenId(), recordedMessageId), 15 * 1000);
                 }
             } catch (Exception e) {
                 log.warn("撤回扫雷旧消息失败: ", e);

@@ -3,7 +3,9 @@ package top.yzljc.atribot.functions.official.permission;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,9 +19,9 @@ import java.util.stream.Collectors;
  * @Package top.yzljc.qqbot.functions.official.permission
  */
 @Slf4j
-public class PermissionGroup {
+public class C2CList {
 
-    private static final Map<String, PermissionData> cache = new ConcurrentHashMap<>();
+    private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
 
     public static void init() {
 
@@ -58,7 +60,7 @@ public class PermissionGroup {
                 Set<String> permissions = parsePermissions(permissionsString);
 
                 cache.put(userOpenId,
-                        new PermissionData(userOpenId, role, permissions));
+                        new UserData(userOpenId, role, permissions));
             }
 
         } catch (Exception e) {
@@ -69,10 +71,31 @@ public class PermissionGroup {
     /**
      * 获取权限数据
      */
-    public static PermissionData getData(String userOpenId) {
+    public static UserData getData(String userOpenId) {
 
-        return cache.getOrDefault(userOpenId, new PermissionData(userOpenId, PermissionRole.USER, Set.of())
+        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of())
         );
+    }
+
+    /**
+     * 列出所有已缓存的用户
+     */
+    public static List<UserData> listAll() {
+        return new ArrayList<>(cache.values());
+    }
+
+    /**
+     * 缓存中是否已存在该用户
+     */
+    public static boolean isCached(String userOpenId) {
+        return cache.containsKey(userOpenId);
+    }
+
+    /**
+     * 注册 C2C 用户到缓存和数据库（默认 USER 角色，空权限）
+     */
+    public static void registerUser(String userOpenId) {
+        setPermissionGroup(userOpenId, PermissionRole.USER, Set.of());
     }
 
     /**
@@ -80,7 +103,7 @@ public class PermissionGroup {
      */
     public static boolean hasPermission(String userOpenId, String permission) {
 
-        PermissionData data = getData(userOpenId);
+        UserData data = getData(userOpenId);
 
         return data.permissions().contains("*")
                 || data.permissions().contains(permission);
@@ -131,7 +154,7 @@ public class PermissionGroup {
             stmt.executeUpdate();
 
             cache.put(userOpenId,
-                    new PermissionData(userOpenId, role, permissions));
+                    new UserData(userOpenId, role, permissions));
 
             return true;
 
@@ -147,7 +170,7 @@ public class PermissionGroup {
     public static boolean addPermission(String userOpenId,
                                         String permission) {
 
-        PermissionData data = getData(userOpenId);
+        UserData data = getData(userOpenId);
 
         Set<String> permissions = ConcurrentHashMap.newKeySet();
 
@@ -168,7 +191,7 @@ public class PermissionGroup {
     public static boolean removePermission(String userOpenId,
                                            String permission) {
 
-        PermissionData data = getData(userOpenId);
+        UserData data = getData(userOpenId);
 
         Set<String> permissions = ConcurrentHashMap.newKeySet();
 
@@ -219,6 +242,6 @@ public class PermissionGroup {
                 .collect(Collectors.toSet());
     }
 
-    public record PermissionData(String userOpenId, PermissionRole role, Set<String> permissions) {
+    public record UserData(String userOpenId, PermissionRole role, Set<String> permissions) {
     }
 }

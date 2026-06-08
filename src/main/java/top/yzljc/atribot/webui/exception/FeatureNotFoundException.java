@@ -1,4 +1,4 @@
-package top.yzljc.atribot.config.webui.exception;
+package top.yzljc.atribot.webui.exception;
 
 import lombok.Getter;
 

@@ -34,6 +34,7 @@ public class WebhookServer implements CommandExecutor {
     private static final String CONFIG_FILE_PATH = ConfigFile.GITHUB_REPOSITORY.getFileName();
     private static final Map<String, List<Long>> repoConfig = new HashMap<>();
     private static final String TEMP_IMAGE_PATH = "tmp/last_github_update.png";
+    private static HttpServer server;
 
     static {
         loadConfig();
@@ -42,13 +43,21 @@ public class WebhookServer implements CommandExecutor {
 
     public static void start(int port, String secret) {
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            stop();
+            server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/github-webhook", new WebhookHandler(secret));
             server.setExecutor(ThreadManager.getExecutor());
             server.start();
             log.info("Webhook server started on port {}", port);
         } catch (IOException e) {
             log.error("Failed to start webhook server", e);
+        }
+    }
+
+    public static void stop() {
+        if (server != null) {
+            server.stop(0);
+            server = null;
         }
     }
 

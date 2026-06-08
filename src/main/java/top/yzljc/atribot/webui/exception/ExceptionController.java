@@ -1,7 +1,7 @@
-package top.yzljc.atribot.config.webui.exception;
+package top.yzljc.atribot.webui.exception;
 
 import io.javalin.http.Context;
-import top.yzljc.atribot.config.webui.Result;
+import top.yzljc.atribot.webui.Result;
 
 public class ExceptionController {
 

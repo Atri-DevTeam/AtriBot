@@ -1,4 +1,4 @@
-package top.yzljc.atribot.config.webui;
+package top.yzljc.atribot.webui.onebot;
 
 import io.javalin.http.Context;
 import lombok.Data;
@@ -6,7 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
 import top.yzljc.atribot.config.Config;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
-import top.yzljc.atribot.config.webui.exception.FeatureNotFoundException;
+import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.exception.FeatureNotFoundException;
 import top.yzljc.atribot.functions.onebot.GroupContentRecord;
 import top.yzljc.atribot.chat.onebot.GroupInformation;
 

@@ -2,6 +2,7 @@ package top.yzljc.atribot.functions.official.minecraft;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.service.ThreadManager;
@@ -84,7 +85,7 @@ public abstract class MinecraftNetwork {
                 markdownLogs += "> 无法获取指令执行结果，可能是服务器未响应或发生错误\n";
             }
 
-            sender.replyMarkdown(label, markdownLogs, service.buildCmdKeyboard(getButtons(sender, server, args)));
+            sender.replyMarkdown(label, TC.md(markdownLogs), service.buildCmdKeyboard(getButtons(sender, server, args)));
         });
 
         return true;

@@ -117,7 +117,7 @@ commands:
     official-only: true
   mc:
     description: Minecraft相关
-    usage: "当前可用子命令有 /mc dice <数量> - Hypixel Skyblock掷骰子 \n\n /mc news - 推送Minecraft新闻设置 \n\n /mc ver 查看Minecraft的最新版本信息"
+    usage: "/mc <子命令> [参数]"
     official-only: true
   test:
     description: 测试命令
@@ -154,3 +154,15 @@ commands:
     official-only: true
   贡献名单:
     description: 查看贡献名单
+  info:
+    description: 查询账号相关字段信息
+    usage: /info @<目标用户>
+    onebot-only: true
+  webui:
+    description: WebUI相关功能
+    usage: /webui
+    official-only: true
+  全量消息:
+    description: 授权全量消息
+    usage: /全量消息
+    official-only: true

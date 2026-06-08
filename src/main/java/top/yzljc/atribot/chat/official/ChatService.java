@@ -6,6 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.event.EventManager;
+import top.yzljc.atribot.event.impl.OfficialActiveMessageFailEvent;
+import top.yzljc.atribot.functions.official.ChatContentRecord;
 import top.yzljc.atribot.service.official.CommandButton;
 import top.yzljc.atribot.service.official.OfficialTokenManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -46,13 +51,21 @@ public class ChatService {
     @SuppressWarnings("UnusedReturnValue")
     public String sendPrivateMessage(String openId, MessageBody request) {
         String url = apiBaseUrl + "/v2/users/" + openId + "/messages";
-        return doSendMessage(url, request, "单聊");
+        String messageId = doSendMessage(url, request, "单聊");
+        if (messageId != null) {
+            ChatContentRecord.recordSentC2CMessage(openId, request, messageId);
+        }
+        return messageId;
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendGroupMessage(String groupOpenId, MessageBody request) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
-        return doSendMessage(url, request, "群聊");
+        String messageId = doSendMessage(url, request, "群聊");
+        if (messageId != null) {
+            ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
+        }
+        return messageId;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -76,26 +89,42 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String sendActiveGroupMarkdownMessage(String groupOpenId, String markdownContent) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
-
+    public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(markdown))
                 .build();
 
         return sendGroupMessage(groupOpenId, request);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String sendActivePrivateMarkdownMessage(String openId, String markdownContent) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
-
+    public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown, Object keyboard) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(markdown))
+                .keyboard(keyboard)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .markdown(buildMarkdown(markdown))
+                .build();
+
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown, Object keyboard) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .markdown(buildMarkdown(markdown))
+                .keyboard(keyboard)
                 .build();
 
         return sendPrivateMessage(openId, request);
@@ -136,6 +165,26 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
+    public String sendActiveGroupArkMessage(String groupOpenId, Ark ark) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.ARK.getValue())
+                .ark(ark)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendActivePrivateArkMessage(String openId, Ark ark) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.ARK.getValue())
+                .ark(ark)
+                .build();
+
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
     public String replyGroupTextMessage(String groupOpenId, String msgId, String replyText) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
@@ -148,15 +197,12 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, String markdownContent) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", At.at(userOpenId) + markdownContent);
-
+    public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(At.at(userOpenId) + markdown.getText()))
                 .build();
 
         return sendGroupMessage(groupOpenId, request);
@@ -175,15 +221,12 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyPrivateMarkdownMessage(String openId, String msgId, String markdownContent) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
-
+    public String replyPrivateMarkdownMessage(String openId, String msgId, Markdown markdown) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(markdown))
                 .build();
 
         return sendPrivateMessage(openId, request);
@@ -198,7 +241,7 @@ public class ChatService {
             for (CommandButton btn : rowBtns) {
                 Map<String, Object> action = new HashMap<>();
                 action.put("type", btn.getType());
-                action.put("data", btn.getCommand());
+                action.put("data", btn.getData());
                 action.put("enter", btn.isEnter());
                 action.put("unsupport_tips", "当前客户端版本不支持此按钮");
 
@@ -213,6 +256,53 @@ public class ChatService {
 
                 Map<String, Object> button = new HashMap<>();
                 button.put("id", btn.getId());
+                button.put("render_data", renderData);
+                button.put("action", action);
+
+                buttons.add(button);
+            }
+            Map<String, Object> row = new HashMap<>();
+            row.put("buttons", buttons);
+            rows.add(row);
+        }
+        Map<String, Object> keyboard = new HashMap<>();
+        Map<String, Object> content = new HashMap<>();
+        content.put("rows", rows);
+        keyboard.put("content", content);
+        return keyboard;
+    }
+
+    public Object buildButtonKeyboard(List<List<Button>> layout) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        for (List<Button> rowBtns : layout) {
+            List<Map<String, Object>> buttons = new ArrayList<>();
+
+            for (Button btn : rowBtns) {
+                Map<String, Object> action = new HashMap<>();
+                action.put("type", btn.getActionType().getCode());
+                action.put("data", btn.getData());
+                action.put("enter", btn.isEnter());
+                action.put("unsupport_tips", "当前客户端版本不支持此按钮");
+                if (btn.isReply()) {
+                    action.put("reply", true);
+                }
+
+                Map<String, Object> permission = new HashMap<>();
+                permission.put("type", btn.getPermissionType().getCode());
+                if (btn.getPermissionType() == PermissionType.SPECIFIC_USER
+                        && !btn.getAllowedOpenIds().isEmpty()) {
+                    permission.put("specify_user_ids", btn.getAllowedOpenIds());
+                }
+                action.put("permission", permission);
+
+                Map<String, Object> renderData = new HashMap<>();
+                renderData.put("label", btn.getDisplayText());
+                renderData.put("visited_label", btn.getVisitedDisplayText());
+                renderData.put("style", btn.getStyle().getCode());
+
+                Map<String, Object> button = new HashMap<>();
+                button.put("id", btn.getButtonId());
                 button.put("render_data", renderData);
                 button.put("action", action);
 
@@ -268,15 +358,36 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyPrivateMarkdownMessage(String openId, String msgId, String markdownContent, Object keyboard) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", markdownContent);
+    public String replyPrivateArkMessage(String openId, String msgId, Ark ark) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.ARK.getValue())
+                .msgId(msgId)
+                .msgSeq(getNextMsgSeq(msgId))
+                .ark(ark)
+                .build();
 
+        return sendPrivateMessage(openId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyGroupArkMessage(String groupOpenId, String msgId, Ark ark) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.ARK.getValue())
+                .msgId(msgId)
+                .msgSeq(getNextMsgSeq(msgId))
+                .ark(ark)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyPrivateMarkdownMessage(String openId, String msgId, Markdown markdown, Object keyboard) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(markdown))
                 .keyboard(keyboard)
                 .build();
 
@@ -284,15 +395,12 @@ public class ChatService {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, String markdownContent, Object keyboard) {
-        Map<String, Object> markdownObj = new HashMap<>();
-        markdownObj.put("content", At.at(userOpenId) + markdownContent);
-
+    public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown, Object keyboard) {
         MessageBody request = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(markdownObj)
+                .markdown(buildMarkdown(At.at(userOpenId) + markdown.getText()))
                 .keyboard(keyboard)
                 .build();
 
@@ -350,13 +458,42 @@ public class ChatService {
         }
     }
 
+    private Map<String, Object> buildMarkdown(Markdown markdown) {
+        return buildMarkdown(markdown.getText());
+    }
+
+    private Map<String, Object> buildMarkdown(String markdownContent) {
+        Map<String, Object> markdownObj = new HashMap<>();
+        markdownObj.put("content", markdownContent);
+        return markdownObj;
+    }
+
     private String doSendMessage(String url, MessageBody request, String logType) {
         try {
             String json = objectMapper.writeValueAsString(request);
-            JsonNode result = HttpService.postJson(url, json,
+            var res = HttpService.postJsonDetailed(url, json,
                     "Authorization", "QQBot " + tokenManager.getAccessToken());
-            if (result != null) {
-                return result.get("id").asText() != null ? result.get("id").asText() : null;
+            if (res.status() >= 200 && res.status() < 300 && res.body() != null && !res.body().isBlank()) {
+                JsonNode result = objectMapper.readTree(res.body());
+                JsonNode idNode = result.get("id");
+                if (idNode != null && !idNode.asText().isBlank()) {
+                    return idNode.asText();
+                }
+                log.error("{}消息发送失败, 返回无 id: {}", logType, result);
+            } else {
+                log.error("{}消息发送失败, status: {}, body: {}", logType, res.status(), res.body());
+                if (res.body() != null) {
+                    try {
+                        JsonNode err = objectMapper.readTree(res.body());
+                        int code = err.path("err_code").asInt(0);
+                        String msg = err.path("message").asText(null);
+                        if (logType.equals("群聊") && url.contains("/groups/")) {
+                            String gid = url.substring(url.indexOf("/groups/") + 8, url.indexOf("/messages"));
+                            EventManager.getInstance().callEvent(new OfficialActiveMessageFailEvent(gid, code, msg));
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
             }
             return null;
         } catch (JsonProcessingException e) {

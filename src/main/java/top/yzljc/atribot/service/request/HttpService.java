@@ -2,6 +2,7 @@ package top.yzljc.atribot.service.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
@@ -120,16 +121,34 @@ public class HttpService {
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            String body = response.body();
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                String body = response.body();
                 if (body != null && !body.isBlank()) {
                     return mapper.readTree(body);
                 }
+                log.warn("POST 返回空 body! URL: {}, status: {}", url, response.statusCode());
+                return null;
             }
+            log.warn("POST 请求失败! URL: {}, status: {}, body: {}", url, response.statusCode(), body);
             return null;
         } catch (Exception e) {
             log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
             return null;
+        }
+    }
+
+    public record PostResult(int status, String body) {}
+
+    public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-Type", "application/json");
+            for (int i = 0; i < headers.length; i += 2) builder.header(headers[i], headers[i + 1]);
+            builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            return new PostResult(response.statusCode(), response.body());
+        } catch (Exception e) {
+            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            return new PostResult(0, null);
         }
     }
 
@@ -158,6 +177,53 @@ public class HttpService {
             return null;
         } catch (Exception e) {
             log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            return null;
+        }
+    }
+
+    public static JsonNode putJson(String url, Map<String, Object> bodyMap, String... headers) {
+        try {
+            String jsonBody = mapper.writeValueAsString(bodyMap);
+            return putJson(url, jsonBody, headers);
+        } catch (Exception e) {
+            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
+            return null;
+        }
+    }
+
+    public static JsonNode putJson(String url, Object bodyObj, String... headers) {
+        try {
+            String jsonBody = mapper.writeValueAsString(bodyObj);
+            return putJson(url, jsonBody, headers);
+        } catch (Exception e) {
+            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
+            return null;
+        }
+    }
+
+    public static JsonNode putJson(String url, String jsonBody, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json");
+            for (int i = 0; i < headers.length; i += 2) {
+                builder.header(headers[i], headers[i + 1]);
+            }
+            builder.PUT(HttpRequest.BodyPublishers.ofString(jsonBody));
+
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return NullNode.getInstance();
+            } else {
+                log.warn("PUT Request failed, HTTP code: {}, URL: {}", response.statusCode(), url);
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
             return null;
         }
     }

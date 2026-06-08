@@ -2,6 +2,7 @@ package top.yzljc.atribot.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.impl.UserRunCommandEvent;
 
@@ -90,7 +91,7 @@ public class CommandMap {
             if (label.equalsIgnoreCase("0")) {
                 sender.reply("执行命令时发生内部错误", false);
             } else {
-                sender.replyMarkdown(label, "> 执行命令时发生内部错误，请联系开发者处理！");
+                sender.replyMarkdown(label, TC.md("> 执行命令时发生内部错误，请联系开发者处理！"));
             }
             return true;
         }

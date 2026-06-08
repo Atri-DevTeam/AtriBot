@@ -7,19 +7,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Keyboard;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.config.Config;
-import top.yzljc.atribot.config.webui.Result;
+import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.functions.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.functions.official.minecraft.MinecraftUserData;
 import top.yzljc.atribot.functions.official.permission.GroupList;
 import top.yzljc.atribot.service.official.CommandButton;
-import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.FormatTools;
 
@@ -34,12 +34,10 @@ import java.util.Map;
 @Slf4j
 public class PlayerProfile implements Listener, CommandExecutor {
 
-    private static final ChatService service = Atri.getInstance().getChatService();
-    
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 
-    private static final Object keyboard = service.buildCmdKeyboard(List.of(
-            List.of(new CommandButton("c1", "绑定账号", "/verify", true, 1, 2))
+    private static final Object keyboard = Keyboard.build(List.of(
+            List.of(new CommandButton("c1", "绑定账号", "/verify", false, 1, 2))
     ));
 
     @Override
@@ -57,7 +55,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (args.length < 1) {
             MinecraftUserData data = MinecraftBind.getDataByOpenId(sender.unionOpenId());
             if (data.memberOpenId().equals("-1")) {
-                Markdown md = TC.md("您尚未绑定社区服务器账号，请先加入社区服务器通过以下方式开始绑定账号\n\n" + TC.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
+                Markdown md = TC.md("您尚未绑定社区服务器账号，请先加入社区服务器通过以下方式开始绑定账号\n\n" + Markdown.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
                 sender.sendMessage(md, keyboard);
                 return true;
             }
@@ -102,7 +100,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         layout.add(List.of(
                 new CommandButton("c5", "网页数据查询", "https://www.yzljc.top/mc/query/", true, 1, 0)
         ));
-        return service.buildCmdKeyboard(layout);
+        return Keyboard.build(layout);
     }
 
     private static boolean getMarkdownText(String key, String label, CommandSender sender, Object keyboard, boolean isWhitelisted) {
@@ -135,7 +133,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
             }
 
             String text = "玩家 **" + (isWhitelisted ? key : "---") + "** 的在档数据如下";
-            sender.replyMarkdown(label, text + "\n" + "![图片 #1188px #1188px](" + url + ")", keyboard);
+            sender.replyMarkdown(label, TC.md(text + "\n" + "![图片 #1188px #1188px](" + url + ")"), keyboard);
 
         } catch (Exception e) {
             log.error("发生异常: ", e);
@@ -184,7 +182,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 markdown.append(resultPart);
             }
 
-            sender.replyMarkdown(label, markdown.toString(), keyboard);
+            sender.replyMarkdown(label, TC.md(markdown.toString()), keyboard);
 
             return true;
         } catch (Exception e) {
@@ -241,7 +239,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 markdown += name + "\n" + body + "\n\n";
             }
 
-            sender.replyMarkdown(label, markdown, keyboard);
+            sender.replyMarkdown(label, TC.md(markdown), keyboard);
 
             return true;
         } catch (Exception e) {
@@ -297,7 +295,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
             markdown += String.format("\n**街机游戏综合**\n击鸡即急寄\n> 最佳存活：%d轮, 最佳得分：%d, 总击杀数：%d\n",
                     data.arcadeGameData.maxRound(), data.arcadeGameData.maxScore(), data.arcadeGameData.totalKills());
 
-            sender.replyMarkdown(label, markdown, keyboard);
+            sender.replyMarkdown(label, TC.md(markdown), keyboard);
 
             return true;
         } catch (Exception e) {

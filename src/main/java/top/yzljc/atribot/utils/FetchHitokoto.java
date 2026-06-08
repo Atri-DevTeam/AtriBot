@@ -30,7 +30,7 @@ public class FetchHitokoto {
             log.info("调用一言API: {} —— {}", hitokoto, authorOrigin);
 
             return "> " + hitokoto + "\n" +
-                    "     —— " + authorOrigin;
+                    ">     —— " + authorOrigin;
 
         } catch (Exception ex) {
             log.warn("一言获取异常: {}", ex.getMessage());

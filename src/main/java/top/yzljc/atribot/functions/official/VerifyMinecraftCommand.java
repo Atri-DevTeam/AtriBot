@@ -1,7 +1,7 @@
 package top.yzljc.atribot.functions.official;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Keyboard;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
@@ -14,7 +14,6 @@ import top.yzljc.atribot.functions.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.functions.official.minecraft.BindResponse;
 import top.yzljc.atribot.functions.official.permission.GroupList;
 import top.yzljc.atribot.service.official.CommandButton;
-import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.net.URI;
@@ -33,12 +32,10 @@ import java.util.concurrent.*;
 @Slf4j
 public class VerifyMinecraftCommand implements CommandExecutor, Listener {
 
-    private static final ChatService service = Atri.getInstance().getChatService();
-
     private static final Map<String, Long> pendingPossibleQQNum = new ConcurrentHashMap<>();
 
-    private static final Object keyboard = service.buildCmdKeyboard(List.of(
-            List.of(new CommandButton("c1", "绑定账号", "/verify", true, 1, 2))
+    private static final Object keyboard = Keyboard.build(List.of(
+            List.of(new CommandButton("c1", "绑定账号", "/verify", false, 1, 2))
     ));
 
     @Override
@@ -49,7 +46,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
         }
 
         if (args.length != 1) {
-            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，格式: /verify <验证码>\n\n" + TC.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
+            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，格式: /verify <验证码>\n\n" + Markdown.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
             sender.sendMessage(md, keyboard);
             return true;
         }
@@ -85,8 +82,8 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
                             new CommandButton("c3", "查询玩家在档数据", "/stats ", false, 1, 2)
                     ));
 
-                    Object keyboard = service.buildCmdKeyboard(layout);
-                    sender.replyMarkdown(label, markdown, keyboard);
+                    Object keyboard = Keyboard.build(layout);
+                    sender.replyMarkdown(label, TC.md(markdown), keyboard);
                 }
                 break;
 

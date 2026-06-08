@@ -49,6 +49,10 @@ public class RunScheduleTask {
         log.info("所有定时任务已启动");
     }
 
+    public static void shutdown() {
+        scheduler.shutdownNow();
+    }
+
     private static List<Class<?>> findClassesInPackage(String packageName) {
         String path = packageName.replace('.', '/');
         ClassLoader cl = RunScheduleTask.class.getClassLoader();

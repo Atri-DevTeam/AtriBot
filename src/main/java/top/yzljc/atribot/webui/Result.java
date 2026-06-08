@@ -1,4 +1,4 @@
-package top.yzljc.atribot.config.webui;
+package top.yzljc.atribot.webui;
 
 import lombok.Data;
 

@@ -1,10 +1,11 @@
 package top.yzljc.atribot.functions.official.minecraft;
 
-import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Keyboard;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.chat.official.At;
-import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.functions.official.permission.GroupList;
+import top.yzljc.atribot.functions.official.permission.VerifyFullMessageGroup;
 import top.yzljc.atribot.service.official.CommandButton;
 
 import java.util.List;
@@ -17,8 +18,6 @@ import java.util.List;
  * @Package top.yzljc.atribot.functions.official
  */
 public class NewsImpl {
-
-    private static final ChatService service = Atri.getInstance().getChatService();
 
     public static void handle(CommandSender sender, String label, String[] args) {
         GroupList.FunctionInfo statusInfo = GroupList.getFunctionInfo(sender.groupOpenId(), "mc_news");
@@ -49,7 +48,7 @@ public class NewsImpl {
                 点击下方按钮开启本功能则表示您已阅读并知晓上述内容，如后续需要关闭可再次使用此指令关闭功能
                 """.formatted(statusLine);
 
-        Object keyboard = service.buildCmdKeyboard(List.of(
+        Object keyboard = Keyboard.build(List.of(
                 List.of(
                         new CommandButton("c1", "开启", "/mc news on", false, 1, 2),
                         new CommandButton("c2", "关闭", "/mc news off", false, 3, 2)
@@ -65,30 +64,36 @@ public class NewsImpl {
             } else if (args[1].equalsIgnoreCase("on")) {
                 handleOn(sender, label);
             } else {
-                sender.replyMarkdown(label, "参数错误！请使用 /mc news on 来开启新闻动态推送，或 /mc news off 来关闭新闻动态推送");
+                sender.replyMarkdown(label, TC.md("参数错误！请使用 /mc news on 来开启新闻动态推送，或 /mc news off 来关闭新闻动态推送"));
             }
             return;
         }
-        sender.replyMarkdown(label, markdown, keyboard);
+        sender.replyMarkdown(label, TC.md(markdown), keyboard);
     }
 
     public static void handleOn(CommandSender sender, String label) {
+
+        if (!GroupList.isAllowedFullMessages(sender.groupOpenId())) {
+            sender.sendMessage(VerifyFullMessageGroup.m());
+            return;
+        }
+
         GroupList.FunctionInfo info = GroupList.getFunctionInfo(sender.groupOpenId(), "mc_news");
         if (info.enabled() && info.operator() != null) {
-            sender.replyMarkdown(label, "Minecraft新闻推送已经在 " + info.time() + " 被" + At.at(info.operator()).replace("\n", "") + "开启过了！");
+            sender.replyMarkdown(label, TC.md("Minecraft新闻推送已经在 " + info.time() + " 被" + At.at(info.operator()).replace("\n", "") + "开启过了！"));
         } else {
             GroupList.setFunctionEnabled(sender.groupOpenId(), "mc_news", true, sender.unionOpenId());
-            sender.replyMarkdown(label, "本群内Minecraft新闻推送已被" + At.at(sender.unionOpenId()).replace("\n", "") + "开启！如果想关闭，请使用 /mc news off 来关闭新闻动态推送");
+            sender.replyMarkdown(label, TC.md("本群内Minecraft新闻推送已被" + At.at(sender.unionOpenId()).replace("\n", "") + "开启！如果想关闭，请使用 /mc news off 来关闭新闻动态推送"));
         }
     }
 
     public static void handleOff(CommandSender sender, String label) {
         GroupList.FunctionInfo info = GroupList.getFunctionInfo(sender.groupOpenId(), "mc_news");
         if (!info.enabled() && info.operator() != null) {
-            sender.replyMarkdown(label, "Minecraft新闻推送已经在 " + info.time() + " 被" + At.at(info.operator()).replace("\n", "") + "关闭过了！");
+            sender.replyMarkdown(label, TC.md("Minecraft新闻推送已经在 " + info.time() + " 被" + At.at(info.operator()).replace("\n", "") + "关闭过了！"));
         } else {
             GroupList.setFunctionEnabled(sender.groupOpenId(), "mc_news", false, sender.unionOpenId());
-            sender.replyMarkdown(label, "本群内Minecraft新闻推送已被" + At.at(sender.unionOpenId()).replace("\n", "") + "关闭！如果想再次开启，请使用 /mc news on 来开启新闻动态推送");
+            sender.replyMarkdown(label, TC.md("本群内Minecraft新闻推送已被" + At.at(sender.unionOpenId()).replace("\n", "") + "关闭！如果想再次开启，请使用 /mc news on 来开启新闻动态推送"));
         }
     }
 }

@@ -20,6 +20,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.impl.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.impl.OfficialC2CMessageEvent;
 import top.yzljc.atribot.chat.official.At;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.request.SaSignHeader;
 import top.yzljc.atribot.chat.onebot.GroupInformation;
@@ -366,7 +367,7 @@ public class Feedback implements CommandExecutor, Listener {
                     "---\n\n" +
                     "如有任何问题欢迎继续联系我们！";
 
-            event.replyMarkdown(reply);
+            event.sendMessage(TC.md(reply));
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUnionOpenId(), remaining.getUuid());
         }
     }
@@ -387,7 +388,7 @@ public class Feedback implements CommandExecutor, Listener {
                     "---\n\n" +
                     "如有任何问题欢迎继续联系我们！";
 
-            event.replyMarkdown(reply);
+            event.sendMessage(TC.md(reply));
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUnionOpenId(), remaining.getUuid());
         }
     }

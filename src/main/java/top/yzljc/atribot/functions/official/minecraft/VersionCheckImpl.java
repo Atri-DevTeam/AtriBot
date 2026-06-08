@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.onebot.GroupInformation;
 import top.yzljc.atribot.chat.onebot.GroupMessage;
@@ -173,7 +174,7 @@ public final class VersionCheckImpl {
             case "1", "2" -> {
 
                 String versionInfo = """
-                        **Minecraft最新版本信息**
+                        %s **Minecraft最新版本信息**
                         
                         正式版: %s
                         
@@ -183,6 +184,7 @@ public final class VersionCheckImpl {
                         
                         > 发布于 %s
                         """.formatted(
+                        Markdown.img("https://www.yzljc.top/img/grass-block-img.png", 24, 24),
                         release != null ? release.id() : "未知",
                         release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
                         snapshot != null ? snapshot.id() : "未知",
@@ -226,7 +228,7 @@ public final class VersionCheckImpl {
         groups.stream().filter(group -> GroupConfigManager.isFeatureEnabled(group, "mc_news"))
                 .forEach(group -> GroupMessage.chatMessage(group, textInfo));
 
-        officialGroups.forEach(group -> Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(group, markdownInfo));
+        officialGroups.forEach(group -> Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(group, TC.md(markdownInfo)));
 
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
     }

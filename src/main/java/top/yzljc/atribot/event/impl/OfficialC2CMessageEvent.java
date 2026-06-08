@@ -2,6 +2,7 @@ package top.yzljc.atribot.event.impl;
 
 import lombok.Getter;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Author;
 import top.yzljc.atribot.event.Event;
 
@@ -42,17 +43,17 @@ public class OfficialC2CMessageEvent extends Event {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyText(String text) {
+    public String sendMessage(String text) {
         return Atri.getInstance().getChatService().replyPrivateTextMessage(this.author.getUnionOpenId(), this.msgId, text);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String markdown) {
+    public String sendMessage(Markdown markdown) {
         return Atri.getInstance().getChatService().replyPrivateMarkdownMessage(this.author.getUnionOpenId(), this.msgId, markdown);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMarkdown(String markdown, Object keyboard) {
+    public String sendMessage(Markdown markdown, Object keyboard) {
         return Atri.getInstance().getChatService().replyPrivateMarkdownMessage(this.author.getUnionOpenId(), this.msgId, markdown, keyboard);
     }
 }

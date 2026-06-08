@@ -36,6 +36,13 @@ public class OfficialManager {
         webSocketClient.connect();
     }
 
+    public void stop() {
+        if (webSocketClient != null) {
+            webSocketClient.shutdown();
+            webSocketClient = null;
+        }
+    }
+
     private String getGateway(String accessToken) throws Exception {
         String gatewayApi = apiBaseUrl + "/gateway";
 

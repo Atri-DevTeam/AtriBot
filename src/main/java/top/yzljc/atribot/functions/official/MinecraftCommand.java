@@ -1,5 +1,7 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -9,20 +11,26 @@ import top.yzljc.atribot.functions.official.minecraft.VersionCheckImpl;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName MinecraftUtils
+ * @ClassName MinecraftCommand
  * @Created_at 2026/05/11
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.official
  */
-public class MinecraftUtils implements CommandExecutor {
+public class MinecraftCommand implements CommandExecutor {
+
+    private static final Markdown ValidCommands = TC.md(
+            Markdown.img("https://www.yzljc.top/img/grass-block-img.png", 24, 24) + " **Minecraft 指令列表**\n\n" +
+                    "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
+                    "2. " + Markdown.enterCommand("/mc news", "/mc news") + " - Minecraft更新动态推送设置\n\n" +
+                    "3. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本"
+    );
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (label.equals("0")) {
-            return true;
-        }
+
         if (args.length < 1) {
-            return false;
+            sender.sendMessage(ValidCommands);
+            return true;
         }
 
         String subCommand = args[0].toLowerCase();
@@ -46,6 +54,7 @@ public class MinecraftUtils implements CommandExecutor {
             return true;
         }
 
-        return false;
+        sender.sendMessage(ValidCommands);
+        return true;
     }
 }

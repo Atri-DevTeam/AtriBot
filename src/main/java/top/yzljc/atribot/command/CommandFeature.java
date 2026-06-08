@@ -2,6 +2,7 @@ package top.yzljc.atribot.command;
 
 import lombok.Getter;
 import lombok.Setter;
+import top.yzljc.atribot.chat.official.TC;
 
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class CommandFeature extends Command {
                 if (commandLabel.equals("0")) {
                     sender.reply("用法: " + this.getUsage(), false);
                 } else {
-                    sender.replyMarkdown(commandLabel, "> 用法: " + this.getUsage());
+                    sender.replyMarkdown(commandLabel, TC.md("> 用法: " + this.getUsage()));
                 }
             }
             return success;

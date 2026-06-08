@@ -1,5 +1,8 @@
 package top.yzljc.atribot.chat.official;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName TC
@@ -12,11 +15,7 @@ public class TC {
         return new Markdown(text);
     }
 
-    public static String img(String url, int width, int height) {
-        return String.format("![img #%dpx #%dpx](%s)\n\n", width, height, url);
-    }
-
-    public static String img(String alt, String url, int width, int height) {
-        return String.format("![%s #%dpx #%dpx](%s)\n\n", alt, width, height, url);
+    public static Ark ark(int templateId, List<Map<String, Object>> content) {
+        return Ark.of(templateId, content);
     }
 }
