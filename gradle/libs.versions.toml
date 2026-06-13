@@ -1,0 +1,39 @@
+# https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
+
+[versions]
+ch-qos-logback-logback-classic = "1.5.32"
+cn-dev33-sa-token-sign = "1.45.0"
+cn-v6tail-lunar = "1.7.7"
+com-fasterxml-jackson-core-jackson-annotations = "2.22"
+com-fasterxml-jackson-core-jackson-core = "2.22.0"
+com-fasterxml-jackson-core-jackson-databind = "2.22.0"
+com-google-guava-guava = "33.6.0-jre"
+com-mysql-mysql-connector-j = "9.7.0"
+com-zaxxer-hikaricp = "7.0.2"
+io-javalin-javalin = "6.6.0"
+net-dankito-readability4j-readability4j = "1.0.8"
+org-apache-commons-commons-text = "1.15.0"
+org-java-websocket-java-websocket = "1.6.0"
+org-jetbrains-kotlin-kotlin-stdlib = "2.1.10"
+org-jsoup-jsoup = "1.22.2"
+org-projectlombok-lombok = "1.18.46"
+org-yaml-snakeyaml = "2.6"
+
+[libraries]
+ch-qos-logback-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "ch-qos-logback-logback-classic" }
+cn-dev33-sa-token-sign = { module = "cn.dev33:sa-token-sign", version.ref = "cn-dev33-sa-token-sign" }
+cn-v6tail-lunar = { module = "cn.6tail:lunar", version.ref = "cn-v6tail-lunar" }
+com-fasterxml-jackson-core-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "com-fasterxml-jackson-core-jackson-annotations" }
+com-fasterxml-jackson-core-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "com-fasterxml-jackson-core-jackson-core" }
+com-fasterxml-jackson-core-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "com-fasterxml-jackson-core-jackson-databind" }
+com-google-guava-guava = { module = "com.google.guava:guava", version.ref = "com-google-guava-guava" }
+com-mysql-mysql-connector-j = { module = "com.mysql:mysql-connector-j", version.ref = "com-mysql-mysql-connector-j" }
+com-zaxxer-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "com-zaxxer-hikaricp" }
+io-javalin-javalin = { module = "io.javalin:javalin", version.ref = "io-javalin-javalin" }
+net-dankito-readability4j-readability4j = { module = "net.dankito.readability4j:readability4j", version.ref = "net-dankito-readability4j-readability4j" }
+org-apache-commons-commons-text = { module = "org.apache.commons:commons-text", version.ref = "org-apache-commons-commons-text" }
+org-java-websocket-java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "org-java-websocket-java-websocket" }
+org-jetbrains-kotlin-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "org-jetbrains-kotlin-kotlin-stdlib" }
+org-jsoup-jsoup = { module = "org.jsoup:jsoup", version.ref = "org-jsoup-jsoup" }
+org-projectlombok-lombok = { module = "org.projectlombok:lombok", version.ref = "org-projectlombok-lombok" }
+org-yaml-snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "org-yaml-snakeyaml" }

@@ -1,0 +1,69 @@
+package top.yzljc.atribot.event.impl;
+
+import lombok.Getter;
+import top.yzljc.atribot.chat.onebot.GroupMessage;
+import top.yzljc.atribot.event.*;
+import top.yzljc.atribot.chat.onebot.impl.MessageSegment;
+
+import java.util.LinkedList;
+import java.util.List;
+
+public class GroupMessageEvent extends Event implements Cancellable {
+    private boolean cancelled;
+
+    @Getter
+    private final long messageId;
+    @Getter
+    private final long groupId;
+    @Getter
+    private final long userId;
+    @Getter
+    private final String rawMessage;
+    @Getter
+    private final LinkedList<MessageSegment> message;
+    @Getter
+    private final long time;
+    @Getter
+    private final long selfId;
+    @Getter
+    private final Sender sender;
+    @Getter
+    private final Group group;
+    @Getter
+    private final List<Mention> mentions;
+
+    public GroupMessageEvent(long messageId, long groupId, long userId, String rawMessage,
+                             LinkedList<MessageSegment> message,
+                             long time, long selfId, Sender sender, List<Mention> mentions) {
+        this.messageId = messageId;
+        this.groupId = groupId;
+        this.userId = userId;
+        this.rawMessage = rawMessage;
+        this.message = message;
+        this.time = time;
+        this.selfId = selfId;
+        this.sender = sender;
+        if (this.sender != null) {
+            this.sender.setReplyGroupId(groupId);
+        }
+        if (this.sender != null) {
+            this.sender.setReplyMessageId(messageId);
+        }
+        this.group = new Group(groupId);
+        this.mentions = mentions;
+    }
+
+    public void recall() {
+        GroupMessage.recallMessage(this.messageId);
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    @Override
+    public void setCancelled(boolean cancel) {
+        this.cancelled = cancel;
+    }
+}

@@ -52,3 +52,17 @@ buildNumber.properties
 .vimrc
 
 .vscode/
+
+config.yml
+data.json
+hypixel_news_history.json
+news_history.json
+OneText-Library.json
+project-info.json
+atribot.yml
+.gradle
+build
+/logs/
+/minecraft_version.json
+/webui/dist/
+/webui/node_modules/
