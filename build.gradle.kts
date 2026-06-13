@@ -6,7 +6,7 @@ plugins {
     `java-library`
     `maven-publish`
     application
-    id("com.gradleup.shadow") version "9.3.1"
+    id("com.gradleup.shadow") version "9.4.2"
 }
 
 group = "top.yzljc"

@@ -1,7 +1,7 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 
 [versions]
-ch-qos-logback-logback-classic = "1.5.32"
+ch-qos-logback-logback-classic = "1.5.34"
 cn-dev33-sa-token-sign = "1.45.0"
 cn-v6tail-lunar = "1.7.7"
 com-fasterxml-jackson-core-jackson-annotations = "2.22"
@@ -10,11 +10,11 @@ com-fasterxml-jackson-core-jackson-databind = "2.22.0"
 com-google-guava-guava = "33.6.0-jre"
 com-mysql-mysql-connector-j = "9.7.0"
 com-zaxxer-hikaricp = "7.0.2"
-io-javalin-javalin = "6.6.0"
+io-javalin-javalin = "7.2.2"
 net-dankito-readability4j-readability4j = "1.0.8"
 org-apache-commons-commons-text = "1.15.0"
 org-java-websocket-java-websocket = "1.6.0"
-org-jetbrains-kotlin-kotlin-stdlib = "2.1.10"
+org-jetbrains-kotlin-kotlin-stdlib = "2.4.0"
 org-jsoup-jsoup = "1.22.2"
 org-projectlombok-lombok = "1.18.46"
 org-yaml-snakeyaml = "2.6"
