@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-const TOKEN_KEY = 'officialWebuiToken'
+const LEGACY_TOKEN_KEY = 'officialWebuiToken'
 const API_BASE = import.meta.env.VITE_API_BASE
 
-async function verifyToken(token) {
+async function verifySession() {
   try {
     const res = await fetch(`${API_BASE}/auth/verify`, {
-      headers: { Authorization: `Bearer ${token}` }
+      credentials: 'same-origin',
+      cache: 'no-store'
     })
     return res.status === 200
   } catch {
@@ -39,24 +40,21 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const token = localStorage.getItem(TOKEN_KEY)
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
 
-  if (to.meta.guest && token) {
-    const valid = await verifyToken(token)
+  if (to.meta.guest) {
+    const valid = await verifySession()
     if (valid) return '/'
-    localStorage.removeItem(TOKEN_KEY)
     return true
   }
 
   if (to.meta.requiresAuth) {
-    if (!token) return '/login'
-    const valid = await verifyToken(token)
+    const valid = await verifySession()
     if (!valid) {
-      localStorage.removeItem(TOKEN_KEY)
       return '/login'
     }
   }
 })
 
 export default router
-export { TOKEN_KEY, API_BASE }
+export { LEGACY_TOKEN_KEY, API_BASE, verifySession }

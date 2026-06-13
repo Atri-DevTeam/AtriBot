@@ -484,6 +484,11 @@ public class GroupList {
      *
      * @return FunctionInfo，若功能不存在则 enabled 为 false
      */
+    /** 获取群的所有功能配置 JSON（key → {enabled, operator, time}） */
+    public static ObjectNode getRawFunctionConfig(String groupOpenId) {
+        return getFunctionConfig(groupOpenId);
+    }
+
     public static FunctionInfo getFunctionInfo(String groupOpenId, String functionKey) {
         ObjectNode config = getFunctionConfig(groupOpenId);
 

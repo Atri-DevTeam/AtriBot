@@ -20,8 +20,6 @@ import top.yzljc.atribot.event.impl.OfficialInteractionEvent;
 import top.yzljc.atribot.functions.official.permission.GroupList;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author YZ_Ljc_
@@ -57,11 +55,9 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 
         Markdown md = TC.md(
                 "**全量消息权限申请**\n\n" +
-                        "> 请群主按下方操作开启权限\n\n" +
-                        "> 需要QQ版本为9.2.90及以上，IOS未知\n\n" +
+                        "> 请群主按下方操作开启权限，需要QQ版本为9.2.90及以上，IOS未知\n\n" +
                         Markdown.img("https://www.yzljc.top/img/full-message-guide.png", 600, 552) + "\n\n" +
-                        "群主批准后，机器人可主动发送消息，并获取群内全部消息，以提供更加便捷的服务\n\n" +
-                        "授权完成后，请点击第二个按钮完成验证"
+                        "> 群主批准后，机器人可主动发送消息，指令不再需要@，并获取群内全部消息，以提供更加便捷的服务,授权完成后，请点击第二个按钮完成验证\n\n"
         );
         String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
         Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);

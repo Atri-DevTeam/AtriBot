@@ -21,6 +21,7 @@ import top.yzljc.atribot.event.impl.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.impl.OfficialC2CMessageEvent;
 import top.yzljc.atribot.chat.official.At;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.request.SaSignHeader;
 import top.yzljc.atribot.chat.onebot.GroupInformation;
@@ -351,7 +352,7 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void onGroupChat(OfficialGroupAtMessageCreateEvent event) {
+    public void onGroupAtChat(OfficialGroupAtMessageCreateEvent event) {
         FeedbackDTO remaining = consumeReplyByProvider(event.getUnionOpenId());
         if (remaining != null) {
             String reply = "您的反馈已被受理\n\n" +
@@ -371,6 +372,29 @@ public class Feedback implements CommandExecutor, Listener {
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUnionOpenId(), remaining.getUuid());
         }
     }
+
+    @EventHandler
+    public void onGroupChat(OfficialGroupMessageCreateEvent event) {
+        FeedbackDTO remaining = consumeReplyByProvider(event.getAuthor().getUnionOpenId());
+        if (remaining != null) {
+            String reply = "您的反馈已被受理\n\n" +
+                    "---\n\n" +
+                    "反馈编号: `" + remaining.getId() + "`\n\n" +
+                    "UUID: `" + remaining.getUuid() + "`\n\n" +
+                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
+                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
+                    "---\n\n" +
+                    "回复人: `" + remaining.getReplier() + "`\n\n" +
+                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
+                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
+                    "---\n\n" +
+                    "如有任何问题欢迎继续联系我们！";
+
+            event.sendMessage(TC.md(reply));
+            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getAuthor().getUnionOpenId(), remaining.getUuid());
+        }
+    }
+
     @EventHandler
     public void onPrivateChat(OfficialC2CMessageEvent event) {
         FeedbackDTO remaining = consumeReplyByProvider(event.getUnionOpenId());

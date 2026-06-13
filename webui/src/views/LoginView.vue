@@ -27,9 +27,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { TOKEN_KEY, API_BASE } from '../router.js'
+import { API_BASE } from '../router.js'
 
 const router = useRouter()
 
@@ -39,19 +39,6 @@ const notice = ref('')
 const avatarUrl = ref('')
 const botName = ref('AtriBot')
 
-onMounted(async () => {
-  try {
-    const [a, n] = await Promise.all([
-      fetch('/webui/meta/avatar').then(r => r.json()),
-      fetch('/webui/meta/name').then(r => r.text())
-    ])
-    if (a.appId && a.botOpenId) {
-      avatarUrl.value = `https://thirdqq.qlogo.cn/qqapp/${a.appId}/${a.botOpenId}/100`
-    }
-    if (n) botName.value = n
-  } catch { /* ignore */ }
-})
-
 async function login() {
   const token = tokenInput.value.trim()
   if (!token) return
@@ -60,11 +47,34 @@ async function login() {
   notice.value = '正在验证 Token…'
 
   try {
+    const challengeRes = await fetch(`${API_BASE}/auth/challenge`, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
+    if (challengeRes.status === 503) {
+      notice.value = 'WebUI 未开启。'
+      return
+    }
+    if (challengeRes.status !== 200) {
+      notice.value = 'Token 未配置或服务不可用。'
+      return
+    }
+
+    const challengePayload = await challengeRes.json()
+    const nonce = challengePayload.data?.nonce
+    if (!nonce) {
+      notice.value = '认证挑战无效。'
+      return
+    }
+
+    const proof = await hmacSha256Base64Url(token, nonce)
     const res = await fetch(`${API_BASE}/auth/verify`, {
-      headers: { Authorization: `Bearer ${token}` }
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce, proof })
     })
     if (res.status === 200) {
-      localStorage.setItem(TOKEN_KEY, token)
       tokenInput.value = ''
       router.replace('/')
     } else {
@@ -75,5 +85,27 @@ async function login() {
   } finally {
     loading.value = false
   }
+}
+
+async function hmacSha256Base64Url(secret, message) {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(message))
+  return base64Url(signature)
+}
+
+function base64Url(buffer) {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 </script>

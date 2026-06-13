@@ -110,12 +110,84 @@ public class OfficialWebUIController {
         )));
     }
 
-    public static void verifyToken(Context ctx) {
-        String auth = ctx.header("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            ctx.cookie("webui_token", auth.substring(7), 1440); // 24h
+    public static void createChallenge(Context ctx) {
+        if (isBlank(getConfiguredToken())) {
+            ctx.status(401).json(Result.fail(401, "Official WebUI Token 未配置"));
+            return;
         }
+
+        String nonce = WebUISessionManager.createChallenge();
+        ctx.header("Cache-Control", "no-store");
+        ctx.json(Result.success(new ChallengeDTO(
+                nonce,
+                WebUISessionManager.challengeExpiresAt().toString(),
+                "HMAC-SHA256"
+        )));
+    }
+
+    public static void login(Context ctx) {
+        String configuredToken = getConfiguredToken();
+        if (isBlank(configuredToken)) {
+            clearSessionCookies(ctx);
+            ctx.status(401).json(Result.fail(401, "Official WebUI Token 未配置"));
+            return;
+        }
+
+        LoginDTO dto = ctx.bodyAsClass(LoginDTO.class);
+        if (dto == null || !WebUISessionManager.verifyChallenge(dto.getNonce(), dto.getProof(), configuredToken)) {
+            clearSessionCookies(ctx);
+            ctx.status(401).json(Result.fail(401, "未授权"));
+            return;
+        }
+
+        String sessionId = WebUISessionManager.createSession();
+        setSessionCookie(ctx, sessionId);
         ctx.json(Result.success("ok"));
+    }
+
+    public static void verifyToken(Context ctx) {
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void logout(Context ctx) {
+        String sessionId = ctx.cookie(WebUISessionManager.SESSION_COOKIE);
+        WebUISessionManager.removeSession(sessionId);
+        clearSessionCookies(ctx);
+        ctx.json(Result.success("ok"));
+    }
+
+    private static String getConfiguredToken() {
+        String token = Config.getInstance().getOfficialWebuiToken();
+        if (token == null || token.isBlank() || "null".equalsIgnoreCase(token)) {
+            return null;
+        }
+        return token;
+    }
+
+    private static void setSessionCookie(Context ctx, String sessionId) {
+        clearLegacyTokenCookie(ctx);
+        ctx.res().addHeader("Set-Cookie", WebUISessionManager.SESSION_COOKIE + "=" + sessionId
+                + "; Path=/; Max-Age=" + WebUISessionManager.SESSION_TTL_SECONDS
+                + "; HttpOnly; SameSite=Strict");
+    }
+
+    private static void clearSessionCookies(Context ctx) {
+        ctx.res().addHeader("Set-Cookie", WebUISessionManager.SESSION_COOKIE
+                + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+        clearLegacyTokenCookie(ctx);
+    }
+
+    private static void clearLegacyTokenCookie(Context ctx) {
+        ctx.res().addHeader("Set-Cookie", "webui_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+    }
+
+    public record ChallengeDTO(String nonce, String expiresAt, String algorithm) {
+    }
+
+    @Data
+    public static class LoginDTO {
+        private String nonce;
+        private String proof;
     }
 
     public record ConfigDTO(String appId, String botOpenId, String botName) {
@@ -156,12 +228,75 @@ public class OfficialWebUIController {
 
     // ═══════════════ C2C 私聊 ═══════════════
 
+    public static void getGroupFunctions(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        ctx.json(Result.success(GroupList.getRawFunctionConfig(groupOpenId)));
+    }
+
+    public static void setGroupWhitelist(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        GroupList.setWhitelist(groupOpenId, enabled);
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setGroupBlacklist(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        GroupList.setGroupBlacklisted(groupOpenId, enabled);
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setGroupAllowedActive(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        GroupList.setAllowedFullMessage(groupOpenId, enabled);
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setGroupFunction(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        String functionKey = ctx.pathParam("functionKey");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        GroupList.setFunctionEnabled(groupOpenId, functionKey, enabled, "webui");
+        ctx.json(Result.success("ok"));
+    }
+
     public static void listC2CUsers(Context ctx) {
         List<C2CUserDTO> users = new ArrayList<>();
         for (var data : C2CList.listAll()) {
-            users.add(new C2CUserDTO(data.userOpenId(), data.role().name()));
+            users.add(new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions()));
         }
         ctx.json(Result.success(users));
+    }
+
+    public static void getC2CUserPermissions(Context ctx) {
+        var data = C2CList.getData(ctx.pathParam("userOpenId"));
+        ctx.json(Result.success(new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions())));
+    }
+
+    public static void setC2CUserRole(Context ctx) {
+        var data = C2CList.getData(ctx.pathParam("userOpenId"));
+        String role = ctx.queryParam("role");
+        try {
+            var r = role != null ? top.yzljc.atribot.functions.official.permission.PermissionRole.valueOf(role.toUpperCase()) : data.role();
+            C2CList.setPermissionGroup(ctx.pathParam("userOpenId"), r, data.permissions());
+            ctx.json(Result.success("ok"));
+        } catch (IllegalArgumentException e) {
+            ctx.json(Result.fail(400, "无效的角色: " + role));
+        }
+    }
+
+    public static void toggleC2CUserPermission(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        String perm = ctx.pathParam("permission");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        if (enabled) {
+            C2CList.addPermission(userOpenId, perm);
+        } else {
+            C2CList.removePermission(userOpenId, perm);
+        }
+        ctx.json(Result.success("ok"));
     }
 
     public static void fetchC2CMessages(Context ctx) {
@@ -209,7 +344,7 @@ public class OfficialWebUIController {
         ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
     }
 
-    public record C2CUserDTO(String userOpenId, String role) {}
+    public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions) {}
 
     @Data
     public static class SendC2CMessageDTO {

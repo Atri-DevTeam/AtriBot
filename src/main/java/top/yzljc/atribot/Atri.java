@@ -18,6 +18,7 @@ import top.yzljc.atribot.config.Reload;
 import top.yzljc.atribot.config.groups.GroupConfigInfo;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
 import top.yzljc.atribot.config.groups.GroupModeManager;
+import top.yzljc.atribot.webui.official.WebUISessionManager;
 import top.yzljc.atribot.webui.onebot.OneBotWebUIRouter;
 import top.yzljc.atribot.functions.official.ChatContentRecord;
 import top.yzljc.atribot.feature.Broadcast;
@@ -250,6 +251,10 @@ public class Atri {
             GroupList.init();
             C2CList.init();
             TufeElecBind.init();
+        }
+
+        if (Config.getInstance().isDebugMode()) {
+            WebUISessionManager.start();
         }
 
         SetProjectInfo.setInfo();

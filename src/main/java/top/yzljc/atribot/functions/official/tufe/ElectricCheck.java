@@ -91,7 +91,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
 
             if ("private-check".equals(args[0])) {
                 String queryResult = handlePrivateModule();
-                sender.replyMarkdown(label, TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)), getKeys("903004", "1", false, false, "/elec 903004 1 0"));
+                sender.replyMarkdown(label, TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)), getKeys("903004", "903004", "1", false, false, "/elec 903004 1 0"));
                 return;
             }
 
@@ -108,7 +108,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
             if (event.getContent().equalsIgnoreCase(k)) {
                 ThreadManager.execute(() -> {
                     String queryResult = handlePrivateModule();
-                    event.sendMessage(TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)), getKeys("903004", "1", false, false, "/elec 903004 1 0"));
+                    event.sendMessage(TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)), getKeys("903004", "903004", "1", false, false, "/elec 903004 1 0"));
                 });
                 break;
             }
@@ -159,15 +159,15 @@ public class ElectricCheck implements Listener, CommandExecutor {
         }
     }
 
-    private static Object getKeys(String roomNum, String schoolRegion, boolean hasDorm, boolean hasAirCon, String lastCommand) {
+    private static Object getKeys(String dormRoomNum, String acRoomNum, String schoolRegion, boolean hasDorm, boolean hasAirCon, String lastCommand) {
         List<List<CommandButton>> layout = new ArrayList<>();
         List<CommandButton> bindButtons = new ArrayList<>();
 
         if (hasDorm) {
-            bindButtons.add(new CommandButton("c1", "宿舍电表", "/elec " + roomNum + " " + schoolRegion + " 0", false, 0, 2));
+            bindButtons.add(new CommandButton("c1", "宿舍电表", "/elec " + dormRoomNum + " " + schoolRegion + " 0", false, 0, 2));
         }
         if (hasAirCon) {
-            bindButtons.add(new CommandButton("c2", "空调电表", "/elec " + roomNum + " " + schoolRegion + " 1", false, 0, 2));
+            bindButtons.add(new CommandButton("c2", "空调电表", "/elec " + acRoomNum + " " + schoolRegion + " 1", false, 0, 2));
         }
 
         if (!bindButtons.isEmpty()) {
@@ -223,7 +223,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
             sender.replyMarkdown(label, TC.md(
                     info.replace("{placeholder_feedback}", "当前未绑定任何电表信息，请使用/elec help查看帮助")
                             .replace("{placeholder_data}\n\n", "")),
-                    getKeys("", "", false, false, "/elec "));
+                    getKeys("", "", "", false, false, "/elec "));
             return;
         }
 
@@ -337,11 +337,15 @@ public class ElectricCheck implements Listener, CommandExecutor {
                         "透支电量：`" + checkData.rtzd() + "` 度\n" +
                         "当前工作状态：`" + checkData.rgzzt() + "`";
 
-        boolean hasDorm = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 0) != null;
-        boolean hasAirCon = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 1) != null;
+        ElecDTO dormBind = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 0);
+        ElecDTO acBind = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 1);
+        boolean hasDorm = dormBind != null;
+        boolean hasAirCon = acBind != null;
+        String dormRoomNum = hasDorm ? String.valueOf(dormBind.roomId()) : String.valueOf(roomNum);
+        String acRoomNum = hasAirCon ? String.valueOf(acBind.roomId()) : String.valueOf(roomNum);
 
         sender.replyMarkdown(label, TC.md(info.replace("{placeholder_feedback}", feedback).replace("{placeholder_data}", queryResult)),
-                getKeys(String.valueOf(roomNum), String.valueOf(schoolRegion), hasDorm, hasAirCon, command)
+                getKeys(dormRoomNum, acRoomNum, String.valueOf(schoolRegion), hasDorm, hasAirCon, command)
         );
     }
 

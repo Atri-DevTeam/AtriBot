@@ -95,7 +95,7 @@ public class EventRecord implements Listener {
         if (event.getLabel().equals("2") && GroupList.isGroupBlacklisted(event.getSender().groupOpenId())) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = Atri.getInstance().getChatService().buildCmdKeyboard(List.of(
-                        List.of(new CommandButton("c1", "联系开发者", "/feedback", true, 1, 2))
+                        List.of(new CommandButton("c1", "联系开发者", "/feedback ", true, 1, 2))
                 ));
                 event.getSender().replyMarkdown(event.getLabel(), TC.md("> 该群聊因违反指令使用规则已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
                 log.warn("Command from blacklisted group {}: {} {}", event.getSender().groupOpenId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
@@ -107,7 +107,7 @@ public class EventRecord implements Listener {
         if (event.getLabel().equals("1") && C2CList.hasRole(event.getSender().unionOpenId(), PermissionRole.BLACKLIST)) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = Atri.getInstance().getChatService().buildCmdKeyboard(List.of(
-                        List.of(new CommandButton("c1", "联系开发者", "/feedback", true, 1, 2))
+                        List.of(new CommandButton("c1", "联系开发者", "/feedback ", true, 1, 2))
                 ));
                 event.getSender().replyMarkdown(event.getLabel(), TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
                 log.warn("Command from blacklisted user {}: {} {}", event.getSender().unionOpenId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
@@ -119,7 +119,7 @@ public class EventRecord implements Listener {
         if (event.getLabel().equals("2") && C2CList.hasRole(event.getSender().unionOpenId(), PermissionRole.BLACKLIST)) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = Atri.getInstance().getChatService().buildCmdKeyboard(List.of(
-                        List.of(new CommandButton("c1", "联系开发者", "/feedback", true, 1, 2))
+                        List.of(new CommandButton("c1", "联系开发者", "/feedback ", true, 1, 2))
                 ));
                 event.getSender().replyMarkdown(event.getLabel(), TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
                 log.warn("Command from group-blacklisted user {}: {} {}", event.getSender().unionOpenId(), event.getCommandHeader(), String.join(" ", event.getArgs()));

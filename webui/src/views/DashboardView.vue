@@ -1,6 +1,15 @@
 <template>
   <div class="shell">
-    <aside class="sidebar">
+    <div v-if="sidebarOpen" class="sidebar-backdrop show" @click="sidebarOpen = false"/>
+
+    <aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
+      <div class="sidebar-head">
+        <button class="sidebar-close" aria-label="关闭侧边栏" @click="sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
       <div class="brand">
         <img v-if="botOpenId && appId" class="brand-avatar" :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${botOpenId}/100`" referrerpolicy="no-referrer" />
         <div v-else class="brand-mark">A</div>
@@ -10,17 +19,37 @@
         </div>
       </div>
 
+      <nav class="side-nav">
+        <button class="side-nav-item" :class="{ active: $route.path === '/' }" @click="$router.push('/'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          群聊
+        </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/c2c' }" @click="$router.push('/c2c'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          私聊
+        </button>
+      </nav>
+
       <div class="side-toolbar">
-        <button class="ghost-button active" @click="$router.push('/')">群聊</button>
-        <button class="ghost-button" @click="$router.push('/c2c')">私聊</button>
         <button class="ghost-button" :disabled="loadingGroups" @click="loadGroups">刷新</button>
         <button class="ghost-button" @click="logout">退出</button>
       </div>
     </aside>
 
+    <div class="sidebar-spacer" />
+
     <main class="workspace">
       <header class="topbar">
         <div class="topbar-left">
+          <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <h2>群聊消息</h2>
           <!-- 下拉式群选择器 -->
           <div class="group-picker">
@@ -62,9 +91,18 @@
             </div>
           </div>
         </div>
-        <div class="status-pill">
-          <span class="dot ok"></span>
-          {{ totalMessages }} 条记录
+        <div class="topbar-right">
+          <span class="status-pill">
+            <span class="dot ok"></span>
+            {{ totalMessages }} 条记录
+          </span>
+          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="群信息" aria-label="群信息">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="12" y1="7" x2="12" y2="13"/>
+              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -183,14 +221,40 @@
           >
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.memberOpenId"
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
+            <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+                    @click="openPermModal(ctxMenu.message)">更改权限组</button>
             <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
                     @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
           </div>
         </section>
 
-        <aside class="inspector">
-          <h3>群信息</h3>
+        <!-- 权限弹窗 -->
+        <div v-if="showPermModal" class="perm-modal-backdrop" @click="showPermModal = false">
+          <div class="perm-modal" @click.stop>
+            <h3>更改权限组</h3>
+            <p class="perm-uid">{{ permTarget }}</p>
+            <div class="perm-roles">
+              <button v-for="r in roles" :key="r" :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
+                      @click="pendingPermRole = r">{{ r }}</button>
+            </div>
+            <div class="perm-modal-actions">
+              <button class="ghost-button" @click="showPermModal = false">关闭</button>
+              <button class="primary-button" @click="confirmPermRole(); showPermModal = false">确认</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="inspector" :class="{ 'inspector--show': showInspector }">
+          <div class="inspector-head">
+            <h3>群信息</h3>
+            <button class="inspector-close" aria-label="关闭群信息" @click="showInspector = false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
           <dl v-if="selectedGroup">
             <dt>群聊开放平台ID</dt>
             <dd>{{ selectedGroup.groupOpenId }}</dd>
@@ -198,14 +262,25 @@
             <dd>{{ selectedGroup.opMemberOpenId || '-' }}</dd>
             <dt>群聊状态</dt>
             <dd class="status-row">
-              <span :class="['badge', selectedGroup.whitelist ? 'green' : 'gray']">白名单</span>
-              <span :class="['badge', selectedGroup.blacklisted ? 'red' : 'gray']">黑名单</span>
-              <span :class="['badge', selectedGroup.allowedActive ? 'green' : 'gray']">主动推送</span>
+              <span :class="['badge', 'clickable', selectedGroup.whitelist ? 'green' : 'gray']" @click="toggleStatus('whitelist')">白名单</span>
+              <span :class="['badge', 'clickable', selectedGroup.blacklisted ? 'red' : 'gray']" @click="toggleStatus('blacklist')">黑名单</span>
+              <span :class="['badge', 'clickable', selectedGroup.allowedActive ? 'green' : 'gray']" @click="toggleStatus('allowedActive')">主动推送</span>
             </dd>
+            <dt>真实群号</dt>
+            <dd>{{ selectedGroup.realGroupId || '-' }}</dd>
             <dt>群聊加入时间</dt>
             <dd>{{ formatTime(selectedGroup.timestamp) }}</dd>
           </dl>
           <div v-else class="hint">选择群后显示详情</div>
+
+          <!-- 功能配置 -->
+          <div v-if="selectedGroupId && funcEntries.length" class="func-box">
+            <h4>功能列表</h4>
+            <div v-for="[key, val] in funcEntries" :key="key" class="func-row clickable" @click="toggleFunction(key, !val.enabled)">
+              <span class="func-name">{{ key }}</span>
+              <span :class="['badge', val.enabled ? 'green' : 'gray']">{{ val.enabled ? '开' : '关' }}</span>
+            </div>
+          </div>
 
           <div class="log-box">
             <strong>请求状态</strong>
@@ -225,7 +300,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { TOKEN_KEY, API_BASE } from '../router.js'
+import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 
 const router = useRouter()
 
@@ -250,8 +325,15 @@ const avatarFailed = reactive({})
 const currentPage = ref(0)
 const dropdownOpen = ref(false)
 const groupSearch = ref('')
+const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
+const funcEntries = ref([])
+const showInspector = ref(false)
+const showPermModal = ref(false)
+const permTarget = ref('')
+const pendingPermRole = ref('')
+const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
 const attachFailed = reactive({})
 const previewImg = ref(null)
 const pastePreview = ref(null)
@@ -272,8 +354,8 @@ const filteredGroups = computed(() => {
 const hasMore = computed(() => messages.value.length < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
-  if (!selectedGroupId.value || !draft.value.trim() || sending.value) return false
-  return true
+  return !(!selectedGroupId.value || !draft.value.trim() || sending.value);
+
 })
 
 onMounted(async () => {
@@ -288,10 +370,8 @@ onBeforeUnmount(() => {
 })
 
 function connectSse() {
-  const token = localStorage.getItem(TOKEN_KEY)
-  if (!token) return
   if (eventSource) eventSource.close()
-  eventSource = new EventSource(`${API_BASE}/events`)
+  eventSource = new EventSource(`${API_BASE}/events`, { withCredentials: true })
   eventSource.onmessage = async (e) => {
     try {
       const payload = JSON.parse(e.data)
@@ -337,6 +417,39 @@ function onPaste(e) {
   }
 }
 
+async function toggleStatus(type) {
+  if (!selectedGroupId.value) return
+  const keyMap = { whitelist: 'whitelist', blacklist: 'blacklisted', allowedActive: 'allowedActive' }
+  const key = keyMap[type]
+  const old = selectedGroup.value[key]
+  try {
+    await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/${type}?enabled=${!old}`, { method: 'POST' })
+    // 更新本地 selectedGroup
+    const g = selectedGroup.value
+    if (type === 'whitelist') g.whitelist = !old
+    else if (type === 'blacklist') g.blacklisted = !old
+    else g.allowedActive = !old
+  } catch (e) { notice.value = e.message }
+}
+
+async function toggleFunction(funcKey, enabled) {
+  if (!selectedGroupId.value) return
+  try {
+    await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/functions/${encodeURIComponent(funcKey)}?enabled=${enabled}`, { method: 'POST' })
+    // 更新本地
+    const entry = funcEntries.value.find(([k]) => k === funcKey)
+    if (entry) entry[1].enabled = enabled
+  } catch (e) { notice.value = e.message }
+}
+
+async function loadGroupFunctions() {
+  if (!selectedGroupId.value) return
+  try {
+    const data = await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/functions`)
+    funcEntries.value = data ? Object.entries(data) : []
+  } catch { funcEntries.value = [] }
+}
+
 function isNearBottom() {
   const el = messageListRef.value
   if (!el) return true
@@ -353,6 +466,22 @@ function onContextMenu(e, message) {
   ctxMenu.x = e.clientX
   ctxMenu.y = e.clientY
   ctxMenu.message = message
+}
+
+async function openPermModal(message) {
+  permTarget.value = message.unionOpenId
+  try {
+    const data = await api(`/c2c/${encodeURIComponent(message.unionOpenId)}/permissions`)
+    pendingPermRole.value = data?.role || 'USER'
+  } catch { pendingPermRole.value = 'USER' }
+  showPermModal.value = true
+}
+
+async function confirmPermRole() {
+  if (!permTarget.value) return
+  try {
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
+  } catch (e) { notice.value = e.message }
 }
 
 function atUser(message) {
@@ -378,18 +507,21 @@ async function recallMsg(message) {
 }
 
 function authHeaders() {
-  const token = localStorage.getItem(TOKEN_KEY)
   return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`
+    'Content-Type': 'application/json'
   }
 }
 
 async function api(path, options) {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: authHeaders(),
+    credentials: 'same-origin',
     ...options
   })
+  if (response.status === 503) {
+    logout('WebUI 已关闭')
+    throw new Error('WebUI 已关闭')
+  }
   const payload = await response.json()
   if (response.status === 401) {
     logout(payload.message || '登录已失效')
@@ -471,6 +603,13 @@ function renderMd(text) {
   if (!text) return ''
   let html = text
 
+  // 代码块 ``` ... ``` (在 HTML 转义之前处理)
+  const codeBlocks = []
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    codeBlocks.push({ lang, code: code.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') })
+    return `CODE${codeBlocks.length - 1}`
+  })
+
   // 转义 HTML
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -481,15 +620,14 @@ function renderMd(text) {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
   html = html.replace(/<(https?:\/\/[^>]+)>/g, '<a href="$1" target="_blank">$1</a>')
 
-  // 水平分割线 (单独一行的 *** 或 ---)
+  // 水平分割线
   html = html.replace(/^(\*{3,}|-{3,})$/gm, '<hr>')
 
-  // 块引用 (> 开头)
+  // 块引用
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
-  // 合并连续 blockquote
   html = html.replace(/<\/blockquote>\n?<blockquote>/g, '\n')
 
-  // 标题 (行首 #)
+  // 标题
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>')
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>')
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>')
@@ -513,6 +651,12 @@ function renderMd(text) {
   // 换行
   html = html.replace(/\n/g, '<br>')
 
+  // 还原代码块
+  html = html.replace(/CODE(\d+)/g, (_, i) => {
+    const b = codeBlocks[+i]
+    return `<pre><code>${b.code}</code></pre>`
+  })
+
   return html
 }
 
@@ -523,8 +667,14 @@ function avatarUrl(message) {
   return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${message.memberOpenId}/640`
 }
 
-function logout(message = '已退出登录') {
-  localStorage.removeItem(TOKEN_KEY)
+async function logout(message = '已退出登录') {
+  try {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      credentials: 'same-origin'
+    })
+  } catch { /* ignore */ }
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
   router.replace('/login')
 }
 
@@ -532,7 +682,7 @@ async function loadGroups() {
   loadingGroups.value = true
   try {
     groups.value = await api('/groups')
-    notice.value = `已加载 ${groups.value.length} 个群。`
+    notice.value = `已加载 ${groups.value.length} 个群`
   } catch (error) {
     notice.value = error.message
   } finally {
@@ -546,7 +696,9 @@ async function selectGroup(groupOpenId) {
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
+  funcEntries.value = []
   await loadLatestMessages()
+  loadGroupFunctions()
 }
 
 async function loadLatestMessages() {

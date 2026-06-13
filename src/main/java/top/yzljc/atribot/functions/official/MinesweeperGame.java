@@ -99,7 +99,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
         List<List<CommandButton>> layout = new ArrayList<>();
         layout.add(List.of(new CommandButton("btn_start", "开始游戏 (默认5雷)", "/扫雷 start 5", true, 1, 2)));
-        layout.add(List.of(new CommandButton("btn_custom", "自定义雷数并开始", "/扫雷 start", false, 0, 2)));
+        layout.add(List.of(new CommandButton("btn_custom", "自定义雷数并开始", "/扫雷 start ", false, 0, 2)));
 
         Object keyboard = Keyboard.build(layout);
         sender.replyMarkdown(label, TC.md(markdown), keyboard);

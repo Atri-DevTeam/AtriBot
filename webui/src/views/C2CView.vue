@@ -1,6 +1,15 @@
 <template>
   <div class="shell">
-    <aside class="sidebar">
+    <div v-if="sidebarOpen" class="sidebar-backdrop show" @click="sidebarOpen = false"/>
+
+    <aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
+      <div class="sidebar-head">
+        <button class="sidebar-close" aria-label="关闭侧边栏" @click="sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
       <div class="brand">
         <img v-if="botOpenId && appId" class="brand-avatar" :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${botOpenId}/100`" referrerpolicy="no-referrer" />
         <div v-else class="brand-mark">A</div>
@@ -10,18 +19,36 @@
         </div>
       </div>
 
+      <nav class="side-nav">
+        <button class="side-nav-item" :class="{ active: $route.path === '/' }" @click="$router.push('/'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          群聊
+        </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/c2c' }" @click="$router.push('/c2c'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          私聊
+        </button>
+      </nav>
+
       <div class="side-toolbar">
-        <button class="ghost-button" @click="$router.push('/')">群聊</button>
-        <button class="ghost-button active" @click="$router.push('/c2c')">私聊</button>
         <button class="ghost-button" :disabled="loadingUsers" @click="loadUsers">刷新</button>
         <button class="ghost-button" @click="logout">退出</button>
       </div>
-
     </aside>
+    <div class="sidebar-spacer" />
 
     <main class="workspace">
       <header class="topbar">
         <div class="topbar-left">
+          <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <h2>私聊消息</h2>
           <div class="group-picker">
             <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
@@ -39,7 +66,16 @@
             </div>
           </div>
         </div>
-        <div class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条记录</div>
+        <div class="topbar-right">
+          <span class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
+          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="用户信息" aria-label="用户信息">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="12" y1="7" x2="12" y2="13"/>
+              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <section class="content">
@@ -116,14 +152,37 @@
           </div>
         </section>
 
-        <aside class="inspector">
-          <h3>用户信息</h3>
+        <aside class="inspector" :class="{ 'inspector--show': showInspector }">
+          <div class="inspector-head">
+            <h3>用户信息</h3>
+            <button class="inspector-close" aria-label="关闭用户信息" @click="showInspector = false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
           <dl v-if="selectedUser">
             <dt>用户开放平台ID</dt>
             <dd>{{ selectedUser.userOpenId }}</dd>
-            <dt>角色</dt>
-            <dd>{{ selectedUser.role }}</dd>
           </dl>
+          <!-- 权限组 -->
+          <div v-if="selectedUser" class="func-box">
+            <h4>权限组</h4>
+            <div class="perm-roles">
+              <button v-for="r in roles" :key="r" :class="['badge', 'clickable', permRole === r ? 'green' : 'gray']"
+                      @click="setPermRole(r)">{{ r }}</button>
+            </div>
+            <h4>权限节点</h4>
+            <div v-for="p in permNodes" :key="p" class="func-row">
+              <span class="func-name">{{ p }}</span>
+              <button class="perm-del" @click="removePerm(p)">×</button>
+            </div>
+            <form class="perm-add" @submit.prevent="addPerm(newPerm)">
+              <input v-model="newPerm" placeholder="新权限节点" />
+              <button class="primary-button" :disabled="!newPerm.trim()">添加</button>
+            </form>
+          </div>
           <div v-else class="hint">选择用户后显示详情</div>
           <div class="log-box"><strong>请求状态</strong><p>{{ notice }}</p></div>
         </aside>
@@ -139,7 +198,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { TOKEN_KEY, API_BASE } from '../router.js'
+import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 
 const router = useRouter()
 
@@ -160,12 +219,18 @@ const avatarFailed = reactive({})
 const currentPage = ref(0)
 const dropdownOpen = ref(false)
 const userSearch = ref('')
+const sidebarOpen = ref(false)
+const showInspector = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const msgType = ref('text')
 const imageType = ref('url')
 const pastePreview = ref(null)
 const previewImg = ref(null)
 const pageSize = 80
+const permRole = ref('')
+const permNodes = ref([])
+const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+const newPerm = ref('')
 
 const messageListRef = ref(null)
 const selectedUser = computed(() => users.value.find(u => u.userOpenId === selectedUserId.value))
@@ -194,10 +259,8 @@ onBeforeUnmount(() => {
 })
 
 function connectSse() {
-  const token = localStorage.getItem(TOKEN_KEY)
-  if (!token) return
   if (eventSource) eventSource.close()
-  eventSource = new EventSource(`${API_BASE}/events`)
+  eventSource = new EventSource(`${API_BASE}/events`, { withCredentials: true })
   eventSource.onmessage = async (e) => {
     try {
       const payload = JSON.parse(e.data)
@@ -233,23 +296,27 @@ function onDocumentClick(e) {
 
 async function loadMeta() {
   try {
-    const [a, n] = await Promise.all([
-      fetch('/webui/meta/avatar').then(r => r.json()),
-      fetch('/webui/meta/name').then(r => r.text())
-    ])
-    appId.value = a.appId || ''
-    botOpenId.value = a.botOpenId || ''
-    botName.value = n || 'AtriBot'
+    const data = await api('/config')
+    appId.value = data.appId || ''
+    botOpenId.value = data.botOpenId || ''
+    botName.value = data.botName || 'AtriBot'
   } catch { /* ignore */ }
 }
 
 function authHeaders() {
-  const token = localStorage.getItem(TOKEN_KEY)
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  return { 'Content-Type': 'application/json' }
 }
 
 async function api(path, options) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders(), ...options })
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: authHeaders(),
+    credentials: 'same-origin',
+    ...options
+  })
+  if (res.status === 503) {
+    logout()
+    throw new Error('WebUI 已关闭')
+  }
   const payload = await res.json()
   if (res.status === 401) { logout(); throw new Error('未授权') }
   if (payload.status !== 200) throw new Error(payload.message || '请求失败')
@@ -267,8 +334,14 @@ function avatarUrl(message) {
   return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${message.unionOpenId}/640`
 }
 
-function logout() {
-  localStorage.removeItem(TOKEN_KEY)
+async function logout() {
+  try {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      credentials: 'same-origin'
+    })
+  } catch { /* ignore */ }
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
   router.replace('/login')
 }
 
@@ -284,7 +357,42 @@ async function selectUser(userOpenId) {
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
+  loadPerms()
   await loadLatestMessages()
+}
+
+async function loadPerms() {
+  if (!selectedUserId.value) return
+  try {
+    const data = await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions`)
+    permRole.value = data?.role || 'USER'
+    permNodes.value = data?.permissions || []
+  } catch { permRole.value = 'USER'; permNodes.value = [] }
+}
+
+async function setPermRole(role) {
+  if (!selectedUserId.value) return
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/role?role=${role}`, { method: 'POST' })
+    permRole.value = role
+  } catch (e) { notice.value = e.message }
+}
+
+async function addPerm(perm) {
+  if (!selectedUserId.value || !perm?.trim()) return
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions/${encodeURIComponent(perm.trim())}?enabled=true`, { method: 'POST' })
+    permNodes.value.push(perm.trim())
+    newPerm.value = ''
+  } catch (e) { notice.value = e.message }
+}
+
+async function removePerm(perm) {
+  if (!selectedUserId.value) return
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions/${encodeURIComponent(perm)}?enabled=false`, { method: 'POST' })
+    permNodes.value = permNodes.value.filter(p => p !== perm)
+  } catch (e) { notice.value = e.message }
 }
 
 async function loadLatestMessages() {

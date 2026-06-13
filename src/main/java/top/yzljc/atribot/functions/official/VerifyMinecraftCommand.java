@@ -35,7 +35,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
     private static final Map<String, Long> pendingPossibleQQNum = new ConcurrentHashMap<>();
 
     private static final Object keyboard = Keyboard.build(List.of(
-            List.of(new CommandButton("c1", "绑定账号", "/verify", false, 1, 2))
+            List.of(new CommandButton("c1", "绑定账号", "/verify ", false, 1, 2))
     ));
 
     @Override

@@ -37,7 +37,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 
     private static final Object keyboard = Keyboard.build(List.of(
-            List.of(new CommandButton("c1", "绑定账号", "/verify", false, 1, 2))
+            List.of(new CommandButton("c1", "绑定账号", "/verify ", false, 1, 2))
     ));
 
     @Override
