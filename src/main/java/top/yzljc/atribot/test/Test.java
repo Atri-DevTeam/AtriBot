@@ -66,18 +66,28 @@ public class Test implements Listener, CommandExecutor {
 //                ),
 //                List.of(new CommandButton("c5", "样式4", "/help", false, 4, 2))
 //        ));
-        Object k = Keyboard.build(
-                List.of(
-                        List.of(new CommandButton("c1", "成功", "callback_data", true, 0, 1),
-                                new CommandButton("c2", "失败", "callback_data", true, 1, 1),
-                                new CommandButton("c3", "过快", "callback_data", true, 2, 1)
-                        ),
-                        List.of(new CommandButton("c4", "重复", "callback_data", true, 3, 1),
-                                new CommandButton("c5", "无权限", "callback_data", true, 4, 1),
-                                new CommandButton("c6", "仅管理员", "callback_data", true, 5, 1)
-                        ))
-        );
-        sender.replyMarkdown(label, TC.md("markdown"), k);
+//        Object k = Keyboard.build(
+//                List.of(
+//                        List.of(new CommandButton("c1", "成功", "callback_data", true, 0, 1),
+//                                new CommandButton("c2", "失败", "callback_data", true, 1, 1),
+//                                new CommandButton("c3", "过快", "callback_data", true, 2, 1)
+//                        ),
+//                        List.of(new CommandButton("c4", "重复", "callback_data", true, 3, 1),
+//                                new CommandButton("c5", "无权限", "callback_data", true, 4, 1),
+//                                new CommandButton("c6", "仅管理员", "callback_data", true, 5, 1)
+//                        ))
+//        );
+
+        sender.replyMarkdown(label, TC.md("⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⚫⚫⚫⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⚪⚪⚪⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n" +
+                "⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜\n"));
 //
 //        List<Map<String, Object>> list = List.of(
 //                Map.of("key", Ark.KEY_DESC,      "value", "机器人订阅消息"),

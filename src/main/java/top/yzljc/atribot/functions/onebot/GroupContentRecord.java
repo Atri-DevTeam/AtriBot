@@ -26,7 +26,7 @@ public class GroupContentRecord implements Listener {
 
     private static final String BASE_TABLE = "qq_group_message_record";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final List<Long> groups = Config.getInstance().getMessageSpyGroups();
+    private static final List<Long> groups = Config.getInstance().getNapcatMessageSpyGroups();
 
     private static String getTableNameForGroup(long groupId) {
         return BASE_TABLE + "_" + groupId;

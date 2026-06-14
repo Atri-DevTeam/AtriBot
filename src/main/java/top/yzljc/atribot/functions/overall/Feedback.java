@@ -136,7 +136,7 @@ public class Feedback implements CommandExecutor, Listener {
                 alertStr = "收到反馈: " + content + " 来自用户: " + userOpenId + " (QQ: " + At.at(userOpenId) + ")，来源于群聊: " + sender.groupOpenId();
             }
 
-            GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(), alertStr, true);
+            GroupMessage.chatMessage(3199590352L, Config.getInstance().getNapcatDebugGroupUin(), alertStr, true);
         }
 
         return true;

@@ -171,7 +171,7 @@ public class CheckBilibili implements Listener {
                 if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
-                        GroupMessage.atUser(3199590352L, Config.getInstance().getDebugGroupId(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        GroupMessage.atUser(3199590352L, Config.getInstance().getNapcatDebugGroupUin(), "登陆状态已过期，无法获取播放量，请及时处理！");
                         log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
                     }
                 } else {

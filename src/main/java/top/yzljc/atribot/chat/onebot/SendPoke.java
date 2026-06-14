@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 public class SendPoke {
     public static void poke(long targetId, long groupId) {
-        if (targetId == Config.getInstance().getBotUid()) return;
+        if (targetId == Config.getInstance().getNapcatBotUin()) return;
         Map<String, Object> params = Map.of(
                 "group_id", groupId,
                 "user_id", targetId

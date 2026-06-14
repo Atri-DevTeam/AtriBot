@@ -14,7 +14,7 @@ import top.yzljc.atribot.event.impl.GroupMessageEvent;
 @Slf4j
 public class GroupModeManager implements Listener {
 
-    private static final List<Long> ADMIN_LIST = Config.getInstance().getAdminUids();
+    private static final List<Long> ADMIN_LIST = Config.getInstance().getNapcatAdminUins();
     private static final Map<Long, String> userSession = new ConcurrentHashMap<>();
     private static final Map<Long, List<?>> selectionCache = new ConcurrentHashMap<>();
 

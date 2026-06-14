@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class UnknownInvitation implements Listener {
-    private static final List<Long> allowed_users = Config.getInstance().getAdminUids();
+    private static final List<Long> allowed_users = Config.getInstance().getNapcatAdminUins();
 
     @EventHandler
     public void onUserInviteBot(GroupMemberChangeEvent event) {

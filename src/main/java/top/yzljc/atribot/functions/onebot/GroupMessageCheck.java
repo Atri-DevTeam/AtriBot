@@ -17,7 +17,7 @@ public class GroupMessageCheck implements Listener {
         if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "illegal_words_check") || event.getUserId() == event.getSelfId()) return;
 
         if (LoadIllegalWords.containsSensitiveWord(event.getRawMessage())) {
-            if (event.getGroupId() == Config.getInstance().getDebugGroupId()) return;
+            if (event.getGroupId() == Config.getInstance().getNapcatDebugGroupUin()) return;
             event.recall();
 
             String detectedWord = LoadIllegalWords.findSensitiveWord(event.getRawMessage());

@@ -16,7 +16,7 @@ public enum ButtonStyle {
     GRAY(0),
     BLUE(1),
     ICON_BUTTON(2),
-    RED_BUTTON(3),
+    RED(3),
     BLUE_WITH_BACKGROUND(4);
 
     private final int code;

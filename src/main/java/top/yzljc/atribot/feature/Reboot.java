@@ -11,7 +11,7 @@ import top.yzljc.atribot.config.Config;
 public class Reboot implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Reboot.class);
-    private static final long debugGroupId = Config.getInstance().getDebugGroupId();
+    private static final long debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
 
 
     @Override

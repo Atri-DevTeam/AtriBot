@@ -13,7 +13,7 @@ import java.util.Set;
 public class GroupInformation {
     private static final Logger log = LoggerFactory.getLogger(GroupInformation.class);
     private static final boolean isDebugMode = Config.getInstance().isDebugMode();
-    private static final long debugGroupId = Config.getInstance().getDebugGroupId();
+    private static final long debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
 
     public static String getGroupName(long groupId) {
         JsonNode json = PostRequest.getSimplePostResult(RequestType.GET_GROUP_INFO, "group_id", groupId);

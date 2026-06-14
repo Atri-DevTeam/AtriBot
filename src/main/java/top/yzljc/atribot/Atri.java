@@ -103,7 +103,7 @@ public class Atri {
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
         this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager);
 
-        int qqBotPort = config.getQqBotPort();
+        int qqBotPort = config.getListenPort();
 
         server = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
@@ -120,7 +120,7 @@ public class Atri {
             cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
             ));
-        }).start(config.getQqBotPort());
+        }).start(config.getListenPort());
 
         server.before("/official-webui/*", ctx -> {
             log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
@@ -173,6 +173,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new OfficialBotDebug());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
+        EventManager.getInstance().registerEvents(new ConnectFourGame());
 
         CommandManager.reload();
 
@@ -214,10 +215,13 @@ public class Atri {
         CommandManager.getCommand("today").setExecutor(new top.yzljc.atribot.functions.official.Calendar());
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
+        CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
         CommandManager.getCommand("hitokoto").setExecutor(new Hitokoto());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
         CommandManager.getCommand("webui").setExecutor(new WebUICommand());
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
+        CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
+        CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
 
@@ -238,58 +242,57 @@ public class Atri {
 
         RunScheduleTask.runAllTasks();
 
-        GroupConfigManager.refreshAllConfigs();
-        FriendList.updateFriendList();
-        ChatContentRecord.init();
+        if (settings.isNapcatEnabled()) {
+            GroupConfigManager.refreshAllConfigs();
+            FriendList.updateFriendList();
+            SetProjectInfo.setInfo();
+            WebhookServer.start(webhookPort, webhookSecret);
 
+            GroupConfigManager.registerFeature("auto_sign", true);
+            GroupConfigManager.registerFeature("mc_news", false);
+            GroupConfigManager.registerFeature("hyp_news", false);
+            GroupConfigManager.registerFeature("electric_check", false);
+            GroupConfigManager.registerFeature("annoy_user", true);
+            GroupConfigManager.registerFeature("new_year", true);
+            GroupConfigManager.registerFeature("one_text", true);
+            GroupConfigManager.registerFeature("repeat_msg", false);
+            GroupConfigManager.registerFeature("send_poke", true);
+            GroupConfigManager.registerFeature("like_user", false);
+            GroupConfigManager.registerFeature("mojang_status", true);
+            GroupConfigManager.registerFeature("motd", false);
+            GroupConfigManager.registerFeature("github_info", false);
+            GroupConfigManager.registerFeature("bv_check", false);
+            GroupConfigManager.registerFeature("wakeup_send", false);
+            GroupConfigManager.registerFeature("broadcast", true);
+            GroupConfigManager.registerFeature("calendar", true);
+            GroupConfigManager.registerFeature("get_hypixel_reward", false);
+            GroupConfigManager.registerFeature("bedwars_challenge", true);
+            GroupConfigManager.registerFeature("tufe_class_alert", false);
+            GroupConfigManager.registerFeature("verify_server", false);
+            GroupConfigManager.registerFeature("illegal_words_check", false);
+        }
+
+        ChatContentRecord.init();
         MinecraftNews.loadHistory();
         HypixelNews.loadHistory();
 
-        if (!Config.getInstance().isDebugMode()) {
-            WebhookServer.start(webhookPort, webhookSecret);
-            MinecraftBind.init();
-            GroupList.init();
-            C2CList.init();
-            TufeElecBind.init();
-        }
+        MinecraftBind.init();
+        GroupList.init();
+        C2CList.init();
+        TufeElecBind.init();
 
         if (Config.getInstance().isDebugMode()) {
             WebUISessionManager.start();
         }
 
-        SetProjectInfo.setInfo();
-
-        GroupConfigManager.registerFeature("auto_sign", true);
-        GroupConfigManager.registerFeature("mc_news", false);
-        GroupConfigManager.registerFeature("hyp_news", false);
-        GroupConfigManager.registerFeature("electric_check", false);
-        GroupConfigManager.registerFeature("annoy_user", true);
-        GroupConfigManager.registerFeature("new_year", true);
-        GroupConfigManager.registerFeature("one_text", true);
-        GroupConfigManager.registerFeature("repeat_msg", false);
-        GroupConfigManager.registerFeature("send_poke", true);
-        GroupConfigManager.registerFeature("like_user", false);
-        GroupConfigManager.registerFeature("mojang_status", true);
-        GroupConfigManager.registerFeature("motd", false);
-        GroupConfigManager.registerFeature("github_info", false);
-        GroupConfigManager.registerFeature("bv_check", false);
-        GroupConfigManager.registerFeature("wakeup_send", false);
-        GroupConfigManager.registerFeature("broadcast", true);
-        GroupConfigManager.registerFeature("calendar", true);
-        GroupConfigManager.registerFeature("get_hypixel_reward", false);
-        GroupConfigManager.registerFeature("bedwars_challenge", true);
-        GroupConfigManager.registerFeature("tufe_class_alert", false);
-        GroupConfigManager.registerFeature("verify_server", false);
-        GroupConfigManager.registerFeature("illegal_words_check", false);
-
         try {
-            if (!Config.getInstance().isDebugMode()) {
-                String mcIp = settings.getVarietyHost();
-                int mcPort = settings.getVarietyPort();
-                String pubKey = settings.getVarietyKey();
+            if (Config.getInstance().isVerifyEnabled()) {
+                String mcIp = settings.getVerifyHost();
+                int mcPort = settings.getVerifyPort();
+                String pubKey = settings.getVerifyKey();
 
                 minecraftSocket = new MinecraftSocket(mcIp, mcPort, pubKey);
-                MinecraftRemote.connect("atri", mcIp, mcPort, Config.getInstance().getDebugGroupId(), pubKey);
+                MinecraftRemote.connect("atri", mcIp, mcPort, Config.getInstance().getNapcatDebugGroupUin(), pubKey);
             }
         } catch (Exception e) {
             log.error("MinecraftVerify 初始化失败: {}", e.getMessage());

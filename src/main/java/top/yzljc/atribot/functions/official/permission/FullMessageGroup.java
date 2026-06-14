@@ -10,9 +10,9 @@ import top.yzljc.atribot.chat.official.TC;
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.official.permission
  */
-public class VerifyFullMessageGroup {
+public class FullMessageGroup {
 
-    public static Markdown m() {
+    public static Markdown n() {
         return TC.md(
                 "**需要全量消息权限**\n\n" +
                         "完成授权后无需@亚托莉喵即可处理指令，同时亚托莉喵可以通过主动推送提供更加便捷的功能\n\n" +

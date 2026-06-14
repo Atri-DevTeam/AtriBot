@@ -127,7 +127,7 @@ public class RequestReceiver {
                     }
                 }
                 // 撤回事件监听
-                if ("notice".equals(postType) && (("group_recall".equals(root.path("notice_type").asText()) && Config.getInstance().getMessageSpyGroups().contains(root.path("group_id").asLong())) || "friend_recall".equals(root.path("notice_type").asText()))) {
+                if ("notice".equals(postType) && (("group_recall".equals(root.path("notice_type").asText()) && Config.getInstance().getNapcatMessageSpyGroups().contains(root.path("group_id").asLong())) || "friend_recall".equals(root.path("notice_type").asText()))) {
                     long time = root.path("time").asLong();
                     long groupId = root.path("group_id").asLong();
                     long userId = root.path("user_id").asLong();

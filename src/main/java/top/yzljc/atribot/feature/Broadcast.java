@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class Broadcast implements CommandExecutor {
     private static final Set<Long> GroupList = GroupInformation.fetchAllGroupIds();
-    private static final long DebugGroupId = Config.getInstance().getDebugGroupId();
+    private static final long DebugGroupId = Config.getInstance().getNapcatDebugGroupUin();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

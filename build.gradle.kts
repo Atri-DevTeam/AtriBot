@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.0.0-Release"
+version = "3.0.1-Release"
 description = "AtriBot"
 
 // 设置 Java 版本

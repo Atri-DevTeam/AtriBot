@@ -58,7 +58,7 @@ public class PostRequest {
 
     private static JsonNode executeRequest(RequestType type, Map<String, Object> params) {
         try {
-            String BASEURL = Config.getInstance().getHttpUrl();
+            String BASEURL = Config.getInstance().getNapcatServerUrl();
             String postUrl = BASEURL + type.getRequestLink();
             Map<String, Object> requestBody = params != null ? params : new HashMap<>();
 

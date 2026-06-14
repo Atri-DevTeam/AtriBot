@@ -32,7 +32,7 @@ public class Notify implements Listener {
             LinkedList<MessageSegment> toSend = new LinkedList<>();
             toSend.add(GroupMessage.createTextNode(event.getMessage(), String.valueOf(event.getUserId()), userName));
             Alert.notify(" 收到来自群 " + groupName + " 中" + userName + "提醒消息，内容如下：");
-            ThreadManager.schedule(() -> GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "群聊消息提醒", "点击从查看", "时间：" + time , "群：" + groupName, "用户：" + userName), 1, TimeUnit.SECONDS);
+            ThreadManager.schedule(() -> GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "群聊消息提醒", "点击从查看", "时间：" + time , "群：" + groupName, "用户：" + userName), 1, TimeUnit.SECONDS);
         }
     }
 
@@ -44,6 +44,6 @@ public class Notify implements Listener {
         LinkedList<MessageSegment> toSend = new LinkedList<>();
         toSend.add(GroupMessage.createTextNode(event.getMessage(), String.valueOf(event.getUserId()), userName));
         Alert.notify(" 收到来自" + userName + "私聊提醒消息，内容如下：");
-        ThreadManager.schedule(() -> GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "私聊消息提醒", "点击从查看", "时间：" + time , "用户：" + userName), 1, TimeUnit.SECONDS);
+        ThreadManager.schedule(() -> GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "私聊消息提醒", "点击从查看", "时间：" + time , "用户：" + userName), 1, TimeUnit.SECONDS);
     }
 }

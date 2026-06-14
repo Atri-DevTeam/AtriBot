@@ -203,7 +203,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
                 boolean isBot = eventData.path("author").get("bot").asBoolean(false);
                 String id = eventData.path("author").get("id").asText();
                 String username = eventData.path("author").get("username").asText();
-                String unionOpenId = eventData.path("author").get("union_openid").asText();
+                String unionOpenId = !Config.getInstance().isNewBot() ? eventData.path("author").get("union_openid").asText() : eventData.path("author").get("member_openid").asText();
                 String groupId = eventData.path("group_id").asText();
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
                 Object msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
@@ -222,7 +222,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
                 String timestamp = eventData.get("timestamp").asText();
                 String userId = eventData.path("author").get("user_openid").asText();
                 String id = eventData.path("author").get("id").asText();
-                String unionOpenId = eventData.path("author").get("union_openid").asText();
+                String unionOpenId = !Config.getInstance().isNewBot() ? eventData.path("author").get("union_openid").asText() : eventData.path("author").get("user_openid").asText();
                 String username = eventData.path("author").get("username").asText();
                 boolean isBot = eventData.path("author").get("bot").asBoolean(false);
                 Object attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
@@ -243,7 +243,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
                         authorNode.path("bot").asBoolean(false),
                         authorNode.path("id").asText(null),
                         authorNode.path("member_openid").asText(null),
-                        authorNode.path("union_openid").asText(null),
+                        !Config.getInstance().isNewBot() ? authorNode.path("union_openid").asText(null) : authorNode.path("member_openid").asText(null),
                         authorNode.path("username").asText(null)
                 );
 
@@ -378,7 +378,7 @@ public class OfficialWebSocketClient extends WebSocketClient {
                 return;
             }
             log.debug(eventData.toString());
-            GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), "事件类型: " + eventType + "\n事件数据: " + eventData);
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "事件类型: " + eventType + "\n事件数据: " + eventData);
         }
 
         if (Config.getInstance().isDebugMode()) {

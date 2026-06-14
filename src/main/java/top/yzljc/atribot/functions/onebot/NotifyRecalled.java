@@ -50,15 +50,15 @@ public class NotifyRecalled implements Listener {
             List<MessageSegment> toSend = new LinkedList<>();
             toSend.add(GroupMessage.createTextNode("[私聊][" + time + "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getSelfId()), "AtriBot"));
             toSend.add(GroupMessage.createTextNode(recalledMessage, String.valueOf(event.getUserId()), userName));
-            GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName);
+            GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName);
 //            Logger.debug("检测到撤回消息，用户: {}, 消息 ID: {}, 内容: {}", userName, event.getMessageId(), recalledMessage);
         }
     }
 
     @EventHandler
     public void onGroupMessageRecall(RecallMessageEvent event) {
-        if (!Config.getInstance().getMessageSpyGroups().contains(event.getGroupId())) return;
-        if (event.getUserId() == event.getSelfId() || Config.getInstance().getIgnoredUsers().contains(event.getUserId())) return;
+        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
+        if (event.getUserId() == event.getSelfId() || Config.getInstance().getNapcatRecallIgnoredUsers().contains(event.getUserId())) return;
         if (event.getType() != RecallType.GROUP) return;
         String time = FormatTools.formatTimestamp(event.getTime());
         String userName = UserInformation.getUserName(event.getUserId());
@@ -69,11 +69,11 @@ public class NotifyRecalled implements Listener {
             if (event.getUserId() != event.getOperatorId()) {
                 toSend.add(GroupMessage.createTextNode("[群聊][" + time + "][" + groupName +  "][" + userName + "]的一条消息被群管理员" + UserInformation.getUserName(event.getOperatorId()) + "撤回: ", String.valueOf(event.getSelfId()), "AtriBot"));
                 toSend.add(GroupMessage.createTextNode(StructRawMessage.parse(foundMessage), String.valueOf(event.getUserId()), userName));
-                GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听 [管理撤回]", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
+                GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "消息撤回监听 [管理撤回]", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
             } else {
                 toSend.add(GroupMessage.createTextNode("[群聊][" + time + "][" + groupName +  "][" + userName + "]撤回了一条消息: ", String.valueOf(event.getSelfId()), "AtriBot"));
                 toSend.add(GroupMessage.createTextNode(StructRawMessage.parse(foundMessage), String.valueOf(event.getUserId()), userName));
-                GroupMessage.forwardMessage(Config.getInstance().getDebugGroupId(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
+                GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "消息撤回监听", "点击查看", "时间：" + time, "用户：" + userName, "群：" + groupName);
             }
 //            Logger.debug("检测到撤回消息，群: {}, 用户: {}, 消息 ID: {}, 内容: {}", groupName, userName, event.getMessageId(), foundMessage);
 //            Logger.debug(toSend.toString());

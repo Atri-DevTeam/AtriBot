@@ -1,112 +1,134 @@
-# 指令头，onebot机器人和官方机器人的识别指令头均用这个
+# ============================================================
+# AtriBot 配置文件
+# ============================================================
+
+# ========== 全局设置区域 ==========
+
+# 指令前缀，OneBot 和官方机器人通用
 command-prefix: "/"
+# Debug 命令后缀
 debug-command-suffix: "--debug"
-
-# 根目录中字体的名字，若不指明默认使用自带的字体（鸿蒙开源字体）
+# 根目录中字体的文件名，默认使用自带的鸿蒙开源字体
 ttf-file-name: "default.ttf"
-
-# 验证服务器Socket信息（对MC个人MC服务器使用）
-variety-port: 8080
-variety-host: "localhost"
-variety-key: "public-key"
-
-# Websocket服务器监听端口（Github更新推送通知）
-websocket-port: "ws://localhost:1111"
-
 # Debug 模式开关
 debug-mode: false
+# Websocket 服务器监听端口
+listen-port: 1234
 
-# Minecraft服务器数据监听端口
-listen-port: 25566
-
-# HTTPS对接Napcat的上报接收端口
-qq-bot-port: 1234
-
-# 官方机器人 WebUI 登录 Token；请改成足够长的随机字符串
-official-webui-token: "null"
-
-# Gtihub推送用Webhook端口和Secret密钥
-github-webhook-port: 54321
-github-webhook-secret: null
-
-# 哔哩哔哩视频查询用的Cookie
-bilibili-cookie: "null"
-
-# 管理员QQ账号
-admin-uids:
-  - 3199590352
-
-# Bot的QQ号（用来做数据排除，不填的话某些地方可能会爆炸）
-bot-uid: 123456
-
-# Debug用的QQ群号
-debug-group-id: 123456
-
-# 启用消息监听的群聊列表
-message-spy-groups:
-  - 123456
-  - 234567
-
-# 消息撤回监听屏蔽用户列表（仅对开启了消息监听的群有效）
-recall-ignore-user:
-  - 123456
-
-# Napcat HTTP 数据来源地址（消息接收入口）
-# 必须是http://xxx.xxx.xxx:port格式
-napcat-data-url: "http://localhost:12345"
-
-# MYSQL数据库配置
+# MySQL 数据库配置
 mysql:
-    host: "localhost"
-    port: 3306
-    database: "qq_bot"
-    username: "qq_bot"
-    password: "null"
+  host: "localhost"
+  port: 3306
+  database: "database"
+  username: "root"
+  password: "null"
 
-# ManoDate推送群号（保密项目）
-manosaba-group-id: 123456
+# AI 配置
+ai:
+  # API Key（OpenAI 格式）
+  api-key: ""
+  # API 基础地址（注意需包含 /v1/chat/completions）
+  base-url: ""
+  # 使用的模型名称
+  model: "qwen3.5-flash"
+  # 请求超时时间（毫秒）
+  timeout: 30000
 
-## 关键词设置区域
-# 一言
-keywords-hitokoto:
+# ========== Napcat 设置区域 ==========
+
+napcat:
+  # 是否启用 Napcat（OneBot）适配器
+  enabled: false
+  # Napcat HTTP 数据来源地址（消息接收入口），格式：http://xxx.xxx.xxx:port
+  server-url: "http://0.0.0.0:12345"
+  # Debug 用的 QQ 群号
+  debug-group-uin: 123456789
+  # Bot 自身的 QQ 号
+  bot-uin: 123456789
+  # 管理员 QQ 号列表
+  admin-uins:
+    - "3199590352"
+  # 启用消息监听的群聊列表
+  message-spy-groups:
+    - "123456"
+    - "234567"
+  # 消息撤回监听屏蔽用户列表（仅对开启了消息监听的群有效）
+  recall-ignore-user:
+    - "123456"
+
+# ========== 功能设置区域 ==========
+
+# AtriBot Key Secret
+atribot-key-secret: "null"
+
+# Hypixel 奖励 WebSocket 地址
+function:
+  hypixel-reward-ws: "ws://localhost:1111"
+  # SA 签到密钥
+  sa-sign-key: "null"
+  # GitHub Webhook 配置
+  github-webhook:
+    port: 54321
+    secret: "null"
+  # 哔哩哔哩视频查询用的 Cookie
+  bilibili-cookie: "null"
+  # 雪莉叫起床的表情包链接
+  wakeup-image-link: "null"
+  # 一言关键词
+  keywords-hitokoto:
     - "一言"
     - "hitokoto"
     - "yiyan"
-# 点赞
-keywords-like-user:
+  # 点赞关键词
+  keywords-like-user:
     - "点赞"
     - "likeme"
     - "zanwo"
     - "赞我"
 
-ai:
-  # 不建议使用任何AI聊天功能，死号速度极快，建议对接官方机器人使用AI功能
+# 验证服务器配置（对个人 MC 服务器使用）
+verify:
+  port: 8080
+  host: "127.0.0.1"
+  key: "public-key"
 
-  # 填入你的 API Key，OpenAI的Key格式
-  api-key: "sk-xxxxx"
-  # API 基础地址（注意后面要有 /v1/chat/completions）
-  base-url: "https://xxxxxxxx/v1/chat/completions"
-  # 使用的模型名称
-  model: "神威太湖之光直连超级计算模型"
-  # 请求超时时间(毫秒)，这里最好写大一些不然MC的新闻推送会超时
-  timeout: 30000000
+# ========== 官方机器人配置参数 ==========
 
 qq:
-  # 官机的AppID
+  # 是否启用官方机器人
+  enabled: false
+  # 官方的 AppID
   app-id: ""
-  # 官机的密钥
+  # 官方的密钥
   client-secret: ""
-  # 注意：沙箱环境使用 https://sandbox.api.sgroup.qq.com
-  # 正式环境使用 https://api.sgroup.qq.com
+  # API 基础地址：沙箱环境用 https://sandbox.api.sgroup.qq.com，正式环境用 https://api.sgroup.qq.com
   api-base-url: "https://sandbox.api.sgroup.qq.com"
+  # 官方机器人 WebUI 登录 Token（请改成足够长的随机字符串）
+  official-webui-token: "null"
+  # 官方机器人 OpenId
+  official-openId: "null"
+  # 官方机器人用户名
+  official-username: "null"
+  # Debug 群 OpenId
+  debug-group-openId: "null"
 
-# 雪莉叫起床的表情包在你的收藏表情中的链接（用/fetch_custom_face抓）
-wakeup-image-link: "default_link"
+# ========== 特殊群专用内容设置区域 ==========
 
-#============ 以下内容均为特殊群专用内容 ============
+# ManoDate 推送群号（保密项目）
+manosaba-group-id: 123456
 
-# 加群验证部分
-group-join-verify-group-id:
-group-join-verify-message:
-group-join-verify-timeout-seconds:
-group-join-verify-answer:
+# 加群验证配置
+group-join-verify-group-id: 123456789
+group-join-verify-message: "欢迎加入，请在30秒内发送验证消息，否则将被移出群聊"
+group-join-verify-timeout-seconds: 60
+group-join-verify-answer: "验证"
+
+# 官方机器人活跃消息群列表
+official-active-message-groups:
+  - "123456"
+
+# 云大陆（Yunland）连接配置
+yunland:
+  host: "null"
+  port: 12345
+  connect-key: "null"

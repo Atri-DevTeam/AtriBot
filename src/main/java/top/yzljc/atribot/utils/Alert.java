@@ -13,6 +13,6 @@ import top.yzljc.atribot.config.Config;
 public class Alert {
 
     public static void notify(String message) {
-        GroupMessage.chatMessage(3199590352L, Config.getInstance().getDebugGroupId(), message, true);
+        GroupMessage.chatMessage(3199590352L, Config.getInstance().getNapcatDebugGroupUin(), message, true);
     }
 }

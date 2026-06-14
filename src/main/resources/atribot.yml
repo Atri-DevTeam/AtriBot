@@ -1,5 +1,5 @@
 name: AtriBot
-version: 3.0.0-Release
+version: 3.0.1-Release
 main: top.yzljc.qqbot.AtriBot
 
 commands:
@@ -152,6 +152,12 @@ commands:
       - 扫雷
       - sl
     official-only: true
+  connect4:
+    description: 四子棋游戏
+    aliases:
+      - 四子棋
+      - c4
+    official-only: true
   贡献名单:
     description: 查看贡献名单
   info:
@@ -165,4 +171,13 @@ commands:
   全量消息:
     description: 授权全量消息
     usage: /全量消息
+    official-only: true
+  推送任务:
+    description: 推送任务列表
+    official-only: true
+  四子棋:
+    description: 四子棋游戏
+    aliases:
+      - c4
+      - connect4
     official-only: true

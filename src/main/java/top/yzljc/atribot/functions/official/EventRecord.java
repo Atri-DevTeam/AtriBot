@@ -53,14 +53,14 @@ public class EventRecord implements Listener {
     @EventHandler
     public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
         if (!event.getContent().trim().startsWith(Config.getInstance().getCommandPrefix())) {
-            event.sendMessage("你好！我是亚托莉喵，感谢你在群里@我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
+            event.sendMessage("你好！我是" + Config.getInstance().getOfficialUsername() + "，感谢你在群里@我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
         }
     }
 
     @EventHandler
     public void onC2CMessage(OfficialC2CMessageEvent event) {
         if (!event.getContent().trim().startsWith(Config.getInstance().getCommandPrefix())) {
-            event.sendMessage("你好！我是亚托莉喵，感谢你私聊我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
+            event.sendMessage("你好！我是" + Config.getInstance().getOfficialUsername() + "，感谢你私聊我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
         }
     }
 
@@ -87,7 +87,7 @@ public class EventRecord implements Listener {
                 event.getData().getType()
         );
         log.info(eventInfo);
-        GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), eventInfo);
+        GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), eventInfo);
     }
 
     @EventHandler
@@ -128,7 +128,7 @@ public class EventRecord implements Listener {
             }
         }
 
-        if ((event.getLabel().equals("1") || event.getLabel().equals("2")) && !Config.getInstance().isDebugMode()) {
+        if ((event.getLabel().equals("1") || event.getLabel().equals("2")) && Config.getInstance().isNapcatEnabled()) {
             if (event.getLabel().equals("2") && event.getSender().groupOpenId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
                 return;
 
@@ -149,7 +149,7 @@ public class EventRecord implements Listener {
                         String.join(" ", event.getArgs())
                 );
             }
-            GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), info);
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), info);
             log.info(info);
         }
     }

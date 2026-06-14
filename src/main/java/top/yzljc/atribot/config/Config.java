@@ -21,24 +21,15 @@ public class Config {
 
     private YamlConfiguration yaml;
 
+    // ########## 全局设置区域 ##########
     @Getter
-    private int qqBotPort;
+    private String commandPrefix;
     @Getter
-    private String bilibiliCookie;
+    private String debugCommandSuffix;
     @Getter
-    private List<Long> adminUids;
+    private String ttfFileName;
     @Getter
-    private long botUid;
-    @Getter
-    private long debugGroupId;
-    @Getter
-    private String debugGroupOpenId;
-    @Getter
-    private List<Long> messageSpyGroups;
-    @Getter
-    private List<Long> ignoredUsers;
-    @Getter
-    private String httpUrl;
+    private boolean debugMode;
     @Getter
     private String mysqlHost;
     @Getter
@@ -49,50 +40,80 @@ public class Config {
     private String mysqlUsername;
     @Getter
     private String mysqlPassword;
+    private String aiApiKey;
+    private String aiBaseUrl;
+    private String aiModel;
+    private int aiTimeout;
     @Getter
-    private long manosabaGroupId;
+    private int listenPort;
+
+    // ########## Napcat设置区域 ##########
     @Getter
-    private boolean debugMode;
+    private boolean napcatEnabled;
     @Getter
-    private String[] keywordsHitokoto;
+    private String napcatServerUrl;
     @Getter
-    private String[] keywordsLikeUser;
+    private long napcatDebugGroupUin;
+    @Getter
+    private long napcatBotUin;
+    @Getter
+    private List<Long> napcatAdminUins;
+    @Getter
+    private List<Long> napcatMessageSpyGroups;
+    @Getter
+    private List<Long> napcatRecallIgnoredUsers;
+
+    // ########## 功能设置区域 ##########
+    @Getter
+    private String atribotKeySecret;
+    @Getter
+    private String hypixelRewardWebSocketUrl;
+    @Getter
+    private String saSignSecretKey;
     @Getter
     private int githubWebhookPort;
     @Getter
     private String githubWebhookSecret;
     @Getter
+    private String bilibiliCookie;
+    @Getter
     private String wakeupImgLink;
     @Getter
-    private String commandPrefix;
+    private String[] keywordsHitokoto;
     @Getter
-    private String websocketUrl;
+    private String[] keywordsLikeUser;
     @Getter
-    private String debugCommandSuffix;
+    private boolean verifyEnabled;
     @Getter
-    private String ttfFileName;
+    private int verifyPort;
     @Getter
-    private int varietyPort;
+    private String verifyHost;
     @Getter
-    private String varietyHost;
-    @Getter
-    private String varietyKey;
+    private String verifyKey;
 
+    // ########## 官方机器人配置参数 ##########
     @Getter
-    private String saSignSecretKey;
-
-    private String aiApiKey;
-    private String aiBaseUrl;
-    private String aiModel;
-    private int aiTimeout;
-
+    private boolean officialBotEnabled;
     @Getter
     private String qqAppId;
     @Getter
     private String qqClientSecret;
     @Getter
     private String qqApiBaseUrl;
+    @Getter
+    private String officialWebuiToken;
+    @Getter
+    private String officialOpenId;
+    @Getter
+    private String officialUsername;
+    @Getter
+    private String debugGroupOpenId;
+    @Getter
+    private boolean newBot;
 
+    // ########## 特殊群专用内容设置区域 ##########
+    @Getter
+    private long manosabaGroupId;
     @Getter
     private String groupJoinVerifyMessage;
     @Getter
@@ -109,14 +130,6 @@ public class Config {
     private int yunlandPort;
     @Getter
     private String yunlandConnectKey;
-    @Getter
-    private String atribotKeySecret;
-    @Getter
-    private String officialWebuiToken;
-    @Getter
-    private String officialOpenId;
-    @Getter
-    private String officialUsername;
 
     private Config() {
         load();
@@ -151,69 +164,70 @@ public class Config {
             this.yaml = new YamlConfiguration(configPath.toFile());
             yaml.load();
 
-            this.qqBotPort = yaml.getInt("qq-bot-port", 1234);
-            this.bilibiliCookie = yaml.getString("bilibili-cookie", "null");
-            this.botUid = getLongOrDefault("bot-uid", 123456789L);
-            this.debugGroupId = getLongOrDefault("debug-group-id", 123456789L);
-            this.debugGroupOpenId = yaml.getString("debug-group-openId", "null");
-            this.httpUrl = yaml.getString("napcat-data-url", "http://0.0.0.0:12345");
-            this.wakeupImgLink = yaml.getString("wakeup-image-link", "null");
-            this.websocketUrl = yaml.getString("websocket-url", "ws://localhost:1111");
+            // ########## 全局设置区域 ##########
+            this.commandPrefix = yaml.getString("command-prefix", "/");
             this.debugCommandSuffix = yaml.getString("debug-command-suffix", "--debug");
-
-            // 读取嵌套的 MySQL 配置
+            this.ttfFileName = yaml.getString("ttf-file-name", "default.ttf");
+            this.debugMode = yaml.getBoolean("debug-mode", false);
             this.mysqlHost = yaml.getString("mysql.host", "localhost");
             this.mysqlPort = yaml.getInt("mysql.port", 3306);
             this.mysqlDatabase = yaml.getString("mysql.database", "database");
             this.mysqlUsername = yaml.getString("mysql.username", "root");
             this.mysqlPassword = yaml.getString("mysql.password", "null");
-
-            this.manosabaGroupId = getLongOrDefault("manosaba-group-id", 123456L);
-            this.debugMode = yaml.getBoolean("debug-mode", false);
-            this.githubWebhookPort = yaml.getInt("github-webhook-port", 54321);
-            this.githubWebhookSecret = yaml.getString("github-webhook-secret", "null");
-            this.commandPrefix = yaml.getString("command-prefix", "/");
-            this.ttfFileName = yaml.getString("ttf-file-name", "default.ttf");
-            this.varietyPort = yaml.getInt("variety-port", 8080);
-            this.varietyHost = yaml.getString("variety-host", "127.0.0.1");
-            this.varietyKey = yaml.getString("variety-key", "public-key");
-            this.saSignSecretKey = yaml.getString("sa-sign-key", "null");
-
-            // 读取嵌套的 AI 配置
             this.aiApiKey = yaml.getString("ai.api-key", "");
             this.aiBaseUrl = yaml.getString("ai.base-url", "");
             this.aiModel = yaml.getString("ai.model", "qwen3.5-flash");
             this.aiTimeout = yaml.getInt("ai.timeout", 30000);
+            this.listenPort = yaml.getInt("listen-port", 1234);
 
-            // 读取嵌套的 QQ 配置
+            // ########## Napcat设置区域 ##########
+            this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
+            this.napcatServerUrl = yaml.getString("napcat.server-url", "http://0.0.0.0:12345");
+            this.napcatDebugGroupUin = getLongOrDefault("napcat.debug-group-uin", 123456789L);
+            this.napcatBotUin = getLongOrDefault("napcat.bot-uin", 123456789L);
+            this.napcatAdminUins = parseLongList(yaml.getStringList("napcat.admin-uins"));
+            this.napcatMessageSpyGroups = parseLongList(yaml.getStringList("napcat.message-spy-groups"));
+            this.napcatRecallIgnoredUsers = parseLongList(yaml.getStringList("napcat.recall-ignore-user"));
+
+            // ########## 功能设置区域 ##########
+            this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
+            this.hypixelRewardWebSocketUrl = yaml.getString("function.hypixel-reward-ws", "ws://localhost:1111");
+            this.saSignSecretKey = yaml.getString("function.sa-sign-key", "null");
+            this.githubWebhookPort = yaml.getInt("function.github-webhook.port", 54321);
+            this.githubWebhookSecret = yaml.getString("function.github-webhook.secret", "null");
+            this.bilibiliCookie = yaml.getString("function.bilibili-cookie", "null");
+            this.verifyEnabled = yaml.getBoolean("verify.enabled", false);
+            this.verifyPort = yaml.getInt("verify.port", 8080);
+            this.verifyHost = yaml.getString("verify.host", "127.0.0.1");
+            this.verifyKey = yaml.getString("verify.key", "public-key");
+            this.wakeupImgLink = yaml.getString("function.wakeup-image-link", "null");
+            this.keywordsHitokoto = yaml.getStringList("function.keywords-hitokoto").toArray(new String[0]);
+            this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
+
+            // ########## 官方机器人配置参数 ##########
+            this.officialBotEnabled = yaml.getBoolean("qq.enabled", false);
             this.qqAppId = yaml.getString("qq.app-id", "");
             this.qqClientSecret = yaml.getString("qq.client-secret", "");
             this.qqApiBaseUrl = yaml.getString("qq.api-base-url", "https://sandbox.api.sgroup.qq.com");
+            this.officialOpenId = yaml.getString("qq.official-openId", "null");
+            this.officialUsername = yaml.getString("qq.official-username", "null");
+            this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
+            this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
+            this.newBot = yaml.getBoolean("qq.is-new-bot", false);
+
+            // ########## 特殊群专用内容设置区域 ##########
+            this.manosabaGroupId = getLongOrDefault("manosaba-group-id", 123456L);
 
             // 群验证配置
             this.groupJoinVerifyGroupId = getLongOrDefault("group-join-verify-group-id", 123456789L);
             this.groupJoinVerifyMessage = yaml.getString("group-join-verify-message", "欢迎加入，请在30秒内发送验证消息，否则将被移出群聊");
             this.groupJoinVerifyTimeoutSeconds = yaml.getInt("group-join-verify-timeout-seconds", 60);
             this.groupJoinVerifyAnswer = yaml.getString("group-join-verify-answer", "验证");
-
-            // 自动将 yaml 的列表解析为 Long 列表
-            this.adminUids = parseLongList(yaml.getStringList("admin-uids"));
-            this.messageSpyGroups = parseLongList(yaml.getStringList("message-spy-groups"));
-            this.ignoredUsers = parseLongList(yaml.getStringList("recall-ignore-user"));
-
-            // 解析 String 数组
-            this.keywordsHitokoto = yaml.getStringList("keywords-hitokoto").toArray(new String[0]);
-            this.keywordsLikeUser = yaml.getStringList("keywords-like-user").toArray(new String[0]);
             this.activeMessageGroups = yaml.getStringList("official-active-message-groups");
 
             this.yunlandHost = yaml.getString("yunland.host", "null");
             this.yunlandPort = yaml.getInt("yunland.port", 12345);
             this.yunlandConnectKey = yaml.getString("yunland.connect-key", "null");
-
-            this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
-            this.officialWebuiToken = yaml.getString("official-webui-token", "null");
-            this.officialOpenId = yaml.getString("official-openId", "null");
-            this.officialUsername = yaml.getString("official-username", "null");
 
             log.info("配置文件加载成功");
 

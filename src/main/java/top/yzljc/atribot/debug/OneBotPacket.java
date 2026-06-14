@@ -17,9 +17,9 @@ public class OneBotPacket {
 
     private static final AtomicBoolean isDebugEnabled = new AtomicBoolean(false);
     private static volatile Long targetFilterGroupId = null;
-    private static final List<Long> admins = Config.getInstance().getAdminUids();
+    private static final List<Long> admins = Config.getInstance().getNapcatAdminUins();
     private static final long botUid = UserInformation.getBotId();
-    private static final long debugGroupId = Config.getInstance().getDebugGroupId();
+    private static final long debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
 
     public static void process(JsonNode json) {
         if (checkToggleCommand(json)) return;

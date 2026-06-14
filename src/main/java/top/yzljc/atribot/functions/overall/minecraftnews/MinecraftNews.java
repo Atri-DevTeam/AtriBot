@@ -267,9 +267,9 @@ public class MinecraftNews implements CommandExecutor {
                 return;
             }
 
-            long messageId = GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), url, MessageUtils.ImageType.URL);
+            long messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), url, MessageUtils.ImageType.URL);
             for (long gid : TARGET_GROUPS) {
-                if (gid == Config.getInstance().getDebugGroupId()) continue;
+                if (gid == Config.getInstance().getNapcatDebugGroupUin()) continue;
                 if (!GroupConfigManager.isFeatureEnabled(gid, "mc_news")) continue;
                 GroupMessage.forwardTo(gid, messageId);
             }

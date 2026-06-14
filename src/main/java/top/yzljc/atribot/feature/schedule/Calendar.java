@@ -53,9 +53,9 @@ public class Calendar implements CommandExecutor {
             }
 
             try {
-                long messageId = GroupMessage.chatMessage(Config.getInstance().getDebugGroupId(), "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=true&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+                long messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=true&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
                 if (messageId != 0L) {
-                    log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getDebugGroupId(), messageId);
+                    log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", Config.getInstance().getNapcatDebugGroupUin(), messageId);
                 } else {
                     log.warn("无法获取MessageID，取消本次推送任务");
                     Alert.notify("日历推送失败，无法获取消息ID");
@@ -65,7 +65,7 @@ public class Calendar implements CommandExecutor {
 
                 Set<Long> allGroups = GroupInformation.fetchAllGroupIds();
                 for (long gid : allGroups) {
-                    if (gid == Config.getInstance().getDebugGroupId()) continue;
+                    if (gid == Config.getInstance().getNapcatDebugGroupUin()) continue;
                     if (!GroupConfigManager.isFeatureEnabled(gid, "calendar")) continue;
 
                     GroupMessage.forwardTo(gid, messageId);

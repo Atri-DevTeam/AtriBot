@@ -26,7 +26,7 @@ public class CommandManager implements Listener {
     private static final String COMMAND_FILE = ConfigFile.ATRIBOT.getFileName();
     private static final String COMMAND_PREFIX = Config.getInstance().getCommandPrefix();
     private static final String DEBUG_SUFFIX = Config.getInstance().getDebugCommandSuffix();
-    private static final List<Long> adminUids = Config.getInstance().getAdminUids();
+    private static final List<Long> adminUids = Config.getInstance().getNapcatAdminUins();
     private static final String FALLBACK_PREFIX = "atri-core";
 
     private static final CommandMap commandMap = new CommandMap();

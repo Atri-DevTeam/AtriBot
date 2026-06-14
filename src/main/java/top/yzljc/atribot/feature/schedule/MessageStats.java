@@ -30,7 +30,7 @@ public class MessageStats implements CommandExecutor {
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
     private static final Map<Long, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static final List<Long> spyGroups = Config.getInstance().getMessageSpyGroups();
+    private static final List<Long> spyGroups = Config.getInstance().getNapcatMessageSpyGroups();
 
     @Schedule(time = "23:59:45", type = ScheduleType.DAILY)
     public static void autoReportAllGroups() {

@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RM implements CommandExecutor {
     private static final Map<Long, Long> latestGroupMessageMap = new ConcurrentHashMap<>();
-    private static final long DEBUG_GROUP = Config.getInstance().getDebugGroupId();
+    private static final long DEBUG_GROUP = Config.getInstance().getNapcatDebugGroupUin();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

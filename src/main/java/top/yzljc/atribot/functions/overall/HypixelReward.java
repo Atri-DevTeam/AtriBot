@@ -22,7 +22,6 @@ import top.yzljc.atribot.event.impl.GroupMessageEvent;
 import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.impl.OfficialInteractionEvent;
 import top.yzljc.atribot.functions.official.permission.GroupList;
-import top.yzljc.atribot.functions.official.permission.VerifyFullMessageGroup;
 import top.yzljc.atribot.service.official.CommandButton;
 import top.yzljc.atribot.service.request.HttpService;
 
@@ -39,7 +38,7 @@ import java.util.regex.Pattern;
 
 public class HypixelReward implements CommandExecutor, Listener {
     private static final Logger log = LoggerFactory.getLogger(HypixelReward.class);
-    private static final String WS_URL = Config.getInstance().getWebsocketUrl();
+    private static final String WS_URL = Config.getInstance().getHypixelRewardWebSocketUrl();
     private static HypixelClient client;
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Pattern URL_PATTERN = Pattern.compile("https?://(rewards\\.)?hypixel\\.net/claim-reward/[a-zA-Z0-9]+");

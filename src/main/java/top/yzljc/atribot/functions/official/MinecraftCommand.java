@@ -6,7 +6,6 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.functions.official.minecraft.DiceImpl;
-import top.yzljc.atribot.functions.official.minecraft.NewsImpl;
 import top.yzljc.atribot.functions.official.minecraft.VersionCheckImpl;
 
 /**
@@ -21,8 +20,7 @@ public class MinecraftCommand implements CommandExecutor {
     private static final Markdown ValidCommands = TC.md(
             Markdown.img("https://www.yzljc.top/img/grass-block-img.png", 24, 24) + " **Minecraft 指令列表**\n\n" +
                     "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
-                    "2. " + Markdown.enterCommand("/mc news", "/mc news") + " - Minecraft更新动态推送设置\n\n" +
-                    "3. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本"
+                    "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本"
     );
 
     @Override
@@ -37,11 +35,6 @@ public class MinecraftCommand implements CommandExecutor {
 
         if (subCommand.equalsIgnoreCase("dice")) {
             DiceImpl.handle(sender, label, args);
-            return true;
-        }
-
-        if (subCommand.equals("news")) {
-            NewsImpl.handle(sender, label, args);
             return true;
         }
 

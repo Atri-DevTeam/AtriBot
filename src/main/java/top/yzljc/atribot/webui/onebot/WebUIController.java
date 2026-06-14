@@ -70,7 +70,7 @@ public class WebUIController {
 
     public static void fetchMessages(Context ctx) {
         MessageRequestDTO dto = ctx.bodyAsClass(MessageRequestDTO.class);
-        if (!Config.getInstance().getMessageSpyGroups().contains(dto.groupId)) {
+        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(dto.groupId)) {
             ctx.json(Result.fail(404, "未开启该群的消息监听"));
             return;
         }
