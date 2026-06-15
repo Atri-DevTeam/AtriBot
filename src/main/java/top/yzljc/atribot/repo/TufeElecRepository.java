@@ -1,7 +1,8 @@
-package top.yzljc.atribot.functions.official.tufe;
+package top.yzljc.atribot.repo;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.functions.official.tufe.ElecDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
  * @Package top.yzljc.atribot.functions.official.tufe
  */
 @Slf4j
-public class TufeElecBind {
+public class TufeElecRepository {
 
     public static void init() {
         String sql = "CREATE TABLE IF NOT EXISTS `tufe_elec_bind` (" +

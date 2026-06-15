@@ -130,13 +130,13 @@ public class LikeUser implements Listener {
 
         if (successCount == 5) {
             log.info("得手 => {} | +50", userId);
-            return "赞成，增五十善，然未与友者或不得见也！";
+            return "赞成，增五十，但或不得见！";
         } else if (failCount == 5) {
             log.info("受阻 => {} | 今日已极", userId);
-            return "今日已赞，不可复也！";
+            return "今日已赞毕，明日请早！";
         } else {
             log.info("半成 => {} | 成: {} | 败: {}", userId, successCount * 10, failCount * 10);
-            return String.format("半成。成 %d 次，败 %d 次，或为今日已赞故！", successCount * 10, failCount * 10);
+            return String.format("半成，成 %d 次，败 %d 次，或为今日已赞故！", successCount * 10, failCount * 10);
         }
     }
 
@@ -168,11 +168,11 @@ public class LikeUser implements Listener {
         return switch (status) {
             case SUCCESS -> {
                 log.info("得手 => {} | +10", userId);
-                yield "已赞，增十善";
+                yield "已赞，得十！";
             }
             case DAILY_LIMIT -> {
                 log.info("受阻 => {} | 今日已极", userId);
-                yield "今日已赞，不可复";
+                yield "今日已赞毕，明日请早！";
             }
             case UNKNOWN -> {
                 log.info("不明 => {} | 接口无应", userId);

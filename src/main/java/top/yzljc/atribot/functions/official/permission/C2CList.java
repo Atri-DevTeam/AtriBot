@@ -1,7 +1,7 @@
 package top.yzljc.atribot.functions.official.permission;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.repo.C2CRepository;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,57 +24,24 @@ public class C2CList {
     private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
 
     public static void init() {
+        // 建表
+        C2CRepository.initTable();
 
-        String sql = "CREATE TABLE IF NOT EXISTS `permission_group` (" +
-                "  `user_openId` VARCHAR(256) NOT NULL," +
-                "  `role` TEXT NOT NULL," +
-                "  `permissions` TEXT NOT NULL," +
-                "  PRIMARY KEY (`user_openId`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-
-            stmt.execute();
-
-        } catch (Exception e) {
-            log.error("初始化权限组数据库失败: {}", e.getMessage());
+        // 加载缓存
+        List<C2CRepository.PermissionRow> rows = C2CRepository.loadAll();
+        for (C2CRepository.PermissionRow row : rows) {
+            PermissionRole role = PermissionRole.fromString(row.role());
+            Set<String> permissions = parsePermissions(row.permissions());
+            cache.put(row.userOpenId(), new UserData(row.userOpenId(), role, permissions));
         }
-
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(
-                     "SELECT user_openId, role, permissions FROM permission_group")) {
-
-            var rs = stmt.executeQuery();
-
-            while (rs.next()) {
-
-                String userOpenId = rs.getString("user_openId");
-
-                PermissionRole role = PermissionRole.fromString(
-                        rs.getString("role")
-                );
-
-                String permissionsString = rs.getString("permissions");
-
-                Set<String> permissions = parsePermissions(permissionsString);
-
-                cache.put(userOpenId,
-                        new UserData(userOpenId, role, permissions));
-            }
-
-        } catch (Exception e) {
-            log.error("加载权限组缓存失败: {}", e.getMessage());
-        }
+        log.info("C2C 权限缓存加载完成，共 {} 条", cache.size());
     }
 
     /**
      * 获取权限数据
      */
     public static UserData getData(String userOpenId) {
-
-        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of())
-        );
+        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of()));
     }
 
     /**
@@ -102,9 +69,7 @@ public class C2CList {
      * 是否拥有权限节点
      */
     public static boolean hasPermission(String userOpenId, String permission) {
-
         UserData data = getData(userOpenId);
-
         return data.permissions().contains("*")
                 || data.permissions().contains(permission);
     }
@@ -113,12 +78,10 @@ public class C2CList {
      * 是否拥有角色
      */
     public static boolean hasRole(String userOpenId, PermissionRole role) {
-
         return getData(userOpenId).role() == role;
     }
 
     public static boolean isAdmin(String userOpenId) {
-
         return getData(userOpenId).role() == PermissionRole.ADMIN || getData(userOpenId).role == PermissionRole.OWNER;
     }
 
@@ -126,7 +89,6 @@ public class C2CList {
      * 获取角色
      */
     public static PermissionRole getRole(String userOpenId) {
-
         return getData(userOpenId).role();
     }
 
@@ -134,108 +96,52 @@ public class C2CList {
      * 设置权限组
      */
     public static boolean setPermissionGroup(String userOpenId, PermissionRole role, Set<String> permissions) {
-
         String permissionsString = String.join(",", permissions);
 
-        String sql = "INSERT INTO permission_group " +
-                "(user_openId, role, permissions) " +
-                "VALUES (?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE " +
-                "role = VALUES(role), " +
-                "permissions = VALUES(permissions)";
-
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, userOpenId);
-            stmt.setString(2, role.name());
-            stmt.setString(3, permissionsString);
-
-            stmt.executeUpdate();
-
-            cache.put(userOpenId,
-                    new UserData(userOpenId, role, permissions));
-
+        if (C2CRepository.upsert(userOpenId, role.name(), permissionsString)) {
+            cache.put(userOpenId, new UserData(userOpenId, role, permissions));
             return true;
-
-        } catch (Exception e) {
-            log.error("设置权限组失败: {}", e.getMessage());
-            return false;
         }
+        return false;
     }
 
     /**
      * 添加权限节点
      */
-    public static boolean addPermission(String userOpenId,
-                                        String permission) {
-
+    public static boolean addPermission(String userOpenId, String permission) {
         UserData data = getData(userOpenId);
-
         Set<String> permissions = ConcurrentHashMap.newKeySet();
-
         permissions.addAll(data.permissions());
-
         permissions.add(permission);
-
-        return setPermissionGroup(
-                userOpenId,
-                data.role(),
-                permissions
-        );
+        return setPermissionGroup(userOpenId, data.role(), permissions);
     }
 
     /**
      * 删除权限节点
      */
-    public static boolean removePermission(String userOpenId,
-                                           String permission) {
-
+    public static boolean removePermission(String userOpenId, String permission) {
         UserData data = getData(userOpenId);
-
         Set<String> permissions = ConcurrentHashMap.newKeySet();
-
         permissions.addAll(data.permissions());
-
         permissions.remove(permission);
-
-        return setPermissionGroup(
-                userOpenId,
-                data.role(),
-                permissions
-        );
+        return setPermissionGroup(userOpenId, data.role(), permissions);
     }
 
     /**
      * 删除整个用户权限数据
      */
     public static boolean removeUser(String userOpenId) {
-
-        String sql = "DELETE FROM permission_group WHERE user_openId = ?";
-
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, userOpenId);
-
-            stmt.executeUpdate();
-
+        if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
-
             return true;
-
-        } catch (Exception e) {
-            log.error("删除用户权限失败: {}", e.getMessage());
-            return false;
         }
+        return false;
     }
 
     private static Set<String> parsePermissions(String permissionsString) {
-
         if (permissionsString == null || permissionsString.isBlank()) {
             return Set.of();
         }
-
         return Arrays.stream(permissionsString.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())

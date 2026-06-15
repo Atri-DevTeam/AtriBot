@@ -30,7 +30,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
     // Timeouts (milliseconds)
     private static final long JOIN_TIMEOUT_MS = 60_000;
     private static final long MOVE_TIMEOUT_MS = 60_000;
-    private static final long GAME_TIMEOUT_MS = 600_000;
+    private static final long GAME_TIMEOUT_MS = 900_000;
     private static final long RECALL_DELAY_MS = 15_000;
 
     // Emoji constants
@@ -106,7 +106,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
                 **时限:**
                 - 每人每步限时 60 秒，超时判对方胜
-                - 整场对局不超过 10 分钟，超时自动平局
+                - 整场对局不超过 15 分钟，超时自动平局
 
                 请点击下方按钮选择你的阵营:
                 > 游戏将在 1 分钟内未满员时自动取消
@@ -193,7 +193,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         sb.append("- 若棋盘填满仍无人连成四子，则为平局\n\n");
         sb.append("**时限:**\n");
         sb.append("- 每人每步限时 60 秒，超时判对方胜\n");
-        sb.append("- 整场对局不超过 10 分钟，超时自动平局\n\n");
+        sb.append("- 整场对局不超过 15 分钟，超时自动平局\n\n");
 
         sb.append("**当前状态:**\n");
         if (game.playerAOpenId != null) {
@@ -232,6 +232,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
     private void startGame(GameState game, String sessionId, String label, CommandSender sender) {
         game.phase = Phase.PLAYING;
+        game.startTime = System.currentTimeMillis();
         game.currentPlayer = PLAYER_A;
         game.board = new int[ROWS][COLS];
 
@@ -252,8 +253,14 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         }
 
         String playerId = sender.unionOpenId();
-        String currentPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
 
+        // Non-participant → silent ignore
+        if (!playerId.equals(game.playerAOpenId) && !playerId.equals(game.playerBOpenId)) {
+            return;
+        }
+
+        // Wrong turn
+        String currentPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
         if (!playerId.equals(currentPlayerId)) {
             sender.replyText(label, "还没轮到你落子喵！请等待对手下完！");
             return;
@@ -537,7 +544,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             activeGames.remove(sessionId);
 
             try {
-                String resultMsg = "⏰ 对局已超过 10 分钟，"
+                String resultMsg = "⏰ 对局已超过 15 分钟，"
                         + Markdown.at(playerAId) + " " + Markdown.at(playerBId)
                         + " 自动判为平局！";
                 String markdown = buildSettlementMarkdown(current, resultMsg);

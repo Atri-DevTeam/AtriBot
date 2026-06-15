@@ -26,8 +26,9 @@ public class WhoAmI implements CommandExecutor {
                         "message_openId: " + sender.messageOpenId() + "\n" +
                         "is_admin: " + sender.isAdmin() + "\n" +
                         "is_debug: " + sender.isDebug() + "\n" +
-                        "permission_group:" + C2CList.getRole(sender.unionOpenId()) + "\n" +
+                        "role:" + C2CList.getRole(sender.unionOpenId()) + "\n" +
                         "is_group_whitelisted: " + GroupList.isWhitelist(sender.groupOpenId()) + "\n" +
+                        "is_group_enable_full_message: " + GroupList.isAllowedFullMessages(sender.groupOpenId()) + "\n" +
                         "```\n\n" +
                         "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义";
                 sender.officialGroupReplyMarkdown(TC.md(markdownInfo));

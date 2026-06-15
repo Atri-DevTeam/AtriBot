@@ -46,7 +46,7 @@ public class HelpCommand implements CommandExecutor {
 
                 List<List<CommandButton>> buttons = List.of(
                         List.of(
-                                new CommandButton("s1", "提交反馈", "/feedback ", false, 1, 2)
+                                new CommandButton("s1", "建议与反馈", "/feedback ", false, 1, 2)
                         )
                 );
                 Object keyboard = Keyboard.build(buttons);

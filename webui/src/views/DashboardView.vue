@@ -125,7 +125,6 @@
               :key="message.id"
               class="message"
               :class="{ mine: isMe(message) }"
-              @contextmenu.prevent="onContextMenu($event, message)"
             >
               <div class="avatar">
                 <img
@@ -160,7 +159,8 @@
                   </template>
                   <span class="msg-uid" v-if="message.unionOpenId">{{ message.unionOpenId }}</span>
                 </div>
-                <div class="bubble" :class="{ recalled: recalledIds[message.messageOpenId] }">
+                <div class="bubble" :class="{ recalled: recalledIds[message.messageOpenId] }"
+                     @contextmenu.prevent.stop="onContextMenu($event, message)">
                   <pre v-if="recalledIds[message.messageOpenId]">你撤回了一条消息</pre>
                   <template v-else>
                     <div v-if="hasMsgRef(message)" class="msg-ref">
@@ -192,6 +192,10 @@
 
           </div>
 
+            <div v-if="replyTo" class="reply-bar">
+              <span>回复 {{ replyTo.username || '...' }}</span>
+              <button @click="replyTo = null">×</button>
+            </div>
           <form class="composer" @submit.prevent="sendMessage">
             <div class="composer-type">
               <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
@@ -223,6 +227,8 @@
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="openPermModal(ctxMenu.message)">更改权限组</button>
+            <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
+            <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
             <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
                     @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
@@ -328,6 +334,7 @@ const groupSearch = ref('')
 const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
+const replyTo = ref(null)
 const funcEntries = ref([])
 const showInspector = ref(false)
 const showPermModal = ref(false)
@@ -493,11 +500,19 @@ function atUser(message) {
   }
 }
 
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text || '') } catch { /* ignore */ }
+}
+
+function startReply(message) {
+  replyTo.value = message
+}
+
 async function recallMsg(message) {
   try {
     await api('/groups/recall', {
       method: 'POST',
-      body: JSON.stringify({ groupOpenId: message.groupOpenId, messageId: message.messageOpenId })
+      body: JSON.stringify({groupOpenId: message.groupOpenId, messageId: message.messageOpenId})
     })
     recalledIds[message.messageOpenId] = true
     notice.value = '消息已撤回。'
@@ -769,12 +784,16 @@ async function sendMessage() {
       body.imageType = imageType.value
       body.imageValue = draft.value.trim()
     }
+    if (replyTo.value) {
+      body.replyMessageId = replyTo.value.messageOpenId
+    }
     await api('/groups/send', {
       method: 'POST',
       body: JSON.stringify(body)
     })
     draft.value = ''
     pastePreview.value = null
+    replyTo.value = null
     notice.value = '消息已发送。'
     await loadLatestMessages()
   } catch (error) {

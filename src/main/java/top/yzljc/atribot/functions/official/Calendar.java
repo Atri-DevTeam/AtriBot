@@ -1,13 +1,11 @@
 package top.yzljc.atribot.functions.official;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.config.Config;
-import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.functions.official.permission.GroupList;
 import top.yzljc.atribot.service.request.HttpService;
@@ -27,8 +25,6 @@ import java.net.http.HttpResponse;
  */
 @Slf4j
 public class Calendar implements CommandExecutor {
-
-    private static final ChatService service = Atri.getInstance().getChatService();
 
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 

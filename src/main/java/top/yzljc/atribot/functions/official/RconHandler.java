@@ -1,5 +1,6 @@
 package top.yzljc.atribot.functions.official;
 
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -26,6 +27,10 @@ public class RconHandler implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getInvokedLabel().equals("unbanme")) {
+            sender.sendMessage(TC.md("该指令已做出调整，请点击下方指令\n\n点击输入: " + Markdown.enterCommand("/rc atri unban ", "解封账号")));
+            return true;
+        }
         if (args.length < 1) {
             sender.replyMarkdown(label, TC.md("""
                     **未输入服务器编号！**

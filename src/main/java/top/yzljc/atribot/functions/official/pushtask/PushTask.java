@@ -1,8 +1,6 @@
 package top.yzljc.atribot.functions.official.pushtask;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import top.yzljc.atribot.chat.official.At;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.functions.official.permission.GroupList;
 

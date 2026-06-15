@@ -1,6 +1,7 @@
 package top.yzljc.atribot.command;
 
 import lombok.Getter;
+import lombok.Setter;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
 
 import java.util.List;
@@ -8,6 +9,13 @@ import java.util.List;
 public abstract class Command {
     @Getter
     private final String name;
+    /**
+     * 用户实际输入的命令标签（可能是主命令名或别名），在 {@code CommandMap#dispatch} 中设置。
+     * 仅在命令执行期间有效，执行完成后不保证保留原值。
+     */
+    @Getter
+    @Setter
+    private volatile String invokedLabel;
     @Getter
     private final String description;
     private final String usageMessage;

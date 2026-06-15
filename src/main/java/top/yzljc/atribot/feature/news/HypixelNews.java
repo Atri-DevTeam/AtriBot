@@ -171,7 +171,7 @@ public class HypixelNews implements CommandExecutor {
             try {
                 base64Img = downloadImageAsBase64(article.imageUrl);
             } catch (Exception e) {
-                System.err.println("[INFO] Hypixel图片下载失败: " + e.getMessage());
+                log.error("[INFO] Hypixel图片下载失败: {}", e.getMessage());
             }
         }
 
@@ -271,7 +271,6 @@ public class HypixelNews implements CommandExecutor {
         }
     }
 
-    /** 统一文章结构 */
     static class UnifiedArticle {
         String id;
         String title;

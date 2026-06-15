@@ -825,6 +825,27 @@ button:disabled {
   font-size: 12px;
 }
 
+.reply-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  font-size: 12px;
+  color: #6b7280;
+}
+.reply-bar button {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  color: #9ca3af;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+}
+.reply-bar button:hover { color: #374151; }
+
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

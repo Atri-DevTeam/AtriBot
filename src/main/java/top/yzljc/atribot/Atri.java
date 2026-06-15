@@ -18,6 +18,7 @@ import top.yzljc.atribot.config.Reload;
 import top.yzljc.atribot.config.groups.GroupConfigInfo;
 import top.yzljc.atribot.config.groups.GroupConfigManager;
 import top.yzljc.atribot.config.groups.GroupModeManager;
+import top.yzljc.atribot.repo.TufeElecRepository;
 import top.yzljc.atribot.webui.official.WebUISessionManager;
 import top.yzljc.atribot.webui.onebot.OneBotWebUIRouter;
 import top.yzljc.atribot.functions.official.ChatContentRecord;
@@ -29,8 +30,9 @@ import top.yzljc.atribot.feature.like.LikeUser;
 import top.yzljc.atribot.feature.minecraft.*;
 import top.yzljc.atribot.feature.schedule.Calendar;
 import top.yzljc.atribot.functions.official.*;
+import top.yzljc.atribot.functions.official.SignCommand;
+import top.yzljc.atribot.repo.SignRepository;
 import top.yzljc.atribot.functions.official.tufe.ElectricCheck;
-import top.yzljc.atribot.functions.official.tufe.TufeElecBind;
 import top.yzljc.atribot.functions.onebot.*;
 import top.yzljc.atribot.functions.overall.Feedback;
 import top.yzljc.atribot.functions.overall.Hitokoto;
@@ -174,6 +176,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
+        EventManager.getInstance().registerEvents(new SignCommand());
 
         CommandManager.reload();
 
@@ -224,6 +227,7 @@ public class Atri {
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
+        CommandManager.getCommand("打卡").setExecutor(new SignCommand());
 
         this.scheduler = new Scheduler();
         try {
@@ -279,7 +283,8 @@ public class Atri {
         MinecraftBind.init();
         GroupList.init();
         C2CList.init();
-        TufeElecBind.init();
+        TufeElecRepository.init();
+        SignRepository.init();
 
         if (Config.getInstance().isDebugMode()) {
             WebUISessionManager.start();

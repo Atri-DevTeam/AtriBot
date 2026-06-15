@@ -110,6 +110,7 @@ commands:
     official-only: true
   rc:
     description: 服务器 RCON 控制
+    aliases: [unbanme]
     usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
     official-only: true
   whoami:
@@ -180,4 +181,8 @@ commands:
     aliases:
       - c4
       - connect4
+    official-only: true
+  打卡:
+    description: 每日打卡签到
+    usage: /打卡
     official-only: true

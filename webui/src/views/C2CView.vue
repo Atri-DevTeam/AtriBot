@@ -90,8 +90,7 @@
             <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
             <article v-for="message in orderedMessages" :key="message.id"
-                     class="message" :class="{ mine: isMe(message) }"
-                     @contextmenu.prevent="onContextMenu($event, message)">
+                     class="message" :class="{ mine: isMe(message) }">
               <div class="avatar">
                 <img v-show="!avatarFailed[message.id] && avatarUrl(message)" :src="avatarUrl(message)"
                      :alt="message.username" referrerpolicy="no-referrer" @error="avatarFailed[message.id] = true" />
@@ -121,7 +120,8 @@
                   </template>
                   <span class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</span>
                 </div>
-                <div class="bubble">
+                <div class="bubble"
+                     @contextmenu.prevent.stop="onContextMenu($event, message)">
                   <pre v-if="message.messageType !== 2">{{ renderContent(message) }}</pre>
                   <div v-else class="md-body" v-html="renderMd(renderContent(message))"></div>
                 </div>
@@ -129,6 +129,10 @@
             </article>
           </div>
 
+            <div v-if="replyTo" class="reply-bar">
+              <span>回复 {{ replyTo.username || '...' }}</span>
+              <button @click="replyTo = null">×</button>
+            </div>
           <form class="composer" @submit.prevent="sendMessage">
             <div class="composer-type">
               <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
@@ -149,6 +153,8 @@
           <div v-if="ctxMenu.visible" class="ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
+            <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
+            <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
           </div>
         </section>
 
@@ -221,6 +227,7 @@ const dropdownOpen = ref(false)
 const userSearch = ref('')
 const sidebarOpen = ref(false)
 const showInspector = ref(false)
+const replyTo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const msgType = ref('text')
 const imageType = ref('url')
@@ -441,8 +448,9 @@ async function sendMessage() {
     const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
     if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
     if (msgType.value === 'image') { body.imageType = imageType.value; body.imageValue = draft.value.trim() }
+    if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
     await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
-    draft.value = ''; pastePreview.value = null; notice.value = '消息已发送。'
+    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送。'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -479,6 +487,14 @@ function onPaste(e) {
 }
 
 function onContextMenu(e, message) { ctxMenu.visible = true; ctxMenu.x = e.clientX; ctxMenu.y = e.clientY; ctxMenu.message = message }
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text || '') } catch { /* ignore */ }
+}
+
+function startReply(message) {
+  replyTo.value = message
+}
 
 function atUser(message) {
   const tag = `@${message.unionOpenId}`

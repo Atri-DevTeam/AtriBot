@@ -69,6 +69,8 @@ public class CommandMap {
             return false;
         }
 
+        target.setInvokedLabel(commandLabel);
+
         // onebot-only：仅 label "0" 响应，官机当作不存在
         if (!"0".equals(label) && target.isOnebotOnly()) {
             return false;

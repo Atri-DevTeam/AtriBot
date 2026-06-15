@@ -11,6 +11,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.event.impl.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.functions.official.permission.GroupList;
+import top.yzljc.atribot.repo.TufeElecRepository;
 import top.yzljc.atribot.service.official.CommandButton;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.ThreadManager;
@@ -205,8 +206,8 @@ public class ElectricCheck implements Listener, CommandExecutor {
 
     private void handleDefaultQuery(CommandSender sender, String label) {
 
-        ElecDTO type0 = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 0);
-        ElecDTO type1 = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 1);
+        ElecDTO type0 = TufeElecRepository.getDataByOpenIdAndType(sender.unionOpenId(), 0);
+        ElecDTO type1 = TufeElecRepository.getDataByOpenIdAndType(sender.unionOpenId(), 1);
 
         int bindAmount = (type0 != null ? 1 : 0) + (type1 != null ? 1 : 0);
 
@@ -260,7 +261,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
                 return;
             }
 
-            if (TufeElecBind.bind(sender.unionOpenId(), roomNum, schoolRegion, type)) {
+            if (TufeElecRepository.bind(sender.unionOpenId(), roomNum, schoolRegion, type)) {
                 sender.replyText(label, "绑定成功");
             } else {
                 sender.replyText(label, "绑定失败");
@@ -285,7 +286,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
                 return;
             }
 
-            if (TufeElecBind.unbind(sender.unionOpenId(), type)) {
+            if (TufeElecRepository.unbind(sender.unionOpenId(), type)) {
                 sender.replyText(label, "解绑成功");
             } else {
                 sender.replyText(label, "当前未绑定该类型电表");
@@ -337,8 +338,8 @@ public class ElectricCheck implements Listener, CommandExecutor {
                         "透支电量：`" + checkData.rtzd() + "` 度\n" +
                         "当前工作状态：`" + checkData.rgzzt() + "`";
 
-        ElecDTO dormBind = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 0);
-        ElecDTO acBind = TufeElecBind.getDataByOpenIdAndType(sender.unionOpenId(), 1);
+        ElecDTO dormBind = TufeElecRepository.getDataByOpenIdAndType(sender.unionOpenId(), 0);
+        ElecDTO acBind = TufeElecRepository.getDataByOpenIdAndType(sender.unionOpenId(), 1);
         boolean hasDorm = dormBind != null;
         boolean hasAirCon = acBind != null;
         String dormRoomNum = hasDorm ? String.valueOf(dormBind.roomId()) : String.valueOf(roomNum);

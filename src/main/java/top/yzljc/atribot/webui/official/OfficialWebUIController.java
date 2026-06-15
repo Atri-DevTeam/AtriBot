@@ -3,6 +3,7 @@ package top.yzljc.atribot.webui.official;
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.ImageType;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -52,33 +53,29 @@ public class OfficialWebUIController {
         String messageId;
 
         try {
-            messageId = switch (msgType) {
-                case "markdown" -> {
-                    if (isBlank(dto.getContent())) {
-                        ctx.json(Result.fail(400, "Markdown 内容不能为空"));
-                        yield null;
+            String replyId = dto.getReplyMessageId();
+            if (replyId != null && !replyId.isBlank()) {
+                // 被动回复：使用 replyMessage 方法
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent());
+            } else {
+                messageId = switch (msgType) {
+                    case "markdown" -> {
+                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "Markdown 内容不能为空")); yield null; }
+                        yield GroupChat.sendMessage(dto.getGroupOpenId(), new Markdown(dto.getContent()));
                     }
-                    yield GroupChat.sendMessage(dto.getGroupOpenId(), new Markdown(dto.getContent()));
-                }
-                case "image" -> {
-                    String imageType = dto.getImageType();
-                    String imageValue = dto.getImageValue();
-                    if (isBlank(imageType) || isBlank(imageValue)) {
-                        ctx.json(Result.fail(400, "图片类型和内容不能为空"));
-                        yield null;
+                    case "image" -> {
+                        String imageType = dto.getImageType(); String imageValue = dto.getImageValue();
+                        if (isBlank(imageType) || isBlank(imageValue)) { ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null; }
+                        yield GroupChat.sendMessage(dto.getGroupOpenId(),
+                                "base64".equalsIgnoreCase(imageType) ? ImageType.BASE64 : ImageType.URL, imageValue);
                     }
-                    yield GroupChat.sendMessage(dto.getGroupOpenId(),
-                            "base64".equalsIgnoreCase(imageType) ? ImageType.BASE64 : ImageType.URL,
-                            imageValue);
-                }
-                default -> {
-                    if (isBlank(dto.getContent())) {
-                        ctx.json(Result.fail(400, "消息内容不能为空"));
-                        yield null;
+                    default -> {
+                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); yield null; }
+                        yield GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent());
                     }
-                    yield GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent());
-                }
-            };
+                };
+            }
         } catch (Exception e) {
             ctx.json(Result.fail(500, "消息发送失败: " + e.getMessage()));
             return;
@@ -224,6 +221,7 @@ public class OfficialWebUIController {
         private String content;
         private String imageType; // "url" | "base64" (仅 image 时)
         private String imageValue;// 图片 URL 或 base64 (仅 image 时)
+        private String replyMessageId;
     }
 
     // ═══════════════ C2C 私聊 ═══════════════
@@ -313,29 +311,32 @@ public class OfficialWebUIController {
             return;
         }
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
+        String replyId = dto.getReplyMessageId();
         String messageId;
         try {
-            messageId = switch (msgType) {
-                case "markdown" -> {
-                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
-                    yield Atri.getInstance().getChatService()
-                            .sendActivePrivateMarkdownMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
-                }
-                case "image" -> {
-                    if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+            if (replyId != null && !replyId.isBlank()) {
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
+            } else {
+                messageId = switch (msgType) {
+                    case "markdown" -> {
+                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
+                        yield C2CChat.sendMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
                     }
-                    yield Atri.getInstance().getChatService()
-                            .sendActivePrivateImageMessage(dto.getUserOpenId(),
-                                    "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL,
-                                    dto.getImageValue());
-                }
-                default -> {
-                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
-                    yield Atri.getInstance().getChatService()
-                            .sendActivePrivateTextMessage(dto.getUserOpenId(), dto.getContent());
-                }
-            };
+                    case "image" -> {
+                        if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                            ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                        }
+                        yield C2CChat.sendMessage(dto.getUserOpenId(),
+                                "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL,
+                                dto.getImageValue());
+                    }
+                    default -> {
+                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
+                        yield C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent());
+                    }
+                };
+            }
         } catch (Exception e) {
             ctx.json(Result.fail(500, "发送失败: " + e.getMessage()));
             return;
@@ -353,5 +354,6 @@ public class OfficialWebUIController {
         private String content;
         private String imageType;
         private String imageValue;
+        private String replyMessageId;
     }
 }

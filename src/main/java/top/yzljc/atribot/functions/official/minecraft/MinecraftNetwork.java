@@ -55,7 +55,7 @@ public abstract class MinecraftNetwork {
 
             if (!hasPermission(sender, commandContent)) {
                 if (this.isSelf) {
-                    sender.replyText(label, "你需要绑定社区服务器账号后才能使用这个功能！");
+                    sender.replyText(label, "你没有权限或未绑定社区服务器用户！");
                 } else {
                     sender.replyText(label, "你没有权限执行这个指令！");
                 }
