@@ -1,0 +1,194 @@
+package top.yzljc.atribot.platform.official;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.event.EventManager;
+import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.platform.Message;
+import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.User;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @Author YZ_Ljc_
+ * @ClassName BotEvents
+ * @Created_at 2026/06/16
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.platform.official
+ */
+@Slf4j
+public class BotEvents {
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static void handleGroupChatEvent(JsonNode eventData) {
+        try {
+            boolean isBot = eventData.path("author").get("bot").asBoolean(false);
+            String content = eventData.get("content").asText();
+            String groupOpenId = eventData.get("group_openid").asText(null);
+            String username = eventData.path("author").get("username").asText();
+            String unionOpenId = eventData.path("author").get("member_openid").asText(null);
+            String messageId = eventData.path("id").asText(null);
+            String timestamp = eventData.get("timestamp").asText();
+            JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
+            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
+
+            List<User> mentions = new ArrayList<>();
+            var mentionsNode = eventData.path("mentions");
+            boolean isAtBot = false;
+
+            if (mentionsNode.isArray()) {
+                for (JsonNode mentionNode : mentionsNode) {
+                    var user_isBot = mentionNode.path("bot").asBoolean(false);
+                    var user_id = mentionNode.path("member_openid").asText(null);
+                    var user_username = mentionNode.path("username").asText(null);
+                    if (mentionNode.path("is_you").asBoolean()) {
+                        isAtBot = true;
+                    }
+                    mentions.add(new User(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, mapper.createObjectNode()));
+                }
+            }
+
+            User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, mapper.createObjectNode());
+            Message msg = new Message(Platform.OFFICIAL_GROUP, messageId, content, timestamp, attachment, msgRef, mentions);
+            OfficialGroupMessageCreateEvent event = new OfficialGroupMessageCreateEvent(sender, groupOpenId, msg, timestamp, isAtBot);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的群消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleC2CChatEvent(JsonNode eventData) {
+        try {
+            boolean isBot = eventData.path("author").get("bot").asBoolean(false);
+            String content = eventData.get("content").asText();
+            String username = eventData.path("author").get("username").asText();
+            String unionOpenId = eventData.path("author").get("user_openid").asText(null);
+            String messageId = eventData.path("id").asText(null);
+            String timestamp = eventData.get("timestamp").asText();
+            JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
+            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
+
+            User sender = new User(Platform.OFFICIAL_C2C, isBot, unionOpenId, username, mapper.createObjectNode());
+            Message msg = new Message(Platform.OFFICIAL_C2C, messageId, content, timestamp, attachment, msgRef, List.of());
+            OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的C2C消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupAtChatEvent(JsonNode eventData) {
+        try {
+            boolean isBot = eventData.path("author").get("bot").asBoolean(false);
+            String content = eventData.get("content").asText();
+            String groupOpenId = eventData.get("group_openid").asText(null);
+            String username = eventData.path("author").get("username").asText();
+            String unionOpenId = eventData.path("author").get("member_openid").asText(null);
+            String messageId = eventData.path("id").asText(null);
+            String timestamp = eventData.get("timestamp").asText();
+            JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
+            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
+
+            List<User> mentions = new ArrayList<>();
+            var mentionsNode = eventData.path("mentions");
+
+            if (mentionsNode.isArray()) {
+                for (JsonNode mentionNode : mentionsNode) {
+                    var user_isBot = mentionNode.path("bot").asBoolean(false);
+                    var user_id = mentionNode.path("member_openid").asText(null);
+                    var user_username = mentionNode.path("username").asText(null);
+                    mentions.add(new User(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, mapper.createObjectNode()));
+                }
+            }
+
+            User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, mapper.createObjectNode());
+            Message msg = new Message(Platform.OFFICIAL_GROUP, messageId, content, timestamp, attachment, msgRef, mentions);
+            OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(sender, msg, groupOpenId, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的群At消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupJoinEvent(JsonNode eventData) {
+        try {
+            String groupOpenId = eventData.get("group_openid").asText();
+            String timestamp = eventData.get("timestamp").asText();
+            String opMemberGroupId = eventData.path("op_member_openid").asText();
+
+            OfficialGroupJoinEvent event = new OfficialGroupJoinEvent(groupOpenId, opMemberGroupId, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的加群事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupDelEvent(JsonNode eventData) {
+        try {
+            String groupOpenId = eventData.get("group_openid").asText();
+            String timestamp = eventData.get("timestamp").asText();
+            String opMemberGroupId = eventData.get("op_member_openid").asText();
+
+            OfficialGroupDelEvent event = new OfficialGroupDelEvent(groupOpenId, opMemberGroupId, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的退群事件时发生错误：", e);
+        }
+    }
+
+    public static void handleFriendAddEvent(JsonNode eventData) {
+        try {
+            String userOpenId = eventData.path("author").get("union_openid").asText();
+            String timestamp = eventData.get("timestamp").asText();
+
+            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的好友添加事件时发生错误：", e);
+        }
+    }
+
+    public static void handleFriendRemoveEvent(JsonNode eventData) {
+        try {
+            String userOpenId = eventData.path("author").get("union_openid").asText();
+            String timestamp = eventData.get("timestamp").asText();
+
+            OfficialFriendDelEvent event = new OfficialFriendDelEvent(userOpenId, timestamp);
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的好友删除事件时发生错误：", e);
+        }
+    }
+
+    public static void handleInteractionEvent(JsonNode eventData) {
+        try {
+            JsonNode dataNode = eventData.path("data");
+
+            OfficialInteractionEvent event = new OfficialInteractionEvent(
+                    eventData.path("chat_type").asInt(-1),
+                    new OfficialInteractionEvent.Data(
+                            dataNode.path("resolved"),
+                            dataNode.path("type").asInt(-1)
+                    ),
+                    eventData.path("group_openid").asText(null),
+                    eventData.path("group_member_openid").asText(
+                            eventData.path("user_openid").asText(null)
+                    ),
+                    eventData.path("id").asText(null),
+                    eventData.path("scene").asText(null),
+                    eventData.path("timestamp").asText(null),
+                    eventData.path("type").asInt(-1)
+            );
+
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的交互事件时发生错误：", e);
+        }
+    }
+}

@@ -1,0 +1,135 @@
+name: AtriBot
+version: 3.1.0-Release
+main: top.yzljc.qqbot.AtriBot
+
+commands:
+  happynewyear:
+    description: 发送新年快乐
+  bc:
+    description: 全服广播
+    usage: /bc <内容>
+    aliases:
+      - broadcast
+  wakeup:
+    description: 发送起床嘲讽图片
+  reboot:
+    description: 重启Bot
+  search:
+    description: 搜索聊天记录
+    usage: '/search "关键词" [-u QQ] [-m p/a]'
+  recall:
+    description: 撤回上一条消息
+  rollback:
+    description: 批量撤回消息
+    usage: /rollback [-n 数量] [-u QQ号]
+  motd:
+    description: 查询MC服务器状态
+    usage: /motd <服务器ip地址(端口号可选)>
+  mojang:
+    description: 查询Mojang服务器状态
+  cl:
+    description: 领取Hypixel奖励
+    usage: /cl <Hypixel每日签到链接>
+  bwc:
+    description: 起床战争挑战查询
+    usage: /bwc <玩家名> 或 /bwc api <API Key>
+  checkmcnews:
+    description: 获取MC新闻
+  checkhypnews:
+    description: 获取Hypixel新闻
+  manodate:
+    description: Manosaba日期查询
+  github:
+    description: Github相关功能
+    usage: /github [群号1] [群号2]...
+  signall:
+    description: 自动签到
+  chat:
+    description: 消息统计
+    usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息'
+  groupinfo:
+    description: 查看群组配置
+  calendar:
+    description: 查看日历
+  atrihelp:
+    description: 显示帮助菜单
+    usage: /atrihelp
+  emj:
+    description: 表情轰炸
+    usage: /emj <normal/medium/insane/animation> [可选 User]
+  reload:
+    description: 重新加载配置
+    usage: /reload [all|cfg|f|g]
+  autolike:
+    description: 自动点赞列表
+    usage: /autolike add|remove|list [可选 User]
+  tufe:
+    description: 查询
+    usage: /tufe查看下节课的上课地点
+  verify:
+    description: 验证YZ_Ljc_ Network账号
+    usage: /verify <验证码>
+  stats:
+    description: 玩家资料查询
+  rc:
+    description: 服务器 RCON 控制
+    aliases: [unbanme]
+    usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
+  whoami:
+    description: 我的账号信息
+  mc:
+    description: Minecraft相关
+    usage: "/mc <子命令> [参数]"
+  test:
+    description: 测试命令
+  feedback:
+    description: 提交反馈
+    usage: /feedback <反馈内容>
+  permission:
+    description: 权限管理
+  ogroup:
+    description: 白名单管理
+  elec:
+    description: Tufe - Student Dormitory Electricity Usage
+  today:
+    description: 每日日历
+  help:
+    description: 显示帮助菜单
+    usage: /help
+  hitokoto:
+    description: 随机一言
+    aliases:
+      - 一言
+      - yiyan
+    usage: /hitokoto 获取随机一言，群授权获取全部消息后可用“一言”触发
+  minesweeper:
+    description: 扫雷游戏
+    aliases:
+      - 扫雷
+      - sl
+  connect4:
+    description: 四子棋游戏
+    aliases:
+      - 四子棋
+      - c4
+  贡献名单:
+    description: 查看贡献名单
+  info:
+    description: 查询账号相关字段信息
+    usage: /info @<目标用户>
+  webui:
+    description: WebUI相关功能
+    usage: /webui
+  全量消息:
+    description: 授权全量消息
+    usage: /全量消息
+  推送任务:
+    description: 推送任务列表
+  四子棋:
+    description: 四子棋游戏
+    aliases:
+      - c4
+      - connect4
+  打卡:
+    description: 每日打卡签到
+    usage: /打卡
