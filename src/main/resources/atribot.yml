@@ -135,3 +135,5 @@ commands:
     usage: /打卡
   debug:
     description: 调试
+  check-hyp:
+    description: 检查Hypixel最新公告

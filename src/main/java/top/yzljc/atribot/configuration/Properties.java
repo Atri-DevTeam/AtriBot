@@ -35,6 +35,8 @@ public class Properties {
 
     public static final String HYPIXEL_NEWS = "hypixel_news_history.json";
 
+    public static final String HYPIXEL_ANNOUNCEMENTS = "hypixel_announcements.json";
+
     public static final String MINECRAFT_NEWS = "news_history.json";
 
     public static final String IMG_MOTD = "manoyinxi.png";

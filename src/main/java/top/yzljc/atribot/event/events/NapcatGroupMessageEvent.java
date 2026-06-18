@@ -1,9 +1,13 @@
 package top.yzljc.atribot.event.events;
 
 import lombok.Getter;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.napcat.NapcatMessage;
+
+import java.util.List;
 
 
 @Getter
@@ -22,6 +26,10 @@ public class NapcatGroupMessageEvent extends Event {
 
     public String sendMessage(String content) {
         return this.user.sendMessage(this.message.getMessageId(), content);
+    }
+
+    public String sendMessage(List<MessageSegment> data) {
+        return GroupMessage.chatMessage(this.groupId, data);
     }
 
     public void recall() {

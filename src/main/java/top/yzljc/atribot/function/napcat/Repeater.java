@@ -2,12 +2,14 @@ package top.yzljc.atribot.function.napcat;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,8 +25,8 @@ public class Repeater implements Listener {
 
     private static final int MEMORY_SIZE = 10;
     private static final int REPEAT_THRESHOLD = 3;
-    private static final Map<String, LinkedList<String>> groupData = new ConcurrentHashMap<>();
-    private static final Map<String, String> lastRepeated = new ConcurrentHashMap<>();
+    private static final Map<String, LinkedList<LinkedList<MessageSegment>>> groupData = new ConcurrentHashMap<>();
+    private static final Map<String, LinkedList<MessageSegment>> lastRepeated = new ConcurrentHashMap<>();
 
     @EventHandler
     public void onGroupMessage(NapcatGroupMessageEvent event) {
@@ -32,8 +34,8 @@ public class Repeater implements Listener {
         if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "repeat_msg")) return;
 
         String groupId = event.getGroupId();
-        String currentMessage = event.getMessage().getContent();
-        LinkedList<String> queue = groupData.computeIfAbsent(groupId, k -> new LinkedList<>());
+        LinkedList<MessageSegment> currentMessage = event.getMessage().getSegments();
+        LinkedList<LinkedList<MessageSegment>> queue = groupData.computeIfAbsent(groupId, k -> new LinkedList<>());
 
         int count = 0;
         synchronized (queue) {
@@ -48,10 +50,10 @@ public class Repeater implements Listener {
             }
         }
 
-        String lastMsg = lastRepeated.get(groupId);
+        LinkedList<MessageSegment> lastMsg = lastRepeated.get(groupId);
         if (count >= REPEAT_THRESHOLD) {
             if (lastMsg == null || !lastMsg.equals(currentMessage)) {
-                GroupMessage.chatMessage(groupId, currentMessage);
+                event.sendMessage(currentMessage);
                 log.info("群 {} 的消息被复读了！", groupId);
 
                 lastRepeated.put(groupId, currentMessage);

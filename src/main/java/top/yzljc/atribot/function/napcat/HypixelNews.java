@@ -108,32 +108,50 @@ public class HypixelNews implements CommandExecutor {
                 try {
                     Document artDoc = Jsoup.connect(url).userAgent("Mozilla/5.0").get();
                     Element imgElem = artDoc.selectFirst(".bbImage");
-                    if (imgElem != null) imageUrl = imgElem.hasAttr("data-url") ? imgElem.attr("data-url") : imgElem.attr("src");
-                } catch (Exception ignored) {}
+                    if (imgElem != null)
+                        imageUrl = imgElem.hasAttr("data-url") ? imgElem.attr("data-url") : imgElem.attr("src");
+                } catch (Exception ignored) {
+                }
                 UnifiedArticle article = new UnifiedArticle();
-                article.id = url; article.title = title; article.url = url;
-                article.timestamp = timestamp; article.dateDisplay = dateDisplay;
-                article.description = descPreview; article.tag = "Hypixel"; article.imageUrl = imageUrl;
-                list.add(article); count++;
+                article.id = url;
+                article.title = title;
+                article.url = url;
+                article.timestamp = timestamp;
+                article.dateDisplay = dateDisplay;
+                article.description = descPreview;
+                article.tag = "Hypixel";
+                article.imageUrl = imageUrl;
+                list.add(article);
+                count++;
             }
-        } catch (Exception e) { log.warn("Hypixel解析失败：{}", e.getMessage(), e); }
+        } catch (Exception e) {
+            log.warn("Hypixel解析失败：{}", e.getMessage(), e);
+        }
         return list;
     }
 
     private static void pushToAllGroups(UnifiedArticle article) {
         StringBuilder sb = new StringBuilder();
         sb.append("【Hypixel 官网资讯】\n").append(article.title).append("\n发布时间: ").append(article.dateDisplay).append("\n\n");
-        if (article.description != null && !article.description.isEmpty()) sb.append(article.description).append("\n\n");
+        if (article.description != null && !article.description.isEmpty())
+            sb.append(article.description).append("\n\n");
         sb.append("链接: ").append(article.url);
         String textContent = sb.toString();
         String base64Img = null;
         if (article.imageUrl != null && !article.imageUrl.isEmpty()) {
-            try { base64Img = downloadImageAsBase64(article.imageUrl); } catch (Exception e) { log.error("[INFO] Hypixel图片下载失败: {}", e.getMessage()); }
+            try {
+                base64Img = downloadImageAsBase64(article.imageUrl);
+            } catch (Exception e) {
+                log.error("[INFO] Hypixel图片下载失败: {}", e.getMessage());
+            }
         }
         for (String groupId : TARGET_GROUPS) {
             if (!GroupConfigManager.isFeatureEnabled(groupId, "hyp_news")) continue;
             GroupMessage.chatMessage(groupId, textContent, base64Img, MessageUtils.ImageType.BASE64);
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 
@@ -141,14 +159,24 @@ public class HypixelNews implements CommandExecutor {
         try {
             URL url = new URI(imageUrl).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5000); conn.setReadTimeout(10000); conn.setRequestMethod("GET");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(10000);
+            conn.setRequestMethod("GET");
             try (InputStream in = conn.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                byte[] buffer = new byte[1024]; int n;
+                byte[] buffer = new byte[1024];
+                int n;
                 while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
                 return Base64.getEncoder().encodeToString(out.toByteArray());
-            } finally { conn.disconnect(); }
-        } catch (URISyntaxException | MalformedURLException e) { log.warn("URL 格式错误：{}", imageUrl); return null;
-        } catch (IOException e) { log.error("下载图片失败：{}", imageUrl, e); return null; }
+            } finally {
+                conn.disconnect();
+            }
+        } catch (URISyntaxException | MalformedURLException e) {
+            log.warn("URL 格式错误：{}", imageUrl);
+            return null;
+        } catch (IOException e) {
+            log.error("下载图片失败：{}", imageUrl, e);
+            return null;
+        }
     }
 
     public static void loadHistory() {
@@ -157,7 +185,9 @@ public class HypixelNews implements CommandExecutor {
         try {
             JsonNode root = objectMapper.readTree(file);
             if (root.isArray()) for (JsonNode idNode : root) pushedArticleIds.add(idNode.asText());
-        } catch (IOException e) { log.warn("Hypixel 历史记录读取失败，将重新创建"); }
+        } catch (IOException e) {
+            log.warn("Hypixel 历史记录读取失败，将重新创建");
+        }
     }
 
     private static void saveHistory() {
@@ -165,22 +195,36 @@ public class HypixelNews implements CommandExecutor {
             ArrayNode arrayNode = objectMapper.createArrayNode();
             for (String id : pushedArticleIds) arrayNode.add(id);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File(HISTORY_FILE), arrayNode);
-        } catch (IOException e) { log.error("写入 Hypixel 历史记录失败：{}", e.getMessage(), e); }
+        } catch (IOException e) {
+            log.error("写入 Hypixel 历史记录失败：{}", e.getMessage(), e);
+        }
     }
 
     private static String formatDisplayDate(String rawDate) {
         if (rawDate == null || rawDate.isEmpty()) return "未知时间";
-        try { if (rawDate.length() >= 19) return LocalDateTime.parse(rawDate.substring(0, 19)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); else return rawDate; }
-        catch (Exception e) { return rawDate; }
+        try {
+            if (rawDate.length() >= 19)
+                return LocalDateTime.parse(rawDate.substring(0, 19)).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            else return rawDate;
+        } catch (Exception e) {
+            return rawDate;
+        }
     }
 
     private static long parseDateToTimestamp(String dateStr) {
         if (dateStr == null || dateStr.isEmpty()) return 0;
-        try { if (dateStr.length() >= 19) return LocalDateTime.parse(dateStr.substring(0, 19)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(); else return 0; }
-        catch (Exception e) { return 0; }
+        try {
+            if (dateStr.length() >= 19)
+                return LocalDateTime.parse(dateStr.substring(0, 19)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            else return 0;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     static class UnifiedArticle {
-        String id, title, description, url, tag, imageUrl; long timestamp; String dateDisplay;
+        String id, title, description, url, tag, imageUrl;
+        long timestamp;
+        String dateDisplay;
     }
 }

@@ -2,10 +2,12 @@ package top.yzljc.atribot.platform.napcat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
+import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.User;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -18,9 +20,11 @@ import java.util.List;
 @Getter
 public class NapcatMessage extends Message {
     private final JsonNode attachments;
+    private final LinkedList<MessageSegment> segments;
 
-    public NapcatMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, JsonNode attachments) {
+    public NapcatMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, JsonNode attachments, LinkedList<MessageSegment> segments) {
         super(platform, messageId, content, timestamp, mentionedUsers);
         this.attachments = attachments;
+        this.segments = segments;
     }
 }

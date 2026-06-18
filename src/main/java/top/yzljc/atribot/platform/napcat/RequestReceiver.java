@@ -1,8 +1,10 @@
 package top.yzljc.atribot.platform.napcat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
@@ -70,7 +72,12 @@ public class RequestReceiver {
                         }
                     }
 
-                    NapcatMessage message = new NapcatMessage(Platform.NAPCAT_GROUP, messageId, rawMessage, time, mentionList, attachments);
+                    java.util.LinkedList<MessageSegment> segmentList = MAPPER.convertValue(
+                            root.path("message"),
+                            new TypeReference<>() {}
+                    );
+
+                    NapcatMessage message = new NapcatMessage(Platform.NAPCAT_GROUP, messageId, rawMessage, time, mentionList, attachments, segmentList);
 
                     // 触发对应的事件
                     if ("group".equals(messageType)) {
