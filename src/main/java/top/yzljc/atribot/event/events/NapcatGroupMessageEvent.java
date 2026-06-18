@@ -2,18 +2,18 @@ package top.yzljc.atribot.event.events;
 
 import lombok.Getter;
 import top.yzljc.atribot.event.Event;
-import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.napcat.NapcatMessage;
 
 
 @Getter
 public class NapcatGroupMessageEvent extends Event {
     private final User user;
-    private final Message message;
+    private final NapcatMessage message;
     private final String groupId;
     private final String timestamp;
 
-    public NapcatGroupMessageEvent(User user, Message message, String groupId, String timestamp) {
+    public NapcatGroupMessageEvent(User user, NapcatMessage message, String groupId, String timestamp) {
         this.user = user;
         this.message = message;
         this.groupId = groupId;

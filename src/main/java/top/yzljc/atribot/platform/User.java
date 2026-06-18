@@ -23,13 +23,15 @@ public class User {
     protected final boolean bot;
     protected final String userId;
     protected final String username;
+    protected final PlatformRole role;
     protected final JsonNode data;
 
-    public User(Platform platform, boolean bot, String userId, String username, JsonNode data) {
+    public User(Platform platform, boolean bot, String userId, String username, PlatformRole role, JsonNode data) {
         this.platform = platform;
         this.bot = bot;
         this.userId = userId;
         this.username = username;
+        this.role = role;
         this.data = data;
     }
 

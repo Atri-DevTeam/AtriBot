@@ -49,7 +49,6 @@ public class CommandMap {
         return executors;
     }
 
-    // [0] Napcat [1] 官机私聊 [2] 官机群聊
     public boolean dispatch(CommandSender sender, String cmdLine) {
         if (cmdLine == null) {
             return false;
@@ -79,11 +78,7 @@ public class CommandMap {
             return true;
         } catch (Exception e) {
             log.error("执行命令 {} 时发生异常，问题: ", commandLabel, e);
-//            if (label.equalsIgnoreCase("0")) {
-//                sender.reply("执行命令时发生内部错误", false);
-//            } else {
-//                sender.replyMarkdown(label, TC.md("> 执行命令时发生内部错误，请联系开发者处理！"));
-//            }
+            sender.sendMessage("执行命令时发生内部错误，请联系开发者处理！");
             return true;
         }
     }

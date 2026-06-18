@@ -40,6 +40,7 @@ import top.yzljc.atribot.service.AiService;
 import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
+import top.yzljc.atribot.utils.debug.DebugCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
@@ -149,7 +150,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
 //        EventManager.getInstance().registerEvents(new GroupJoinVerify());
-//        EventManager.getInstance().registerEvents(new OfficialBotDebug());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
@@ -203,6 +203,7 @@ public class Atri {
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
+        CommandManager.getCommand("debug").setExecutor(new DebugCommand());
 
         this.scheduler = new Scheduler();
         try {

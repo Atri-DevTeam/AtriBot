@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Gradle dependencies (Java main project)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "gradle-wrapper"
+      - dependency-name: "io.javalin:javalin"
+      - dependency-name: "org.jetbrains.kotlin:kotlin-stdlib"
+    groups:
+      gradle-all:
+        patterns:
+          - "*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"

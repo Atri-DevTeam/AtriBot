@@ -110,7 +110,8 @@ public class CommandManager implements Listener {
         String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(), event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers());
+        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -132,7 +133,8 @@ public class CommandManager implements Listener {
         String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(), null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers());
+        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
+                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -154,7 +156,8 @@ public class CommandManager implements Listener {
         String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(), event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers());
+        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -168,19 +171,22 @@ public class CommandManager implements Listener {
     public void onOfficialGroupMessageCreate(OfficialGroupMessageCreateEvent event) {
         String userInput = event.getMessage().getContent().trim();
 
-        if (!(userInput.startsWith(COMMAND_PREFIX) || event.isAtBot())) {
-            return;
+        if (!userInput.startsWith(COMMAND_PREFIX)) {
+            if (event.isAtBot()) {
+                userInput = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
+            } else {
+                return;
+            }
         }
 
-        if (event.isAtBot()) {
-            userInput = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
-        }
+        if (userInput.trim().isEmpty()) return;
 
         User eventUser = event.getUser();
         String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(), event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers());
+        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();

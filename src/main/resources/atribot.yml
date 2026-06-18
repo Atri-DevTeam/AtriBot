@@ -133,3 +133,5 @@ commands:
   打卡:
     description: 每日打卡签到
     usage: /打卡
+  debug:
+    description: 调试

@@ -27,7 +27,7 @@ public class SetProjectInfo {
         int friendCount = FriendList.getFriendCount();
         int groupCount = GroupInformation.fetchAllGroupIds().size();
         Map<String, Object> projectInfo = new HashMap<>();
-        projectInfo.put("nickname","ATRI - " + commitId + " - /atrihelp查看帮助");
+        projectInfo.put("nickname","ATRI - " + commitId + " - /help查看帮助");
         projectInfo.put("personal_note","Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version);
         projectInfo.put("sex","female");
         PostRequest.sendPost(RequestType.SET_PROFILE,projectInfo);

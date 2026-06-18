@@ -14,6 +14,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.util.List;
@@ -94,7 +95,7 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onRunCommand(UserRunCommandEvent event) {
-        if (event.getLabel().equals("2") && OfficialGroups.isGroupBlacklisted(event.getSender().getGroupId())) {
+        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialGroups.isGroupBlacklisted(event.getSender().getGroupId())) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = TC.keyboard(List.of(
                         List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -106,7 +107,7 @@ public class EventRecord implements Listener {
             }
         }
 
-        if (event.getLabel().equals("1") && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
+        if (event.getSender().getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = TC.keyboard(List.of(
                         List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -118,7 +119,7 @@ public class EventRecord implements Listener {
             }
         }
 
-        if (event.getLabel().equals("2") && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
+        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = TC.keyboard(List.of(
                         List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -130,12 +131,12 @@ public class EventRecord implements Listener {
             }
         }
 
-        if ((event.getLabel().equals("1") || event.getLabel().equals("2")) && Config.getInstance().isNapcatEnabled()) {
-            if (event.getLabel().equals("2") && event.getSender().getUserId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
+        if ((event.getSender().getPlatform() == Platform.OFFICIAL_C2C || event.getSender().getPlatform() == Platform.OFFICIAL_GROUP) && Config.getInstance().isNapcatEnabled()) {
+            if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && event.getSender().getUserId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
                 return;
 
             String info;
-            if (event.getLabel().equals("2")) {
+            if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP) {
                 info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (群: %s)".formatted(
                         event.getSender().getUsername(),
                         event.getSender().getUserId(),

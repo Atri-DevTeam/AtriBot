@@ -9,6 +9,7 @@ import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.event.impl.*;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.utils.debug.NapcatPacket;
 
@@ -43,6 +44,7 @@ public class RequestReceiver {
                                 selfId.equals(userId),
                                 senderNode.path("user_id").asText(),
                                 senderNode.path("nickname").asText(""),
+                                PlatformRole.getPlatformRole(senderNode.path("role").asText()),
                                 MAPPER.createObjectNode()
                         );
                     }
@@ -61,14 +63,14 @@ public class RequestReceiver {
                                     String uin = textElement.path("atUid").asText(null);
                                     JsonNode uid = MAPPER.createObjectNode().put("ntUid", atNtUid);
 //                                    String content = textElement.path("content").asText("");
-                                    User mentioned = new User(Platform.NAPCAT_GROUP, selfId.equals(uin), uin, "", uid);
+                                    User mentioned = new User(Platform.NAPCAT_GROUP, selfId.equals(uin), uin, "", PlatformRole.MEMBER, uid);
                                     mentionList.add(mentioned);
                                 }
                             }
                         }
                     }
 
-                    Message message = new Message(Platform.NAPCAT_GROUP, messageId, rawMessage, time, attachments, null, mentionList);
+                    NapcatMessage message = new NapcatMessage(Platform.NAPCAT_GROUP, messageId, rawMessage, time, mentionList, attachments);
 
                     // 触发对应的事件
                     if ("group".equals(messageType)) {

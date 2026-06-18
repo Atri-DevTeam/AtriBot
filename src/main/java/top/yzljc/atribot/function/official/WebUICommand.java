@@ -13,6 +13,7 @@ import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.webui.official.WebUISessionManager;
 
 import java.util.List;
@@ -28,6 +29,10 @@ public class WebUICommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+            return true;
+        }
 
         Object keyboard = TC.keyboard(
                 List.of(

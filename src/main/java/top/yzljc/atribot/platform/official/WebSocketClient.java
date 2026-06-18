@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.utils.debug.DebugCommand;
 
 import java.net.URI;
 import java.util.Timer;
@@ -116,8 +118,10 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             int INTENT_GROUP_AND_C2C = 1 << 25;
             int INTENT_INTERACTION = 1 << 26;
             int INTENT_DIRECT_MESSAGE = 1 << 12;
+            int MESSAGE_AUDIT = 1 << 27;
+            int INTENT_GROUP_MEMBER = 1 << 24;
 
-            int intents = INTENT_GROUP_AND_C2C | INTENT_INTERACTION | INTENT_DIRECT_MESSAGE;
+            int intents = INTENT_GROUP_AND_C2C | INTENT_INTERACTION | INTENT_DIRECT_MESSAGE | MESSAGE_AUDIT | INTENT_GROUP_MEMBER;
             d.put("intents", intents);
 
             d.putArray("shard").add(0).add(1);
@@ -216,13 +220,13 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             BotEvents.handleInteractionEvent(eventData);
         }
 
-//        if (OfficialBotDebug.isOfficialDebugEnabled.get()) {
-//            if ("GROUP_MESSAGE_CREATE".equals(eventType) && eventData.path("author").path("union_openid").asText(null).equalsIgnoreCase("68FA9563EC62B0F43E9BE5B3023B860F")) {
-//                return;
-//            }
-//            log.debug(eventData.toString());
-//            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "事件类型: " + eventType + "\n事件数据: " + eventData);
-//        }
+        if (DebugCommand.isOfficialDebugEnabled.get()) {
+            if ("GROUP_MESSAGE_CREATE".equals(eventType) && eventData.path("author").path("union_openid").asText(null).equalsIgnoreCase("68FA9563EC62B0F43E9BE5B3023B860F")) {
+                return;
+            }
+            log.debug(eventData.toString());
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "事件类型: " + eventType + "\n事件数据: " + eventData);
+        }
 
         if (Config.getInstance().isDebugMode()) {
             log.debug("{}\n{}", eventType, eventData);

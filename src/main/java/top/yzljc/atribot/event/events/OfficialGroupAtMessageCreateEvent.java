@@ -3,8 +3,8 @@ package top.yzljc.atribot.event.events;
 import lombok.Getter;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Event;
-import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.official.OfficialMessage;
 
 /**
  * @Author YZ_Ljc_
@@ -16,11 +16,11 @@ import top.yzljc.atribot.platform.User;
 @Getter
 public class OfficialGroupAtMessageCreateEvent extends Event {
     private final User user;
-    private final Message message;
+    private final OfficialMessage message;
     private final String groupId;
     private final String timestamp;
 
-    public OfficialGroupAtMessageCreateEvent(User user, Message message, String groupId, String timestamp) {
+    public OfficialGroupAtMessageCreateEvent(User user, OfficialMessage message, String groupId, String timestamp) {
         this.user = user;
         this.message = message;
         this.groupId = groupId;

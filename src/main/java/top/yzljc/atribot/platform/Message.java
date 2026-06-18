@@ -20,7 +20,5 @@ public class Message {
     private final String messageId;
     private final String content;
     private final String timestamp;
-    private final JsonNode attachments;
-    private final JsonNode reference;
     private final List<User> mentionedUsers;
 }

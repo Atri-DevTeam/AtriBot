@@ -12,6 +12,7 @@ import top.yzljc.atribot.chat.official.media.GroupMessageType;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
+import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 
@@ -53,7 +54,7 @@ public class ChatService {
         String url = apiBaseUrl + "/v2/users/" + openId + "/messages";
         String messageId = doSendMessage(url, request, "单聊");
         if (messageId != null) {
-//            ChatContentRecord.recordSentC2CMessage(openId, request, messageId); // TODO: 1
+            ChatContentRecord.recordSentC2CMessage(openId, request, messageId);
         }
         return messageId;
     }
@@ -63,7 +64,7 @@ public class ChatService {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
         String messageId = doSendMessage(url, request, "群聊");
         if (messageId != null) {
-//            ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId); // TODO: 2
+            ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
         }
         return messageId;
     }

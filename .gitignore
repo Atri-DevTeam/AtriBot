@@ -43,3 +43,7 @@ bin/
 .DS_Store
 /config.yml
 /data.json
+/webui/dist/
+/webui/node_modules/
+/logs/
+/tmp/

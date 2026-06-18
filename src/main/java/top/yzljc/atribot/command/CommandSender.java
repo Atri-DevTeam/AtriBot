@@ -6,7 +6,9 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
 
 import java.util.List;
@@ -24,18 +26,28 @@ public class CommandSender extends User {
     private final String messageId;
     private final List<User> mentions;
 
-    public CommandSender(Platform platform, boolean bot, String userId, String username, String groupId, String messageId, JsonNode data, List<User> mentions) {
-        super(platform, bot, userId, username, data);
+    public CommandSender(Platform platform, boolean bot, String userId, String username, String groupId, String messageId, JsonNode data, List<User> mentions, PlatformRole role) {
+        super(platform, bot, userId, username, role, data);
         this.groupId = groupId;
         this.messageId = messageId;
         this.mentions = mentions;
     }
 
     public boolean hasPermission() {
+        if (this.platform == Platform.NAPCAT_GROUP) {
+            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
+                return true;
+            }
+        }
         return OfficialUsers.isAdmin(this.userId);
     }
 
     public boolean hasPermission(String permission) {
+        if (this.platform == Platform.NAPCAT_GROUP) {
+            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
+                return true;
+            }
+        }
         if (OfficialUsers.isAdmin(this.userId)) return true;
         return OfficialUsers.hasPermission(this.userId, permission);
     }
