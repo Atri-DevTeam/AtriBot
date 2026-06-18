@@ -30,7 +30,7 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-core:2.22.0")
     api("com.mysql:mysql-connector-j:9.7.0")
     api("org.yaml:snakeyaml:2.6")
-    api("com.zaxxer:HikariCP:7.0.2")
+    api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.22.2")
     api("com.fasterxml.jackson.core:jackson-databind:2.22.0")
