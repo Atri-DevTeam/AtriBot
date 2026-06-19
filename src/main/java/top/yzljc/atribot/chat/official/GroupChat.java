@@ -59,4 +59,14 @@ public final class GroupChat {
     public static void recallMessage(String groupOpenId, String messageId) {
         service().recallGroupMessage(groupOpenId, messageId);
     }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String welcomeMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+        return service().sendGroupWelcome(groupOpenId, memberOpenId, eventId,markdown);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String welcomeMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+        return service().sendGroupWelcome(groupOpenId, memberOpenId, eventId,markdown, buttons);
+    }
 }

@@ -9,7 +9,6 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.event.impl.*;
-import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;

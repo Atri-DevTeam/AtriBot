@@ -24,6 +24,8 @@ import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
+import top.yzljc.atribot.function.general.impl.ImageDTO;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -367,8 +369,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append(r.asText()).append("\n");
                         }
-                        GroupMessage.replyMessage(session.userId, session.groupId,
-                                session.messageId, false, sb.toString());
+                        GroupMessage.replyMessage(session.userId, session.groupId, session.messageId, false, sb.toString());
                     } else if (session.type.equals("2")) {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
@@ -408,13 +409,8 @@ public class HypixelReward implements CommandExecutor, Listener {
                     String msg = response.path("msg").asText();
                     String prefix = success ? "🎉 " : "😭 ";
                     String rewardUrl = "https://rewards.hypixel.net/claim-reward/" + session.rewardId + "/banner.png";
-                    String dumpUrl = "https://www.yzljc.top/data/api/v2/atribot/function/image-dump";
-                    String finalUrl = null;
-                    JsonNode resp = HttpService.postJson(dumpUrl + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of("url", rewardUrl));
-
-                    if (resp != null && resp.path("status").asInt() == 200) {
-                        finalUrl = dumpUrl + "/" + resp.path("data").path("uuid").asText();
-                    }
+                    ImageDTO dto = PreImageGenerate.dump(rewardUrl);
+                    String finalUrl = dto.url();
 
                     Object keyboard = TC.keyboard(List.of(List.of(
                             new Button("c0", "再领取一个", "/cl", false, ButtonStyle.BLUE, ButtonType.COMMAND)

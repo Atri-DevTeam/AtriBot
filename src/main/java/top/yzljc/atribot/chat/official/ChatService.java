@@ -213,6 +213,29 @@ public class ChatService {
         return sendPrivateMessage(openId, request);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .eventId(eventId)
+                .markdown(buildMarkdown(markdown.getText()))
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+        MessageBody request = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .eventId(eventId)
+                .markdown(buildMarkdown(markdown.getText()))
+                .keyboard(buttons)
+                .build();
+
+        return sendGroupMessage(groupOpenId, request);
+    }
+
     public Object buildButtonKeyboard(List<List<Button>> layout) {
         List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -322,11 +345,6 @@ public class ChatService {
                 .build();
 
         return sendGroupMessage(groupOpenId, request);
-    }
-
-    public void recall(String label, String openId, String messageOpenId) {
-        if (label.equals("1")) recallPrivateMessage(openId, messageOpenId);
-        if (label.equals("2")) recallGroupMessage(openId, messageOpenId);
     }
 
     public void recallPrivateMessage(String userOpenId, String messageId) {

@@ -14,6 +14,7 @@ import top.yzljc.atribot.event.Event;
 @Getter
 @AllArgsConstructor
 public class OfficialGroupMemberRemoveEvent extends Event {
+    private final String eventId;
     private final String groupOpenId;
     private final String memberOpenId;
     private final String timestamp;

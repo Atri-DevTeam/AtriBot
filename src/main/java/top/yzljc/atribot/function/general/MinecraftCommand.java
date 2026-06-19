@@ -7,6 +7,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.official.minecraft.DiceImpl;
 import top.yzljc.atribot.function.official.minecraft.VersionCheckImpl;
+import top.yzljc.atribot.platform.Platform;
 
 /**
  * @Author YZ_Ljc_
@@ -25,6 +26,8 @@ public class MinecraftCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
 
         if (args.length < 1) {
             sender.sendMessage(ValidCommands);

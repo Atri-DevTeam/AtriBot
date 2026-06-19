@@ -3,7 +3,13 @@ version: 3.1.0-Release
 main: top.yzljc.qqbot.AtriBot
 
 commands:
-  happynewyear:
+  newyear:
+    aliases:
+      - 新年快乐
+      - happynewyear
+      - 新年
+      - 新年倒计时
+      - 过年
     description: 发送新年快乐
   bc:
     description: 全服广播

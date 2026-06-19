@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
-import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
@@ -202,6 +201,40 @@ public class BotEvents {
 
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的交互事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupMemberAddEvent(String eventId, JsonNode eventData) {
+        try {
+            JsonNode dataNode = eventData.path("data");
+
+            OfficialGroupMemberAddEvent event = new OfficialGroupMemberAddEvent(
+                    eventId,
+                    eventData.path("group_openid").asText(null),
+                    eventData.path("member_openid").asText(null),
+                    eventData.path("timestamp").asText(null)
+            );
+
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的群成员添加事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupMemberRemoveEvent(String eventId, JsonNode eventData) {
+        try {
+            JsonNode dataNode = eventData.path("data");
+
+            OfficialGroupMemberRemoveEvent event = new OfficialGroupMemberRemoveEvent(
+                    eventId,
+                    eventData.path("group_openid").asText(null),
+                    eventData.path("member_openid").asText(null),
+                    eventData.path("timestamp").asText(null)
+            );
+
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的群成员删除事件时发生错误：", e);
         }
     }
 }

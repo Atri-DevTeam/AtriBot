@@ -9,8 +9,10 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.official.pushtask.CalendarTask;
+import top.yzljc.atribot.function.official.pushtask.HypixelNewsTask;
 import top.yzljc.atribot.function.official.pushtask.MinecraftNewsCheckTask;
 import top.yzljc.atribot.function.official.pushtask.PushTask;
+import top.yzljc.atribot.platform.Platform;
 
 import java.util.List;
 
@@ -25,7 +27,8 @@ public class PushTaskCommand implements CommandExecutor {
 
     private static final List<PushTask> tasks = List.of(
             new MinecraftNewsCheckTask(),
-            new CalendarTask()
+            new CalendarTask(),
+            new HypixelNewsTask()
     );
 
     @Override
@@ -33,8 +36,8 @@ public class PushTaskCommand implements CommandExecutor {
 
         String groupOpenId = sender.getGroupId();
 
-        if (label.equals("1")) {
-            sender.sendMessage(TC.md("> 推送任务只在群聊中有效，等待官方开放私聊主动消息后更新!"));
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) {
+            if (sender.getPlatform() == Platform.OFFICIAL_C2C) sender.sendMessage(TC.md("> 推送任务只在群聊中有效，等待官方开放私聊主动消息后更新!"));
             return true;
         }
 

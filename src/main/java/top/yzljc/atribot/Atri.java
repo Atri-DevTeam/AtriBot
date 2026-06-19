@@ -156,7 +156,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new SignCommand());
 
         CommandManager.reload();
-        CommandManager.getCommand("happynewyear").setExecutor(new HappyNewYear());
+        CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
 //        CommandManager.getCommand("wakeup").setExecutor(new WakeUp());
         CommandManager.getCommand("reboot").setExecutor(new Reboot());
@@ -167,7 +167,6 @@ public class Atri {
         CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
         CommandManager.getCommand("cl").setExecutor(new HypixelReward());
         CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
-        CommandManager.getCommand("checkhypnews").setExecutor(new HypixelNews());
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
         CommandManager.getCommand("github").setExecutor(new WebhookServer());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
@@ -204,7 +203,7 @@ public class Atri {
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
-//        CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
+        CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
 
         this.scheduler = new Scheduler();
         try {
@@ -219,7 +218,6 @@ public class Atri {
         Config settings = Config.getInstance();
         ChatContentRecord.init();
         MinecraftNews.loadHistory();
-        HypixelNews.loadHistory();
 
         MinecraftBind.init();
         OfficialGroups.init();

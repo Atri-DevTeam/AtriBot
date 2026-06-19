@@ -58,7 +58,8 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                     break;
                 case 0:
                     String eventType = payload.get("t").asText();
-                    handleEvent(eventType, payload.get("d"));
+                    String eventId = payload.path("id").asText(null);
+                    handleEvent(eventType, eventId, payload.get("d"));
                     break;
                 case 11:
                     break;
@@ -181,7 +182,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         close();
     }
 
-    private void handleEvent(String eventType, JsonNode eventData) {
+    private void handleEvent(String eventType, String eventId, JsonNode eventData) {
         if ("READY".equals(eventType)) {
             sessionId = eventData.get("session_id").asText();
             log.info("鉴权成功！获取到 session_id: {}", sessionId);
@@ -218,6 +219,14 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
         if ("INTERACTION_CREATE".equals(eventType)) {
             BotEvents.handleInteractionEvent(eventData);
+        }
+
+        if ("GROUP_MEMBER_ADD".equals(eventType)) {
+            BotEvents.handleGroupMemberAddEvent(eventId, eventData);
+        }
+
+        if ("GROUP_MEMBER_REMOVE".equals(eventType)) {
+            BotEvents.handleGroupMemberRemoveEvent(eventId, eventData);
         }
 
         if (DebugCommand.isOfficialDebugEnabled.get()) {

@@ -21,11 +21,9 @@ public class MojangStatus implements CommandExecutor {
 
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 
-    private static final String url = "https://www.yzljc.top/data/api/v2/atribot/function/mojang-status?key=" + secret + "&" + System.currentTimeMillis();
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-
+        String url = "https://www.yzljc.top/data/api/v2/atribot/function/mojang-status?key=" + secret + "&" + System.currentTimeMillis();
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "mojang_status")) {

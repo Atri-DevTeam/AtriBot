@@ -2,6 +2,8 @@ package top.yzljc.atribot.event.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Event;
 
 /**
@@ -14,7 +16,16 @@ import top.yzljc.atribot.event.Event;
 @Getter
 @AllArgsConstructor
 public class OfficialGroupMemberAddEvent extends Event {
+    private final String eventId;
     private final String groupOpenId;
     private final String memberOpenId;
     private final String timestamp;
+
+    public String sendMessage(Markdown markdown) {
+        return GroupChat.welcomeMessage(groupOpenId, memberOpenId, eventId, markdown);
+    }
+
+    public String sendMessage(Markdown markdown, Object buttons) {
+        return GroupChat.welcomeMessage(groupOpenId, memberOpenId, eventId, markdown, buttons);
+    }
 }

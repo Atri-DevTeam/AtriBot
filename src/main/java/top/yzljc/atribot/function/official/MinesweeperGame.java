@@ -29,6 +29,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+            return true;
+        }
+
         String sessionId = sender.getPlatform() == Platform.OFFICIAL_C2C ? sender.getUserId() : sender.getGroupId();
 
         // 1. 发送欢迎与规则界面
