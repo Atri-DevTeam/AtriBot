@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class SignCommand implements CommandExecutor, Listener {
 
-    private static final Pattern pattern = Pattern.compile("<@[A-F0-9]+> 打卡");
+    private static final Pattern pattern = Pattern.compile("<@[A-F0-9]+> (打卡|签到)\\s*");
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

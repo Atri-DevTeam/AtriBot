@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.official;
 
+import lombok.Getter;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -8,10 +9,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.function.official.pushtask.CalendarTask;
-import top.yzljc.atribot.function.official.pushtask.HypixelNewsTask;
-import top.yzljc.atribot.function.official.pushtask.MinecraftNewsCheckTask;
-import top.yzljc.atribot.function.official.pushtask.PushTask;
+import top.yzljc.atribot.function.official.pushtask.*;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.List;
@@ -25,10 +23,12 @@ import java.util.List;
  */
 public class PushTaskCommand implements CommandExecutor {
 
+    @Getter
     private static final List<PushTask> tasks = List.of(
             new MinecraftNewsCheckTask(),
             new CalendarTask(),
-            new HypixelNewsTask()
+            new HypixelNewsTask(),
+            new MemerAddWelcomeTask()
     );
 
     @Override

@@ -92,8 +92,7 @@ public class HypixelAnnouncements implements CommandExecutor {
                             "标题: `" + a.title() + "`\n\n" +
                             "作者: `" + a.author() + "`\n\n" +
                             "时间: `" + a.publishTime() + "`\n\n" +
-                            (a.intro() != null && !a.intro().isBlank() ? ("简介: `" + a.intro()) + "`\n\n" : "") +
-                            "[原帖链接](" + a.link() + ")" +
+                            (a.intro() != null && !a.intro().isBlank() ? ("简介: `" + a.intro()) + "`" : "") +
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 

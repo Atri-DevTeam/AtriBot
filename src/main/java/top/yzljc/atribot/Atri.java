@@ -204,6 +204,7 @@ public class Atri {
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
+        CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
 
         this.scheduler = new Scheduler();
         try {

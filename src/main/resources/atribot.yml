@@ -47,7 +47,7 @@ commands:
     description: Manosaba日期查询
   github:
     description: Github相关功能
-    usage: /github [群号1] [群号2]...
+    usage: /github [on|off] 或 /github [仓库名] [群号1] [群号2]...
   signall:
     description: 自动签到
   chat:
@@ -68,7 +68,7 @@ commands:
     usage: /reload [all|cfg|f|g]
   autolike:
     description: 自动点赞列表
-    usage: /autolike add|remove|list [可选 User]
+    usage: /autolike <add|remove|list> (不需要输入QQ号，非管理员不允许更改他人设置)
   tufe:
     description: 查询
     usage: /tufe查看下节课的上课地点
@@ -136,6 +136,7 @@ commands:
     aliases:
       - c4
       - connect4
+      - connectfour
   打卡:
     description: 每日打卡签到
     usage: /打卡
@@ -143,3 +144,9 @@ commands:
     description: 调试
   check-hyp:
     description: 检查Hypixel最新公告
+  games:
+    aliases:
+      - 游戏
+      - 小游戏
+      - game
+    description: 小游戏

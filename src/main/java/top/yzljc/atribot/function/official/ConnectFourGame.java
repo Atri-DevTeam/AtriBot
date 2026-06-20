@@ -52,7 +52,10 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Only support group chat
+        if (sender.getPlatform() == Platform.OFFICIAL_C2C) {
+            sender.sendMessage("单聊模式下暂不支持四子棋喵！请在群聊中使用 /四子棋 来开始游戏！");
+            return true;
+        }
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 
         String sessionId = sender.getGroupId();

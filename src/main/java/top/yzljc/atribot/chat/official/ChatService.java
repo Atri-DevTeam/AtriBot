@@ -183,7 +183,7 @@ public class ChatService {
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText() + "\n\n" + "[☁ 聊天群](https://qm.qq.com/q/s9ZPDwAm0C)"))
+                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText()))
                 .build();
 
         return sendGroupMessage(groupOpenId, request);
@@ -340,7 +340,7 @@ public class ChatService {
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .msgId(msgId)
                 .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText() + "\n\n" + "[☁ 聊天群](https://qm.qq.com/q/s9ZPDwAm0C)"))
+                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText()))
                 .keyboard(keyboard)
                 .build();
 
