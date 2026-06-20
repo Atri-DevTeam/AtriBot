@@ -35,11 +35,11 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 
         if (args.length < 1) {
             Markdown md = TC.md(
-                    "请输入群号\n\n" +
-                            "完成授权后无需@" + Config.getInstance().getOfficialUsername() + "即可处理指令，同时" + Config.getInstance().getOfficialUsername() + "可以通过主动推送提供更加便捷的功能\n\n" +
-                            "格式：" + Markdown.enterCommand("/全量消息 ", "/全量消息 群号")
+                    "启用全量消息\n\n" +
+                            "群主完成授权后无需@" + Config.getInstance().getOfficialUsername() + "即可处理指令，同时" + Config.getInstance().getOfficialUsername() + "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供更加便捷的功能\n\n" +
+                            Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
             );
-            Button verifyButton = new Button("c2", "若已开启请点我验证", "full_message_enable_verify", true, ButtonStyle.BLUE, ButtonType.CALLBACK);
+            Button verifyButton = new Button("c2", "开启后请点我验证", "full_message_enable_verify", true, ButtonStyle.BLUE, ButtonType.CALLBACK);
             Object keyboard = TC.keyboard(
                     List.of(
                             List.of(verifyButton)
@@ -100,6 +100,11 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         String groupOpenId = event.getGroupOpenId();
         if (OfficialGroups.isAllowedFullMessages(groupOpenId) && event.getErrorMessage().equals("主动消息失败, 无权限") && event.getGroupOpenId() != null) {
             OfficialGroups.setAllowedFullMessage(groupOpenId, false);
+            for (var task : PushTaskCommand.getTasks()) {
+                if (task.isGroupEnabled(groupOpenId)) {
+                    task.disable(groupOpenId, "system_active_message_fail");
+                }
+            }
         }
     }
 }

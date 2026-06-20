@@ -33,6 +33,9 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onMemberJoin(OfficialGroupMemberAddEvent event) {
+        if (!OfficialGroups.isFunctionEnabled(event.getGroupOpenId(), "member_add_welcome")) {
+            return;
+        }
         String url = "https://www.yzljc.top/img/welcome-img.png";
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " 欢迎新人喵~\n\n" +

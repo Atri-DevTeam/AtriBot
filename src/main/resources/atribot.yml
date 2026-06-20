@@ -47,7 +47,7 @@ commands:
     description: Manosaba日期查询
   github:
     description: Github相关功能
-    usage: /github [群号1] [群号2]...
+    usage: /github [on|off] 或 /github [仓库名] [群号1] [群号2]...
   signall:
     description: 自动签到
   chat:
@@ -136,6 +136,7 @@ commands:
     aliases:
       - c4
       - connect4
+      - connectfour
   打卡:
     description: 每日打卡签到
     usage: /打卡

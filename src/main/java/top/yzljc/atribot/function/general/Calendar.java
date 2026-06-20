@@ -61,7 +61,7 @@ public class Calendar implements CommandExecutor {
                 return;
             }
 
-            String today = "![today #1642px #958px](" + url + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n\n> 夜已深，世界安静了。早点休息，好梦。";
+            String today = "![today #1642px #958px](" + url + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n> 夜已深，世界安静了。早点休息，好梦。";
 
             for (String gid : OfficialGroups.enabledGroups("daily_calendar")) {
                 GroupChat.sendMessage(gid, TC.md(today));

@@ -283,7 +283,7 @@ public class MinecraftNews implements CommandExecutor {
                 GroupMessage.forwardTo(gid, messageId);
             }
             String markdown = "![MC #" + w + "px #" + h + "px](" + url + ")\n\n" +
-                    "> Minecraft官方发布了新的文章，点击图片查看详情！\n\n" +
+                    "> Minecraft官方发布了新的文章，点击图片查看详情！\n" +
                     "> 时间：" + t;
 
             List<String> activeGroups = OfficialGroups.enabledGroups("mc_news");
