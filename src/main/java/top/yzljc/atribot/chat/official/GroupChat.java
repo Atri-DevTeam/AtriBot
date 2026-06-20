@@ -56,6 +56,11 @@ public final class GroupChat {
         return service().replyGroupImageMessage(groupOpenId, msgId, type, value);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String groupOpenId, String msgId, int type, String value) {
+        return service().replyGroupFileMessage(groupOpenId, msgId, type, value);
+    }
+
     public static void recallMessage(String groupOpenId, String messageId) {
         service().recallGroupMessage(groupOpenId, messageId);
     }

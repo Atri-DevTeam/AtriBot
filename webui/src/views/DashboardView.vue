@@ -580,6 +580,8 @@ function hasMsgRef(message) {
 
 function renderContent(message) {
   let text = message.content || ''
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   if (message.eventType === 'GROUP_MESSAGE_CREATE' && message.mentions) {
     try {
       const mentions = typeof message.mentions === 'string' ? JSON.parse(message.mentions) : message.mentions

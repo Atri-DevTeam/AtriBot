@@ -458,6 +458,8 @@ async function sendMessage() {
 
 function renderContent(message) {
   let text = message.content || ''
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   return text
 }
 

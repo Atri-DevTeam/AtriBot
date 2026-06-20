@@ -59,7 +59,12 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 case 0:
                     String eventType = payload.get("t").asText();
                     String eventId = payload.path("id").asText(null);
-                    handleEvent(eventType, eventId, payload.get("d"));
+                    JsonNode eventData = payload.get("d");
+                    if ("READY".equals(eventType)) {
+                        handleEvent(eventType, eventId, eventData);
+                    } else {
+                        ThreadManager.execute(() -> handleEvent(eventType, eventId, eventData));
+                    }
                     break;
                 case 11:
                     break;

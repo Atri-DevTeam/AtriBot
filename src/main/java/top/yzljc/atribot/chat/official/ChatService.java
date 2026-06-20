@@ -15,12 +15,15 @@ import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -49,191 +52,237 @@ public class ChatService {
         }
     }
 
+    private String privateMessageUrl(String openId) {
+        return apiBaseUrl + "/v2/users/" + openId + "/messages";
+    }
+
+    private String groupMessageUrl(String groupOpenId) {
+        return apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
+    }
+
+    private String privateFileUrl(String openId) {
+        return apiBaseUrl + "/v2/users/" + openId + "/files";
+    }
+
+    private String groupFileUrl(String groupOpenId) {
+        return apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
+    }
+
+    private MessageBody textRequest(String text) {
+        return MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .content(text)
+                .build();
+    }
+
+    private MessageBody markdownRequest(Markdown markdown) {
+        return markdownRequest(markdown.getText(), null, null, null);
+    }
+
+    private MessageBody markdownRequest(Markdown markdown, Object keyboard) {
+        return markdownRequest(markdown.getText(), keyboard, null, null);
+    }
+
+    private MessageBody markdownRequest(String markdownContent, Object keyboard, String msgId, String eventId) {
+        MessageBody.MessageBodyBuilder builder = MessageBody.builder()
+                .msgType(GroupMessageType.MARKDOWN.getValue())
+                .markdown(buildMarkdown(markdownContent));
+        if (keyboard != null) {
+            builder.keyboard(keyboard);
+        }
+        if (msgId != null) {
+            builder.msgId(msgId).msgSeq(getNextMsgSeq(msgId));
+        }
+        if (eventId != null) {
+            builder.eventId(eventId);
+        }
+        return builder.build();
+    }
+
+    private MessageBody replyTextRequest(String msgId, String text) {
+        return MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .msgId(msgId)
+                .msgSeq(getNextMsgSeq(msgId))
+                .content(text)
+                .build();
+    }
+
+    private MessageBody mediaRequest(String fileInfo, String msgId) {
+        Map<String, Object> mediaObj = new HashMap<>();
+        mediaObj.put("file_info", fileInfo);
+
+        MessageBody.MessageBodyBuilder builder = MessageBody.builder()
+                .msgType(GroupMessageType.MEDIA.getValue())
+                .media(mediaObj);
+        if (msgId != null) {
+            builder.msgId(msgId).msgSeq(getNextMsgSeq(msgId));
+        }
+        return builder.build();
+    }
+
+    private String atMarkdown(String userOpenId, Markdown markdown) {
+        return Markdown.at(userOpenId) + "\n" + markdown.getText();
+    }
+
     @SuppressWarnings("UnusedReturnValue")
     public String sendPrivateMessage(String openId, MessageBody request) {
-        String url = apiBaseUrl + "/v2/users/" + openId + "/messages";
-        String messageId = doSendMessage(url, request, "单聊");
-        if (messageId != null) {
-            ChatContentRecord.recordSentC2CMessage(openId, request, messageId);
-        }
-        return messageId;
+        return awaitSend(sendPrivateMessageAsync(openId, request), "单聊");
+    }
+
+    public CompletableFuture<String> sendPrivateMessageAsync(String openId, MessageBody request) {
+        return sendMessageAsync(privateMessageUrl(openId), request, "单聊")
+                .thenApply(messageId -> {
+                    if (messageId != null) {
+                        ChatContentRecord.recordSentC2CMessage(openId, request, messageId);
+                    }
+                    return messageId;
+                });
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendGroupMessage(String groupOpenId, MessageBody request) {
-        String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
-        String messageId = doSendMessage(url, request, "群聊");
-        if (messageId != null) {
-            ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
-        }
-        return messageId;
+        return awaitSend(sendGroupMessageAsync(groupOpenId, request), "群聊");
+    }
+
+    public CompletableFuture<String> sendGroupMessageAsync(String groupOpenId, MessageBody request) {
+        return sendMessageAsync(groupMessageUrl(groupOpenId), request, "群聊")
+                .thenApply(messageId -> {
+                    if (messageId != null) {
+                        ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
+                    }
+                    return messageId;
+                });
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupTextMessage(String groupOpenId, String text) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.TEXT.getValue())
-                .content(text)
-                .build();
+        return sendGroupMessage(groupOpenId, textRequest(text));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendActiveGroupTextMessageAsync(String groupOpenId, String text) {
+        return sendGroupMessageAsync(groupOpenId, textRequest(text));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateTextMessage(String openId, String text) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.TEXT.getValue())
-                .content(text)
-                .build();
+        return sendPrivateMessage(openId, textRequest(text));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> sendActivePrivateTextMessageAsync(String openId, String text) {
+        return sendPrivateMessageAsync(openId, textRequest(text));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(buildMarkdown(markdown))
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendActiveGroupMarkdownMessageAsync(String groupOpenId, Markdown markdown) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown, Object keyboard) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(buildMarkdown(markdown))
-                .keyboard(keyboard)
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown, keyboard));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendActiveGroupMarkdownMessageAsync(String groupOpenId, Markdown markdown, Object keyboard) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown, keyboard));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(buildMarkdown(markdown))
-                .build();
+        return sendPrivateMessage(openId, markdownRequest(markdown));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> sendActivePrivateMarkdownMessageAsync(String openId, Markdown markdown) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown, Object keyboard) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .markdown(buildMarkdown(markdown))
-                .keyboard(keyboard)
-                .build();
+        return sendPrivateMessage(openId, markdownRequest(markdown, keyboard));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> sendActivePrivateMarkdownMessageAsync(String openId, Markdown markdown, Object keyboard) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown, keyboard));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateImageMessage(String openId, ImageType type, String value) {
-        String uploadUrl = apiBaseUrl + "/v2/users/" + openId + "/files";
-        String fileInfo = uploadImageFile(uploadUrl, type, value, "单聊主动");
-        if (fileInfo == null) return null;
+        MessageBody request = buildImageRequest(privateFileUrl(openId), type, value, "单聊主动", null);
+        return request == null ? null : sendPrivateMessage(openId, request);
+    }
 
-        Map<String, Object> mediaObj = new HashMap<>();
-        mediaObj.put("file_info", fileInfo);
-
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MEDIA.getValue())
-                .media(mediaObj)
-                .build();
-
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> sendActivePrivateImageMessageAsync(String openId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(privateFileUrl(openId), type, value, "单聊主动", null))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendPrivateMessageAsync(openId, request));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupImageMessage(String groupOpenId, ImageType type, String value) {
-        String uploadUrl = apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
-        String fileInfo = uploadImageFile(uploadUrl, type, value, "群聊主动");
-        if (fileInfo == null) return null;
+        MessageBody request = buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊主动", null);
+        return request == null ? null : sendGroupMessage(groupOpenId, request);
+    }
 
-        Map<String, Object> mediaObj = new HashMap<>();
-        mediaObj.put("file_info", fileInfo);
-
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MEDIA.getValue())
-                .media(mediaObj)
-                .build();
-
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendActiveGroupImageMessageAsync(String groupOpenId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊主动", null))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendGroupMessageAsync(groupOpenId, request));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyGroupTextMessage(String groupOpenId, String msgId, String replyText) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.TEXT.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .content(replyText)
-                .build();
+        return sendGroupMessage(groupOpenId, replyTextRequest(msgId, replyText));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> replyGroupTextMessageAsync(String groupOpenId, String msgId, String replyText) {
+        return sendGroupMessageAsync(groupOpenId, replyTextRequest(msgId, replyText));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText()))
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), null, msgId, null));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> replyGroupMarkdownMessageAsync(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), null, msgId, null));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateTextMessage(String openId, String msgId, String replyText) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.TEXT.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .content(replyText)
-                .build();
+        return sendPrivateMessage(openId, replyTextRequest(msgId, replyText));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> replyPrivateTextMessageAsync(String openId, String msgId, String replyText) {
+        return sendPrivateMessageAsync(openId, replyTextRequest(msgId, replyText));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateMarkdownMessage(String openId, String msgId, Markdown markdown) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(markdown))
-                .build();
+        return sendPrivateMessage(openId, markdownRequest(markdown.getText(), null, msgId, null));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> replyPrivateMarkdownMessageAsync(String openId, String msgId, Markdown markdown) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown.getText(), null, msgId, null));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .eventId(eventId)
-                .markdown(buildMarkdown(markdown.getText()))
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendGroupWelcomeAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .eventId(eventId)
-                .markdown(buildMarkdown(markdown.getText()))
-                .keyboard(buttons)
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> sendGroupWelcomeAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
     }
 
     public Object buildButtonKeyboard(List<List<Button>> layout) {
@@ -285,66 +334,53 @@ public class ChatService {
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateImageMessage(String openId, String msgId, ImageType type, String value) {
-        String uploadUrl = apiBaseUrl + "/v2/users/" + openId + "/files";
-        String fileInfo = uploadImageFile(uploadUrl, type, value, "单聊");
-        if (fileInfo == null) return null;
+        MessageBody request = buildImageRequest(privateFileUrl(openId), type, value, "单聊", msgId);
+        return request == null ? null : sendPrivateMessage(openId, request);
+    }
 
-        Map<String, Object> mediaObj = new HashMap<>();
-        mediaObj.put("file_info", fileInfo);
-
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MEDIA.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .media(mediaObj)
-                .build();
-
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> replyPrivateImageMessageAsync(String openId, String msgId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(privateFileUrl(openId), type, value, "单聊", msgId))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendPrivateMessageAsync(openId, request));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyGroupImageMessage(String groupOpenId, String msgId, ImageType type, String value) {
-        String uploadUrl = apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
-        String fileInfo = uploadImageFile(uploadUrl, type, value, "群聊");
-        if (fileInfo == null) return null;
+        MessageBody request = buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊", msgId);
+        return request == null ? null : sendGroupMessage(groupOpenId, request);
+    }
 
-        Map<String, Object> mediaObj = new HashMap<>();
-        mediaObj.put("file_info", fileInfo);
+    public CompletableFuture<String> replyGroupImageMessageAsync(String groupOpenId, String msgId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊", msgId))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendGroupMessageAsync(groupOpenId, request));
+    }
 
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MEDIA.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .media(mediaObj)
-                .build();
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyGroupFileMessage(String groupOpenId, String msgId, int type, String value) {
+        MessageBody request = buildFileRequest(groupFileUrl(groupOpenId), type, value, "文件发送", msgId);
+        return request == null ? null : sendGroupMessage(groupOpenId, request);
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> replyGroupFileMessageAsync(String groupOpenId, String msgId, int type, String value) {
+        return ThreadManager.supplyAsync(() -> buildFileRequest(groupFileUrl(groupOpenId), type, value, "文件发送", msgId))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendGroupMessageAsync(groupOpenId, request));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateMarkdownMessage(String openId, String msgId, Markdown markdown, Object keyboard) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(markdown))
-                .keyboard(keyboard)
-                .build();
+        return sendPrivateMessage(openId, markdownRequest(markdown.getText(), keyboard, msgId, null));
+    }
 
-        return sendPrivateMessage(openId, request);
+    public CompletableFuture<String> replyPrivateMarkdownMessageAsync(String openId, String msgId, Markdown markdown, Object keyboard) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown.getText(), keyboard, msgId, null));
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown, Object keyboard) {
-        MessageBody request = MessageBody.builder()
-                .msgType(GroupMessageType.MARKDOWN.getValue())
-                .msgId(msgId)
-                .msgSeq(getNextMsgSeq(msgId))
-                .markdown(buildMarkdown(Markdown.at(userOpenId) + "\n" + markdown.getText()))
-                .keyboard(keyboard)
-                .build();
+        return sendGroupMessage(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), keyboard, msgId, null));
+    }
 
-        return sendGroupMessage(groupOpenId, request);
+    public CompletableFuture<String> replyGroupMarkdownMessageAsync(String groupOpenId, String userOpenId, String msgId, Markdown markdown, Object keyboard) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), keyboard, msgId, null));
     }
 
     public void recallPrivateMessage(String userOpenId, String messageId) {
@@ -370,25 +406,50 @@ public class ChatService {
         uploadData.put("file_type", 1);
         uploadData.put(type.getDataKey(), value);
         uploadData.put("srv_send_msg", false);
+        return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel);
+    }
 
+    private MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId) {
+        String fileInfo = uploadImageFile(uploadUrl, type, value, logLabel);
+        if (fileInfo == null) return null;
+
+        return mediaRequest(fileInfo, msgId);
+    }
+
+    private MessageBody buildFileRequest(String uploadUrl, int type, String value, String logLabel, String msgId) {
+        String fileInfo = uploadFile(uploadUrl, type, value, logLabel);
+        if (fileInfo == null) return null;
+
+        return mediaRequest(fileInfo, msgId);
+    }
+
+    private String uploadFile(String uploadUrl, int type, String value, String logLabel) {
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("file_type", type);
+        uploadData.put("url", value);
+        uploadData.put("srv_send_msg", false);
+        return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel);
+    }
+
+    private String uploadAndGetFileInfo(String uploadUrl, Map<String, Object> uploadData, String logLabel) {
         try {
             String uploadJson = objectMapper.writeValueAsString(uploadData);
             String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
                     "Authorization", "QQBot " + tokenManager.getAccessToken());
 
             if (uploadRes == null || uploadRes.isBlank()) {
-                log.error("{}-图片上传失败，服务器返回为空", logLabel);
+                log.error("{}上传失败，服务器返回为空", logLabel);
                 return null;
             }
 
             JsonNode resNode = objectMapper.readTree(uploadRes);
             if (!resNode.has("file_info")) {
-                log.error("{}-图片上传失败，未返回 file_info: {}", logLabel, uploadRes);
+                log.error("{}上传失败，未返回 file_info: {}", logLabel, uploadRes);
                 return null;
             }
             return resNode.get("file_info").asText();
         } catch (Exception e) {
-            log.error("发送{}图片异常: ", logLabel, e);
+            log.error("{}上传异常", logLabel, e);
             return null;
         }
     }
@@ -401,6 +462,27 @@ public class ChatService {
         Map<String, Object> markdownObj = new HashMap<>();
         markdownObj.put("content", markdownContent);
         return markdownObj;
+    }
+
+    private CompletableFuture<String> sendMessageAsync(String url, MessageBody request, String logType) {
+        return ThreadManager.supplyAsync(() -> doSendMessage(url, request, logType))
+                .exceptionally(e -> {
+                    log.error("{}消息异步发送任务失败, url: {}", logType, url, e);
+                    return null;
+                });
+    }
+
+    private String awaitSend(CompletableFuture<String> future, String logType) {
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("{}消息发送等待被中断", logType, e);
+            return null;
+        } catch (ExecutionException e) {
+            log.error("{}消息发送任务失败: {}", logType, e.getCause() != null ? e.getCause() : e);
+            return null;
+        }
     }
 
     private String doSendMessage(String url, MessageBody request, String logType) {

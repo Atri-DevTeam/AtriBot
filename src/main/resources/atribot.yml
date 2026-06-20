@@ -150,3 +150,6 @@ commands:
       - 小游戏
       - game
     description: 小游戏
+  skb:
+    description: Music
+    usage: /skb <关键词>

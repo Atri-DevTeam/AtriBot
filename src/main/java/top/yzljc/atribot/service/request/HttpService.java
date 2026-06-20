@@ -17,10 +17,43 @@ import java.util.Map;
 public class HttpService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static final int MAX_LOG_BODY_LENGTH = 4096;
 
     public static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
     public static final HttpClient redirectHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).followRedirects(HttpClient.Redirect.ALWAYS).build();
+
+    private static void logHttpFailure(String method, String url, int statusCode, String responseBody) {
+        log.warn("{} Request failed! URL: {}, HTTP code: {}, Response body: {}",
+                method, url, statusCode, limitLogBody(responseBody));
+    }
+
+    private static void logRequestError(String method, String url, Exception e) {
+        log.warn("{} Request Error! URL: {}, Error type: {}, Error message: {}",
+                method, url, e.getClass().getName(), e.getMessage(), e);
+    }
+
+    private static String limitLogBody(String body) {
+        if (body == null) {
+            return "<null>";
+        }
+        if (body.isBlank()) {
+            return "<blank>";
+        }
+        if (body.length() <= MAX_LOG_BODY_LENGTH) {
+            return body;
+        }
+        return body.substring(0, MAX_LOG_BODY_LENGTH) + "...(truncated, length=" + body.length() + ")";
+    }
+
+    private static void applyHeaders(Builder builder, String... headers) {
+        if (headers.length % 2 != 0) {
+            throw new IllegalArgumentException("Headers must be key/value pairs, length: " + headers.length);
+        }
+        for (int i = 0; i < headers.length; i += 2) {
+            builder.header(headers[i], headers[i + 1]);
+        }
+    }
 
     public static JsonNode sendGetRequest(String url) {
         try {
@@ -36,10 +69,10 @@ public class HttpService {
                 }
                 return null;
             } else {
-                log.warn("GET Request failed, HTTP code: {}", response.statusCode());
+                logHttpFailure("GET", url, response.statusCode(), response.body());
             }
         } catch (Exception e) {
-            log.warn("GET Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("GET", url, e);
         }
         return null;
     }
@@ -54,10 +87,10 @@ public class HttpService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             } else {
-                log.warn("GET Request failed, HTTP code: {}", response.statusCode());
+                logHttpFailure("GET", url, response.statusCode(), response.body());
             }
         } catch (Exception e) {
-            log.warn("GET Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("GET", url, e);
         }
         return null;
     }
@@ -81,10 +114,10 @@ public class HttpService {
                 }
                 return mapper.readTree(responseBody);
             } else {
-                log.warn("POST(redirect) Request failed, HTTP code: {}", statusCode);
+                logHttpFailure("POST(redirect)", url, statusCode, responseBody);
             }
         } catch (Exception e) {
-            log.warn("POST(redirect) Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("POST(redirect)", url, e);
         }
         return null;
     }
@@ -94,7 +127,7 @@ public class HttpService {
             String jsonBody = mapper.writeValueAsString(bodyMap);
             return postJson(url, jsonBody, headers);  // 调用原方法
         } catch (Exception e) {
-            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("POST", url, e);
             return null;
         }
     }
@@ -105,7 +138,7 @@ public class HttpService {
             String jsonBody = mapper.writeValueAsString(bodyObj);
             return postJson(url, jsonBody, headers);  // 调用原方法
         } catch (Exception e) {
-            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("POST", url, e);
             return null;
         }
     }
@@ -115,9 +148,7 @@ public class HttpService {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json");
-            for (int i = 0; i < headers.length; i += 2) {
-                builder.header(headers[i], headers[i + 1]);
-            }
+            applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
@@ -129,10 +160,10 @@ public class HttpService {
                 log.warn("POST 返回空 body! URL: {}, status: {}", url, response.statusCode());
                 return null;
             }
-            log.warn("POST 请求失败! URL: {}, status: {}, body: {}", url, response.statusCode(), body);
+            logHttpFailure("POST", url, response.statusCode(), body);
             return null;
         } catch (Exception e) {
-            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("POST", url, e);
             return null;
         }
     }
@@ -142,13 +173,16 @@ public class HttpService {
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
         try {
             Builder builder = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-Type", "application/json");
-            for (int i = 0; i < headers.length; i += 2) builder.header(headers[i], headers[i + 1]);
+            applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logHttpFailure("POST(detailed)", url, response.statusCode(), response.body());
+            }
             return new PostResult(response.statusCode(), response.body());
         } catch (Exception e) {
-            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
-            return new PostResult(0, null);
+            logRequestError("POST(detailed)", url, e);
+            return new PostResult(0, e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
@@ -161,9 +195,7 @@ public class HttpService {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json");
-            for (int i = 0; i < headers.length; i += 2) {
-                builder.header(headers[i], headers[i + 1]);
-            }
+            applyHeaders(builder, headers);
             if (duration != null) {
                 builder.timeout(duration);
             }
@@ -173,10 +205,10 @@ public class HttpService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             }
-            log.warn("POST Request non-2xx, HTTP code: {}", response.statusCode());
+            logHttpFailure("POST(string)", url, response.statusCode(), response.body());
             return null;
         } catch (Exception e) {
-            log.warn("POST Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("POST(string)", url, e);
             return null;
         }
     }
@@ -186,7 +218,7 @@ public class HttpService {
             String jsonBody = mapper.writeValueAsString(bodyMap);
             return putJson(url, jsonBody, headers);
         } catch (Exception e) {
-            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("PUT", url, e);
             return null;
         }
     }
@@ -196,7 +228,7 @@ public class HttpService {
             String jsonBody = mapper.writeValueAsString(bodyObj);
             return putJson(url, jsonBody, headers);
         } catch (Exception e) {
-            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("PUT", url, e);
             return null;
         }
     }
@@ -206,24 +238,22 @@ public class HttpService {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json");
-            for (int i = 0; i < headers.length; i += 2) {
-                builder.header(headers[i], headers[i + 1]);
-            }
+            applyHeaders(builder, headers);
             builder.PUT(HttpRequest.BodyPublishers.ofString(jsonBody));
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            String body = response.body();
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                String body = response.body();
                 if (body != null && !body.isBlank()) {
                     return mapper.readTree(body);
                 }
                 return NullNode.getInstance();
             } else {
-                log.warn("PUT Request failed, HTTP code: {}, URL: {}", response.statusCode(), url);
+                logHttpFailure("PUT", url, response.statusCode(), body);
             }
             return null;
         } catch (Exception e) {
-            log.warn("PUT Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("PUT", url, e);
             return null;
         }
     }
@@ -242,10 +272,10 @@ public class HttpService {
                 }
                 return null;
             } else {
-                log.warn("DELETE Request failed, HTTP code: {}", response.statusCode());
+                logHttpFailure("DELETE", url, response.statusCode(), response.body());
             }
         } catch (Exception e) {
-            log.warn("DELETE Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("DELETE", url, e);
         }
         return null;
     }
@@ -255,18 +285,16 @@ public class HttpService {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .DELETE();
-            for (int i = 0; i < headers.length; i += 2) {
-                builder.header(headers[i], headers[i + 1]);
-            }
+            applyHeaders(builder, headers);
             HttpRequest request = builder.build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             } else {
-                log.warn("DELETE Request failed, HTTP code: {}, {}", response.statusCode(), response.body());
+                logHttpFailure("DELETE(string)", url, response.statusCode(), response.body());
             }
         } catch (Exception e) {
-            log.warn("DELETE Request Error! URL: {}, Error: {}", url, e.getMessage());
+            logRequestError("DELETE(string)", url, e);
         }
         return null;
     }

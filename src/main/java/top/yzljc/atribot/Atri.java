@@ -40,6 +40,7 @@ import top.yzljc.atribot.service.AiService;
 import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
+import top.yzljc.atribot.test.Test;
 import top.yzljc.atribot.utils.debug.DebugCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
@@ -185,7 +186,7 @@ public class Atri {
         CommandManager.getCommand("rc").setExecutor(new RconHandler());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmI());
         CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
-//        CommandManager.getCommand("test").setExecutor(new Test());
+        CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("ogroup").setExecutor(new GroupCommand());
         CommandManager.getCommand("permission").setExecutor(new PermissionCommand());
@@ -205,6 +206,7 @@ public class Atri {
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
+        CommandManager.getCommand("skb").setExecutor(new MusicCommand());
 
         this.scheduler = new Scheduler();
         try {
