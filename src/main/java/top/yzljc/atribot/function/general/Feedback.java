@@ -62,6 +62,7 @@ public class Feedback implements CommandExecutor, Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "请提供反馈内容！用法：/feedback <反馈内容>");
+            return true;
         }
 
         Platform platform = sender.getPlatform();
@@ -78,68 +79,66 @@ public class Feedback implements CommandExecutor, Listener {
 
         int code = 0;
 
-        if (args.length > 0) {
-            String userName;
-            String groupName;
-            boolean isGroupAdmin;
-            boolean isBotAdmin = sender.hasPermission();
-            boolean isDebugMode = Config.getInstance().isDebugMode();
+        String userName;
+        String groupName;
+        boolean isGroupAdmin;
+        boolean isBotAdmin = sender.hasPermission();
+        boolean isDebugMode = Config.getInstance().isDebugMode();
 
-            if (platform == Platform.NAPCAT_GROUP || platform == Platform.NAPCAT_C2C) {
-                userName = UserInformation.getUserName(userId);
-                groupName = GroupInformation.getGroupName(groupId);
-                isGroupAdmin = UserInformation.isGroupAdmin(groupId, userId);
+        if (platform == Platform.NAPCAT_GROUP || platform == Platform.NAPCAT_C2C) {
+            userName = UserInformation.getUserName(userId);
+            groupName = GroupInformation.getGroupName(groupId);
+            isGroupAdmin = UserInformation.isGroupAdmin(groupId, userId);
 
-                ObjectNode info = mapper.createObjectNode();
-                info.put("group_id", Long.parseLong(groupId));
-                info.put("group_name", groupName);
-                info.put("user_name", userName);
-                info.put("message_id", Long.parseLong(messageId));
-                info.put("is_group_admin", isGroupAdmin);
-                info.put("is_bot_admin", isBotAdmin);
-                info.put("is_debug_mode", isDebugMode);
+            ObjectNode info = mapper.createObjectNode();
+            info.put("group_id", Long.parseLong(groupId));
+            info.put("group_name", groupName);
+            info.put("user_name", userName);
+            info.put("message_id", Long.parseLong(messageId));
+            info.put("is_group_admin", isGroupAdmin);
+            info.put("is_bot_admin", isBotAdmin);
+            info.put("is_debug_mode", isDebugMode);
 
-                FeedbackRequest data = new FeedbackRequest(content, userId, 0, info);
-                code = submitFeedback(data);
+            FeedbackRequest data = new FeedbackRequest(content, userId, 0, info);
+            code = submitFeedback(data);
 
-                String alertStr = "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")";
-                GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
-            } else if (platform == Platform.OFFICIAL_C2C) {
-                isGroupAdmin = false;
+            String alertStr = "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")";
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
+        } else if (platform == Platform.OFFICIAL_C2C) {
+            isGroupAdmin = false;
 
-                ObjectNode info = mapper.createObjectNode();
-                info.put("message_open_id", messageId);
-                info.put("is_group_admin", isGroupAdmin);
-                info.put("is_bot_admin", isBotAdmin);
-                info.put("is_debug_mode", isDebugMode);
+            ObjectNode info = mapper.createObjectNode();
+            info.put("message_open_id", messageId);
+            info.put("is_group_admin", isGroupAdmin);
+            info.put("is_bot_admin", isBotAdmin);
+            info.put("is_debug_mode", isDebugMode);
 
-                FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
-                code = submitFeedback(data);
+            FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
+            code = submitFeedback(data);
 
-                String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")";
-                GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
-            } else {
-                isGroupAdmin = false;
+            String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")";
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
+        } else {
+            isGroupAdmin = false;
 
-                ObjectNode info = mapper.createObjectNode();
-                info.put("group_open_id", groupId);
-                info.put("message_open_id", messageId);
-                info.put("is_group_admin", isGroupAdmin);
-                info.put("is_bot_admin", isBotAdmin);
-                info.put("is_debug_mode", isDebugMode);
+            ObjectNode info = mapper.createObjectNode();
+            info.put("group_open_id", groupId);
+            info.put("message_open_id", messageId);
+            info.put("is_group_admin", isGroupAdmin);
+            info.put("is_bot_admin", isBotAdmin);
+            info.put("is_debug_mode", isDebugMode);
 
-                FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
-                code = submitFeedback(data);
+            FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
+            code = submitFeedback(data);
 
-                String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")，来源于群聊: " + groupId;
-                GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
-            }
+            String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")，来源于群聊: " + groupId;
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
+        }
 
-            switch (code) {
-                case 200 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈已收到！我们会尽快处理的~");
-                case 201 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "你已经提交过反馈了哦，请先等待上一条反馈被受理！");
-                default -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈提交失败了呢，请稍后再试！");
-            }
+        switch (code) {
+            case 200 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈已收到！我们会尽快处理的~");
+            case 201 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "你已经提交过反馈了哦，请先等待上一条反馈被受理！");
+            default -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈提交失败了呢，请稍后再试！");
         }
 
         return true;
@@ -153,8 +152,10 @@ public class Feedback implements CommandExecutor, Listener {
             String jsonBody = mapper.writeValueAsString(data);
             JsonNode response = HttpService.postJson(signedUrl, jsonBody);
             if (response != null) {
-                if (response.get("status").asInt() != 200) {
-                    if (response.get("status").asInt() == 201) {
+                // 我喜欢提取变量(╯‵□′)╯︵┻━┻
+                int status = response.get("status").asInt();
+                if (status != 200) {
+                    if (status == 201) {
                         log.warn("Feedback submission failed: already existed");
                         return 201;
                     } else {
@@ -354,24 +355,27 @@ public class Feedback implements CommandExecutor, Listener {
         private JsonNode info;
     }
 
+    // 新增buildReplyMessage()方法,你这一大段文本重复写三遍给我看力竭了
+    private static String buildReplyMessage(FeedbackDTO feedback) {
+        return "您的反馈已被受理\n\n" +
+                "---\n\n" +
+                "反馈编号: `" + feedback.getId() + "`\n\n" +
+                "UUID: `" + feedback.getUuid() + "`\n\n" +
+                "时间: `" + feedback.getCreatedAt() + "`\n\n" +
+                "反馈内容：`" + feedback.getContent() + "`\n\n" +
+                "---\n\n" +
+                "回复人: `" + feedback.getReplier() + "`\n\n" +
+                "回复时间: `" + feedback.getRepliedAt() + "`\n\n" +
+                "回复内容: `" + feedback.getReplyContent() + "`\n\n" +
+                "---\n\n" +
+                "如有任何问题欢迎继续联系我们！";
+    }
+
     @EventHandler
     public void onGroupAtChat(OfficialGroupAtMessageCreateEvent event) {
         FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
         if (remaining != null) {
-            String reply = "您的反馈已被受理\n\n" +
-                    "---\n\n" +
-                    "反馈编号: `" + remaining.getId() + "`\n\n" +
-                    "UUID: `" + remaining.getUuid() + "`\n\n" +
-                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
-                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
-                    "---\n\n" +
-                    "回复人: `" + remaining.getReplier() + "`\n\n" +
-                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
-                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
-                    "---\n\n" +
-                    "如有任何问题欢迎继续联系我们！";
-
-            event.sendMessage(TC.md(reply));
+            event.sendMessage(TC.md(buildReplyMessage(remaining)));
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
         }
     }
@@ -380,20 +384,7 @@ public class Feedback implements CommandExecutor, Listener {
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
         FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
         if (remaining != null) {
-            String reply = "您的反馈已被受理\n\n" +
-                    "---\n\n" +
-                    "反馈编号: `" + remaining.getId() + "`\n\n" +
-                    "UUID: `" + remaining.getUuid() + "`\n\n" +
-                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
-                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
-                    "---\n\n" +
-                    "回复人: `" + remaining.getReplier() + "`\n\n" +
-                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
-                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
-                    "---\n\n" +
-                    "如有任何问题欢迎继续联系我们！";
-
-            event.sendMessage(TC.md(reply));
+            event.sendMessage(TC.md(buildReplyMessage(remaining)));
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
         }
     }
@@ -402,20 +393,7 @@ public class Feedback implements CommandExecutor, Listener {
     public void onPrivateChat(OfficialC2CMessageCreateEvent event) {
         FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
         if (remaining != null) {
-            String reply = "您的反馈已被受理\n\n" +
-                    "---\n\n" +
-                    "反馈编号: `" + remaining.getId() + "`\n\n" +
-                    "UUID: `" + remaining.getUuid() + "`\n\n" +
-                    "时间: `" + remaining.getCreatedAt() + "`\n\n" +
-                    "反馈内容：`" + remaining.getContent() + "`\n\n" +
-                    "---\n\n" +
-                    "回复人: `" + remaining.getReplier() + "`\n\n" +
-                    "回复时间: `" + remaining.getRepliedAt() + "`\n\n" +
-                    "回复内容: `" + remaining.getReplyContent() + "`\n\n" +
-                    "---\n\n" +
-                    "如有任何问题欢迎继续联系我们！";
-
-            event.sendMessage(TC.md(reply));
+            event.sendMessage(TC.md(buildReplyMessage(remaining)));
             log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
         }
     }
