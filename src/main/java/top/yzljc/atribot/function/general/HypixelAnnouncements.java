@@ -297,7 +297,7 @@ public class HypixelAnnouncements implements CommandExecutor {
         }
 
         try {
-            List<String> guidList = objectMapper.readValue(file, new TypeReference<List<String>>() {});
+            List<String> guidList = objectMapper.readValue(file, new TypeReference<>() {});
 
             return new HashSet<>(guidList);
 
@@ -319,7 +319,7 @@ public class HypixelAnnouncements implements CommandExecutor {
         saveGuids(guids);
     }
 
-    private static synchronized void saveGuids(Set<String> guids) { //AI改的，这个不是很清楚，加 synchronized 保证线程安全，和多线程相关
+    private static synchronized void saveGuids(Set<String> guids) {
         File file = new File(HISTORY_FILE);
 
         try {

@@ -101,6 +101,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
             OfficialGroups.setAllowedFullMessage(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
+                    if (task.getFunctionId().equals("member_add_welcome")) continue;
                     task.disable(groupOpenId, "system_active_message_fail");
                 }
             }
