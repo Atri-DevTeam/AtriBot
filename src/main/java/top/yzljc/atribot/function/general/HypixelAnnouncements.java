@@ -319,7 +319,7 @@ public class HypixelAnnouncements implements CommandExecutor {
         saveGuids(guids);
     }
 
-    private static void saveGuids(Set<String> guids) {
+    private static synchronized void saveGuids(Set<String> guids) { //AI改的，这个不是很清楚，加 synchronized 保证线程安全，和多线程相关
         File file = new File(HISTORY_FILE);
 
         try {

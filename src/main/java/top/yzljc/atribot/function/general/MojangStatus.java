@@ -36,16 +36,17 @@ public class MojangStatus implements CommandExecutor {
         int code = PreImageGenerate.create(url);
         if (code != 200) {
             sender.sendMessage("检查 Mojang 服务状态失败，API 返回状态码: " + code);
-            sender.recall(messageId);
+            if (messageId != null && !messageId.isBlank()) {
+                sender.recall(messageId);
+            }
             return true;
         }
 
-        sender.recall(messageId);
+        if (messageId != null && !messageId.isBlank()) {
+            sender.recall(messageId);
+        }
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
-            if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "mojang_status")) {
-                return true;
-            }
             sender.sendMessage(url, MessageUtils.ImageType.URL);
             return true;
         } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
