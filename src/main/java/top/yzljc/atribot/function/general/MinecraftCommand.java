@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
@@ -19,7 +21,7 @@ import top.yzljc.atribot.platform.Platform;
 public class MinecraftCommand implements CommandExecutor {
 
     private static final Markdown ValidCommands = TC.md(
-            Markdown.img("https://www.yzljc.top/img/grass-block-img.png", 24, 24) + " **Minecraft 指令列表**\n\n" +
+            Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) + " **Minecraft 指令列表**\n\n" +
                     "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
                     "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本"
     );

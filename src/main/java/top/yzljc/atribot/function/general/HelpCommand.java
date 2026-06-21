@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
@@ -38,7 +40,7 @@ public class HelpCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            String url = "https://www.yzljc.top/data/api/v2/atribot/function/help?key=" + secret + "&" + System.currentTimeMillis();
+            String url = ResourcesProperties.HELP_API + "?key=" + secret + "&" + System.currentTimeMillis();
 
             ThreadManager.execute(() -> {
                 try {

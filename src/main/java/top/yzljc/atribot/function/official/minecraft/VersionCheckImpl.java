@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official.minecraft;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -179,7 +181,7 @@ public final class VersionCheckImpl {
                         
                         > 发布于 %s
                         """.formatted(
-                        Markdown.img("https://www.yzljc.top/img/grass-block-img.png", 24, 24),
+                        Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
                         release != null ? release.id() : "未知",
                         release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
                         snapshot != null ? snapshot.id() : "未知",

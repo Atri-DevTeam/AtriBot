@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official.minecraft;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -50,7 +52,7 @@ public class DiceImpl {
     }
 
     public static void rollSingle(CommandSender sender) {
-        String url = "https://www.yzljc.top/img/dice_render_result_<id>.png";
+        String url = ResourcesProperties.DICE_RENDER_RESULT_IMG;
 
         int rolledNumber = getRolledNumber();
         String imageUrl = url.replace("<id>", String.valueOf(rolledNumber));
@@ -74,11 +76,11 @@ public class DiceImpl {
 
         String markdown;
         if (rolledNumber == 7) {
-            markdown = "![dice #80px #80px](" + imageUrl + ")\n\n" + text + "\n\n![skb #24px #24px](https://www.yzljc.top/img/skb-logo.png)数据来源于 Hypixel Skyblock, 结果仅供娱乐";
+            markdown = "![dice #80px #80px](" + imageUrl + ")\n\n" + text + "\n\n![skb #24px #24px](" + ResourcesProperties.SKB_LOGO_IMG + ")数据来源于 Hypixel Skyblock, 结果仅供娱乐";
         } else if (rolledNumber == 6) {
-            markdown = "![dice #128px #128px](" + imageUrl + ")\n\n" + text + "\n\n" + "![bank #20px #20px](https://www.yzljc.top/img/skb-bank-logo.png) Purse: +100M\n\n" + "![skb #24px #24px](https://www.yzljc.top/img/skb-logo.png)数据来源于 Hypixel Skyblock, 结果仅供娱乐";
+            markdown = "![dice #128px #128px](" + imageUrl + ")\n\n" + text + "\n\n" + "![bank #20px #20px](" + ResourcesProperties.SKB_BANK_LOGO_IMG + ") Purse: +100M\n\n" + "![skb #24px #24px](" + ResourcesProperties.SKB_LOGO_IMG + ")数据来源于 Hypixel Skyblock, 结果仅供娱乐";
         } else {
-            markdown = "![dice #128px #128px](" + imageUrl + ")\n\n" + text + "\n\n![skb #24px #24px](https://www.yzljc.top/img/skb-logo.png)数据来源于 Hypixel Skyblock, 结果仅供娱乐";
+            markdown = "![dice #128px #128px](" + imageUrl + ")\n\n" + text + "\n\n![skb #24px #24px](" + ResourcesProperties.SKB_LOGO_IMG + ")数据来源于 Hypixel Skyblock, 结果仅供娱乐";
         }
 
         List<List<Button>> buttons = List.of(
@@ -100,7 +102,7 @@ public class DiceImpl {
         long[] results = new long[8];
         System.arraycopy(calculatedPulls, 0, results, 1, 7);
         StringBuilder sb = new StringBuilder();
-        sb.append("![skb #32px #32px](https://www.yzljc.top/img/dice_render_result_7.png) **连续投掷").append(times).append("次High Class Archfiend Dice结果：**\n\n");
+        sb.append("![skb #32px #32px](" + ResourcesProperties.DICE_RENDER_RESULT_7_IMG + ") **连续投掷").append(times).append("次High Class Archfiend Dice结果：**\n\n");
         sb.append("- **1点** (-300❤)：`").append(results[1]).append("` 次\n");
         sb.append("- **2点** (-200❤)：`").append(results[2]).append("` 次\n");
         sb.append("- **3点** (-100❤)：`").append(results[3]).append("` 次\n");
@@ -122,13 +124,13 @@ public class DiceImpl {
         BigDecimal gainedMoney = BigDecimal.valueOf(results[6]).multiply(BigDecimal.valueOf(100));
         BigDecimal netMoney = gainedMoney.subtract(costMoney);
 
-        sb.append("\n![bank #20px #20px](https://www.yzljc.top/img/skb-bank-logo.png) Purse: `").append(netMoney.compareTo(BigDecimal.ZERO) > 0 ? "+" : "")
+        sb.append("\n![bank #20px #20px](" + ResourcesProperties.SKB_BANK_LOGO_IMG + ") Purse: `").append(netMoney.compareTo(BigDecimal.ZERO) > 0 ? "+" : "")
                 .append(netMoney.stripTrailingZeros().toPlainString()).append("M ")
                 .append("(- ").append(costMoney.stripTrailingZeros().toPlainString()).append("M | ")
                 .append("+ ").append(gainedMoney.stripTrailingZeros().toPlainString()).append("M)`\n\n");
         sb.append("当前理论血量：`").append(-totalLostHealth + totalGainedHealth).append("❤`\n");
 
-        sb.append("\n![skb #24px #24px](https://www.yzljc.top/img/skb-logo.png)数据来源于 Hypixel Skyblock, 结果仅供娱乐");
+        sb.append("\n![skb #24px #24px](" + ResourcesProperties.SKB_LOGO_IMG + ")数据来源于 Hypixel Skyblock, 结果仅供娱乐");
 
         List<List<Button>> buttons = List.of(
                 List.of(

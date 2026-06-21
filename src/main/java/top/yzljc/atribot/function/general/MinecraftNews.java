@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -238,7 +240,7 @@ public class MinecraftNews implements CommandExecutor {
         log.info(">>> 2. 开始请求 AI 进行总结...");
         String aiMessages = AtriNewsSummarizer.summarize(article.title, articleText);
         log.info(">>> [成功] AI 总结完毕");
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/mcnews";
+        String url = ResourcesProperties.MCNEWS_API;
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("title", article.title);
         requestBody.put("author", article.author);
@@ -264,7 +266,7 @@ public class MinecraftNews implements CommandExecutor {
     }
 
     private static void pushNews(String newsId, int w, int h, String t) {
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/mcnews?news_id=" + newsId;
+        String url = ResourcesProperties.MCNEWS_API + "?news_id=" + newsId;
 
         try {
             HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();

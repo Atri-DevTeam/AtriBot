@@ -51,7 +51,7 @@ public class RconHandler implements CommandExecutor {
             String maskedServer = "*".repeat(server.length());
             sender.sendMessage(TC.md("无效的服务器编号: `" + maskedServer + "`\n\n" +
                     "该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系\n\n" +
-                    "![show_img #540px #606px](https://www.yzljc.top/img/rcon-shower.png)"));
+                    "![show_img #540px #606px](" + ResourcesProperties.RCON_GUIDE_IMG + ")"));
             return true;
         }
     }

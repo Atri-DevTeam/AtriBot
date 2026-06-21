@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.task;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
@@ -39,7 +41,7 @@ public class Calendar implements CommandExecutor {
 
     public static void sendToSingleGroup(String targetGroupId) {
         try {
-            GroupMessage.chatMessage(targetGroupId, "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=false&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+            GroupMessage.chatMessage(targetGroupId, ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=false&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
         } catch (Exception e) {
             log.error("发送失败", e);
         }
@@ -56,7 +58,7 @@ public class Calendar implements CommandExecutor {
 
             try {
                 String debugGroupUin = Config.getInstance().getNapcatDebugGroupUin();
-                String messageId = GroupMessage.chatMessage(debugGroupUin, "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=true&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+                String messageId = GroupMessage.chatMessage(debugGroupUin, ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=true&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
                 if (messageId != null) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", debugGroupUin, messageId);
                 } else {

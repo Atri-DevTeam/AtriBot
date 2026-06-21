@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official.tufe;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +29,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
     private static final String QUERY_URL = "https://di.tjufe.edu.cn:8088/CardApp2021/ElecSearch.php?ec={room_num}&xq={school_region}";
 
     private static final String HELP_INFO = """
-            ![tufe #35px #34px](https://www.yzljc.top/img/tufe-logo.png) **天津财经大学电表查询**
+            ![tufe #35px #34px](%s) **天津财经大学电表查询**
 
             **参数说明：**
 
@@ -47,9 +49,9 @@ public class ElectricCheck implements Listener, CommandExecutor {
 
             **在不输入校区和类型的情况下，默认查询宿舍电表并且校区为大学生宿舍**
 
-            """;
+            """.formatted(ResourcesProperties.TUFE_LOGO_IMG);
 
-    private static final String info = "![tufe #35px #34px](https://www.yzljc.top/img/tufe-logo.png) **天津财经大学电表查询**\n\n" +
+    private static final String info = "![tufe #35px #34px](" + ResourcesProperties.TUFE_LOGO_IMG + ") **天津财经大学电表查询**\n\n" +
             "{placeholder_feedback}\n\n" +
             "{placeholder_data}\n\n" +
             "---\n\n" +
