@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -64,7 +66,7 @@ public class HypixelAnnouncements implements CommandExecutor {
 
     private static final int INTRO_MAX_LENGTH = 100;
 
-    private static final String HYPIXEL_HEADER_URL = "https://www.yzljc.top/img/hypixel-header.png";
+    private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -297,7 +299,7 @@ public class HypixelAnnouncements implements CommandExecutor {
         }
 
         try {
-            List<String> guidList = objectMapper.readValue(file, new TypeReference<List<String>>() {});
+            List<String> guidList = objectMapper.readValue(file, new TypeReference<>() {});
 
             return new HashSet<>(guidList);
 
@@ -319,7 +321,7 @@ public class HypixelAnnouncements implements CommandExecutor {
         saveGuids(guids);
     }
 
-    private static synchronized void saveGuids(Set<String> guids) { //AI改的，这个不是很清楚，加 synchronized 保证线程安全，和多线程相关
+    private static synchronized void saveGuids(Set<String> guids) {
         File file = new File(HISTORY_FILE);
 
         try {

@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
@@ -19,7 +21,7 @@ public class HappyNewYear implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/happy-new-year?key=" + Config.getInstance().getAtribotKeySecret() + "&timestamp=" + System.currentTimeMillis();
+        String url = ResourcesProperties.HAPPY_NEW_YEAR_API + "?key=" + Config.getInstance().getAtribotKeySecret() + "&timestamp=" + System.currentTimeMillis();
 
         int code = PreImageGenerate.create(url);
         if (code != 200) {

@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
@@ -33,7 +35,7 @@ public class Calendar implements CommandExecutor {
             return true;
         }
 
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=false&" + System.currentTimeMillis();
+        String url = ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=false&" + System.currentTimeMillis();
 
         int code = PreImageGenerate.create(url);
 
@@ -50,7 +52,7 @@ public class Calendar implements CommandExecutor {
     }
 
     public static void sendCalendar() {
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/calendar?key=" + secret + "&system=true&" + System.currentTimeMillis();
+        String url = ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=true&" + System.currentTimeMillis();
 
         ThreadManager.execute(() -> {
             int code = PreImageGenerate.create(url);

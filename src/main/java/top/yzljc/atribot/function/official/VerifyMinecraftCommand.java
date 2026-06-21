@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -42,7 +44,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
         if (sender.getPlatform() != Platform.OFFICIAL_C2C && sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 
         if (args.length != 1) {
-            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，格式: /verify <验证码>\n\n" + Markdown.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
+            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，格式: /verify <验证码>\n\n" + Markdown.img(ResourcesProperties.HOW_TO_VERIFY_GIF, 640, 360));
             sender.sendMessage(md, keyboard);
             return true;
         }
@@ -100,7 +102,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
     }
 
     private static String getPlayerHead(String uuid) {
-        String url = "https://www.yzljc.top/data/api/v1/avatar/{uuid}".replace("{uuid}", uuid);
+        String url = ResourcesProperties.PLAYER_AVATAR_API.replace("{uuid}", uuid);
 
         int code = PreImageGenerate.create(url);
         if (code != 200) return "-1";

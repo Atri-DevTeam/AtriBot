@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -145,7 +147,7 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     private static int submitFeedback(FeedbackRequest data) {
-        String url = "https://www.yzljc.top/data/api/v2/open-api/feedback/submit";
+        String url = ResourcesProperties.FEEDBACK_SUBMIT_API;
         String signedUrl = SaSignHeader.sign(url);
 
         try {

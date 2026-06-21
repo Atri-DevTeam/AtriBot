@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.media.ImageType;
@@ -25,7 +27,7 @@ public class SponsorCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String url = "https://www.yzljc.top/data/api/v2/atribot/function/sponsors?key=" + secret + "&" + System.currentTimeMillis();
+        String url = ResourcesProperties.SPONSORS_API + "?key=" + secret + "&" + System.currentTimeMillis();
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             sender.sendMessage(url, MessageUtils.ImageType.URL);

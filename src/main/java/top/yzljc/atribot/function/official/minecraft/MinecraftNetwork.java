@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official.minecraft;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.chat.official.TC;
@@ -78,7 +80,7 @@ public abstract class MinecraftNetwork {
                 }
             }
 
-            String markdownLogs = "![console #24px #24px](https://www.yzljc.top/img/console-logo.png) **指令执行结果**\n\n";
+            String markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n";
             if (logs != null) {
                 markdownLogs += "```\n" + logs + "\n```\n";
             } else {

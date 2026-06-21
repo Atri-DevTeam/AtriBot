@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general.impl;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.service.request.HttpService;
@@ -18,7 +20,7 @@ import java.util.Map;
  */
 public class PreImageGenerate {
 
-    private static final String DUMP_URL = "https://www.yzljc.top/data/api/v2/atribot/function/image-dump";
+    private static final String DUMP_URL = ResourcesProperties.IMAGE_DUMP_API;
 
     public static int create(String url) {
         HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();

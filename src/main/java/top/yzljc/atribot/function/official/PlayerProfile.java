@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -53,7 +55,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (args.length < 1) {
             MinecraftUserData data = MinecraftBind.getDataByOpenId(sender.getUserId());
             if (data.memberOpenId().equals("-1")) {
-                Markdown md = TC.md("您尚未绑定社区服务器账号，请先加入社区服务器通过以下方式开始绑定账号\n\n" + Markdown.img("https://www.yzljc.top/img/how-to-verify.gif", 640, 360));
+                Markdown md = TC.md("您尚未绑定社区服务器账号，请先加入社区服务器通过以下方式开始绑定账号\n\n" + Markdown.img(ResourcesProperties.HOW_TO_VERIFY_GIF, 640, 360));
                 sender.sendMessage(md, keyboard);
                 return true;
             }
@@ -96,7 +98,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 new Button("c4", "查询玩家在档数据", "/stats ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
         ));
         layout.add(List.of(
-                new Button("c5", "网页数据查询", "https://www.yzljc.top/mc/query/", true, ButtonStyle.BLUE, ButtonType.LINK)
+                new Button("c5", "网页数据查询", ResourcesProperties.PLAYER_WEB_QUERY, true, ButtonStyle.BLUE, ButtonType.LINK)
         ));
         return TC.keyboard(layout);
     }
@@ -106,7 +108,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (key == null) return false;
 
         String messageId = sender.sendMessage("正在获取玩家数据喵，请稍等片刻！");
-        String url = "https://www.yzljc.top/data/api/v2/player/card/" + key + "?key=" + secret + "&isVerified=" + isWhitelisted + "&timestamp=" + System.currentTimeMillis();
+        String url = ResourcesProperties.PLAYER_CARD_API + key + "?key=" + secret + "&isVerified=" + isWhitelisted + "&timestamp=" + System.currentTimeMillis();
         int code = PreImageGenerate.create(url);
         sender.recall(messageId);
 
@@ -130,8 +132,8 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (key == null) return false;
 
         try {
-            String dataNameUrl = "https://www.yzljc.top/data/api/v2/player/achievements/name/{name}";
-            String dataUuidUrl = "https://www.yzljc.top/data/api/v2/player/achievements/uuid/{uuid}";
+            String dataNameUrl = ResourcesProperties.PLAYER_ACHIEVEMENTS_NAME_API;
+            String dataUuidUrl = ResourcesProperties.PLAYER_ACHIEVEMENTS_UUID_API;
 
             String finalUrl;
 
@@ -180,8 +182,8 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (key == null) return false;
 
         try {
-            String dataNameUrl = "https://www.yzljc.top/data/api/v2/player/friends/name/{name}";
-            String dataUuidUrl = "https://www.yzljc.top/data/api/v2/player/friends/uuid/{uuid}";
+            String dataNameUrl = ResourcesProperties.PLAYER_FRIENDS_NAME_API;
+            String dataUuidUrl = ResourcesProperties.PLAYER_FRIENDS_UUID_API;
 
             String finalUrl;
 
@@ -237,8 +239,8 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (key == null) return false;
 
         try {
-            String dataNameUrl = "https://www.yzljc.top/data/api/v2/player/gamestats/name/{name}";
-            String dataUuidUrl = "https://www.yzljc.top/data/api/v2/player/gamestats/uuid/{uuid}";
+            String dataNameUrl = ResourcesProperties.PLAYER_GAMESTATS_NAME_API;
+            String dataUuidUrl = ResourcesProperties.PLAYER_GAMESTATS_UUID_API;
 
             String finalUrl;
 

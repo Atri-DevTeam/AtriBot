@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.official;
 
+import top.yzljc.atribot.configuration.ResourcesProperties;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
@@ -36,7 +38,7 @@ public class EventRecord implements Listener {
         if (!OfficialGroups.isFunctionEnabled(event.getGroupOpenId(), "member_add_welcome")) {
             return;
         }
-        String url = "https://www.yzljc.top/img/welcome-img.png";
+        String url = ResourcesProperties.WELCOME_IMG;
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " 欢迎新人喵~\n\n" +
                 Markdown.img(url, 1254 ,1254)
