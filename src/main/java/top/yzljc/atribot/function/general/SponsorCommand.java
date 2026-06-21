@@ -33,13 +33,13 @@ public class SponsorCommand implements CommandExecutor {
         }
 
         ThreadManager.execute(() -> {
-
             int code = PreImageGenerate.create(url);
-            if (code != 200) {
+            if (code == 200) {
+                sender.sendMessage(url, ImageType.URL);
+            } else {
                 sender.sendMessage("数据获取失败，请尝试重新执行指令，或稍后再试");
                 log.warn("预生成赞助信息图片失败，状态码: {}", code);
             }
-            sender.sendMessage(url, ImageType.URL);
         });
 
         return true;
