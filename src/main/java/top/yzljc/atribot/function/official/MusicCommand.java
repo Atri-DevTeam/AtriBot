@@ -20,7 +20,8 @@ import java.util.Map;
 public class MusicCommand implements CommandExecutor {
 
     private static final Map<String, String> musicList = Map.of(
-            "a_silent_mirror", ResourcesProperties.A_SILENT_MIRROR_MP3
+            "a_silent_mirror", ResourcesProperties.A_SILENT_MIRROR_MP3,
+            "biome_fest", ResourcesProperties.BIOME_FEST_MP3
     );
 
     @Override

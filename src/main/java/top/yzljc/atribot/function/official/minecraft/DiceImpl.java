@@ -52,7 +52,7 @@ public class DiceImpl {
     }
 
     public static void rollSingle(CommandSender sender) {
-        String url = ResourcesProperties.DICE_RENDER_RESULT_IMG;
+        String url = ResourcesProperties.DICE_RENDER_RESULT_IMG_T;
 
         int rolledNumber = getRolledNumber();
         String imageUrl = url.replace("<id>", String.valueOf(rolledNumber));

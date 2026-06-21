@@ -12,43 +12,46 @@ public class ResourcesProperties {
     // ==================== 图片 / 媒体资源 ====================
 
     // @ClassName RconHandler
-    public static final String RCON_GUIDE_IMG = "https://www.yzljc.top/img/rcon-shower.png";
+    public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";
 
     // @ClassName Test, MusicCommand
-    public static final String A_SILENT_MIRROR_MP3 = "https://www.yzljc.top/img/a_silent_mirror.mp3";
+    public static final String A_SILENT_MIRROR_MP3 = "https://res.yzljc.top/images/a_silent_mirror.mp3";
+
+    // @ClassName MusicCommand
+    public static final String BIOME_FEST_MP3 = "https://res.yzljc.top/images/c418.mp3";
 
     // @ClassName HypixelAnnouncements
-    public static final String HYPIXEL_HEADER_IMG = "https://www.yzljc.top/img/hypixel-header.png";
+    public static final String HYPIXEL_HEADER_IMG = "https://res.yzljc.top/images/hypixel-header.png";
 
     // @ClassName MinecraftCommand, VersionCheckImpl
-    public static final String GRASS_BLOCK_IMG = "https://www.yzljc.top/img/grass-block-img.png";
+    public static final String GRASS_BLOCK_IMG = "https://res.yzljc.top/images/grass-block-img.png";
 
     // @ClassName ElectricCheck
-    public static final String TUFE_LOGO_IMG = "https://www.yzljc.top/img/tufe-logo.png";
+    public static final String TUFE_LOGO_IMG = "https://res.yzljc.top/images/tufe-logo.png";
 
     // @ClassName PlayerProfile, VerifyMinecraftCommand
-    public static final String HOW_TO_VERIFY_GIF = "https://www.yzljc.top/img/how-to-verify.gif";
+    public static final String HOW_TO_VERIFY_GIF = "https://res.yzljc.top/images/how-to-verify.gif";
 
     // @ClassName FullMessageEnableCommand
-    public static final String FULL_MESSAGE_GUIDE_IMG = "https://www.yzljc.top/img/full-message-guide.png";
+    public static final String FULL_MESSAGE_GUIDE_IMG = "https://res.yzljc.top/images/full-message-guide.png";
 
     // @ClassName EventRecord
-    public static final String WELCOME_IMG = "https://www.yzljc.top/img/welcome-img.png";
+    public static final String WELCOME_IMG = "https://res.yzljc.top/images/welcome-img.png";
 
     // @ClassName MinecraftNetwork
-    public static final String CONSOLE_LOGO_IMG = "https://www.yzljc.top/img/console-logo.png";
+    public static final String CONSOLE_LOGO_IMG = "https://res.yzljc.top/images/console-logo.png";
 
     // @ClassName DiceImpl
-    public static final String SKB_LOGO_IMG = "https://www.yzljc.top/img/skb-logo.png";
+    public static final String SKB_LOGO_IMG = "https://res.yzljc.top/images/skb-logo.png";
 
     // @ClassName DiceImpl
-    public static final String SKB_BANK_LOGO_IMG = "https://www.yzljc.top/img/skb-bank-logo.png";
+    public static final String SKB_BANK_LOGO_IMG = "https://res.yzljc.top/images/skb-bank-logo.png";
 
     // @ClassName DiceImpl （模板，使用时将 <id> 替换为点数）
-    public static final String DICE_RENDER_RESULT_IMG = "https://www.yzljc.top/img/dice_render_result_<id>.png";
+    public static final String DICE_RENDER_RESULT_IMG_T = "https://res.yzljc.top/images/dice_render_result_<id>.png";
 
     // @ClassName DiceImpl
-    public static final String DICE_RENDER_RESULT_7_IMG = "https://www.yzljc.top/img/dice_render_result_7.png";
+    public static final String DICE_RENDER_RESULT_7_IMG = "https://res.yzljc.top/images/dice_render_result_7.png";
 
     // ==================== 接口 / API 资源 ====================
 
