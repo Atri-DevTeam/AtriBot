@@ -38,10 +38,11 @@ public class EventRecord implements Listener {
         if (!OfficialGroups.isFunctionEnabled(event.getGroupOpenId(), "member_add_welcome")) {
             return;
         }
+        // Guided by GordonHim
         String url = ResourcesProperties.WELCOME_IMG;
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " 欢迎新人喵~\n\n" +
-                Markdown.img(url, 1254 ,1254)
+                Markdown.img(url, 1238 ,564)
         );
         Object buttons = TC.keyboard(
                 List.of(

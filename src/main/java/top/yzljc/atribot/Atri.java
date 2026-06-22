@@ -19,7 +19,7 @@ import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.function.general.*;
 import top.yzljc.atribot.function.napcat.*;
-import top.yzljc.atribot.function.napcat.github.WebhookServer;
+import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.LikeUser;
 import top.yzljc.atribot.function.official.*;
@@ -164,12 +164,12 @@ public class Atri {
         CommandManager.getCommand("search").setExecutor(new SearchRelevant());
         CommandManager.getCommand("recall").setExecutor(new RM());
         CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
-        CommandManager.getCommand("motd").setExecutor(new Motd());
+//        CommandManager.getCommand("motd").setExecutor(new Motd());
         CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
         CommandManager.getCommand("cl").setExecutor(new HypixelReward());
         CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
-        CommandManager.getCommand("github").setExecutor(new WebhookServer());
+        CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
         CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
@@ -207,6 +207,8 @@ public class Atri {
         CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("skb").setExecutor(new MusicCommand());
+        CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
+        CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
 
         this.scheduler = new Scheduler();
         try {
@@ -237,7 +239,7 @@ public class Atri {
             GroupConfigManager.refreshAllConfigs();
             FriendList.updateFriendList();
             SetProjectInfo.setInfo();
-            WebhookServer.start(webhookPort, webhookSecret);
+            GithubCommitNotify.start(webhookPort, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
@@ -293,7 +295,7 @@ public class Atri {
         }
         MinecraftRemote.disconnect();
         qqBotManagerService.stop();
-        WebhookServer.stop();
+        GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
         if (server != null) {

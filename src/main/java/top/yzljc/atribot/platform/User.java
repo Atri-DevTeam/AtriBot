@@ -1,7 +1,6 @@
 package top.yzljc.atribot.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
@@ -17,7 +16,6 @@ import top.yzljc.atribot.chat.official.media.ImageType;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.platform
  */
-@Getter
 public class User {
     protected final Platform platform;
     protected final boolean bot;
@@ -33,6 +31,30 @@ public class User {
         this.username = username;
         this.role = role;
         this.data = data;
+    }
+
+    public Platform getPlatform() {
+        return platform;
+    }
+
+    public boolean isBot() {
+        return bot;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public PlatformRole getRole() {
+        return role;
+    }
+
+    public JsonNode getData() {
+        return data;
     }
 
     @SuppressWarnings("UnusedReturnValue")

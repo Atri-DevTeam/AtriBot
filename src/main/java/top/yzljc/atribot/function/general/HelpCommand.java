@@ -129,7 +129,6 @@ public class HelpCommand implements CommandExecutor {
                 ● /emj 贴表情恶搞机制相关
                 ● /calendar 日历推送
                 ● /mojang MOJANG 验证服务器状态查询
-                ● /motd MOTD 查询 [默认关闭]
                 ● /cl <url> 领取Hypixel每日签到 [默认关闭]
                 ● /rc <服务器编号> <指令> MC服务器关联指令 [默认关闭]
                 """;

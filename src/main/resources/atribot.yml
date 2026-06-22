@@ -153,3 +153,11 @@ commands:
   skb:
     description: Music
     usage: /skb <关键词>
+  ping:
+    description: Pong!
+    usage: /ping
+  boop:
+    description: Boop!
+    usage: /boop @<目标用户>
+    aliases:
+      - boo

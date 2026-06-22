@@ -7,6 +7,7 @@ plugins {
     `maven-publish`
     application
     id("com.gradleup.shadow") version "9.4.2"
+    kotlin("jvm") version "2.3.0"
 }
 
 group = "top.yzljc"
@@ -134,5 +135,17 @@ tasks.build {
 publishing {
     publications.create<MavenPublication>("maven") {
         from(components["java"])
+    }
+}
+
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }

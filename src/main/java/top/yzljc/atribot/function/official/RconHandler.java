@@ -35,12 +35,12 @@ public class RconHandler implements CommandExecutor {
             return true;
         }
         if (args.length < 1) {
-            sender.sendMessage(TC.md("""
+            sender.sendMessage(TC.md(String.format("""
                     **未输入服务器编号！**
                     
                     该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系
                     
-                    ![show_img #540px #606px](%s)"""), ResourcesProperties.RCON_GUIDE_IMG);
+                    ![show_img #540px #606px](%s)""", ResourcesProperties.RCON_GUIDE_IMG)));
             return true;
         }
         String server = args[0];

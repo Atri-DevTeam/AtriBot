@@ -1,6 +1,7 @@
-package top.yzljc.atribot.function.napcat.github;
+package top.yzljc.atribot.function.napcat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -13,9 +14,12 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
+import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import javax.crypto.Mac;
@@ -27,20 +31,18 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-public class WebhookServer implements CommandExecutor {
+public class GithubCommitNotify implements CommandExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(WebhookServer.class);
+    private static final Logger log = LoggerFactory.getLogger(GithubCommitNotify.class);
     public static final Set<String> TARGET_GROUPS = GroupInformation.fetchAllGroupIds();
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String CONFIG_FILE_PATH = Properties.GITHUB_REPOSITORY;
     private static final Map<String, List<String>> repoConfig = new HashMap<>();
-    private static final String TEMP_IMAGE_PATH = "tmp/last_github_update.png";
     private static HttpServer server;
     private static volatile boolean pushEnabled = true;
 
     static {
         loadConfig();
-        new File("tmp").mkdirs();
     }
 
     public static void start(int port, String secret) {
@@ -157,30 +159,26 @@ public class WebhookServer implements CommandExecutor {
 
         private void processPushEvent(String json) {
             if (!pushEnabled) return;
-            CommitDisplay.GithubPayload data = parseJson(json);
+            Map<String, Object> payload = parseJson(json);
             String repoNameForFilter = getSimpleRepoName(json);
-            CommitDisplay generator = new CommitDisplay();
-            String base64Image = generator.generateBase64(data);
-            if (base64Image != null) {
-                saveImageLocally(base64Image);
-                Collection<String> destinationGroups = new ArrayList<>();
-                if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase()))
-                    destinationGroups = repoConfig.get(repoNameForFilter.toLowerCase());
-                else for (String groupId : TARGET_GROUPS)
-                    if (GroupConfigManager.isFeatureEnabled(groupId, "github_info")) destinationGroups.add(groupId);
-                for (String groupId : destinationGroups)
-                    ThreadManager.execute(() -> GroupMessage.chatMessage(groupId, base64Image, MessageUtils.ImageType.BASE64));
-            }
-        }
 
-        private void saveImageLocally(String base64Image) {
-            try {
-                String b64 = base64Image.contains(",") ? base64Image.split(",")[1] : base64Image;
-                try (FileOutputStream fos = new FileOutputStream(TEMP_IMAGE_PATH)) {
-                    fos.write(Base64.getDecoder().decode(b64));
-                }
-            } catch (Exception e) {
-                log.error("Failed to save github push image locally", e);
+            String apiUrl = ResourcesProperties.COMMIT_DISPLAY_API + "?key=" + Config.getInstance().getAtribotKeySecret();
+            JsonNode resp = HttpService.postJson(apiUrl, payload);
+            if (resp == null || resp.path("status").asInt() != 200) {
+                log.error("CommitDisplay API 调用失败, url={}", apiUrl);
+                return;
+            }
+
+            String uuid = resp.path("data").path("uuid").asText();
+            String imageUrl = ResourcesProperties.COMMIT_DISPLAY_API + "/" + uuid;
+
+            Collection<String> destinationGroups = new ArrayList<>();
+            if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase()))
+                destinationGroups = repoConfig.get(repoNameForFilter.toLowerCase());
+            else for (String groupId : TARGET_GROUPS)
+                if (GroupConfigManager.isFeatureEnabled(groupId, "github_info")) destinationGroups.add(groupId);
+            for (String gid : destinationGroups) {
+                GroupMessage.chatMessage(gid, imageUrl, MessageUtils.ImageType.URL);
             }
         }
 
@@ -189,24 +187,33 @@ public class WebhookServer implements CommandExecutor {
             return i != -1 ? extractString(json.substring(i), "\"name\":\"") : null;
         }
 
-        private CommitDisplay.GithubPayload parseJson(String json) {
-            CommitDisplay.GithubPayload p = new CommitDisplay.GithubPayload();
+        private Map<String, Object> parseJson(String json) {
+            Map<String, Object> p = new LinkedHashMap<>();
             try {
-                p.repoName = extractString(json, "\"full_name\":\"");
+                p.put("repoName", extractString(json, "\"full_name\":\""));
                 String ref = extractString(json, "\"ref\":\"");
-                p.branch = ref.contains("/") ? ref.substring(ref.lastIndexOf("/") + 1) : ref;
+                p.put("branch", ref.contains("/") ? ref.substring(ref.lastIndexOf("/") + 1) : ref);
                 int si = json.indexOf("\"sender\":");
-                if (si != -1) p.avatarUrl = extractString(json.substring(si), "\"avatar_url\":\"");
+                p.put("avatarUrl", si != -1 ? extractString(json.substring(si), "\"avatar_url\":\"") : "");
                 int hci = json.indexOf("\"head_commit\":");
                 if (hci != -1) {
                     String hj = json.substring(hci);
-                    p.hash = extractString(hj, "\"id\":\"");
-                    p.message = extractString(hj, "\"message\":\"").replace("\\n", "\n").replace("\\r", "\r").replace("\\\"", "\"");
+                    p.put("hash", extractString(hj, "\"id\":\""));
+                    p.put("message", extractString(hj, "\"message\":\"").replace("\\n", "\n").replace("\\r", "\r").replace("\\\"", "\""));
                     int ai = hj.indexOf("\"author\":");
-                    if (ai != -1) p.pusherName = extractString(hj.substring(ai), "\"name\":\"");
-                    p.addedCount = countArrayElements(hj, "\"added\":");
-                    p.removedCount = countArrayElements(hj, "\"removed\":");
-                    p.changedFilesCount = p.addedCount + p.removedCount + countArrayElements(hj, "\"modified\":");
+                    p.put("pusherName", ai != -1 ? extractString(hj.substring(ai), "\"name\":\"") : "Unknown");
+                    p.put("addedCount", countArrayElements(hj, "\"added\":"));
+                    p.put("removedCount", countArrayElements(hj, "\"removed\":"));
+                    int added = p.get("addedCount") instanceof Integer ? (Integer) p.get("addedCount") : 0;
+                    int removed = p.get("removedCount") instanceof Integer ? (Integer) p.get("removedCount") : 0;
+                    p.put("changedFilesCount", added + removed + countArrayElements(hj, "\"modified\":"));
+                } else {
+                    p.putIfAbsent("hash", "");
+                    p.putIfAbsent("message", "");
+                    p.putIfAbsent("pusherName", "Unknown");
+                    p.putIfAbsent("addedCount", 0);
+                    p.putIfAbsent("removedCount", 0);
+                    p.putIfAbsent("changedFilesCount", 0);
                 }
             } catch (Exception e) {
                 log.error("Github Webhook JSON parsing error", e);

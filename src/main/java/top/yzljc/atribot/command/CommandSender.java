@@ -1,7 +1,6 @@
 package top.yzljc.atribot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -20,7 +19,6 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.command
  */
-@Getter
 public class CommandSender extends User {
     private final String groupId;
     private final String messageId;
@@ -31,6 +29,18 @@ public class CommandSender extends User {
         this.groupId = groupId;
         this.messageId = messageId;
         this.mentions = mentions;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public List<User> getMentions() {
+        return mentions;
     }
 
     public boolean hasPermission() {

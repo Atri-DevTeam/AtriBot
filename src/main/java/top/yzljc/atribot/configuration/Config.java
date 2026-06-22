@@ -114,7 +114,7 @@ public class Config {
 
     // ########## 特殊群专用内容设置区域 ##########
     @Getter
-    private long manosabaGroupId;
+    private String manosabaGroupId;
     @Getter
     private String groupJoinVerifyMessage;
     @Getter
@@ -217,7 +217,7 @@ public class Config {
             this.newBot = yaml.getBoolean("qq.is-new-bot", false);
 
             // ########## 特殊群专用内容设置区域 ##########
-            this.manosabaGroupId = getLongOrDefault("manosaba-group-id", 123456L);
+            this.manosabaGroupId = yaml.getString("manosaba-group-id", "null");
 
             // 群验证配置
             this.groupJoinVerifyGroupId = getLongOrDefault("group-join-verify-group-id", 123456789L);

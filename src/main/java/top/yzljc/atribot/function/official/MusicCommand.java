@@ -37,6 +37,7 @@ public class MusicCommand implements CommandExecutor {
         String url = musicList.get(name);
         if (url == null) {
             sender.sendMessage("无效音乐");
+            return true;
         }
         GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), 3, url);
         return true;
