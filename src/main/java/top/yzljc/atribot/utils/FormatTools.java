@@ -28,7 +28,12 @@ public class FormatTools {
     }
 
     public static String formatTimestamp(String timestamp) {
-        long timestampLong = Long.parseLong(timestamp);
+        long timestampLong;
+        try {
+            timestampLong = Long.parseLong(timestamp);
+        } catch (Exception _) {
+            return "-";
+        }
         return formatTimestamp(timestampLong);
     }
 

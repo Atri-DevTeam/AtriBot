@@ -63,7 +63,7 @@ public class User {
             case OFFICIAL_C2C -> {
                 return C2CChat.replyMessage(this.userId, messageId, text);
             }
-            case NAPCAT_C2C -> {
+            case NAPCAT_PRIVATE -> {
                 return PrivateMessage.replyMessage(this.userId, messageId, text);
             }
         }
@@ -185,7 +185,7 @@ public class User {
                 C2CChat.recallMessage(this.userId, messageId);
                 return;
             }
-            case NAPCAT_C2C -> {
+            case NAPCAT_PRIVATE -> {
                 PrivateMessage.recallMessage(messageId);
                 return;
             }

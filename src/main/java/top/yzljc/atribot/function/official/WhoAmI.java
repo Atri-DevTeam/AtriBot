@@ -13,7 +13,7 @@ import top.yzljc.atribot.command.CommandSender;
  * @ClassName AccountInfo
  * @Created_at 2026/05/09
  * @Project AtriBot
- * @Package top.yzljc.qqbot.functions.impl
+ * @Package top.yzljc.atribot.functions.impl
  */
 public class WhoAmI implements CommandExecutor {
 
@@ -26,6 +26,7 @@ public class WhoAmI implements CommandExecutor {
                         "group_openId: " + sender.getGroupId() + "\n" +
                         "message_openId: " + sender.getMessageId() + "\n" +
                         "user_role: " + OfficialUsers.getRole(sender.getUserId()) + "\n" +
+                        "user_group_role：" + sender.getRole() + "\n" +
                         "enabled_full_message: " + OfficialGroups.isAllowedFullMessages(sender.getUserId()) + "\n" +
                         "```\n\n" +
                         "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义");
@@ -48,6 +49,7 @@ public class WhoAmI implements CommandExecutor {
                 String text = "user_id: " + sender.getUserId() + "\n" +
                         "group_id: " + sender.getGroupId() + "\n" +
                         "message_id: " + sender.getMessageId() + "\n" +
+                        "user_group_role：" + sender.getRole() + "\n" +
                         "注意，本条指令专为获取相关鉴权数据使用，无实际意义";
                 sender.sendMessage(text);
                 return true;

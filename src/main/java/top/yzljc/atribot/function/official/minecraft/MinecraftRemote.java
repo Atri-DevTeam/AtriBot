@@ -216,7 +216,7 @@ public class MinecraftRemote {
                 }
                 return response;
             } catch (Exception e) {
-                log.error("[{}] 指令发送失败: {}", serverId, e.getMessage());
+                log.error("[{}] 指令发送失败: ", serverId, e);
                 return null;
             }
         } catch (Exception ignored) {

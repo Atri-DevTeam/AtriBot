@@ -16,15 +16,26 @@ def get_scraper():
     )
 
 def parse_js_object(html_content):
-    r_match = re.search(r'rewards"\s*:\s*(\[\s*\{.*?\}\s*\])', html_content, re.DOTALL)
-    if r_match:
-        raw_data_str = '{"rewards": ' + r_match.group(1) + '}'
-        try:
-            data = json.loads(raw_data_str)
-            return data.get('rewards', [])
-        except Exception as e:
-            print(f"[Error] JSON 解析失败: {e}")
-    return []
+    r_match = re.search(
+        r'rewards"\s*:\s*(\[\s*\{.*?\}\s*\])',
+        html_content,
+        re.DOTALL
+    )
+
+    if not r_match:
+        return []
+
+    raw_data_str = '{"rewards": ' + r_match.group(1) + '}'
+
+    # Hypixel 把 JSON 放在 JS 字符串里，可能包含 \'，JSON 不支持
+    raw_data_str = raw_data_str.replace("\\'", "'")
+
+    try:
+        data = json.loads(raw_data_str)
+        return data.get("rewards", [])
+    except Exception as e:
+        print(f"[Error] JSON 解析失败: {e}")
+        return []
 
 def fetch_reward_list(url):
     print(f"[Info] 开始获取奖励数据 (源链接): {url}")

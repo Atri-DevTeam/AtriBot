@@ -240,7 +240,7 @@ public class MinecraftNews implements CommandExecutor {
         log.info(">>> 2. 开始请求 AI 进行总结...");
         String aiMessages = AtriNewsSummarizer.summarize(article.title, articleText);
         log.info(">>> [成功] AI 总结完毕");
-        String url = ResourcesProperties.MCNEWS_API;
+        String url = ResourcesProperties.MC_NEWS_API;
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("title", article.title);
         requestBody.put("author", article.author);
@@ -266,7 +266,7 @@ public class MinecraftNews implements CommandExecutor {
     }
 
     private static void pushNews(String newsId, int w, int h, String t) {
-        String url = ResourcesProperties.MCNEWS_API + "?news_id=" + newsId;
+        String url = ResourcesProperties.MC_NEWS_API + "?news_id=" + newsId;
 
         try {
             HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();

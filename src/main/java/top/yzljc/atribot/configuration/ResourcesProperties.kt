@@ -56,7 +56,7 @@ object ResourcesProperties {
     // ==================== 接口 / API 资源 ====================
 
     // @ClassName MinecraftNews
-    const val MCNEWS_API = "https://www.yzljc.top/data/api/v2/atribot/function/mcnews"
+    const val MC_NEWS_API = "https://www.yzljc.top/data/api/v2/atribot/function/mcnews"
 
     // @ClassName Calendar(general), Calendar(task)
     const val CALENDAR_API = "https://www.yzljc.top/data/api/v2/atribot/function/calendar"

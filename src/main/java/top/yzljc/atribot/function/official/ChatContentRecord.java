@@ -43,6 +43,7 @@ public class ChatContentRecord implements Listener {
                 "  `content` MEDIUMTEXT NULL," +
                 "  `message_openId` VARCHAR(256) NULL," +
                 "  `sender_is_bot` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `member_role` VARCHAR(32) NULL," +
                 "  `event_type` VARCHAR(64) NOT NULL," +
                 "  `message_type` INT NULL," +
                 "  `event_timestamp` VARCHAR(64) NULL," +
@@ -79,6 +80,7 @@ public class ChatContentRecord implements Listener {
             groupStmt.execute();
             c2cStmt.execute();
             ensureColumn("official_group_record", "event_type", "VARCHAR(64) NOT NULL DEFAULT 'UNKNOWN' AFTER `sender_is_bot`");
+            ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `sender_is_bot`");
             dropColumnIfExists(C2C_TABLE, "user_openId");
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
@@ -129,6 +131,7 @@ public class ChatContentRecord implements Listener {
                 event.getMessage().getContent(),
                 event.getMessage().getMessageId(),
                 user.isBot(),
+                user.getRole().name(),
                 "GROUP_AT_MESSAGE_CREATE",
                 0,
                 event.getTimestamp(),
@@ -149,6 +152,7 @@ public class ChatContentRecord implements Listener {
                 event.getMessage().getContent(),
                 event.getMessage().getMessageId(),
                 user.isBot(),
+                user.getRole().name(),
                 "GROUP_MESSAGE_CREATE",
                 event.getMessage().getType(),
                 event.getTimestamp(),
@@ -166,6 +170,7 @@ public class ChatContentRecord implements Listener {
                 extractContent(request),
                 messageOpenId,
                 true,
+                null,
                 "BOT_SEND",
                 request.getMsgType(),
                 nowLocalTime(),
@@ -196,7 +201,7 @@ public class ChatContentRecord implements Listener {
 
         String countSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
         String dataSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
-                "sender_is_bot, event_type, message_type, event_timestamp, attachments, mentions, message_reference, created_at " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, created_at " +
                 "FROM `" + GROUP_TABLE + "` WHERE group_openId = ? ORDER BY id DESC LIMIT ? OFFSET ?";
 
         long total = 0;
@@ -224,6 +229,7 @@ public class ChatContentRecord implements Listener {
                         rs.getString("content"),
                         rs.getString("message_openId"),
                         rs.getBoolean("sender_is_bot"),
+                        rs.getString("member_role"),
                         rs.getString("event_type"),
                         (Integer) rs.getObject("message_type"),
                         rs.getString("event_timestamp"),
@@ -241,7 +247,7 @@ public class ChatContentRecord implements Listener {
     }
 
     private static void recordGroupMessage(String groupOpenId, String unionOpenId, String username, String content,
-                                           String messageOpenId, boolean senderIsBot,
+                                           String messageOpenId, boolean senderIsBot, String memberRole,
                                            String source, Integer messageType, String eventTimestamp,
                                            String attachments, String mentions, String messageReference) {
         if (isBlank(groupOpenId)) {
@@ -250,8 +256,8 @@ public class ChatContentRecord implements Listener {
         }
 
         String sql = "INSERT INTO `" + GROUP_TABLE + "` " +
-                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, event_type, message_type, event_timestamp, attachments, mentions, message_reference) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE content = VALUES(content), username = VALUES(username), event_type = VALUES(event_type)";
 
         try (var conn = DatabaseManager.getConnection();
@@ -262,16 +268,17 @@ public class ChatContentRecord implements Listener {
             stmt.setString(4, content);
             stmt.setString(5, emptyToNull(messageOpenId));
             stmt.setBoolean(6, senderIsBot);
-            stmt.setString(7, source);
+            stmt.setString(7, emptyToNull(memberRole));
+            stmt.setString(8, source);
             if (messageType == null) {
-                stmt.setNull(8, java.sql.Types.INTEGER);
+                stmt.setNull(9, java.sql.Types.INTEGER);
             } else {
-                stmt.setInt(8, messageType);
+                stmt.setInt(9, messageType);
             }
-            stmt.setString(9, emptyToNull(eventTimestamp));
-            stmt.setString(10, emptyToNull(attachments));
-            stmt.setString(11, emptyToNull(mentions));
-            stmt.setString(12, emptyToNull(messageReference));
+            stmt.setString(10, emptyToNull(eventTimestamp));
+            stmt.setString(11, emptyToNull(attachments));
+            stmt.setString(12, emptyToNull(mentions));
+            stmt.setString(13, emptyToNull(messageReference));
             stmt.executeUpdate();
 
             // SSE 实时推送 — 只发刷新信号，前端自己拉数据
@@ -419,7 +426,8 @@ public class ChatContentRecord implements Listener {
 
     public record GroupMessageRecord(long id, String groupOpenId, String unionOpenId, String username,
                                      String content, String messageOpenId,
-                                     boolean senderIsBot, String eventType,
+                                     boolean senderIsBot, String memberRole,
+                                     String eventType,
                                      Integer messageType, String eventTimestamp,
                                      String attachments, String mentions, String messageReference, String createdAt) {
     }

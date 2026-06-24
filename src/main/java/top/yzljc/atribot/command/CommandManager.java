@@ -95,6 +95,7 @@ public class CommandManager implements Listener {
 
     @EventHandler
     public void processCommand(NapcatGroupMessageEvent event) {
+        if (event.getUser().isBot()) return;
         String userInput = event.getMessage().getContent().trim();
 
         if (!userInput.startsWith(COMMAND_PREFIX)) {
@@ -123,6 +124,7 @@ public class CommandManager implements Listener {
 
     @EventHandler
     public void onOfficialC2CCommand(OfficialC2CMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         String userInput = event.getMessage().getContent().trim();
 
         if (!userInput.startsWith(COMMAND_PREFIX)) {
@@ -146,6 +148,7 @@ public class CommandManager implements Listener {
 
     @EventHandler
     public void onOfficialGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         String userInput = event.getMessage().getContent().trim();
 
         if (!userInput.startsWith(COMMAND_PREFIX)) {
@@ -169,6 +172,7 @@ public class CommandManager implements Listener {
 
     @EventHandler
     public void onOfficialGroupMessageCreate(OfficialGroupMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         String userInput = event.getMessage().getContent().trim();
 
         if (!userInput.startsWith(COMMAND_PREFIX)) {

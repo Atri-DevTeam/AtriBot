@@ -10,6 +10,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.test
  */
-public class Test implements CommandExecutor {
+public class Test implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;

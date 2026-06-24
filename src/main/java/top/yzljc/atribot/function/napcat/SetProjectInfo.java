@@ -19,7 +19,7 @@ public class SetProjectInfo {
     private static final Logger log = LoggerFactory.getLogger(SetProjectInfo.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static void setInfo(){
+    public static void setInfo() {
         String commitId = GetProjectInfo.getCommitId();
         String branch = GetProjectInfo.getBranch();
         String buildTime = GetProjectInfo.getBuildTime();
@@ -27,10 +27,10 @@ public class SetProjectInfo {
         int friendCount = FriendList.getFriendCount();
         int groupCount = GroupInformation.fetchAllGroupIds().size();
         Map<String, Object> projectInfo = new HashMap<>();
-        projectInfo.put("nickname","ATRI - " + commitId + " - /help查看帮助");
-        projectInfo.put("personal_note","Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version);
-        projectInfo.put("sex","female");
-        PostRequest.sendPost(RequestType.SET_PROFILE,projectInfo);
+        projectInfo.put("nickname", "亚托莉喵");
+        projectInfo.put("personal_note", "Build Time: " + buildTime + " | " + commitId + "/" + branch + " " + version);
+        projectInfo.put("sex", "female");
+        PostRequest.sendPost(RequestType.SET_PROFILE, projectInfo);
         writeProjectInfoJson(commitId, branch, buildTime, version, friendCount, groupCount);
         log.info("已更新项目标签信息: {} / {} / {} / {}", commitId, branch, buildTime, version);
     }

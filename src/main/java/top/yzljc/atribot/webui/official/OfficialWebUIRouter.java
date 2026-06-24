@@ -66,8 +66,14 @@ public class OfficialWebUIRouter {
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", OfficialWebUIController::toggleC2CUserPermission);
         server.get("/webui/api/c2c/{userOpenId}/messages", OfficialWebUIController::fetchC2CMessages);
         server.post("/webui/api/c2c/send", OfficialWebUIController::sendC2CMessage);
+        server.post("/webui/api/c2c/recall", OfficialWebUIController::recallC2CMessage);
 
         server.get("/webui/api/events", SseBroadcaster::handle);
+
+        // 反馈管理
+        server.get("/webui/api/feedback/list", OfficialWebUIController::listFeedback);
+        server.get("/webui/api/feedback/count", OfficialWebUIController::countFeedback);
+        server.post("/webui/api/feedback/reply", OfficialWebUIController::replyFeedback);
 
         server.error(404, OfficialWebUIRouter::spaFallback);
     }

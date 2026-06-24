@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
@@ -42,6 +43,7 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.test.Test;
 import top.yzljc.atribot.utils.debug.DebugCommand;
+import top.yzljc.atribot.utils.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
@@ -101,7 +103,8 @@ public class Atri {
             cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
             ));
-        }).start(config.getListenPort());
+            cfg.http.maxRequestSize = 10_000_000;
+        }).start(qqBotPort);
 
         server.before("/official-webui/*", ctx -> {
             log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
@@ -145,7 +148,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new ElectricCheck());
 //        EventManager.getInstance().registerEvents(new Scratch());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
-//        EventManager.getInstance().registerEvents(new Test());
+        EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
@@ -155,6 +158,8 @@ public class Atri {
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
         EventManager.getInstance().registerEvents(new SignCommand());
+        UpdatePushCommand updatePushCommand = new UpdatePushCommand();
+        EventManager.getInstance().registerEvents(updatePushCommand);
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -209,6 +214,7 @@ public class Atri {
         CommandManager.getCommand("skb").setExecutor(new MusicCommand());
         CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
+        CommandManager.getCommand("update").setExecutor(updatePushCommand);
 
         this.scheduler = new Scheduler();
         try {
@@ -229,6 +235,7 @@ public class Atri {
         OfficialUsers.init();
         TufeElecRepository.init();
         SignRepository.init();
+        FeedbackRepository.init();
 
         RunScheduleTask.runAllTasks();
 

@@ -28,11 +28,9 @@ import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.request.HttpService;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -375,7 +373,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
                         if (!OfficialGroups.isAllowedFullMessages(session.groupOpenId)) {
-                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息 群号")).append(" 授权后可省去`/cl`前缀，直接解析链接");
+                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息")).append(" 授权后可省去`/cl`前缀，直接解析链接");
                         }
                         GroupChat.replyMessage(session.groupOpenId, session.userOpenId,
                                 session.messageOpenId,

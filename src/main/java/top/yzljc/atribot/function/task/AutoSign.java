@@ -60,7 +60,7 @@ public class AutoSign implements CommandExecutor {
         PostRequest.sendSimplePost(RequestType.SEND_SIGN, "group_id", groupId);
     }
 
-    @Schedule(time = "00:00:01", type = ScheduleType.DAILY)
+    @Schedule(time = "00:00:00", type = ScheduleType.DAILY)
     public static void processAutoSign() {
         ThreadManager.execute(AutoSign::signAllGroups);
     }

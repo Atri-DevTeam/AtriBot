@@ -46,6 +46,8 @@ public class BotEvents {
 
             if (mentionsNode.isArray()) {
                 for (JsonNode mentionNode : mentionsNode) {
+                    var scope = mentionNode.path("scope").asText("single");
+                    if (scope.equals("all")) continue;
                     var user_isBot = mentionNode.path("bot").asBoolean(false);
                     var user_id = mentionNode.path("member_openid").asText(null);
                     var user_username = mentionNode.path("username").asText(null);

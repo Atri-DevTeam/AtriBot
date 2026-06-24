@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.utils.FormatTools;
 
 public class CheckBilibili implements Listener {
 
@@ -119,6 +120,7 @@ public class CheckBilibili implements Listener {
                 String upStats = fetchUploaderStats(mid);
 
                 long duration = data.path("duration").asLong();
+                String time = FormatTools.formatTimestamp(data.path("pubdate").asText());
                 String link = "https://www.bilibili.com/video/" + bvid;
 
                 String sb = "视频标题：" + title + "\n" +
@@ -128,6 +130,7 @@ public class CheckBilibili implements Listener {
                         "收藏次数：" + formatNum(stat.path("favorite").asLong()) + "\n" +
                         "弹幕量：" + formatNum(stat.path("danmaku").asLong()) + "\n" +
                         "视频时长：" + formatDuration(duration) + "\n" +
+                        "发布时间：" + time + "\n" +
                         "原始链接：" + link;
 
                 List<MessageSegment> nodes = new ArrayList<>();

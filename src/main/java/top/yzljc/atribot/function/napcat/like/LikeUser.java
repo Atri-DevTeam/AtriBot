@@ -6,12 +6,14 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.napcat.UserInformation;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atribot.event.events.NapcatPrivateMessageEvent;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -96,6 +98,18 @@ public class LikeUser implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPrivateMessage(NapcatPrivateMessageEvent event) {
+        String msg = event.getMessage().getContent().trim();
+        String userId = event.getUser().getUserId();
+        boolean isFriend = FriendList.isFriend(userId);
+        for (var k : Config.getInstance().getKeywordsLikeUser()) {
+            if (msg.equalsIgnoreCase(k)) {
+                Atri.getInstance().getScheduler().runTaskAsynchronously(() -> sendLike(userId, isFriend));
+            }
+        }
+    }
+
     private static String sendLike(String userId, String groupId, boolean isFriend, boolean isAuto) {
         String feedback;
 
@@ -110,6 +124,22 @@ public class LikeUser implements Listener {
             String messageId = GroupMessage.chatMessage(groupId, feedback);
             Atri.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(messageId), 15 * 1000L);
         }
+        BotRuntimeData.callLikeUser();
+        return feedback;
+    }
+
+    private static String sendLike(String userId, boolean isFriend) {
+        String feedback;
+
+        if (isFriend) {
+            LikeStatus status = postLike(userId);
+            feedback = generalResult(userId, status);
+        } else {
+            feedback = unfriendLike(userId);
+        }
+        String messageId = PrivateMessage.chatMessage(userId, feedback);
+        Atri.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(messageId), 15 * 1000L);
+
         BotRuntimeData.callLikeUser();
         return feedback;
     }

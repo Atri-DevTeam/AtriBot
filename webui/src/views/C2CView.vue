@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          反馈管理
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -145,6 +151,8 @@
             <div class="composer-image-opts" v-if="msgType === 'image'">
               <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
               <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
+              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <label @click="$refs.fileInputRef.click()">上传</label>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
@@ -155,6 +163,9 @@
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
+            <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
+                    class="ctx-recall"
+                    @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
           </div>
         </section>
 
@@ -229,6 +240,7 @@ const sidebarOpen = ref(false)
 const showInspector = ref(false)
 const replyTo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
+const recalledIds = reactive({})
 const msgType = ref('text')
 const imageType = ref('url')
 const pastePreview = ref(null)
@@ -450,7 +462,7 @@ async function sendMessage() {
     if (msgType.value === 'image') { body.imageType = imageType.value; body.imageValue = draft.value.trim() }
     if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
     await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
-    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送。'
+    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -460,12 +472,25 @@ function renderContent(message) {
   let text = message.content || ''
   text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
 }
 
 function renderMd(text) {
   if (!text) return ''
-  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  let html = text
+  // 图片 ![alt #Wpx #Hpx](url) — 在 HTML 转义前处理
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
+    let style = 'max-width:100%;max-height:320px'
+    let cleanAlt = alt
+    if (m) {
+      style += `;width:${m[1]}px;height:${m[2]}px`
+      cleanAlt = alt.replace(m[0], '').trim()
+    }
+    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
+  })
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
   html = html.replace(/`(.+?)`/g, '<code>$1</code>')
@@ -488,6 +513,20 @@ function onPaste(e) {
   }
 }
 
+function onFilePicked(e) {
+  const file = e.target.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const b64 = reader.result.split(',')[1]
+    draft.value = b64
+    imageType.value = 'base64'
+    pastePreview.value = reader.result
+  }
+  reader.readAsDataURL(file)
+  e.target.value = ''
+}
+
 function onContextMenu(e, message) { ctxMenu.visible = true; ctxMenu.x = e.clientX; ctxMenu.y = e.clientY; ctxMenu.message = message }
 
 async function copyText(text) {
@@ -496,6 +535,19 @@ async function copyText(text) {
 
 function startReply(message) {
   replyTo.value = message
+}
+
+async function recallMsg(message) {
+  try {
+    await api('/c2c/recall', {
+      method: 'POST',
+      body: JSON.stringify({ userOpenId: message.unionOpenId, messageId: message.messageOpenId })
+    })
+    recalledIds[message.messageOpenId] = true
+    notice.value = '消息已撤回'
+  } catch (e) {
+    notice.value = e.message
+  }
 }
 
 function atUser(message) {

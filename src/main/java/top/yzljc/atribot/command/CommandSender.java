@@ -66,10 +66,10 @@ public class CommandSender extends User {
     public String sendMessage(String text) {
         switch (platform) {
             case OFFICIAL_GROUP, NAPCAT_GROUP -> {
-                return sendMessage(this.groupId, this.messageId, text);
+                return super.sendMessage(this.groupId, this.messageId, text);
             }
             case OFFICIAL_C2C -> {
-                return sendMessage(this.messageId, text);
+                return super.sendMessage(this.messageId, text);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -79,10 +79,10 @@ public class CommandSender extends User {
     public String sendMessage(Markdown markdown) {
         switch (platform) {
             case OFFICIAL_GROUP -> {
-                return sendMessage(this.groupId, this.messageId, markdown);
+                return super.sendMessage(this.groupId, this.messageId, markdown);
             }
             case OFFICIAL_C2C -> {
-                return sendMessage(this.messageId, markdown);
+                return super.sendMessage(this.messageId, markdown);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -92,10 +92,10 @@ public class CommandSender extends User {
     public String sendMessage(Markdown markdown, Object buttons) {
         switch (platform) {
             case OFFICIAL_GROUP -> {
-                return sendMessage(this.groupId, this.messageId, markdown, buttons);
+                return super.sendMessage(this.groupId, this.messageId, markdown, buttons);
             }
             case OFFICIAL_C2C -> {
-                return sendMessage(this.messageId, markdown, buttons);
+                return super.sendMessage(this.messageId, markdown, buttons);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -105,10 +105,10 @@ public class CommandSender extends User {
     public String sendMessage(String data, ImageType type) {
         switch (platform) {
             case OFFICIAL_GROUP -> {
-                return sendMessage(this.groupId, this.messageId, data, type);
+                return super.sendMessage(this.groupId, this.messageId, data, type);
             }
             case OFFICIAL_C2C -> {
-                return sendMessage(this.messageId, data, type);
+                return super.sendMessage(this.messageId, data, type);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -117,8 +117,8 @@ public class CommandSender extends User {
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String data, MessageUtils.ImageType type) {
         switch (platform) {
-            case NAPCAT_GROUP, NAPCAT_C2C -> {
-                return sendMessage(this.groupId, this.messageId, data, type);
+            case NAPCAT_GROUP, NAPCAT_PRIVATE -> {
+                return super.sendMessage(this.groupId, this.messageId, data, type);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -127,8 +127,8 @@ public class CommandSender extends User {
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text, String data, MessageUtils.ImageType type) {
         switch (platform) {
-            case NAPCAT_GROUP, NAPCAT_C2C -> {
-                return sendMessage(this.groupId, this.messageId, text, data, type);
+            case NAPCAT_GROUP, NAPCAT_PRIVATE -> {
+                return super.sendMessage(this.groupId, this.messageId, text, data, type);
             }
         }
         throw new UnsupportedOperationException("Unsupported platform: " + platform);
@@ -137,9 +137,9 @@ public class CommandSender extends User {
     @SuppressWarnings("UnusedReturnValue")
     public void recall(String messageId) {
         switch (platform) {
-            case OFFICIAL_GROUP -> recall(this.groupId, messageId);
-            case OFFICIAL_C2C -> recall(messageId);
-            case NAPCAT_GROUP -> recall(this.groupId, messageId);
+            case OFFICIAL_GROUP -> super.recall(this.groupId, messageId);
+            case OFFICIAL_C2C -> super.recall(messageId);
+            case NAPCAT_GROUP -> super.recall(this.groupId, messageId);
             default -> throw new UnsupportedOperationException("Unsupported platform: " + platform);
         }
     }

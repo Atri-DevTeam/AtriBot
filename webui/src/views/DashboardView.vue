@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          反馈管理
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -157,7 +163,7 @@
                       <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
                     </svg>
                   </template>
-                  <span class="msg-uid" v-if="message.unionOpenId">{{ message.unionOpenId }}</span>
+                  <span class="msg-uid" v-if="message.unionOpenId">{{ message.unionOpenId }}<template v-if="!isMe(message) && message.memberRole"> / {{ message.memberRole }}</template></span>
                 </div>
                 <div class="bubble" :class="{ recalled: recalledIds[message.messageOpenId] }"
                      @contextmenu.prevent.stop="onContextMenu($event, message)">
@@ -212,6 +218,8 @@
             <div class="composer-image-opts" v-if="msgType === 'image'">
               <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
               <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
+              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <label @click="$refs.fileInputRef.click()">上传</label>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
@@ -229,7 +237,7 @@
                     @click="openPermModal(ctxMenu.message)">更改权限组</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
-            <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
+            <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
                     @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
           </div>
@@ -244,6 +252,15 @@
               <button v-for="r in roles" :key="r" :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
                       @click="pendingPermRole = r">{{ r }}</button>
             </div>
+            <h4 style="margin:10px 0 4px">权限节点</h4>
+            <div v-for="p in pendingPermNodes" :key="p" class="func-row">
+              <span class="func-name">{{ p }}</span>
+              <button class="perm-del" @click="removePermNode(p)">×</button>
+            </div>
+            <form class="perm-add" @submit.prevent="addPermNode(newPermNode)">
+              <input v-model="newPermNode" placeholder="新权限节点" />
+              <button class="primary-button" :disabled="!newPermNode.trim()">添加</button>
+            </form>
             <div class="perm-modal-actions">
               <button class="ghost-button" @click="showPermModal = false">关闭</button>
               <button class="primary-button" @click="confirmPermRole(); showPermModal = false">确认</button>
@@ -323,7 +340,7 @@ const imageType = ref('url')
 
 watch(msgType, () => { pastePreview.value = null })
 const totalMessages = ref(0)
-const notice = ref('等待操作。')
+const notice = ref('等待操作')
 const appId = ref('')
 const botOpenId = ref('')
 const botName = ref('AtriBot')
@@ -340,6 +357,8 @@ const showInspector = ref(false)
 const showPermModal = ref(false)
 const permTarget = ref('')
 const pendingPermRole = ref('')
+const pendingPermNodes = ref([])
+const newPermNode = ref('')
 const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
 const attachFailed = reactive({})
 const previewImg = ref(null)
@@ -424,6 +443,20 @@ function onPaste(e) {
   }
 }
 
+function onFilePicked(e) {
+  const file = e.target.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const b64 = reader.result.split(',')[1]
+    draft.value = b64
+    imageType.value = 'base64'
+    pastePreview.value = reader.result
+  }
+  reader.readAsDataURL(file)
+  e.target.value = ''
+}
+
 async function toggleStatus(type) {
   if (!selectedGroupId.value) return
   const keyMap = { whitelist: 'whitelist', blacklist: 'blacklisted', allowedActive: 'allowedActive' }
@@ -480,7 +513,9 @@ async function openPermModal(message) {
   try {
     const data = await api(`/c2c/${encodeURIComponent(message.unionOpenId)}/permissions`)
     pendingPermRole.value = data?.role || 'USER'
-  } catch { pendingPermRole.value = 'USER' }
+    pendingPermNodes.value = [...(data?.permissions || [])]
+  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = [] }
+  newPermNode.value = ''
   showPermModal.value = true
 }
 
@@ -488,6 +523,23 @@ async function confirmPermRole() {
   if (!permTarget.value) return
   try {
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
+  } catch (e) { notice.value = e.message }
+}
+
+async function addPermNode(perm) {
+  if (!permTarget.value || !perm?.trim()) return
+  try {
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/permissions/${encodeURIComponent(perm.trim())}?enabled=true`, { method: 'POST' })
+    pendingPermNodes.value.push(perm.trim())
+    newPermNode.value = ''
+  } catch (e) { notice.value = e.message }
+}
+
+async function removePermNode(perm) {
+  if (!permTarget.value) return
+  try {
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/permissions/${encodeURIComponent(perm)}?enabled=false`, { method: 'POST' })
+    pendingPermNodes.value = pendingPermNodes.value.filter(p => p !== perm)
   } catch (e) { notice.value = e.message }
 }
 
@@ -515,7 +567,7 @@ async function recallMsg(message) {
       body: JSON.stringify({groupOpenId: message.groupOpenId, messageId: message.messageOpenId})
     })
     recalledIds[message.messageOpenId] = true
-    notice.value = '消息已撤回。'
+    notice.value = '消息已撤回'
   } catch (e) {
     notice.value = e.message
   }
@@ -582,6 +634,7 @@ function renderContent(message) {
   let text = message.content || ''
   text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   if (message.eventType === 'GROUP_MESSAGE_CREATE' && message.mentions) {
     try {
       const mentions = typeof message.mentions === 'string' ? JSON.parse(message.mentions) : message.mentions
@@ -631,7 +684,16 @@ function renderMd(text) {
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
   // 图片 ![alt #Wpx #Hpx](url)
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">')
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
+    let style = 'max-width:100%;max-height:320px'
+    let cleanAlt = alt
+    if (m) {
+      style += `;width:${m[1]}px;height:${m[2]}px`
+      cleanAlt = alt.replace(m[0], '').trim()
+    }
+    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
+  })
 
   // 链接 [text](url) 和 <url>
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
@@ -665,7 +727,8 @@ function renderMd(text) {
   html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>')
   html = html.replace(/`(.+?)`/g, '<code>$1</code>')
 
-  // 换行
+  // 换行：连续 \n 合并为一个段落间距
+  html = html.replace(/\n{2,}/g, '\n')
   html = html.replace(/\n/g, '<br>')
 
   // 还原代码块
@@ -796,7 +859,7 @@ async function sendMessage() {
     draft.value = ''
     pastePreview.value = null
     replyTo.value = null
-    notice.value = '消息已发送。'
+    notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (error) {
     notice.value = error.message

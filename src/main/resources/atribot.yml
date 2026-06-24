@@ -161,3 +161,9 @@ commands:
     usage: /boop @<目标用户>
     aliases:
       - boo
+  update:
+    description: 设置更新推送内容
+    usage: /updatepush <set|clear|status> <内容>
+    aliases:
+      - 更新推送
+      - 更新通知
