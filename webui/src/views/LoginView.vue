@@ -35,7 +35,6 @@ const atriImg = import.meta.env.BASE_URL + 'img/atri-main.png'
 const tokenInput = ref('')
 const loading = ref(false)
 const notice = ref('')
-const botName = ref('AtriBot')
 
 async function login() {
   const token = tokenInput.value.trim()
@@ -54,14 +53,14 @@ async function login() {
       return
     }
     if (challengeRes.status !== 200) {
-      notice.value = 'Token 未配置或服务不可用'
+      notice.value = 'WebUI 未配置或服务不可用'
       return
     }
 
     const challengePayload = await challengeRes.json()
     const nonce = challengePayload.data?.nonce
     if (!nonce) {
-      notice.value = '认证挑战无效'
+      notice.value = '认证无效'
       return
     }
 

@@ -1218,8 +1218,8 @@ button:disabled {
   .workspace { padding: 12px; }
 
   .topbar {
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    gap: 6px;
     min-height: auto;
     margin-bottom: 10px;
   }
@@ -1233,8 +1233,6 @@ button:disabled {
   .chat-panel {
     min-height: 0;
   }
-
-  .msg-uid { display: none; }
 
   .bubble {
     max-width: min(520px, 88%);
@@ -1297,19 +1295,19 @@ button:disabled {
   }
 
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
   .topbar-left {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    width: 100%;
+    display: contents;
   }
 
-  .topbar h2 { font-size: 15px; }
+  .topbar h2 {
+    font-size: 15px;
+    width: calc(100% - 38px);
+    text-align: center;
+  }
 
   .chat-head {
     padding: 8px 10px;
@@ -1331,7 +1329,6 @@ button:disabled {
   }
 
   .msg-name { font-size: 12px; }
-  .msg-uid { display: none; }
   .msg-time { font-size: 10px; }
 
   .bubble {

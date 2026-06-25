@@ -485,7 +485,7 @@ function renderMd(text) {
     let style = 'max-width:100%;max-height:320px'
     let cleanAlt = alt
     if (m) {
-      style += `;width:${m[1]}px;height:${m[2]}px`
+      style += `;width:${m[1]}px;height:auto`
       cleanAlt = alt.replace(m[0], '').trim()
     }
     return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
