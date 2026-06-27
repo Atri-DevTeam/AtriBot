@@ -1,6 +1,6 @@
 name: AtriBot
-version: 3.1.0-Release
-main: top.yzljc.qqbot.AtriBot
+version: 3.1.1-Release
+main: top.yzljc.atribot.Atri
 
 commands:
   newyear:
