@@ -6,7 +6,7 @@ plugins {
     `java-library`
     `maven-publish`
     application
-    id("com.gradleup.shadow") version "9.4.2"
+    id("com.gradleup.shadow") version "9.4.3"
 }
 
 group = "top.yzljc"
@@ -37,7 +37,7 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
-    api("ch.qos.logback:logback-classic:1.5.34")
+    api("ch.qos.logback:logback-classic:1.5.37")
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
