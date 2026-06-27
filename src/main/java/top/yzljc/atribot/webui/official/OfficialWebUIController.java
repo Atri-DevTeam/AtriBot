@@ -57,11 +57,19 @@ public class OfficialWebUIController {
         String messageId;
 
         try {
-            String replyId = dto.getReplyMessageId();
-            if (replyId != null && !replyId.isBlank()) {
-                // 被动回复：使用 replyMessage 方法
+            String refId = dto.getRefMessageId();
+            if (refId != null && !refId.isBlank()) {
+                // 引用回复：发送带 message_reference 的主动消息
                 if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
-                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent());
+                messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
+                if (messageId != null) {
+                    ChatContentRecord.patchRefDisplayData(messageId,
+                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments());
+                }
+            } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {
+                // 被动回复
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
@@ -242,6 +250,10 @@ public class OfficialWebUIController {
         private String imageType; // "url" | "base64" (仅 image 时)
         private String imageValue;// 图片 URL 或 base64 (仅 image 时)
         private String replyMessageId;
+        private String refMessageId;
+        private String refAuthor;
+        private String refContent;
+        private String refAttachments;
     }
 
     // ═══════════════ C2C 私聊 ═══════════════
@@ -268,7 +280,7 @@ public class OfficialWebUIController {
     public static void setGroupAllowedActive(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
-        OfficialGroups.setAllowedFullMessage(groupOpenId, enabled);
+        OfficialGroups.setAllowedActiveMessage(groupOpenId, enabled);
         ctx.json(Result.success("ok"));
     }
 

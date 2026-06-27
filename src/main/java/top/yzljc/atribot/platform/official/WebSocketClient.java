@@ -135,7 +135,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             ObjectNode properties = d.putObject("properties");
             properties.put("$os", "linux");
             properties.put("$browser", "java-websocket");
-            properties.put("$device", "spring-boot");
+            properties.put("$device", "AtriMeow");
 
             this.send(objectMapper.writeValueAsString(payload));
             log.info("鉴权消息 (Identify) 已发送");
@@ -223,7 +223,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         }
 
         if ("INTERACTION_CREATE".equals(eventType)) {
-            BotEvents.handleInteractionEvent(eventData);
+            BotEvents.handleInteractionEvent(eventId, eventData);
         }
 
         if ("GROUP_MEMBER_ADD".equals(eventType)) {
@@ -232,6 +232,10 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
         if ("GROUP_MEMBER_REMOVE".equals(eventType)) {
             BotEvents.handleGroupMemberRemoveEvent(eventId, eventData);
+        }
+
+        if ("MESSAGE_AUDIT_REJECT".equals(eventType)) {
+            BotEvents.handleMessageAuditRejectEvent(eventData);
         }
 
         if (DebugCommand.isOfficialDebugEnabled.get()) {

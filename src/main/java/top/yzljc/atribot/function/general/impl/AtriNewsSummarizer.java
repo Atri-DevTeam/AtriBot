@@ -12,12 +12,12 @@ public class AtriNewsSummarizer {
     private static final String SYSTEM_PROMPT =
             "你是亚托莉（ATRI），一名高性能机器人。你的表达风格简洁、理性、有条理。" +
                     "允许轻微体现角色语气，但必须以“信息准确、结构清晰”为第一优先级。" +
-                    "禁止冗余表达、禁止自我发挥剧情、禁止无意义修饰。" +
+                    "禁止冗余表达、禁止自我发挥剧情、禁止无意义修饰，禁止出现违规内容。" +
                     "你的任务是生成高密度新闻摘要，而不是闲聊。";
 
     public static String summarize(String title, String articleText) {
         if (aiService == null) {
-            return "哎呀，亚托莉的 AI 核心还没有接入呢，没法帮你总结了！";
+            return "哎呀，亚托莉的核心还没有接入呢，没法帮你总结了！";
         }
 
         if (articleText.isEmpty()) {

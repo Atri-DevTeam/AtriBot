@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,6 +57,15 @@ public class HypixelAnnouncements implements CommandExecutor {
 
     private static final String HYPIXEL_ANNOUNCEMENT_URL = "https://hypixel.net/forums/news-and-announcements.4/index.rss";
 
+    private static final String HYPIXEL_SKYBLOCK_PATCH_NOTES_URL = "https://hypixel.net/forums/skyblock-patch-notes.158/index.rss";
+
+    private record FeedConfig(String url, String label) {}
+
+    private static final List<FeedConfig> FEEDS = List.of(
+            new FeedConfig(HYPIXEL_ANNOUNCEMENT_URL, "Hypixel"),
+            new FeedConfig(HYPIXEL_SKYBLOCK_PATCH_NOTES_URL, "Hypixel Skyblock")
+    );
+
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     private static final String HISTORY_FILE = Properties.HYPIXEL_ANNOUNCEMENTS;
@@ -87,18 +97,20 @@ public class HypixelAnnouncements implements CommandExecutor {
 
         for (Announcement a : announcements) {
 
-            ImageDTO banner = PreImageGenerate.dump(a.headerImage);
+            ImageDTO banner = a.headerImage() != null ? PreImageGenerate.dump(a.headerImage()) : null;
+
+            String headerText = a.source() + " 发布了新的公告";
 
             Markdown md = TC.md(
-                    Markdown.img(HYPIXEL_HEADER_URL, 24, 24) + "**Hypixel发布了新的公告**\n\n" +
-                            "标题: `" + a.title() + "`\n\n" +
-                            "作者: `" + a.author() + "`\n\n" +
-                            "时间: `" + a.publishTime() + "`\n\n" +
-                            (a.intro() != null && !a.intro().isBlank() ? ("简介: `" + a.intro()) + "`" : "") +
+                    Markdown.img(HYPIXEL_HEADER_URL, 24, 24) + "**" + headerText + "**\n\n" +
+                            "标题: " + a.title() + "\n\n" +
+                            "作者: " + a.author() + "\n\n" +
+                            "时间: " + a.publishTime() + "\n\n" +
+                            (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 
-            String text = "Hypixel 发布了新的公告！\n" +
+            String text = headerText + "！\n" +
                     "标题: " + a.title() + "\n" +
                     "作者: " + a.author() + "\n" +
                     "时间: " + a.publishTime() + "\n" +
@@ -117,6 +129,8 @@ public class HypixelAnnouncements implements CommandExecutor {
                     GroupMessage.chatMessage(gid, text);
                 }
             }
+//            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), text.trim());
+//            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), md);
         }
         return true;
     }
@@ -124,9 +138,21 @@ public class HypixelAnnouncements implements CommandExecutor {
     public static List<Announcement> fetchAnnouncements() {
         List<Announcement> announcements = new ArrayList<>();
 
+        for (FeedConfig feed : FEEDS) {
+            announcements.addAll(fetchAnnouncementsFromUrl(feed));
+        }
+
+        return announcements;
+    }
+
+    private static List<Announcement> fetchAnnouncementsFromUrl(FeedConfig feed) {
+        String feedUrl = feed.url();
+        String source = feed.label();
+        List<Announcement> announcements = new ArrayList<>();
+
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(HYPIXEL_ANNOUNCEMENT_URL))
+                    .uri(URI.create(feedUrl))
                     .header("User-Agent", USER_AGENT)
                     .header("Accept", "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8")
                     .timeout(Duration.ofSeconds(30))
@@ -138,14 +164,14 @@ public class HypixelAnnouncements implements CommandExecutor {
             int statusCode = response.statusCode();
 
             if (statusCode < 200 || statusCode >= 300) {
-                log.warn("Failed to fetch Hypixel RSS feed, HTTP {}", statusCode);
+                log.warn("Failed to fetch Hypixel RSS feed from {}, HTTP {}", feedUrl, statusCode);
                 return announcements;
             }
 
             String rssXml = response.body();
 
             if (rssXml == null || rssXml.isBlank()) {
-                log.warn("Failed to fetch Hypixel RSS feed, empty response");
+                log.warn("Failed to fetch Hypixel RSS feed from {}, empty response", feedUrl);
                 return announcements;
             }
 
@@ -158,12 +184,12 @@ public class HypixelAnnouncements implements CommandExecutor {
             }
 
             if (items.isEmpty()) {
-                log.warn("No RSS items found. Response preview: {}", preview(rssXml, 300));
+                log.warn("No RSS items found from {}. Response preview: {}", feedUrl, preview(rssXml, 300));
                 return announcements;
             }
 
             for (Element item : items) {
-                Announcement announcement = parseAnnouncementItem(item);
+                Announcement announcement = parseAnnouncementItem(item, source);
 
                 if (announcement == null) {
                     continue;
@@ -172,21 +198,21 @@ public class HypixelAnnouncements implements CommandExecutor {
                 announcements.add(announcement);
             }
 
-            log.info("Fetched {} announcements from Hypixel RSS", announcements.size());
+            log.info("Fetched {} announcements from {}", announcements.size(), feedUrl);
 
         } catch (IOException e) {
-            log.error("Failed to fetch Hypixel announcements", e);
+            log.error("Failed to fetch Hypixel announcements from {}", feedUrl, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Fetching Hypixel announcements was interrupted", e);
+            log.error("Fetching Hypixel announcements from {} was interrupted", feedUrl, e);
         } catch (Exception e) {
-            log.error("Failed to parse Hypixel announcements", e);
+            log.error("Failed to parse Hypixel announcements from {}", feedUrl, e);
         }
 
         return announcements;
     }
 
-    private static Announcement parseAnnouncementItem(Element item) {
+    private static Announcement parseAnnouncementItem(Element item, String source) {
         String title = directChildText(item, "title");
         String link = directChildText(item, "link");
         String guid = directChildText(item, "guid");
@@ -223,7 +249,7 @@ public class HypixelAnnouncements implements CommandExecutor {
             intro = parsedContent.intro();
         }
 
-        return new Announcement(title, author, publishTime, link, guid, headerImage, intro);
+        return new Announcement(title, author, publishTime, link, guid, headerImage, intro, source);
     }
 
     private static ParsedContent parseContentEncoded(String contentEncoded) {
@@ -502,6 +528,7 @@ public class HypixelAnnouncements implements CommandExecutor {
      * @param guid        RSS 唯一标识
      * @param headerImage 头图
      * @param intro       简介
+     * @param source      来源（如 Hypixel、Hypixel Skyblock）
      */
     public record Announcement(
             String title,
@@ -510,7 +537,8 @@ public class HypixelAnnouncements implements CommandExecutor {
             String link,
             String guid,
             String headerImage,
-            String intro
+            String intro,
+            String source
     ) {
     }
 }

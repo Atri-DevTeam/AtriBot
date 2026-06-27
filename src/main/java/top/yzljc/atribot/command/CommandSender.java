@@ -6,6 +6,7 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
@@ -23,24 +24,31 @@ public class CommandSender extends User {
     private final String groupId;
     private final String messageId;
     private final List<User> mentions;
+    private final EventType eventType;
 
-    public CommandSender(Platform platform, boolean bot, String userId, String username, String groupId, String messageId, JsonNode data, List<User> mentions, PlatformRole role) {
+    public CommandSender(Platform platform, boolean bot, String userId, String username, String groupId, String messageId,
+                         JsonNode data, List<User> mentions, PlatformRole role, EventType eventType) {
         super(platform, bot, userId, username, role, data);
         this.groupId = groupId;
         this.messageId = messageId;
         this.mentions = mentions;
+        this.eventType = eventType;
     }
 
     public String getGroupId() {
-        return groupId;
+        return this.groupId;
     }
 
     public String getMessageId() {
-        return messageId;
+        return this.messageId;
     }
 
     public List<User> getMentions() {
-        return mentions;
+        return this.mentions;
+    }
+
+    public EventType getEventType() {
+        return this.eventType;
     }
 
     public boolean hasPermission() {

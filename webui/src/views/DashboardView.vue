@@ -57,67 +57,46 @@
             </svg>
           </button>
           <h2>群聊消息</h2>
-          <!-- 下拉式群选择器 -->
-          <div class="group-picker">
-            <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; groupSearch = ''">
-              <span>{{ selectedGroupId || '选择群聊' }}</span>
-              <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-            </button>
-            <div v-if="dropdownOpen" class="dropdown-menu">
-              <input
-                v-model="groupSearch"
-                class="dropdown-search"
-                placeholder="搜索群聊 openId…"
-                @click.stop
-              />
-              <button
-                v-for="group in filteredGroups"
-                :key="group.groupOpenId"
-                class="dropdown-item"
-                :class="{ active: group.groupOpenId === selectedGroupId }"
-                @click="selectGroup(group.groupOpenId); dropdownOpen = false"
-              >
-                <span class="item-id">{{ group.groupOpenId }}</span>
-                <span class="item-badges">
-                  <!-- 主动推送 -->
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
-                    <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
-                    <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <template v-else>
-                      <line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/>
-                      <line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/>
-                    </template>
-                  </svg>
-                  <!-- 白名单 -->
-                  <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'" :title="group.whitelist ? '白名单' : '未白名单'"></span>
-                  <!-- 黑名单 -->
-                  <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'" :title="group.blacklisted ? '黑名单' : '未拉黑'"></span>
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
-        <div class="topbar-right">
-          <span class="status-pill">
-            <span class="dot ok"></span>
-            {{ totalMessages }} 条记录
-          </span>
-          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="群信息" aria-label="群信息">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="12" y1="7" x2="12" y2="13"/>
-              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
-            </svg>
-          </button>
-        </div>
+        <span class="status-pill topbar-status"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
       </header>
 
       <section class="content">
         <section class="chat-panel">
           <div class="chat-head">
-            <strong>{{ selectedGroupId || '未选择群聊' }}</strong>
+            <div class="group-picker">
+              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; groupSearch = ''">
+                <span>{{ selectedGroupId || '选择群聊' }}</span>
+                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+              </button>
+              <div v-if="dropdownOpen" class="dropdown-menu">
+                <input v-model="groupSearch" class="dropdown-search" placeholder="搜索群聊 openId…" @click.stop />
+                <button v-for="group in filteredGroups" :key="group.groupOpenId"
+                        class="dropdown-item" :class="{ active: group.groupOpenId === selectedGroupId }"
+                        @click="selectGroup(group.groupOpenId); dropdownOpen = false">
+                  <span class="item-id">{{ group.groupOpenId }}</span>
+                  <span class="item-badges">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
+                      <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
+                      <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      <template v-else><line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/></template>
+                    </svg>
+                    <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'" :title="group.whitelist ? '白名单' : '未白名单'"></span>
+                    <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'" :title="group.blacklisted ? '黑名单' : '未拉黑'"></span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="chat-head-right">
+              <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="群信息" aria-label="群信息">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="7" x2="12" y2="13"/>
+                  <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+              </button>
+            </div>
           </div>
-
           <div class="message-list" ref="messageListRef" @scroll="onScroll">
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
@@ -132,7 +111,7 @@
               class="message"
               :class="{ mine: isMe(message) }"
             >
-              <div class="avatar">
+              <div class="avatar" @click="toggleMsgDetail(message.id)">
                 <img
                   v-show="avatarUrl(message) && !avatarFailed[message.id]"
                   :src="avatarUrl(message)"
@@ -163,16 +142,17 @@
                       <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
                     </svg>
                   </template>
-                  <span class="msg-uid" v-if="message.unionOpenId">{{ message.unionOpenId }}<template v-if="!isMe(message) && message.memberRole"> / {{ message.memberRole }}</template></span>
+                  <span class="msg-uid" :class="{ expanded: expandedIds[message.id] }" v-if="message.unionOpenId">{{ message.unionOpenId }}</span>
+                  <span v-if="!isMe(message) && message.memberRole" class="role-badge" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
                 </div>
                 <div class="bubble" :class="{ recalled: recalledIds[message.messageOpenId] }"
                      @contextmenu.prevent.stop="onContextMenu($event, message)">
                   <pre v-if="recalledIds[message.messageOpenId]">你撤回了一条消息</pre>
                   <template v-else>
                     <div v-if="hasMsgRef(message)" class="msg-ref">
-                      <span class="msg-ref-author">{{ parseMsgRef(message.messageReference).author }}</span>
-                      <div class="msg-ref-content">{{ parseMsgRef(message.messageReference).content }}</div>
-                    </div>
+                    <span class="msg-ref-author">{{ parseMsgRef(message.messageReference).author }}</span>
+                    <div class="msg-ref-content" v-html="renderRefContent(parseMsgRef(message.messageReference))"></div>
+                  </div>
                     <div v-if="message.attachments" class="msg-attach">
                       <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
                         <img
@@ -199,8 +179,8 @@
           </div>
 
             <div v-if="replyTo" class="reply-bar">
-              <span>回复 {{ replyTo.username || '...' }}</span>
-              <button @click="replyTo = null">×</button>
+              <span>{{ refMode ? '引用' : '回复' }} {{ replyTo.username || '...' }}</span>
+              <button @click="replyTo = null; refMode = false">×</button>
             </div>
           <form class="composer" @submit.prevent="sendMessage">
             <div class="composer-type">
@@ -236,6 +216,7 @@
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="openPermModal(ctxMenu.message)">更改权限组</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
+            <button @click="startRefReply(ctxMenu.message); ctxMenu.visible = false">引用回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
             <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
@@ -352,6 +333,7 @@ const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const replyTo = ref(null)
+const refMode = ref(false)
 const funcEntries = ref([])
 const showInspector = ref(false)
 const showPermModal = ref(false)
@@ -360,7 +342,13 @@ const pendingPermRole = ref('')
 const pendingPermNodes = ref([])
 const newPermNode = ref('')
 const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+function roleLabel(r) {
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', MEMBER: '成员', BLACKLIST: '黑名单' }
+  return map[r] || r
+}
 const attachFailed = reactive({})
+const expandedIds = reactive({})
+function toggleMsgDetail(id) { expandedIds[id] = !expandedIds[id] }
 const previewImg = ref(null)
 const pastePreview = ref(null)
 const pageSize = 80
@@ -558,6 +546,12 @@ async function copyText(text) {
 
 function startReply(message) {
   replyTo.value = message
+  refMode.value = false
+}
+
+function startRefReply(message) {
+  replyTo.value = message
+  refMode.value = true
 }
 
 async function recallMsg(message) {
@@ -632,9 +626,10 @@ function hasMsgRef(message) {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  text = text.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
   if (message.eventType === 'GROUP_MESSAGE_CREATE' && message.mentions) {
     try {
       const mentions = typeof message.mentions === 'string' ? JSON.parse(message.mentions) : message.mentions
@@ -650,13 +645,33 @@ function renderContent(message) {
   return text
 }
 
+function renderRefContent(ref) {
+  const parts = []
+  if (ref.content) {
+    let t = ref.content
+    t = t.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
+    t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+    t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+    if (t.trim()) parts.push(renderMd(t))
+  }
+  if (ref.attachments && ref.attachments.length) {
+    for (const a of ref.attachments) {
+      parts.push(`<img src="${a.url}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+    }
+  }
+  if (!parts.length) return '&#8203;'
+  return parts.join('')
+}
+
 function parseMsgRef(raw) {
   try {
     const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!Array.isArray(arr) || !arr[0]) return {}
+    const ref = arr[0]
     return {
-      author: arr[0].author?.username || '',
-      content: arr[0].content || ''
+      author: ref.author?.username || '',
+      content: ref.content || '',
+      attachments: (ref.attachments || []).filter(a => a.url)
     }
   } catch { return {} }
 }
@@ -686,10 +701,10 @@ function renderMd(text) {
   // 图片 ![alt #Wpx #Hpx](url)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
     const m = alt.match(/#(\d+)px\s*#(\d+)px/)
-    let style = 'max-width:100%;max-height:320px'
+    let style = ''
     let cleanAlt = alt
     if (m) {
-      style += `;width:${m[1]}px;height:auto`
+      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
       cleanAlt = alt.replace(m[0], '').trim()
     }
     return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
@@ -850,7 +865,14 @@ async function sendMessage() {
       body.imageValue = draft.value.trim()
     }
     if (replyTo.value) {
-      body.replyMessageId = replyTo.value.messageOpenId
+      if (refMode.value) {
+        body.refMessageId = replyTo.value.refIdx
+        body.refAuthor = replyTo.value.username || ''
+        body.refContent = replyTo.value.content || ''
+        body.refAttachments = replyTo.value.attachments || null
+      } else {
+        body.replyMessageId = replyTo.value.messageOpenId
+      }
     }
     await api('/groups/send', {
       method: 'POST',
@@ -859,6 +881,7 @@ async function sendMessage() {
     draft.value = ''
     pastePreview.value = null
     replyTo.value = null
+    refMode.value = false
     notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (error) {

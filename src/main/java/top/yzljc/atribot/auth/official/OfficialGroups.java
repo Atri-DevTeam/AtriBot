@@ -146,7 +146,7 @@ public class OfficialGroups {
     /**
      * 设置主动推送状态
      */
-    public static boolean setAllowedFullMessage(String groupOpenId, boolean allowedActive) {
+    public static boolean setAllowedActiveMessage(String groupOpenId, boolean allowedActive) {
         GroupData oldData = getData(groupOpenId);
 
         if (GroupRepository.upsertAllowedFullMessage(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
@@ -161,7 +161,7 @@ public class OfficialGroups {
     /**
      * 是否允许主动推送（已缓存，启动时加载）
      */
-    public static boolean isAllowedFullMessages(String groupOpenId) {
+    public static boolean isAllowedActiveMessages(String groupOpenId) {
         return getData(groupOpenId).isAllowedActive();
     }
 

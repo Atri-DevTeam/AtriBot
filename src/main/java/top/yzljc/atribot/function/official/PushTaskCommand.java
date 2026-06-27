@@ -42,7 +42,7 @@ public class PushTaskCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            StringBuilder markdown = new StringBuilder("**📋 推送任务列表**\n\n");
+            StringBuilder markdown = new StringBuilder("**推送任务列表**\n\n");
             for (PushTask task : tasks) {
                 markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(groupOpenId, task), getFunctionDescriptionText(task)));
             }
@@ -74,11 +74,11 @@ public class PushTaskCommand implements CommandExecutor {
                     return true;
                 }
                 case "开启" -> {
-                    sender.sendMessage(task.enable(groupOpenId, sender.getUserId()), TC.keyboard(List.of(List.of(back()))));
+                    task.enable(groupOpenId, sender.getUserId(), sender.getMessageId());
                     return true;
                 }
                 case "关闭" -> {
-                    sender.sendMessage(task.disable(groupOpenId, sender.getUserId()), TC.keyboard(List.of(List.of(back()))));
+                    task.disable(groupOpenId, sender.getUserId(), sender.getMessageId());
                     return true;
                 }
             }
@@ -124,6 +124,6 @@ public class PushTaskCommand implements CommandExecutor {
     }
 
     private static Button back() {
-        return new Button("c3", "返回列表", "/推送任务", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND);
+        return new Button("c3", "返回列表", "/推送任务", true, ButtonStyle.BLUE, ButtonType.COMMAND);
     }
 }

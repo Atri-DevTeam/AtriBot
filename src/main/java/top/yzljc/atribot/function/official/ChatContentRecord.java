@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.List;
 
 @Slf4j
 public class ChatContentRecord implements Listener {
@@ -81,6 +82,7 @@ public class ChatContentRecord implements Listener {
             c2cStmt.execute();
             ensureColumn("official_group_record", "event_type", "VARCHAR(64) NOT NULL DEFAULT 'UNKNOWN' AFTER `sender_is_bot`");
             ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `sender_is_bot`");
+            ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
             dropColumnIfExists(C2C_TABLE, "user_openId");
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
@@ -137,7 +139,8 @@ public class ChatContentRecord implements Listener {
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
                 null,
-                toJson(event.getMessage().getReference())
+                toJson(event.getMessage().getReference()),
+                event.getMessage().getRefIdx()
         );
     }
 
@@ -158,11 +161,68 @@ public class ChatContentRecord implements Listener {
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
                 toJson(event.getMessage().getMentionedUsers()),
-                toJson(event.getMessage().getReference())
+                toJson(event.getMessage().getReference()),
+                event.getMessage().getRefIdx()
         );
     }
 
+    public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments) {
+        if (refAuthor == null && refContent == null) return;
+        try {
+            var refObj = objectMapper.createObjectNode();
+            var authorNode = refObj.putObject("author");
+            authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
+            refObj.put("content", refContent != null ? refContent : "");
+            if (refAttachments != null && !refAttachments.isBlank()) {
+                try { refObj.set("attachments", objectMapper.readTree(refAttachments)); } catch (Exception ignored) {}
+            }
+            String messageReference = objectMapper.writeValueAsString(List.of(refObj));
+            String sql = "UPDATE `" + GROUP_TABLE + "` SET message_reference = ? WHERE message_openId = ?";
+            try (var conn = DatabaseManager.getConnection();
+                 var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, messageReference);
+                stmt.setString(2, messageOpenId);
+                stmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            log.error("更新引用消息展示数据失败, messageOpenId={}", messageOpenId, e);
+        }
+    }
+
     public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId) {
+        recordSentGroupMessage(groupOpenId, request, messageOpenId, null, null, null);
+    }
+
+    public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId,
+                                               String refAuthor, String refContent, String refAttachments) {
+        String refIdx = null;
+        String messageReference = null;
+        if (request.getMessageReference() != null) {
+            try {
+                JsonNode refNode = objectMapper.valueToTree(request.getMessageReference());
+                JsonNode midNode = refNode.get("message_id");
+                if (midNode != null && midNode.isTextual()) {
+                    refIdx = midNode.asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        // 如果前端传了引用消息的展示数据，直接拼成数组格式
+        if (refAuthor != null || refContent != null) {
+            try {
+                var refObj = objectMapper.createObjectNode();
+                var authorNode = refObj.putObject("author");
+                authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
+                refObj.put("content", refContent != null ? refContent : "");
+                if (refAttachments != null && !refAttachments.isBlank()) {
+                    try {
+                        refObj.set("attachments", objectMapper.readTree(refAttachments));
+                    } catch (Exception ignored) {}
+                }
+                messageReference = objectMapper.writeValueAsString(List.of(refObj));
+            } catch (Exception e) {
+                log.error("构建引用消息展示数据失败", e);
+            }
+        }
         recordGroupMessage(
                 groupOpenId,
                 BOT_UNION_OPEN_ID,
@@ -176,7 +236,8 @@ public class ChatContentRecord implements Listener {
                 nowLocalTime(),
                 null,
                 null,
-                null
+                messageReference,
+                refIdx
         );
     }
 
@@ -201,7 +262,7 @@ public class ChatContentRecord implements Listener {
 
         String countSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
         String dataSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
-                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, created_at " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
                 "FROM `" + GROUP_TABLE + "` WHERE group_openId = ? ORDER BY id DESC LIMIT ? OFFSET ?";
 
         long total = 0;
@@ -236,6 +297,7 @@ public class ChatContentRecord implements Listener {
                         rs.getString("attachments"),
                         rs.getString("mentions"),
                         rs.getString("message_reference"),
+                        rs.getString("ref_idx"),
                         rs.getString("created_at")
                 ));
             }
@@ -249,15 +311,15 @@ public class ChatContentRecord implements Listener {
     private static void recordGroupMessage(String groupOpenId, String unionOpenId, String username, String content,
                                            String messageOpenId, boolean senderIsBot, String memberRole,
                                            String source, Integer messageType, String eventTimestamp,
-                                           String attachments, String mentions, String messageReference) {
+                                           String attachments, String mentions, String messageReference, String refIdx) {
         if (isBlank(groupOpenId)) {
             log.warn("跳过官方群消息记录：groupOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
             return;
         }
 
         String sql = "INSERT INTO `" + GROUP_TABLE + "` " +
-                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE content = VALUES(content), username = VALUES(username), event_type = VALUES(event_type)";
 
         try (var conn = DatabaseManager.getConnection();
@@ -279,6 +341,7 @@ public class ChatContentRecord implements Listener {
             stmt.setString(11, emptyToNull(attachments));
             stmt.setString(12, emptyToNull(mentions));
             stmt.setString(13, emptyToNull(messageReference));
+            stmt.setString(14, emptyToNull(refIdx));
             stmt.executeUpdate();
 
             // SSE 实时推送 — 只发刷新信号，前端自己拉数据
@@ -429,7 +492,8 @@ public class ChatContentRecord implements Listener {
                                      boolean senderIsBot, String memberRole,
                                      String eventType,
                                      Integer messageType, String eventTimestamp,
-                                     String attachments, String mentions, String messageReference, String createdAt) {
+                                     String attachments, String mentions, String messageReference,
+                                     String refIdx, String createdAt) {
     }
 
     public record C2CMessageRecord(long id, String unionOpenId, String username,

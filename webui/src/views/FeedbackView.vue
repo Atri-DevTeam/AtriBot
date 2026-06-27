@@ -54,7 +54,7 @@
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <h2>反馈管理</h2>
+          <h2 class="feedback-title">反馈管理</h2>
           <div class="feedback-tabs">
             <button :class="{ active: filter === 'unreplied' }" @click="setFilter('unreplied')">
               待回复 {{ counts.unreplied }}
@@ -67,15 +67,13 @@
             </button>
           </div>
         </div>
-        <div class="topbar-right">
-          <span class="status-pill"><span class="dot ok"></span>{{ total }} 条记录</span>
-        </div>
       </header>
 
       <section class="content feedback-layout">
         <section class="chat-panel feedback-panel">
           <div class="chat-head">
             <strong>{{ currentFilterName }}</strong>
+            <span class="status-pill" style="margin-left:auto"><span class="dot ok"></span>{{ total }} 条记录</span>
           </div>
           <div class="feedback-content">
             <div v-if="loading" class="empty-state">加载中...</div>

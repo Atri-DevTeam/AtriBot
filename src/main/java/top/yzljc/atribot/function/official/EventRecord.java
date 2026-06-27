@@ -3,12 +3,10 @@ package top.yzljc.atribot.function.official;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.PermissionRole;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -75,20 +73,6 @@ public class EventRecord implements Listener {
         } else {
             log.info("Removed group: {}", event.getGroupOpenId());
             Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵移出群聊" + event.getGroupOpenId());
-        }
-    }
-
-    @EventHandler
-    public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
-        if (!event.getMessage().getContent().trim().startsWith(Config.getInstance().getCommandPrefix())) {
-            event.sendMessage("你好！我是" + Config.getInstance().getOfficialUsername() + "，感谢你在群里@我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
-        }
-    }
-
-    @EventHandler
-    public void onC2CMessage(OfficialC2CMessageCreateEvent event) {
-        if (!event.getMessage().getContent().trim().startsWith(Config.getInstance().getCommandPrefix())) {
-            event.sendMessage("你好！我是" + Config.getInstance().getOfficialUsername() + "，感谢你私聊我！由于官方限制，我暂时不能主动聊天哦，您可以通过 /help 查看所有可用指令，也可以通过 /feedback <内容> 向开发者提交反馈，感谢您的支持喵~");
         }
     }
 

@@ -17,8 +17,6 @@ import java.util.List;
  */
 public final class YunLandNetwork extends MinecraftNetwork {
 
-    private static final List<String> allowedCommands = List.of("list", "tps");
-
     public YunLandNetwork() {
         super(false, Config.getInstance().getYunlandHost(), Config.getInstance().getYunlandPort(), Config.getInstance().getYunlandConnectKey());
     }
@@ -35,7 +33,6 @@ public final class YunLandNetwork extends MinecraftNetwork {
 
     @Override
     public boolean hasPermission(CommandSender sender, String commandContent) {
-        if (allowedCommands.contains(commandContent)) return true;
         return sender.hasPermission("rcon.yunland");
     }
 

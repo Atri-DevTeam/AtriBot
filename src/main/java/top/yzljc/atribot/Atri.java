@@ -42,6 +42,7 @@ import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.test.Test;
+import top.yzljc.atribot.test.YunLandSpecialCommand;
 import top.yzljc.atribot.utils.debug.DebugCommand;
 import top.yzljc.atribot.utils.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
@@ -157,6 +158,8 @@ public class Atri {
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
+        RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
+        EventManager.getInstance().registerEvents(rockPaperScissorsGame);
         EventManager.getInstance().registerEvents(new SignCommand());
         UpdatePushCommand updatePushCommand = new UpdatePushCommand();
         EventManager.getInstance().registerEvents(updatePushCommand);
@@ -205,6 +208,7 @@ public class Atri {
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
         CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
+        CommandManager.getCommand("rsp").setExecutor(rockPaperScissorsGame);
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
@@ -215,6 +219,7 @@ public class Atri {
         CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
         CommandManager.getCommand("update").setExecutor(updatePushCommand);
+        CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
 
         this.scheduler = new Scheduler();
         try {
@@ -272,7 +277,7 @@ public class Atri {
             GroupConfigManager.registerFeature("illegal_words_check", false);
         }
 
-        if (Config.getInstance().isDebugMode()) {
+        if (settings.getEnv().equals("dev")) {
             WebUISessionManager.start();
         }
 

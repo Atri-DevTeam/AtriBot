@@ -1,14 +1,8 @@
 package top.yzljc.atribot.function.official;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
-
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -16,11 +10,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
-import top.yzljc.atribot.event.events.OfficialInteractionEvent;
-import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
-
-import java.util.List;
 
 /**
  * @Author YZ_Ljc_
@@ -38,16 +28,13 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         if (args.length < 1) {
             Markdown md = TC.md(
                     "启用全量消息\n\n" +
-                            "群主完成授权后无需@" + Config.getInstance().getOfficialUsername() + "即可处理指令，同时" + Config.getInstance().getOfficialUsername() + "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供更加便捷的功能\n\n" +
+                            "全量消息包括`主动消息`和`获取全部消息`，群主完成授权启用主动消息后，"
+                            + Config.getInstance().getOfficialUsername() +
+                            "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供部分推送功能；" +
+                            "启用获取全部消息后，无需@" + Config.getInstance().getOfficialUsername() + "即可处理指令\n\n" +
                             Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
             );
-            Button verifyButton = new Button("c2", "开启后请点我验证", "full_message_enable_verify", true, ButtonStyle.BLUE, ButtonType.CALLBACK);
-            Object keyboard = TC.keyboard(
-                    List.of(
-                            List.of(verifyButton)
-                    )
-            );
-            sender.sendMessage(md, keyboard);
+            sender.sendMessage(md);
             return true;
         }
 //        String groupRealId = args[0];
@@ -79,32 +66,32 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 //        OfficialGroups.setRealGroupId(sender.getGroupId(), Long.parseLong(groupRealId));
         return true;
     }
-
-    @EventHandler
-    public void onCallback(OfficialInteractionEvent event) {
-        if (!"full_message_enable_verify".equals(event.getButtonValue())) return;
-        if (OfficialGroups.isAllowedFullMessages(event.getGroupOpenId())) {
-            event.answer(AnswerCode.REPEAT);
-            return;
-        }
-        String messageId = event.sendMessage(TC.md("> 全量消息已开放，若后续检测到主动推送失败将自动关闭"));
-        if (messageId != null) {
-            OfficialGroups.setAllowedFullMessage(event.getGroupOpenId(), true);
-            event.answer(AnswerCode.SUCCESS);
-        } else {
-            event.answer(AnswerCode.FAIL);
-        }
-    }
+//
+//    @EventHandler
+//    public void onCallback(OfficialInteractionEvent event) {
+//        if (!"full_message_enable_verify".equals(event.getButtonValue())) return;
+//        if (OfficialGroups.isAllowedFullMessages(event.getGroupOpenId())) {
+//            event.answer(AnswerCode.REPEAT);
+//            return;
+//        }
+//        String messageId = event.sendMessage(TC.md("> 全量消息已开放，若后续检测到主动推送失败将自动关闭"));
+//        if (messageId != null) {
+//            OfficialGroups.setAllowedFullMessage(event.getGroupOpenId(), true);
+//            event.answer(AnswerCode.SUCCESS);
+//        } else {
+//            event.answer(AnswerCode.FAIL);
+//        }
+//    }
 
     @EventHandler
     public void onFullMessageFail(OfficialActiveMessageFailEvent event) {
         String groupOpenId = event.getGroupOpenId();
-        if (OfficialGroups.isAllowedFullMessages(groupOpenId) && event.getErrorMessage().equals("主动消息失败, 无权限") && event.getGroupOpenId() != null) {
-            OfficialGroups.setAllowedFullMessage(groupOpenId, false);
+        if (OfficialGroups.isAllowedActiveMessages(groupOpenId) && event.getErrorMessage().equals("主动消息失败, 无权限") && event.getGroupOpenId() != null) {
+            OfficialGroups.setAllowedActiveMessage(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
                     if (task.getFunctionId().equals("member_add_welcome")) continue;
-                    task.disable(groupOpenId, "system_active_message_fail");
+                    OfficialGroups.setFunctionEnabled(groupOpenId, task.getFunctionId(), false, "system_active_message_fail");
                 }
             }
         }

@@ -6,6 +6,7 @@ import org.yaml.snakeyaml.Yaml;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
@@ -112,7 +113,7 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.NAPCAT_GROUP_MESSAGE);
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -136,7 +137,7 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
+                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_C2C_MESSAGE);
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -160,7 +161,7 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_AT_MESSAGE);
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -190,13 +191,13 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole());
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_MESSAGE);
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
 
-        if (!executed) {
-            // senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        if (!executed && event.isAtBot() && commandContent.startsWith(COMMAND_PREFIX)) {
+             senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }
 }

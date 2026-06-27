@@ -56,38 +56,37 @@
             </svg>
           </button>
           <h2>私聊消息</h2>
-          <div class="group-picker">
-            <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
-              <span>{{ selectedUserId || '选择用户' }}</span>
-              <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-            </button>
-            <div v-if="dropdownOpen" class="dropdown-menu">
-              <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
-              <button v-for="user in filteredUsers" :key="user.userOpenId"
-                      class="dropdown-item"
-                      :class="{ active: user.userOpenId === selectedUserId }"
-                      @click="selectUser(user.userOpenId); dropdownOpen = false">
-                <span class="item-id">{{ user.userOpenId }}</span>
-              </button>
-            </div>
-          </div>
         </div>
-        <div class="topbar-right">
-          <span class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
-          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="用户信息" aria-label="用户信息">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="12" y1="7" x2="12" y2="13"/>
-              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
-            </svg>
-          </button>
-        </div>
+        <span class="status-pill topbar-status"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
       </header>
 
       <section class="content">
         <section class="chat-panel">
-          <div class="chat-head"><strong>{{ selectedUserId || '未选择用户' }}</strong></div>
-
+          <div class="chat-head">
+            <div class="group-picker">
+              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
+                <span>{{ selectedUserId || '选择用户' }}</span>
+                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+              </button>
+              <div v-if="dropdownOpen" class="dropdown-menu">
+                <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
+                <button v-for="user in filteredUsers" :key="user.userOpenId"
+                        class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
+                        @click="selectUser(user.userOpenId); dropdownOpen = false">
+                  <span class="item-id">{{ user.userOpenId }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="chat-head-right">
+              <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="用户信息" aria-label="用户信息">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="7" x2="12" y2="13"/>
+                  <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+              </button>
+            </div>
+          </div>
           <div class="message-list" ref="messageListRef" @scroll="onScroll">
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
@@ -249,6 +248,10 @@ const pageSize = 80
 const permRole = ref('')
 const permNodes = ref([])
 const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+function roleLabel(r) {
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', BLACKLIST: '黑名单' }
+  return map[r] || r
+}
 const newPerm = ref('')
 
 const messageListRef = ref(null)
@@ -470,7 +473,7 @@ async function sendMessage() {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
@@ -482,10 +485,10 @@ function renderMd(text) {
   // 图片 ![alt #Wpx #Hpx](url) — 在 HTML 转义前处理
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
     const m = alt.match(/#(\d+)px\s*#(\d+)px/)
-    let style = 'max-width:100%;max-height:320px'
+    let style = ''
     let cleanAlt = alt
     if (m) {
-      style += `;width:${m[1]}px;height:auto`
+      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
       cleanAlt = alt.replace(m[0], '').trim()
     }
     return `<img src="${url}" alt="${cleanAlt}" style="${style}">`

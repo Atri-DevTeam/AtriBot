@@ -118,6 +118,10 @@ commands:
     aliases:
       - 四子棋
       - c4
+  rsp:
+    description: 石头剪刀布游戏
+    aliases:
+      - 石头剪刀布
   贡献名单:
     description: 查看贡献名单
   info:
@@ -167,3 +171,8 @@ commands:
     aliases:
       - 更新推送
       - 更新通知
+  spc:
+    description: 特殊指令集
+    usage: 取决于 label
+    aliases:
+      - yl
