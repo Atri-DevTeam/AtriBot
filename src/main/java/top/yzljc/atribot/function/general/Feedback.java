@@ -1,45 +1,27 @@
 package top.yzljc.atribot.function.general;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.javalin.http.Context;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.UserInformation;
-import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.FeedbackDTO;
+import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
+import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atribot.event.events.NapcatPrivateMessageEvent;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.request.SaSignHeader;
-import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.tools.Alert;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,350 +35,270 @@ import java.util.regex.Pattern;
 @Slf4j
 public class Feedback implements CommandExecutor, Listener {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final Path REPLY_STORE_FILE = Path.of("feedback_reply_store.json");
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
-
-    private static final CopyOnWriteArrayList<FeedbackDTO> cachedReplies = new CopyOnWriteArrayList<>();
-    private static volatile boolean cacheLoaded = false;
+    private static final int PAGE_SIZE = 10;
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "请提供反馈内容！用法：/feedback <反馈内容>");
+            sender.sendMessage("请提供反馈内容！用法：/feedback <反馈内容>");
             return true;
         }
 
+        String firstArg = args[0].toLowerCase();
+
+        if (firstArg.equals("list") || firstArg.equals("reply")) {
+            return handleAdminCommand(sender, args);
+        }
+
+        return handleSubmitFeedback(sender, args);
+    }
+
+    private boolean handleSubmitFeedback(CommandSender sender, String[] args) {
         Platform platform = sender.getPlatform();
         String userId = sender.getUserId();
         String groupId = sender.getGroupId();
-        String messageId = sender.getMessageId();
         String content = String.join(" ", args);
 
+        // 检查 CQ 码
         Matcher check = contentFormat.matcher(content);
         if (check.find()) {
-            sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈内容必须为纯文本！");
+            sender.sendMessage("反馈内容必须为纯文本！");
             return true;
         }
 
-        int code = 0;
-
-        String userName;
-        String groupName;
-        boolean isGroupAdmin;
-        boolean isBotAdmin = sender.hasPermission();
-        boolean isDebugMode = Config.getInstance().isDebugMode();
-
-        if (platform == Platform.NAPCAT_GROUP || platform == Platform.NAPCAT_C2C) {
-            userName = UserInformation.getUserName(userId);
-            groupName = GroupInformation.getGroupName(groupId);
-            isGroupAdmin = UserInformation.isGroupAdmin(groupId, userId);
-
-            ObjectNode info = mapper.createObjectNode();
-            info.put("group_id", Long.parseLong(groupId));
-            info.put("group_name", groupName);
-            info.put("user_name", userName);
-            info.put("message_id", Long.parseLong(messageId));
-            info.put("is_group_admin", isGroupAdmin);
-            info.put("is_bot_admin", isBotAdmin);
-            info.put("is_debug_mode", isDebugMode);
-
-            FeedbackRequest data = new FeedbackRequest(content, userId, 0, info);
-            code = submitFeedback(data);
-
-            String alertStr = "收到反馈: " + content + " 来自用户: " + userName + " (QQ: " + userId + ")";
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
-        } else if (platform == Platform.OFFICIAL_C2C) {
-            isGroupAdmin = false;
-
-            ObjectNode info = mapper.createObjectNode();
-            info.put("message_open_id", messageId);
-            info.put("is_group_admin", isGroupAdmin);
-            info.put("is_bot_admin", isBotAdmin);
-            info.put("is_debug_mode", isDebugMode);
-
-            FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
-            code = submitFeedback(data);
-
-            String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")";
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
-        } else {
-            isGroupAdmin = false;
-
-            ObjectNode info = mapper.createObjectNode();
-            info.put("group_open_id", groupId);
-            info.put("message_open_id", messageId);
-            info.put("is_group_admin", isGroupAdmin);
-            info.put("is_bot_admin", isBotAdmin);
-            info.put("is_debug_mode", isDebugMode);
-
-            FeedbackRequest data = new FeedbackRequest(content, userId, 1, info);
-            code = submitFeedback(data);
-
-            String alertStr = "收到反馈: " + content + " 来自用户: " + userId + " (QQ: " + Markdown.at(userId) + ")，来源于群聊: " + groupId;
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), alertStr);
+        // 检查是否有未回复的反馈
+        if (FeedbackRepository.hasPendingFeedback(userId)) {
+            sender.sendMessage("你已经提交过反馈了哦，请先等待上一条反馈被受理！");
+            return true;
         }
 
-        switch (code) {
-            case 200 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈已收到！我们会尽快处理的~");
-            case 201 -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "你已经提交过反馈了哦，请先等待上一条反馈被受理！");
-            default -> sender.sendMessage(sender.getGroupId(), sender.getMessageId(), "反馈提交失败了呢，请稍后再试！");
+        // 构建 DTO
+        FeedbackDTO feedback = new FeedbackDTO();
+        feedback.setPlatform(platform.name());
+        feedback.setUserId(userId);
+        feedback.setUsername(sender.getUsername());
+        feedback.setGroupId(groupId);
+        feedback.setSubmitContent(content);
+        feedback.setCreateTime(new Timestamp(System.currentTimeMillis()));
+
+        String id = FeedbackRepository.insert(feedback);
+        if (id != null) {
+            sender.sendMessage("反馈已收到！我们会尽快处理的~\n反馈编号: " + id.substring(0, 8) + "...");
+
+            // 发送通知到调试群
+            String alertStr = "收到反馈: " + content + " 来自用户: " + sender.getUsername() +
+                    " (" + platform.name() + ": " + userId + ")" +
+                    (groupId != null ? " 群聊: " + groupId : "");
+            Alert.notify(alertStr);
+        } else {
+            sender.sendMessage("反馈提交失败了呢，请稍后再试！");
         }
 
         return true;
     }
 
-    private static int submitFeedback(FeedbackRequest data) {
-        String url = ResourcesProperties.FEEDBACK_SUBMIT_API;
-        String signedUrl = SaSignHeader.sign(url);
+    // ==================== 管理员命令 ====================
 
-        try {
-            String jsonBody = mapper.writeValueAsString(data);
-            JsonNode response = HttpService.postJson(signedUrl, jsonBody);
-            if (response != null) {
-                // 我喜欢提取变量(╯‵□′)╯︵┻━┻
-                int status = response.get("status").asInt();
-                if (status != 200) {
-                    if (status == 201) {
-                        log.warn("Feedback submission failed: already existed");
-                        return 201;
-                    } else {
-                        log.warn("Feedback submission failed: {}", response.toString());
-                        return 500;
-                    }
-                }
-                log.info("Feedback submitted successfully");
-                return 200;
-            } else {
-                log.warn("Feedback submission returned null response");
-                return 500;
-            }
-        } catch (Exception e) {
-            log.warn("Failed to submit feedback, error: {}", e.getMessage());
-            return 500;
-        }
-    }
-
-    public static void notifyReply(Context ctx) {
-        try {
-            if (ctx.body() == null || ctx.body().isBlank()) {
-                ctx.status(400).result("empty feedback reply payload");
-                return;
-            }
-
-            FeedbackDTO data = parseReplyNotification(ctx);
-            if (data == null) {
-                ctx.status(400).result("invalid feedback reply payload");
-                return;
-            }
-
-            String id = String.valueOf(data.getId());
-            String uuid = data.getUuid();
-            String content = data.getContent();
-            String replyContent = data.getReplyContent();
-            String replier = data.getReplier();
-            String provider = data.getProvider();
-            Timestamp createdAt = data.getCreatedAt();
-            Timestamp repliedAt = data.getRepliedAt();
-            long groupId = data.getInfo().path("group_id").asLong(0);
-
-            if (data.getUploadedWay() == 0) {
-
-                String reply = "您的反馈已被受理\n" +
-                        "====================\n" +
-                        "反馈编号: " + id + "\n" +
-                        "UUID: " + uuid + "\n" +
-                        "时间: " + createdAt + "\n" +
-                        "反馈内容：" + content + "\n" +
-                        "====================\n" +
-                        "回复人: " + replier + "\n" +
-                        "回复时间: " + repliedAt + "\n" +
-                        "回复内容: " + replyContent + "\n" +
-                        "====================\n" +
-                        "如有任何问题欢迎继续联系我们！";
-
-                GroupMessage.chatMessage(provider, String.valueOf(groupId), reply, true);
-
-                log.info("收到反馈回复通知(uploadedWay=0): provider={}, uuid={}", data.getProvider(), data.getUuid());
-                ctx.status(200).result("ok");
-                return;
-            }
-
-            if (data.getUploadedWay() == 1) {
-                if (data.getProvider() == null || data.getProvider().isBlank()) {
-                    ctx.status(400).result("provider is required when uploadedWay is 1");
-                    return;
-                }
-                storeReplyNotification(data);
-                ctx.status(200).result("stored");
-                return;
-            }
-
-            ctx.status(400).result("unsupported uploadedWay: " + data.getUploadedWay());
-        } catch (IOException e) {
-            log.warn("反馈回复通知解析失败: {}", e.getMessage(), e);
-            ctx.status(400).result("invalid feedback reply payload");
-        } catch (Exception e) {
-            log.warn("处理反馈回复通知失败: {}", e.getMessage(), e);
-            ctx.status(500).result("failed");
-        }
-    }
-
-    public static FeedbackDTO consumeReplyByProvider(String provider) {
-        if (provider == null || provider.isBlank()) {
-            return null;
+    private boolean handleAdminCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission()) {
+            return false;
         }
 
-        try {
-            ensureCacheLoaded();
-            for (FeedbackDTO notification : cachedReplies) {
-                if (provider.equals(notification.getProvider())) {
-                    cachedReplies.remove(notification);
-                    asyncSaveStoredReplies();
-                    return notification;
-                }
-            }
-        } catch (Exception e) {
-            log.warn("按 provider 读取反馈回复失败: {}", e.getMessage(), e);
-        }
-        return null;
-    }
+        String subCommand = args[0].toLowerCase();
 
-    private static FeedbackDTO parseReplyNotification(Context ctx) throws IOException {
-        JsonNode root = mapper.readTree(ctx.body());
-        if (root == null || root.isNull()) {
-            return null;
-        }
-
-        FeedbackDTO notification = new FeedbackDTO();
-        notification.setId(root.path("id").asInt(0));
-        notification.setUuid(textValue(root, "uuid"));
-        notification.setContent(textValue(root, "content"));
-        notification.setReplyContent(textValue(root, "replyContent", "reply_content"));
-        notification.setReplier(textValue(root, "replier"));
-        notification.setProvider(textValue(root, "provider"));
-        notification.setUploadedWay(root.path("uploadedWay").asInt(root.path("uploaded_way").asInt(0)));
-        notification.setRead(root.path("isRead").asBoolean(root.path("is_read").asBoolean(false)));
-
-        JsonNode infoNode = root.get("info");
-        if (infoNode != null && !infoNode.isNull()) {
-            notification.setInfo(infoNode);
-        }
-
-        notification.setCreatedAt(FormatTools.parseTimestamp(root, "createdAt", "created_at"));
-        notification.setRepliedAt(FormatTools.parseTimestamp(root, "repliedAt", "replied_at"));
-        return notification;
-    }
-
-    private static void storeReplyNotification(FeedbackDTO notification) throws IOException {
-        ensureCacheLoaded();
-        cachedReplies.add(notification);
-        asyncSaveStoredReplies();
-    }
-
-    private static synchronized void ensureCacheLoaded() {
-        if (cacheLoaded) {
-            return;
-        }
-        try {
-            if (!Files.exists(REPLY_STORE_FILE) || Files.size(REPLY_STORE_FILE) == 0L) {
-                cacheLoaded = true;
-                return;
-            }
-            List<FeedbackDTO> notifications = mapper.readValue(
-                    REPLY_STORE_FILE.toFile(),
-                    new TypeReference<List<FeedbackDTO>>() {}
-            );
-            if (notifications != null) {
-                cachedReplies.addAll(notifications);
-            }
-            cacheLoaded = true;
-        } catch (IOException e) {
-            log.error("加载反馈缓存失败", e);
-        }
-    }
-
-    private static void asyncSaveStoredReplies() {
-        List<FeedbackDTO> snapshot = new ArrayList<>(cachedReplies);
-        CompletableFuture.runAsync(() -> {
-            try {
-                Path tempFile = Path.of(REPLY_STORE_FILE + ".tmp");
-                mapper.writerWithDefaultPrettyPrinter().writeValue(tempFile.toFile(), snapshot);
-
+        if (subCommand.equals("list")) {
+            int page = 1;
+            if (args.length > 1) {
                 try {
-                    Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                } catch (IOException e) {
-                    Files.move(tempFile, REPLY_STORE_FILE, StandardCopyOption.REPLACE_EXISTING);
-                }
-            } catch (Exception e) {
-                log.error("异步保存反馈数据失败", e);
-            }
-        });
-    }
-
-    private static String textValue(JsonNode root, String... keys) {
-        for (String key : keys) {
-            JsonNode node = root.get(key);
-            if (node != null && !node.isNull()) {
-                String value = node.asText("");
-                if (!value.isBlank()) {
-                    return value;
+                    page = Integer.parseInt(args[1]);
+                } catch (NumberFormatException ignored) {
                 }
             }
+            return handleList(sender, page);
         }
-        return "";
+
+        if (subCommand.equals("reply")) {
+            if (args.length < 3) {
+                sender.sendMessage("用法: /feedback reply <反馈ID前缀> <回复内容> [--hidden]");
+                return true;
+            }
+            String idPrefix = args[1];
+            boolean isHidden = false;
+            // 检查最后一个参数是否是 --hidden
+            int contentEnd = args.length;
+            if (args[args.length - 1].equalsIgnoreCase("--hidden")) {
+                isHidden = true;
+                contentEnd = args.length - 1;
+            }
+            String replyContent = String.join(" ", java.util.Arrays.copyOfRange(args, 2, contentEnd));
+            return handleReply(sender, idPrefix, replyContent, isHidden);
+        }
+
+        return false;
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FeedbackRequest {
-        private String content;
-        private String provider;
-        private int uploadedWay;
-        private JsonNode info;
+    private boolean handleList(CommandSender sender, int page) {
+        int total = FeedbackRepository.countUnreplied();
+        if (total == 0) {
+            sender.sendMessage("没有待回复的反馈喵~");
+            return true;
+        }
+
+        List<FeedbackDTO> list = FeedbackRepository.findUnrepliedPaginated(page, PAGE_SIZE);
+        if (list.isEmpty()) {
+            sender.sendMessage("第 " + page + " 页没有数据，共 " + total + " 条待回复反馈");
+            return true;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("待回复反馈列表 (第 ").append(page).append(" 页，共 ").append(total).append(" 条)\n");
+        sb.append("━━━━━━━━━━━━━━\n");
+
+        for (FeedbackDTO fb : list) {
+            sb.append("ID: `").append(fb.getId(), 0, 8).append("`\n");
+            sb.append("平台: ").append(fb.getPlatform()).append(" | 用户: ").append(fb.getUsername());
+            sb.append(" (").append(fb.getUserId()).append(")\n");
+            if (fb.getGroupId() != null) {
+                sb.append("群聊: ").append(fb.getGroupId()).append("\n");
+            }
+            sb.append("时间: ").append(formatTime(fb.getCreateTime())).append("\n");
+            sb.append("内容: ").append(fb.getSubmitContent()).append("\n");
+            sb.append("━━━━━━━━━━━━━━\n");
+        }
+
+        int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
+        sb.append("回复: /feedback reply <ID前缀> <回复内容> [--hidden]");
+        if (page < totalPages) {
+            sb.append("\n下一页: /feedback list ").append(page + 1);
+        }
+
+        sender.sendMessage(TC.md(sb.toString()));
+        return true;
     }
 
-    // 新增buildReplyMessage()方法,你这一大段文本重复写三遍给我看力竭了
-    private static String buildReplyMessage(FeedbackDTO feedback) {
-        return "您的反馈已被受理\n\n" +
-                "---\n\n" +
-                "反馈编号: `" + feedback.getId() + "`\n\n" +
-                "UUID: `" + feedback.getUuid() + "`\n\n" +
-                "时间: `" + feedback.getCreatedAt() + "`\n\n" +
-                "反馈内容：`" + feedback.getContent() + "`\n\n" +
-                "---\n\n" +
-                "回复人: `" + feedback.getReplier() + "`\n\n" +
-                "回复时间: `" + feedback.getRepliedAt() + "`\n\n" +
-                "回复内容: `" + feedback.getReplyContent() + "`\n\n" +
-                "---\n\n" +
-                "如有任何问题欢迎继续联系我们！";
+    private boolean handleReply(CommandSender sender, String idPrefix, String replyContent, boolean isHidden) {
+        if (replyContent.isBlank()) {
+            sender.sendMessage("回复内容不能为空！");
+            return true;
+        }
+
+        // 通过前缀查找反馈
+        FeedbackDTO feedback = FeedbackRepository.findByIdPrefix(idPrefix);
+        if (feedback == null) {
+            sender.sendMessage("找不到匹配的反馈: " + idPrefix);
+            return true;
+        }
+
+        boolean isReReply = feedback.getReplyContent() != null;
+
+        boolean success = FeedbackRepository.reply(feedback.getId(), replyContent, isHidden);
+        if (success) {
+            String msg = (isReReply ? "重新回复成功！" : "回复成功！") +
+                    "反馈编号: " + feedback.getId().substring(0, 8) + "...";
+            if (isHidden) {
+                msg += "\n已标记为隐藏原始内容";
+            }
+            sender.sendMessage(msg);
+            log.info("管理员 {} {}回复了反馈 {}: isHidden={}",
+                    sender.getUsername(), isReReply ? "重新" : "", feedback.getId(), isHidden);
+        } else {
+            sender.sendMessage("回复失败，请稍后再试");
+        }
+
+        return true;
     }
 
     @EventHandler
     public void onGroupAtChat(OfficialGroupAtMessageCreateEvent event) {
-        FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
-        if (remaining != null) {
-            event.sendMessage(TC.md(buildReplyMessage(remaining)));
-            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
+        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
+        if (reply != null) {
+            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
+            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
     }
 
     @EventHandler
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
-        FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
-        if (remaining != null) {
-            event.sendMessage(TC.md(buildReplyMessage(remaining)));
-            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
+        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
+        if (reply != null) {
+            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
+            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
     }
 
     @EventHandler
     public void onPrivateChat(OfficialC2CMessageCreateEvent event) {
-        FeedbackDTO remaining = consumeReplyByProvider(event.getUser().getUserId());
-        if (remaining != null) {
-            event.sendMessage(TC.md(buildReplyMessage(remaining)));
-            log.info("收到反馈回复通知(事件驱动): provider={}, uuid={}", event.getUser().getUserId(), remaining.getUuid());
+        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
+        if (reply != null) {
+            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
+            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
+    }
+
+    @EventHandler
+    public void onNapcatGroupMessage(NapcatGroupMessageEvent event) {
+        if (event.getUser().isBot()) return;
+        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
+        if (reply != null) {
+            GroupMessage.chatMessage(event.getGroupId(), buildReplyMessage(reply, false));
+            log.info("已送达反馈回复(Napcat群聊): userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
+        }
+    }
+
+    @EventHandler
+    public void onNapcatPrivateMessage(NapcatPrivateMessageEvent event) {
+        if (event.getUser().isBot()) return;
+        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
+        if (reply != null) {
+            event.getUser().sendMessage(event.getMessage().getMessageId(), buildReplyMessage(reply, false));
+            log.info("已送达反馈回复(Napcat私聊): userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
+        }
+    }
+
+    private static FeedbackDTO consumePendingReply(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
+        try {
+            FeedbackDTO reply = FeedbackRepository.findPendingReplyByUserId(userId);
+            if (reply != null) {
+                FeedbackRepository.markRead(reply.getId());
+            }
+            return reply;
+        } catch (Exception e) {
+            log.warn("消费待送达回复失败: userId={}", userId, e);
+            return null;
+        }
+    }
+
+    private static String buildReplyMessage(FeedbackDTO feedback, boolean markdown) {
+        String title = markdown ? "**你的反馈已被受理**" : "你的反馈已被受理";
+        String sep = markdown ? "\n---\n" : "\n————————————\n";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(title).append("\n");
+        sb.append("反馈编号: ").append(feedback.getId(), 0, 8).append("\n");
+        sb.append("时间: ").append(formatTime(feedback.getCreateTime())).append("\n");
+
+        if (feedback.isHidden()) {
+            sb.append("反馈内容：已被隐藏\n");
+        } else {
+            sb.append("反馈内容：").append(feedback.getSubmitContent()).append("\n");
+        }
+
+        sb.append(sep);
+        sb.append("回复时间: ").append(formatTime(feedback.getReplyTime())).append("\n");
+        sb.append("回复内容: ").append(feedback.getReplyContent()).append("\n");
+        sb.append(sep);
+        sb.append("如有任何问题欢迎继续联系我们！");
+
+        return sb.toString();
+    }
+
+    private static String formatTime(Timestamp ts) {
+        if (ts == null) return "";
+        return ts.toLocalDateTime().format(TIME_FMT);
     }
 }

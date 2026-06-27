@@ -44,7 +44,7 @@ public class Notify implements Listener {
         String time = FormatTools.formatTimestamp(Long.parseLong(event.getTimestamp()));
         LinkedList<MessageSegment> toSend = new LinkedList<>();
         toSend.add(GroupMessage.createTextNode(event.getMessage().getSegments(), event.getUser().getUserId(), userName));
-        Alert.notify(" 收到来自" + userName + "私聊提醒消息，内容如下：");
+//        Alert.notify(" 收到来自" + userName + "私聊提醒消息，内容如下：");
         ThreadManager.schedule(() -> GroupMessage.forwardMessage(Config.getInstance().getNapcatDebugGroupUin(), toSend, "私聊消息提醒", "点击从查看", "时间：" + time , "用户：" + userName), 1, TimeUnit.SECONDS);
     }
 }

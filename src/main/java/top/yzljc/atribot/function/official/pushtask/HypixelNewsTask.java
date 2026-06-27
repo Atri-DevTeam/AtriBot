@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.official.pushtask;
 
-import top.yzljc.atribot.auth.official.FullMessageAuth;
-import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 
@@ -14,27 +12,11 @@ import top.yzljc.atribot.chat.official.TC;
  */
 public final class HypixelNewsTask extends PushTask {
     public HypixelNewsTask() {
-        super("hyp_news", "Hypixel公告推送");
+        super("hyp_news", "Hypixel公告推送", true);
     }
 
     @Override
     public Markdown getDescription(String groupOpenId) {
         return TC.md("**Hypixel公告推送**\n\nHypixel Announcements 论坛公告推送，每小时检查一次并完成公告推送\n\n" + getStatus(groupOpenId));
-    }
-
-    @Override
-    public Markdown enable(String groupOpenId, String operatorOpenId) {
-        if (!OfficialGroups.isAllowedFullMessages(groupOpenId)) {
-            return FullMessageAuth.n();
-        }
-
-        OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), true, operatorOpenId);
-        return TC.md("✅ 已启用**" + this.getDisplayName() + "**");
-    }
-
-    @Override
-    public Markdown disable(String groupOpenId, String operatorOpenId) {
-        OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), false, operatorOpenId);
-        return TC.md("❌ 已关闭**" + this.getDisplayName() + "**");
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 @Getter
 @AllArgsConstructor
 public class OfficialInteractionEvent extends Event {
+    private final String eventId;
     private final int chatType;
     private final Data data;
     private final String groupOpenId;
@@ -60,6 +61,24 @@ public class OfficialInteractionEvent extends Event {
             return data.resolved.get("button_id").asText();
         } else {
             return "missing_data";
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(Markdown markdown) {
+        if (this.chatType == 1) {
+            return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown);
+        } else {
+            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(Markdown markdown, Object keyboard) {
+        if (this.chatType == 1) {
+            return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown, keyboard);
+        } else {
+            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
         }
     }
 

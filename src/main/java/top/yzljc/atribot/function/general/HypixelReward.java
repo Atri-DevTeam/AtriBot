@@ -7,7 +7,6 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.*;
@@ -21,6 +20,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
@@ -28,11 +28,9 @@ import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.request.HttpService;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -50,12 +48,10 @@ public class HypixelReward implements CommandExecutor, Listener {
     // Key: UUID (sessionId) -> Value: 对应的会话
     private static final ConcurrentHashMap<String, RewardSession> activeSessions = new ConcurrentHashMap<>();
 
-    private static final ChatService service = Atri.getInstance().getChatService();
-
     private static RewardSession getSessionByUserId(String userId) {
         if (userId == null || userId.isEmpty()) return null;
         for (RewardSession session : activeSessions.values()) {
-            if (userId.equals(session.userId) || userId.equals(session.userOpenId)) return session;
+            if (userId.equals(session.userId)) return session;
         }
         return null;
     }
@@ -78,7 +74,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             String url = matcher.group();
 
             if (client == null || !client.isOpen()) {
-                String errorText = "❌ 服务未连接，请联系管理员启动请求发送端喵！";
+                String errorText = "> 请求失败，请向开发者报告此问题！";
                 Object keyboard = TC.keyboard(List.of(
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
@@ -100,16 +96,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             }
 
             String sessionId = UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(
-                    sessionId,
-                    platform == Platform.NAPCAT_GROUP ? userId : null,
-                    platform == Platform.NAPCAT_GROUP ? groupId : null,
-                    platform == Platform.NAPCAT_GROUP ? messageId : null,
-                    platform != Platform.NAPCAT_GROUP ? userId : null,
-                    platform != Platform.NAPCAT_GROUP ? groupId : null,
-                    platform != Platform.NAPCAT_GROUP ? messageId : null,
-                    platform == Platform.NAPCAT_GROUP ? "0" : (platform == Platform.OFFICIAL_C2C ? "1" : "2")
-            );
+            RewardSession session = new RewardSession(sessionId, userId, groupId, messageId, platform);
             activeSessions.put(sessionId, session);
 
             ObjectNode request = mapper.createObjectNode();
@@ -118,7 +105,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             request.put("session_id", sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", userId, session.type, sessionId);
+            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", userId, session.platform, sessionId);
 
         } else {
             sender.sendMessage(groupId, messageId, "⚠️ 链接格式错误或未检测到链接喵！");
@@ -138,8 +125,8 @@ public class HypixelReward implements CommandExecutor, Listener {
         RewardSession session = getSessionByUserId(userId);
 
         if (session != null && groupId.equals(session.groupId)) {
-            // 普通端 type=0 才会走这里拦截直接发数字的操作
-            if (!"0".equals(session.type)) return;
+            // Napcat 群聊才会走这里拦截直接发数字的操作
+            if (session.platform != Platform.NAPCAT_GROUP) return;
 
             if (rawMessage.equals("0") || rawMessage.equals("1") || rawMessage.equals("2")) {
 
@@ -173,7 +160,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             String url = findLink.group();
 
             if (client == null || !client.isOpen()) {
-                String errorText = "> ❌ 服务未连接，请联系管理员启动请求发送端喵！";
+                String errorText = "> 请求失败，请向开发者报告此问题！";
                 Object keyboard = TC.keyboard(List.of(
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
@@ -191,8 +178,47 @@ public class HypixelReward implements CommandExecutor, Listener {
 
             String sessionId = UUID.randomUUID().toString();
             RewardSession session = new RewardSession(
-                    sessionId, null, null, null,
-                    event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), "2"
+                    sessionId, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.OFFICIAL_GROUP
+            );
+            activeSessions.put(sessionId, session);
+
+            ObjectNode request = mapper.createObjectNode();
+            request.put("action", "fetch");
+            request.put("url", url);
+            request.put("session_id", sessionId);
+
+            client.send(request.toString());
+            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), Platform.OFFICIAL_GROUP, sessionId);
+        }
+    }
+
+    @EventHandler
+    public void onOfficialC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
+        String content = event.getMessage().getContent();
+        if (content.contains("/cl ")) return;
+        Matcher findLink = URL_PATTERN.matcher(content.trim());
+        if (findLink.find()) {
+            String url = findLink.group();
+
+            if (client == null || !client.isOpen()) {
+                String errorText = "> 请求失败，请向开发者报告此问题！";
+                Object keyboard = TC.keyboard(List.of(
+                        List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+                ));
+
+                event.sendMessage(TC.md(errorText), keyboard);
+                return;
+            }
+
+            RewardSession existingSession = getSessionByUserId(event.getUser().getUserId());
+            if (existingSession != null) {
+                event.sendMessage("⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
+                return;
+            }
+
+            String sessionId = UUID.randomUUID().toString();
+            RewardSession session = new RewardSession(
+                    sessionId, event.getUser().getUserId(), "null", event.getMessage().getMessageId(), Platform.OFFICIAL_C2C
             );
             activeSessions.put(sessionId, session);
 
@@ -211,27 +237,19 @@ public class HypixelReward implements CommandExecutor, Listener {
         String userId;
         String groupId;
         String messageId;
-
-        String userOpenId;
-        String groupOpenId;
-        String messageOpenId;
-        String type;
+        Platform platform;
 
         String securityToken;
         String rewardId;
         String originalUrl;
         long timestamp;
 
-        public RewardSession(String sessionId, String userId, String groupId, String messageId,
-                             String userOpenId, String groupOpenId, String messageOpenId, String type) {
+        public RewardSession(String sessionId, String userId, String groupId, String messageId, Platform platform) {
             this.sessionId = sessionId;
             this.userId = userId;
             this.groupId = groupId;
             this.messageId = messageId;
-            this.userOpenId = userOpenId;
-            this.groupOpenId = groupOpenId;
-            this.messageOpenId = messageOpenId;
-            this.type = type;
+            this.platform = platform;
             this.timestamp = System.currentTimeMillis();
         }
 
@@ -257,8 +275,7 @@ public class HypixelReward implements CommandExecutor, Listener {
 
         client.send(request.toString());
 
-        String identifier = "0".equals(session.type) ? session.userId : session.userOpenId;
-        log.info("用户 {} (Type:{}) 选择奖励 {}，SessionID: {}", identifier, session.type, choice, session.sessionId);
+        log.info("用户 {} (Platform:{}) 选择奖励 {}，SessionID: {}", session.userId, session.platform, choice, session.sessionId);
         return true;
     }
 
@@ -270,7 +287,7 @@ public class HypixelReward implements CommandExecutor, Listener {
         String buttonId = event.getButtonId();
         RewardSession session = getSessionByUserId(event.getUnionOpenId());
         if (session == null) {
-            event.answer(AnswerCode.FAIL);
+            event.answer(AnswerCode.NO_PERMISSION);
             return;
         }
         switch (buttonId) {
@@ -295,12 +312,12 @@ public class HypixelReward implements CommandExecutor, Listener {
                 activeSessions.entrySet().removeIf(entry -> {
                     RewardSession session = entry.getValue();
                     if (now - session.timestamp > 60000) {
-                        switch (session.type) {
-                            case "0" -> GroupMessage.chatMessage(session.groupId, "⚠️ 领奖操作超时，请重新获取!");
-                            case "2" ->
-                                    GroupChat.replyMessage(session.groupOpenId, session.messageOpenId, "⚠️ 领奖操作超时，请重新获取!");
-                            case "1" ->
-                                    C2CChat.replyMessage(session.userOpenId, session.messageOpenId, "⚠️ 领奖操作超时，请重新获取!");
+                        switch (session.platform) {
+                            case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, "⚠️ 领奖操作超时，请重新获取!");
+                            case OFFICIAL_GROUP ->
+                                    GroupChat.replyMessage(session.groupId, session.messageId, "⚠️ 领奖操作超时，请重新获取!");
+                            case OFFICIAL_C2C ->
+                                    C2CChat.replyMessage(session.userId, session.messageId, "⚠️ 领奖操作超时，请重新获取!");
                         }
                         return true;
                     }
@@ -359,26 +376,26 @@ public class HypixelReward implements CommandExecutor, Listener {
 
                     StringBuilder sb = new StringBuilder("🎁 解析成功！");
 
-                    if ("0".equals(session.type)) {
+                    if (session.platform == Platform.NAPCAT_GROUP) {
                         sb.append("请在 1 分钟内直接回复数字 (0-2) 领取：\n");
                     } else {
                         sb.append("请在 1 分钟内点击下方按钮领取奖励：\n");
                     }
 
-                    if (session.type.equals("0")) {
+                    if (session.platform == Platform.NAPCAT_GROUP) {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append(r.asText()).append("\n");
                         }
                         GroupMessage.replyMessage(session.userId, session.groupId, session.messageId, false, sb.toString());
-                    } else if (session.type.equals("2")) {
+                    } else if (session.platform == Platform.OFFICIAL_GROUP) {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        if (!OfficialGroups.isAllowedFullMessages(session.groupOpenId)) {
-                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息 群号")).append(" 授权后可省去`/cl`前缀，直接解析链接");
+                        if (!OfficialGroups.isAllowedActiveMessages(session.groupId)) {
+                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息")).append(" 授权后可省去`/cl`前缀，直接解析链接");
                         }
-                        GroupChat.replyMessage(session.groupOpenId, session.userOpenId,
-                                session.messageOpenId,
+                        GroupChat.replyMessage(session.groupId, session.userId,
+                                session.messageId,
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
@@ -388,11 +405,11 @@ public class HypixelReward implements CommandExecutor, Listener {
                                         )
                                 ))
                         );
-                    } else if (session.type.equals("1")) {
+                    } else if (session.platform == Platform.OFFICIAL_C2C) {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        C2CChat.replyMessage(session.userOpenId, session.messageOpenId,
+                        C2CChat.replyMessage(session.userId, session.messageId,
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
@@ -416,25 +433,25 @@ public class HypixelReward implements CommandExecutor, Listener {
                             new Button("c0", "再领取一个", "/cl", false, ButtonStyle.BLUE, ButtonType.COMMAND)
                     )));
 
-                    switch (session.type) {
-                        case "0" -> GroupMessage.chatMessage(session.groupId, prefix + msg);
-                        case "2" -> {
+                    switch (session.platform) {
+                        case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, prefix + msg);
+                        case OFFICIAL_GROUP -> {
                             if (finalUrl != null) {
-                                GroupChat.replyMessage(session.groupOpenId, session.userOpenId,
-                                        session.messageOpenId,
+                                GroupChat.replyMessage(session.groupId, session.userId,
+                                        session.messageId,
                                         TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                GroupChat.replyMessage(session.groupOpenId, session.userOpenId,
-                                        session.messageOpenId,
+                                GroupChat.replyMessage(session.groupId, session.userId,
+                                        session.messageId,
                                         TC.md(prefix + msg), keyboard);
                             }
                         }
-                        case "1" -> {
+                        case OFFICIAL_C2C -> {
                             if (finalUrl != null) {
-                                C2CChat.replyMessage(session.userOpenId, session.messageOpenId,
+                                C2CChat.replyMessage(session.userId, session.messageId,
                                         TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                C2CChat.replyMessage(session.userOpenId, session.messageOpenId,
+                                C2CChat.replyMessage(session.userId, session.messageId,
                                         TC.md(prefix + msg), keyboard);
                             }
                         }
@@ -443,10 +460,10 @@ public class HypixelReward implements CommandExecutor, Listener {
 
                 } else if ("error".equals(type)) {
                     String text = "❌ 出错啦: " + response.path("msg").asText();
-                    switch (session.type) {
-                        case "0" -> GroupMessage.chatMessage(session.groupId, text);
-                        case "2" -> GroupChat.replyMessage(session.groupOpenId, session.messageOpenId, text);
-                        case "1" -> C2CChat.replyMessage(session.userOpenId, session.messageOpenId, text);
+                    switch (session.platform) {
+                        case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, text);
+                        case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, session.messageId, text);
+                        case OFFICIAL_C2C -> C2CChat.replyMessage(session.userId, session.messageId, text);
                     }
                     activeSessions.remove(sessionId);
                 }

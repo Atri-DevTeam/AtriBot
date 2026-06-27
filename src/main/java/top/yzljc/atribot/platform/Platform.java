@@ -11,5 +11,5 @@ public enum Platform {
     OFFICIAL_GROUP,
     OFFICIAL_C2C,
     NAPCAT_GROUP,
-    NAPCAT_C2C;
+    NAPCAT_PRIVATE;
 }

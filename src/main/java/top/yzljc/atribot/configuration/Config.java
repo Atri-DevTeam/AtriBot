@@ -47,6 +47,8 @@ public class Config {
     private int aiTimeout;
     @Getter
     private int listenPort;
+    @Getter
+    private String env;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -114,7 +116,7 @@ public class Config {
 
     // ########## 特殊群专用内容设置区域 ##########
     @Getter
-    private long manosabaGroupId;
+    private String manosabaGroupId;
     @Getter
     private String groupJoinVerifyMessage;
     @Getter
@@ -180,6 +182,7 @@ public class Config {
             this.aiModel = yaml.getString("ai.model", "qwen3.5-flash");
             this.aiTimeout = yaml.getInt("ai.timeout", 30000);
             this.listenPort = yaml.getInt("listen-port", 1234);
+            this.env = yaml.getString("env", "production");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
@@ -217,7 +220,7 @@ public class Config {
             this.newBot = yaml.getBoolean("qq.is-new-bot", false);
 
             // ########## 特殊群专用内容设置区域 ##########
-            this.manosabaGroupId = getLongOrDefault("manosaba-group-id", 123456L);
+            this.manosabaGroupId = yaml.getString("manosaba-group-id", "null");
 
             // 群验证配置
             this.groupJoinVerifyGroupId = getLongOrDefault("group-join-verify-group-id", 123456789L);

@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          反馈管理
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -50,38 +56,37 @@
             </svg>
           </button>
           <h2>私聊消息</h2>
-          <div class="group-picker">
-            <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
-              <span>{{ selectedUserId || '选择用户' }}</span>
-              <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-            </button>
-            <div v-if="dropdownOpen" class="dropdown-menu">
-              <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
-              <button v-for="user in filteredUsers" :key="user.userOpenId"
-                      class="dropdown-item"
-                      :class="{ active: user.userOpenId === selectedUserId }"
-                      @click="selectUser(user.userOpenId); dropdownOpen = false">
-                <span class="item-id">{{ user.userOpenId }}</span>
-              </button>
-            </div>
-          </div>
         </div>
-        <div class="topbar-right">
-          <span class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
-          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="用户信息" aria-label="用户信息">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="12" y1="7" x2="12" y2="13"/>
-              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
-            </svg>
-          </button>
-        </div>
+        <span class="status-pill topbar-status"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
       </header>
 
       <section class="content">
         <section class="chat-panel">
-          <div class="chat-head"><strong>{{ selectedUserId || '未选择用户' }}</strong></div>
-
+          <div class="chat-head">
+            <div class="group-picker">
+              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
+                <span>{{ selectedUserId || '选择用户' }}</span>
+                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+              </button>
+              <div v-if="dropdownOpen" class="dropdown-menu">
+                <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
+                <button v-for="user in filteredUsers" :key="user.userOpenId"
+                        class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
+                        @click="selectUser(user.userOpenId); dropdownOpen = false">
+                  <span class="item-id">{{ user.userOpenId }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="chat-head-right">
+              <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="用户信息" aria-label="用户信息">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="7" x2="12" y2="13"/>
+                  <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+              </button>
+            </div>
+          </div>
           <div class="message-list" ref="messageListRef" @scroll="onScroll">
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
@@ -145,6 +150,8 @@
             <div class="composer-image-opts" v-if="msgType === 'image'">
               <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
               <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
+              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <label @click="$refs.fileInputRef.click()">上传</label>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
@@ -155,6 +162,9 @@
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
+            <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
+                    class="ctx-recall"
+                    @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
           </div>
         </section>
 
@@ -229,6 +239,7 @@ const sidebarOpen = ref(false)
 const showInspector = ref(false)
 const replyTo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
+const recalledIds = reactive({})
 const msgType = ref('text')
 const imageType = ref('url')
 const pastePreview = ref(null)
@@ -237,6 +248,10 @@ const pageSize = 80
 const permRole = ref('')
 const permNodes = ref([])
 const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+function roleLabel(r) {
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', BLACKLIST: '黑名单' }
+  return map[r] || r
+}
 const newPerm = ref('')
 
 const messageListRef = ref(null)
@@ -450,7 +465,7 @@ async function sendMessage() {
     if (msgType.value === 'image') { body.imageType = imageType.value; body.imageValue = draft.value.trim() }
     if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
     await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
-    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送。'
+    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -458,14 +473,27 @@ async function sendMessage() {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
 }
 
 function renderMd(text) {
   if (!text) return ''
-  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  let html = text
+  // 图片 ![alt #Wpx #Hpx](url) — 在 HTML 转义前处理
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
+    let style = ''
+    let cleanAlt = alt
+    if (m) {
+      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
+      cleanAlt = alt.replace(m[0], '').trim()
+    }
+    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
+  })
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
   html = html.replace(/`(.+?)`/g, '<code>$1</code>')
@@ -488,6 +516,20 @@ function onPaste(e) {
   }
 }
 
+function onFilePicked(e) {
+  const file = e.target.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const b64 = reader.result.split(',')[1]
+    draft.value = b64
+    imageType.value = 'base64'
+    pastePreview.value = reader.result
+  }
+  reader.readAsDataURL(file)
+  e.target.value = ''
+}
+
 function onContextMenu(e, message) { ctxMenu.visible = true; ctxMenu.x = e.clientX; ctxMenu.y = e.clientY; ctxMenu.message = message }
 
 async function copyText(text) {
@@ -496,6 +538,19 @@ async function copyText(text) {
 
 function startReply(message) {
   replyTo.value = message
+}
+
+async function recallMsg(message) {
+  try {
+    await api('/c2c/recall', {
+      method: 'POST',
+      body: JSON.stringify({ userOpenId: message.unionOpenId, messageId: message.messageOpenId })
+    })
+    recalledIds[message.messageOpenId] = true
+    notice.value = '消息已撤回'
+  } catch (e) {
+    notice.value = e.message
+  }
 }
 
 function atUser(message) {

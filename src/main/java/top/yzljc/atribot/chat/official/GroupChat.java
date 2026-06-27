@@ -66,12 +66,17 @@ public final class GroupChat {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String welcomeMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        return service().sendGroupWelcome(groupOpenId, memberOpenId, eventId,markdown);
+    public static String replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+        return service().replyGroupEvent(groupOpenId, memberOpenId, eventId,markdown);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String welcomeMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
-        return service().sendGroupWelcome(groupOpenId, memberOpenId, eventId,markdown, buttons);
+    public static String replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+        return service().replyGroupEvent(groupOpenId, memberOpenId, eventId,markdown, buttons);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String refMessage(String groupOpenId, String refIdx, String content) {
+        return service().sendActiveGroupRefTextMessage(groupOpenId, content, refIdx);
     }
 }

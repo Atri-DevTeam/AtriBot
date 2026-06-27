@@ -8,6 +8,7 @@ import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.utils.tools.Alert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,8 @@ public class BotEvents {
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
             JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
+            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
+            String refIdx = extValue.substring(8);
 
             PlatformRole role = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
 
@@ -46,6 +49,8 @@ public class BotEvents {
 
             if (mentionsNode.isArray()) {
                 for (JsonNode mentionNode : mentionsNode) {
+                    var scope = mentionNode.path("scope").asText("single");
+                    if (scope.equals("all")) continue;
                     var user_isBot = mentionNode.path("bot").asBoolean(false);
                     var user_id = mentionNode.path("member_openid").asText(null);
                     var user_username = mentionNode.path("username").asText(null);
@@ -58,7 +63,7 @@ public class BotEvents {
             }
 
             User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, attachment, ark, msgRef);
+            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef);
             OfficialGroupMessageCreateEvent event = new OfficialGroupMessageCreateEvent(sender, groupOpenId, msg, timestamp, isAtBot);
             EventManager.getInstance().callEvent(event);
 
@@ -79,9 +84,11 @@ public class BotEvents {
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
             JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
+            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
+            String refIdx = extValue.substring(8);
 
             User sender = new User(Platform.OFFICIAL_C2C, isBot, unionOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, attachment, ark, msgRef);
+            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, refIdx, attachment, ark, msgRef);
             OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
@@ -102,6 +109,8 @@ public class BotEvents {
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
             JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
+            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
+            String refIdx = extValue.substring(8);
 
             PlatformRole role = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
 
@@ -119,7 +128,7 @@ public class BotEvents {
             }
 
             User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, attachment, ark, msgRef);
+            OfficialMessage msg = new OfficialMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef);
             OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(sender, msg, groupOpenId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
@@ -177,11 +186,12 @@ public class BotEvents {
         }
     }
 
-    public static void handleInteractionEvent(JsonNode eventData) {
+    public static void handleInteractionEvent(String eventId, JsonNode eventData) {
         try {
             JsonNode dataNode = eventData.path("data");
 
             OfficialInteractionEvent event = new OfficialInteractionEvent(
+                    eventId,
                     eventData.path("chat_type").asInt(-1),
                     new OfficialInteractionEvent.Data(
                             dataNode.path("resolved"),
@@ -236,5 +246,10 @@ public class BotEvents {
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的群成员删除事件时发生错误：", e);
         }
+    }
+
+    public static void handleMessageAuditRejectEvent(JsonNode evetData) {
+        Alert.notify("消息审核失败: " + evetData.toString());
+        log.error("消息审核失败: {}", evetData);
     }
 }

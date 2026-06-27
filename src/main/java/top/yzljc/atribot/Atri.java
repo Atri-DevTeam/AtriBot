@@ -14,12 +14,13 @@ import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.function.general.*;
 import top.yzljc.atribot.function.napcat.*;
-import top.yzljc.atribot.function.napcat.github.WebhookServer;
+import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.LikeUser;
 import top.yzljc.atribot.function.official.*;
@@ -41,7 +42,9 @@ import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.test.Test;
+import top.yzljc.atribot.test.YunLandSpecialCommand;
 import top.yzljc.atribot.utils.debug.DebugCommand;
+import top.yzljc.atribot.utils.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
@@ -101,7 +104,8 @@ public class Atri {
             cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
             ));
-        }).start(config.getListenPort());
+            cfg.http.maxRequestSize = 10_000_000;
+        }).start(qqBotPort);
 
         server.before("/official-webui/*", ctx -> {
             log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
@@ -145,7 +149,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new ElectricCheck());
 //        EventManager.getInstance().registerEvents(new Scratch());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
-//        EventManager.getInstance().registerEvents(new Test());
+        EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
@@ -154,7 +158,11 @@ public class Atri {
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
+        RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
+        EventManager.getInstance().registerEvents(rockPaperScissorsGame);
         EventManager.getInstance().registerEvents(new SignCommand());
+        UpdatePushCommand updatePushCommand = new UpdatePushCommand();
+        EventManager.getInstance().registerEvents(updatePushCommand);
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -164,12 +172,12 @@ public class Atri {
         CommandManager.getCommand("search").setExecutor(new SearchRelevant());
         CommandManager.getCommand("recall").setExecutor(new RM());
         CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
-        CommandManager.getCommand("motd").setExecutor(new Motd());
+//        CommandManager.getCommand("motd").setExecutor(new Motd());
         CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
         CommandManager.getCommand("cl").setExecutor(new HypixelReward());
         CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
-        CommandManager.getCommand("github").setExecutor(new WebhookServer());
+        CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
         CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
@@ -200,6 +208,7 @@ public class Atri {
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
         CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
+        CommandManager.getCommand("rsp").setExecutor(rockPaperScissorsGame);
 
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
@@ -207,6 +216,10 @@ public class Atri {
         CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("skb").setExecutor(new MusicCommand());
+        CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
+        CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
+        CommandManager.getCommand("update").setExecutor(updatePushCommand);
+        CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
 
         this.scheduler = new Scheduler();
         try {
@@ -227,6 +240,7 @@ public class Atri {
         OfficialUsers.init();
         TufeElecRepository.init();
         SignRepository.init();
+        FeedbackRepository.init();
 
         RunScheduleTask.runAllTasks();
 
@@ -237,7 +251,7 @@ public class Atri {
             GroupConfigManager.refreshAllConfigs();
             FriendList.updateFriendList();
             SetProjectInfo.setInfo();
-            WebhookServer.start(webhookPort, webhookSecret);
+            GithubCommitNotify.start(webhookPort, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
@@ -263,7 +277,7 @@ public class Atri {
             GroupConfigManager.registerFeature("illegal_words_check", false);
         }
 
-        if (Config.getInstance().isDebugMode()) {
+        if (settings.getEnv().equals("dev")) {
             WebUISessionManager.start();
         }
 
@@ -293,7 +307,7 @@ public class Atri {
         }
         MinecraftRemote.disconnect();
         qqBotManagerService.stop();
-        WebhookServer.stop();
+        GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
         if (server != null) {

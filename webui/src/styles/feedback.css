@@ -1,0 +1,247 @@
+
+.feedback-tabs {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.feedback-tabs button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.feedback-tabs button:hover { background: #f3f4f6; }
+.feedback-tabs button.active {
+  color: #0f766e;
+  border-color: #0f766e;
+  background: #e7f7f3;
+}
+
+.feedback-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  min-height: 18px;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.feedback-layout {
+  display: block;
+}
+
+.feedback-panel {
+  height: 100%;
+}
+
+.feedback-content {
+  overflow-y: auto;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.feedback-list { display: flex; flex-direction: column; gap: 12px; }
+
+.feedback-card {
+  background: #fff;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.feedback-card--hidden { border-left: 4px solid #f59e0b; }
+.feedback-card--replied { background: #f8fafc; }
+
+.feedback-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.feedback-id { font-family: monospace; font-weight: 600; color: #1e293b; }
+.feedback-platform { padding: 1px 6px; background: #e2e8f0; border-radius: 4px; font-size: 11px; }
+.feedback-user { color: #334155; }
+.feedback-group { color: #94a3b8; font-size: 12px; }
+
+.feedback-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.feedback-tag--pending { background: #fef3c7; color: #b45309; }
+.feedback-tag--replied { background: #d1fae5; color: #065f46; }
+.feedback-tag--hidden { background: #fef3c7; color: #b45309; }
+
+.feedback-card-body { display: flex; flex-direction: column; gap: 8px; }
+
+.feedback-section { }
+.feedback-label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+.feedback-text { font-size: 14px; color: #1e293b; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+.feedback-reply { color: #065f46; }
+
+.feedback-card-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.feedback-action {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.feedback-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* modal (shared) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-head h2 { font-size: 16px; font-weight: 600; }
+
+.modal-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reply-context {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.reply-textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.empty-state { text-align: center; padding: 48px 0; color: #94a3b8; font-size: 15px; }
+.empty-state.error { color: #ef4444; }
+
+@media (max-width: 640px) {
+  .feedback-tabs {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .feedback-tabs button {
+    flex: 1;
+    min-width: 0;
+    padding: 0 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .feedback-title {
+    position: static !important;
+    transform: none !important;
+    flex: unset !important;
+    margin-left: auto;
+    text-align: right;
+    font-size: 15px;
+  }
+
+  .topbar .menu-btn {
+    position: absolute;
+    left: 10px;
+    z-index: 1;
+  }
+
+  .feedback-content {
+    padding: 8px;
+  }
+
+  .feedback-card {
+    padding: 10px;
+  }
+
+  .feedback-card-head {
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .feedback-user,
+  .feedback-group {
+    word-break: break-all;
+  }
+
+  .feedback-pagination {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}

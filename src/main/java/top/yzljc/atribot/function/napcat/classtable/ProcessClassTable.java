@@ -83,9 +83,9 @@ public class ProcessClassTable {
                 sb.append("课程: ").append(sessionObj.getClassData().getClassNameShow()).append("\n");
                 sb.append("地点: ").append(sessionObj.getClassData().getLocation()).append(" ").append(sessionObj.getClassData().getFullLocation()).append("\n");
                 sb.append("教师: ").append(sessionObj.getClassData().getTeacher()).append("\n");
-                sb.append("节次: ").append(sessionObj.getClassData().getClassStartTime()).append("-").append(sessionObj.getClassData().getClassEndTime()).append("\n");
+                sb.append("节次: ").append(sessionObj.getClassData().getClassStartTime()).append("-").append(sessionObj.getClassData().getClassEndTime());
                 if (!targetDate.equals(LocalDate.now())) {
-                    sb.append("日期: ").append(targetDate);
+                    sb.append("\n日期: ").append(targetDate);
                 }
                 GroupMessage.chatMessage(String.valueOf(groupId), sb.toString());
                 return RESULT_FOUND;

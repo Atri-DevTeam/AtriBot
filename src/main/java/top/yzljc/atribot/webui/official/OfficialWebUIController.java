@@ -1,5 +1,6 @@
 package top.yzljc.atribot.webui.official;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
@@ -10,9 +11,12 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.FeedbackDTO;
+import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.webui.Result;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -53,11 +57,19 @@ public class OfficialWebUIController {
         String messageId;
 
         try {
-            String replyId = dto.getReplyMessageId();
-            if (replyId != null && !replyId.isBlank()) {
-                // 被动回复：使用 replyMessage 方法
+            String refId = dto.getRefMessageId();
+            if (refId != null && !refId.isBlank()) {
+                // 引用回复：发送带 message_reference 的主动消息
                 if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
-                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent());
+                messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
+                if (messageId != null) {
+                    ChatContentRecord.patchRefDisplayData(messageId,
+                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments());
+                }
+            } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {
+                // 被动回复
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
@@ -92,6 +104,16 @@ public class OfficialWebUIController {
             return;
         }
         GroupChat.recallMessage(dto.getGroupOpenId(), dto.getMessageId());
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void recallC2CMessage(Context ctx) {
+        C2CRecallDTO dto = ctx.bodyAsClass(C2CRecallDTO.class);
+        if (isBlank(dto.getUserOpenId()) || isBlank(dto.getMessageId())) {
+            ctx.json(Result.fail(400, "userOpenId 和 messageId 不能为空"));
+            return;
+        }
+        C2CChat.recallMessage(dto.getUserOpenId(), dto.getMessageId());
         ctx.json(Result.success("ok"));
     }
 
@@ -215,6 +237,12 @@ public class OfficialWebUIController {
     }
 
     @Data
+    public static class C2CRecallDTO {
+        private String userOpenId;
+        private String messageId;
+    }
+
+    @Data
     public static class SendGroupMessageDTO {
         private String groupOpenId;
         private String msgType;   // "text" | "markdown" | "image"
@@ -222,6 +250,10 @@ public class OfficialWebUIController {
         private String imageType; // "url" | "base64" (仅 image 时)
         private String imageValue;// 图片 URL 或 base64 (仅 image 时)
         private String replyMessageId;
+        private String refMessageId;
+        private String refAuthor;
+        private String refContent;
+        private String refAttachments;
     }
 
     // ═══════════════ C2C 私聊 ═══════════════
@@ -248,7 +280,7 @@ public class OfficialWebUIController {
     public static void setGroupAllowedActive(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
-        OfficialGroups.setAllowedFullMessage(groupOpenId, enabled);
+        OfficialGroups.setAllowedActiveMessage(groupOpenId, enabled);
         ctx.json(Result.success("ok"));
     }
 
@@ -355,5 +387,84 @@ public class OfficialWebUIController {
         private String imageType;
         private String imageValue;
         private String replyMessageId;
+    }
+
+    // ═══════════════ 反馈管理 ═══════════════
+
+    private static final DateTimeFormatter FEEDBACK_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public static void listFeedback(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        String filter = ctx.queryParam("filter"); // "unreplied" | "replied" | "all"
+
+        List<FeedbackDTO> list;
+        int total;
+
+        if ("replied".equals(filter)) {
+            total = FeedbackRepository.countReplied();
+            list = FeedbackRepository.findRepliedPaginated(page, pageSize);
+        } else if ("all".equals(filter)) {
+            total = FeedbackRepository.countAll();
+            list = FeedbackRepository.findAllPaginated(page, pageSize);
+        } else {
+            total = FeedbackRepository.countUnreplied();
+            list = FeedbackRepository.findUnrepliedPaginated(page, pageSize);
+        }
+
+        List<FeedbackItemDTO> items = list.stream().map(fb -> new FeedbackItemDTO(
+                fb.getId(),
+                fb.getPlatform(),
+                fb.getUserId(),
+                fb.getUsername(),
+                fb.getGroupId(),
+                fb.getSubmitContent(),
+                fb.getCreateTime() != null ? fb.getCreateTime().toLocalDateTime().format(FEEDBACK_TIME_FMT) : null,
+                fb.isRead(),
+                fb.getReplyContent(),
+                fb.getReplyTime() != null ? fb.getReplyTime().toLocalDateTime().format(FEEDBACK_TIME_FMT) : null,
+                fb.isHidden()
+        )).toList();
+
+        ctx.json(Result.success(new FeedbackListResult(items, total, page, pageSize)));
+    }
+
+    public static void countFeedback(Context ctx) {
+        int unreplied = FeedbackRepository.countUnreplied();
+        int replied = FeedbackRepository.countReplied();
+        int all = FeedbackRepository.countAll();
+        ctx.json(Result.success(new FeedbackCountDTO(unreplied, replied, all)));
+    }
+
+    public static void replyFeedback(Context ctx) {
+        ReplyFeedbackDTO dto = ctx.bodyAsClass(ReplyFeedbackDTO.class);
+        if (isBlank(dto.getId()) || isBlank(dto.getReplyContent())) {
+            ctx.json(Result.fail(400, "id 和 replyContent 不能为空"));
+            return;
+        }
+        boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden());
+        if (success) {
+            ctx.json(Result.success("ok"));
+        } else {
+            ctx.json(Result.fail(500, "回复失败，可能该反馈不存在"));
+        }
+    }
+
+    public record FeedbackItemDTO(String id, String platform, String userId, String username,
+                                   String groupId, String submitContent, String createTime,
+                                   @JsonProperty("isRead") boolean isRead,
+                                   String replyContent, String replyTime,
+                                   @JsonProperty("isHidden") boolean isHidden) {}
+
+    public record FeedbackListResult(List<FeedbackItemDTO> items, int total, int page, int pageSize) {}
+
+    public record FeedbackCountDTO(int unreplied, int replied, int all) {}
+
+    @Data
+    public static class ReplyFeedbackDTO {
+        private String id;
+        private String replyContent;
+        @JsonProperty("isHidden")
+        private boolean isHidden;
     }
 }

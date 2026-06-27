@@ -1,27 +1,25 @@
 <template>
   <div class="login-screen">
+    <div class="login-hero">
+      <img :src="atriImg" alt="Atri" class="login-char" />
+    </div>
     <form class="login-panel" @submit.prevent="login">
-      <div class="brand login-brand">
-        <img v-if="avatarUrl" class="brand-avatar" :src="avatarUrl" referrerpolicy="no-referrer" />
-        <div v-else class="brand-mark">A</div>
-        <div>
-          <h1>{{ botName }}</h1>
-          <p>官方机器人WebUI</p>
-        </div>
-      </div>
       <label>
-        <span>访问 Token</span>
+        <span>登录到WebUI</span>
         <input
           v-model="tokenInput"
           type="password"
           autocomplete="current-password"
-          placeholder="official-webui-token"
+          placeholder="输入 Token 以登录…"
         />
       </label>
-      <button class="primary-button" :disabled="!tokenInput.trim() || loading">
+      <button class="login-btn" :disabled="!tokenInput.trim() || loading">
+        <svg v-if="!loading" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
         {{ loading ? '验证中…' : '登录' }}
       </button>
-      <p class="login-notice">{{ notice }}</p>
+      <p class="login-notice" v-if="notice">{{ notice }}</p>
     </form>
   </div>
 </template>
@@ -33,11 +31,10 @@ import { API_BASE } from '../router.js'
 
 const router = useRouter()
 
+const atriImg = import.meta.env.BASE_URL + 'img/atri-main.png'
 const tokenInput = ref('')
 const loading = ref(false)
 const notice = ref('')
-const avatarUrl = ref('')
-const botName = ref('AtriBot')
 
 async function login() {
   const token = tokenInput.value.trim()
@@ -52,18 +49,18 @@ async function login() {
       cache: 'no-store'
     })
     if (challengeRes.status === 503) {
-      notice.value = 'WebUI 未开启。'
+      notice.value = 'WebUI 未开启'
       return
     }
     if (challengeRes.status !== 200) {
-      notice.value = 'Token 未配置或服务不可用。'
+      notice.value = 'WebUI 未配置或服务不可用'
       return
     }
 
     const challengePayload = await challengeRes.json()
     const nonce = challengePayload.data?.nonce
     if (!nonce) {
-      notice.value = '认证挑战无效。'
+      notice.value = '认证无效'
       return
     }
 
@@ -78,10 +75,10 @@ async function login() {
       tokenInput.value = ''
       router.replace('/')
     } else {
-      notice.value = 'Token 无效，请重试。'
+      notice.value = 'Token 无效，请重试'
     }
   } catch {
-    notice.value = '无法连接到服务器。'
+    notice.value = '无法连接到服务器'
   } finally {
     loading.value = false
   }

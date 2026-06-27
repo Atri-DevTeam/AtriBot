@@ -1,7 +1,6 @@
 package top.yzljc.atribot.database;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,17 +11,17 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FeedbackDTO {
-    private int id;
-    private String uuid;
-    private String content;
-    private String replyContent;
-    private String replier;
-    private String provider;
-    private int uploadedWay;
+    private String id;
+    private String platform;
+    private String userId;
+    private String username;
+    private String groupId;
+    private String submitContent;
+    private Timestamp createTime;
+    @JsonProperty("isRead")
     private boolean isRead;
-    private JsonNode info;
-    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
-    private Timestamp createdAt;
-    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
-    private Timestamp repliedAt;
+    private String replyContent;
+    private Timestamp replyTime;
+    @JsonProperty("isHidden")
+    private boolean isHidden;
 }

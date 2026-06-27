@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          反馈管理
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -51,67 +57,46 @@
             </svg>
           </button>
           <h2>群聊消息</h2>
-          <!-- 下拉式群选择器 -->
-          <div class="group-picker">
-            <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; groupSearch = ''">
-              <span>{{ selectedGroupId || '选择群聊' }}</span>
-              <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-            </button>
-            <div v-if="dropdownOpen" class="dropdown-menu">
-              <input
-                v-model="groupSearch"
-                class="dropdown-search"
-                placeholder="搜索群聊 openId…"
-                @click.stop
-              />
-              <button
-                v-for="group in filteredGroups"
-                :key="group.groupOpenId"
-                class="dropdown-item"
-                :class="{ active: group.groupOpenId === selectedGroupId }"
-                @click="selectGroup(group.groupOpenId); dropdownOpen = false"
-              >
-                <span class="item-id">{{ group.groupOpenId }}</span>
-                <span class="item-badges">
-                  <!-- 主动推送 -->
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
-                    <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
-                    <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <template v-else>
-                      <line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/>
-                      <line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/>
-                    </template>
-                  </svg>
-                  <!-- 白名单 -->
-                  <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'" :title="group.whitelist ? '白名单' : '未白名单'"></span>
-                  <!-- 黑名单 -->
-                  <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'" :title="group.blacklisted ? '黑名单' : '未拉黑'"></span>
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
-        <div class="topbar-right">
-          <span class="status-pill">
-            <span class="dot ok"></span>
-            {{ totalMessages }} 条记录
-          </span>
-          <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="群信息" aria-label="群信息">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="12" y1="7" x2="12" y2="13"/>
-              <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
-            </svg>
-          </button>
-        </div>
+        <span class="status-pill topbar-status"><span class="dot ok"></span>{{ totalMessages }} 条记录</span>
       </header>
 
       <section class="content">
         <section class="chat-panel">
           <div class="chat-head">
-            <strong>{{ selectedGroupId || '未选择群聊' }}</strong>
+            <div class="group-picker">
+              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; groupSearch = ''">
+                <span>{{ selectedGroupId || '选择群聊' }}</span>
+                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+              </button>
+              <div v-if="dropdownOpen" class="dropdown-menu">
+                <input v-model="groupSearch" class="dropdown-search" placeholder="搜索群聊 openId…" @click.stop />
+                <button v-for="group in filteredGroups" :key="group.groupOpenId"
+                        class="dropdown-item" :class="{ active: group.groupOpenId === selectedGroupId }"
+                        @click="selectGroup(group.groupOpenId); dropdownOpen = false">
+                  <span class="item-id">{{ group.groupOpenId }}</span>
+                  <span class="item-badges">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
+                      <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
+                      <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      <template v-else><line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/></template>
+                    </svg>
+                    <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'" :title="group.whitelist ? '白名单' : '未白名单'"></span>
+                    <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'" :title="group.blacklisted ? '黑名单' : '未拉黑'"></span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="chat-head-right">
+              <button class="info-toggle" :class="{ active: showInspector }" @click="showInspector = !showInspector" title="群信息" aria-label="群信息">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="7" x2="12" y2="13"/>
+                  <circle cx="12" cy="17" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+              </button>
+            </div>
           </div>
-
           <div class="message-list" ref="messageListRef" @scroll="onScroll">
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
@@ -126,7 +111,7 @@
               class="message"
               :class="{ mine: isMe(message) }"
             >
-              <div class="avatar">
+              <div class="avatar" @click="toggleMsgDetail(message.id)">
                 <img
                   v-show="avatarUrl(message) && !avatarFailed[message.id]"
                   :src="avatarUrl(message)"
@@ -157,16 +142,17 @@
                       <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
                     </svg>
                   </template>
-                  <span class="msg-uid" v-if="message.unionOpenId">{{ message.unionOpenId }}</span>
+                  <span class="msg-uid" :class="{ expanded: expandedIds[message.id] }" v-if="message.unionOpenId">{{ message.unionOpenId }}</span>
+                  <span v-if="!isMe(message) && message.memberRole" class="role-badge" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
                 </div>
                 <div class="bubble" :class="{ recalled: recalledIds[message.messageOpenId] }"
                      @contextmenu.prevent.stop="onContextMenu($event, message)">
                   <pre v-if="recalledIds[message.messageOpenId]">你撤回了一条消息</pre>
                   <template v-else>
                     <div v-if="hasMsgRef(message)" class="msg-ref">
-                      <span class="msg-ref-author">{{ parseMsgRef(message.messageReference).author }}</span>
-                      <div class="msg-ref-content">{{ parseMsgRef(message.messageReference).content }}</div>
-                    </div>
+                    <span class="msg-ref-author">{{ parseMsgRef(message.messageReference).author }}</span>
+                    <div class="msg-ref-content" v-html="renderRefContent(parseMsgRef(message.messageReference))"></div>
+                  </div>
                     <div v-if="message.attachments" class="msg-attach">
                       <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
                         <img
@@ -193,8 +179,8 @@
           </div>
 
             <div v-if="replyTo" class="reply-bar">
-              <span>回复 {{ replyTo.username || '...' }}</span>
-              <button @click="replyTo = null">×</button>
+              <span>{{ refMode ? '引用' : '回复' }} {{ replyTo.username || '...' }}</span>
+              <button @click="replyTo = null; refMode = false">×</button>
             </div>
           <form class="composer" @submit.prevent="sendMessage">
             <div class="composer-type">
@@ -212,6 +198,8 @@
             <div class="composer-image-opts" v-if="msgType === 'image'">
               <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
               <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
+              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <label @click="$refs.fileInputRef.click()">上传</label>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
@@ -228,8 +216,9 @@
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="openPermModal(ctxMenu.message)">更改权限组</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
+            <button @click="startRefReply(ctxMenu.message); ctxMenu.visible = false">引用回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
-            <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
+            <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
                     @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
           </div>
@@ -244,6 +233,15 @@
               <button v-for="r in roles" :key="r" :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
                       @click="pendingPermRole = r">{{ r }}</button>
             </div>
+            <h4 style="margin:10px 0 4px">权限节点</h4>
+            <div v-for="p in pendingPermNodes" :key="p" class="func-row">
+              <span class="func-name">{{ p }}</span>
+              <button class="perm-del" @click="removePermNode(p)">×</button>
+            </div>
+            <form class="perm-add" @submit.prevent="addPermNode(newPermNode)">
+              <input v-model="newPermNode" placeholder="新权限节点" />
+              <button class="primary-button" :disabled="!newPermNode.trim()">添加</button>
+            </form>
             <div class="perm-modal-actions">
               <button class="ghost-button" @click="showPermModal = false">关闭</button>
               <button class="primary-button" @click="confirmPermRole(); showPermModal = false">确认</button>
@@ -323,7 +321,7 @@ const imageType = ref('url')
 
 watch(msgType, () => { pastePreview.value = null })
 const totalMessages = ref(0)
-const notice = ref('等待操作。')
+const notice = ref('等待操作')
 const appId = ref('')
 const botOpenId = ref('')
 const botName = ref('AtriBot')
@@ -335,13 +333,22 @@ const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const replyTo = ref(null)
+const refMode = ref(false)
 const funcEntries = ref([])
 const showInspector = ref(false)
 const showPermModal = ref(false)
 const permTarget = ref('')
 const pendingPermRole = ref('')
+const pendingPermNodes = ref([])
+const newPermNode = ref('')
 const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+function roleLabel(r) {
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', MEMBER: '成员', BLACKLIST: '黑名单' }
+  return map[r] || r
+}
 const attachFailed = reactive({})
+const expandedIds = reactive({})
+function toggleMsgDetail(id) { expandedIds[id] = !expandedIds[id] }
 const previewImg = ref(null)
 const pastePreview = ref(null)
 const pageSize = 80
@@ -424,6 +431,20 @@ function onPaste(e) {
   }
 }
 
+function onFilePicked(e) {
+  const file = e.target.files?.[0]
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const b64 = reader.result.split(',')[1]
+    draft.value = b64
+    imageType.value = 'base64'
+    pastePreview.value = reader.result
+  }
+  reader.readAsDataURL(file)
+  e.target.value = ''
+}
+
 async function toggleStatus(type) {
   if (!selectedGroupId.value) return
   const keyMap = { whitelist: 'whitelist', blacklist: 'blacklisted', allowedActive: 'allowedActive' }
@@ -480,7 +501,9 @@ async function openPermModal(message) {
   try {
     const data = await api(`/c2c/${encodeURIComponent(message.unionOpenId)}/permissions`)
     pendingPermRole.value = data?.role || 'USER'
-  } catch { pendingPermRole.value = 'USER' }
+    pendingPermNodes.value = [...(data?.permissions || [])]
+  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = [] }
+  newPermNode.value = ''
   showPermModal.value = true
 }
 
@@ -488,6 +511,23 @@ async function confirmPermRole() {
   if (!permTarget.value) return
   try {
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
+  } catch (e) { notice.value = e.message }
+}
+
+async function addPermNode(perm) {
+  if (!permTarget.value || !perm?.trim()) return
+  try {
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/permissions/${encodeURIComponent(perm.trim())}?enabled=true`, { method: 'POST' })
+    pendingPermNodes.value.push(perm.trim())
+    newPermNode.value = ''
+  } catch (e) { notice.value = e.message }
+}
+
+async function removePermNode(perm) {
+  if (!permTarget.value) return
+  try {
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/permissions/${encodeURIComponent(perm)}?enabled=false`, { method: 'POST' })
+    pendingPermNodes.value = pendingPermNodes.value.filter(p => p !== perm)
   } catch (e) { notice.value = e.message }
 }
 
@@ -506,6 +546,12 @@ async function copyText(text) {
 
 function startReply(message) {
   replyTo.value = message
+  refMode.value = false
+}
+
+function startRefReply(message) {
+  replyTo.value = message
+  refMode.value = true
 }
 
 async function recallMsg(message) {
@@ -515,7 +561,7 @@ async function recallMsg(message) {
       body: JSON.stringify({groupOpenId: message.groupOpenId, messageId: message.messageOpenId})
     })
     recalledIds[message.messageOpenId] = true
-    notice.value = '消息已撤回。'
+    notice.value = '消息已撤回'
   } catch (e) {
     notice.value = e.message
   }
@@ -580,8 +626,10 @@ function hasMsgRef(message) {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '')
+  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  text = text.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
   if (message.eventType === 'GROUP_MESSAGE_CREATE' && message.mentions) {
     try {
       const mentions = typeof message.mentions === 'string' ? JSON.parse(message.mentions) : message.mentions
@@ -597,13 +645,33 @@ function renderContent(message) {
   return text
 }
 
+function renderRefContent(ref) {
+  const parts = []
+  if (ref.content) {
+    let t = ref.content
+    t = t.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
+    t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+    t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+    if (t.trim()) parts.push(renderMd(t))
+  }
+  if (ref.attachments && ref.attachments.length) {
+    for (const a of ref.attachments) {
+      parts.push(`<img src="${a.url}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+    }
+  }
+  if (!parts.length) return '&#8203;'
+  return parts.join('')
+}
+
 function parseMsgRef(raw) {
   try {
     const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!Array.isArray(arr) || !arr[0]) return {}
+    const ref = arr[0]
     return {
-      author: arr[0].author?.username || '',
-      content: arr[0].content || ''
+      author: ref.author?.username || '',
+      content: ref.content || '',
+      attachments: (ref.attachments || []).filter(a => a.url)
     }
   } catch { return {} }
 }
@@ -631,7 +699,16 @@ function renderMd(text) {
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
   // 图片 ![alt #Wpx #Hpx](url)
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">')
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
+    let style = ''
+    let cleanAlt = alt
+    if (m) {
+      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
+      cleanAlt = alt.replace(m[0], '').trim()
+    }
+    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
+  })
 
   // 链接 [text](url) 和 <url>
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
@@ -665,7 +742,8 @@ function renderMd(text) {
   html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>')
   html = html.replace(/`(.+?)`/g, '<code>$1</code>')
 
-  // 换行
+  // 换行：连续 \n 合并为一个段落间距
+  html = html.replace(/\n{2,}/g, '\n')
   html = html.replace(/\n/g, '<br>')
 
   // 还原代码块
@@ -787,7 +865,14 @@ async function sendMessage() {
       body.imageValue = draft.value.trim()
     }
     if (replyTo.value) {
-      body.replyMessageId = replyTo.value.messageOpenId
+      if (refMode.value) {
+        body.refMessageId = replyTo.value.refIdx
+        body.refAuthor = replyTo.value.username || ''
+        body.refContent = replyTo.value.content || ''
+        body.refAttachments = replyTo.value.attachments || null
+      } else {
+        body.replyMessageId = replyTo.value.messageOpenId
+      }
     }
     await api('/groups/send', {
       method: 'POST',
@@ -796,7 +881,8 @@ async function sendMessage() {
     draft.value = ''
     pastePreview.value = null
     replyTo.value = null
-    notice.value = '消息已发送。'
+    refMode.value = false
+    notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (error) {
     notice.value = error.message

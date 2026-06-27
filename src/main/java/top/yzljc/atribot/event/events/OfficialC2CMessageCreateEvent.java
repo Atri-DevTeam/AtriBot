@@ -32,4 +32,8 @@ public class OfficialC2CMessageCreateEvent extends Event {
     public String sendMessage(Markdown markdown) {
         return this.user.sendMessage(this.message.getMessageId(), markdown);
     }
+
+    public String sendMessage(Markdown markdown, Object keyboard) {
+        return this.user.sendMessage(this.message.getMessageId(), markdown, keyboard);
+    }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.chat.official.media.GroupMessageType;
@@ -19,10 +20,12 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +39,11 @@ public class ChatService {
     private final Cache<String, AtomicInteger> msgSeqCache = CacheBuilder.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
+
+    // 60 QPM
+    private static final int ACTIVE_QPM_LIMIT = 60;
+    private static final long WINDOW_MS = 60_000;
+    private final Deque<Long> activeTimestamps = new ConcurrentLinkedDeque<>();
 
     public ChatService(String apiBaseUrl, TokenManager tokenManager) {
         this.apiBaseUrl = apiBaseUrl;
@@ -72,6 +80,14 @@ public class ChatService {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .content(text)
+                .build();
+    }
+
+    private MessageBody textRefRequest(String text, String refIdx) {
+        return MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .content(text)
+                .messageReference(Map.of("message_id", refIdx))
                 .build();
     }
 
@@ -125,7 +141,6 @@ public class ChatService {
         return Markdown.at(userOpenId) + "\n" + markdown.getText();
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendPrivateMessage(String openId, MessageBody request) {
         return awaitSend(sendPrivateMessageAsync(openId, request), "单聊");
     }
@@ -140,7 +155,6 @@ public class ChatService {
                 });
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendGroupMessage(String groupOpenId, MessageBody request) {
         return awaitSend(sendGroupMessageAsync(groupOpenId, request), "群聊");
     }
@@ -150,21 +164,26 @@ public class ChatService {
                 .thenApply(messageId -> {
                     if (messageId != null) {
                         ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
+                        if (request.getMsgId() == null && !OfficialGroups.isAllowedActiveMessages(groupOpenId)) {
+                            OfficialGroups.setAllowedActiveMessage(groupOpenId, true);
+                        }
                     }
                     return messageId;
                 });
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupTextMessage(String groupOpenId, String text) {
         return sendGroupMessage(groupOpenId, textRequest(text));
+    }
+
+    public String sendActiveGroupRefTextMessage(String groupOpenId, String text, String refIdx) {
+        return sendGroupMessage(groupOpenId, textRefRequest(text, refIdx));
     }
 
     public CompletableFuture<String> sendActiveGroupTextMessageAsync(String groupOpenId, String text) {
         return sendGroupMessageAsync(groupOpenId, textRequest(text));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateTextMessage(String openId, String text) {
         return sendPrivateMessage(openId, textRequest(text));
     }
@@ -173,7 +192,6 @@ public class ChatService {
         return sendPrivateMessageAsync(openId, textRequest(text));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown) {
         return sendGroupMessage(groupOpenId, markdownRequest(markdown));
     }
@@ -182,7 +200,6 @@ public class ChatService {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupMarkdownMessage(String groupOpenId, Markdown markdown, Object keyboard) {
         return sendGroupMessage(groupOpenId, markdownRequest(markdown, keyboard));
     }
@@ -191,7 +208,6 @@ public class ChatService {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown, keyboard));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown) {
         return sendPrivateMessage(openId, markdownRequest(markdown));
     }
@@ -200,7 +216,6 @@ public class ChatService {
         return sendPrivateMessageAsync(openId, markdownRequest(markdown));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateMarkdownMessage(String openId, Markdown markdown, Object keyboard) {
         return sendPrivateMessage(openId, markdownRequest(markdown, keyboard));
     }
@@ -209,7 +224,6 @@ public class ChatService {
         return sendPrivateMessageAsync(openId, markdownRequest(markdown, keyboard));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActivePrivateImageMessage(String openId, ImageType type, String value) {
         MessageBody request = buildImageRequest(privateFileUrl(openId), type, value, "单聊主动", null);
         return request == null ? null : sendPrivateMessage(openId, request);
@@ -220,7 +234,6 @@ public class ChatService {
                 .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendPrivateMessageAsync(openId, request));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String sendActiveGroupImageMessage(String groupOpenId, ImageType type, String value) {
         MessageBody request = buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊主动", null);
         return request == null ? null : sendGroupMessage(groupOpenId, request);
@@ -231,7 +244,6 @@ public class ChatService {
                 .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendGroupMessageAsync(groupOpenId, request));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String replyGroupTextMessage(String groupOpenId, String msgId, String replyText) {
         return sendGroupMessage(groupOpenId, replyTextRequest(msgId, replyText));
     }
@@ -240,7 +252,6 @@ public class ChatService {
         return sendGroupMessageAsync(groupOpenId, replyTextRequest(msgId, replyText));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String replyGroupMarkdownMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
         return sendGroupMessage(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), null, msgId, null));
     }
@@ -249,7 +260,6 @@ public class ChatService {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(atMarkdown(userOpenId, markdown), null, msgId, null));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateTextMessage(String openId, String msgId, String replyText) {
         return sendPrivateMessage(openId, replyTextRequest(msgId, replyText));
     }
@@ -258,7 +268,6 @@ public class ChatService {
         return sendPrivateMessageAsync(openId, replyTextRequest(msgId, replyText));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateMarkdownMessage(String openId, String msgId, Markdown markdown) {
         return sendPrivateMessage(openId, markdownRequest(markdown.getText(), null, msgId, null));
     }
@@ -267,21 +276,19 @@ public class ChatService {
         return sendPrivateMessageAsync(openId, markdownRequest(markdown.getText(), null, msgId, null));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+    public String replyGroupEvent(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
         return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
     }
 
-    public CompletableFuture<String> sendGroupWelcomeAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendGroupWelcome(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+    public String replyGroupEvent(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
         return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
     }
 
-    public CompletableFuture<String> sendGroupWelcomeAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
     }
 
@@ -332,7 +339,6 @@ public class ChatService {
         return keyboard;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public String replyPrivateImageMessage(String openId, String msgId, ImageType type, String value) {
         MessageBody request = buildImageRequest(privateFileUrl(openId), type, value, "单聊", msgId);
         return request == null ? null : sendPrivateMessage(openId, request);
@@ -485,7 +491,47 @@ public class ChatService {
         }
     }
 
+    private void waitForActiveRateLimit() {
+        long now = System.currentTimeMillis();
+        long cutoff = now - WINDOW_MS;
+        // 清理过期记录
+        while (true) {
+            Long oldest = activeTimestamps.peekFirst();
+            if (oldest == null || oldest >= cutoff) break;
+            activeTimestamps.pollFirst();
+        }
+        // 超出限制则等待最旧记录过期
+        if (activeTimestamps.size() >= ACTIVE_QPM_LIMIT) {
+            Long oldest = activeTimestamps.peekFirst();
+            if (oldest != null) {
+                long waitMs = oldest + WINDOW_MS - now + 50;
+                if (waitMs > 0) {
+                    log.info("主动消息已达 {} QPM 限制，等待 {}ms", ACTIVE_QPM_LIMIT, waitMs);
+                    try {
+                        Thread.sleep(waitMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    // 等待后再次清理
+                    long newNow = System.currentTimeMillis();
+                    long newCutoff = newNow - WINDOW_MS;
+                    while (true) {
+                        Long o = activeTimestamps.peekFirst();
+                        if (o == null || o >= newCutoff) break;
+                        activeTimestamps.pollFirst();
+                    }
+                }
+            }
+        }
+        activeTimestamps.offerLast(System.currentTimeMillis());
+    }
+
     private String doSendMessage(String url, MessageBody request, String logType) {
+        // 主动消息（无 msgId ≠ 被动回复）需遵守 60 QPM 频控
+        if (request.getMsgId() == null) {
+            waitForActiveRateLimit();
+        }
+
         try {
             String json = objectMapper.writeValueAsString(request);
             var res = HttpService.postJsonDetailed(url, json,

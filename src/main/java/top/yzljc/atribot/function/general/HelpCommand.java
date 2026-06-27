@@ -70,7 +70,7 @@ public class HelpCommand implements CommandExecutor {
             return true;
         }
 
-        if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_C2C) {
+        if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
             GroupMessage.forwardMessage(sender.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
                     "项目开发说明", "指令帮助", "功能介绍");
             return true;
@@ -91,8 +91,7 @@ public class HelpCommand implements CommandExecutor {
                 联系开发者的最快方式是使用 /feedback 指令，或者直接联系开发者 QQ: 3199590352
                 """;
         String subSb = """
-                Bot 的设计初衷是用来高度自定义连接 MC/QQ 群的
-                因此它有一个配套的MC插件能与 Bot 互联，与服务器交互，如果你有需求可以联系一下开发
+                本机器人的大部分内容已转移到官方机器人！
                 """;
         help.add(GroupMessage.createTextNode(sb));
         help.add(GroupMessage.createTextNode(subSb));
@@ -129,7 +128,6 @@ public class HelpCommand implements CommandExecutor {
                 ● /emj 贴表情恶搞机制相关
                 ● /calendar 日历推送
                 ● /mojang MOJANG 验证服务器状态查询
-                ● /motd MOTD 查询 [默认关闭]
                 ● /cl <url> 领取Hypixel每日签到 [默认关闭]
                 ● /rc <服务器编号> <指令> MC服务器关联指令 [默认关闭]
                 """;

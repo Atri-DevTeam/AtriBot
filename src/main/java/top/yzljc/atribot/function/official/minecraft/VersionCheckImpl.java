@@ -206,13 +206,13 @@ public final class VersionCheckImpl {
                 """.formatted(
                 verId,
                 versionInfo.id(),
-                FormatTools.formatIsoTime(versionInfo.releaseTime())
+                FormatTools.formatIsoTime(versionInfo.releaseTime()).trim()
         );
 
         String markdownInfo = """
                 **Minecraft发布了新的%s**
                 
-                >版本号: %s
+                > 版本号: %s
                 
                 > 发布时间: %s
                 """.formatted(
