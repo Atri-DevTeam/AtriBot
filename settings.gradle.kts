@@ -1,9 +1,9 @@
 pluginManagement {
     plugins {
-        kotlin("jvm") version "2.2.20"
+        kotlin("jvm") version "2.4.0"
     }
 }
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 rootProject.name = "AtriMeow"
