@@ -502,6 +502,85 @@ public class ChatContentRecord implements Listener {
                                    String eventTimestamp, String createdAt) {
     }
 
+    /**
+     * 跨所有群聚合查询，用于 WebUI 用户列表页面。
+     */
+    public static MessagePage<AllGroupUserRecord> fetchAllGroupMessages(int page, int pageSize, String search) {
+        int safePage = Math.max(page, 1);
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        int offset = (safePage - 1) * safePageSize;
+
+        boolean hasSearch = search != null && !search.isBlank();
+        String likePattern = hasSearch ? "%" + search.trim() + "%" : null;
+
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM `").append(GROUP_TABLE).append("` WHERE sender_is_bot = FALSE");
+        StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, group_openId, content, member_role, event_timestamp, created_at FROM `").append(GROUP_TABLE).append("` WHERE sender_is_bot = FALSE");
+
+        if (hasSearch) {
+            String searchClause = " AND (username LIKE ? OR union_openId LIKE ? OR group_openId LIKE ? OR content LIKE ?)";
+            countSql.append(searchClause);
+            dataSql.append(searchClause);
+        }
+
+        dataSql.append(" ORDER BY id DESC LIMIT ? OFFSET ?");
+
+        long total = 0;
+        List<AllGroupUserRecord> records = new ArrayList<>();
+
+        try (var conn = DatabaseManager.getConnection();
+             var countStmt = conn.prepareStatement(countSql.toString());
+             var dataStmt = conn.prepareStatement(dataSql.toString())) {
+
+            int countIdx = 1;
+            if (hasSearch) {
+                countStmt.setString(countIdx++, likePattern);
+                countStmt.setString(countIdx++, likePattern);
+                countStmt.setString(countIdx++, likePattern);
+                countStmt.setString(countIdx++, likePattern);
+            }
+            var countRs = countStmt.executeQuery();
+            if (countRs.next()) total = countRs.getLong(1);
+
+            int dataIdx = 1;
+            if (hasSearch) {
+                dataStmt.setString(dataIdx++, likePattern);
+                dataStmt.setString(dataIdx++, likePattern);
+                dataStmt.setString(dataIdx++, likePattern);
+                dataStmt.setString(dataIdx++, likePattern);
+            }
+            dataStmt.setInt(dataIdx++, safePageSize);
+            dataStmt.setInt(dataIdx, offset);
+            var rs = dataStmt.executeQuery();
+            while (rs.next()) {
+                String unionOpenId = rs.getString("union_openId");
+                String userRole = "-";
+                if (unionOpenId != null && !unionOpenId.isBlank()) {
+                    var userData = OfficialUsers.getData(unionOpenId);
+                    if (userData != null) userRole = userData.role().name();
+                }
+                records.add(new AllGroupUserRecord(
+                        unionOpenId,
+                        rs.getString("username"),
+                        rs.getString("group_openId"),
+                        rs.getString("content"),
+                        rs.getString("member_role"),
+                        userRole,
+                        rs.getString("event_timestamp"),
+                        rs.getString("created_at")
+                ));
+            }
+        } catch (SQLException e) {
+            log.error("聚合查询所有群消息失败, page={}, pageSize={}: {}", safePage, safePageSize, e.getMessage(), e);
+        }
+
+        return new MessagePage<>(safePage, safePageSize, total, records);
+    }
+
+    public record AllGroupUserRecord(String unionOpenId, String username, String groupOpenId,
+                                     String content, String memberRole, String userRole,
+                                     String eventTimestamp, String createdAt) {
+    }
+
     public static MessagePage<C2CMessageRecord> fetchC2CMessages(String userOpenId, int page, int pageSize) {
         int safePage = Math.max(page, 1);
         int safePageSize = Math.max(1, Math.min(pageSize, 200));

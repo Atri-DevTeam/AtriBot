@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Author YZ_Ljc_
@@ -19,8 +20,6 @@ import java.util.Map;
  * @Package top.yzljc.atribot.function.general.impl
  */
 public class PreImageGenerate {
-
-    private static final String DUMP_URL = ResourcesProperties.IMAGE_DUMP_API;
 
     public static int create(String url) {
         HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
@@ -36,15 +35,41 @@ public class PreImageGenerate {
 
     public static ImageDTO dump(String url) {
         ImageDTO finalUrl = null;
-        JsonNode resp = HttpService.postJson(DUMP_URL + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of("url", url));
+        JsonNode resp = HttpService.postJson(ResourcesProperties.DUMP + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of("url", url));
 
         if (resp != null && resp.path("status").asInt() == 200) {
-            String urlTmp = DUMP_URL + "/" + resp.path("data").path("uuid").asText();
+            String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
             int width = resp.path("data").path("width").asInt();
             int height = resp.path("data").path("height").asInt();
             finalUrl = new ImageDTO(urlTmp, width, height);
         }
 
+        return finalUrl;
+    }
+
+    public static ImageDTO dump(Map<String, ?> body) {
+        ImageDTO finalUrl = null;
+        JsonNode resp = HttpService.postJson(ResourcesProperties.DUMP + "?key=" + Config.getInstance().getAtribotKeySecret(), body);
+
+        if (resp != null && resp.path("status").asInt() == 200) {
+            String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
+            int width = resp.path("data").path("width").asInt();
+            int height = resp.path("data").path("height").asInt();
+            finalUrl = new ImageDTO(urlTmp, width, height);
+        }
+        return finalUrl;
+    }
+
+    public static ImageDTO dump(String url, Map<String, String> body) {
+        ImageDTO finalUrl = null;
+        JsonNode resp = HttpService.postJson(url, body);
+
+        if (resp != null && resp.path("status").asInt() == 200) {
+            String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
+            int width = resp.path("data").path("width").asInt();
+            int height = resp.path("data").path("height").asInt();
+            finalUrl = new ImageDTO(urlTmp, width, height);
+        }
         return finalUrl;
     }
 }

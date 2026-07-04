@@ -7,7 +7,8 @@ import re
 from urllib.parse import urlparse
 import traceback
 
-WORKER_DOMAIN = "hypixel-rewards.yzljc.top"
+# WORKER_DOMAIN = "hypixel-rewards.yzljc.top"
+WORKER_DOMAIN = "hypixel-rewards.yzljc.top"  # 代理域名，确保与前端一致
 session_storage = {}
 
 def get_scraper():
@@ -58,7 +59,7 @@ def fetch_reward_list(url):
     html = resp.text
     token_match = re.search(r'window\.securityToken\s*=\s*["\']([^"\']+)["\']', html)
     if not token_match:
-        return {"success": False, "msg": "无法找到 Token，可能链接已失效或被拦截。"}
+        return {"success": False, "msg": "访问目标失败，当前签到可能已被领取，如持续发生请向开发者报告此问题！"}
 
     security_token = token_match.group(1)
     session_storage[security_token] = scraper

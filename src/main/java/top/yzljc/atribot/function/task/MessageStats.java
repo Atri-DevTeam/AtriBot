@@ -11,7 +11,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.function.napcat.GroupContentRecord;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 
@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +40,7 @@ public class MessageStats implements CommandExecutor {
         for (String groupId : groups) {
             String msg = buildGroupStatsMsg(groupId, LocalDate.now(), false, null);
             if (msg != null && !msg.isEmpty()) {
-                sendAndScheduleWithdraw(groupId, msg);
+                sendCheck(groupId, msg);
             }
         }
     }
@@ -55,6 +54,7 @@ public class MessageStats implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
         String replyMsg;
         if (args == null || args.length == 0) {
             LocalDate targetDate = LocalDate.now();
@@ -81,13 +81,19 @@ public class MessageStats implements CommandExecutor {
             } else {
                 return false;
             }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("overall") && args[1].contains("[CQ:at,qq=")) {
+            Long qqAt = extractAtUser(args[1]);
+            if (qqAt != null) {
+                replyMsg = buildGroupStatsMsg(sender.getGroupId(), LocalDate.now(), true, qqAt);
+                getMessageContent(sender.getGroupId(), replyMsg);
+            }
         }
         return true;
     }
 
     private static void getMessageContent(String groupId, String replyMsg) {
         if (replyMsg != null && !replyMsg.isEmpty()) {
-            sendAndScheduleWithdraw(groupId, replyMsg);
+            sendCheck(groupId, replyMsg);
         }
     }
 
@@ -183,19 +189,8 @@ public class MessageStats implements CommandExecutor {
         return sb.toString();
     }
 
-    private static void sendAndScheduleWithdraw(String groupId, String message) {
-        try {
-            String messageId = GroupMessage.chatMessage(groupId, message);
-
-            if (messageId != null) {
-                ThreadManager.schedule(() -> GroupMessage.recallMessage(messageId), 60, TimeUnit.SECONDS);
-            } else {
-                GroupMessage.chatMessage(groupId, message);
-            }
-        } catch (Exception e) {
-            log.warn("自动撤回发送流程异常: {}", e.getMessage());
-            GroupMessage.chatMessage(groupId, message);
-        }
+    private static void sendCheck(String groupId, String message) {
+        GroupMessage.chatMessage(groupId, message);
     }
 
     private static String fetchNickname(Long userId) {

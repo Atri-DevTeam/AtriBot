@@ -25,7 +25,5 @@ public class Properties {
 
     public static final String MINECRAFT_NEWS = "news_history.json";
 
-    public static final String IMG_MOTD = "manoyinxi.png";
-
-    public static final String IMG_GITHUB = "github_background.png";
+    public static final String MOJIRA_CACHE = "data/mojira-cache.json";
 }

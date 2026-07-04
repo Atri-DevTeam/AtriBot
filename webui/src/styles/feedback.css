@@ -169,6 +169,23 @@
   padding: 12px;
 }
 
+.quick-reply-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-reply-select:focus { border-color: #0f766e; }
+
 .reply-textarea {
   width: 100%;
   border: 1px solid #e2e8f0;
@@ -244,4 +261,6 @@
     gap: 8px;
     flex-wrap: wrap;
   }
+
+  .quick-reply-select { font-size: 14px; padding: 10px 12px; }
 }

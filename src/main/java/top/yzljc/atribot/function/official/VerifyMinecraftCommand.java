@@ -44,7 +44,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
         if (sender.getPlatform() != Platform.OFFICIAL_C2C && sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 
         if (args.length != 1) {
-            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，格式: /verify <验证码>\n\n" + Markdown.img(ResourcesProperties.HOW_TO_VERIFY_GIF, 640, 360));
+            Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，用法: /verify <验证码>");
             sender.sendMessage(md, keyboard);
             return true;
         }

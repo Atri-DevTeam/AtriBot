@@ -55,7 +55,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (args.length < 1) {
             MinecraftUserData data = MinecraftBind.getDataByOpenId(sender.getUserId());
             if (data.memberOpenId().equals("-1")) {
-                Markdown md = TC.md("您尚未绑定社区服务器账号，请先加入社区服务器通过以下方式开始绑定账号\n\n" + Markdown.img(ResourcesProperties.HOW_TO_VERIFY_GIF, 640, 360));
+                Markdown md = TC.md("您尚未绑定玩家身份，请先加入社区服务器使用`/verify`获取绑定码！");
                 sender.sendMessage(md, keyboard);
                 return true;
             }

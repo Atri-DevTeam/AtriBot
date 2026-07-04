@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
@@ -108,7 +109,27 @@ public class RunScheduleTask {
     private static void register(Method method, Schedule ann) {
         Runnable task = () -> {
             try {
-                method.invoke(null);
+                Object instance = null;
+
+                // 非 static 方法
+                if (!Modifier.isStatic(method.getModifiers())) {
+                    Class<?> clazz = method.getDeclaringClass();
+
+                    try {
+                        // Kotlin object
+                        instance = clazz.getField("INSTANCE").get(null);
+                    } catch (NoSuchFieldException ignored) {
+                        // 普通 Java 类
+                        try {
+                            instance = clazz.getDeclaredConstructor().newInstance();
+                        } catch (Exception e) {
+                            log.error("无法创建定时任务实例: {}.{}", clazz.getSimpleName(), method.getName(), e);
+                            return;
+                        }
+                    }
+                }
+
+                method.invoke(instance);
             } catch (Exception e) {
                 log.error("定时任务执行异常: {}.{}", method.getDeclaringClass().getSimpleName(), method.getName(), e);
             }

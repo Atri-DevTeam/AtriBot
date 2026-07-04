@@ -50,40 +50,6 @@ public class FormatTools {
         return StringEscapeUtils.unescapeHtml4(text);
     }
 
-    public static Timestamp parseTimestamp(JsonNode root, String... keys) {
-        for (String key : keys) {
-            JsonNode node = root.get(key);
-            if (node == null || node.isNull()) {
-                continue;
-            }
-
-            if (node.isNumber()) {
-                return new Timestamp(node.asLong());
-            }
-
-            String value = node.asText("");
-            if (value.isBlank()) {
-                continue;
-            }
-
-            try {
-                return Timestamp.valueOf(value);
-            } catch (IllegalArgumentException ignored) {
-            }
-
-            try {
-                return Timestamp.from(Instant.parse(value));
-            } catch (DateTimeParseException ignored) {
-            }
-
-            try {
-                return Timestamp.from(OffsetDateTime.parse(value).toInstant());
-            } catch (DateTimeParseException ignored) {
-            }
-        }
-        return null;
-    }
-
     public static String formatIsoTime(String isoTime) {
         return formatIsoTime(isoTime, "yyyy-MM-dd HH:mm:ss");
     }
@@ -95,6 +61,27 @@ public class FormatTools {
                     .format(DateTimeFormatter.ofPattern(pattern));
         } catch (DateTimeParseException e) {
             return isoTime;
+        }
+    }
+
+    private static final DateTimeFormatter MOJIRA_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
+    public static String formatMojiraTime(String mojiraTime) {
+        return formatMojiraTime(mojiraTime, "yyyy-MM-dd HH:mm:ss");
+    }
+
+    public static String formatMojiraTime(String mojiraTime, String pattern) {
+        if (mojiraTime == null || mojiraTime.isBlank()) {
+            return "";
+        }
+
+        try {
+            return OffsetDateTime.parse(mojiraTime, MOJIRA_TIME_FORMATTER)
+                    .atZoneSameInstant(ZoneId.systemDefault())
+                    .format(DateTimeFormatter.ofPattern(pattern));
+        } catch (DateTimeParseException e) {
+            return mojiraTime;
         }
     }
 }

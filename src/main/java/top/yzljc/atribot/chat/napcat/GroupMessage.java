@@ -2,12 +2,11 @@ package top.yzljc.atribot.chat.napcat;
 
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
+import top.yzljc.atribot.platform.napcat.PostRequest;
+import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Author YZ_Ljc_
@@ -194,5 +193,9 @@ public class GroupMessage {
 
     public static void handleRequest(boolean approve, String flag, String reason) {
         MessageUtils.handleGroupRequest(approve, flag, reason);
+    }
+
+    public static void setEmoji(String messageId, int emojiId, boolean set) {
+        MessageUtils.setEmoji(messageId, emojiId, set);
     }
 }

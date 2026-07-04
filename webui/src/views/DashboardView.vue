@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/users' }" @click="$router.push('/users'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          用户列表
+        </button>
         <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -65,11 +71,11 @@
         <section class="chat-panel">
           <div class="chat-head">
             <div class="group-picker">
-              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; groupSearch = ''">
+              <button class="group-picker-trigger" @click="toggleDropdown">
                 <span>{{ selectedGroupId || '选择群聊' }}</span>
                 <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
               </button>
-              <div v-if="dropdownOpen" class="dropdown-menu">
+              <div v-if="dropdownOpen" ref="dropdownRef" class="dropdown-menu">
                 <input v-model="groupSearch" class="dropdown-search" placeholder="搜索群聊 openId…" @click.stop />
                 <button v-for="group in filteredGroups" :key="group.groupOpenId"
                         class="dropdown-item" :class="{ active: group.groupOpenId === selectedGroupId }"
@@ -101,7 +107,25 @@
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
 
-            <div v-if="!selectedGroupId" class="empty-state">请选择一个群</div>
+            <div v-if="!selectedGroupId" class="group-list-hint">
+              <div class="group-list-grid">
+                <button v-for="group in groups" :key="group.groupOpenId"
+                        class="group-list-card"
+                        @click="selectGroup(group.groupOpenId)">
+                  <span class="group-list-id">{{ group.groupOpenId }}</span>
+                  <span class="group-list-badges">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
+                      <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
+                      <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      <template v-else><line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/></template>
+                    </svg>
+                    <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'"></span>
+                    <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'"></span>
+                  </span>
+                </button>
+                <div v-if="groups.length === 0" class="empty-state">暂无群聊数据</div>
+              </div>
+            </div>
             <div v-else-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
             <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
@@ -214,7 +238,7 @@
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-                    @click="openPermModal(ctxMenu.message)">更改权限组</button>
+                    @click="openPermModal(ctxMenu.message)">更改信息</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
             <button @click="startRefReply(ctxMenu.message); ctxMenu.visible = false">引用回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
@@ -224,10 +248,10 @@
           </div>
         </section>
 
-        <!-- 权限弹窗 -->
+        <!-- 更改信息弹窗 -->
         <div v-if="showPermModal" class="perm-modal-backdrop" @click="showPermModal = false">
           <div class="perm-modal" @click.stop>
-            <h3>更改权限组</h3>
+            <h3>更改信息</h3>
             <p class="perm-uid">{{ permTarget }}</p>
             <div class="perm-roles">
               <button v-for="r in roles" :key="r" :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
@@ -242,6 +266,15 @@
               <input v-model="newPermNode" placeholder="新权限节点" />
               <button class="primary-button" :disabled="!newPermNode.trim()">添加</button>
             </form>
+            <h4 style="margin:10px 0 4px">状态</h4>
+            <label class="checkbox-label" style="margin-bottom:6px">
+              <input type="checkbox" v-model="pendingIsBlocked" />
+              拉黑（禁止使用指令）
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="pendingIsIgnored" />
+              屏蔽（静默忽略所有交互）
+            </label>
             <div class="perm-modal-actions">
               <button class="ghost-button" @click="showPermModal = false">关闭</button>
               <button class="primary-button" @click="confirmPermRole(); showPermModal = false">确认</button>
@@ -268,10 +301,13 @@
             <dd class="status-row">
               <span :class="['badge', 'clickable', selectedGroup.whitelist ? 'green' : 'gray']" @click="toggleStatus('whitelist')">白名单</span>
               <span :class="['badge', 'clickable', selectedGroup.blacklisted ? 'red' : 'gray']" @click="toggleStatus('blacklist')">黑名单</span>
-              <span :class="['badge', 'clickable', selectedGroup.allowedActive ? 'green' : 'gray']" @click="toggleStatus('allowedActive')">主动推送</span>
+              <span :class="['badge', selectedGroup.allowedActive ? 'green' : 'gray']">主动推送</span>
             </dd>
             <dt>真实群号</dt>
-            <dd>{{ selectedGroup.realGroupId || '-' }}</dd>
+            <dd>
+              <input v-model="realGroupInput" class="real-group-input" placeholder="输入真实群号"
+                     @blur="saveRealGroup" @keydown.enter="saveRealGroup" />
+            </dd>
             <dt>群聊加入时间</dt>
             <dd>{{ formatTime(selectedGroup.timestamp) }}</dd>
           </dl>
@@ -328,6 +364,8 @@ const botName = ref('AtriBot')
 const avatarFailed = reactive({})
 const currentPage = ref(0)
 const dropdownOpen = ref(false)
+const dropdownRef = ref(null)
+const dropdownScrollTop = ref(0)
 const groupSearch = ref('')
 const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
@@ -340,10 +378,12 @@ const showPermModal = ref(false)
 const permTarget = ref('')
 const pendingPermRole = ref('')
 const pendingPermNodes = ref([])
+const pendingIsBlocked = ref(false)
+const pendingIsIgnored = ref(false)
 const newPermNode = ref('')
-const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+const roles = ['USER', 'ADMIN', 'OWNER']
 function roleLabel(r) {
-  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', MEMBER: '成员', BLACKLIST: '黑名单' }
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', MEMBER: '成员' }
   return map[r] || r
 }
 const attachFailed = reactive({})
@@ -357,6 +397,19 @@ let eventSource = null
 const messageListRef = ref(null)
 
 const selectedGroup = computed(() => groups.value.find(g => g.groupOpenId === selectedGroupId.value))
+const realGroupInput = ref('')
+watch(selectedGroup, (g) => { realGroupInput.value = g?.realGroupId || '' })
+async function saveRealGroup() {
+  const g = selectedGroup.value
+  if (!g) return
+  const val = realGroupInput.value.trim()
+  const original = g.realGroupId || ''
+  if (val === original) return
+  try {
+    await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/real-group-id?value=${encodeURIComponent(val || 'null')}`, { method: 'POST' })
+    g.realGroupId = val ? parseInt(val) : null
+  } catch (e) { realGroupInput.value = original }
+}
 const filteredGroups = computed(() => {
   const q = groupSearch.value.toLowerCase()
   const filtered = q ? groups.value.filter(g => g.groupOpenId.toLowerCase().includes(q)) : groups.value
@@ -447,7 +500,7 @@ function onFilePicked(e) {
 
 async function toggleStatus(type) {
   if (!selectedGroupId.value) return
-  const keyMap = { whitelist: 'whitelist', blacklist: 'blacklisted', allowedActive: 'allowedActive' }
+  const keyMap = { whitelist: 'whitelist', blacklist: 'blacklisted' }
   const key = keyMap[type]
   const old = selectedGroup.value[key]
   try {
@@ -456,7 +509,6 @@ async function toggleStatus(type) {
     const g = selectedGroup.value
     if (type === 'whitelist') g.whitelist = !old
     else if (type === 'blacklist') g.blacklisted = !old
-    else g.allowedActive = !old
   } catch (e) { notice.value = e.message }
 }
 
@@ -502,7 +554,9 @@ async function openPermModal(message) {
     const data = await api(`/c2c/${encodeURIComponent(message.unionOpenId)}/permissions`)
     pendingPermRole.value = data?.role || 'USER'
     pendingPermNodes.value = [...(data?.permissions || [])]
-  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = [] }
+    pendingIsBlocked.value = data?.isBlocked || false
+    pendingIsIgnored.value = data?.isIgnored || false
+  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = []; pendingIsBlocked.value = false; pendingIsIgnored.value = false }
   newPermNode.value = ''
   showPermModal.value = true
 }
@@ -511,6 +565,8 @@ async function confirmPermRole() {
   if (!permTarget.value) return
   try {
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/blocked?value=${pendingIsBlocked.value}`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/ignored?value=${pendingIsIgnored.value}`, { method: 'POST' })
   } catch (e) { notice.value = e.message }
 }
 
@@ -583,7 +639,13 @@ async function api(path, options) {
     logout('WebUI 已关闭')
     throw new Error('WebUI 已关闭')
   }
-  const payload = await response.json()
+  let payload
+  try {
+    payload = await response.json()
+  } catch {
+    const text = await response.text()
+    throw new Error(text || `HTTP ${response.status}`)
+  }
   if (response.status === 401) {
     logout(payload.message || '登录已失效')
     throw new Error(payload.message || '未授权')
@@ -782,6 +844,21 @@ async function loadGroups() {
     notice.value = error.message
   } finally {
     loadingGroups.value = false
+  }
+}
+
+function toggleDropdown() {
+  if (dropdownOpen.value) {
+    const el = dropdownRef.value
+    if (el) dropdownScrollTop.value = el.scrollTop
+    dropdownOpen.value = false
+  } else {
+    groupSearch.value = ''
+    dropdownOpen.value = true
+    nextTick(() => {
+      const el = dropdownRef.value
+      if (el) el.scrollTop = dropdownScrollTop.value
+    })
   }
 }
 

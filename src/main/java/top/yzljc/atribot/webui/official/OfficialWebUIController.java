@@ -277,10 +277,11 @@ public class OfficialWebUIController {
         ctx.json(Result.success("ok"));
     }
 
-    public static void setGroupAllowedActive(Context ctx) {
+    public static void setGroupRealGroupId(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
-        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
-        OfficialGroups.setAllowedActiveMessage(groupOpenId, enabled);
+        String value = ctx.queryParam("value");
+        Long realGroupId = (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) ? null : Long.parseLong(value);
+        OfficialGroups.setRealGroupId(groupOpenId, realGroupId);
         ctx.json(Result.success("ok"));
     }
 
@@ -295,14 +296,19 @@ public class OfficialWebUIController {
     public static void listC2CUsers(Context ctx) {
         List<C2CUserDTO> users = new ArrayList<>();
         for (var data : OfficialUsers.listAll()) {
-            users.add(new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions()));
+            users.add(toC2CUserDTO(data));
         }
         ctx.json(Result.success(users));
     }
 
     public static void getC2CUserPermissions(Context ctx) {
         var data = OfficialUsers.getData(ctx.pathParam("userOpenId"));
-        ctx.json(Result.success(new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions())));
+        ctx.json(Result.success(toC2CUserDTO(data)));
+    }
+
+    private static C2CUserDTO toC2CUserDTO(OfficialUsers.UserData data) {
+        return new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions(),
+                data.isBlocked(), data.isIgnored());
     }
 
     public static void setC2CUserRole(Context ctx) {
@@ -326,6 +332,20 @@ public class OfficialWebUIController {
         } else {
             OfficialUsers.removePermission(userOpenId, perm);
         }
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setC2CUserBlocked(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
+        OfficialUsers.setBlocked(userOpenId, value);
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setC2CUserIgnored(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
+        OfficialUsers.setIgnored(userOpenId, value);
         ctx.json(Result.success("ok"));
     }
 
@@ -377,7 +397,8 @@ public class OfficialWebUIController {
         ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
     }
 
-    public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions) {}
+    public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,
+                             boolean isBlocked, boolean isIgnored) {}
 
     @Data
     public static class SendC2CMessageDTO {
@@ -467,4 +488,24 @@ public class OfficialWebUIController {
         @JsonProperty("isHidden")
         private boolean isHidden;
     }
+
+    // ═══════════════ 用户列表 ═══════════════
+
+    public static void listUserMessages(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        String search = ctx.queryParam("search");
+        var result = ChatContentRecord.fetchAllGroupMessages(page, pageSize, search);
+        List<UserMessageItemDTO> items = result.records().stream()
+                .map(r -> new UserMessageItemDTO(
+                        r.unionOpenId(), r.username(), r.groupOpenId(), r.content(),
+                        r.memberRole(), r.userRole(), r.eventTimestamp(), r.createdAt()))
+                .toList();
+        ctx.json(Result.success(new UserMessageListResult(items, result.total(), result.page(), result.pageSize())));
+    }
+
+    public record UserMessageItemDTO(String unionOpenId, String username, String groupOpenId,
+                                     String content, String memberRole, String userRole,
+                                     String eventTimestamp, String createdAt) {}
+    public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
 }

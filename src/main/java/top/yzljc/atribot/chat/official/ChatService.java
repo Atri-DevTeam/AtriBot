@@ -17,6 +17,7 @@ import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.utils.tools.Alert;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,6 +46,11 @@ public class ChatService {
     private static final int ACTIVE_QPM_LIMIT = 60;
     private static final long WINDOW_MS = 60_000;
     private final Deque<Long> activeTimestamps = new ConcurrentLinkedDeque<>();
+
+    // 按群主动消息频控：单群 1 分钟内超过 5 条触发报警
+    private static final int PER_GROUP_ACTIVE_LIMIT = 5;
+    private static final long PER_GROUP_WINDOW_MS = 60_000;
+    private final Map<String, Deque<Long>> groupActiveTimestamps = new ConcurrentHashMap<>();
 
     public ChatService(String apiBaseUrl, TokenManager tokenManager) {
         this.apiBaseUrl = apiBaseUrl;
@@ -160,6 +167,9 @@ public class ChatService {
     }
 
     public CompletableFuture<String> sendGroupMessageAsync(String groupOpenId, MessageBody request) {
+        if (request.getMsgId() == null && request.getEventId() == null) {
+            checkPerGroupActiveRate(groupOpenId);
+        }
         return sendMessageAsync(groupMessageUrl(groupOpenId), request, "群聊")
                 .thenApply(messageId -> {
                     if (messageId != null) {
@@ -491,6 +501,21 @@ public class ChatService {
         }
     }
 
+    private void checkPerGroupActiveRate(String groupOpenId) {
+        Deque<Long> timestamps = groupActiveTimestamps.computeIfAbsent(groupOpenId, k -> new ConcurrentLinkedDeque<>());
+        long now = System.currentTimeMillis();
+        long cutoff = now - PER_GROUP_WINDOW_MS;
+        while (true) {
+            Long oldest = timestamps.peekFirst();
+            if (oldest == null || oldest >= cutoff) break;
+            timestamps.pollFirst();
+        }
+        timestamps.offerLast(now);
+        if (timestamps.size() >= PER_GROUP_ACTIVE_LIMIT) {
+            Alert.notify("群聊主动消息频控异常：群 " + groupOpenId + " 在 1 分钟内发送了 " + timestamps.size() + " 条主动消息");
+        }
+    }
+
     private void waitForActiveRateLimit() {
         long now = System.currentTimeMillis();
         long cutoff = now - WINDOW_MS;
@@ -528,7 +553,7 @@ public class ChatService {
 
     private String doSendMessage(String url, MessageBody request, String logType) {
         // 主动消息（无 msgId ≠ 被动回复）需遵守 60 QPM 频控
-        if (request.getMsgId() == null) {
+        if (request.getMsgId() == null && request.getEventId() == null) {
             waitForActiveRateLimit();
         }
 

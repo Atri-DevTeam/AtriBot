@@ -5,7 +5,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.auth.official.PermissionRole;
+
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
+import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.Platform;
@@ -40,7 +41,8 @@ public class EventRecord implements Listener {
         String url = ResourcesProperties.WELCOME_IMG;
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " 欢迎新人喵~\n\n" +
-                Markdown.img(url, 1238 ,564)
+                        Markdown.img(url, 1238, 564) + "\n\n" +
+                        "> " + Markdown.enterCommand("/推送任务 关闭 member_add_welcome", "关闭欢迎提示")
         );
         Object buttons = TC.keyboard(
                 List.of(
@@ -88,9 +90,18 @@ public class EventRecord implements Listener {
         Alert.notify("有好友删除了亚托莉喵，OpenID: " + event.getUnionOpenId());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void callback(OfficialInteractionEvent event) {
-        if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(Config.getInstance().getDebugGroupOpenId())) return;
+        if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(Config.getInstance().getDebugGroupOpenId()))
+            return;
+        if (OfficialUsers.isIgnored(event.getUnionOpenId()) || OfficialUsers.isBlocked(event.getUnionOpenId())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getGroupOpenId() != null && OfficialGroups.isGroupBlacklisted(event.getGroupOpenId())) {
+            event.setCancelled(true);
+            return;
+        }
         String eventInfo = "[官机] 收到来自用户 %s (场景%s: %s) 的交互事件: %s (类型: %d)".formatted(
                 event.getUnionOpenId(),
                 event.getScene(),
@@ -116,25 +127,37 @@ public class EventRecord implements Listener {
             }
         }
 
-        if (event.getSender().getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
-            if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
-                Object key = TC.keyboard(List.of(
-                        List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
-                ));
-                event.getSender().sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
-                log.warn("Command from blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+        if (event.getSender().getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.isBlocked(event.getSender().getUserId())) {
+            if (!OfficialUsers.isIgnored(event.getSender().getUserId())) {
+                if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
+                    Object key = TC.keyboard(List.of(
+                            List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    ));
+                    event.getSender().sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
+                    log.warn("Command from blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                    event.setCancelled(true);
+                    return;
+                }
+            } else {
+                log.warn("Command from ignored user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
             }
         }
 
-        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.hasRole(event.getSender().getUserId(), PermissionRole.BLACKLIST)) {
-            if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
-                Object key = TC.keyboard(List.of(
-                        List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
-                ));
-                event.getSender().sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
-                log.warn("Command from group-blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.isBlocked(event.getSender().getUserId())) {
+            if (!OfficialUsers.isIgnored(event.getSender().getUserId())) {
+                if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
+                    Object key = TC.keyboard(List.of(
+                            List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    ));
+                    event.getSender().sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
+                    log.warn("Command from group-blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                    event.setCancelled(true);
+                    return;
+                }
+            } else {
+                log.warn("Command from group-ignored user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
             }

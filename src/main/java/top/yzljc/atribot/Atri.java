@@ -27,17 +27,15 @@ import top.yzljc.atribot.function.official.*;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.official.tufe.ElectricCheck;
-import top.yzljc.atribot.function.task.AutoSign;
-import top.yzljc.atribot.function.task.ManosabaDate;
-import top.yzljc.atribot.function.task.MessageStats;
-import top.yzljc.atribot.function.task.TufeClassAlert;
+import top.yzljc.atribot.function.task.*;
+import top.yzljc.atribot.function.task.Calendar;
 import top.yzljc.atribot.platform.napcat.RequestReceiver;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
 import top.yzljc.atribot.platform.official.OfficialManager;
 import top.yzljc.atribot.platform.official.TokenManager;
-import top.yzljc.atribot.service.AiService;
+import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
@@ -82,7 +80,7 @@ public class Atri {
         }
         instance = this;
         Config config = Config.getInstance();
-        this.aiService = new AiService(config.getAiBotProperties(), objectMapper);
+        this.aiService = new AiService(config.getAiPropertiesMap(), objectMapper);
         this.tokenManager = new TokenManager(config.getQqAppId(), config.getQqClientSecret());
         this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager);
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
@@ -167,12 +165,12 @@ public class Atri {
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
-//        CommandManager.getCommand("wakeup").setExecutor(new WakeUp());
+        CommandManager.getCommand("anan").setExecutor(AnAnGirlEmoji.INSTANCE);
         CommandManager.getCommand("reboot").setExecutor(new Reboot());
         CommandManager.getCommand("search").setExecutor(new SearchRelevant());
         CommandManager.getCommand("recall").setExecutor(new RM());
         CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
-//        CommandManager.getCommand("motd").setExecutor(new Motd());
+        CommandManager.getCommand("gt").setExecutor(CucumberGirl.INSTANCE);
         CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
         CommandManager.getCommand("cl").setExecutor(new HypixelReward());
         CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
@@ -181,8 +179,8 @@ public class Atri {
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
         CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
-        CommandManager.getCommand("calendar").setExecutor(new top.yzljc.atribot.function.task.Calendar());
-//        CommandManager.getCommand("atrihelp").setExecutor(new AtriHelp());
+        CommandManager.getCommand("calendar").setExecutor(new Calendar());
+        CommandManager.getCommand("check-mojira").setExecutor(new CheckMojira());
         CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
 //        CommandManager.getCommand("reload").setExecutor(new Reload());
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
@@ -197,7 +195,7 @@ public class Atri {
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("ogroup").setExecutor(new GroupCommand());
-        CommandManager.getCommand("permission").setExecutor(new PermissionCommand());
+        CommandManager.getCommand("perm").setExecutor(new UserMgrCommand());
         CommandManager.getCommand("today").setExecutor(new Calendar());
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
@@ -215,7 +213,7 @@ public class Atri {
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
-        CommandManager.getCommand("skb").setExecutor(new MusicCommand());
+        CommandManager.getCommand("music").setExecutor(new MusicCommand());
         CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
         CommandManager.getCommand("update").setExecutor(updatePushCommand);
@@ -264,16 +262,16 @@ public class Atri {
             GroupConfigManager.registerFeature("send_poke", true);
             GroupConfigManager.registerFeature("like_user", false);
             GroupConfigManager.registerFeature("mojang_status", true);
-            GroupConfigManager.registerFeature("motd", false);
+//            GroupConfigManager.registerFeature("motd", false);
             GroupConfigManager.registerFeature("github_info", false);
             GroupConfigManager.registerFeature("bv_check", false);
-            GroupConfigManager.registerFeature("wakeup_send", false);
+            GroupConfigManager.registerFeature("mojira_tracker", false);
             GroupConfigManager.registerFeature("broadcast", true);
             GroupConfigManager.registerFeature("calendar", true);
             GroupConfigManager.registerFeature("get_hypixel_reward", false);
-            GroupConfigManager.registerFeature("bedwars_challenge", true);
+//            GroupConfigManager.registerFeature("bedwars_challenge", true);
             GroupConfigManager.registerFeature("tufe_class_alert", false);
-            GroupConfigManager.registerFeature("verify_server", false);
+            GroupConfigManager.registerFeature("girl_text", false);
             GroupConfigManager.registerFeature("illegal_words_check", false);
         }
 

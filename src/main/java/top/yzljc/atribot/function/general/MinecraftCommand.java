@@ -7,6 +7,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.DiceImpl;
 import top.yzljc.atribot.function.official.minecraft.VersionCheckImpl;
 import top.yzljc.atribot.platform.Platform;
@@ -23,13 +24,19 @@ public class MinecraftCommand implements CommandExecutor {
     private static final Markdown ValidCommands = TC.md(
             Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) + " **Minecraft 指令列表**\n\n" +
                     "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
-                    "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本"
+                    "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本\n\n" +
+                    "3. " + Markdown.enterCommand("/bantracker", "/bantracker") + " - Hypixel BanTracker查询"
     );
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+
+
+        if (label.equals("bt") || label.equals("bantracker")) {
+            return BanTracker.handle(sender, command, label, args);
+        }
 
         if (args.length < 1) {
             sender.sendMessage(ValidCommands);

@@ -9,8 +9,7 @@ public enum PermissionRole {
 
     OWNER("机器人拥有者"),
     ADMIN("管理员"),
-    USER("普通用户"),
-    BLACKLIST("黑名单");
+    USER("普通用户");
 
     private final String displayName;
 

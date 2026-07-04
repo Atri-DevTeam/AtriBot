@@ -36,9 +36,9 @@ commands:
   cl:
     description: 领取Hypixel奖励
     usage: /cl <Hypixel每日签到链接>
-  bwc:
-    description: 起床战争挑战查询
-    usage: /bwc <玩家名> 或 /bwc api <API Key>
+  anan:
+    description: 夏目安安素描本
+    usage: /anan <文本> [模式]
   checkmcnews:
     description: 获取MC新闻
   checkhypnews:
@@ -63,9 +63,9 @@ commands:
   emj:
     description: 表情轰炸
     usage: /emj <normal/medium/insane/animation> [可选 User]
-  reload:
-    description: 重新加载配置
-    usage: /reload [all|cfg|f|g]
+  gt:
+    description: 好女孩
+    usage: /gt <内容>
   autolike:
     description: 自动点赞列表
     usage: /autolike <add|remove|list> (不需要输入QQ号，非管理员不允许更改他人设置)
@@ -86,13 +86,24 @@ commands:
   mc:
     description: Minecraft相关
     usage: "/mc <子命令> [参数]"
+    aliases:
+      - bt
+      - bantracker
   test:
     description: 测试命令
   feedback:
     description: 提交反馈
     usage: /feedback <反馈内容>
-  permission:
+    aliases:
+      - 反馈
+      - 举报
+      - 建议
+  perm:
     description: 权限管理
+    aliases:
+      - 权限
+      - 权限管理
+      - permission
   ogroup:
     description: 白名单管理
   elec:
@@ -154,9 +165,9 @@ commands:
       - 小游戏
       - game
     description: 小游戏
-  skb:
+  music:
     description: Music
-    usage: /skb <关键词>
+    usage: /music <关键词>
   ping:
     description: Pong!
     usage: /ping
@@ -176,3 +187,5 @@ commands:
     usage: 取决于 label
     aliases:
       - yl
+  check-mojira:
+    description: 检查 Mojira 漏洞追踪器

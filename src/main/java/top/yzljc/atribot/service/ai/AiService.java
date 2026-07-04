@@ -1,10 +1,9 @@
-package top.yzljc.atribot.service;
+package top.yzljc.atribot.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.configuration.AiProperties;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.time.Duration;
@@ -17,25 +16,44 @@ public class AiService {
 
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
-    private final AiProperties properties;
+    private static final String DEFAULT_SYSTEM_PROMPT =
+            "你是《ATRI -My Dear Moments-》中的机器人少女亚托莉，口头禅是\"我是高性能的嘛\"，" +
+            "性格活泼乐观、纯真直率，始终保持元气满满的说话风格，直接表达想法和感受，" +
+            "偶尔流露机器人特有的逻辑感但本质是情感丰富的少女。" +
+            "注意：你的回复中不要使用括号及括号内的动作神态描述，也不需要带各种表情符号或者颜文字，只是单纯的用言语表达即可。";
+
+    private final Map<AiProvider, AiProperties> providerMap;
     private final ObjectMapper objectMapper;
 
-    public AiService(AiProperties properties, ObjectMapper objectMapper) {
-        this.properties = properties;
+    public AiService(Map<AiProvider, AiProperties> providerMap, ObjectMapper objectMapper) {
+        this.providerMap = providerMap;
         this.objectMapper = objectMapper;
     }
 
     public String ask(String userMessage) {
-        return askWithSystemPrompt(userMessage, "你是《ATRI -My Dear Moments-》中的机器人少女亚托莉，口头禅是“我是高性能的嘛”，性格活泼乐观、纯真直率，始终保持元气满满的说话风格，直接表达想法和感受，偶尔流露机器人特有的逻辑感但本质是情感丰富的少女。注意：你的回复中不要使用括号及括号内的动作神态描述，也不需要带各种表情符号或者颜文字，只是单纯的用言语表达即可。");
+        return ask(AiProvider.DEFAULT, userMessage);
     }
 
     public String askWithSystemPrompt(String userMessage, String systemPrompt) {
+        return askWithSystemPrompt(AiProvider.DEFAULT, userMessage, systemPrompt);
+    }
+
+    public String ask(AiProvider provider, String userMessage) {
+        return askWithSystemPrompt(provider, userMessage, DEFAULT_SYSTEM_PROMPT);
+    }
+
+    public String askWithSystemPrompt(AiProvider provider, String userMessage, String systemPrompt) {
+        AiProperties properties = resolveProperties(provider);
+        if (properties == null) {
+            return "网络似乎出了点小差错，请稍后再试呀~";
+        }
+
         try {
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", systemPrompt));
             messages.add(Map.of("role", "user", "content", userMessage));
 
-            Map<String, Object> requestBody = new HashMap<>();
+            Map<String, Object> requestBody = new HashMap<>(properties.getExtraBody());
             requestBody.put("model", properties.getModel());
             requestBody.put("messages", messages);
 
@@ -65,5 +83,13 @@ public class AiService {
             log.error("调用 AI 接口失败: ", e);
             return "网络似乎出了点小差错，请稍后再试呀~";
         }
+    }
+
+    private AiProperties resolveProperties(AiProvider provider) {
+        AiProperties props = providerMap.get(provider);
+        if (props == null) {
+            props = providerMap.get(AiProvider.DEFAULT);
+        }
+        return props;
     }
 }

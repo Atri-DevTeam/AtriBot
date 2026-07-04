@@ -50,6 +50,11 @@ public class Markdown {
         return "[" + display + "](" + url + ")";
     }
 
+    /**
+     * 群消息发送失败，
+     * 错误码：40034106
+     * 原因：群消息不支持 @全体成员（qqbot-at-everyone）
+     */
     public static String atAll() {
         return "<qqbot-at-everyone />";
     }

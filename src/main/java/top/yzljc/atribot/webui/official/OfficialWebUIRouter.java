@@ -53,7 +53,7 @@ public class OfficialWebUIRouter {
         server.get("/webui/api/groups/{groupOpenId}/functions", OfficialWebUIController::getGroupFunctions);
         server.post("/webui/api/groups/{groupOpenId}/whitelist", OfficialWebUIController::setGroupWhitelist);
         server.post("/webui/api/groups/{groupOpenId}/blacklist", OfficialWebUIController::setGroupBlacklist);
-        server.post("/webui/api/groups/{groupOpenId}/allowed-active", OfficialWebUIController::setGroupAllowedActive);
+        server.post("/webui/api/groups/{groupOpenId}/real-group-id", OfficialWebUIController::setGroupRealGroupId);
         server.post("/webui/api/groups/{groupOpenId}/functions/{functionKey}", OfficialWebUIController::setGroupFunction);
         server.post("/webui/api/groups/send", OfficialWebUIController::sendGroupMessage);
         server.post("/webui/api/groups/recall", OfficialWebUIController::recallMessage);
@@ -64,6 +64,8 @@ public class OfficialWebUIRouter {
         server.get("/webui/api/c2c/{userOpenId}/permissions", OfficialWebUIController::getC2CUserPermissions);
         server.post("/webui/api/c2c/{userOpenId}/role", OfficialWebUIController::setC2CUserRole);
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", OfficialWebUIController::toggleC2CUserPermission);
+        server.post("/webui/api/c2c/{userOpenId}/blocked", OfficialWebUIController::setC2CUserBlocked);
+        server.post("/webui/api/c2c/{userOpenId}/ignored", OfficialWebUIController::setC2CUserIgnored);
         server.get("/webui/api/c2c/{userOpenId}/messages", OfficialWebUIController::fetchC2CMessages);
         server.post("/webui/api/c2c/send", OfficialWebUIController::sendC2CMessage);
         server.post("/webui/api/c2c/recall", OfficialWebUIController::recallC2CMessage);
@@ -74,6 +76,9 @@ public class OfficialWebUIRouter {
         server.get("/webui/api/feedback/list", OfficialWebUIController::listFeedback);
         server.get("/webui/api/feedback/count", OfficialWebUIController::countFeedback);
         server.post("/webui/api/feedback/reply", OfficialWebUIController::replyFeedback);
+
+        // 用户列表
+        server.get("/webui/api/users/messages", OfficialWebUIController::listUserMessages);
 
         server.error(404, OfficialWebUIRouter::spaFallback);
     }

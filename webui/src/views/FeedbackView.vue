@@ -31,6 +31,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/users' }" @click="$router.push('/users'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          用户列表
+        </button>
         <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -131,6 +137,10 @@
             <div class="feedback-label">#{{ replyTarget.id.substring(0, 8) }} · {{ replyTarget.username }}</div>
             <div class="feedback-text">{{ replyTarget.submitContent }}</div>
           </div>
+          <select v-if="quickReplies.length" v-model="replyContent" class="quick-reply-select">
+            <option value="" disabled>快捷回复…</option>
+            <option v-for="qr in quickReplies" :key="qr" :value="qr">{{ qr }}</option>
+          </select>
           <textarea v-model="replyContent" class="reply-textarea" rows="5" placeholder="输入回复内容..." />
           <label class="checkbox-label">
             <input type="checkbox" v-model="replyHidden" />
@@ -152,6 +162,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
+
+const quickReplies = [
+  "你好，根据开放平台用户安全策略，相关内容无法提供",
+    "您的反馈已收到，但我们还需进一步处理，我们将在问题处理后予以再次答复，感谢您的支持",
+    "问题已修复"
+]
 
 const router = useRouter()
 
@@ -193,7 +209,13 @@ async function api(path, options) {
     ...options
   })
   if (res.status === 503) { logout(); throw new Error('WebUI 已关闭') }
-  const payload = await res.json()
+  let payload
+  try {
+    payload = await res.json()
+  } catch {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
   if (res.status === 401) { logout(); throw new Error('未授权') }
   if (payload.status !== 200) throw new Error(payload.message || '请求失败')
   return payload.data

@@ -242,6 +242,9 @@
   .chat-head-right .info-toggle { padding: 2px; }
   .chat-head-right .info-toggle svg { width: 16px; height: 16px; }
 
+  .group-list-grid { grid-template-columns: 1fr; }
+  .group-list-card { font-size: 12px; padding: 10px 12px; }
+
   .group-picker-trigger {
     min-width: 0;
     max-width: none;

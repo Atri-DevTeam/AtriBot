@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.event.Cancellable;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.service.request.HttpService;
@@ -22,8 +24,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.event.impl
  */
 @Getter
-@AllArgsConstructor
-public class OfficialInteractionEvent extends Event {
+public class OfficialInteractionEvent extends Event implements Cancellable {
     private final String eventId;
     private final int chatType;
     private final Data data;
@@ -33,6 +34,24 @@ public class OfficialInteractionEvent extends Event {
     private final String scene;
     private final String timestamp;
     private final int type;
+    private boolean cancelled;
+
+    public OfficialInteractionEvent(String eventId, int chatType, Data data, String groupOpenId, String unionOpenId, String id, String scene, String timestamp, int type) {
+        this.eventId = eventId;
+        this.chatType = chatType;
+        this.data = data;
+        this.groupOpenId = groupOpenId;
+        this.unionOpenId = unionOpenId;
+        this.id = id;
+        this.scene = scene;
+        this.timestamp = timestamp;
+        this.type = type;
+    }
+
+    @Override
+    public void setCancelled(boolean cancel) {
+        this.cancelled = cancel;
+    }
 
     @Getter
     @AllArgsConstructor
@@ -43,6 +62,9 @@ public class OfficialInteractionEvent extends Event {
 
     @SuppressWarnings("UnusedReturnValue")
     public boolean answer(AnswerCode status) {
+        if (this.cancelled) {
+            status = AnswerCode.FAIL;
+        }
         Map<String, Integer> body = Map.of("code", status.getCode());
         JsonNode response = HttpService.putJson(Config.getInstance().getQqApiBaseUrl() + "/interactions/" + id, body, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
         return response != null;

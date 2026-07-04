@@ -2,7 +2,7 @@ package top.yzljc.atribot.function.general.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.service.AiService;
+import top.yzljc.atribot.service.ai.AiService;
 
 @Slf4j
 public class AtriNewsSummarizer {

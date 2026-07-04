@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.official;
 
-import top.yzljc.atribot.auth.official.OfficialGroups;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -12,10 +13,10 @@ import top.yzljc.atribot.event.EventType;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName AccountInfo
+ * @ClassName WhoAmI
  * @Created_at 2026/05/09
  * @Project AtriBot
- * @Package top.yzljc.atribot.functions.impl
+ * @Package top.yzljc.atribot.official.function
  */
 public class WhoAmI implements CommandExecutor {
 
@@ -24,45 +25,74 @@ public class WhoAmI implements CommandExecutor {
         switch (sender.getPlatform()) {
             case OFFICIAL_GROUP -> {
                 boolean fullMessage = sender.getEventType() == EventType.OFFICIAL_GROUP_MESSAGE;
-                String mdText = "```json\n" +
-                        "user_openId: " + sender.getUserId() + "\n" +
-                        "group_openId: " + sender.getGroupId() + "\n" +
-                        "message_openId: " + sender.getMessageId() + "\n" +
-                        "user_bot_role: " + OfficialUsers.getRole(sender.getUserId()) + "\n" +
-                        "user_group_role：" + sender.getRole() + "\n" +
-                        "enable_full_message: " + fullMessage + "\n" +
-                        "enable_active_message: " + "$msg" + "\n" +
-                        "```\n\n" +
-                        "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义";
 
-                String messageId = GroupChat.sendMessage(sender.getGroupId(), TC.md(mdText.replace("$msg", "true")));
+                ObjectNode json = JsonNodeFactory.instance.objectNode();
+                json.put("user_openId", sender.getUserId());
+                json.put("group_openId", sender.getGroupId());
+                json.put("message_openId", sender.getMessageId());
+                json.put("user_bot_role", String.valueOf(OfficialUsers.getRole(sender.getUserId())));
+                json.put("user_group_role", String.valueOf(sender.getRole()));
+                json.put("enable_full_message", fullMessage);
+                json.put("enable_active_message", true);
+
+                String mdText = "```json\n"
+                        + json.toPrettyString()
+                        + "\n```\n\n"
+                        + "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义";
+
+                String messageId = GroupChat.sendMessage(sender.getGroupId(), TC.md(mdText));
+
                 if (messageId == null) {
-                    sender.sendMessage(TC.md(mdText.replace("$msg", "false")));
+                    json.put("enable_active_message", false);
+
+                    sender.sendMessage(
+                            TC.md(
+                                    "```json\n"
+                                            + json.toPrettyString()
+                                            + "\n```\n\n"
+                                            + "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义"
+                            )
+                    );
                 }
+
                 return true;
             }
 
             case OFFICIAL_C2C -> {
-                Markdown md = TC.md("```json\n" +
-                        "union_openId: " + sender.getUserId() + "\n" +
-                        "message_id: " + sender.getMessageId() + "\n" +
-                        "user_bot_role: " + OfficialUsers.getRole(sender.getUserId()) + "\n" +
-                        "```\n\n" +
-                        "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义");
+                ObjectNode json = JsonNodeFactory.instance.objectNode();
+                json.put("union_openId", sender.getUserId());
+                json.put("message_id", sender.getMessageId());
+                json.put("user_bot_role", String.valueOf(OfficialUsers.getRole(sender.getUserId())));
+
+                Markdown md = TC.md(
+                        "```json\n"
+                                + json.toPrettyString()
+                                + "\n```\n\n"
+                                + "> 注意，本条指令专为获取相关鉴权数据使用，无实际意义"
+                );
+
                 sender.sendMessage(md);
                 return true;
             }
 
             case NAPCAT_GROUP -> {
-                String text = "user_id: " + sender.getUserId() + "\n" +
-                        "group_id: " + sender.getGroupId() + "\n" +
-                        "message_id: " + sender.getMessageId() + "\n" +
-                        "user_group_role：" + sender.getRole() + "\n" +
-                        "注意，本条指令专为获取相关鉴权数据使用，无实际意义";
-                sender.sendMessage(text);
+                ObjectNode json = JsonNodeFactory.instance.objectNode();
+                json.put("user_id", sender.getUserId());
+                json.put("group_id", sender.getGroupId());
+                json.put("message_id", sender.getMessageId());
+                json.put("user_group_role", String.valueOf(sender.getRole()));
+
+                sender.sendMessage(
+                        "```json\n"
+                                + json.toPrettyString()
+                                + "\n```\n\n"
+                                + "注意，本条指令专为获取相关鉴权数据使用，无实际意义"
+                );
+
                 return true;
             }
         }
+
         return true;
     }
 }

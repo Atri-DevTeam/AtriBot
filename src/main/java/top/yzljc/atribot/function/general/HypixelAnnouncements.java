@@ -1,8 +1,6 @@
 package top.yzljc.atribot.function.general;
 
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -44,6 +42,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Author YZ_Ljc_
@@ -76,6 +76,10 @@ public class HypixelAnnouncements implements CommandExecutor {
 
     private static final int INTRO_MAX_LENGTH = 100;
 
+    private static final int MAX_PUSH_PER_RUN = 3;
+
+    private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
+
     private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
 
     @Override
@@ -95,7 +99,10 @@ public class HypixelAnnouncements implements CommandExecutor {
         List<Announcement> announcements = checkForNewAnnouncements();
         if (announcements.isEmpty()) return false;
 
+        int pushed = 0;
         for (Announcement a : announcements) {
+            if (pushed >= MAX_PUSH_PER_RUN) break;
+            pushed++;
 
             ImageDTO banner = a.headerImage() != null ? PreImageGenerate.dump(a.headerImage()) : null;
 
@@ -222,6 +229,7 @@ public class HypixelAnnouncements implements CommandExecutor {
             return null;
         }
 
+        guid = normalizeGuid(guid);
         if (guid.isBlank()) {
             guid = !link.isBlank() ? link : title;
         }
@@ -380,6 +388,19 @@ public class HypixelAnnouncements implements CommandExecutor {
                 log.error("Failed to save Hypixel announcement guids to {}", HISTORY_FILE, e);
             }
         }
+    }
+
+    private static String normalizeGuid(String guid) {
+        if (guid == null || guid.isBlank()) {
+            return "";
+        }
+
+        Matcher matcher = GUID_NUMBER_PATTERN.matcher(guid.trim());
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return guid.trim();
     }
 
     private static String extractAuthor(String author) {

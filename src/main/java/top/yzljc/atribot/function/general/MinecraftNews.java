@@ -26,6 +26,7 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.tools.Alert;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,6 +107,12 @@ public class MinecraftNews implements CommandExecutor {
             }
 
             Collections.reverse(newArticlesFound);
+
+            if (newArticlesFound.size() > 10) {
+                Alert.notify("Minecraft 新闻源异常：单次新增文章数超过频控上限 10，放弃本次推送");
+                log.error("单次新增文章数异常（{} 篇），超过频控上限 10，放弃本次推送", newArticlesFound.size());
+                return;
+            }
 
             for (UnifiedArticle article : newArticlesFound) {
                 log.info("发现新文章：[{}] {}", article.tag, article.title);

@@ -63,7 +63,7 @@ public class LikeUser implements Listener {
                 userName = userIdStr;
             }
 
-            String resultLine = sendLike(userIdStr, "818804507", FriendList.isFriend(userIdStr), true);
+            String resultLine = sendLike(userIdStr, null, FriendList.isFriend(userIdStr), true);
             result.add(GroupMessage.createTextNode("自动点赞 " + userName + " " + resultLine));
             log.info("已向群 818804507 自动点赞用户 {}", userName);
             i++;
@@ -93,7 +93,7 @@ public class LikeUser implements Listener {
         boolean isFriend = FriendList.isFriend(userId);
         for (String kw : Config.getInstance().getKeywordsLikeUser()) {
             if (msg.equalsIgnoreCase(kw)) {
-                ThreadManager.execute(() -> sendLike(userId, event.getGroupId(), isFriend, false));
+                ThreadManager.execute(() -> sendLike(userId, event.getMessage().getMessageId(), isFriend, false));
             }
         }
     }
@@ -110,7 +110,7 @@ public class LikeUser implements Listener {
         }
     }
 
-    private static String sendLike(String userId, String groupId, boolean isFriend, boolean isAuto) {
+    private static String sendLike(String userId, String messageId, boolean isFriend, boolean isAuto) {
         String feedback;
 
         if (isFriend) {
@@ -120,9 +120,14 @@ public class LikeUser implements Listener {
             feedback = unfriendLike(userId);
         }
 
+        int emojiId;
         if (!isAuto) {
-            String messageId = GroupMessage.chatMessage(groupId, feedback);
-            Atri.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(messageId), 15 * 1000L);
+            switch (feedback) {
+                case "已赞，得十！" -> emojiId = 10024;
+                case "赞成，增五十，但或不得见！", "半成，成 10 次，败 40 次，或为今日已赞故！" -> emojiId = 76;
+                default -> emojiId= 10060;
+            }
+            GroupMessage.setEmoji(messageId, emojiId, true);
         }
         BotRuntimeData.callLikeUser();
         return feedback;

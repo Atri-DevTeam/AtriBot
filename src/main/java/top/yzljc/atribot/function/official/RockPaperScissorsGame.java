@@ -92,7 +92,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         );
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onChoiceCallback(OfficialInteractionEvent event) {
         if (!"rps_choice".equals(event.getButtonValue())) return;
 

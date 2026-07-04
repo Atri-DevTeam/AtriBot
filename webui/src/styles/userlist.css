@@ -1,0 +1,254 @@
+
+.userlist-layout {
+  display: block;
+}
+
+.userlist-panel {
+  height: 100%;
+}
+
+/* search bar */
+.userlist-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.userlist-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  background: #f8fafc;
+  transition: border-color 0.15s;
+}
+
+.userlist-search-input:focus {
+  border-color: #0f766e;
+  background: #fff;
+}
+
+.userlist-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.userlist-content {
+  overflow-y: auto;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+/* card list */
+.userlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.userlist-card {
+  background: #fff;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.userlist-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #e2e8f0;
+}
+
+.userlist-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.userlist-row1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.userlist-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.userlist-role {
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.userlist-role.role-owner {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.userlist-role.role-admin {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.userlist-role.role-member {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.userlist-perm {
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.userlist-perm.perm-owner {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.userlist-perm.perm-admin {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.userlist-perm.perm-blacklist {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.userlist-perm.perm-user {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.userlist-row2 {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.userlist-id {
+  cursor: default;
+}
+
+.userlist-gid {
+  cursor: default;
+}
+
+.userlist-time {
+  font-family: inherit;
+}
+
+.userlist-row3 {
+  margin-top: 2px;
+}
+
+.userlist-edit-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.userlist-edit-btn:hover {
+  background: #f1f5f9;
+  border-color: #0f766e;
+  color: #0f766e;
+}
+
+.userlist-msg {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+  word-break: break-all;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* pagination */
+.userlist-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .userlist-search-bar {
+    padding: 10px 8px;
+    gap: 6px;
+  }
+
+  .userlist-search-input {
+    font-size: 13px;
+  }
+
+  .userlist-content {
+    padding: 8px;
+  }
+
+  .userlist-card {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .userlist-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .userlist-row2 {
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .userlist-pagination {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .userlist-id,
+  .userlist-gid {
+    word-break: break-all;
+  }
+}

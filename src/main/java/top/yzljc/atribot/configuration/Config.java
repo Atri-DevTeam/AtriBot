@@ -3,6 +3,8 @@ package top.yzljc.atribot.configuration;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.service.ai.AiProperties;
+import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.utils.YamlConfiguration;
 
 import java.io.InputStream;
@@ -10,14 +12,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Config {
 
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
     private static final String CONFIG_FILE = Properties.CONFIG;
+    private static final Set<String> STANDARD_AI_KEYS = Set.of("api-key", "base-url", "model", "timeout");
     private static Config instance;
 
     private YamlConfiguration yaml;
@@ -41,14 +43,14 @@ public class Config {
     private String mysqlUsername;
     @Getter
     private String mysqlPassword;
-    private String aiApiKey;
-    private String aiBaseUrl;
-    private String aiModel;
-    private int aiTimeout;
+    @Getter
+    private Map<AiProvider, AiProperties> aiPropertiesMap;
     @Getter
     private int listenPort;
     @Getter
     private String env;
+    @Getter
+    private String apiUrl;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -67,7 +69,6 @@ public class Config {
     private List<String> napcatRecallIgnoredUsers;
 
     // ########## 功能设置区域 ##########
-    @Getter
     private String atribotKeySecret;
     @Getter
     private String hypixelRewardWebSocketUrl;
@@ -177,12 +178,10 @@ public class Config {
             this.mysqlDatabase = yaml.getString("mysql.database", "database");
             this.mysqlUsername = yaml.getString("mysql.username", "root");
             this.mysqlPassword = yaml.getString("mysql.password", "null");
-            this.aiApiKey = yaml.getString("ai.api-key", "");
-            this.aiBaseUrl = yaml.getString("ai.base-url", "");
-            this.aiModel = yaml.getString("ai.model", "qwen3.5-flash");
-            this.aiTimeout = yaml.getInt("ai.timeout", 30000);
+            this.aiPropertiesMap = loadAiConfigs();
             this.listenPort = yaml.getInt("listen-port", 1234);
             this.env = yaml.getString("env", "production");
+            this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
@@ -262,12 +261,58 @@ public class Config {
         return def;
     }
 
-    public AiProperties getAiBotProperties() {
+    private Map<AiProvider, AiProperties> loadAiConfigs() {
+        Map<AiProvider, AiProperties> map = new EnumMap<>(AiProvider.class);
+
+        for (AiProvider provider : AiProvider.values()) {
+            String key = "ai." + provider.getConfigKey();
+            AiProperties props = loadAiProperties(key);
+            map.put(provider, props);
+        }
+
+        // 确保 DEFAULT 至少有一个空配置，防止 NPE
+        AiProperties defaultProps = map.get(AiProvider.DEFAULT);
+        if (defaultProps == null || defaultProps.getBaseUrl().isEmpty()) {
+            log.warn("AI 默认配置 (ai.default) 未设置或 base-url 为空，AI 功能可能不可用");
+        }
+
+        log.info("已加载 {} 个 AI 配置: {}", map.size(), map.keySet());
+        return map;
+    }
+
+    private AiProperties loadAiProperties(String prefix) {
         AiProperties props = new AiProperties();
-        props.setApiKey(aiApiKey);
-        props.setBaseUrl(aiBaseUrl);
-        props.setModel(aiModel);
-        props.setTimeout(aiTimeout);
+        props.setApiKey(yaml.getString(prefix + ".api-key", ""));
+        props.setBaseUrl(yaml.getString(prefix + ".base-url", ""));
+        props.setModel(yaml.getString(prefix + ".model", "deepseek-v4-pro"));
+        props.setTimeout(yaml.getInt(prefix + ".timeout", 30000000));
+
+        // 读取 YAML 中除标准字段外的所有额外字段，放入 extraBody
+        YamlConfiguration.ConfigSection section = yaml.getSection(prefix);
+        if (section != null) {
+            for (String key : section.getKeys()) {
+                if (!STANDARD_AI_KEYS.contains(key)) {
+                    props.getExtraBody().put(key, section.get(key));
+                }
+            }
+        }
+
         return props;
+    }
+
+    public AiProperties getAiBotProperties() {
+        return getAiBotProperties(AiProvider.DEFAULT);
+    }
+
+    public AiProperties getAiBotProperties(AiProvider provider) {
+        AiProperties props = aiPropertiesMap.get(provider);
+        if (props == null) {
+            props = aiPropertiesMap.get(AiProvider.DEFAULT);
+        }
+        return props;
+    }
+
+    public String getAtribotKeySecret() {
+        return this.atribotKeySecret;
     }
 }

@@ -31,6 +31,7 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -426,8 +427,15 @@ public class HypixelReward implements CommandExecutor, Listener {
                     String msg = response.path("msg").asText();
                     String prefix = success ? "🎉 " : "😭 ";
                     String rewardUrl = "https://rewards.hypixel.net/claim-reward/" + session.rewardId + "/banner.png";
-                    ImageDTO dto = PreImageGenerate.dump(rewardUrl);
-                    String finalUrl = dto.url();
+                    Map<String, Object> body = Map.of(
+                            "cover", Map.of("x1", "408", "y1", "283", "x2", "764", "y2", "362", "color", "#dbae2f"),
+                            "url", rewardUrl
+                    );
+                    ImageDTO dto = PreImageGenerate.dump(body);
+                    String finalUrl = null;
+                    if (dto != null) {
+                        finalUrl = dto.url();
+                    }
 
                     Object keyboard = TC.keyboard(List.of(List.of(
                             new Button("c0", "再领取一个", "/cl", false, ButtonStyle.BLUE, ButtonType.COMMAND)
@@ -459,7 +467,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                     activeSessions.remove(sessionId);
 
                 } else if ("error".equals(type)) {
-                    String text = "❌ 出错啦: " + response.path("msg").asText();
+                    String text = "执行操作时出现错误: " + response.path("msg").asText();
                     switch (session.platform) {
                         case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, text);
                         case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, session.messageId, text);

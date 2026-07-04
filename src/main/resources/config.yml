@@ -14,7 +14,8 @@ ttf-file-name: "default.ttf"
 debug-mode: false
 # Websocket 服务器监听端口
 listen-port: 1234
-
+# API
+api-url: null
 # MySQL 数据库配置
 mysql:
   host: "localhost"
@@ -23,16 +24,29 @@ mysql:
   username: "root"
   password: "null"
 
-# AI 配置
+# AI 配置（支持多提供商，按名称区分）
+# 每个子节点为一个 AI 提供商。
+# api-key / base-url / model / timeout 为标准字段。
+# 除此之外的任意字段都会原样合并到请求 JSON body 中，
+# 可用于传递 temperature、top_p、max_tokens、extra_body 等参数。
 ai:
-  # API Key（OpenAI 格式）
-  api-key: ""
-  # API 基础地址（注意需包含 /v1/chat/completions）
-  base-url: ""
-  # 使用的模型名称
-  model: "qwen3.5-flash"
-  # 请求超时时间（毫秒）
-  timeout: 30000
+  default:
+    api-key: ""
+    base-url: ""
+    model: "qwen3.5-flash"
+    timeout: 30000000
+  dickseek:
+    api-key: ""
+    base-url: ""
+    model: "qwen3.5-flash"
+    timeout: 30000000
+    # 需要额外参数时直接写在下面
+    # temperature: 1
+    # top_p: 0.95
+    # max_tokens: 16384
+    # extra_body:
+    #   chat_template_kwargs:
+    #     thinking: false
 
 # ========== Napcat 设置区域 ==========
 

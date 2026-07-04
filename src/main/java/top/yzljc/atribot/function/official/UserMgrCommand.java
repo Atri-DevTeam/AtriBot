@@ -6,6 +6,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.Arrays;
@@ -19,7 +20,7 @@ import java.util.Set;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official
  */
-public class PermissionCommand implements CommandExecutor {
+public class UserMgrCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -27,7 +28,7 @@ public class PermissionCommand implements CommandExecutor {
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
 
         if (!sender.hasPermission()) {
-            sender.sendMessage("❌ 权限不足！只有管理员可以使用此命令！");
+            sender.sendMessage(Identifier.NO_PERMISSION);
             return true;
         }
 
@@ -48,23 +49,14 @@ public class PermissionCommand implements CommandExecutor {
             args[1] = sender.getUserId();
         }
 
-        /*
-         * setrole
-         */
-
         if (action.equalsIgnoreCase("setrole")) {
-
             if (args.length < 3) {
                 sender.sendMessage("用法：/permission setrole <unionOpenId> <role>");
                 return true;
             }
-
             String userOpenId = args[1];
-
             PermissionRole role = PermissionRole.fromString(args[2]);
-
             OfficialUsers.UserData data = OfficialUsers.getData(userOpenId);
-
             boolean success = OfficialUsers.setPermissionGroup(userOpenId, role, data.permissions());
             sender.sendMessage(success ? "权限组设置成功" : "权限组设置失败");
 
@@ -76,86 +68,99 @@ public class PermissionCommand implements CommandExecutor {
          */
 
         if (action.equalsIgnoreCase("add")) {
-
             if (args.length < 3) {
                 sender.sendMessage("用法：/permission add <unionOpenId> <permission1,permission2>");
                 return true;
             }
-
             String userOpenId = args[1];
-
             Set<String> permissions = new HashSet<>(Arrays.asList(args[2].split(",")));
-
             boolean success = true;
-
             for (String permission : permissions) {
-
                 permission = permission.trim();
-
                 if (permission.isBlank()) {
                     continue;
                 }
-
                 if (!OfficialUsers.addPermission(userOpenId, permission)) {
                     success = false;
                 }
             }
-
             sender.sendMessage(success ? "权限节点添加成功" : "部分权限节点添加失败");
-
             return true;
         }
 
-        /*
-         * remove
-         */
-
         if (action.equalsIgnoreCase("remove")) {
-
             if (args.length < 3) {
                 sender.sendMessage("用法：/permission remove <unionOpenId> <permission1,permission2>");
                 return true;
             }
-
             String userOpenId = args[1];
-
             Set<String> permissions = new HashSet<>(Arrays.asList(args[2].split(",")));
-
             boolean success = true;
-
             for (String permission : permissions) {
-
                 permission = permission.trim();
-
                 if (permission.isBlank()) {
                     continue;
                 }
-
                 if (!OfficialUsers.removePermission(userOpenId, permission)) {
                     success = false;
                 }
             }
-
             sender.sendMessage(success ? "权限节点删除成功" : "部分权限节点删除失败");
-
             return true;
         }
 
-        /*
-         * query
-         */
+        if (action.equalsIgnoreCase("block")) {
+            if (args.length < 2) {
+                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+                return true;
+            }
+            if (args.length < 3) {
+                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+                return true;
+            }
+            String userid = args[2];
+            if (args[1].equalsIgnoreCase("add")) {
+                OfficialUsers.setBlocked(userid, true);
+                sender.sendMessage("已拉黑用户 " + userid);
+            } else if (args[1].equalsIgnoreCase("remove")) {
+                OfficialUsers.setBlocked(userid, false);
+                sender.sendMessage("已解除拉黑用户 " + userid);
+            } else {
+                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+            }
+            return true;
+        }
+
+        if (action.equalsIgnoreCase("ignore")) {
+
+            if (args.length < 2) {
+                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+                return true;
+            }
+            if (args.length < 3) {
+                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+                return true;
+            }
+            String userid = args[2];
+            if (args[1].equalsIgnoreCase("add")) {
+                OfficialUsers.setIgnored(userid, true);
+                sender.sendMessage("已屏蔽用户 " + userid);
+            } else if (args[1].equalsIgnoreCase("remove")) {
+                OfficialUsers.setIgnored(userid, false);
+                sender.sendMessage("已解除屏蔽用户 " + userid);
+            } else {
+                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+            }
+            return true;
+        }
 
         if (action.equalsIgnoreCase("query")) {
-
             if (args.length < 2) {
                 sender.sendMessage("用法：/permission query <unionOpenId>");
                 return true;
             }
-
             String userOpenId = args[1];
-
             OfficialUsers.UserData data = OfficialUsers.getData(userOpenId);
-
             sender.sendMessage(TC.md(
                     """
                             ### 权限信息
@@ -177,10 +182,8 @@ public class PermissionCommand implements CommandExecutor {
                             data.role().name(),
                             data.permissions().isEmpty() ? "暂无权限节点" : String.join("\n", data.permissions())
                     )));
-
             return true;
         }
-
         return true;
     }
 }

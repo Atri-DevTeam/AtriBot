@@ -169,6 +169,7 @@ public class OfficialGroups {
      * 是否为黑名单群（已缓存，启动时加载）
      */
     public static boolean isGroupBlacklisted(String groupOpenId) {
+        if (groupOpenId == null) return false;
         return getData(groupOpenId).isBlacklisted();
     }
 

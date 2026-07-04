@@ -32,6 +32,12 @@
           </svg>
           私聊
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/users' }" @click="$router.push('/users'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          用户列表
+        </button>
         <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -64,11 +70,11 @@
         <section class="chat-panel">
           <div class="chat-head">
             <div class="group-picker">
-              <button class="group-picker-trigger" @click="dropdownOpen = !dropdownOpen; userSearch = ''">
+              <button class="group-picker-trigger" @click="toggleDropdown">
                 <span>{{ selectedUserId || '选择用户' }}</span>
                 <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
               </button>
-              <div v-if="dropdownOpen" class="dropdown-menu">
+              <div v-if="dropdownOpen" ref="dropdownRef" class="dropdown-menu">
                 <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
                 <button v-for="user in filteredUsers" :key="user.userOpenId"
                         class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
@@ -90,7 +96,16 @@
           <div class="message-list" ref="messageListRef" @scroll="onScroll">
             <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
             <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
-            <div v-if="!selectedUserId" class="empty-state">请选择一个用户</div>
+            <div v-if="!selectedUserId" class="group-list-hint">
+              <div class="group-list-grid">
+                <button v-for="user in users" :key="user.userOpenId"
+                        class="group-list-card"
+                        @click="selectUser(user.userOpenId)">
+                  <span class="group-list-id">{{ user.userOpenId }}</span>
+                </button>
+                <div v-if="users.length === 0" class="empty-state">暂无用户数据</div>
+              </div>
+            </div>
             <div v-else-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
             <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
@@ -198,6 +213,15 @@
               <input v-model="newPerm" placeholder="新权限节点" />
               <button class="primary-button" :disabled="!newPerm.trim()">添加</button>
             </form>
+            <h4>状态</h4>
+            <label class="checkbox-label" style="margin-bottom:6px">
+              <input type="checkbox" :checked="permBlocked" @change="toggleBlocked" />
+              拉黑
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" :checked="permIgnored" @change="toggleIgnored" />
+              屏蔽
+            </label>
           </div>
           <div v-else class="hint">选择用户后显示详情</div>
           <div class="log-box"><strong>请求状态</strong><p>{{ notice }}</p></div>
@@ -234,6 +258,8 @@ const botName = ref('AtriBot')
 const avatarFailed = reactive({})
 const currentPage = ref(0)
 const dropdownOpen = ref(false)
+const dropdownRef = ref(null)
+const dropdownScrollTop = ref(0)
 const userSearch = ref('')
 const sidebarOpen = ref(false)
 const showInspector = ref(false)
@@ -246,10 +272,12 @@ const pastePreview = ref(null)
 const previewImg = ref(null)
 const pageSize = 80
 const permRole = ref('')
+const permBlocked = ref(false)
+const permIgnored = ref(false)
 const permNodes = ref([])
-const roles = ['USER', 'ADMIN', 'OWNER', 'BLACKLIST']
+const roles = ['USER', 'ADMIN', 'OWNER']
 function roleLabel(r) {
-  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员', BLACKLIST: '黑名单' }
+  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员' }
   return map[r] || r
 }
 const newPerm = ref('')
@@ -339,7 +367,13 @@ async function api(path, options) {
     logout()
     throw new Error('WebUI 已关闭')
   }
-  const payload = await res.json()
+  let payload
+  try {
+    payload = await res.json()
+  } catch {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
   if (res.status === 401) { logout(); throw new Error('未授权') }
   if (payload.status !== 200) throw new Error(payload.message || '请求失败')
   return payload.data
@@ -373,6 +407,21 @@ async function loadUsers() {
   finally { loadingUsers.value = false }
 }
 
+function toggleDropdown() {
+  if (dropdownOpen.value) {
+    const el = dropdownRef.value
+    if (el) dropdownScrollTop.value = el.scrollTop
+    dropdownOpen.value = false
+  } else {
+    userSearch.value = ''
+    dropdownOpen.value = true
+    nextTick(() => {
+      const el = dropdownRef.value
+      if (el) el.scrollTop = dropdownScrollTop.value
+    })
+  }
+}
+
 async function selectUser(userOpenId) {
   if (selectedUserId.value === userOpenId) return
   selectedUserId.value = userOpenId
@@ -389,7 +438,27 @@ async function loadPerms() {
     const data = await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions`)
     permRole.value = data?.role || 'USER'
     permNodes.value = data?.permissions || []
-  } catch { permRole.value = 'USER'; permNodes.value = [] }
+    permBlocked.value = data?.isBlocked || false
+    permIgnored.value = data?.isIgnored || false
+  } catch { permRole.value = 'USER'; permNodes.value = []; permBlocked.value = false; permIgnored.value = false }
+}
+
+async function toggleBlocked() {
+  if (!selectedUserId.value) return
+  const val = !permBlocked.value
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/blocked?value=${val}`, { method: 'POST' })
+    permBlocked.value = val
+  } catch (e) { notice.value = e.message }
+}
+
+async function toggleIgnored() {
+  if (!selectedUserId.value) return
+  const val = !permIgnored.value
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/ignored?value=${val}`, { method: 'POST' })
+    permIgnored.value = val
+  } catch (e) { notice.value = e.message }
 }
 
 async function setPermRole(role) {

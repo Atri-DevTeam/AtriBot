@@ -325,6 +325,19 @@ public class MessageUtils {
         PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
     }
 
+
+    public static void setEmoji(String msgId, int emojiId, boolean set) {
+        try {
+            Map<String, Object> req = new HashMap<>(4);
+            req.put("message_id", msgId);
+            req.put("emoji_id", emojiId);
+            req.put("set", set);
+            PostRequest.sendPost(RequestType.PUT_EMOJI, req);
+        } catch (Exception e) {
+            log.warn("Emoji API fail: {}", e.getMessage());
+        }
+    }
+
     public enum ImageType {
         URL, BASE64, FILE
     }
