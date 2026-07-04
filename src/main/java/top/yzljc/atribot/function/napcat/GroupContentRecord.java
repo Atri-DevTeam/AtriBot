@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.napcat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.napcat.UserInformation;
@@ -10,7 +11,6 @@ import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.webui.onebot.WebUIController;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -147,8 +147,8 @@ public class GroupContentRecord implements Listener {
         return null;
     }
 
-    public static LinkedList<WebUIController.GroupMessageDTO> fetchMessages(long groupId, int page) {
-        LinkedList<WebUIController.GroupMessageDTO> result = new LinkedList<>();
+    public static LinkedList<GroupMessageDTO> fetchMessages(long groupId, int page) {
+        LinkedList<GroupMessageDTO> result = new LinkedList<>();
         String tableName = getTableNameForGroup(groupId);
         int offset = (page - 1) * 25;
         String sql = "SELECT user_id, message_id, raw_message, msg_time FROM `" + tableName + "` ORDER BY id DESC LIMIT 25 OFFSET ?";
@@ -158,7 +158,7 @@ public class GroupContentRecord implements Listener {
             pstmt.setInt(1, offset);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    WebUIController.GroupMessageDTO data = new WebUIController.GroupMessageDTO();
+                    GroupMessageDTO data = new GroupMessageDTO();
                     data.setUserId(rs.getLong("user_id"));
                     data.setMessageId(rs.getLong("message_id"));
                     data.setContent(rs.getString("raw_message"));
@@ -172,5 +172,15 @@ public class GroupContentRecord implements Listener {
             log.error("分页查询消息失败: {}", e.getMessage());
         }
         return result;
+    }
+
+    @Data
+    public static class GroupMessageDTO {
+        private long userId;
+        private String userName;
+        private long messageId;
+        private long time;
+        private String content;
+        private boolean isAdmin;
     }
 }

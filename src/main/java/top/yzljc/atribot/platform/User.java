@@ -1,6 +1,7 @@
 package top.yzljc.atribot.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
@@ -8,6 +9,7 @@ import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.configuration.Config;
 
 /**
  * @Author YZ_Ljc_
@@ -67,7 +69,7 @@ public class User {
                 return PrivateMessage.replyMessage(this.userId, messageId, text);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String text)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -80,7 +82,7 @@ public class User {
                 return GroupMessage.replyMessage(this.userId, groupId, messageId, false, text);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -90,7 +92,7 @@ public class User {
                 return GroupChat.replyMessage(groupId, this.userId, messageId, md);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -100,7 +102,7 @@ public class User {
                 return C2CChat.replyMessage(this.userId, messageId, md);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -110,7 +112,7 @@ public class User {
                 return GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md, Object keyboard)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -120,7 +122,7 @@ public class User {
                 return C2CChat.replyMessage(this.userId, messageId, md, keyboard);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -130,7 +132,7 @@ public class User {
                 return GroupChat.replyMessage(groupId, messageId, type, data);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -140,7 +142,7 @@ public class User {
                 return C2CChat.replyMessage(this.userId, messageId, type, data);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String data, ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -150,7 +152,7 @@ public class User {
                 return GroupMessage.replyMessage(groupId, messageId, text, data, type);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String data, MessageUtils.ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -160,7 +162,7 @@ public class User {
                 return GroupMessage.replyMessage(groupId, messageId, data, type);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, MessageUtils.ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -175,7 +177,7 @@ public class User {
                 return;
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "recall(String groupId, String messageId)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -190,6 +192,25 @@ public class User {
                 return;
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + this.platform);
+        throw new UnsupportedPlatform(this.platform, "recall(String messageId)");
+    }
+
+    public boolean hasPermission() {
+        if (this.platform == Platform.NAPCAT_GROUP) {
+            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
+                return true;
+            }
+        }
+        return OfficialUsers.isAdmin(this.userId);
+    }
+
+    public boolean hasPermission(String permission) {
+        if (this.platform == Platform.NAPCAT_GROUP) {
+            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
+                return true;
+            }
+        }
+        if (OfficialUsers.isAdmin(this.userId)) return true;
+        return OfficialUsers.hasPermission(this.userId, permission);
     }
 }

@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.napcat.like;
 
+import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.napcat.UserInformation;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -33,7 +34,7 @@ public class AutoLikeCommand implements CommandExecutor {
                 } else {
                     targetUid = Long.parseLong(sender.getUserId());
                 }
-                LikeUser.addToAutoLikeList(targetUid);
+                CardLike.addToAutoLikeList(targetUid);
                 sender.sendMessage("已将 " + UserInformation.getUserName(String.valueOf(targetUid)) + "(" + targetUid + ") 加入自动点赞列表");
                 return true;
             }
@@ -45,12 +46,12 @@ public class AutoLikeCommand implements CommandExecutor {
                 } else {
                     targetUid = Long.parseLong(sender.getUserId());
                 }
-                LikeUser.removeFromAutoLikeList(targetUid);
+                CardLike.removeFromAutoLikeList(targetUid);
                 sender.sendMessage("已将 " + UserInformation.getUserName(String.valueOf(targetUid)) + "(" + targetUid + ") 从自动点赞列表移除");
                 return true;
             }
             case "list" -> {
-                List<Long> list = LikeUser.getAutoLikeList();
+                List<Long> list = CardLike.getAutoLikeList();
                 if (list.isEmpty()) { sender.sendMessage("自动点赞列表为空"); return true; }
                 String oneLine = list.stream().map(uid -> {
                     String name = UserInformation.getUserName(String.valueOf(uid));
@@ -61,7 +62,7 @@ public class AutoLikeCommand implements CommandExecutor {
             }
         }
         if (sender.hasPermission() && "test".equals(sub)) {
-            LikeUser.likeAllinList();
+            CardLike.likeAllinList();
             return true;
         }
         return false;

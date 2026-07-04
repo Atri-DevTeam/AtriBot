@@ -7,11 +7,11 @@ plugins {
     `maven-publish`
     application
     id("com.gradleup.shadow") version "9.4.3"
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.4.0"
 }
 
 group = "top.yzljc"
-version = "3.1.1-Release"
+version = "3.1.3-Release"
 description = "AtriBot"
 
 repositories {
@@ -39,6 +39,7 @@ dependencies {
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
     api("ch.qos.logback:logback-classic:1.5.37")
+    api("com.github.stuxuhai:jpinyin:1.1.8")
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")

@@ -44,6 +44,12 @@
           </svg>
           反馈管理
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/napcat' }" @click="$router.push('/napcat'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="3"/><path d="M8 20h8"/><path d="M12 18v2"/>
+          </svg>
+          Napcat功能
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -78,7 +84,7 @@
                 <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
                 <button v-for="user in filteredUsers" :key="user.userOpenId"
                         class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
-                        @click="selectUser(user.userOpenId); dropdownOpen = false">
+                        @click="selectUser(user.userOpenId); closeDropdown()">
                   <span class="item-id">{{ user.userOpenId }}</span>
                 </button>
               </div>
@@ -142,8 +148,29 @@
                 </div>
                 <div class="bubble"
                      @contextmenu.prevent.stop="onContextMenu($event, message)">
-                  <pre v-if="message.messageType !== 2">{{ renderContent(message) }}</pre>
-                  <div v-else class="md-body" v-html="renderMd(renderContent(message))"></div>
+                  <div v-if="message.attachments" class="msg-attach">
+                    <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
+                      <img
+                        v-if="att.type === 'image'"
+                        v-show="!attachFailed[att.url]"
+                        :src="att.url"
+                        :alt="att.filename"
+                        referrerpolicy="no-referrer"
+                        class="clickable"
+                        @error="attachFailed[att.url] = true"
+                        @click="previewImg = att.url"
+                      />
+                      <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                      <div v-else-if="att.type === 'voice'" class="voice-attach">
+                        <div class="voice-title">语音消息</div>
+                        <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
+                        <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
+                        <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
+                      </div>
+                    </template>
+                  </div>
+                  <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                  <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                 </div>
               </div>
             </article>
@@ -239,6 +266,7 @@
 import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
+import { renderFaceTags } from '../messageRender.js'
 
 const router = useRouter()
 
@@ -256,6 +284,7 @@ const appId = ref('')
 const botOpenId = ref('')
 const botName = ref('AtriBot')
 const avatarFailed = reactive({})
+const attachFailed = reactive({})
 const currentPage = ref(0)
 const dropdownOpen = ref(false)
 const dropdownRef = ref(null)
@@ -340,7 +369,7 @@ function isNearBottom() {
 }
 
 function onDocumentClick(e) {
-  if (!e.target.closest('.group-picker')) dropdownOpen.value = false
+  if (!e.target.closest('.group-picker')) closeDropdown()
   if (!e.target.closest('.ctx-menu')) ctxMenu.visible = false
 }
 
@@ -409,17 +438,21 @@ async function loadUsers() {
 
 function toggleDropdown() {
   if (dropdownOpen.value) {
-    const el = dropdownRef.value
-    if (el) dropdownScrollTop.value = el.scrollTop
-    dropdownOpen.value = false
+    closeDropdown()
   } else {
-    userSearch.value = ''
     dropdownOpen.value = true
     nextTick(() => {
       const el = dropdownRef.value
       if (el) el.scrollTop = dropdownScrollTop.value
     })
   }
+}
+
+function closeDropdown() {
+  if (!dropdownOpen.value) return
+  const el = dropdownRef.value
+  if (el) dropdownScrollTop.value = el.scrollTop
+  dropdownOpen.value = false
 }
 
 async function selectUser(userOpenId) {
@@ -542,10 +575,34 @@ async function sendMessage() {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
+  text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
+}
+
+function parseAttach(raw) {
+  try {
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!Array.isArray(arr)) return []
+    return arr.map(normalizeAttachment).filter(Boolean)
+  } catch { return [] }
+}
+
+function normalizeAttachment(att) {
+  const contentType = att?.content_type || ''
+  if (att?.url && contentType.startsWith('image/')) {
+    return { ...att, type: 'image' }
+  }
+  if (contentType === 'voice') {
+    return {
+      ...att,
+      type: 'voice',
+      asrText: att.asr_refer_text || '',
+      voiceUrl: att.voice_wav_url || ''
+    }
+  }
+  return null
 }
 
 function renderMd(text) {

@@ -1,4 +1,4 @@
-package top.yzljc.atribot.webui.official;
+package top.yzljc.atribot.webui.impl;
 
 import lombok.extern.slf4j.Slf4j;
 

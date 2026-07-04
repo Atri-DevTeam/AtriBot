@@ -216,8 +216,6 @@ public class BotEvents {
 
     public static void handleGroupMemberAddEvent(String eventId, JsonNode eventData) {
         try {
-            JsonNode dataNode = eventData.path("data");
-
             OfficialGroupMemberAddEvent event = new OfficialGroupMemberAddEvent(
                     eventId,
                     eventData.path("group_openid").asText(null),
@@ -233,8 +231,6 @@ public class BotEvents {
 
     public static void handleGroupMemberRemoveEvent(String eventId, JsonNode eventData) {
         try {
-            JsonNode dataNode = eventData.path("data");
-
             OfficialGroupMemberRemoveEvent event = new OfficialGroupMemberRemoveEvent(
                     eventId,
                     eventData.path("group_openid").asText(null),

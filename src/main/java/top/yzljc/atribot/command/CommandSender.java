@@ -1,14 +1,13 @@
 package top.yzljc.atribot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
+import top.yzljc.atribot.platform.UnsupportedPlatform;
 import top.yzljc.atribot.platform.User;
 
 import java.util.List;
@@ -51,25 +50,6 @@ public class CommandSender extends User {
         return this.eventType;
     }
 
-    public boolean hasPermission() {
-        if (this.platform == Platform.NAPCAT_GROUP) {
-            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
-                return true;
-            }
-        }
-        return OfficialUsers.isAdmin(this.userId);
-    }
-
-    public boolean hasPermission(String permission) {
-        if (this.platform == Platform.NAPCAT_GROUP) {
-            if (Config.getInstance().getNapcatAdminUins().contains(this.userId)) {
-                return true;
-            }
-        }
-        if (OfficialUsers.isAdmin(this.userId)) return true;
-        return OfficialUsers.hasPermission(this.userId, permission);
-    }
-
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text) {
         switch (platform) {
@@ -80,7 +60,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.messageId, text);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String text)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -93,7 +73,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.messageId, markdown);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -106,7 +86,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.messageId, markdown, buttons);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown, Object buttons)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -119,7 +99,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.messageId, data, type);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String data, ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -129,7 +109,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.groupId, this.messageId, data, type);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String data, MessageUtils.ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -139,7 +119,7 @@ public class CommandSender extends User {
                 return super.sendMessage(this.groupId, this.messageId, text, data, type);
             }
         }
-        throw new UnsupportedOperationException("Unsupported platform: " + platform);
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String text, String data, MessageUtils.ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -148,7 +128,7 @@ public class CommandSender extends User {
             case OFFICIAL_GROUP -> super.recall(this.groupId, messageId);
             case OFFICIAL_C2C -> super.recall(messageId);
             case NAPCAT_GROUP -> super.recall(this.groupId, messageId);
-            default -> throw new UnsupportedOperationException("Unsupported platform: " + platform);
+            default -> throw new UnsupportedPlatform(this.platform, "recall(String messageId)");
         }
     }
 }

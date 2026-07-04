@@ -176,6 +176,28 @@
 
   .msg-uid { display: none; }
   .msg-uid.expanded { display: inline; }
+  .msg-header.uid-expanded {
+    width: 100%;
+    gap: 0;
+  }
+  .message.mine .msg-header.uid-expanded {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .msg-header.uid-expanded .msg-name,
+  .msg-header.uid-expanded .role-badge,
+  .msg-header.uid-expanded .bot-icon {
+    display: none;
+  }
+  .msg-header.uid-expanded .msg-uid.expanded {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    line-height: 1.25;
+  }
   .avatar { cursor: pointer; }
 
   .bubble {
@@ -248,6 +270,15 @@
   .group-picker-trigger {
     min-width: 0;
     max-width: none;
+  }
+
+  .group-picker-row {
+    width: 100%;
+  }
+
+  .filter-return-btn {
+    width: 30px;
+    height: 30px;
   }
 
   .dropdown-menu {

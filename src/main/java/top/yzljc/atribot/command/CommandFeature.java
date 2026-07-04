@@ -2,7 +2,6 @@ package top.yzljc.atribot.command;
 
 import lombok.Getter;
 import lombok.Setter;
-import top.yzljc.atribot.chat.official.TC;
 
 import java.util.List;
 

@@ -14,7 +14,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.webui.official.WebUISessionManager;
+import top.yzljc.atribot.webui.impl.WebUISessionManager;
 
 import java.util.List;
 

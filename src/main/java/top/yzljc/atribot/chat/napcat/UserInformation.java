@@ -4,19 +4,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class UserInformation {
-    private static String cachedBotId = null;
+    private static String napcatBotId = null;
     private static final Map<String, String> cache = new HashMap<>();
     private static final Map<String, Map<String, Boolean>> groupAdminCache = new HashMap<>();
+    private static final List<BotUinInterval> botUinList = new ArrayList<>();
 
     public static String getBotId() {
-        if (cachedBotId == null) {
-            cachedBotId = specBotIdInternal();
+        if (napcatBotId == null) {
+            napcatBotId = specBotIdInternal();
         }
-        return cachedBotId;
+        return napcatBotId;
     }
 
     public static String getUserName(String userId) {
@@ -48,7 +51,7 @@ public class UserInformation {
     }
 
     public static void clearCache() {
-        cachedBotId = null;
+        napcatBotId = null;
     }
 
     private static String specBotIdInternal() {
@@ -57,5 +60,32 @@ public class UserInformation {
             return loginInfo.get("data").get("user_id").asText();
         }
         return null;
+    }
+
+    public static boolean isBot(String userId) {
+        if (botUinList.isEmpty()) {
+            var data = PostRequest.getPostResult(RequestType.BOT_UIN_RANGE, Map.of());
+            if (data != null && data.has("data") && data.get("data").isArray()) {
+                for (JsonNode interval : data.get("data")) {
+                    long min = interval.path("minUin").asLong();
+                    long max = interval.path("maxUin").asLong();
+                    botUinList.add(new BotUinInterval(min, max));
+                }
+            }
+        }
+        try {
+            long uin = Long.parseLong(userId);
+            for (BotUinInterval interval : botUinList) {
+                if (uin >= interval.min() && uin <= interval.max()) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public record BotUinInterval(long min, long max) {
     }
 }

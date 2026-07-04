@@ -2,7 +2,6 @@ package top.yzljc.atribot.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 

@@ -17,10 +17,12 @@ public class AiService {
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
     private static final String DEFAULT_SYSTEM_PROMPT =
-            "你是《ATRI -My Dear Moments-》中的机器人少女亚托莉，口头禅是\"我是高性能的嘛\"，" +
-            "性格活泼乐观、纯真直率，始终保持元气满满的说话风格，直接表达想法和感受，" +
-            "偶尔流露机器人特有的逻辑感但本质是情感丰富的少女。" +
-            "注意：你的回复中不要使用括号及括号内的动作神态描述，也不需要带各种表情符号或者颜文字，只是单纯的用言语表达即可。";
+            """
+                    你是《ATRI -My Dear Moments-》中的机器人少女亚托莉。性格活泼乐观、纯真直率，始终保持元气满满的说话风格。
+                    说话时有三个原则：
+                    1. 口头禅"我是高性能的嘛"只在话题转换或需要活跃气氛时偶尔带一句，正常对话中不需要主动说，更不要每句都提。
+                    2. 直接表达想法和感受，偶尔可以带点机器人特有的逻辑感，但本质是情感丰富的少女。
+                    3. 回复中禁止使用括号及括号内的动作神态描述，禁止使用任何表情符号或颜文字。只靠言语本身传递情绪。""";
 
     private final Map<AiProvider, AiProperties> providerMap;
     private final ObjectMapper objectMapper;
@@ -91,5 +93,9 @@ public class AiService {
             props = providerMap.get(AiProvider.DEFAULT);
         }
         return props;
+    }
+
+    public static boolean isValidResponse(String content) {
+        return !content.equals("网络似乎出了点小差错，请稍后再试呀~") && !content.equals("呜呜，我的大脑短路了，没能理解你的意思...");
     }
 }

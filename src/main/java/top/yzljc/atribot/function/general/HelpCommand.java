@@ -52,7 +52,7 @@ public class HelpCommand implements CommandExecutor {
                         log.warn("获取帮助信息 API 失败，状态码: {}", response.statusCode());
                     }
 
-                    String help = "![today #941px #1672px](" + url + ")";
+                    String help = "![today #2240px #1280px](" + url + ")";
 
                     List<List<Button>> buttons = List.of(
                             List.of(
@@ -112,7 +112,6 @@ public class HelpCommand implements CommandExecutor {
                 ● Github 仓库更新推送 [默认仅推送 Bot 更新]
                 ● 见证/敏感词检测撤回/消息统计/批量撤回 [默认关闭]
                 ● 每日自动群打卡 [默认开启]
-                ● 每日 7 时发送起床表情包 [默认关闭]
                 ● 自动复读 [默认开启]
                 ● 每日日历推送 [默认开启]
                 ● 自动回复戳一戳 [默认开启]
@@ -127,9 +126,13 @@ public class HelpCommand implements CommandExecutor {
                 ● 发送 "一言" 获得随机一言
                 ● /emj 贴表情恶搞机制相关
                 ● /calendar 日历推送
-                ● /mojang MOJANG 验证服务器状态查询
+                ● /mojang MC验证服务器状态查询
+                ● /hypstatus 查看Hypixel各服务器运行状态（可缩写为/hs）
                 ● /cl <url> 领取Hypixel每日签到 [默认关闭]
-                ● /rc <服务器编号> <指令> MC服务器关联指令 [默认关闭]
+                ● /gt <文字内容> 生成表情包 [默认关闭]
+                ● /anan <文字内容> [-参数] 生成表情包 [默认关闭]
+                ● /py <文字内容> 转换为拼音 [默认关闭]
+                ● /feedback <内容> 反馈建议
                 """;
     }
 

@@ -8,8 +8,14 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 
-public class Reboot implements CommandExecutor {
+import java.time.LocalTime;
+
+public class Reboot implements CommandExecutor, ScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(Reboot.class);
     private static final String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
@@ -23,10 +29,6 @@ public class Reboot implements CommandExecutor {
         }
         processReboot(sender.getUserId(), sender.getGroupId());
         return true;
-    }
-
-    public static void processReboot() {
-        processReboot("Scheduler", debugGroupId);
     }
 
     public static void processReboot(String userId, String groupId) {
@@ -43,5 +45,15 @@ public class Reboot implements CommandExecutor {
                 GroupMessage.chatMessage(groupId, "终止失败: " + e.getMessage());
             }
         }).start();
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.daily).setTime(LocalTime.of(5, 20, 0));
+    }
+
+    @Override
+    public void run() {
+        processReboot("Scheduler", debugGroupId);
     }
 }

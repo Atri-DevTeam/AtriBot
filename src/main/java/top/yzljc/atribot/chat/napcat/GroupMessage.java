@@ -2,8 +2,6 @@ package top.yzljc.atribot.chat.napcat;
 
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.platform.napcat.PostRequest;
-import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
 import java.util.*;

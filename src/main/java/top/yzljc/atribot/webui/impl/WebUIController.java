@@ -1,4 +1,4 @@
-package top.yzljc.atribot.webui.official;
+package top.yzljc.atribot.webui.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.javalin.http.Context;
@@ -6,6 +6,8 @@ import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.PermissionRole;
+import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -13,15 +15,21 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
+import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.function.official.PushTaskCommand;
+import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.webui.Result;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
-public class OfficialWebUIController {
+public class WebUIController {
 
     public static void listGroups(Context ctx) {
         List<GroupDTO> groups = OfficialGroups.listGroups().stream()
@@ -46,6 +54,27 @@ public class OfficialWebUIController {
         ctx.json(Result.success(ChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
     }
 
+    public static void locateGroupMessageByRefIdx(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        String msgIdx = firstNonBlank(ctx.queryParam("msgIdx"), ctx.queryParam("refIdx"));
+        String refAuthor = ctx.queryParam("refAuthor");
+        String refContent = ctx.queryParam("refContent");
+        String refAttachments = ctx.queryParam("refAttachments");
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
+        long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
+        if (isBlank(msgIdx) && isBlank(refContent) && isBlank(refAttachments)) {
+            ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
+            return;
+        }
+        var result = ChatContentRecord.locateGroupMessageByReference(
+                groupOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
+        if (result == null) {
+            ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
+            return;
+        }
+        ctx.json(Result.success(result));
+    }
+
     public static void sendGroupMessage(Context ctx) {
         SendGroupMessageDTO dto = ctx.bodyAsClass(SendGroupMessageDTO.class);
         if (dto.getGroupOpenId() == null || dto.getGroupOpenId().isBlank()) {
@@ -64,7 +93,7 @@ public class OfficialWebUIController {
                 messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
                 if (messageId != null) {
                     ChatContentRecord.patchRefDisplayData(messageId,
-                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments());
+                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
                 }
             } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {
                 // 被动回复
@@ -119,6 +148,15 @@ public class OfficialWebUIController {
 
     private static boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (!isBlank(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 
     public static void getConfig(Context ctx) {
@@ -223,6 +261,17 @@ public class OfficialWebUIController {
         }
     }
 
+    private static long parseLong(String value, long defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ignored) {
+            return defaultValue;
+        }
+    }
+
     public record GroupDTO(String groupOpenId, String opMemberOpenId, long timestamp,
                            boolean whitelist, boolean blacklisted, boolean allowedActive, Long realGroupId) {
     }
@@ -263,6 +312,16 @@ public class OfficialWebUIController {
         ctx.json(Result.success(OfficialGroups.getRawFunctionConfig(groupOpenId)));
     }
 
+    public static void listGroupFunctionKeys(Context ctx) {
+        TreeSet<String> keys = new TreeSet<>();
+        PushTaskCommand.getTasks().forEach(task -> keys.add(task.getFunctionId()));
+        for (var group : OfficialGroups.listGroups()) {
+            var config = OfficialGroups.getRawFunctionConfig(group.groupOpenId());
+            config.fieldNames().forEachRemaining(keys::add);
+        }
+        ctx.json(Result.success(List.copyOf(keys)));
+    }
+
     public static void setGroupWhitelist(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
@@ -291,6 +350,102 @@ public class OfficialWebUIController {
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
         OfficialGroups.setFunctionEnabled(groupOpenId, functionKey, enabled, "webui");
         ctx.json(Result.success("ok"));
+    }
+
+    // ═══════════════ Napcat 功能 ═══════════════
+
+    public static void listNapcatGroups(Context ctx) {
+        List<NapcatGroupDTO> groups = new ArrayList<>();
+        for (String groupId : GroupInformation.fetchAllGroupIds()) {
+            groups.add(new NapcatGroupDTO(groupId, GroupInformation.getGroupName(groupId)));
+        }
+        groups.sort(Comparator.comparing(NapcatGroupDTO::name, Comparator.nullsLast(String::compareTo))
+                .thenComparing(NapcatGroupDTO::groupId));
+        ctx.json(Result.success(groups));
+    }
+
+    public static void getNapcatGroupFeatures(Context ctx) {
+        String groupId = ctx.pathParam("groupId");
+        if (!GroupInformation.fetchAllGroupIds().contains(groupId)) {
+            ctx.json(Result.fail(404, "群聊不在服务范围内"));
+            return;
+        }
+
+        Map<String, Boolean> features = new LinkedHashMap<>();
+        for (String feature : GroupConfigManager.getFeatureList()) {
+            features.put(feature, GroupConfigManager.isFeatureEnabled(groupId, feature));
+        }
+        ctx.json(Result.success(new NapcatFeatureConfigDTO(groupId, features)));
+    }
+
+    public static void setNapcatGroupFeature(Context ctx) {
+        String groupId = ctx.pathParam("groupId");
+        String feature = ctx.pathParam("feature");
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+
+        if (!GroupConfigManager.getRegisteredFeatures().containsKey(feature)) {
+            ctx.json(Result.fail(404, "未知的功能: " + feature));
+            return;
+        }
+
+        GroupConfigManager.setFeature(groupId, feature, enabled);
+        ctx.json(Result.success(new NapcatFeatureDTO(feature, GroupConfigManager.isFeatureEnabled(groupId, feature))));
+    }
+
+    public static void fetchNapcatMessages(Context ctx) {
+        NapcatMessageRequestDTO dto = ctx.bodyAsClass(NapcatMessageRequestDTO.class);
+        if (dto == null || isBlank(dto.getGroupId())) {
+            ctx.json(Result.fail(400, "groupId 不能为空"));
+            return;
+        }
+        long groupId;
+        try {
+            groupId = Long.parseLong(dto.getGroupId());
+        } catch (NumberFormatException ignored) {
+            ctx.json(Result.fail(400, "groupId 必须是数字"));
+            return;
+        }
+        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(dto.getGroupId())) {
+            ctx.json(Result.fail(404, "未开启该群的消息监听"));
+            return;
+        }
+        int page = Math.max(dto.getPage(), 1);
+        ctx.json(Result.success(GroupContentRecord.fetchMessages(groupId, page)));
+    }
+
+    public static void recallNapcatMessages(Context ctx) {
+        NapcatRecallDTO dto = ctx.bodyAsClass(NapcatRecallDTO.class);
+        if (dto == null || dto.getMessageIds() == null || dto.getMessageIds().isEmpty()) {
+            ctx.json(Result.fail(400, "messageIds 不能为空"));
+            return;
+        }
+
+        for (Long messageId : dto.getMessageIds()) {
+            if (messageId != null) {
+                GroupMessage.recallMessage(String.valueOf(messageId));
+            }
+        }
+        ctx.json(Result.success("ok"));
+    }
+
+    public record NapcatGroupDTO(String groupId, String name) {
+    }
+
+    public record NapcatFeatureConfigDTO(String groupId, Map<String, Boolean> features) {
+    }
+
+    public record NapcatFeatureDTO(String feature, boolean enabled) {
+    }
+
+    @Data
+    public static class NapcatMessageRequestDTO {
+        private String groupId;
+        private int page;
+    }
+
+    @Data
+    public static class NapcatRecallDTO {
+        private List<Long> messageIds;
     }
 
     public static void listC2CUsers(Context ctx) {
@@ -499,13 +654,15 @@ public class OfficialWebUIController {
         List<UserMessageItemDTO> items = result.records().stream()
                 .map(r -> new UserMessageItemDTO(
                         r.unionOpenId(), r.username(), r.groupOpenId(), r.content(),
-                        r.memberRole(), r.userRole(), r.eventTimestamp(), r.createdAt()))
+                        r.memberRole(), r.userRole(), r.messageType(), r.attachments(),
+                        r.mentions(), r.eventTimestamp(), r.createdAt()))
                 .toList();
         ctx.json(Result.success(new UserMessageListResult(items, result.total(), result.page(), result.pageSize())));
     }
 
     public record UserMessageItemDTO(String unionOpenId, String username, String groupOpenId,
                                      String content, String memberRole, String userRole,
+                                     Integer messageType, String attachments, String mentions,
                                      String eventTimestamp, String createdAt) {}
     public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
 }

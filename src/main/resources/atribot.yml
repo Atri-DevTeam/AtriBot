@@ -1,5 +1,5 @@
 name: AtriBot
-version: 3.1.1-Release
+version: 3.1.3-Release
 main: top.yzljc.atribot.Atri
 
 commands:
@@ -16,8 +16,13 @@ commands:
     usage: /bc <内容>
     aliases:
       - broadcast
-  wakeup:
-    description: 发送起床嘲讽图片
+  golds:
+    description: 查看金粒余额
+    aliases:
+      - 金粒
+      - gold
+      - coin
+      - coins
   reboot:
     description: 重启Bot
   search:
@@ -39,10 +44,14 @@ commands:
   anan:
     description: 夏目安安素描本
     usage: /anan <文本> [模式]
-  checkmcnews:
+  check-mc:
     description: 获取MC新闻
-  checkhypnews:
-    description: 获取Hypixel新闻
+  py:
+    description: 获取拼音
+    aliases:
+      - 拼音
+      - pinyin
+      - pn
   manodate:
     description: Manosaba日期查询
   github:
@@ -57,9 +66,13 @@ commands:
     description: 查看群组配置
   calendar:
     description: 查看日历
-  atrihelp:
-    description: 显示帮助菜单
-    usage: /atrihelp
+  hypstatus:
+    description: Hypixel Server Status
+    usage: /hypstatus
+    aliases:
+      - hs
+      - hypixelstatus
+      - hypixel-status
   emj:
     description: 表情轰炸
     usage: /emj <normal/medium/insane/animation> [可选 User]

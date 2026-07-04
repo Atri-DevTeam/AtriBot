@@ -18,7 +18,8 @@ public class HttpService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int MAX_LOG_BODY_LENGTH = 4096;
-
+    private static final String DEFAULT_USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     public static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
     public static final HttpClient redirectHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).followRedirects(HttpClient.Redirect.ALWAYS).build();
@@ -168,7 +169,8 @@ public class HttpService {
         }
     }
 
-    public record PostResult(int status, String body) {}
+    public record PostResult(int status, String body) {
+    }
 
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
         try {
@@ -194,7 +196,8 @@ public class HttpService {
         try {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .header("Content-Type", "application/json");
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", DEFAULT_USER_AGENT);
             applyHeaders(builder, headers);
             if (duration != null) {
                 builder.timeout(duration);

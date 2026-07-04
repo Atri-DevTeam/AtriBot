@@ -15,6 +15,10 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.io.File;
@@ -32,16 +36,13 @@ import java.util.Set;
  * @Package top.yzljc.atribot.functions.official.minecraft
  */
 @Slf4j
-public final class VersionCheckImpl {
+public final class MinecraftVersionCheck implements ScheduledTask {
 
     private static final String VERSION_API = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final File RECORD_FILE = new File("minecraft_version.json");
-
-    private VersionCheckImpl() {
-    }
 
     public static Map<String, VersionInfo> checkCurrentVersion() {
         LatestVersions latest = getLatestVersion();
@@ -51,26 +52,6 @@ public final class VersionCheckImpl {
         result.put("snapshot", latest.snapshot());
 
         return result;
-    }
-
-    public static void checkVersion() {
-        LatestVersions latest = getLatestVersion();
-        LatestVersions old = loadVersions();
-
-        if (old == null) {
-            saveVersions(latest);
-            return;
-        }
-
-        if (!old.release().id().equals(latest.release().id())) {
-            pushUpdateInfo(VersionType.RELEASE, latest.release());
-        }
-
-        if (!old.snapshot().id().equals(latest.snapshot().id())) {
-            pushUpdateInfo(VersionType.SNAPSHOT, latest.snapshot());
-        }
-
-        saveVersions(latest);
     }
 
     public static LatestVersions getLatestVersion() {
@@ -167,7 +148,7 @@ public final class VersionCheckImpl {
                         snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知"
                 );
 
-                sender.sendMessage(versionInfo);
+                sender.sendMessage(versionInfo.trim());
             }
             case OFFICIAL_GROUP, OFFICIAL_C2C -> {
                 String versionInfo = """
@@ -180,12 +161,15 @@ public final class VersionCheckImpl {
                         快照版: %s
                         
                         > 发布于 %s
+                        
+                        > %s
                         """.formatted(
                         Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
                         release != null ? release.id() : "未知",
                         release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
                         snapshot != null ? snapshot.id() : "未知",
-                        snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知"
+                        snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知",
+                        Markdown.enterCommand("/推送任务 开启 mc_news", "订阅更新动态")
                 );
                 sender.sendMessage(TC.md(versionInfo));
             }
@@ -213,7 +197,6 @@ public final class VersionCheckImpl {
                 **Minecraft发布了新的%s**
                 
                 > 版本号: %s
-                
                 > 发布时间: %s
                 """.formatted(
                 verId,
@@ -227,6 +210,32 @@ public final class VersionCheckImpl {
         officialGroups.forEach(group -> Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(group, TC.md(markdownInfo)));
 
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.hourly);
+    }
+
+    @Override
+    public void run() {
+        LatestVersions latest = getLatestVersion();
+        LatestVersions old = loadVersions();
+
+        if (old == null) {
+            saveVersions(latest);
+            return;
+        }
+
+        if (!old.release().id().equals(latest.release().id())) {
+            pushUpdateInfo(VersionType.RELEASE, latest.release());
+        }
+
+        if (!old.snapshot().id().equals(latest.snapshot().id())) {
+            pushUpdateInfo(VersionType.SNAPSHOT, latest.snapshot());
+        }
+
+        saveVersions(latest);
     }
 
     @Getter

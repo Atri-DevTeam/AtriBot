@@ -26,4 +26,6 @@ public class Properties {
     public static final String MINECRAFT_NEWS = "news_history.json";
 
     public static final String MOJIRA_CACHE = "data/mojira-cache.json";
+
+    public static final String DI_ZHEN_DATA = "data/di-zhen-data.json";
 }

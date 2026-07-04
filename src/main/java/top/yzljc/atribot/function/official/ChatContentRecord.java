@@ -15,13 +15,12 @@ import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.User;
-import top.yzljc.atribot.webui.official.SseBroadcaster;
+import top.yzljc.atribot.webui.impl.SseBroadcaster;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.List;
 
 @Slf4j
@@ -34,6 +33,7 @@ public class ChatContentRecord implements Listener {
     private static final String BOT_UNION_OPEN_ID = Config.getInstance().getOfficialOpenId();
     private static final String BOT_USERNAME = Config.getInstance().getOfficialUsername();
     private static final DateTimeFormatter LOCAL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int REFERENCE_SCAN_LIMIT = 500;
 
     public static void init() {
         String groupSql = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
@@ -51,10 +51,13 @@ public class ChatContentRecord implements Listener {
                 "  `attachments` MEDIUMTEXT NULL," +
                 "  `mentions` MEDIUMTEXT NULL," +
                 "  `message_reference` MEDIUMTEXT NULL," +
+                "  `ref_idx` VARCHAR(256) NULL," +
                 "  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  PRIMARY KEY (`id`)," +
                 "  UNIQUE KEY `uk_group_message_openId` (`message_openId`)," +
                 "  KEY `idx_group_openId` (`group_openId`)," +
+                "  KEY `idx_group_union_openId` (`union_openId`)," +
+                "  KEY `idx_group_ref_idx` (`ref_idx`)," +
                 "  KEY `idx_group_created_at` (`created_at`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -83,6 +86,8 @@ public class ChatContentRecord implements Listener {
             ensureColumn("official_group_record", "event_type", "VARCHAR(64) NOT NULL DEFAULT 'UNKNOWN' AFTER `sender_is_bot`");
             ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `sender_is_bot`");
             ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
+            ensureIndex(GROUP_TABLE, "idx_group_union_openId", "`union_openId`");
+            ensureIndex(GROUP_TABLE, "idx_group_ref_idx", "`ref_idx`");
             dropColumnIfExists(C2C_TABLE, "user_openId");
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
@@ -167,12 +172,19 @@ public class ChatContentRecord implements Listener {
     }
 
     public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments) {
-        if (refAuthor == null && refContent == null) return;
+        patchRefDisplayData(messageOpenId, refAuthor, refContent, refAttachments, null);
+    }
+
+    public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments, String refMsgIdx) {
+        if (refAuthor == null && refContent == null && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
         try {
             var refObj = objectMapper.createObjectNode();
             var authorNode = refObj.putObject("author");
             authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
             refObj.put("content", refContent != null ? refContent : "");
+            if (!isBlank(refMsgIdx)) {
+                refObj.put("msg_idx", refMsgIdx);
+            }
             if (refAttachments != null && !refAttachments.isBlank()) {
                 try { refObj.set("attachments", objectMapper.readTree(refAttachments)); } catch (Exception ignored) {}
             }
@@ -195,17 +207,7 @@ public class ChatContentRecord implements Listener {
 
     public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId,
                                                String refAuthor, String refContent, String refAttachments) {
-        String refIdx = null;
         String messageReference = null;
-        if (request.getMessageReference() != null) {
-            try {
-                JsonNode refNode = objectMapper.valueToTree(request.getMessageReference());
-                JsonNode midNode = refNode.get("message_id");
-                if (midNode != null && midNode.isTextual()) {
-                    refIdx = midNode.asText();
-                }
-            } catch (Exception ignored) {}
-        }
         // 如果前端传了引用消息的展示数据，直接拼成数组格式
         if (refAuthor != null || refContent != null) {
             try {
@@ -213,6 +215,10 @@ public class ChatContentRecord implements Listener {
                 var authorNode = refObj.putObject("author");
                 authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
                 refObj.put("content", refContent != null ? refContent : "");
+                String refMsgIdx = extractReferenceMessageId(request);
+                if (!isBlank(refMsgIdx)) {
+                    refObj.put("msg_idx", refMsgIdx);
+                }
                 if (refAttachments != null && !refAttachments.isBlank()) {
                     try {
                         refObj.set("attachments", objectMapper.readTree(refAttachments));
@@ -237,7 +243,7 @@ public class ChatContentRecord implements Listener {
                 null,
                 null,
                 messageReference,
-                refIdx
+                null
         );
     }
 
@@ -282,30 +288,220 @@ public class ChatContentRecord implements Listener {
             dataStmt.setInt(3, offset);
             var rs = dataStmt.executeQuery();
             while (rs.next()) {
-                records.add(new GroupMessageRecord(
-                        rs.getLong("id"),
-                        rs.getString("group_openId"),
-                        rs.getString("union_openId"),
-                        rs.getString("username"),
-                        rs.getString("content"),
-                        rs.getString("message_openId"),
-                        rs.getBoolean("sender_is_bot"),
-                        rs.getString("member_role"),
-                        rs.getString("event_type"),
-                        (Integer) rs.getObject("message_type"),
-                        rs.getString("event_timestamp"),
-                        rs.getString("attachments"),
-                        rs.getString("mentions"),
-                        rs.getString("message_reference"),
-                        rs.getString("ref_idx"),
-                        rs.getString("created_at")
-                ));
+                records.add(toGroupMessageRecord(rs));
             }
         } catch (SQLException e) {
             log.error("查询官方群消息失败, groupOpenId={}, page={}, pageSize={}: {}", groupOpenId, safePage, safePageSize, e.getMessage(), e);
         }
 
         return new MessagePage<>(safePage, safePageSize, total, records);
+    }
+
+    public static GroupMessageLocation locateGroupMessageByRefIdx(String groupOpenId, String msgIdx, int pageSize, long excludeId) {
+        if (isBlank(groupOpenId) || isBlank(msgIdx)) {
+            return null;
+        }
+
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        String excludeClause = excludeId > 0 ? " AND id <> ?" : "";
+        String targetSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
+                "FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND ref_idx = ?" + excludeClause + " ORDER BY id DESC LIMIT 1";
+        String newerCountSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND id > ?";
+
+        try (var conn = DatabaseManager.getConnection();
+             var targetStmt = conn.prepareStatement(targetSql);
+             var countStmt = conn.prepareStatement(newerCountSql)) {
+            targetStmt.setString(1, groupOpenId);
+            targetStmt.setString(2, msgIdx);
+            if (excludeId > 0) {
+                targetStmt.setLong(3, excludeId);
+            }
+
+            var rs = targetStmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+
+            GroupMessageRecord record = toGroupMessageRecord(rs);
+            countStmt.setString(1, groupOpenId);
+            countStmt.setLong(2, record.id());
+            var countRs = countStmt.executeQuery();
+            long newerCount = 0;
+            if (countRs.next()) {
+                newerCount = countRs.getLong(1);
+            }
+            int page = (int) (newerCount / safePageSize) + 1;
+            return new GroupMessageLocation(page, safePageSize, record);
+        } catch (SQLException e) {
+            log.error("定位引用消息失败, groupOpenId={}, msgIdx={}: {}", groupOpenId, msgIdx, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public static GroupMessageLocation locateGroupMessageByReference(String groupOpenId, String msgIdx,
+                                                                      String refAuthor, String refContent,
+                                                                      String refAttachments, int pageSize,
+                                                                      long excludeId) {
+        GroupMessageLocation byMsgIdx = locateGroupMessageByRefIdx(groupOpenId, msgIdx, pageSize, excludeId);
+        if (byMsgIdx != null) {
+            return byMsgIdx;
+        }
+        return scanGroupMessageByReference(groupOpenId, refAuthor, refContent, refAttachments, pageSize, excludeId);
+    }
+
+    private static GroupMessageLocation scanGroupMessageByReference(String groupOpenId, String refAuthor,
+                                                                    String refContent, String refAttachments,
+                                                                    int pageSize, long excludeId) {
+        if (isBlank(groupOpenId) || (isBlank(refContent) && isBlank(refAttachments))) {
+            return null;
+        }
+
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        String idClause = excludeId > 0 ? " AND id < ?" : "";
+        String scanSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
+                "FROM `" + GROUP_TABLE + "` WHERE group_openId = ?" + idClause + " ORDER BY id DESC LIMIT ?";
+        String newerCountSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND id > ?";
+
+        String targetText = normalizeReferenceText(refContent);
+        List<AttachmentFingerprint> targetAttachments = parseAttachmentFingerprints(refAttachments);
+        String targetAuthor = emptyToNull(refAuthor);
+
+        try (var conn = DatabaseManager.getConnection();
+             var scanStmt = conn.prepareStatement(scanSql);
+             var countStmt = conn.prepareStatement(newerCountSql)) {
+            int idx = 1;
+            scanStmt.setString(idx++, groupOpenId);
+            if (excludeId > 0) {
+                scanStmt.setLong(idx++, excludeId);
+            }
+            scanStmt.setInt(idx, REFERENCE_SCAN_LIMIT);
+
+            var rs = scanStmt.executeQuery();
+            while (rs.next()) {
+                GroupMessageRecord record = toGroupMessageRecord(rs);
+                if (!matchesReference(record, targetAuthor, targetText, targetAttachments)) {
+                    continue;
+                }
+
+                countStmt.setString(1, groupOpenId);
+                countStmt.setLong(2, record.id());
+                var countRs = countStmt.executeQuery();
+                long newerCount = 0;
+                if (countRs.next()) {
+                    newerCount = countRs.getLong(1);
+                }
+                int page = (int) (newerCount / safePageSize) + 1;
+                return new GroupMessageLocation(page, safePageSize, record);
+            }
+        } catch (SQLException e) {
+            log.error("扫描定位引用消息失败, groupOpenId={}, excludeId={}: {}", groupOpenId, excludeId, e.getMessage(), e);
+        }
+        return null;
+    }
+
+    private static boolean matchesReference(GroupMessageRecord record, String refAuthor, String refText,
+                                            List<AttachmentFingerprint> refAttachments) {
+        if (!isBlank(refAuthor) && !refAuthor.equals(record.username())) {
+            return false;
+        }
+
+        if (!isBlank(refText)) {
+            String content = normalizeReferenceText(record.content());
+            if (refText.equals(content)) {
+                return true;
+            }
+            if (refText.length() >= 6 && !isBlank(content)
+                    && (content.contains(refText) || refText.contains(content))) {
+                return true;
+            }
+        }
+
+        if (!refAttachments.isEmpty()) {
+            List<AttachmentFingerprint> attachments = parseAttachmentFingerprints(record.attachments());
+            for (AttachmentFingerprint refAttachment : refAttachments) {
+                for (AttachmentFingerprint attachment : attachments) {
+                    if (refAttachment.matches(attachment)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static String normalizeReferenceText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replaceAll("<faceType=\\d+,faceId=\"[^\"]*\",ext=\"[^\"]*\">", "[表情]")
+                .replaceAll("<qqbot-at-user id=\"([A-F0-9]+)\"\\s*/>", "@$1")
+                .replaceAll("<qqbot-cmd-input[^>]*show=\"([^\"]*)\"[^>]*/>", "$1")
+                .replaceAll("(<@[A-F0-9]+>)\\s+\\1", "$1")
+                .trim();
+    }
+
+    private static List<AttachmentFingerprint> parseAttachmentFingerprints(String raw) {
+        if (isBlank(raw)) {
+            return List.of();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            if (!node.isArray()) {
+                return List.of();
+            }
+            List<AttachmentFingerprint> result = new ArrayList<>();
+            for (JsonNode item : node) {
+                String url = item.path("url").asText(null);
+                String voiceWavUrl = item.path("voice_wav_url").asText(null);
+                String filename = item.path("filename").asText(null);
+                if (!isBlank(url) || !isBlank(voiceWavUrl) || !isBlank(filename)) {
+                    result.add(new AttachmentFingerprint(url, voiceWavUrl, filename));
+                }
+            }
+            return result;
+        } catch (Exception ignored) {
+            return List.of();
+        }
+    }
+
+    private static String extractReferenceMessageId(MessageBody request) {
+        if (request == null || request.getMessageReference() == null) {
+            return null;
+        }
+        try {
+            JsonNode refNode = objectMapper.valueToTree(request.getMessageReference());
+            JsonNode midNode = refNode.get("message_id");
+            if (midNode != null && midNode.isTextual()) {
+                return midNode.asText();
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private static GroupMessageRecord toGroupMessageRecord(java.sql.ResultSet rs) throws SQLException {
+        return new GroupMessageRecord(
+                rs.getLong("id"),
+                rs.getString("group_openId"),
+                rs.getString("union_openId"),
+                rs.getString("username"),
+                rs.getString("content"),
+                rs.getString("message_openId"),
+                rs.getBoolean("sender_is_bot"),
+                rs.getString("member_role"),
+                rs.getString("event_type"),
+                (Integer) rs.getObject("message_type"),
+                rs.getString("event_timestamp"),
+                rs.getString("attachments"),
+                rs.getString("mentions"),
+                rs.getString("message_reference"),
+                rs.getString("ref_idx"),
+                rs.getString("created_at")
+        );
     }
 
     private static void recordGroupMessage(String groupOpenId, String unionOpenId, String username, String content,
@@ -320,7 +516,18 @@ public class ChatContentRecord implements Listener {
         String sql = "INSERT INTO `" + GROUP_TABLE + "` " +
                 "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE content = VALUES(content), username = VALUES(username), event_type = VALUES(event_type)";
+                "ON DUPLICATE KEY UPDATE " +
+                "content = VALUES(content), " +
+                "username = VALUES(username), " +
+                "sender_is_bot = VALUES(sender_is_bot), " +
+                "member_role = COALESCE(VALUES(member_role), member_role), " +
+                "event_type = VALUES(event_type), " +
+                "message_type = COALESCE(VALUES(message_type), message_type), " +
+                "event_timestamp = COALESCE(VALUES(event_timestamp), event_timestamp), " +
+                "attachments = COALESCE(VALUES(attachments), attachments), " +
+                "mentions = COALESCE(VALUES(mentions), mentions), " +
+                "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
+                "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
 
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -368,6 +575,19 @@ public class ChatContentRecord implements Listener {
                 return;
             }
             log.error("为表 {} 补充字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
+        }
+    }
+
+    private static void ensureIndex(String tableName, String indexName, String columns) {
+        String sql = "ALTER TABLE `" + tableName + "` ADD INDEX `" + indexName + "` (" + columns + ")";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.execute();
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 1061) {
+                return;
+            }
+            log.error("为表 {} 补充索引 {} 失败: {}", tableName, indexName, e.getMessage(), e);
         }
     }
 
@@ -496,6 +716,18 @@ public class ChatContentRecord implements Listener {
                                      String refIdx, String createdAt) {
     }
 
+    public record GroupMessageLocation(int page, int pageSize, GroupMessageRecord record) {
+    }
+
+    private record AttachmentFingerprint(String url, String voiceWavUrl, String filename) {
+        boolean matches(AttachmentFingerprint other) {
+            return other != null
+                    && ((!isBlank(url) && url.equals(other.url))
+                    || (!isBlank(voiceWavUrl) && voiceWavUrl.equals(other.voiceWavUrl))
+                    || (!isBlank(filename) && filename.equals(other.filename)));
+        }
+    }
+
     public record C2CMessageRecord(long id, String unionOpenId, String username,
                                    String content, String messageOpenId,
                                    boolean senderIsBot, Integer messageType,
@@ -513,8 +745,13 @@ public class ChatContentRecord implements Listener {
         boolean hasSearch = search != null && !search.isBlank();
         String likePattern = hasSearch ? "%" + search.trim() + "%" : null;
 
-        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM `").append(GROUP_TABLE).append("` WHERE sender_is_bot = FALSE");
-        StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, group_openId, content, member_role, event_timestamp, created_at FROM `").append(GROUP_TABLE).append("` WHERE sender_is_bot = FALSE");
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM `")
+                .append(GROUP_TABLE)
+                .append("` WHERE sender_is_bot = FALSE");
+        StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, group_openId, content, member_role, ")
+                .append("message_type, attachments, mentions, event_timestamp, created_at FROM `")
+                .append(GROUP_TABLE)
+                .append("` WHERE sender_is_bot = FALSE");
 
         if (hasSearch) {
             String searchClause = " AND (username LIKE ? OR union_openId LIKE ? OR group_openId LIKE ? OR content LIKE ?)";
@@ -565,6 +802,9 @@ public class ChatContentRecord implements Listener {
                         rs.getString("content"),
                         rs.getString("member_role"),
                         userRole,
+                        (Integer) rs.getObject("message_type"),
+                        rs.getString("attachments"),
+                        rs.getString("mentions"),
                         rs.getString("event_timestamp"),
                         rs.getString("created_at")
                 ));
@@ -578,6 +818,7 @@ public class ChatContentRecord implements Listener {
 
     public record AllGroupUserRecord(String unionOpenId, String username, String groupOpenId,
                                      String content, String memberRole, String userRole,
+                                     Integer messageType, String attachments, String mentions,
                                      String eventTimestamp, String createdAt) {
     }
 

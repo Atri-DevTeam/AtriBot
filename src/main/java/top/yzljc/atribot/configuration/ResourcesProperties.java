@@ -64,8 +64,14 @@ public final class ResourcesProperties {
     // @ClassName SponsorCommand
     public static final String SPONSORS_API = API + "/v1/atrimeow/sponsors";
 
-    // @ClassName PreImageGenerate
-    public static final String IMAGE_DUMP_API = "https://www.yzljc.top/data/api/v2/atribot/function/image-dump";
+    // @ClassName SignCommand
+    public static final String GOLD_IMG = "https://res.yzljc.top/images/gold.png";
+
+    // @ClassName HypixelStatus
+    public static final String HYPIXEL_STATUS_API = API + "/v1/atrimeow/hypixel-status";
+
+    // @ClassName MinecraftCapes
+    public static final String MINECRAFT_CAPES_API = API + "/v1/atrimeow/minecraft-capes";
 
     // @ClassName HappyNewYear
     public static final String HAPPY_NEW_YEAR_API = API + "/v1/atrimeow/happy-new-year";

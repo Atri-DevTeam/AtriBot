@@ -9,6 +9,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -33,9 +34,22 @@ import java.util.regex.Pattern;
 public class SignCommand implements CommandExecutor, Listener {
 
     private static final Pattern pattern = Pattern.compile("<@[A-F0-9]+> (打卡|签到)\\s*");
+    private static boolean banned = false;
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (args.length > 0 && sender.hasPermission()) {
+            if (args[0].equals("ban")) {
+                banned = true;
+                sender.sendMessage("已禁用打卡功能！");
+                return true;
+            } else if (args[0].equals("unban")) {
+                banned = false;
+                sender.sendMessage("已启用打卡功能！");
+                return true;
+            }
+        }
 
         int flag;
         if (sender.getPlatform() == Platform.OFFICIAL_C2C) {
@@ -74,6 +88,15 @@ public class SignCommand implements CommandExecutor, Listener {
     private static void handleCheckIn(int label, String unionOpenId, String groupOpenId, String messageOpenId) {
         ThreadManager.execute(() -> {
 
+            if (banned) {
+                if (label == 1) {
+                    C2CChat.replyMessage(unionOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                } else {
+                    GroupChat.replyMessage(groupOpenId, unionOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                }
+                return;
+            }
+
             if (SignRepository.isInSettlementWindow()) {
                 if (label == 1) {
                     C2CChat.replyMessage(unionOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
@@ -92,14 +115,18 @@ public class SignCommand implements CommandExecutor, Listener {
                 return;
             }
 
-            SignRepository.checkIn(unionOpenId);
+            SignRepository.CheckInResult result = SignRepository.checkIn(unionOpenId);
 
-            Markdown md = TC.md(
-                    "## 打卡成功\n\n" +
-                            "> 你已累计打卡**" + SignRepository.getTotalCount(unionOpenId) + "**次！\n" +
-                            "> 今天已有**" + SignRepository.getTodayCount() + "**人参与了打卡！\n\n" +
-                            getGreetingByTime()
-            );
+            Markdown md = null;
+            if (result != null) {
+                md = TC.md(
+                        "## 打卡成功\n\n" +
+                                "> 你已累计打卡**" + result.totalCount() + "**次！\n" +
+                                "> 今天已有**" + result.rank() + "**人参与了打卡！\n" +
+                                "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + "\n\n" +
+                                getGreetingByTime()
+                );
+            }
 
             Object buttons = TC.keyboard(List.of(
                     List.of(new Button("c1", "我也要打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND))

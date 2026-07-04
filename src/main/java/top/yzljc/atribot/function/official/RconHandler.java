@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.official;
 
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
@@ -46,6 +47,10 @@ public class RconHandler implements CommandExecutor {
         String server = args[0];
 
         if (registeredServer.get(server) != null) {
+            if (!OfficialGroups.isWhitelist(sender.getGroupId())) {
+                sender.sendMessage("执行操作失败: 群聊不在白名单内，拒绝执行操作！");
+                return true;
+            }
             return registeredServer.get(server).handleCommand(sender, command, label, args);
         } else {
             String maskedServer = "*".repeat(server.length());

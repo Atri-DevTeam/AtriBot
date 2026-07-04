@@ -1,17 +1,20 @@
 <template>
   <div class="shell">
-    <div v-if="sidebarOpen" class="sidebar-backdrop show" @click="sidebarOpen = false" />
+    <div v-if="sidebarOpen" class="sidebar-backdrop show" @click="sidebarOpen = false"/>
 
     <aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
       <div class="sidebar-head">
         <button class="sidebar-close" aria-label="关闭侧边栏" @click="sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
       <div class="brand">
-        <img v-if="botOpenId && appId" class="brand-avatar" :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${botOpenId}/100`" referrerpolicy="no-referrer" />
+        <img v-if="botOpenId && appId" class="brand-avatar"
+             :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${botOpenId}/100`" referrerpolicy="no-referrer"/>
         <div v-else class="brand-mark">A</div>
         <div>
           <h1>{{ botName }}</h1>
@@ -19,30 +22,53 @@
         </div>
       </div>
       <nav class="side-nav">
-        <button class="side-nav-item" :class="{ active: $route.path === '/' }" @click="$router.push('/'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="side-nav-item" :class="{ active: $route.path === '/' }"
+                @click="$router.push('/'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           群聊
         </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/c2c' }" @click="$router.push('/c2c'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        <button class="side-nav-item" :class="{ active: $route.path === '/c2c' }"
+                @click="$router.push('/c2c'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
           </svg>
           私聊
         </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/users' }" @click="$router.push('/users'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <button class="side-nav-item" :class="{ active: $route.path === '/users' }"
+                @click="$router.push('/users'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
           用户列表
         </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }"
+                @click="$router.push('/feedback'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
           </svg>
           反馈管理
           <span v-if="counts.unreplied > 0" class="feedback-nav-badge">{{ counts.unreplied }}</span>
+        </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/napcat' }"
+                @click="$router.push('/napcat'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="3"/>
+            <path d="M8 20h8"/>
+            <path d="M12 18v2"/>
+          </svg>
+          Napcat功能
         </button>
       </nav>
       <div class="side-toolbar">
@@ -50,14 +76,17 @@
         <button class="ghost-button" @click="logout">退出</button>
       </div>
     </aside>
-    <div class="sidebar-spacer" />
+    <div class="sidebar-spacer"/>
 
     <main class="workspace">
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <h2 class="feedback-title">反馈管理</h2>
@@ -87,7 +116,8 @@
             <div v-else-if="items.length === 0" class="empty-state">暂无数据</div>
 
             <div v-else class="feedback-list">
-              <article v-for="fb in items" :key="fb.id" class="feedback-card" :class="{ 'feedback-card--hidden': fb.isHidden, 'feedback-card--replied': fb.replyContent }">
+              <article v-for="fb in items" :key="fb.id" class="feedback-card"
+                       :class="{ 'feedback-card--hidden': fb.isHidden, 'feedback-card--replied': fb.replyContent }">
                 <div class="feedback-card-head">
                   <span class="feedback-id" :title="fb.id">#{{ shortId(fb.id) }}</span>
                   <span class="feedback-platform">{{ fb.platform || '-' }}</span>
@@ -109,7 +139,9 @@
                   </div>
                 </div>
                 <div class="feedback-card-actions">
-                  <button class="primary-button feedback-action" @click="openReply(fb)">{{ fb.replyContent ? '重新回复' : '回复' }}</button>
+                  <button class="primary-button feedback-action" @click="openReply(fb)">
+                    {{ fb.replyContent ? '重新回复' : '回复' }}
+                  </button>
                 </div>
               </article>
             </div>
@@ -129,7 +161,10 @@
         <div class="modal-head">
           <h2>{{ replyTarget.replyContent ? '重新回复' : '回复反馈' }}</h2>
           <button class="icon-button" @click="closeReply">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
         <div class="modal-body">
@@ -141,9 +176,9 @@
             <option value="" disabled>快捷回复…</option>
             <option v-for="qr in quickReplies" :key="qr" :value="qr">{{ qr }}</option>
           </select>
-          <textarea v-model="replyContent" class="reply-textarea" rows="5" placeholder="输入回复内容..." />
+          <textarea v-model="replyContent" class="reply-textarea" rows="5" placeholder="输入回复内容..."/>
           <label class="checkbox-label">
-            <input type="checkbox" v-model="replyHidden" />
+            <input type="checkbox" v-model="replyHidden"/>
             隐藏用户原始内容
           </label>
         </div>
@@ -159,14 +194,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { API_BASE } from '../router.js'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
+import {API_BASE} from '../router.js'
 
 const quickReplies = [
   "你好，根据开放平台用户安全策略，相关内容无法提供",
-    "您的反馈已收到，但我们还需进一步处理，我们将在问题处理后予以再次答复，感谢您的支持",
-    "问题已修复"
+  "相关反馈内容无效",
+  "您的反馈已收到，但我们还需进一步处理，我们将在问题处理后予以再次答复，感谢您的支持",
+  "问题已修复"
 ]
 
 const router = useRouter()
@@ -184,7 +220,7 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = 20
 const filter = ref('unreplied')
-const counts = reactive({ unreplied: 0, replied: 0, all: 0 })
+const counts = reactive({unreplied: 0, replied: 0, all: 0})
 
 const replyTarget = ref(null)
 const replyContent = ref('')
@@ -199,7 +235,7 @@ const currentFilterName = computed(() => {
 })
 
 function authHeaders() {
-  return { 'Content-Type': 'application/json' }
+  return {'Content-Type': 'application/json'}
 }
 
 async function api(path, options) {
@@ -208,7 +244,10 @@ async function api(path, options) {
     credentials: 'same-origin',
     ...options
   })
-  if (res.status === 503) { logout(); throw new Error('WebUI 已关闭') }
+  if (res.status === 503) {
+    logout();
+    throw new Error('WebUI 已关闭')
+  }
   let payload
   try {
     payload = await res.json()
@@ -216,13 +255,16 @@ async function api(path, options) {
     const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)
   }
-  if (res.status === 401) { logout(); throw new Error('未授权') }
+  if (res.status === 401) {
+    logout();
+    throw new Error('未授权')
+  }
   if (payload.status !== 200) throw new Error(payload.message || '请求失败')
   return payload.data
 }
 
 function logout() {
-  fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' }).finally(() => {
+  fetch(`${API_BASE}/auth/logout`, {method: 'POST', credentials: 'same-origin'}).finally(() => {
     router.replace('/login')
   })
 }

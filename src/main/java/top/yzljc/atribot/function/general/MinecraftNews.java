@@ -25,6 +25,10 @@ import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.tools.Alert;
 
@@ -39,7 +43,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class MinecraftNews implements CommandExecutor {
+public final class MinecraftNews implements CommandExecutor, ScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
@@ -340,6 +344,16 @@ public class MinecraftNews implements CommandExecutor {
         } catch (Exception e) {
             return "时间解析错误";
         }
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.hourly);
+    }
+
+    @Override
+    public void run() {
+        checkNews(false);
     }
 
     static class UnifiedArticle {

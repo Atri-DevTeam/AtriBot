@@ -22,10 +22,11 @@ import top.yzljc.atribot.function.general.*;
 import top.yzljc.atribot.function.napcat.*;
 import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
-import top.yzljc.atribot.function.napcat.like.LikeUser;
+import top.yzljc.atribot.function.napcat.like.CardLike;
 import top.yzljc.atribot.function.official.*;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftRemote;
+import top.yzljc.atribot.function.official.minecraft.MinecraftVersionCheck;
 import top.yzljc.atribot.function.official.tufe.ElectricCheck;
 import top.yzljc.atribot.function.task.*;
 import top.yzljc.atribot.function.task.Calendar;
@@ -39,6 +40,8 @@ import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
+import top.yzljc.atribot.service.taskscheduler.TaskScheduler;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedulerRegistry;
 import top.yzljc.atribot.test.Test;
 import top.yzljc.atribot.test.YunLandSpecialCommand;
 import top.yzljc.atribot.utils.debug.DebugCommand;
@@ -46,9 +49,8 @@ import top.yzljc.atribot.utils.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
-import top.yzljc.atribot.webui.official.OfficialWebUIRouter;
-import top.yzljc.atribot.webui.official.WebUISessionManager;
-import top.yzljc.atribot.webui.onebot.OneBotWebUIRouter;
+import top.yzljc.atribot.webui.impl.WebUIRouter;
+import top.yzljc.atribot.webui.impl.WebUISessionManager;
 
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,10 +66,23 @@ public class Atri {
     private ChatService chatService;
     @Getter
     private Scheduler scheduler;
+    private TaskScheduler taskScheduler;
     @Getter
     private AiService aiService;
     @Getter
     private static MinecraftSocket minecraftSocket;
+    @Getter
+    private final MojiraStatus checkMojira;
+    @Getter
+    private final CardLike cardLike;
+    @Getter
+    private final Reboot reboot;
+    @Getter
+    private final MinecraftVersionCheck minecraftVersionCheck;
+    @Getter
+    private final MinecraftNews minecraftNews;
+    @Getter
+    private final HypixelAnnouncements hypixelAnnouncements;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     @Getter
@@ -84,6 +99,12 @@ public class Atri {
         this.tokenManager = new TokenManager(config.getQqAppId(), config.getQqClientSecret());
         this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager);
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
+        this.checkMojira = new MojiraStatus();
+        this.cardLike = new CardLike();
+        this.reboot = new Reboot();
+        this.minecraftVersionCheck = new MinecraftVersionCheck();
+        this.minecraftNews = new MinecraftNews();
+        this.hypixelAnnouncements = new HypixelAnnouncements();
 
         int qqBotPort = config.getListenPort();
 
@@ -118,8 +139,7 @@ public class Atri {
             ctx.result(result).contentType("application/json");
         });
 
-        OneBotWebUIRouter.register(server);
-        OfficialWebUIRouter.register(server);
+        WebUIRouter.register(server);
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
 
@@ -133,7 +153,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new CommandManager());
         EventManager.getInstance().registerEvents(new DenyFuckGuys());
         EventManager.getInstance().registerEvents(new UnknownInvitation());
-        EventManager.getInstance().registerEvents(new LikeUser());
+        EventManager.getInstance().registerEvents(this.cardLike);
         EventManager.getInstance().registerEvents(new Notify());
         EventManager.getInstance().registerEvents(new Repeater());
         EventManager.getInstance().registerEvents(new CheckBilibili());
@@ -145,14 +165,14 @@ public class Atri {
         EventManager.getInstance().registerEvents(new HypixelReward());
         EventManager.getInstance().registerEvents(new GroupContentRecord());
         EventManager.getInstance().registerEvents(new ElectricCheck());
-//        EventManager.getInstance().registerEvents(new Scratch());
+        EventManager.getInstance().registerEvents(new AtriChat());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
-//        EventManager.getInstance().registerEvents(new GroupJoinVerify());
+        EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
@@ -166,23 +186,23 @@ public class Atri {
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
         CommandManager.getCommand("bc").setExecutor(new Broadcast());
         CommandManager.getCommand("anan").setExecutor(AnAnGirlEmoji.INSTANCE);
-        CommandManager.getCommand("reboot").setExecutor(new Reboot());
+        CommandManager.getCommand("reboot").setExecutor(this.reboot);
         CommandManager.getCommand("search").setExecutor(new SearchRelevant());
         CommandManager.getCommand("recall").setExecutor(new RM());
         CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
         CommandManager.getCommand("gt").setExecutor(CucumberGirl.INSTANCE);
         CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
         CommandManager.getCommand("cl").setExecutor(new HypixelReward());
-        CommandManager.getCommand("checkmcnews").setExecutor(new MinecraftNews());
+        CommandManager.getCommand("check-mc").setExecutor(this.minecraftNews);
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
         CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
         CommandManager.getCommand("calendar").setExecutor(new Calendar());
-        CommandManager.getCommand("check-mojira").setExecutor(new CheckMojira());
+        CommandManager.getCommand("check-mojira").setExecutor(this.checkMojira);
         CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
-//        CommandManager.getCommand("reload").setExecutor(new Reload());
+        CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
         CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
@@ -211,13 +231,15 @@ public class Atri {
         CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
-        CommandManager.getCommand("check-hyp").setExecutor(new HypixelAnnouncements());
+        CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
-        CommandManager.getCommand("ping").setExecutor(PingCommand.INSTANCE);
+        CommandManager.getCommand("ping").setExecutor(new PingCommand());
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
         CommandManager.getCommand("update").setExecutor(updatePushCommand);
         CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
+        CommandManager.getCommand("golds").setExecutor(new CoinsCommand());
+        CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
 
         this.scheduler = new Scheduler();
         try {
@@ -241,6 +263,8 @@ public class Atri {
         FeedbackRepository.init();
 
         RunScheduleTask.runAllTasks();
+        this.taskScheduler = new TaskScheduler();
+        TaskSchedulerRegistry.registerAll(taskScheduler);
 
         int webhookPort = settings.getGithubWebhookPort();
         String webhookSecret = settings.getGithubWebhookSecret();
@@ -254,7 +278,6 @@ public class Atri {
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
             GroupConfigManager.registerFeature("hyp_news", false);
-            GroupConfigManager.registerFeature("electric_check", false);
             GroupConfigManager.registerFeature("annoy_user", true);
             GroupConfigManager.registerFeature("new_year", true);
             GroupConfigManager.registerFeature("one_text", true);
@@ -262,16 +285,16 @@ public class Atri {
             GroupConfigManager.registerFeature("send_poke", true);
             GroupConfigManager.registerFeature("like_user", false);
             GroupConfigManager.registerFeature("mojang_status", true);
-//            GroupConfigManager.registerFeature("motd", false);
+            GroupConfigManager.registerFeature("hypixel_status", true);
             GroupConfigManager.registerFeature("github_info", false);
             GroupConfigManager.registerFeature("bv_check", false);
             GroupConfigManager.registerFeature("mojira_tracker", false);
             GroupConfigManager.registerFeature("broadcast", true);
             GroupConfigManager.registerFeature("calendar", true);
             GroupConfigManager.registerFeature("get_hypixel_reward", false);
-//            GroupConfigManager.registerFeature("bedwars_challenge", true);
+            GroupConfigManager.registerFeature("atri_chat", false);
             GroupConfigManager.registerFeature("tufe_class_alert", false);
-            GroupConfigManager.registerFeature("girl_text", false);
+            GroupConfigManager.registerFeature("private_func", false);
             GroupConfigManager.registerFeature("illegal_words_check", false);
         }
 
@@ -308,6 +331,9 @@ public class Atri {
         GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
+        if (taskScheduler != null) {
+            taskScheduler.shutdown();
+        }
         if (server != null) {
             server.stop();
         }

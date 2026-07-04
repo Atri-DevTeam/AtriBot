@@ -168,8 +168,14 @@
   margin-top: 2px;
 }
 
-.userlist-edit-btn {
+.userlist-actions {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.userlist-action-btn {
   width: 32px;
   height: 32px;
   border: 1px solid #d1d5db;
@@ -184,7 +190,7 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
-.userlist-edit-btn:hover {
+.userlist-action-btn:hover {
   background: #f1f5f9;
   border-color: #0f766e;
   color: #0f766e;
@@ -202,15 +208,41 @@
   overflow: hidden;
 }
 
-/* pagination */
-.userlist-pagination {
+/* top pagination */
+.userlist-top-pager {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pager-arrow {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
-  font-size: 13px;
   color: #64748b;
+  padding: 0;
+  line-height: 1;
+}
+
+.pager-arrow:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #0f766e;
+  color: #0f766e;
+}
+
+.pager-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 @media (max-width: 640px) {
@@ -240,11 +272,6 @@
   .userlist-row2 {
     gap: 8px;
     font-size: 11px;
-  }
-
-  .userlist-pagination {
-    gap: 8px;
-    flex-wrap: wrap;
   }
 
   .userlist-id,

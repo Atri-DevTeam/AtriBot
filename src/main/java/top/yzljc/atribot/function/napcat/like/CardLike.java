@@ -18,16 +18,21 @@ import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LikeUser implements Listener {
+public final class CardLike implements Listener, ScheduledTask {
 
-    private static final Logger log = LoggerFactory.getLogger(LikeUser.class);
+    private static final Logger log = LoggerFactory.getLogger(CardLike.class);
 
     public static void addToAutoLikeList(long userId) {
         List<Long> list = LikeUserListRecord.loadLikeUserUids();
@@ -75,6 +80,16 @@ public class LikeUser implements Listener {
         }
 
         GroupMessage.forwardMessage("818804507", result, "自动点赞结果", "点击查看详细", "本次共点赞 " + i + " 位用户");
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.daily).setTime(LocalTime.of(0, 3, 0));
+    }
+
+    @Override
+    public void run() {
+        likeAllinList();
     }
 
     private enum LikeStatus {
@@ -125,7 +140,7 @@ public class LikeUser implements Listener {
             switch (feedback) {
                 case "已赞，得十！" -> emojiId = 10024;
                 case "赞成，增五十，但或不得见！", "半成，成 10 次，败 40 次，或为今日已赞故！" -> emojiId = 76;
-                default -> emojiId= 10060;
+                default -> emojiId = 10060;
             }
             GroupMessage.setEmoji(messageId, emojiId, true);
         }

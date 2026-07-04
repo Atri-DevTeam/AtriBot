@@ -9,7 +9,8 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.DiceImpl;
-import top.yzljc.atribot.function.official.minecraft.VersionCheckImpl;
+import top.yzljc.atribot.function.official.minecraft.MinecraftCapes;
+import top.yzljc.atribot.function.official.minecraft.MinecraftVersionCheck;
 import top.yzljc.atribot.platform.Platform;
 
 /**
@@ -25,7 +26,8 @@ public class MinecraftCommand implements CommandExecutor {
             Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) + " **Minecraft 指令列表**\n\n" +
                     "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
                     "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本\n\n" +
-                    "3. " + Markdown.enterCommand("/bantracker", "/bantracker") + " - Hypixel BanTracker查询"
+                    "3. " + Markdown.enterCommand("/bantracker", "/bantracker") + " - Hypixel BanTracker查询\n\n" +
+                    "4. " + Markdown.enterCommand("/mc capes", "/mc capes") + " - Minecraft全部Capes使用情况"
     );
 
     @Override
@@ -51,8 +53,12 @@ public class MinecraftCommand implements CommandExecutor {
         }
 
         if (subCommand.equals("version") || subCommand.equals("ver")) {
-            VersionCheckImpl.onCommand(sender);
+            MinecraftVersionCheck.onCommand(sender);
             return true;
+        }
+
+        if (subCommand.equals("capes") || subCommand.equals("cape")) {
+            return MinecraftCapes.handleCapesCommand(sender);
         }
 
         sender.sendMessage(ValidCommands);

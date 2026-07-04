@@ -16,6 +16,10 @@ import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.io.*;
@@ -28,9 +32,9 @@ import java.util.*;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.napcat
  */
-public class CheckMojira implements CommandExecutor {
+public final class MojiraStatus implements CommandExecutor, ScheduledTask {
 
-    private static final Logger log = LoggerFactory.getLogger(CheckMojira.class);
+    private static final Logger log = LoggerFactory.getLogger(MojiraStatus.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
     private static final String CACHE_FILE = Properties.MOJIRA_CACHE;
@@ -54,6 +58,16 @@ public class CheckMojira implements CommandExecutor {
         sender.sendMessage("已触发 Mojira 手动检查!");
         log.info("[Mojira] 用户 {} 在群 {} 触发了手动检查", sender.getUserId(), sender.getGroupId());
         return true;
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.half_hour);
+    }
+
+    @Override
+    public void run() {
+        checkNewIssues();
     }
 
     public record MojiraIssue(
@@ -223,7 +237,7 @@ public class CheckMojira implements CommandExecutor {
     }
 
     public static void checkNewIssues() {
-        synchronized (CheckMojira.class) {
+        synchronized (MojiraStatus.class) {
             if (running) return;
             running = true;
         }

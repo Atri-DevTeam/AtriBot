@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 打卡签到数据库访问层
@@ -35,6 +36,7 @@ public class SignRepository {
         String sqlTotal = "CREATE TABLE IF NOT EXISTS `check_in_total` (" +
                 "  `user_open_id` VARCHAR(255) NOT NULL," +
                 "  `total_count` INT DEFAULT 1," +
+                "  `total_coins` INT DEFAULT 0," +
                 "  `last_check_in_date` DATE NOT NULL," +
                 "  PRIMARY KEY (`user_open_id`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -44,6 +46,7 @@ public class SignRepository {
                 "  `user_open_id` VARCHAR(255) NOT NULL," +
                 "  `check_in_time` BIGINT NOT NULL," +
                 "  `check_in_date` DATE NOT NULL," +
+                "  `coins` INT DEFAULT 0," +
                 "  PRIMARY KEY (`id`)," +
                 "  INDEX `idx_date` (`check_in_date`)," +
                 "  UNIQUE KEY `uk_user_date` (`user_open_id`, `check_in_date`)" +
@@ -55,6 +58,19 @@ public class SignRepository {
             }
             try (var ps = con.prepareStatement(sqlDaily)) {
                 ps.execute();
+            }
+            // 迁移：为旧表补充 coins 列
+            try (var ps = con.prepareStatement(
+                    "ALTER TABLE `check_in_daily` ADD COLUMN `coins` INT DEFAULT 0")) {
+                ps.execute();
+            } catch (SQLException ignored) {
+                // 列已存在，忽略
+            }
+            try (var ps = con.prepareStatement(
+                    "ALTER TABLE `check_in_total` ADD COLUMN `total_coins` INT DEFAULT 0")) {
+                ps.execute();
+            } catch (SQLException ignored) {
+                // 列已存在，忽略
             }
             log.info("打卡数据库表初始化完成");
         } catch (Exception e) {
@@ -84,12 +100,16 @@ public class SignRepository {
                 }
             }
 
+            // 根据排名计算硬币奖励
+            int coins = calculateCoins(rank);
+
             // 插入日表记录（唯一键约束防止重复打卡）
-            String insertDaily = "INSERT INTO `check_in_daily` (`user_open_id`, `check_in_time`, `check_in_date`) VALUES (?, ?, ?)";
+            String insertDaily = "INSERT INTO `check_in_daily` (`user_open_id`, `check_in_time`, `check_in_date`, `coins`) VALUES (?, ?, ?, ?)";
             try (var ps = con.prepareStatement(insertDaily)) {
                 ps.setString(1, userOpenId);
                 ps.setLong(2, now);
                 ps.setDate(3, Date.valueOf(today));
+                ps.setInt(4, coins);
                 ps.executeUpdate();
             } catch (SQLException e) {
                 if (e.getMessage() != null && e.getMessage().contains("Duplicate")) {
@@ -98,32 +118,53 @@ public class SignRepository {
                 throw e;
             }
 
-            // 更新总表
-            String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`) " +
-                    "VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?";
+            // 更新总表（累计次数、累计硬币）
+            String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `total_coins`, `last_check_in_date`) " +
+                    "VALUES (?, 1, ?, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?, `total_coins` = `total_coins` + ?";
             try (var ps = con.prepareStatement(upsertTotal)) {
                 ps.setString(1, userOpenId);
-                ps.setDate(2, Date.valueOf(today));
+                ps.setInt(2, coins);
                 ps.setDate(3, Date.valueOf(today));
+                ps.setDate(4, Date.valueOf(today));
+                ps.setInt(5, coins);
                 ps.executeUpdate();
             }
 
-            // 获取累计打卡次数
+            // 获取累计打卡次数和累计硬币
             int totalCount;
-            String totalSql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
+            int totalCoins;
+            String totalSql = "SELECT `total_count`, `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
             try (var ps = con.prepareStatement(totalSql)) {
                 ps.setString(1, userOpenId);
                 try (var rs = ps.executeQuery()) {
                     rs.next();
                     totalCount = rs.getInt("total_count");
+                    totalCoins = rs.getInt("total_coins");
                 }
             }
 
-            return new CheckInResult(rank, totalCount);
+            return new CheckInResult(rank, totalCount, coins, totalCoins);
 
         } catch (Exception e) {
             log.error("打卡失败，userOpenId: {}", userOpenId, e);
             return null;
+        }
+    }
+
+    /**
+     * 根据打卡排名计算随机硬币奖励
+     * 1-3名: 90~100, 4-10名: 70~89, 11-25名: 50~69, 26名以后: 20~49
+     */
+    private static int calculateCoins(int rank) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        if (rank <= 3) {
+            return r.nextInt(90, 101);   // 90-100
+        } else if (rank <= 10) {
+            return r.nextInt(70, 90);    // 70-89
+        } else if (rank <= 25) {
+            return r.nextInt(50, 70);    // 50-69
+        } else {
+            return r.nextInt(20, 50);    // 20-49
         }
     }
 
@@ -163,6 +204,77 @@ public class SignRepository {
     }
 
     /**
+     * 获取用户累计硬币
+     */
+    public static int getTotalCoins(String userOpenId) {
+        String sql = "SELECT `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("total_coins");
+                }
+            }
+        } catch (Exception e) {
+            log.error("查询累计硬币失败", e);
+        }
+        return 0;
+    }
+
+    /**
+     * 给用户加硬币（不存在则自动创建记录）
+     */
+    public static boolean addCoins(String userOpenId, int amount) {
+        if (amount <= 0) return false;
+        String sql = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `total_coins`, `last_check_in_date`) " +
+                "VALUES (?, 0, ?, ?) ON DUPLICATE KEY UPDATE `total_coins` = `total_coins` + ?";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            ps.setInt(2, amount);
+            ps.setDate(3, Date.valueOf(LocalDate.now()));
+            ps.setInt(4, amount);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("加硬币失败，userOpenId: {}, amount: {}", userOpenId, amount, e);
+            return false;
+        }
+    }
+
+    /**
+     * 给用户扣硬币（余额不足返回 false）
+     */
+    public static boolean removeCoins(String userOpenId, int amount) {
+        if (amount <= 0) return false;
+        try (var con = DatabaseManager.getConnection()) {
+            // 先查余额
+            int balance;
+            String querySql = "SELECT `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
+            try (var ps = con.prepareStatement(querySql)) {
+                ps.setString(1, userOpenId);
+                try (var rs = ps.executeQuery()) {
+                    if (!rs.next()) return false;       // 没有记录
+                    balance = rs.getInt("total_coins");
+                }
+            }
+            if (balance < amount) return false;          // 余额不足
+
+            String updateSql = "UPDATE `check_in_total` SET `total_coins` = `total_coins` - ? WHERE `user_open_id` = ?";
+            try (var ps = con.prepareStatement(updateSql)) {
+                ps.setInt(1, amount);
+                ps.setString(2, userOpenId);
+                ps.executeUpdate();
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("扣硬币失败，userOpenId: {}, amount: {}", userOpenId, amount, e);
+            return false;
+        }
+    }
+
+    /**
      * 获取今日打卡人数
      */
     public static int getTodayCount() {
@@ -186,7 +298,7 @@ public class SignRepository {
         LocalDate today = LocalDate.now();
         String dateStr = today.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        String querySql = "SELECT `user_open_id`, `check_in_time` FROM `check_in_daily` WHERE `check_in_date` = ? ORDER BY `id`";
+        String querySql = "SELECT `user_open_id`, `check_in_time`, `coins` FROM `check_in_daily` WHERE `check_in_date` = ? ORDER BY `id`";
 
         ObjectNode root = mapper.createObjectNode();
         root.put("date", dateStr);
@@ -206,6 +318,7 @@ public class SignRepository {
                         record.put("rank", rank);
                         record.put("user_open_id", rs.getString("user_open_id"));
                         record.put("check_in_time", rs.getLong("check_in_time"));
+                        record.put("coins", rs.getInt("coins"));
                         records.add(record);
                     }
                     totalCount = rank;
@@ -239,6 +352,6 @@ public class SignRepository {
         return now.getHour() == 23 && now.getMinute() >= 50;
     }
 
-    public record CheckInResult(int rank, int totalCount) {
+    public record CheckInResult(int rank, int totalCount, int coins, int totalCoins) {
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.napcat.UserInformation;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventManager;
@@ -42,7 +43,7 @@ public class RequestReceiver {
                     if (!senderNode.isMissingNode() && !senderNode.isNull()) {
                         senderObj = new User(
                                 Platform.NAPCAT_GROUP,
-                                selfId.equals(userId),
+                                selfId.equals(userId) || UserInformation.isBot(userId),
                                 senderNode.path("user_id").asText(),
                                 senderNode.path("nickname").asText(""),
                                 PlatformRole.getPlatformRole(senderNode.path("role").asText()),

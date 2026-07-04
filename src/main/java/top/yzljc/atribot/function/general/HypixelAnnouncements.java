@@ -27,6 +27,10 @@ import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,7 +57,7 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.atribot.function.general
  */
 @Slf4j
-public class HypixelAnnouncements implements CommandExecutor {
+public final class HypixelAnnouncements implements CommandExecutor, ScheduledTask {
 
     private static final String HYPIXEL_ANNOUNCEMENT_URL = "https://hypixel.net/forums/news-and-announcements.4/index.rss";
 
@@ -93,6 +97,16 @@ public class HypixelAnnouncements implements CommandExecutor {
         }
 
         return true;
+    }
+
+    @Override
+    public TaskSchedule schedule() {
+        return new DefaultTaskSchedule().setMode(ScheduleMode.hourly);
+    }
+
+    @Override
+    public void run() {
+        feedAnnouncements();
     }
 
     public static boolean feedAnnouncements() {

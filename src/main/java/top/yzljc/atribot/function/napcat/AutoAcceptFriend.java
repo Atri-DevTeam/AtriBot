@@ -12,6 +12,7 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -30,11 +31,14 @@ public class AutoAcceptFriend implements Listener {
         } catch (Exception e) {
             // 1
         }
-        if (lastUser != event.getUserId()) {
-            ThreadManager.schedule(() -> PrivateMessage.forwardMessage(event.getUserId(), HelpCommand.getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
-                    "项目开发说明", "指令帮助", "功能介绍"), 10, TimeUnit.SECONDS);
+        if (!Objects.equals(lastUser, event.getUserId())) {
+            ThreadManager.schedule(() -> {
+                if (!Objects.equals(lastUser, event.getUserId())) return;
+                PrivateMessage.forwardMessage(event.getUserId(), HelpCommand.getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+                        "项目开发说明", "指令帮助", "功能介绍");
+                lastUser = event.getUserId();
+            }, 10, TimeUnit.SECONDS);
             log.info("已自动接受好友请求，用户ID: " + event.getUserId());
         }
-        lastUser = event.getUserId();
     }
 }

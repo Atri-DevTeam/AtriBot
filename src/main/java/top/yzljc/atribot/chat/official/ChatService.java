@@ -427,14 +427,14 @@ public class ChatService {
 
     private MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId) {
         String fileInfo = uploadImageFile(uploadUrl, type, value, logLabel);
-        if (fileInfo == null) return null;
+        if (fileInfo == null) return textRequest("在查询数据时出现错误：服务器上行被限导致请求超时，请稍后重试，如持续发生请向开发者报告此问题！");
 
         return mediaRequest(fileInfo, msgId);
     }
 
     private MessageBody buildFileRequest(String uploadUrl, int type, String value, String logLabel, String msgId) {
         String fileInfo = uploadFile(uploadUrl, type, value, logLabel);
-        if (fileInfo == null) return null;
+        if (fileInfo == null) return textRequest("在查询数据时出现错误：服务器上行被限导致请求超时，请稍后重试，如持续发生请向开发者报告此问题！");
 
         return mediaRequest(fileInfo, msgId);
     }

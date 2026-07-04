@@ -76,9 +76,6 @@ public class ErrorReport {
         return traceId;
     }
 
-    /**
-     * 便捷重载：自动取 e 的堆栈中第一个调用者作为类名。
-     */
     public static String report(Exception e) {
         String className = "Unknown";
         StackTraceElement[] stack = e.getStackTrace();

@@ -94,6 +94,8 @@ public class Config {
     private String verifyHost;
     @Getter
     private String verifyKey;
+    @Getter
+    private String dizhenStatusUrl;
 
     // ########## 官方机器人配置参数 ##########
     @Getter
@@ -206,6 +208,7 @@ public class Config {
             this.wakeupImgLink = yaml.getString("function.wakeup-image-link", "null");
             this.keywordsHitokoto = yaml.getStringList("function.keywords-hitokoto").toArray(new String[0]);
             this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
+            this.dizhenStatusUrl = yaml.getString("function.dizhen-status-url", "null");
 
             // ########## 官方机器人配置参数 ##########
             this.officialBotEnabled = yaml.getBoolean("qq.enabled", false);

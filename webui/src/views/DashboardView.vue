@@ -44,6 +44,12 @@
           </svg>
           反馈管理
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/napcat' }" @click="$router.push('/napcat'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="3"/><path d="M8 20h8"/><path d="M12 18v2"/>
+          </svg>
+          Napcat功能
+        </button>
       </nav>
 
       <div class="side-toolbar">
@@ -71,15 +77,24 @@
         <section class="chat-panel">
           <div class="chat-head">
             <div class="group-picker">
-              <button class="group-picker-trigger" @click="toggleDropdown">
-                <span>{{ selectedGroupId || '选择群聊' }}</span>
-                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-              </button>
+              <div class="group-picker-row">
+                <button class="group-picker-trigger" @click="toggleDropdown">
+                  <span>{{ selectedGroupId || '选择群聊' }}</span>
+                  <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+                </button>
+                <button class="filter-return-btn" type="button" title="回到群筛选" aria-label="回到群筛选" @click="returnToGroupFilter">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 5h18"/>
+                    <path d="M6 12h12"/>
+                    <path d="M10 19h4"/>
+                  </svg>
+                </button>
+              </div>
               <div v-if="dropdownOpen" ref="dropdownRef" class="dropdown-menu">
                 <input v-model="groupSearch" class="dropdown-search" placeholder="搜索群聊 openId…" @click.stop />
                 <button v-for="group in filteredGroups" :key="group.groupOpenId"
                         class="dropdown-item" :class="{ active: group.groupOpenId === selectedGroupId }"
-                        @click="selectGroup(group.groupOpenId); dropdownOpen = false">
+                        @click="selectGroup(group.groupOpenId); closeDropdown()">
                   <span class="item-id">{{ group.groupOpenId }}</span>
                   <span class="item-badges">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
@@ -109,7 +124,7 @@
 
             <div v-if="!selectedGroupId" class="group-list-hint">
               <div class="group-list-grid">
-                <button v-for="group in groups" :key="group.groupOpenId"
+                <button v-for="group in visibleGroups" :key="group.groupOpenId"
                         class="group-list-card"
                         @click="selectGroup(group.groupOpenId)">
                   <span class="group-list-id">{{ group.groupOpenId }}</span>
@@ -124,6 +139,7 @@
                   </span>
                 </button>
                 <div v-if="groups.length === 0" class="empty-state">暂无群聊数据</div>
+                <div v-else-if="visibleGroups.length === 0" class="empty-state">没有匹配的群</div>
               </div>
             </div>
             <div v-else-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
@@ -132,8 +148,9 @@
             <article
               v-for="message in orderedMessages"
               :key="message.id"
+              :data-message-id="message.id"
               class="message"
-              :class="{ mine: isMe(message) }"
+              :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id }"
             >
               <div class="avatar" @click="toggleMsgDetail(message.id)">
                 <img
@@ -145,7 +162,7 @@
                 <span v-show="!avatarUrl(message) || avatarFailed[message.id]">{{ avatarText(message) }}</span>
               </div>
               <div class="message-main">
-                <div class="msg-header">
+                <div class="msg-header" :class="{ 'uid-expanded': expandedIds[message.id] }">
                   <template v-if="isMe(message)">
                     <svg v-if="message.senderIsBot" class="bot-icon" width="14" height="14" viewBox="0 0 64 64">
                       <line x1="32" y1="10" x2="32" y2="18" stroke="#12B7F5" stroke-width="3.5" stroke-linecap="round"/>
@@ -173,13 +190,17 @@
                      @contextmenu.prevent.stop="onContextMenu($event, message)">
                   <pre v-if="recalledIds[message.messageOpenId]">你撤回了一条消息</pre>
                   <template v-else>
-                    <div v-if="hasMsgRef(message)" class="msg-ref">
+                    <div v-if="hasMsgRef(message)"
+                         class="msg-ref msg-ref--clickable"
+                         title="跳转到引用来源"
+                         @click.stop="jumpToReference(message)">
                     <span class="msg-ref-author">{{ parseMsgRef(message.messageReference).author }}</span>
                     <div class="msg-ref-content" v-html="renderRefContent(parseMsgRef(message.messageReference))"></div>
                   </div>
                     <div v-if="message.attachments" class="msg-attach">
                       <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
                         <img
+                          v-if="att.type === 'image'"
                           v-show="!attachFailed[att.url]"
                           :src="att.url"
                           :alt="att.filename"
@@ -188,10 +209,16 @@
                           @error="attachFailed[att.url] = true"
                           @click="previewImg = att.url"
                         />
-                        <span v-if="attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                        <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                        <div v-else-if="att.type === 'voice'" class="voice-attach">
+                          <div class="voice-title">语音消息</div>
+                          <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
+                          <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
+                          <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
+                        </div>
                       </template>
                     </div>
-                    <pre v-if="message.messageType !== 2 && message.messageType !== 7">{{ renderContent(message) }}</pre>
+                    <pre v-if="message.messageType !== 2 && message.messageType !== 7 && renderContent(message)">{{ renderContent(message) }}</pre>
                     <div v-if="message.messageType === 7" class="media-placeholder">📷 媒体消息</div>
                     <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                   </template>
@@ -311,15 +338,44 @@
             <dt>群聊加入时间</dt>
             <dd>{{ formatTime(selectedGroup.timestamp) }}</dd>
           </dl>
-          <div v-else class="hint">选择群后显示详情</div>
+          <div v-else class="group-filter-panel">
+            <div class="filter-title">群筛选</div>
+            <div class="filter-actions">
+              <button v-for="option in groupFilterOptions"
+                      :key="option.value"
+                      :class="['filter-chip', { active: groupFilter === option.value }]"
+                      @click="setGroupFilter(option.value)">
+                {{ option.label }}
+              </button>
+            </div>
+            <label v-if="groupFilter === 'function'" class="function-filter">
+              <span>Function</span>
+              <select v-model="functionFilterKey" :disabled="functionFilterLoading">
+                <option value="">任意已开启功能</option>
+                <option v-for="key in availableFunctionKeys" :key="key" :value="key">{{ key }}</option>
+              </select>
+            </label>
+            <div class="filter-summary">
+              <span v-if="functionFilterLoading">正在加载功能配置</span>
+              <span v-else>{{ visibleGroups.length }} / {{ groups.length }} 个群</span>
+            </div>
+          </div>
 
           <!-- 功能配置 -->
-          <div v-if="selectedGroupId && funcEntries.length" class="func-box">
+          <div v-if="selectedGroupId" class="func-box">
             <h4>功能列表</h4>
             <div v-for="[key, val] in funcEntries" :key="key" class="func-row clickable" @click="toggleFunction(key, !val.enabled)">
               <span class="func-name">{{ key }}</span>
               <span :class="['badge', val.enabled ? 'green' : 'gray']">{{ val.enabled ? '开' : '关' }}</span>
             </div>
+            <div v-if="funcEntries.length === 0" class="func-empty">暂无功能配置</div>
+            <form class="perm-add func-add" @submit.prevent="addFunctionKey">
+              <select v-model="newFunctionKey">
+                <option value="">选择功能配置</option>
+                <option v-for="key in addableFunctionKeys" :key="key" :value="key">{{ key }}</option>
+              </select>
+              <button class="primary-button" :disabled="!newFunctionKey">添加</button>
+            </form>
           </div>
 
           <div class="log-box">
@@ -339,10 +395,12 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
+import { renderFaceTags } from '../messageRender.js'
 
 const router = useRouter()
+const route = useRoute()
 
 const groups = ref([])
 const messages = ref([])
@@ -367,12 +425,18 @@ const dropdownOpen = ref(false)
 const dropdownRef = ref(null)
 const dropdownScrollTop = ref(0)
 const groupSearch = ref('')
+const groupFilter = ref('all')
+const functionFilterKey = ref('')
+const functionFilterLoading = ref(false)
+const knownFunctionKeys = ref([])
+const groupFunctionConfigs = reactive({})
 const sidebarOpen = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const replyTo = ref(null)
 const refMode = ref(false)
 const funcEntries = ref([])
+const newFunctionKey = ref('')
 const showInspector = ref(false)
 const showPermModal = ref(false)
 const permTarget = ref('')
@@ -391,8 +455,11 @@ const expandedIds = reactive({})
 function toggleMsgDetail(id) { expandedIds[id] = !expandedIds[id] }
 const previewImg = ref(null)
 const pastePreview = ref(null)
+const highlightedMessageId = ref(null)
 const pageSize = 80
 let eventSource = null
+let highlightTimer = null
+const GROUP_FILTER_STORAGE_KEY = 'atri.webui.group_filter'
 
 const messageListRef = ref(null)
 
@@ -410,14 +477,139 @@ async function saveRealGroup() {
     g.realGroupId = val ? parseInt(val) : null
   } catch (e) { realGroupInput.value = original }
 }
+const groupFilterOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'whitelist', label: '白名单' },
+  { value: 'blacklist', label: '黑名单' },
+  { value: 'active', label: '主动消息' },
+  { value: 'function', label: '已开功能' }
+]
+const availableFunctionKeys = computed(() => {
+  const keys = new Set()
+  for (const key of knownFunctionKeys.value) {
+    if (key) keys.add(key)
+  }
+  for (const config of Object.values(groupFunctionConfigs)) {
+    for (const key of Object.keys(config || {})) {
+      keys.add(key)
+    }
+  }
+  return [...keys].sort((a, b) => a.localeCompare(b))
+})
+const addableFunctionKeys = computed(() => {
+  const existing = new Set(funcEntries.value.map(([key]) => key))
+  return availableFunctionKeys.value.filter(key => !existing.has(key))
+})
+const visibleGroups = computed(() => sortGroups(applyGroupFilter(groups.value)))
 const filteredGroups = computed(() => {
   const q = groupSearch.value.toLowerCase()
   const filtered = q ? groups.value.filter(g => g.groupOpenId.toLowerCase().includes(q)) : groups.value
-  return [...filtered].sort((a, b) => {
+  return sortGroups(filtered)
+})
+
+function sortGroups(list) {
+  return [...list].sort((a, b) => {
     if (a.whitelist !== b.whitelist) return a.whitelist ? -1 : 1
     return b.timestamp - a.timestamp
   })
+}
+
+function applyGroupFilter(list) {
+  if (groupFilter.value === 'whitelist') return list.filter(g => g.whitelist)
+  if (groupFilter.value === 'blacklist') return list.filter(g => g.blacklisted)
+  if (groupFilter.value === 'active') return list.filter(g => g.allowedActive)
+  if (groupFilter.value === 'function') {
+    return list.filter(g => groupHasEnabledFunction(g.groupOpenId, functionFilterKey.value))
+  }
+  return list
+}
+
+function groupHasEnabledFunction(groupOpenId, functionKey) {
+  const config = groupFunctionConfigs[groupOpenId]
+  if (!config) return false
+  if (functionKey) return !!config[functionKey]?.enabled
+  return Object.values(config).some(val => val?.enabled)
+}
+
+function setGroupFilter(value) {
+  groupFilter.value = value
+  persistGroupFilter()
+  if (value === 'function') {
+    ensureGroupFunctionConfigs()
+  }
+}
+
+function restoreGroupFilter() {
+  try {
+    const raw = localStorage.getItem(GROUP_FILTER_STORAGE_KEY)
+    if (!raw) return
+    const saved = JSON.parse(raw)
+    if (groupFilterOptions.some(option => option.value === saved?.type)) {
+      groupFilter.value = saved.type
+    }
+    if (typeof saved?.functionKey === 'string') {
+      functionFilterKey.value = saved.functionKey
+    }
+  } catch { /* ignore */ }
+}
+
+function persistGroupFilter() {
+  try {
+    localStorage.setItem(GROUP_FILTER_STORAGE_KEY, JSON.stringify({
+      type: groupFilter.value,
+      functionKey: functionFilterKey.value
+    }))
+  } catch { /* ignore */ }
+}
+
+function returnToGroupFilter() {
+  selectedGroupId.value = ''
+  closeDropdown()
+  showInspector.value = true
+  messages.value = []
+  totalMessages.value = 0
+  currentPage.value = 0
+  funcEntries.value = []
+  replyTo.value = null
+  refMode.value = false
+  if (groupFilter.value === 'function') {
+    ensureGroupFunctionConfigs()
+  }
+}
+
+watch(functionFilterKey, () => {
+  persistGroupFilter()
+  if (groupFilter.value === 'function') {
+    ensureGroupFunctionConfigs()
+  }
 })
+
+async function ensureGroupFunctionConfigs() {
+  const missing = groups.value.filter(g => !groupFunctionConfigs[g.groupOpenId])
+  if (!missing.length || functionFilterLoading.value) return
+  functionFilterLoading.value = true
+  try {
+    await Promise.all(missing.map(async group => {
+      try {
+        const data = await api(`/groups/${encodeURIComponent(group.groupOpenId)}/functions`)
+        groupFunctionConfigs[group.groupOpenId] = data || {}
+      } catch {
+        groupFunctionConfigs[group.groupOpenId] = {}
+      }
+    }))
+  } finally {
+    functionFilterLoading.value = false
+  }
+}
+
+async function loadFunctionKeys() {
+  try {
+    const keys = await api('/groups/functions/keys')
+    knownFunctionKeys.value = Array.isArray(keys) ? keys : []
+  } catch {
+    knownFunctionKeys.value = []
+  }
+}
 const hasMore = computed(() => messages.value.length < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
@@ -427,13 +619,20 @@ const canSend = computed(() => {
 
 onMounted(async () => {
   document.addEventListener('click', onDocumentClick)
+  restoreGroupFilter()
   await loadConfig()
   await loadGroups()
+  await loadFunctionKeys()
+  const targetGroup = route.query.group
+  if (targetGroup) {
+    selectGroup(targetGroup)
+  }
   connectSse()
 })
 
 onBeforeUnmount(() => {
   if (eventSource) eventSource.close()
+  if (highlightTimer) clearTimeout(highlightTimer)
 })
 
 function connectSse() {
@@ -513,13 +712,43 @@ async function toggleStatus(type) {
 }
 
 async function toggleFunction(funcKey, enabled) {
-  if (!selectedGroupId.value) return
+  const key = funcKey?.trim()
+  if (!selectedGroupId.value || !key) return false
+  if (!availableFunctionKeys.value.includes(key)) {
+    notice.value = '请选择已有功能配置'
+    return false
+  }
   try {
-    await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/functions/${encodeURIComponent(funcKey)}?enabled=${enabled}`, { method: 'POST' })
+    await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/functions/${encodeURIComponent(key)}?enabled=${enabled}`, { method: 'POST' })
     // 更新本地
-    const entry = funcEntries.value.find(([k]) => k === funcKey)
-    if (entry) entry[1].enabled = enabled
-  } catch (e) { notice.value = e.message }
+    const entry = funcEntries.value.find(([k]) => k === key)
+    if (entry) {
+      entry[1].enabled = enabled
+    } else {
+      funcEntries.value.push([key, { enabled }])
+      funcEntries.value.sort(([a], [b]) => a.localeCompare(b))
+    }
+    if (!groupFunctionConfigs[selectedGroupId.value]) {
+      groupFunctionConfigs[selectedGroupId.value] = {}
+    }
+    const config = groupFunctionConfigs[selectedGroupId.value]
+    config[key] = { ...(config[key] || {}), enabled }
+    if (!functionFilterKey.value && groupFilter.value === 'function') {
+      functionFilterKey.value = key
+    }
+    return true
+  } catch (e) {
+    notice.value = e.message
+    return false
+  }
+}
+
+async function addFunctionKey() {
+  const key = newFunctionKey.value
+  if (!key) return
+  if (await toggleFunction(key, true)) {
+    newFunctionKey.value = ''
+  }
 }
 
 async function loadGroupFunctions() {
@@ -527,6 +756,7 @@ async function loadGroupFunctions() {
   try {
     const data = await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/functions`)
     funcEntries.value = data ? Object.entries(data) : []
+    groupFunctionConfigs[selectedGroupId.value] = data || {}
   } catch { funcEntries.value = [] }
 }
 
@@ -537,7 +767,7 @@ function isNearBottom() {
 }
 
 function onDocumentClick(e) {
-  if (!e.target.closest('.group-picker')) dropdownOpen.value = false
+  if (!e.target.closest('.group-picker')) closeDropdown()
   if (!e.target.closest('.ctx-menu')) ctxMenu.visible = false
 }
 
@@ -688,7 +918,7 @@ function hasMsgRef(message) {
 
 function renderContent(message) {
   let text = message.content || ''
-  text = text.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
+  text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   text = text.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
@@ -711,14 +941,19 @@ function renderRefContent(ref) {
   const parts = []
   if (ref.content) {
     let t = ref.content
-    t = t.replace(/<faceType=\d+,faceId="[^"]*",ext="[^"]*">/g, '[表情]')
+    t = renderFaceTags(t)
     t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
     t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
     if (t.trim()) parts.push(renderMd(t))
   }
   if (ref.attachments && ref.attachments.length) {
     for (const a of ref.attachments) {
-      parts.push(`<img src="${a.url}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+      if ((a.content_type || '').startsWith('image/') && a.url) {
+        parts.push(`<img src="${a.url}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+      } else if (a.content_type === 'voice') {
+        const text = a.asr_refer_text || a.filename || '语音消息'
+        parts.push(`<span class="voice-ref">${escapeHtml(text)}</span>`)
+      }
     }
   }
   if (!parts.length) return '&#8203;'
@@ -733,17 +968,209 @@ function parseMsgRef(raw) {
     return {
       author: ref.author?.username || '',
       content: ref.content || '',
-      attachments: (ref.attachments || []).filter(a => a.url)
+      attachments: (ref.attachments || []).filter(a => a.url || a.voice_wav_url)
     }
   } catch { return {} }
+}
+
+function getRefTargetMsgIdx(message) {
+  if (!hasMsgRef(message)) return ''
+  const fromRef = findRefIdx(message.messageReference)
+  if (fromRef) return fromRef
+  // 兼容旧版 WebUI 主动引用记录：当时把被引用消息的 msg_idx 暂存在本记录 refIdx。
+  if ((message.eventType === 'BOT_SEND' || message.senderIsBot) && message.refIdx) {
+    return message.refIdx
+  }
+  return ''
+}
+
+function findRefIdx(raw) {
+  try {
+    const value = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return findRefIdxValue(value)
+  } catch {
+    return ''
+  }
+}
+
+function findRefIdxValue(value) {
+  if (!value || typeof value !== 'object') return ''
+  const keys = ['msg_idx', 'msgIdx', 'ref_idx', 'refIdx', 'message_id', 'messageId', 'msg_id', 'msgId']
+  for (const key of keys) {
+    const candidate = value[key]
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findRefIdxValue(item)
+      if (found) return found
+    }
+  } else {
+    for (const item of Object.values(value)) {
+      const found = findRefIdxValue(item)
+      if (found) return found
+    }
+  }
+  return ''
+}
+
+async function jumpToReference(message) {
+  const msgIdx = getRefTargetMsgIdx(message)
+  const ref = parseMsgRef(message.messageReference)
+  if (!selectedGroupId.value) return
+
+  const loaded = findLoadedReference(message, msgIdx)
+  if (loaded) {
+    await nextTick()
+    highlightMessage(loaded.id)
+    return
+  }
+
+  if (!msgIdx && !ref.content && !(ref.attachments && ref.attachments.length)) {
+    notice.value = '引用来源消息缺少可定位信息'
+    return
+  }
+
+  try {
+    const params = new URLSearchParams({
+      pageSize: String(pageSize),
+      excludeId: String(message.id)
+    })
+    if (msgIdx) params.set('msgIdx', msgIdx)
+    if (ref.author) params.set('refAuthor', ref.author)
+    if (ref.content) params.set('refContent', ref.content)
+    if (ref.attachments && ref.attachments.length) {
+      params.set('refAttachments', JSON.stringify(ref.attachments))
+    }
+    const location = await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/messages/ref?${params}`)
+    const page = location.page || 1
+    const data = await api(`/groups/${encodeURIComponent(selectedGroupId.value)}/messages?page=${page}&pageSize=${pageSize}`)
+    messages.value = data.records || []
+    totalMessages.value = data.total || totalMessages.value
+    currentPage.value = page
+    await nextTick()
+    highlightMessage(location.record.id)
+  } catch (error) {
+    notice.value = error.message
+  }
+}
+
+function findLoadedReference(message, refIdx) {
+  if (refIdx) {
+    const byId = messages.value.find(m =>
+      m.id !== message.id && m.refIdx === refIdx
+    )
+    if (byId) return byId
+  }
+
+  const ref = parseMsgRef(message.messageReference)
+  const refText = normalizeRefText(ref.content)
+  const refAuthor = (ref.author || '').trim()
+  const candidates = messages.value
+    .filter(m => m.id !== message.id)
+    .sort((a, b) => {
+      const aOlder = a.id < message.id ? 0 : 1
+      const bOlder = b.id < message.id ? 0 : 1
+      if (aOlder !== bOlder) return aOlder - bOlder
+      return Math.abs(message.id - a.id) - Math.abs(message.id - b.id)
+    })
+
+  if (refText) {
+    const exact = candidates.find(m =>
+      (!refAuthor || m.username === refAuthor) && normalizeRefText(m.content) === refText
+    )
+    if (exact) return exact
+
+    if (refText.length >= 6) {
+      const partial = candidates.find(m => {
+        if (refAuthor && m.username !== refAuthor) return false
+        const content = normalizeRefText(m.content)
+        return !!content && (content.includes(refText) || refText.includes(content))
+      })
+      if (partial) return partial
+    }
+  }
+
+  const refAttachments = ref.attachments || []
+  if (refAttachments.length) {
+    const byAttachment = candidates.find(m => {
+      if (refAuthor && m.username !== refAuthor) return false
+      const attachments = parseRawAttachments(m.attachments)
+      return refAttachments.some(refAtt => attachments.some(att => sameAttachment(att, refAtt)))
+    })
+    if (byAttachment) return byAttachment
+  }
+
+  return null
+}
+
+function normalizeRefText(text) {
+  let value = renderFaceTags(text || '')
+  value = value.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  value = value.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  value = value.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
+  return value.trim()
+}
+
+function parseRawAttachments(raw) {
+  try {
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+function sameAttachment(a, b) {
+  if (!a || !b) return false
+  if (a.url && b.url && a.url === b.url) return true
+  if (a.voice_wav_url && b.voice_wav_url && a.voice_wav_url === b.voice_wav_url) return true
+  if (a.filename && b.filename && a.filename === b.filename) return true
+  return false
+}
+
+function highlightMessage(id) {
+  highlightedMessageId.value = id
+  const el = messageListRef.value?.querySelector(`[data-message-id="${id}"]`)
+  if (el) {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }
+  if (highlightTimer) clearTimeout(highlightTimer)
+  highlightTimer = setTimeout(() => {
+    highlightedMessageId.value = null
+  }, 1800)
 }
 
 function parseAttach(raw) {
   try {
     const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!Array.isArray(arr)) return []
-    return arr.filter(a => a.url && (a.content_type || '').startsWith('image/'))
+    return arr.map(normalizeAttachment).filter(Boolean)
   } catch { return [] }
+}
+
+function normalizeAttachment(att) {
+  const contentType = att?.content_type || ''
+  if (att?.url && contentType.startsWith('image/')) {
+    return { ...att, type: 'image' }
+  }
+  if (contentType === 'voice') {
+    return {
+      ...att,
+      type: 'voice',
+      asrText: att.asr_refer_text || '',
+      voiceUrl: att.voice_wav_url || ''
+    }
+  }
+  return null
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function renderMd(text) {
@@ -839,6 +1266,9 @@ async function loadGroups() {
   loadingGroups.value = true
   try {
     groups.value = await api('/groups')
+    if (groupFilter.value === 'function') {
+      ensureGroupFunctionConfigs()
+    }
     notice.value = `已加载 ${groups.value.length} 个群`
   } catch (error) {
     notice.value = error.message
@@ -849,17 +1279,21 @@ async function loadGroups() {
 
 function toggleDropdown() {
   if (dropdownOpen.value) {
-    const el = dropdownRef.value
-    if (el) dropdownScrollTop.value = el.scrollTop
-    dropdownOpen.value = false
+    closeDropdown()
   } else {
-    groupSearch.value = ''
     dropdownOpen.value = true
     nextTick(() => {
       const el = dropdownRef.value
       if (el) el.scrollTop = dropdownScrollTop.value
     })
   }
+}
+
+function closeDropdown() {
+  if (!dropdownOpen.value) return
+  const el = dropdownRef.value
+  if (el) dropdownScrollTop.value = el.scrollTop
+  dropdownOpen.value = false
 }
 
 async function selectGroup(groupOpenId) {

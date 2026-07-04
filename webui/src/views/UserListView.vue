@@ -43,6 +43,12 @@
           </svg>
           反馈管理
         </button>
+        <button class="side-nav-item" :class="{ active: $route.path === '/napcat' }" @click="$router.push('/napcat'); sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="3"/><path d="M8 20h8"/><path d="M12 18v2"/>
+          </svg>
+          Napcat功能
+        </button>
       </nav>
       <div class="side-toolbar">
         <button class="ghost-button" :disabled="loading" @click="fetchList">刷新</button>
@@ -79,6 +85,11 @@
         <section class="chat-panel userlist-panel">
           <div class="chat-head">
             <strong>全部群消息</strong>
+            <div class="userlist-top-pager">
+              <button class="pager-arrow" :disabled="page <= 1" @click="goPage(page - 1)">◂</button>
+              <span>{{ page }} / {{ totalPages }}</span>
+              <button class="pager-arrow" :disabled="page >= totalPages" @click="goPage(page + 1)">▸</button>
+            </div>
             <span class="status-pill" style="margin-left:auto"><span class="dot ok"></span>{{ total }} 条记录</span>
           </div>
           <div class="userlist-content">
@@ -87,7 +98,7 @@
             <div v-else-if="items.length === 0" class="empty-state">暂无数据</div>
 
             <div v-else class="userlist-list">
-              <article v-for="item in items" :key="`${item.groupOpenId}-${item.createdAt}`" class="userlist-card">
+              <article v-for="item in items" :key="`${item.groupOpenId}-${item.unionOpenId}-${item.createdAt}`" class="userlist-card">
                 <img
                   class="userlist-avatar"
                   :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${item.unionOpenId}/100`"
@@ -107,21 +118,26 @@
                     <span v-if="item.eventTimestamp" class="userlist-time">{{ formatTime(item.eventTimestamp) }}</span>
                   </div>
                   <div class="userlist-row3">
-                    <span class="userlist-msg">{{ item.content || '(无内容)' }}</span>
+                    <span class="userlist-msg">{{ renderContent(item) || '(最近一条消息无文本内容)' }}</span>
                   </div>
                 </div>
-                <button v-if="item.unionOpenId"
-                  class="userlist-edit-btn"
-                  title="更改用户信息"
-                  @click="openPermModal(item.unionOpenId)">⚙</button>
+                <div class="userlist-actions">
+                  <button v-if="item.unionOpenId"
+                    class="userlist-action-btn"
+                    title="更改用户信息"
+                    @click="openPermModal(item.unionOpenId)">⚙</button>
+                  <button v-if="item.groupOpenId"
+                    class="userlist-action-btn"
+                    title="跳转到群"
+                    @click="$router.push({ path: '/', query: { group: item.groupOpenId } })">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                </div>
               </article>
             </div>
 
-            <div v-if="totalPages > 1" class="userlist-pagination">
-              <button class="ghost-button" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
-              <span>第 {{ page }} / {{ totalPages }} 页</span>
-              <button class="ghost-button" :disabled="page >= totalPages" @click="goPage(page + 1)">下一页</button>
-            </div>
           </div>
         </section>
       </section>
@@ -174,6 +190,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
+import { renderFaceTags } from '../messageRender.js'
 
 const router = useRouter()
 
@@ -336,6 +353,34 @@ function formatTime(value) {
   if (Number.isNaN(date.getTime())) return raw
   const pad = n => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function renderContent(item) {
+  let text = item.content || ''
+  text = renderFaceTags(text)
+  text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  text = text.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
+  if (text.trim()) return text
+  return renderAttachmentSummary(item.attachments)
+}
+
+function renderAttachmentSummary(raw) {
+  const attachments = parseAttachments(raw)
+  const voice = attachments.find(att => att.content_type === 'voice')
+  if (voice) return voice.asr_refer_text || '[语音]'
+  if (attachments.some(att => (att.content_type || '').startsWith('image/'))) return '[图片]'
+  if (attachments.length > 0) return '[附件]'
+  return ''
+}
+
+function parseAttachments(raw) {
+  try {
+    const attachments = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return Array.isArray(attachments) ? attachments : []
+  } catch {
+    return []
+  }
 }
 
 let eventSource = null

@@ -27,7 +27,7 @@ object CucumberGirl : CommandExecutor {
         args: Array<out String?>?
     ): Boolean {
         if (sender?.platform != Platform.NAPCAT_GROUP) return true
-        if (!GroupConfigManager.isFeatureEnabled(sender.groupId, "girl_text")) {
+        if (!GroupConfigManager.isFeatureEnabled(sender.groupId, "private_func")) {
             if (!sender.hasPermission()) {
                 return true
             }
