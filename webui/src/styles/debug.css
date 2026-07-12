@@ -1,0 +1,258 @@
+.debug-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.debug-panel {
+  min-width: 0;
+}
+
+.debug-send-btn {
+  margin-left: auto;
+  min-height: 30px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.debug-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+}
+
+.debug-request {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.debug-preset-line {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.debug-url-line {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.debug-preset,
+.debug-method,
+.debug-path,
+.debug-editors textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+  font-size: 12px;
+}
+
+.debug-preset,
+.debug-method,
+.debug-path {
+  box-sizing: border-box;
+  height: 36px;
+  padding: 0 10px;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.debug-method {
+  box-sizing: border-box;
+}
+
+.debug-editors {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px;
+  min-height: 0;
+}
+
+.debug-editors label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.debug-editor-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.debug-editor-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debug-format-btn {
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #4b5563;
+  background: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.debug-format-btn:hover {
+  color: #0f766e;
+  border-color: #8bd3dd;
+  background: #f8fafc;
+}
+
+.debug-editors textarea {
+  box-sizing: border-box;
+  resize: none;
+  height: 160px;
+  padding: 9px 10px;
+  font-family: Consolas, Monaco, monospace;
+  line-height: 1.45;
+}
+
+.debug-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.debug-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  width: min(920px, 100%);
+  height: min(680px, calc(100vh - 48px));
+  min-height: 320px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.debug-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #111827;
+  font-size: 14px;
+}
+
+.debug-modal-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.debug-modal-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  resize: none;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.debug-response-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.debug-response-body {
+  align-content: start;
+}
+
+.debug-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.debug-final-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.debug-response-body details {
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.debug-response-body summary {
+  cursor: pointer;
+}
+
+.debug-response-body pre,
+.debug-output {
+  max-height: 260px;
+  margin: 6px 0 0;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #111827;
+  background: #f8fafc;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .debug-layout,
+  .debug-url-line,
+  .debug-editors {
+    grid-template-columns: 1fr;
+  }
+
+  .debug-preset-line {
+    grid-template-columns: 1fr;
+  }
+
+  .debug-modal-backdrop {
+    padding: 12px;
+  }
+
+  .debug-modal {
+    height: calc(100vh - 24px);
+  }
+}

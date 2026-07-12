@@ -127,6 +127,12 @@ public class CommandManager implements Listener {
     public void onOfficialC2CCommand(OfficialC2CMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
         String userInput = event.getMessage().getContent().trim();
+        if (userInput.equals("指令帮助")) {
+            userInput = "/help";
+        }
+        if (userInput.equals("反馈与建议")) {
+            userInput = "/feedback";
+        }
 
         if (!userInput.startsWith(COMMAND_PREFIX)) {
             return;

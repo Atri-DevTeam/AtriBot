@@ -12,6 +12,8 @@ import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
+import java.util.Map;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName MojangStatus
@@ -25,7 +27,7 @@ public class MojangStatus implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String url = ResourcesProperties.MOJANG_STATUS_API + "?key=" + secret + "&" + System.currentTimeMillis();
+        String apiUrl = ResourcesProperties.MOJANG_STATUS_API + "?key=" + secret;
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "mojang_status")) {
@@ -35,9 +37,10 @@ public class MojangStatus implements CommandExecutor {
 
         String messageId = sender.sendMessage("正在检查 Mojang 服务状态，请稍候...");
 
-        int code = PreImageGenerate.create(url);
-        if (code != 200) {
-            sender.sendMessage("检查 Mojang 服务状态失败，API 返回状态码: " + code);
+        var data = PreImageGenerate.dump(apiUrl, Map.of());
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            sender.sendMessage("检查 Mojang 服务状态失败: " + errMsg);
             if (messageId != null && !messageId.isBlank()) {
                 sender.recall(messageId);
             }
@@ -49,10 +52,10 @@ public class MojangStatus implements CommandExecutor {
         }
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
-            sender.sendMessage(url, MessageUtils.ImageType.URL);
+            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
             return true;
         } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage(url, ImageType.URL);
+            sender.sendMessage(data.url(), ImageType.URL);
             return true;
         }
         return true;

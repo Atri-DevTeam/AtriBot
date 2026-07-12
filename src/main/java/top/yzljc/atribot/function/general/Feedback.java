@@ -42,7 +42,7 @@ public class Feedback implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("请提供反馈内容！用法：/feedback <反馈内容>");
+            sender.sendMessage("请提供反馈或建议的内容，用法：/feedback <反馈内容>");
             return true;
         }
 

@@ -51,6 +51,7 @@ public class WebUIRouter {
         server.post("/official-webui/api/napcat/groups/{groupId}/features/{feature}", WebUIController::setNapcatGroupFeature);
         server.post("/official-webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
         server.post("/official-webui/api/napcat/recall", WebUIController::recallNapcatMessages);
+        server.post("/official-webui/api/debug/official/request", WebUIController::debugOfficialApi);
 
         server.get("/webui/api/auth/challenge", WebUIController::createChallenge);
         server.post("/webui/api/auth/verify", WebUIController::login);
@@ -73,6 +74,7 @@ public class WebUIRouter {
         server.post("/webui/api/napcat/groups/{groupId}/features/{feature}", WebUIController::setNapcatGroupFeature);
         server.post("/webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
         server.post("/webui/api/napcat/recall", WebUIController::recallNapcatMessages);
+        server.post("/webui/api/debug/official/request", WebUIController::debugOfficialApi);
 
         // C2C 私聊
         server.get("/webui/api/c2c/users", WebUIController::listC2CUsers);

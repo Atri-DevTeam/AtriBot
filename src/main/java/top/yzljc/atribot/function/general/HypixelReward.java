@@ -28,6 +28,8 @@ import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
+import top.yzljc.atribot.utils.ErrorReport;
+import top.yzljc.atribot.utils.RemoteServerErrorException;
 
 import java.net.URI;
 import java.util.List;
@@ -467,7 +469,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                     activeSessions.remove(sessionId);
 
                 } else if ("error".equals(type)) {
-                    String text = "执行操作时出现错误: " + response.path("msg").asText();
+                    String text = "执行操作时出现错误，请向开发者报告此问题，traceId: " + ErrorReport.report(this.getClass().getName(), new RemoteServerErrorException(response.path("msg").asText()));
                     switch (session.platform) {
                         case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, text);
                         case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, session.messageId, text);

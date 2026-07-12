@@ -51,6 +51,8 @@ public class Config {
     private String env;
     @Getter
     private String apiUrl;
+    @Getter
+    private String ugcApiUrl;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -94,8 +96,7 @@ public class Config {
     private String verifyHost;
     @Getter
     private String verifyKey;
-    @Getter
-    private String dizhenStatusUrl;
+    private java.util.Properties emailProperties;
 
     // ########## 官方机器人配置参数 ##########
     @Getter
@@ -116,6 +117,20 @@ public class Config {
     private String debugGroupOpenId;
     @Getter
     private boolean newBot;
+
+    // Email configuration
+    @Getter
+    private boolean emailEnabled;
+    @Getter
+    private String emailUsername;
+    @Getter
+    private String emailPassword;
+    private String protocol;
+    private String host;
+    private int port;
+    private boolean sslEnabled;
+    private int connectionTimeout;
+    private int readTimeout;
 
     // ########## 特殊群专用内容设置区域 ##########
     @Getter
@@ -184,6 +199,7 @@ public class Config {
             this.listenPort = yaml.getInt("listen-port", 1234);
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
+            this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
@@ -208,7 +224,17 @@ public class Config {
             this.wakeupImgLink = yaml.getString("function.wakeup-image-link", "null");
             this.keywordsHitokoto = yaml.getStringList("function.keywords-hitokoto").toArray(new String[0]);
             this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
-            this.dizhenStatusUrl = yaml.getString("function.dizhen-status-url", "null");
+            // -------- Email 配置区域 ---------
+            this.emailEnabled = yaml.getBoolean("email.enabled", false);
+            this.emailUsername = yaml.getString("email.username", "");
+            this.emailPassword = yaml.getString("email.password", "");
+            this.protocol = yaml.getString("email.protocol", "imap");
+            this.host = yaml.getString("email.host", "imap.qq.com");
+            this.port = yaml.getInt("email.port", 993);
+            this.sslEnabled = yaml.getBoolean("email.ssl-enabled", true);
+            this.connectionTimeout = yaml.getInt("email.connection-timeout", 30000);
+            this.readTimeout = yaml.getInt("email.read-timeout", 300000);
+            this.emailProperties = getEmailProperties();
 
             // ########## 官方机器人配置参数 ##########
             this.officialBotEnabled = yaml.getBoolean("qq.enabled", false);
@@ -312,6 +338,17 @@ public class Config {
         if (props == null) {
             props = aiPropertiesMap.get(AiProvider.DEFAULT);
         }
+        return props;
+    }
+
+    public java.util.Properties getEmailProperties() {
+        java.util.Properties props = new java.util.Properties();
+        props.setProperty("mail.store.protocol", protocol);
+        props.setProperty("mail.imap.host", host);
+        props.setProperty("mail.imap.port", String.valueOf(port));
+        props.setProperty("mail.imap.ssl.enable", String.valueOf(sslEnabled));
+        props.setProperty("mail.imap.connectiontimeout", String.valueOf(connectionTimeout));
+        props.setProperty("mail.imap.timeout", String.valueOf(readTimeout));
         return props;
     }
 

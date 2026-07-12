@@ -14,7 +14,9 @@ public final class ResourcesProperties {
 
     private static final String API = Config.getInstance().getApiUrl();
 
-    public static final String DUMP = API + "/v1/atrimeow/dump";
+    private static final String UGC_API = Config.getInstance().getUgcApiUrl();
+
+    public static final String DUMP = UGC_API + "/v2/atrimeow/image-dump";
 
     // @ClassName RconHandler
     public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";
@@ -53,34 +55,34 @@ public final class ResourcesProperties {
     public static final String DICE_RENDER_RESULT_7_IMG = "https://res.yzljc.top/images/dice_render_result_7.png";
 
     // @ClassName MinecraftNews
-    public static final String MC_NEWS_API = API + "/v1/atrimeow/mcnews";
+    public static final String MC_NEWS_API = UGC_API + "/v2/atrimeow/mcnews";
 
     // @ClassName Calendar(general), Calendar(task)
-    public static final String CALENDAR_API = API + "/v1/atrimeow/calendar";
+    public static final String CALENDAR_API = UGC_API + "/v2/atrimeow/calendar";
 
     // @ClassName HelpCommand
-    public static final String HELP_API = API + "/v1/atrimeow/help";
+    public static final String HELP_API = UGC_API + "/v2/atrimeow/help";
 
     // @ClassName SponsorCommand
-    public static final String SPONSORS_API = API + "/v1/atrimeow/sponsors";
+    public static final String SPONSORS_API = UGC_API + "/v2/atrimeow/sponsors";
 
     // @ClassName SignCommand
     public static final String GOLD_IMG = "https://res.yzljc.top/images/gold.png";
 
     // @ClassName HypixelStatus
-    public static final String HYPIXEL_STATUS_API = API + "/v1/atrimeow/hypixel-status";
+    public static final String HYPIXEL_STATUS_API = UGC_API + "/v2/atrimeow/hypixel-status";
 
     // @ClassName MinecraftCapes
-    public static final String MINECRAFT_CAPES_API = API + "/v1/atrimeow/minecraft-capes";
+    public static final String MINECRAFT_CAPES_API = UGC_API + "/v2/atrimeow/minecraft-capes";
 
     // @ClassName HappyNewYear
-    public static final String HAPPY_NEW_YEAR_API = API + "/v1/atrimeow/happy-new-year";
+    public static final String HAPPY_NEW_YEAR_API = UGC_API + "/v2/atrimeow/happy-new-year";
 
     // @ClassName MojangStatus
-    public static final String MOJANG_STATUS_API = API + "/v1/atrimeow/mojang-status";
+    public static final String MOJANG_STATUS_API = UGC_API + "/v2/atrimeow/mojang-status";
 
     // @ClassName BanTracker
-    public static final String BAN_TRACKER = API + "/v1/atrimeow/bantracker-chart";
+    public static final String BAN_TRACKER = UGC_API + "/v2/atrimeow/bantracker-chart";
 
     // @ClassName PlayerProfile （使用时拼接 key 与查询参数）
     public static final String PLAYER_CARD_API = "https://www.yzljc.top/data/api/v2/player/card/";
@@ -106,18 +108,21 @@ public final class ResourcesProperties {
     // @ClassName PlayerProfile
     public static final String PLAYER_WEB_QUERY = "https://www.yzljc.top/mc/query/";
 
+    // @ClassName HelpCommand
+    public static final String MINECRAFT_CAPE_EXAMPLE = "https://res.yzljc.top/images/mc-cape-2013.png";
+
     // @ClassName VerifyMinecraftCommand （使用时将 {uuid} 替换为玩家 UUID）
     public static final String PLAYER_AVATAR_API = "https://www.yzljc.top/data/api/v1/avatar/{uuid}";
 
     // @ClassName ManosabaDate
-    public static final String MANOSABA_DATE_IMG = API + "/v1/atrimeow/manosaba-date";
+    public static final String MANOSABA_DATE_IMG = UGC_API + "/v2/atrimeow/manosaba-date";
 
     // @ClassName WebhookServer
-    public static final String COMMIT_DISPLAY_API = API + "/v1/atrimeow/commit-display";
+    public static final String COMMIT_DISPLAY_API = UGC_API + "/v2/atrimeow/commit-display";
 
     // @ClassName CucumberGirl
-    public static final String GIRL_TEXT_IMG = API + "/v1/atrimeow/girl-emoji-text";
+    public static final String GIRL_TEXT_IMG = UGC_API + "/v2/atrimeow/girl-emoji-text";
 
     // @ClassName AnanGirlEmoji
-    public static final String ANAN_TEXT_IMG = API + "/v1/atrimeow/anan-emoji-text";
+    public static final String ANAN_TEXT_IMG = UGC_API + "/v2/atrimeow/anan-emoji-text";
 }

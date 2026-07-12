@@ -25,6 +25,10 @@ public final class MinecraftCapes {
             sender.sendMessage(Identifier.HANDLER_ERROR);
             return true;
         }
+        if (data.isError()) {
+            sender.sendMessage(data.errorMessage());
+            return true;
+        }
         if (data.url() == null) {
             sender.sendMessage(Identifier.HANDLER_ERROR);
             return true;

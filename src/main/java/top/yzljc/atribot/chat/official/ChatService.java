@@ -417,6 +417,21 @@ public class ChatService {
         }
     }
 
+    public String getUserInfo(String userOpenId, String groupOpenId) {
+        String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/members/" + userOpenId;
+        try {
+            JsonNode response = HttpService.sendGetRequest(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            if (response == null || response.isEmpty()) {
+                log.error("获取用户信息失败，服务器返回为空, userOpenId: {}, groupOpenId: {}", userOpenId, groupOpenId);
+                return null;
+            }
+            return response.toString();
+        } catch (Exception e) {
+            log.error("获取用户信息失败, userOpenId: {}, groupOpenId: {}", userOpenId, groupOpenId, e);
+            return null;
+        }
+    }
+
     private String uploadImageFile(String uploadUrl, ImageType type, String value, String logLabel) {
         Map<String, Object> uploadData = new HashMap<>();
         uploadData.put("file_type", 1);

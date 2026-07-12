@@ -31,22 +31,28 @@ public class HypixelStatus implements CommandExecutor {
             }
         }
 
-        var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of());
-        if (data == null) {
-            sender.sendMessage(Identifier.HANDLER_ERROR);
-            return true;
-        }
-        if (data.url() == null) {
-            sender.sendMessage(Identifier.HANDLER_ERROR);
-            return true;
-        }
+        String msgId = sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
 
-        if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
-            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
-        } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage(data.url(), ImageType.URL);
-        } else {
-            sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
+        try {
+            var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of());
+            if (data.isError()) {
+                sender.sendMessage(data.errorMessage());
+                return true;
+            }
+            if (data.url() == null) {
+                sender.sendMessage(Identifier.HANDLER_ERROR);
+                return true;
+            }
+
+            if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
+                sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
+            } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
+                sender.sendMessage(data.url(), ImageType.URL);
+            } else {
+                sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
+            }
+        } finally {
+            sender.recall(msgId);
         }
         return true;
     }

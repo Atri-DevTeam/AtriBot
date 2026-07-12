@@ -20,6 +20,8 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.general.impl.ArticleScraper;
 import top.yzljc.atribot.function.general.impl.AtriNewsSummarizer;
+import top.yzljc.atribot.function.general.impl.ImageDTO;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -138,7 +140,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         }
     }
 
-    private static JsonNode fetchJson(String url) {
+    public static JsonNode fetchJson(String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -156,7 +158,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         }
     }
 
-    private static List<UnifiedArticle> fetchAndParsePrimary() {
+    public static List<UnifiedArticle> fetchAndParsePrimary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
             JsonNode root = fetchJson(API_PRIMARY);
@@ -190,7 +192,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         return list;
     }
 
-    private static List<UnifiedArticle> fetchAndParseSecondary() {
+    public static List<UnifiedArticle> fetchAndParseSecondary() {
         List<UnifiedArticle> list = new ArrayList<>();
         try {
             JsonNode root = fetchJson(API_SECONDARY);
@@ -251,7 +253,8 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         log.info(">>> 2. 开始请求 AI 进行总结...");
         String aiMessages = AtriNewsSummarizer.summarize(article.title, articleText);
         log.info(">>> [成功] AI 总结完毕");
-        String url = ResourcesProperties.MC_NEWS_API;
+
+        String apiUrl = ResourcesProperties.MC_NEWS_API;
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("title", article.title);
         requestBody.put("author", article.author);
@@ -259,43 +262,26 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         requestBody.put("headerImageUrl", article.imageUrl);
         requestBody.put("content", aiMessages);
 
-        try {
-            JsonNode resp = HttpService.postJson(url, requestBody);
-            if (resp != null) {
-                if (resp.get("news_id").asText() != null) {
-                    String newsId = resp.get("news_id").asText();
-                    int width = resp.get("img_w").asInt();
-                    int height = resp.get("img_h").asInt();
-                    pushNews(newsId, width, height, article.dateDisplay);
-                    return;
-                }
-            }
-            log.warn(">>> [失败] AI 总结结果上传失败，接口返回: {}", resp);
-        } catch (Exception e) {
-            log.warn(">>> [失败] AI 总结结果上传失败，异常信息: {}", e.getMessage(), e);
+        ImageDTO data = PreImageGenerate.dump(apiUrl, requestBody);
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            log.warn(">>> [失败] 新闻图片生成失败: {}", errMsg);
+            return;
         }
+        pushNews(data, article.dateDisplay);
     }
 
-    private static void pushNews(String newsId, int w, int h, String t) {
-        String url = ResourcesProperties.MC_NEWS_API + "?news_id=" + newsId;
+    private static void pushNews(ImageDTO data, String t) {
+        String url = data.url();
 
         try {
-            HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-            HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
-            HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
-
-            if (response.statusCode() != 200) {
-                log.warn("请求新闻图片接口失败，状态码: {}", response.statusCode());
-                return;
-            }
-
             String messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), url, MessageUtils.ImageType.URL);
             for (var gid : TARGET_GROUPS) {
                 if (Objects.equals(gid, Config.getInstance().getNapcatDebugGroupUin())) continue;
                 if (!GroupConfigManager.isFeatureEnabled(gid, "mc_news")) continue;
                 GroupMessage.forwardTo(gid, messageId);
             }
-            String markdown = "![MC #" + w + "px #" + h + "px](" + url + ")\n\n" +
+            String markdown = "![MC #" + data.width() + "px #" + data.height() + "px](" + url + ")\n\n" +
                     "> Minecraft官方发布了新的文章，点击图片查看详情！\n" +
                     "> 时间：" + t;
 
@@ -305,7 +291,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             }
 
         } catch (Exception e) {
-            log.warn("获取新闻图片失败: {}", e.getMessage());
+            log.warn("推送新闻图片失败: {}", e.getMessage());
         }
     }
 
@@ -336,7 +322,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         }
     }
 
-    private static String formatTimestamp(long timestampMillis) {
+    public static String formatTimestamp(long timestampMillis) {
         if (timestampMillis == 0) return "未知时间";
         try {
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampMillis), ZoneId.of("Asia/Shanghai"))
@@ -356,15 +342,15 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         checkNews(false);
     }
 
-    static class UnifiedArticle {
-        String id;
-        String title;
-        String description;
-        String url;
-        String author;
-        String tag;
-        String imageUrl;
-        long timestamp;
-        String dateDisplay;
+    public static class UnifiedArticle {
+        public String id;
+        public String title;
+        public String description;
+        public String url;
+        public String author;
+        public String tag;
+        public String imageUrl;
+        public long timestamp;
+        public String dateDisplay;
     }
 }

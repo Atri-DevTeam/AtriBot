@@ -13,6 +13,8 @@ import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
+import java.util.Map;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName SponsorCommand
@@ -27,21 +29,28 @@ public class SponsorCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String url = ResourcesProperties.SPONSORS_API + "?key=" + secret + "&" + System.currentTimeMillis();
+        String apiUrl = ResourcesProperties.SPONSORS_API + "?key=" + secret;
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
-            sender.sendMessage(url, MessageUtils.ImageType.URL);
+            var data = PreImageGenerate.dump(apiUrl, Map.of());
+            if (data.isError()) {
+                String errMsg = data.errorMessage();
+                sender.sendMessage("数据获取失败: " + errMsg);
+                return true;
+            }
+            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
             return true;
         }
 
         ThreadManager.execute(() -> {
-            int code = PreImageGenerate.create(url);
-            if (code == 200) {
-                sender.sendMessage(url, ImageType.URL);
-            } else {
-                sender.sendMessage("数据获取失败，请尝试重新执行指令，或稍后再试");
-                log.warn("预生成赞助信息图片失败，状态码: {}", code);
+            var data = PreImageGenerate.dump(apiUrl, Map.of());
+            if (data.isError()) {
+                String errMsg = data.errorMessage();
+                sender.sendMessage("数据获取失败: " + errMsg);
+                log.warn("赞助信息图片生成失败: {}", errMsg);
+                return;
             }
+            sender.sendMessage(data.url(), ImageType.URL);
         });
 
         return true;

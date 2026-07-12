@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.utils.tools.Alert;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,6 +74,7 @@ public class ErrorReport {
             log.error("保存错误报告失败 (traceId={})", traceId, ioe);
         }
 
+        Alert.notify("发生异常: " + e.getClass().getSimpleName() + " (traceId=" + traceId + ")");
         return traceId;
     }
 

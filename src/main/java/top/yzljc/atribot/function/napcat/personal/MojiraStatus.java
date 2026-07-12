@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.napcat;
+package top.yzljc.atribot.function.napcat.personal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +54,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
         if (!sender.hasPermission()) return true;
-        checkNewIssues();
+        this.run();
         sender.sendMessage("已触发 Mojira 手动检查!");
         log.info("[Mojira] 用户 {} 在群 {} 触发了手动检查", sender.getUserId(), sender.getGroupId());
         return true;
@@ -67,7 +67,53 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
 
     @Override
     public void run() {
-        checkNewIssues();
+        synchronized (MojiraStatus.class) {
+            if (running) return;
+            running = true;
+        }
+        ThreadManager.execute(() -> {
+            try {
+                List<MojiraIssue> latestIssues = requestLatestIssues();
+                if (latestIssues.isEmpty()) {
+                    log.warn("[Mojira] 未能获取到 Issue 列表，跳过本轮检查");
+                    return;
+                }
+
+                if (knownIssues.isEmpty()) {
+                    // 首次启动：仅初始化缓存，不推送
+                    for (MojiraIssue issue : latestIssues) {
+                        knownIssues.add(issue.key());
+                    }
+                    trimCache();
+                    saveCache();
+                    log.info("[Mojira] 初始化完成，缓存了 {} 个已存在的 Issue，不发送推送", knownIssues.size());
+                    return;
+                }
+
+                int newCount = 0;
+                for (MojiraIssue issue : latestIssues) {
+                    if (knownIssues.add(issue.key())) {
+                        sendIssue(issue);
+                        saveCache();
+                        newCount++;
+                    }
+                }
+
+                if (newCount > 0) {
+                    log.info("[Mojira] 发现并推送了 {} 个新 Issue", newCount);
+                } else {
+                    log.info("[Mojira] 没有新 Issue");
+                }
+
+                trimCache();
+                saveCache();
+
+            } catch (Exception e) {
+                log.warn("[Mojira] checkNewIssues 执行异常: {}", e.getMessage());
+            } finally {
+                running = false;
+            }
+        });
     }
 
     public record MojiraIssue(
@@ -234,56 +280,6 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
                 collectText(children, sb);
             }
         }
-    }
-
-    public static void checkNewIssues() {
-        synchronized (MojiraStatus.class) {
-            if (running) return;
-            running = true;
-        }
-        ThreadManager.execute(() -> {
-            try {
-                List<MojiraIssue> latestIssues = requestLatestIssues();
-                if (latestIssues.isEmpty()) {
-                    log.warn("[Mojira] 未能获取到 Issue 列表，跳过本轮检查");
-                    return;
-                }
-
-                if (knownIssues.isEmpty()) {
-                    // 首次启动：仅初始化缓存，不推送
-                    for (MojiraIssue issue : latestIssues) {
-                        knownIssues.add(issue.key());
-                    }
-                    trimCache();
-                    saveCache();
-                    log.info("[Mojira] 初始化完成，缓存了 {} 个已存在的 Issue，不发送推送", knownIssues.size());
-                    return;
-                }
-
-                int newCount = 0;
-                for (MojiraIssue issue : latestIssues) {
-                    if (knownIssues.add(issue.key())) {
-                        sendIssue(issue);
-                        saveCache();
-                        newCount++;
-                    }
-                }
-
-                if (newCount > 0) {
-                    log.info("[Mojira] 发现并推送了 {} 个新 Issue", newCount);
-                } else {
-                    log.info("[Mojira] 没有新 Issue");
-                }
-
-                trimCache();
-                saveCache();
-
-            } catch (Exception e) {
-                log.warn("[Mojira] checkNewIssues 执行异常: {}", e.getMessage());
-            } finally {
-                running = false;
-            }
-        });
     }
 
     private static void sendIssue(MojiraIssue issue) {

@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.napcat
+package top.yzljc.atribot.function.napcat.personal
 
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils
 import top.yzljc.atribot.command.Command
@@ -50,7 +50,15 @@ object CucumberGirl : CommandExecutor {
             ResourcesProperties.GIRL_TEXT_IMG + "?key=" + Config.getInstance().atribotKeySecret,
             req
         )
-        data?.url?.let {
+        if (data == null) {
+            sender.sendMessage("图片生成失败，请稍后重试")
+            return true
+        }
+        if (data.isError) {
+            sender.sendMessage(data.errorMessage)
+            return true
+        }
+        data.url?.let {
             sender.sendMessage(it, MessageUtils.ImageType.URL)
         }
         return true

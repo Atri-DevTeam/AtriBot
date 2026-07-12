@@ -1,62 +1,11 @@
 <template>
   <div class="shell">
-    <div v-if="sidebarOpen" class="sidebar-backdrop show" @click="sidebarOpen = false"/>
-
-    <aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
-      <div class="sidebar-head">
-        <button class="sidebar-close" aria-label="关闭侧边栏" @click="sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <div class="brand">
-        <img v-if="botOpenId && appId" class="brand-avatar" :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${botOpenId}/100`" referrerpolicy="no-referrer" />
-        <div v-else class="brand-mark">A</div>
-        <div>
-          <h1>{{ botName }}</h1>
-          <p>官方机器人WebUI</p>
-        </div>
-      </div>
-
-      <nav class="side-nav">
-        <button class="side-nav-item" :class="{ active: $route.path === '/' }" @click="$router.push('/'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          群聊
-        </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/c2c' }" @click="$router.push('/c2c'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          私聊
-        </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/users' }" @click="$router.push('/users'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          用户列表
-        </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/feedback' }" @click="$router.push('/feedback'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-          </svg>
-          反馈管理
-        </button>
-        <button class="side-nav-item" :class="{ active: $route.path === '/napcat' }" @click="$router.push('/napcat'); sidebarOpen = false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="14" rx="3"/><path d="M8 20h8"/><path d="M12 18v2"/>
-          </svg>
-          Napcat功能
-        </button>
-      </nav>
-
-      <div class="side-toolbar">
+    <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
+      <template #toolbar>
         <button class="ghost-button" :disabled="loadingUsers" @click="loadUsers">刷新</button>
         <button class="ghost-button" @click="logout">退出</button>
-      </div>
-    </aside>
+      </template>
+    </AppSidebar>
     <div class="sidebar-spacer" />
 
     <main class="workspace">
@@ -257,7 +206,7 @@
     </main>
 
     <div v-if="previewImg" class="lightbox" @click="previewImg = null">
-      <img :src="previewImg" referrerpolicy="no-referrer" @click.stop />
+      <img :src="previewImg" referrerpolicy="no-referrer" @click.stop  alt="t-1"/>
     </div>
   </div>
 </template>
@@ -267,6 +216,7 @@ import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } 
 import { useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
+import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
 

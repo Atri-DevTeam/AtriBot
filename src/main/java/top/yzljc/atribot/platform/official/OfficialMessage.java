@@ -2,6 +2,7 @@ package top.yzljc.atribot.platform.official;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
+import top.yzljc.atribot.function.official.SignCommand;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.User;
@@ -30,5 +31,10 @@ public class OfficialMessage extends Message {
         this.attachments = attachments;
         this.ark = ark;
         this.reference = reference;
+    }
+
+    public boolean isCommand() {
+        var content = super.getContent().trim();
+        return content.startsWith("/") || SignCommand.isMatch(content) || content.equals("指令帮助") || content.equals("反馈与建议");
     }
 }

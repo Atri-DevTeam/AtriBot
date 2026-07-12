@@ -1,0 +1,266 @@
+.napcat-layout {
+  grid-template-columns: 360px minmax(0, 1fr) 280px;
+}
+
+.napcat-panel {
+  min-width: 0;
+}
+
+.napcat-panel-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+}
+
+.napcat-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.napcat-head-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.napcat-group-select label {
+  display: grid;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.napcat-group-select select {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+}
+
+.napcat-feature-list {
+  display: grid;
+  gap: 6px;
+}
+
+.napcat-feature-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.napcat-feature-row:hover {
+  border-color: #8bd3dd;
+  background: #f8fafc;
+}
+
+.napcat-feature-row.enabled {
+  border-color: #b7e4dc;
+  background: #e7f7f3;
+}
+
+.napcat-feature-row span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.napcat-switch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 0.15s;
+}
+
+.napcat-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.15s;
+}
+
+.napcat-switch.on {
+  background: #0f766e;
+}
+
+.napcat-switch.on span {
+  transform: translateX(16px);
+}
+
+.napcat-messages {
+  align-content: start;
+}
+
+.napcat-message-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.napcat-message-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.napcat-pager {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.napcat-pager .pager-arrow.active {
+  color: #ffffff;
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
+.napcat-message-list {
+  display: grid;
+  gap: 8px;
+}
+
+.napcat-message {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.napcat-message.recalled {
+  color: #94a3b8;
+  background: #f3f4f6;
+}
+
+.napcat-message-check {
+  padding-top: 3px;
+}
+
+.napcat-message-main {
+  min-width: 0;
+}
+
+.napcat-message-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.napcat-message-head strong {
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-size: 13px;
+}
+
+.napcat-message-head time {
+  margin-left: auto;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.napcat-message p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.napcat-message.recalled p {
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.napcat-recall-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.napcat-recalled-text {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.napcat-log {
+  min-width: 0;
+}
+
+.napcat-log dl {
+  margin-top: 14px;
+}
+
+@media (max-width: 980px) {
+  .napcat-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .napcat-panel-body {
+    padding: 10px;
+  }
+
+  .napcat-head-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .napcat-message-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .napcat-message {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .napcat-recall-btn,
+  .napcat-recalled-text {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

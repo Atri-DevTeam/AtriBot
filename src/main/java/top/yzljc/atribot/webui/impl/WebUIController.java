@@ -3,6 +3,7 @@ package top.yzljc.atribot.webui.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.javalin.http.Context;
 import lombok.Data;
+import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.PermissionRole;
@@ -19,14 +20,19 @@ import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
+import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.webui.Result;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class WebUIController {
@@ -163,7 +169,8 @@ public class WebUIController {
         ctx.json(Result.success(new ConfigDTO(
                 Config.getInstance().getQqAppId(),
                 Config.getInstance().getOfficialOpenId(),
-                Config.getInstance().getOfficialUsername()
+                Config.getInstance().getOfficialUsername(),
+                Config.getInstance().getQqApiBaseUrl()
         )));
     }
 
@@ -247,7 +254,7 @@ public class WebUIController {
         private String proof;
     }
 
-    public record ConfigDTO(String appId, String botOpenId, String botName) {
+    public record ConfigDTO(String appId, String botOpenId, String botName, String apiBaseUrl) {
     }
 
     private static int parseInt(String value, int defaultValue) {
@@ -428,6 +435,104 @@ public class WebUIController {
         ctx.json(Result.success("ok"));
     }
 
+    public static void debugOfficialApi(Context ctx) {
+        OfficialApiDebugRequestDTO dto = ctx.bodyAsClass(OfficialApiDebugRequestDTO.class);
+        if (dto == null || isBlank(dto.getPath())) {
+            ctx.json(Result.fail(400, "API 路径不能为空"));
+            return;
+        }
+
+        String method = normalizeHttpMethod(dto.getMethod());
+        if (method == null) {
+            ctx.json(Result.fail(400, "不支持的请求方法"));
+            return;
+        }
+
+        String targetUrl;
+        try {
+            targetUrl = buildOfficialApiUrl(dto.getPath());
+        } catch (IllegalArgumentException e) {
+            ctx.json(Result.fail(400, e.getMessage()));
+            return;
+        }
+
+        long start = System.currentTimeMillis();
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(targetUrl))
+                    .header("Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
+
+            boolean hasBody = dto.getBody() != null && !dto.getBody().isBlank();
+            if (hasBody && !hasDebugHeader(dto.getHeaders(), "content-type")) {
+                builder.header("Content-Type", "application/json");
+            }
+
+            if (dto.getHeaders() != null) {
+                dto.getHeaders().forEach((name, value) -> {
+                    if (isAllowedDebugHeader(name) && value != null) {
+                        builder.header(name.trim(), value);
+                    }
+                });
+            }
+
+            if ("GET".equals(method) || "HEAD".equals(method)) {
+                builder.method(method, HttpRequest.BodyPublishers.noBody());
+            } else if (hasBody) {
+                builder.method(method, HttpRequest.BodyPublishers.ofString(dto.getBody()));
+            } else {
+                builder.method(method, HttpRequest.BodyPublishers.noBody());
+            }
+
+            HttpResponse<String> response = HttpService.httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            ctx.json(Result.success(new OfficialApiDebugResponseDTO(
+                    method,
+                    targetUrl,
+                    response.statusCode(),
+                    response.headers().map(),
+                    response.body(),
+                    System.currentTimeMillis() - start
+            )));
+        } catch (Exception e) {
+            ctx.json(Result.fail(500, e.getClass().getSimpleName() + ": " + e.getMessage()));
+        }
+    }
+
+    private static String normalizeHttpMethod(String method) {
+        String value = method == null ? "GET" : method.trim().toUpperCase();
+        Set<String> allowed = Set.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS");
+        return allowed.contains(value) ? value : null;
+    }
+
+    private static String buildOfficialApiUrl(String path) {
+        String value = path.trim();
+        if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("//")) {
+            throw new IllegalArgumentException("只允许填写相对 API 路径");
+        }
+        if (!value.startsWith("/")) {
+            value = "/" + value;
+        }
+        String base = Config.getInstance().getQqApiBaseUrl();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + value;
+    }
+
+    private static boolean isAllowedDebugHeader(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String key = name.trim().toLowerCase();
+        return !Set.of("authorization", "host", "content-length", "connection").contains(key);
+    }
+
+    private static boolean hasDebugHeader(Map<String, String> headers, String name) {
+        if (headers == null || name == null) {
+            return false;
+        }
+        return headers.keySet().stream().anyMatch(key -> name.equalsIgnoreCase(key));
+    }
+
     public record NapcatGroupDTO(String groupId, String name) {
     }
 
@@ -446,6 +551,19 @@ public class WebUIController {
     @Data
     public static class NapcatRecallDTO {
         private List<Long> messageIds;
+    }
+
+    @Data
+    public static class OfficialApiDebugRequestDTO {
+        private String method;
+        private String path;
+        private Map<String, String> headers;
+        private String body;
+    }
+
+    public record OfficialApiDebugResponseDTO(String method, String url, int statusCode,
+                                              Map<String, List<String>> headers, String body,
+                                              long durationMillis) {
     }
 
     public static void listC2CUsers(Context ctx) {

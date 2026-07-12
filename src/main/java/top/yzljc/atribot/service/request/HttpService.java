@@ -78,6 +78,29 @@ public class HttpService {
         return null;
     }
 
+    public static JsonNode sendGetRequest(String url, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET();
+            applyHeaders(builder, headers);
+            HttpRequest request = builder.build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
+            } else {
+                logHttpFailure("GET", url, response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            logRequestError("GET", url, e);
+        }
+        return null;
+    }
+
     public static String getRequestStr(String url) {
         try {
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()

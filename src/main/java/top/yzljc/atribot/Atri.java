@@ -23,6 +23,7 @@ import top.yzljc.atribot.function.napcat.*;
 import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.CardLike;
+import top.yzljc.atribot.function.napcat.personal.*;
 import top.yzljc.atribot.function.official.*;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftRemote;
@@ -38,10 +39,12 @@ import top.yzljc.atribot.platform.official.OfficialManager;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
+import top.yzljc.atribot.service.email.IMAP;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.service.taskscheduler.TaskScheduler;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedulerRegistry;
+import top.yzljc.atribot.test.MinecraftNewsDebug;
 import top.yzljc.atribot.test.Test;
 import top.yzljc.atribot.test.YunLandSpecialCommand;
 import top.yzljc.atribot.utils.debug.DebugCommand;
@@ -85,6 +88,7 @@ public class Atri {
     private final HypixelAnnouncements hypixelAnnouncements;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
+    private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean disabled = new AtomicBoolean(false);
@@ -181,6 +185,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new SignCommand());
         UpdatePushCommand updatePushCommand = new UpdatePushCommand();
         EventManager.getInstance().registerEvents(updatePushCommand);
+        EventManager.getInstance().registerEvents(new EmailNotify());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -216,7 +221,7 @@ public class Atri {
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("ogroup").setExecutor(new GroupCommand());
         CommandManager.getCommand("perm").setExecutor(new UserMgrCommand());
-        CommandManager.getCommand("today").setExecutor(new Calendar());
+        CommandManager.getCommand("today").setExecutor(new top.yzljc.atribot.function.general.Calendar());
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
@@ -240,6 +245,9 @@ public class Atri {
         CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
         CommandManager.getCommand("golds").setExecutor(new CoinsCommand());
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
+
+        // ----------- DEBUG COMMANDS -----------
+        CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
 
         this.scheduler = new Scheduler();
         try {
@@ -302,6 +310,16 @@ public class Atri {
             WebUISessionManager.start();
         }
 
+        if (settings.isEmailEnabled()) {
+            try {
+                this.imap = new IMAP();
+                this.imap.start();
+            } catch (Exception e) {
+                this.imap = null;
+                log.error("IMAP 邮件监听启动失败: {}", e.getMessage(), e);
+            }
+        }
+
         try {
             if (Config.getInstance().isVerifyEnabled()) {
                 String mcIp = settings.getVerifyHost();
@@ -331,6 +349,10 @@ public class Atri {
         GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
+        if (imap != null) {
+            imap.close();
+            imap = null;
+        }
         if (taskScheduler != null) {
             taskScheduler.shutdown();
         }

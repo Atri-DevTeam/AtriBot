@@ -28,4 +28,6 @@ public class Properties {
     public static final String MOJIRA_CACHE = "data/mojira-cache.json";
 
     public static final String DI_ZHEN_DATA = "data/di-zhen-data.json";
+
+    public static final String HASH_DATA = "data/img_hashes.json";
 }

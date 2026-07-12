@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.1.3-Release"
+version = "3.1.4-Release"
 description = "AtriBot"
 
 repositories {
@@ -40,6 +40,7 @@ dependencies {
     api("org.java-websocket:Java-WebSocket:1.6.0")
     api("ch.qos.logback:logback-classic:1.5.37")
     api("com.github.stuxuhai:jpinyin:1.1.8")
+    api("org.eclipse.angus:jakarta.mail:2.0.3")
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")

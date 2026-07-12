@@ -15,24 +15,29 @@ import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
+import java.util.Map;
+
 public class HappyNewYear implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(HappyNewYear.class);
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String url = ResourcesProperties.HAPPY_NEW_YEAR_API + "?key=" + Config.getInstance().getAtribotKeySecret() + "&timestamp=" + System.currentTimeMillis();
+        String apiUrl = ResourcesProperties.HAPPY_NEW_YEAR_API + "?key=" + Config.getInstance().getAtribotKeySecret();
+        var data = PreImageGenerate.dump(apiUrl, Map.of());
 
-        int code = PreImageGenerate.create(url);
-        if (code != 200) {
-            sender.sendMessage("数据获取失败，请稍后重试，若反复发生请反馈给开发者，谢谢喵！");
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            sender.sendMessage("数据获取失败: " + errMsg);
+            log.warn("新年倒计时图片获取失败: {}", errMsg);
+            return true;
         }
 
         if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage(url, ImageType.URL);
+            sender.sendMessage(data.url(), ImageType.URL);
         } else if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "new_year")) return true;
-            sender.sendMessage(url, MessageUtils.ImageType.URL);
+            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
         }
 
         return true;

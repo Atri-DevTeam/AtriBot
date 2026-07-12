@@ -106,6 +106,18 @@ verify:
   host: "127.0.0.1"
   key: "public-key"
 
+# IMAP 邮件监听配置
+email:
+  enabled: false
+  username: ""
+  password: ""
+  protocol: "imap"
+  host: "imap.qq.com"
+  port: 993
+  ssl-enabled: true
+  connection-timeout: 30000
+  read-timeout: 300000
+
 # ========== 官方机器人配置参数 ==========
 
 qq:

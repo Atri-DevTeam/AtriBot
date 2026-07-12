@@ -57,6 +57,10 @@ public final class BanTracker {
         );
 
         ImageDTO data = PreImageGenerate.dump(url, req);
+        if (data.isError()) {
+            sender.sendMessage(data.errorMessage());
+            return true;
+        }
         if (data.url() == null) {
             sender.sendMessage("数据获取失败: 发生未知错误!");
             return true;

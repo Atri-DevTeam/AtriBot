@@ -9,11 +9,12 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 
-import java.awt.*;
+import java.util.Map;
 
 public class ManosabaDate implements CommandExecutor {
 
@@ -24,7 +25,14 @@ public class ManosabaDate implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
         if (sender.getGroupId().equals(GROUP_ID)) {
-            sender.sendMessage(ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret() + "&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+            String apiUrl = ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret();
+            var data = PreImageGenerate.dump(apiUrl, Map.of());
+            if (data.isError() || data.url() == null) {
+                String errMsg = data.errorMessage();
+                sender.sendMessage("开发天数图片获取失败: " + errMsg);
+                return true;
+            }
+            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
         } else {
             sender.sendMessage("此指令无法在该群聊调用！");
         }
@@ -33,6 +41,13 @@ public class ManosabaDate implements CommandExecutor {
 
     @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
     public static void sendAndNotifyToGroup() {
-        GroupMessage.chatMessage(Config.getInstance().getManosabaGroupId(), ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret() + "&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+        String apiUrl = ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret();
+        var data = PreImageGenerate.dump(apiUrl, Map.of());
+        if (data.isError() || data.url() == null) {
+            String errMsg = data.errorMessage();
+            log.error("ManosabaDate 定时任务失败: {}", errMsg);
+            return;
+        }
+        GroupMessage.chatMessage(Config.getInstance().getManosabaGroupId(), data.url(), MessageUtils.ImageType.URL);
     }
 }

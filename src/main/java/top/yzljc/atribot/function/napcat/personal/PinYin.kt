@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.napcat
+package top.yzljc.atribot.function.napcat.personal
 
 import com.github.stuxuhai.jpinyin.ChineseHelper
 import com.github.stuxuhai.jpinyin.PinyinFormat

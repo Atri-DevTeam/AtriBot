@@ -1,5 +1,5 @@
 name: AtriBot
-version: 3.1.3-Release
+version: {version}
 main: top.yzljc.atribot.Atri
 
 commands:
@@ -202,3 +202,5 @@ commands:
       - yl
   check-mojira:
     description: 检查 Mojira 漏洞追踪器
+  test-mcnews:
+    description: 测试获取 MC 新闻

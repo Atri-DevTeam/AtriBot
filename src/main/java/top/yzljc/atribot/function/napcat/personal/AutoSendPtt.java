@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.napcat;
+package top.yzljc.atribot.function.napcat.personal;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;

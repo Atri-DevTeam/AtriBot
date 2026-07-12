@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,16 +14,14 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.GetProjectInfo;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
@@ -40,33 +39,63 @@ public class HelpCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            String url = ResourcesProperties.HELP_API + "?key=" + secret + "&" + System.currentTimeMillis();
 
-            ThreadManager.execute(() -> {
-                try {
-                    HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-                    HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
-                    HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
+            Markdown md = TC.md("✨ **" + Config.getInstance().getOfficialUsername() + "帮助菜单**\n\n" +
+                    "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
+                    Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 16, 16) + Markdown.enterCommand("/mc",  "MC功能  ") + " | " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡") + "\n\n" +
+                    Markdown.enterCommand("/games", "\uD83C\uDF40小游戏   ") + " | " + Markdown.enterCommand("/hitokoto", "\uD83D\uDCAB随机一言") + "\n\n" +
+                    Markdown.enterCommand("/mojang", "\uD83D\uDEE0\uFE0FMC状态 ") + " | " + Markdown.enterCommand("/hypstatus", "\uD83D\uDCA4Hyp状态") + "\n\n" +
+                    Markdown.enterCommand("/newyear", "⏳新年倒数") + " | " + Markdown.enterCommand("/today", "\uD83D\uDCC5今日日历") + "\n\n" +
+                    "> " + Markdown.enterCommand("/rsp", "✊一场酣畅淋漓的石头剪刀布") + "\n" +
+                    "> " + Markdown.img(ResourcesProperties.MINECRAFT_CAPE_EXAMPLE, 16, 16) + Markdown.enterCommand("/mc capes", "Minecraft披风实况")  + "\n" +
+                    "> " + Markdown.img(ResourcesProperties.HYPIXEL_HEADER_IMG, 16, 16) + Markdown.enterCommand("/bantracker", "Hypixel BanTracker") + "\n" +
+                    "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取Hypixel每日签到奖励"));
 
-                    if (response.statusCode() != 200) {
-                        log.warn("获取帮助信息 API 失败，状态码: {}", response.statusCode());
+            List<List<Button>> buttons = List.of(
+                    List.of(
+                            new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("s2", "详细帮助", "/help -m", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                    ),
+                    List.of(
+                            new Button("s3", "贡献名单", "/贡献名单", false, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("s4", "推送任务", "/推送任务", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                    ),
+                    List.of(
+                            new Button("s5", "场景信息", "/whoami", false, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("s6", "全量消息", "/全量消息", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                    ),
+                    List.of(
+                            new Button("l1", "社区交流", "https://qm.qq.com/q/UXrrpLsICG", true, ButtonStyle.BLUE, ButtonType.LINK),
+                            new Button("l2", "邀我进群", "https://qun.qq.com/qunpro/robot/qunshare?robot_uin=3889798968&robot_appid=102808581&sceneData=Y2m6DyvYd2SX5MyQfppq4axrIRdiOobQ6HDJim4ofdHS4e7PXVyNveeS8neRVhk4WdeLSBVcwJqpoXQTamuFFFC", true, ButtonStyle.BLUE, ButtonType.LINK)
+                    )
+            );
+
+            if (args.length > 0 && args[0].equals("-m")) {
+                ThreadManager.execute(() -> {
+                    String apiUrl = ResourcesProperties.HELP_API + "?key=" + secret;
+                    try {
+                        var data = PreImageGenerate.dump(apiUrl, Map.of());
+                        if (data.isError()) {
+                            String errMsg = data.errorMessage();
+                            log.warn("获取帮助信息失败: {}", errMsg);
+                            sender.sendMessage("获取帮助信息失败: " + errMsg);
+                            return;
+                        }
+
+                        String help = "![today #2240px #1280px](" + data.url() + ")";
+
+
+                        Object keyboard = TC.keyboard(buttons);
+
+                        sender.sendMessage(TC.md(help), keyboard);
+
+                    } catch (Exception e) {
+                        log.error("获取帮助信息 API 失败: ", e);
                     }
-
-                    String help = "![today #2240px #1280px](" + url + ")";
-
-                    List<List<Button>> buttons = List.of(
-                            List.of(
-                                    new Button("s1", "建议与反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
-                            )
-                    );
-                    Object keyboard = TC.keyboard(buttons);
-
-                    sender.sendMessage(TC.md(help), keyboard);
-
-                } catch (Exception e) {
-                    log.error("获取帮助信息 API 失败: ", e);
-                }
-            });
+                });
+                return true;
+            }
+            sender.sendMessage(md, TC.keyboard(buttons));
             return true;
         }
 
@@ -78,7 +107,7 @@ public class HelpCommand implements CommandExecutor {
         return true;
     }
 
-    public static List<MessageSegment> getAtriHelp(){
+    public static List<MessageSegment> getAtriHelp() {
         List<MessageSegment> help = new ArrayList<>();
         String sb = """
                 这是一个新手拿来练手的项目，并没有什么有用的功能。
@@ -103,7 +132,7 @@ public class HelpCommand implements CommandExecutor {
         return help;
     }
 
-    private static String featureHelp(){
+    private static String featureHelp() {
 
         return """
                 【功能介绍】
@@ -136,7 +165,7 @@ public class HelpCommand implements CommandExecutor {
                 """;
     }
 
-    private static String lastInfo(){
+    private static String lastInfo() {
 
         return """
                 您可以发送 /groupinfo 查询本群功能开启情况
@@ -151,7 +180,7 @@ public class HelpCommand implements CommandExecutor {
                 """;
     }
 
-    private static String versionInfo(){
+    private static String versionInfo() {
         String buildTime = GetProjectInfo.getBuildTime();
         String commitId = GetProjectInfo.getCommitId();
         String branch = GetProjectInfo.getBranch();

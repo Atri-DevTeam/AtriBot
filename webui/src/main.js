@@ -7,5 +7,6 @@ import './styles/responsive.css'
 import './styles/feedback.css'
 import './styles/userlist.css'
 import './styles/napcat.css'
+import './styles/debug.css'
 
 createApp(App).use(router).mount('#app')

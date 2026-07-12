@@ -79,6 +79,14 @@ public class EventRecord implements Listener {
     }
 
     @EventHandler
+    public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
+        if (!event.getMessage().isCommand()) {
+            var md = TC.md("你好喵~\n\n根据开放平台安全策略要求，" + Config.getInstance().getOfficialUsername() + "暂时不能与你聊天，您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，您可以通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
+            event.getUser().sendMessage(event.getMessage().getMessageId(), md);
+        }
+    }
+
+    @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
         log.info("New friend added: {}", event.getUnionOpenId());
         Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUnionOpenId());

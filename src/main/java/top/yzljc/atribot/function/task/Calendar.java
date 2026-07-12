@@ -11,6 +11,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -18,6 +19,7 @@ import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 import top.yzljc.atribot.utils.tools.Alert;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -41,9 +43,16 @@ public class Calendar implements CommandExecutor {
 
     public static void sendToSingleGroup(String targetGroupId) {
         try {
-            GroupMessage.chatMessage(targetGroupId, ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=false&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+            String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
+            var data = PreImageGenerate.dump(apiUrl, Map.of("system", false));
+            if (!data.isError() && data.url() != null) {
+                GroupMessage.chatMessage(targetGroupId, data.url(), MessageUtils.ImageType.URL);
+            } else {
+                String errMsg = data.errorMessage();
+                log.error("日历推送失败: {}", errMsg);
+            }
         } catch (Exception e) {
-            log.error("发送失败", e);
+            log.error("日历推送失败", e);
         }
     }
 
@@ -57,8 +66,18 @@ public class Calendar implements CommandExecutor {
             }
 
             try {
+                String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
+                var data = PreImageGenerate.dump(apiUrl, Map.of("system", true));
+                if (data.isError() || data.url() == null) {
+                    String errMsg = data.errorMessage();
+                    log.warn("日历推送失败: {}", errMsg);
+                    Alert.notify("日历推送失败: " + errMsg);
+                    calendarPushInProgress.set(false);
+                    return;
+                }
+
                 String debugGroupUin = Config.getInstance().getNapcatDebugGroupUin();
-                String messageId = GroupMessage.chatMessage(debugGroupUin, ResourcesProperties.CALENDAR_API + "?key=" + secret + "&system=true&" + System.currentTimeMillis(), MessageUtils.ImageType.URL);
+                String messageId = GroupMessage.chatMessage(debugGroupUin, data.url(), MessageUtils.ImageType.URL);
                 if (messageId != null) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", debugGroupUin, messageId);
                 } else {

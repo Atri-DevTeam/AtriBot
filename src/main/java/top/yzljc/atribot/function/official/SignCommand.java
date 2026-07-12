@@ -149,7 +149,7 @@ public class SignCommand implements CommandExecutor, Listener {
         return "暮色苍茫，灯火可亲";
     }
 
-    private static boolean isMatch(String message) {
+    public static boolean isMatch(String message) {
         if (message.trim().equals("打卡") || message.trim().equals("签到")) {
             return true;
         }
