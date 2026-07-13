@@ -6,7 +6,7 @@ plugins {
     `java-library`
     `maven-publish`
     application
-    id("com.gradleup.shadow") version "9.4.3"
+    id("com.gradleup.shadow") version "9.5.1"
     kotlin("jvm") version "2.4.0"
 }
 
@@ -28,17 +28,17 @@ dependencies {
     api("cn.dev33:sa-token-sign:1.45.0")
     api("com.google.guava:guava:33.6.0-jre")
     api("net.dankito.readability4j:readability4j:1.0.8")
-    api("com.fasterxml.jackson.core:jackson-core:2.22.0")
+    api("com.fasterxml.jackson.core:jackson-core:2.22.1")
     api("com.mysql:mysql-connector-j:9.7.0")
     api("org.yaml:snakeyaml:2.6")
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.22.2")
-    api("com.fasterxml.jackson.core:jackson-databind:2.22.0")
+    api("com.fasterxml.jackson.core:jackson-databind:2.22.1")
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
-    api("ch.qos.logback:logback-classic:1.5.37")
+    api("ch.qos.logback:logback-classic:1.5.38")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.3")
 

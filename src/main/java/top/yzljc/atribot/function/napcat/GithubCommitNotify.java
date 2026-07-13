@@ -170,7 +170,7 @@ public class GithubCommitNotify implements CommandExecutor {
             }
 
             String uuid = resp.path("data").path("uuid").asText();
-            String imageUrl = ResourcesProperties.COMMIT_DISPLAY_API + "/" + uuid;
+            String imageUrl = ResourcesProperties.DUMP + "/" + uuid;
 
             Collection<String> destinationGroups = new ArrayList<>();
             if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase()))
