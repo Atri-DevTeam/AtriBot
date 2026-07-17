@@ -58,7 +58,13 @@ public class ChatContentRecord implements Listener {
                 "  KEY `idx_group_openId` (`group_openId`)," +
                 "  KEY `idx_group_union_openId` (`union_openId`)," +
                 "  KEY `idx_group_ref_idx` (`ref_idx`)," +
-                "  KEY `idx_group_created_at` (`created_at`)" +
+                "  KEY `idx_group_created_at` (`created_at`)," +
+                "  KEY `idx_group_sender_created` (`sender_is_bot`, `created_at`)," +
+                "  KEY `idx_group_open_sender_created` (`group_openId`, `sender_is_bot`, `created_at`)," +
+                "  KEY `idx_group_union_sender_created` (`union_openId`, `sender_is_bot`, `created_at`)," +
+                "  KEY `idx_group_event_created` (`event_type`, `created_at`)," +
+                "  KEY `idx_group_open_event_created` (`group_openId`, `event_type`, `created_at`)," +
+                "  KEY `idx_group_union_event_created` (`union_openId`, `event_type`, `created_at`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         String c2cSql = "CREATE TABLE IF NOT EXISTS `" + C2C_TABLE + "` (" +
@@ -75,7 +81,11 @@ public class ChatContentRecord implements Listener {
                 "  PRIMARY KEY (`id`)," +
                 "  UNIQUE KEY `uk_c2c_message_openId` (`message_openId`)," +
                 "  KEY `idx_c2c_union_openId` (`union_openId`)," +
-                "  KEY `idx_c2c_created_at` (`created_at`)" +
+                "  KEY `idx_c2c_created_at` (`created_at`)," +
+                "  KEY `idx_c2c_sender_created` (`sender_is_bot`, `created_at`)," +
+                "  KEY `idx_c2c_union_sender_created` (`union_openId`, `sender_is_bot`, `created_at`)," +
+                "  KEY `idx_c2c_source_created` (`source`, `created_at`)," +
+                "  KEY `idx_c2c_union_source_created` (`union_openId`, `source`, `created_at`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         try (var conn = DatabaseManager.getConnection();
@@ -88,6 +98,16 @@ public class ChatContentRecord implements Listener {
             ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
             ensureIndex(GROUP_TABLE, "idx_group_union_openId", "`union_openId`");
             ensureIndex(GROUP_TABLE, "idx_group_ref_idx", "`ref_idx`");
+            ensureIndex(GROUP_TABLE, "idx_group_sender_created", "`sender_is_bot`, `created_at`");
+            ensureIndex(GROUP_TABLE, "idx_group_open_sender_created", "`group_openId`, `sender_is_bot`, `created_at`");
+            ensureIndex(GROUP_TABLE, "idx_group_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
+            ensureIndex(C2C_TABLE, "idx_c2c_sender_created", "`sender_is_bot`, `created_at`");
+            ensureIndex(C2C_TABLE, "idx_c2c_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
+            ensureIndex(GROUP_TABLE, "idx_group_event_created", "`event_type`, `created_at`");
+            ensureIndex(GROUP_TABLE, "idx_group_open_event_created", "`group_openId`, `event_type`, `created_at`");
+            ensureIndex(GROUP_TABLE, "idx_group_union_event_created", "`union_openId`, `event_type`, `created_at`");
+            ensureIndex(C2C_TABLE, "idx_c2c_source_created", "`source`, `created_at`");
+            ensureIndex(C2C_TABLE, "idx_c2c_union_source_created", "`union_openId`, `source`, `created_at`");
             dropColumnIfExists(C2C_TABLE, "user_openId");
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {

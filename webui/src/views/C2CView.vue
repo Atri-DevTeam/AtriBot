@@ -35,6 +35,13 @@
                         class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
                         @click="selectUser(user.userOpenId); closeDropdown()">
                   <span class="item-id">{{ user.userOpenId }}</span>
+                  <svg :class="['c2c-push-mark', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
+                    <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                    <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
+                    <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
+                    <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
+                    <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -57,6 +64,13 @@
                         class="group-list-card"
                         @click="selectUser(user.userOpenId)">
                   <span class="group-list-id">{{ user.userOpenId }}</span>
+                  <svg :class="['c2c-push-mark', 'c2c-push-mark--card', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
+                    <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                    <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
+                    <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
+                    <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
+                    <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
+                  </svg>
                 </button>
                 <div v-if="users.length === 0" class="empty-state">暂无用户数据</div>
               </div>
@@ -64,65 +78,68 @@
             <div v-else-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
             <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
-            <article v-for="message in orderedMessages" :key="message.id"
-                     class="message" :class="{ mine: isMe(message) }">
-              <div class="avatar">
-                <img v-show="!avatarFailed[message.id] && avatarUrl(message)" :src="avatarUrl(message)"
-                     :alt="message.username" referrerpolicy="no-referrer" @error="avatarFailed[message.id] = true" />
-                <span v-show="!avatarUrl(message) || avatarFailed[message.id]">{{ avatarText(message) }}</span>
-              </div>
-              <div class="message-main">
-                <div class="msg-header">
-                  <template v-if="isMe(message)">
-                    <svg v-if="message.senderIsBot" class="bot-icon" width="14" height="14" viewBox="0 0 64 64">
-                      <line x1="32" y1="10" x2="32" y2="18" stroke="#12B7F5" stroke-width="3.5" stroke-linecap="round"/>
-                      <circle cx="32" cy="8" r="4" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
-                      <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
-                      <rect x="24" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
-                      <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
-                    </svg>
-                    <strong class="msg-name">{{ message.username || 'AtriBot' }}</strong>
-                  </template>
-                  <template v-else>
-                    <strong class="msg-name">{{ message.username || 'Unknown' }}</strong>
-                    <svg v-if="message.senderIsBot" class="bot-icon" width="14" height="14" viewBox="0 0 64 64">
-                      <line x1="32" y1="10" x2="32" y2="18" stroke="#12B7F5" stroke-width="3.5" stroke-linecap="round"/>
-                      <circle cx="32" cy="8" r="4" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
-                      <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
-                      <rect x="24" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
-                      <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
-                    </svg>
-                  </template>
-                  <span class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</span>
+            <template v-for="message in orderedMessages" :key="message.id">
+              <div v-if="message.system" class="system-message">{{ message.text }}</div>
+              <article v-else
+                       class="message" :class="{ mine: isMe(message) }">
+                <div class="avatar">
+                  <img v-show="!avatarFailed[message.id] && avatarUrl(message)" :src="avatarUrl(message)"
+                       :alt="message.username" referrerpolicy="no-referrer" @error="avatarFailed[message.id] = true" />
+                  <span v-show="!avatarUrl(message) || avatarFailed[message.id]">{{ avatarText(message) }}</span>
                 </div>
-                <div class="bubble"
-                     @contextmenu.prevent.stop="onContextMenu($event, message)">
-                  <div v-if="message.attachments" class="msg-attach">
-                    <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
-                      <img
-                        v-if="att.type === 'image'"
-                        v-show="!attachFailed[att.url]"
-                        :src="att.url"
-                        :alt="att.filename"
-                        referrerpolicy="no-referrer"
-                        class="clickable"
-                        @error="attachFailed[att.url] = true"
-                        @click="previewImg = att.url"
-                      />
-                      <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
-                      <div v-else-if="att.type === 'voice'" class="voice-attach">
-                        <div class="voice-title">语音消息</div>
-                        <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
-                        <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
-                        <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
-                      </div>
+                <div class="message-main">
+                  <div class="msg-header">
+                    <template v-if="isMe(message)">
+                      <svg v-if="message.senderIsBot" class="bot-icon" width="14" height="14" viewBox="0 0 64 64">
+                        <line x1="32" y1="10" x2="32" y2="18" stroke="#12B7F5" stroke-width="3.5" stroke-linecap="round"/>
+                        <circle cx="32" cy="8" r="4" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
+                        <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
+                        <rect x="24" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
+                        <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
+                      </svg>
+                      <strong class="msg-name">{{ message.username || 'AtriBot' }}</strong>
                     </template>
+                    <template v-else>
+                      <strong class="msg-name">{{ message.username || 'Unknown' }}</strong>
+                      <svg v-if="message.senderIsBot" class="bot-icon" width="14" height="14" viewBox="0 0 64 64">
+                        <line x1="32" y1="10" x2="32" y2="18" stroke="#12B7F5" stroke-width="3.5" stroke-linecap="round"/>
+                        <circle cx="32" cy="8" r="4" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
+                        <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="#12B7F5" stroke-width="3.5"/>
+                        <rect x="24" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
+                        <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
+                      </svg>
+                    </template>
+                    <span class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</span>
                   </div>
-                  <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                  <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                  <div class="bubble"
+                       @contextmenu.prevent.stop="onContextMenu($event, message)">
+                    <div v-if="message.attachments" class="msg-attach">
+                      <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
+                        <img
+                          v-if="att.type === 'image'"
+                          v-show="!attachFailed[att.url]"
+                          :src="att.url"
+                          :alt="att.filename"
+                          referrerpolicy="no-referrer"
+                          class="clickable"
+                          @error="attachFailed[att.url] = true"
+                          @click="previewImg = att.url"
+                        />
+                        <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                        <div v-else-if="att.type === 'voice'" class="voice-attach">
+                          <div class="voice-title">语音消息</div>
+                          <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
+                          <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
+                          <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
+                        </div>
+                      </template>
+                    </div>
+                    <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                    <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
+            </template>
           </div>
 
             <div v-if="replyTo" class="reply-bar">
@@ -190,13 +207,17 @@
               <button class="primary-button" :disabled="!newPerm.trim()">添加</button>
             </form>
             <h4>状态</h4>
-            <label class="checkbox-label" style="margin-bottom:6px">
+            <label class="checkbox-label">
               <input type="checkbox" :checked="permBlocked" @change="toggleBlocked" />
               拉黑
             </label>
             <label class="checkbox-label">
               <input type="checkbox" :checked="permIgnored" @change="toggleIgnored" />
               屏蔽
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" :checked="permC2CPush" @change="toggleC2CPush" />
+              主动消息
             </label>
           </div>
           <div v-else class="hint">选择用户后显示详情</div>
@@ -216,6 +237,7 @@ import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } 
 import { useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
+import { renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -253,6 +275,7 @@ const pageSize = 80
 const permRole = ref('')
 const permBlocked = ref(false)
 const permIgnored = ref(false)
+const permC2CPush = ref(true)
 const permNodes = ref([])
 const roles = ['USER', 'ADMIN', 'OWNER']
 function roleLabel(r) {
@@ -267,7 +290,8 @@ const filteredUsers = computed(() => {
   const q = userSearch.value.toLowerCase()
   return q ? users.value.filter(u => u.userOpenId.toLowerCase().includes(q)) : users.value
 })
-const hasMore = computed(() => messages.value.length < totalMessages.value)
+const persistedMessageCount = computed(() => messages.value.filter(m => !m.system).length)
+const hasMore = computed(() => persistedMessageCount.value < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
   if (!selectedUserId.value || !draft.value.trim() || sending.value) return false
@@ -293,11 +317,15 @@ function connectSse() {
   eventSource.onmessage = async (e) => {
     try {
       const payload = JSON.parse(e.data)
+      if (payload.type === 'c2c_push_status') {
+        handleC2CPushStatus(payload)
+        return
+      }
       if (payload.type !== 'c2c_refresh') return
       if (payload.userOpenId !== selectedUserId.value) return
       const data = await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/messages?page=1&pageSize=${pageSize}`)
       const latest = data.records || []
-      const seen = new Set(messages.value.map(m => m.messageOpenId))
+      const seen = new Set(messages.value.filter(m => !m.system).map(m => m.messageOpenId))
       const fresh = latest.filter(m => !seen.has(m.messageOpenId))
       if (fresh.length > 0) {
         messages.value = [...fresh, ...messages.value]
@@ -310,6 +338,33 @@ function connectSse() {
     eventSource.close()
     setTimeout(connectSse, 5000)
   }
+}
+
+async function handleC2CPushStatus(payload) {
+  const userOpenId = payload?.userOpenId || ''
+  if (!userOpenId) return
+  const enabled = payload.enabled !== false
+  updateC2CPushState(userOpenId, enabled)
+  if (userOpenId !== selectedUserId.value) return
+  const wasNearBottom = isNearBottom()
+  appendSystemMessage(enabled ? '主动消息已开启' : '主动消息已关闭')
+  if (wasNearBottom) { await nextTick(); scrollToBottom() }
+}
+
+function updateC2CPushState(userOpenId, enabled) {
+  const user = users.value.find(u => u.userOpenId === userOpenId)
+  if (user) user.c2cPush = enabled
+  if (userOpenId === selectedUserId.value) {
+    permC2CPush.value = enabled
+  }
+}
+
+function appendSystemMessage(text) {
+  messages.value = [{
+    id: `system-c2c-push-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    system: true,
+    text
+  }, ...messages.value]
 }
 
 function isNearBottom() {
@@ -369,6 +424,10 @@ function avatarUrl(message) {
   return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${message.unionOpenId}/640`
 }
 
+function isC2CPushOn(user) {
+  return user?.c2cPush !== false
+}
+
 async function logout() {
   try {
     await fetch(`${API_BASE}/auth/logout`, {
@@ -423,7 +482,8 @@ async function loadPerms() {
     permNodes.value = data?.permissions || []
     permBlocked.value = data?.isBlocked || false
     permIgnored.value = data?.isIgnored || false
-  } catch { permRole.value = 'USER'; permNodes.value = []; permBlocked.value = false; permIgnored.value = false }
+    permC2CPush.value = data?.c2cPush !== false
+  } catch { permRole.value = 'USER'; permNodes.value = []; permBlocked.value = false; permIgnored.value = false; permC2CPush.value = true }
 }
 
 async function toggleBlocked() {
@@ -441,6 +501,17 @@ async function toggleIgnored() {
   try {
     await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/ignored?value=${val}`, { method: 'POST' })
     permIgnored.value = val
+  } catch (e) { notice.value = e.message }
+}
+
+async function toggleC2CPush() {
+  if (!selectedUserId.value) return
+  const val = !permC2CPush.value
+  try {
+    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/push?value=${val}`, { method: 'POST' })
+    permC2CPush.value = val
+    const user = users.value.find(u => u.userOpenId === selectedUserId.value)
+    if (user) user.c2cPush = val
   } catch (e) { notice.value = e.message }
 }
 
@@ -553,27 +624,6 @@ function normalizeAttachment(att) {
     }
   }
   return null
-}
-
-function renderMd(text) {
-  if (!text) return ''
-  let html = text
-  // 图片 ![alt #Wpx #Hpx](url) — 在 HTML 转义前处理
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
-    let style = ''
-    let cleanAlt = alt
-    if (m) {
-      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
-      cleanAlt = alt.replace(m[0], '').trim()
-    }
-    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
-  })
-  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
-  html = html.replace(/`(.+?)`/g, '<code>$1</code>')
-  return html.replace(/\n/g, '<br>')
 }
 
 function onPaste(e) {

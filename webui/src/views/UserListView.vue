@@ -119,13 +119,17 @@
             <button class="primary-button" :disabled="!newPermNode.trim()">添加</button>
           </form>
           <h4 style="margin:10px 0 4px">状态</h4>
-          <label class="checkbox-label" style="margin-bottom:6px">
+          <label class="checkbox-label">
             <input type="checkbox" v-model="pendingIsBlocked" />
             拉黑（禁止使用指令）
           </label>
           <label class="checkbox-label">
             <input type="checkbox" v-model="pendingIsIgnored" />
             屏蔽（静默忽略所有交互）
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="pendingC2CPush" />
+            主动消息
           </label>
         </div>
         <div class="modal-foot">
@@ -167,6 +171,7 @@ const pendingPermRole = ref('')
 const pendingPermNodes = ref([])
 const pendingIsBlocked = ref(false)
 const pendingIsIgnored = ref(false)
+const pendingC2CPush = ref(true)
 const newPermNode = ref('')
 const roles = ['USER', 'ADMIN', 'OWNER']
 
@@ -178,7 +183,8 @@ async function openPermModal(unionOpenId) {
     pendingPermNodes.value = [...(data?.permissions || [])]
     pendingIsBlocked.value = data?.isBlocked || false
     pendingIsIgnored.value = data?.isIgnored || false
-  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = []; pendingIsBlocked.value = false; pendingIsIgnored.value = false }
+    pendingC2CPush.value = data?.c2cPush !== false
+  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = []; pendingIsBlocked.value = false; pendingIsIgnored.value = false; pendingC2CPush.value = true }
   newPermNode.value = ''
   showPermModal.value = true
 }
@@ -189,6 +195,7 @@ async function confirmPerm() {
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/blocked?value=${pendingIsBlocked.value}`, { method: 'POST' })
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/ignored?value=${pendingIsIgnored.value}`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/push?value=${pendingC2CPush.value}`, { method: 'POST' })
   } catch (e) { /* ignore */ }
 }
 

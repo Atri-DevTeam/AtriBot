@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.official;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -34,6 +35,7 @@ public class WhoAmI implements CommandExecutor {
                 json.put("user_group_role", String.valueOf(sender.getRole()));
                 json.put("enable_full_message", fullMessage);
                 json.put("enable_active_message", true);
+                json.put("is_group_whitelist", OfficialGroups.isWhitelist(sender.getGroupId()));
 
                 String mdText = "```json\n"
                         + json.toPrettyString()

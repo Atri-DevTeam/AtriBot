@@ -47,8 +47,12 @@ public class RconHandler implements CommandExecutor {
         String server = args[0];
 
         if (registeredServer.get(server) != null) {
-            if (!OfficialGroups.isWhitelist(sender.getGroupId())) {
+            if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !OfficialGroups.isWhitelist(sender.getGroupId())) {
                 sender.sendMessage("执行操作失败: 群聊不在白名单内，拒绝执行操作！");
+                return true;
+            }
+            if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.hasPermission()) {
+                sender.sendMessage("执行操作失败: 用户不在白名单内，拒绝执行操作！");
                 return true;
             }
             return registeredServer.get(server).handleCommand(sender, command, label, args);

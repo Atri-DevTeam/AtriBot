@@ -1,5 +1,5 @@
 name: AtriBot
-version: {version}
+version: ${version}
 main: top.yzljc.atribot.Atri
 
 commands:

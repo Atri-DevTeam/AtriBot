@@ -3,7 +3,6 @@ package top.yzljc.atribot.database.repo;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +30,7 @@ public class C2CRepository {
                 "  `permissions` TEXT NOT NULL," +
                 "  `is_blocked` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `is_ignored` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `c2c_push` BOOLEAN NOT NULL DEFAULT TRUE," +
                 "  PRIMARY KEY (`user_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -41,8 +41,34 @@ public class C2CRepository {
             log.error("初始化 official_users 表失败: {}", e.getMessage());
         }
 
+        ensureC2CPushColumn();
+
         // 从旧表迁移数据（如果存在）
         migrateFromLegacyTable();
+    }
+
+    private static void ensureC2CPushColumn() {
+        String checkSql = "SHOW COLUMNS FROM `" + TABLE + "` LIKE 'c2c_push'";
+        String alterSql = "ALTER TABLE `" + TABLE + "` ADD COLUMN `c2c_push` BOOLEAN NOT NULL DEFAULT TRUE AFTER `is_ignored`";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(checkSql);
+             var rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return;
+            }
+        } catch (Exception e) {
+            log.warn("检查 official_users.c2c_push 列失败: {}", e.getMessage());
+            return;
+        }
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(alterSql)) {
+            ps.execute();
+            log.info("已为 official_users 补充 c2c_push 列");
+        } catch (Exception e) {
+            log.error("补充 official_users.c2c_push 列失败: {}", e.getMessage());
+        }
     }
 
     private static void migrateFromLegacyTable() {
@@ -73,7 +99,7 @@ public class C2CRepository {
      */
     public static List<PermissionRow> loadAll() {
         List<PermissionRow> rows = new ArrayList<>();
-        String sql = "SELECT user_openId, role, permissions, is_blocked, is_ignored FROM `" + TABLE + "`";
+        String sql = "SELECT user_openId, role, permissions, is_blocked, is_ignored, c2c_push FROM `" + TABLE + "`";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql);
@@ -85,7 +111,8 @@ public class C2CRepository {
                         rs.getString("role"),
                         rs.getString("permissions"),
                         rs.getBoolean("is_blocked"),
-                        rs.getBoolean("is_ignored")
+                        rs.getBoolean("is_ignored"),
+                        rs.getBoolean("c2c_push")
                 ));
             }
         } catch (Exception e) {
@@ -118,11 +145,11 @@ public class C2CRepository {
      * 插入或更新全部字段（含 blocked/ignored）
      */
     public static boolean upsertFull(String userOpenId, String role, String permissions,
-                                     boolean isBlocked, boolean isIgnored) {
-        String sql = "INSERT INTO `" + TABLE + "` (user_openId, role, permissions, is_blocked, is_ignored) " +
-                "VALUES (?, ?, ?, ?, ?) " +
+                                     boolean isBlocked, boolean isIgnored, boolean c2cPush) {
+        String sql = "INSERT INTO `" + TABLE + "` (user_openId, role, permissions, is_blocked, is_ignored, c2c_push) " +
+                "VALUES (?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE role = VALUES(role), permissions = VALUES(permissions), " +
-                "is_blocked = VALUES(is_blocked), is_ignored = VALUES(is_ignored)";
+                "is_blocked = VALUES(is_blocked), is_ignored = VALUES(is_ignored), c2c_push = VALUES(c2c_push)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -131,6 +158,7 @@ public class C2CRepository {
             ps.setString(3, permissions);
             ps.setBoolean(4, isBlocked);
             ps.setBoolean(5, isIgnored);
+            ps.setBoolean(6, c2cPush);
             ps.executeUpdate();
             return true;
         } catch (Exception e) {
@@ -180,6 +208,26 @@ public class C2CRepository {
     }
 
     /**
+     * 单独更新 c2c_push
+     */
+    public static boolean setC2CPush(String userOpenId, boolean c2cPush) {
+        String sql = "INSERT INTO `" + TABLE + "` (user_openId, role, permissions, c2c_push) " +
+                "VALUES (?, 'USER', '', ?) " +
+                "ON DUPLICATE KEY UPDATE c2c_push = VALUES(c2c_push)";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            ps.setBoolean(2, c2cPush);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("setC2CPush 失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 删除用户数据
      */
     public static boolean delete(String userOpenId) {
@@ -197,6 +245,6 @@ public class C2CRepository {
     }
 
     public record PermissionRow(String userOpenId, String role, String permissions,
-                                boolean isBlocked, boolean isIgnored) {
+                                boolean isBlocked, boolean isIgnored, boolean c2cPush) {
     }
 }

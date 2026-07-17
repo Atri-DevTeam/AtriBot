@@ -67,6 +67,7 @@ public class OfficialGroups {
      * 删除群数据
      */
     public static boolean removeGroup(String groupOpenId) {
+        if (isGroupBlacklisted(groupOpenId)) return false; // 黑名单群不允许删除
         if (GroupRepository.deleteGroup(groupOpenId)) {
             cache.remove(groupOpenId);
             return true;

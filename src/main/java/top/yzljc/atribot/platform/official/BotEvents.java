@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.event.impl.InteractionType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
@@ -165,6 +166,9 @@ public class BotEvents {
     public static void handleFriendAddEvent(JsonNode eventData) {
         try {
             String userOpenId = eventData.path("author").get("union_openid").asText();
+            if (userOpenId.isEmpty()) {
+                userOpenId = eventData.path("openid").asText(null);
+            }
             String timestamp = eventData.get("timestamp").asText();
 
             OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp);
@@ -177,6 +181,9 @@ public class BotEvents {
     public static void handleFriendRemoveEvent(JsonNode eventData) {
         try {
             String userOpenId = eventData.path("author").get("union_openid").asText();
+            if (userOpenId.isEmpty()) {
+                userOpenId = eventData.path("openid").asText(null);
+            }
             String timestamp = eventData.get("timestamp").asText();
 
             OfficialFriendDelEvent event = new OfficialFriendDelEvent(userOpenId, timestamp);
@@ -189,26 +196,56 @@ public class BotEvents {
     public static void handleInteractionEvent(String eventId, JsonNode eventData) {
         try {
             JsonNode dataNode = eventData.path("data");
+            String application_id = eventData.path("application_id").asText(null);
+            String id = eventData.path("id").asText(null);
+            String scene = eventData.path("scene").asText(null);
+            String timestamp = eventData.path("timestamp").asText(null);
+            int type = eventData.path("type").asInt(-1);
+            int version = eventData.path("version").asInt(-1);
+            int chatType = eventData.path("chat_type").asInt(-1);
+            String groupId = eventData.path("group_openid").asText(null);
+            String userId = eventData.path("group_member_openid").asText(eventData.path("user_openid").asText(null));
 
-            OfficialInteractionEvent event = new OfficialInteractionEvent(
-                    eventId,
-                    eventData.path("chat_type").asInt(-1),
-                    new OfficialInteractionEvent.Data(
-                            dataNode.path("resolved"),
-                            dataNode.path("type").asInt(-1)
-                    ),
-                    eventData.path("group_openid").asText(null),
-                    eventData.path("group_member_openid").asText(
-                            eventData.path("user_openid").asText(null)
-                    ),
-                    eventData.path("id").asText(null),
-                    eventData.path("scene").asText(null),
-                    eventData.path("timestamp").asText(null),
-                    eventData.path("type").asInt(-1)
-            );
+            var interactionType = InteractionType.from(type);
 
-            EventManager.getInstance().callEvent(event);
-
+            switch (interactionType) {
+                case BUTTON_CLICK -> {
+                    OfficialButtonInteractionEvent event = new OfficialButtonInteractionEvent(
+                            application_id,
+                            eventId,
+                            chatType,
+                            new OfficialButtonInteractionEvent.Data(
+                                    dataNode.path("resolved"),
+                                    dataNode.path("type").asInt(-1)
+                            ),
+                            groupId,
+                            userId,
+                            id,
+                            scene,
+                            timestamp,
+                            type,
+                            version
+                    );
+                    EventManager.getInstance().callEvent(event);
+                }
+                case C2C_PUSH_SWITCH -> {
+                    OfficialC2CAuthorizeModifyEvent event = new OfficialC2CAuthorizeModifyEvent(
+                            application_id,
+                            eventId,
+                            userId,
+                            id,
+                            scene,
+                            timestamp,
+                            type,
+                            version,
+                            dataNode.path("resolved").path("authorize_data")
+                    );
+                    EventManager.getInstance().callEvent(event);
+                }
+                case GROUP_DEV_SETTINGS -> {
+                    log.info("收到群开发者设置事件，内容: {}", eventData.toString());
+                }
+            }
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的交互事件时发生错误：", e);
         }

@@ -1,5 +1,6 @@
 package top.yzljc.atribot.webui.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class SseBroadcaster {
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Set<BlockingQueue<String>> clients = ConcurrentHashMap.newKeySet();
 
     public static void handle(Context ctx) {
@@ -58,6 +60,18 @@ public class SseBroadcaster {
     public static void broadcast(String data) {
         for (BlockingQueue<String> queue : clients) {
             queue.offer(data);
+        }
+    }
+
+    public static void broadcastC2CPushStatus(String userOpenId, boolean enabled) {
+        try {
+            var payload = objectMapper.createObjectNode();
+            payload.put("type", "c2c_push_status");
+            payload.put("userOpenId", userOpenId);
+            payload.put("enabled", enabled);
+            broadcast(objectMapper.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.warn("广播 C2C 主动消息状态失败: {}", e.getMessage());
         }
     }
 }

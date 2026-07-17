@@ -55,6 +55,26 @@ public final class C2CChat {
         return service().replyPrivateImageMessage(openId, msgId, type, value);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String openId, String eventId, Markdown markdown) {
+        return service().replyC2CEvent(openId, eventId, markdown);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String openId, String eventId, Markdown markdown, Object keyboard) {
+        return service().replyC2CEvent(openId, eventId, markdown, keyboard);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String openId, String eventId, String text) {
+        return service().replyC2CEvent(openId, eventId, text);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String openId, String eventId, ImageType type, String value) {
+        return service().replyC2CEvent(openId, eventId, type, value);
+    }
+
     public static void recallMessage(String openId, String messageId) {
         service().recallPrivateMessage(openId, messageId);
     }

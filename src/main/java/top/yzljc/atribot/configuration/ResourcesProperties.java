@@ -84,8 +84,8 @@ public final class ResourcesProperties {
     // @ClassName BanTracker
     public static final String BAN_TRACKER = UGC_API + "/v2/atrimeow/bantracker-chart";
 
-    // @ClassName PlayerProfile （使用时拼接 key 与查询参数）
-    public static final String PLAYER_CARD_API = "https://www.yzljc.top/data/api/v2/player/card/";
+    // @ClassName PlayerProfile
+    public static final String PLAYER_CARD_API = UGC_API + "/v2/atrimeow/player-game-stats";
 
     // @ClassName PlayerProfile
     public static final String PLAYER_ACHIEVEMENTS_NAME_API = "https://www.yzljc.top/data/api/v2/player/achievements/name/{name}";

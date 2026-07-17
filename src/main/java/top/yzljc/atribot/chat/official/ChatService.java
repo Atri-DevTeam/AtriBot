@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.official.media.GroupMessageType;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
+import top.yzljc.atribot.event.events.OfficialC2CPushFailEvent;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -131,7 +132,19 @@ public class ChatService {
                 .build();
     }
 
+    private MessageBody eventTextRequest(String eventId, String text) {
+        return MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .eventId(eventId)
+                .content(text)
+                .build();
+    }
+
     private MessageBody mediaRequest(String fileInfo, String msgId) {
+        return mediaRequest(fileInfo, msgId, null);
+    }
+
+    private MessageBody mediaRequest(String fileInfo, String msgId, String eventId) {
         Map<String, Object> mediaObj = new HashMap<>();
         mediaObj.put("file_info", fileInfo);
 
@@ -140,6 +153,9 @@ public class ChatService {
                 .media(mediaObj);
         if (msgId != null) {
             builder.msgId(msgId).msgSeq(getNextMsgSeq(msgId));
+        }
+        if (eventId != null) {
+            builder.eventId(eventId);
         }
         return builder.build();
     }
@@ -287,19 +303,87 @@ public class ChatService {
     }
 
     public String replyGroupEvent(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
+        return sendGroupMessage(groupOpenId, markdownRequest(atMarkdown(memberOpenId, markdown), null, null, eventId));
     }
 
     public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(atMarkdown(memberOpenId, markdown), null, null, eventId));
     }
 
     public String replyGroupEvent(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
-        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
+        return sendGroupMessage(groupOpenId, markdownRequest(atMarkdown(memberOpenId, markdown), buttons, null, eventId));
     }
 
     public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(atMarkdown(memberOpenId, markdown), buttons, null, eventId));
+    }
+
+    public String replyGroupEvent(String groupOpenId, String eventId, Markdown markdown) {
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
+    }
+
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String eventId, Markdown markdown) {
+        return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), null, null, eventId));
+    }
+
+    public String replyGroupEvent(String groupOpenId, String eventId, Markdown markdown, Object buttons) {
+        return sendGroupMessage(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
+    }
+
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String eventId, Markdown markdown, Object buttons) {
         return sendGroupMessageAsync(groupOpenId, markdownRequest(markdown.getText(), buttons, null, eventId));
+    }
+
+    public String replyGroupEvent(String groupOpenId, String eventId, String text) {
+        return sendGroupMessage(groupOpenId, eventTextRequest(eventId, text));
+    }
+
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String eventId, String text) {
+        return sendGroupMessageAsync(groupOpenId, eventTextRequest(eventId, text));
+    }
+
+    public String replyGroupEvent(String groupOpenId, String eventId, ImageType type, String value) {
+        MessageBody request = buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊事件", null, eventId);
+        return request == null ? null : sendGroupMessage(groupOpenId, request);
+    }
+
+    public CompletableFuture<String> replyGroupEventAsync(String groupOpenId, String eventId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(groupFileUrl(groupOpenId), type, value, "群聊事件", null, eventId))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendGroupMessageAsync(groupOpenId, request));
+    }
+
+    public String replyC2CEvent(String openId, String eventId, Markdown markdown) {
+        return sendPrivateMessage(openId, markdownRequest(markdown.getText(), null, null, eventId));
+    }
+
+    public CompletableFuture<String> replyC2CEventAsync(String openId, String eventId, Markdown markdown) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown.getText(), null, null, eventId));
+    }
+
+    public String replyC2CEvent(String openId, String eventId, Markdown markdown, Object buttons) {
+        return sendPrivateMessage(openId, markdownRequest(markdown.getText(), buttons, null, eventId));
+    }
+
+    public CompletableFuture<String> replyC2CEventAsync(String openId, String eventId, Markdown markdown, Object buttons) {
+        return sendPrivateMessageAsync(openId, markdownRequest(markdown.getText(), buttons, null, eventId));
+    }
+
+    public String replyC2CEvent(String openId, String eventId, String text) {
+        return sendPrivateMessage(openId, eventTextRequest(eventId, text));
+    }
+
+    public CompletableFuture<String> replyC2CEventAsync(String openId, String eventId, String text) {
+        return sendPrivateMessageAsync(openId, eventTextRequest(eventId, text));
+    }
+
+    public String replyC2CEvent(String openId, String eventId, ImageType type, String value) {
+        MessageBody request = buildImageRequest(privateFileUrl(openId), type, value, "单聊事件", null, eventId);
+        return request == null ? null : sendPrivateMessage(openId, request);
+    }
+
+    public CompletableFuture<String> replyC2CEventAsync(String openId, String eventId, ImageType type, String value) {
+        return ThreadManager.supplyAsync(() -> buildImageRequest(privateFileUrl(openId), type, value, "单聊事件", null, eventId))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null) : sendPrivateMessageAsync(openId, request));
     }
 
     public Object buildButtonKeyboard(List<List<Button>> layout) {
@@ -441,10 +525,14 @@ public class ChatService {
     }
 
     private MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId) {
+        return buildImageRequest(uploadUrl, type, value, logLabel, msgId, null);
+    }
+
+    private MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId, String eventId) {
         String fileInfo = uploadImageFile(uploadUrl, type, value, logLabel);
         if (fileInfo == null) return textRequest("在查询数据时出现错误：服务器上行被限导致请求超时，请稍后重试，如持续发生请向开发者报告此问题！");
 
-        return mediaRequest(fileInfo, msgId);
+        return mediaRequest(fileInfo, msgId, eventId);
     }
 
     private MessageBody buildFileRequest(String uploadUrl, int type, String value, String logLabel, String msgId) {
@@ -593,6 +681,10 @@ public class ChatService {
                         if (logType.equals("群聊") && url.contains("/groups/")) {
                             String gid = url.substring(url.indexOf("/groups/") + 8, url.indexOf("/messages"));
                             EventManager.getInstance().callEvent(new OfficialActiveMessageFailEvent(gid, code, msg));
+                        }
+                        if (logType.equals("单聊") && url.contains("users")) {
+                            String userId = url.substring(url.indexOf("/users/") + 7, url.indexOf("/messages"));
+                            EventManager.getInstance().callEvent(new OfficialC2CPushFailEvent(userId, code, msg));
                         }
                     } catch (Exception ignored) {
                     }

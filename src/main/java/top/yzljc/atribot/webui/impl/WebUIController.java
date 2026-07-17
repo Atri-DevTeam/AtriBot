@@ -21,11 +21,16 @@ import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepository;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 public class WebUIController {
 
@@ -581,7 +588,7 @@ public class WebUIController {
 
     private static C2CUserDTO toC2CUserDTO(OfficialUsers.UserData data) {
         return new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions(),
-                data.isBlocked(), data.isIgnored());
+                data.isBlocked(), data.isIgnored(), data.c2cPush());
     }
 
     public static void setC2CUserRole(Context ctx) {
@@ -619,6 +626,14 @@ public class WebUIController {
         String userOpenId = ctx.pathParam("userOpenId");
         boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
         OfficialUsers.setIgnored(userOpenId, value);
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void setC2CUserPush(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
+        OfficialUsers.setC2CPush(userOpenId, value);
+        SseBroadcaster.broadcastC2CPushStatus(userOpenId, value);
         ctx.json(Result.success("ok"));
     }
 
@@ -671,7 +686,7 @@ public class WebUIController {
     }
 
     public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,
-                             boolean isBlocked, boolean isIgnored) {}
+                             boolean isBlocked, boolean isIgnored, boolean c2cPush) {}
 
     @Data
     public static class SendC2CMessageDTO {
@@ -783,4 +798,305 @@ public class WebUIController {
                                      Integer messageType, String attachments, String mentions,
                                      String eventTimestamp, String createdAt) {}
     public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
+
+    // ═══════════════ 公开官方机器人查询 ═══════════════
+
+    private static final DateTimeFormatter PUBLIC_QUERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final long PUBLIC_QUERY_CACHE_TTL_MILLIS = 60_000L;
+    private static final ConcurrentHashMap<String, PublicQueryCacheEntry> PUBLIC_QUERY_CACHE = new ConcurrentHashMap<>();
+
+    public static void publicOfficialGroupReceivedMessages(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
+        String cacheKey = publicCacheKey("group_received", window, groupOpenId, null);
+        publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
+                "official_group_received_messages",
+                "group",
+                window.startString(),
+                window.endString(),
+                groupOpenId,
+                null,
+                PublicOfficialQueryRepository.countGroupMessages(false, window.start(), window.end(), groupOpenId)
+        ));
+    }
+
+    public static void publicOfficialGroupSentMessages(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
+        String cacheKey = publicCacheKey("group_sent", window, groupOpenId, null);
+        publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
+                "official_group_sent_messages",
+                "group",
+                window.startString(),
+                window.endString(),
+                groupOpenId,
+                null,
+                PublicOfficialQueryRepository.countGroupMessages(true, window.start(), window.end(), groupOpenId)
+        ));
+    }
+
+    public static void publicOfficialC2CReceivedMessages(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String cacheKey = publicCacheKey("c2c_received", window, null, userOpenId);
+        publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
+                "official_c2c_received_messages",
+                "c2c",
+                window.startString(),
+                window.endString(),
+                null,
+                userOpenId,
+                PublicOfficialQueryRepository.countC2CMessages(false, window.start(), window.end(), userOpenId)
+        ));
+    }
+
+    public static void publicOfficialC2CSentMessages(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String cacheKey = publicCacheKey("c2c_sent", window, null, userOpenId);
+        publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
+                "official_c2c_sent_messages",
+                "c2c",
+                window.startString(),
+                window.endString(),
+                null,
+                userOpenId,
+                PublicOfficialQueryRepository.countC2CMessages(true, window.start(), window.end(), userOpenId)
+        ));
+    }
+
+    public static void publicOfficialDau(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
+        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String cacheKey = publicCacheKey("dau", window, groupOpenId, userOpenId);
+        publicAsyncCached(ctx, cacheKey, () -> {
+            var stats = PublicOfficialQueryRepository.queryDau(window.start(), window.end(), groupOpenId, userOpenId);
+            double totalDau = PublicOfficialQueryRepository.queryAverageDailyDau();
+            long groupReceiveMessages = PublicOfficialQueryRepository.countGroupMessages(false, window.start(), window.end(), groupOpenId);
+            long groupSendMessages = PublicOfficialQueryRepository.countGroupMessages(true, window.start(), window.end(), groupOpenId);
+            long c2cReceiveMessages = PublicOfficialQueryRepository.countC2CMessages(false, window.start(), window.end(), userOpenId);
+            long c2cSendMessages = PublicOfficialQueryRepository.countC2CMessages(true, window.start(), window.end(), userOpenId);
+            return new PublicDauDTO(
+                    window.startString(),
+                    window.endString(),
+                    groupOpenId,
+                    userOpenId,
+                    stats.totalReceiveUsers(),
+                    totalDau,
+                    groupReceiveMessages,
+                    groupSendMessages,
+                    c2cReceiveMessages,
+                    c2cSendMessages
+            );
+        });
+    }
+
+    public static void publicOfficialUserInfo(Context ctx) {
+        String userOpenId = trimToNull(firstNonBlank(ctx.pathParam("userOpenId"), ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        if (userOpenId == null) {
+            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            return;
+        }
+        String cacheKey = publicCacheKey("user_info", null, null, userOpenId);
+        publicAsyncCached(ctx, cacheKey, () -> {
+            var user = OfficialUsers.getData(userOpenId);
+            var stats = PublicOfficialQueryRepository.queryUserMessageStats(userOpenId);
+            return new PublicUserInfoDTO(
+                    user.userOpenId(),
+                    user.role().name(),
+                    user.permissions(),
+                    user.isBlocked(),
+                    user.isIgnored(),
+                    user.c2cPush(),
+                    stats.c2cReceivedMessages(),
+                    stats.c2cSentMessages(),
+                    stats.groupReceivedMessages(),
+                    stats.firstSeenAt(),
+                    stats.lastSeenAt(),
+                    stats.lastUsername()
+            );
+        });
+    }
+
+    public static void publicOfficialGroupInfo(Context ctx) {
+        String groupOpenId = trimToNull(firstNonBlank(ctx.pathParam("groupOpenId"), ctx.queryParam("groupOpenId")));
+        if (groupOpenId == null) {
+            ctx.json(Result.fail(400, "groupOpenId 不能为空"));
+            return;
+        }
+        String cacheKey = publicCacheKey("group_info", null, groupOpenId, null);
+        publicAsyncCached(ctx, cacheKey, () -> {
+            var group = OfficialGroups.getData(groupOpenId);
+            var stats = PublicOfficialQueryRepository.queryGroupMessageStats(groupOpenId);
+            return new PublicGroupInfoDTO(
+                    group.groupOpenId(),
+                    group.opMemberOpenId(),
+                    group.timestamp(),
+                    group.isWhitelist(),
+                    group.isBlacklisted(),
+                    group.isAllowedActive(),
+                    group.realGroupId(),
+                    stats.receivedMessages(),
+                    stats.sentMessages(),
+                    stats.activeUsers(),
+                    stats.firstSeenAt(),
+                    stats.lastSeenAt()
+            );
+        });
+    }
+
+    private static <T> void publicAsyncCached(Context ctx, String cacheKey, Supplier<T> supplier) {
+        PublicQueryCacheEntry cached = PUBLIC_QUERY_CACHE.get(cacheKey);
+        long now = System.currentTimeMillis();
+        if (cached != null && now - cached.createdAt() < PUBLIC_QUERY_CACHE_TTL_MILLIS) {
+            ctx.json(cached.result());
+            return;
+        }
+
+        publicAsync(ctx, () -> {
+            T data = supplier.get();
+            Result<T> result = Result.success(data);
+            PUBLIC_QUERY_CACHE.put(cacheKey, new PublicQueryCacheEntry(now, result));
+            cleanupPublicQueryCache(now);
+            return result;
+        }, true);
+    }
+
+    private static <T> void publicAsync(Context ctx, Supplier<T> supplier) {
+        publicAsync(ctx, supplier, false);
+    }
+
+    private static <T> void publicAsync(Context ctx, Supplier<T> supplier, boolean alreadyWrapped) {
+        ctx.future(() -> ThreadManager.supplyAsync(() -> {
+            try {
+                return alreadyWrapped ? supplier.get() : Result.success(supplier.get());
+            } catch (IllegalArgumentException e) {
+                return Result.fail(400, e.getMessage());
+            } catch (Exception e) {
+                return Result.fail(500, "公开查询失败: " + e.getMessage());
+            }
+        }).thenAccept(ctx::json));
+    }
+
+    private static String publicCacheKey(String name, QueryWindow window, String groupOpenId, String userOpenId) {
+        String start = window == null ? "-" : String.valueOf(window.startString());
+        String end = window == null ? "-" : String.valueOf(window.endString());
+        return name + "|start=" + start + "|end=" + end + "|group=" + nullToDash(groupOpenId) + "|user=" + nullToDash(userOpenId);
+    }
+
+    private static String nullToDash(String value) {
+        return value == null ? "-" : value;
+    }
+
+    private static void cleanupPublicQueryCache(long now) {
+        if (PUBLIC_QUERY_CACHE.size() < 512) {
+            return;
+        }
+        PUBLIC_QUERY_CACHE.entrySet().removeIf(entry -> now - entry.getValue().createdAt() >= PUBLIC_QUERY_CACHE_TTL_MILLIS);
+    }
+
+    private static QueryWindow parseQueryWindowOrFail(Context ctx) {
+        try {
+            return parseQueryWindow(ctx);
+        } catch (IllegalArgumentException e) {
+            ctx.json(Result.fail(400, e.getMessage()));
+            return null;
+        }
+    }
+
+    private static QueryWindow parseQueryWindow(Context ctx) {
+        if (Boolean.parseBoolean(ctx.queryParam("all"))) {
+            return new QueryWindow(null, null);
+        }
+
+        String startValue = firstNonBlank(ctx.queryParam("start"), ctx.queryParam("startTime"), ctx.queryParam("from"));
+        String endValue = firstNonBlank(ctx.queryParam("end"), ctx.queryParam("endTime"), ctx.queryParam("to"));
+        LocalDateTime start;
+        LocalDateTime end;
+
+        if (isBlank(startValue) && isBlank(endValue)) {
+            start = LocalDate.now().atStartOfDay();
+            end = start.plusDays(1);
+        } else if (isBlank(startValue)) {
+            end = parsePublicQueryTime(endValue, true);
+            start = end.minusDays(1);
+        } else if (isBlank(endValue)) {
+            start = parsePublicQueryTime(startValue, false);
+            end = start.plusDays(1);
+        } else {
+            start = parsePublicQueryTime(startValue, false);
+            end = parsePublicQueryTime(endValue, true);
+        }
+
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("end 必须晚于 start");
+        }
+        return new QueryWindow(start, end);
+    }
+
+    private static LocalDateTime parsePublicQueryTime(String value, boolean endOfDate) {
+        if (isBlank(value)) {
+            throw new IllegalArgumentException("时间参数不能为空");
+        }
+
+        String normalized = value.trim();
+        try {
+            if (normalized.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                LocalDate date = LocalDate.parse(normalized);
+                return endOfDate ? date.plusDays(1).atStartOfDay() : date.atStartOfDay();
+            }
+            if (normalized.indexOf(' ') > 0) {
+                return LocalDateTime.parse(normalized, PUBLIC_QUERY_TIME_FMT);
+            }
+            return LocalDateTime.parse(normalized);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("时间格式无效，支持 yyyy-MM-dd、yyyy-MM-dd HH:mm:ss 或 ISO LocalDateTime");
+        }
+    }
+
+    private static String trimToNull(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private record QueryWindow(LocalDateTime start, LocalDateTime end) {
+        String startString() {
+            return start == null ? null : start.format(PUBLIC_QUERY_TIME_FMT);
+        }
+
+        String endString() {
+            return end == null ? null : end.format(PUBLIC_QUERY_TIME_FMT);
+        }
+    }
+
+    private record PublicQueryCacheEntry(long createdAt, Result<?> result) {
+    }
+
+    public record PublicMessageCountDTO(String metric, String scope, String startTime, String endTime,
+                                        String groupOpenId, String userOpenId, long count) {
+    }
+
+    public record PublicDauDTO(String startTime, String endTime, String groupOpenId, String userOpenId,
+                               long dau, double totalDau,
+                               long groupReceiveMessages, long groupSendMessages,
+                               long c2cReceiveMessages, long c2cSendMessages) {
+    }
+
+    public record PublicUserInfoDTO(String userOpenId, String role, java.util.Set<String> permissions,
+                                    boolean isBlocked, boolean isIgnored, boolean c2cPush,
+                                    long c2cReceivedMessages, long c2cSentMessages,
+                                    long groupReceivedMessages, String firstSeenAt,
+                                    String lastSeenAt, String lastUsername) {
+    }
+
+    public record PublicGroupInfoDTO(String groupOpenId, String opMemberOpenId, long timestamp,
+                                     boolean whitelist, boolean blacklisted, boolean allowedActive,
+                                     Long realGroupId, long receivedMessages, long sentMessages,
+                                     long activeUsers, String firstSeenAt, String lastSeenAt) {
+    }
 }

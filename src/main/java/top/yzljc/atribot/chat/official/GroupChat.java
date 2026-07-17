@@ -76,6 +76,26 @@ public final class GroupChat {
     }
 
     @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String groupOpenId, String eventId, Markdown markdown) {
+        return service().replyGroupEvent(groupOpenId, eventId, markdown);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String groupOpenId, String eventId, Markdown markdown, Object buttons) {
+        return service().replyGroupEvent(groupOpenId, eventId, markdown, buttons);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String groupOpenId, String eventId, String text) {
+        return service().replyGroupEvent(groupOpenId, eventId, text);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String groupOpenId, String eventId, ImageType type, String value) {
+        return service().replyGroupEvent(groupOpenId, eventId, type, value);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
     public static String refMessage(String groupOpenId, String refIdx, String content) {
         return service().sendActiveGroupRefTextMessage(groupOpenId, content, refIdx);
     }

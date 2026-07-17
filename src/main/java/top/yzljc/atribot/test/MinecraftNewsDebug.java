@@ -1,5 +1,9 @@
 package top.yzljc.atribot.test;
 
+import org.jetbrains.annotations.TestOnly;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
@@ -17,8 +21,10 @@ import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
+import java.net.URI;
 import java.util.*;
 
+/* 测试类 */
 public class MinecraftNewsDebug implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNewsDebug.class);
@@ -31,40 +37,69 @@ public class MinecraftNewsDebug implements CommandExecutor {
             return true;
         }
 
-        ThreadManager.execute(MinecraftNewsDebug::runDebug);
-        sender.sendMessage("[DEBUG] MinecraftNews 链路测试已启动，结果仅发送到 debug 群...");
+        String specifiedUrl = null;
+        for (int i = 0; i < args.length; i++) {
+            if (!"-url".equalsIgnoreCase(args[i])) continue;
+            if (i + 1 >= args.length || args[i + 1].isBlank()) {
+                sender.sendMessage("用法: /" + label + " -url <文章链接>");
+                return true;
+            }
+            specifiedUrl = args[i + 1].trim();
+            break;
+        }
+
+        if (specifiedUrl != null && !isHttpUrl(specifiedUrl)) {
+            sender.sendMessage("-url 仅支持 http:// 或 https:// 链接");
+            return true;
+        }
+
+        String targetUrl = specifiedUrl;
+        ThreadManager.execute(() -> runDebug(targetUrl));
+        sender.sendMessage(targetUrl == null
+                ? "[DEBUG] MinecraftNews 链路测试已启动，结果仅发送到 debug 群..."
+                : "[DEBUG] MinecraftNews 指定链接测试已启动，结果仅发送到 debug 群...");
         return true;
     }
 
-    private static void runDebug() {
+    private static void runDebug(String specifiedUrl) {
         String debugGroup = Config.getInstance().getNapcatDebugGroupUin();
 
         try {
-            GroupMessage.chatMessage(debugGroup, "[DEBUG] MinecraftNews 链路测试开始，正在拉取文章列表...");
+            MinecraftNews.UnifiedArticle article;
+            if (specifiedUrl != null) {
+                GroupMessage.chatMessage(debugGroup, "[DEBUG] MinecraftNews 链路测试开始，正在读取指定文章...");
+                article = fetchSpecifiedArticle(specifiedUrl);
+                log.info("[DEBUG] 使用指定文章 [{}] {}: {}", article.tag, article.title, article.url);
+                GroupMessage.chatMessage(debugGroup,
+                        "[DEBUG] 使用指定文章\n"
+                                + "[" + article.tag + "] " + article.title + "\n"
+                                + "URL: " + article.url);
+            } else {
+                GroupMessage.chatMessage(debugGroup, "[DEBUG] MinecraftNews 链路测试开始，正在拉取文章列表...");
 
-            List<MinecraftNews.UnifiedArticle> primaryList = MinecraftNews.fetchAndParsePrimary();
-            List<MinecraftNews.UnifiedArticle> secondaryList = MinecraftNews.fetchAndParseSecondary();
+                List<MinecraftNews.UnifiedArticle> primaryList = MinecraftNews.fetchAndParsePrimary();
+                List<MinecraftNews.UnifiedArticle> secondaryList = MinecraftNews.fetchAndParseSecondary();
 
-            List<MinecraftNews.UnifiedArticle> allArticles = new ArrayList<>();
-            allArticles.addAll(primaryList);
-            allArticles.addAll(secondaryList);
+                List<MinecraftNews.UnifiedArticle> allArticles = new ArrayList<>();
+                allArticles.addAll(primaryList);
+                allArticles.addAll(secondaryList);
 
-            if (allArticles.isEmpty()) {
-                log.warn("[DEBUG] 链路测试失败：没有获取到任何文章");
-                GroupMessage.chatMessage(debugGroup, "[DEBUG] 链路测试失败：没有获取到任何文章");
-                return;
+                if (allArticles.isEmpty()) {
+                    log.warn("[DEBUG] 链路测试失败：没有获取到任何文章");
+                    GroupMessage.chatMessage(debugGroup, "[DEBUG] 链路测试失败：没有获取到任何文章");
+                    return;
+                }
+
+                int index = new Random().nextInt(allArticles.size());
+                article = allArticles.get(index);
+
+                log.info("[DEBUG] 随机选中 ({} / {}) [{}] {}: {}",
+                        index + 1, allArticles.size(), article.tag, article.title, article.url);
+                GroupMessage.chatMessage(debugGroup,
+                        "[DEBUG] 随机选中文章 (" + (index + 1) + "/" + allArticles.size() + ")\n"
+                                + "[" + article.tag + "] " + article.title + "\n"
+                                + "URL: " + article.url);
             }
-
-            // 随机抽取一篇
-            int index = new Random().nextInt(allArticles.size());
-            MinecraftNews.UnifiedArticle article = allArticles.get(index);
-
-            log.info("[DEBUG] 随机选中 ({} / {}) [{}] {}: {}",
-                    index + 1, allArticles.size(), article.tag, article.title, article.url);
-            GroupMessage.chatMessage(debugGroup,
-                    "[DEBUG] 随机选中文章 (" + (index + 1) + "/" + allArticles.size() + ")\n"
-                            + "[" + article.tag + "] " + article.title + "\n"
-                            + "URL: " + article.url);
 
             // ── 1. 网页抓取 ──
             log.info("[DEBUG] >>> 1. 开始提取网页纯文本: {}", article.url);
@@ -115,5 +150,79 @@ public class MinecraftNewsDebug implements CommandExecutor {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private static boolean isHttpUrl(String value) {
+        try {
+            URI uri = URI.create(value);
+            String scheme = uri.getScheme();
+            return uri.getHost() != null
+                    && ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private static MinecraftNews.UnifiedArticle fetchSpecifiedArticle(String url) throws Exception {
+        Document document = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")
+                .timeout(20_000)
+                .get();
+
+        MinecraftNews.UnifiedArticle article = new MinecraftNews.UnifiedArticle();
+        article.id = url;
+        article.url = document.location().isBlank() ? url : document.location();
+        article.title = firstNonBlank(
+                metaContent(document, "meta[property=og:title]"),
+                metaContent(document, "meta[name=twitter:title]"),
+                document.title(),
+                url
+        );
+        article.description = firstNonBlank(
+                metaContent(document, "meta[property=og:description]"),
+                metaContent(document, "meta[name=description]"),
+                ""
+        );
+        article.author = firstNonBlank(
+                metaContent(document, "meta[name=author]"),
+                metaContent(document, "meta[property=article:author]"),
+                "Minecraft"
+        );
+        article.imageUrl = firstNonBlank(
+                absoluteMetaContent(document, "meta[property=og:image]"),
+                absoluteMetaContent(document, "meta[name=twitter:image]"),
+                ""
+        );
+        article.dateDisplay = firstNonBlank(
+                metaContent(document, "meta[property=article:published_time]"),
+                metaContent(document, "meta[name=date]"),
+                elementAttribute(document, "time[datetime]", "datetime"),
+                "未知时间"
+        );
+        article.tag = "指定链接";
+        return article;
+    }
+
+    private static String metaContent(Document document, String selector) {
+        return elementAttribute(document, selector, "content");
+    }
+
+    private static String absoluteMetaContent(Document document, String selector) {
+        Element element = document.selectFirst(selector);
+        if (element == null) return "";
+        String absolute = element.absUrl("content");
+        return absolute.isBlank() ? element.attr("content").trim() : absolute;
+    }
+
+    private static String elementAttribute(Document document, String selector, String attribute) {
+        Element element = document.selectFirst(selector);
+        return element == null ? "" : element.attr(attribute).trim();
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return "";
     }
 }

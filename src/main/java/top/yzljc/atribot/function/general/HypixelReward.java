@@ -22,7 +22,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialInteractionEvent;
+import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
@@ -283,7 +283,7 @@ public class HypixelReward implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void callback(OfficialInteractionEvent event) {
+    public void callback(OfficialButtonInteractionEvent event) {
         if (event.getType() != 11) return;
         if (!event.getButtonValue().equals("reward_claim")) return;
 

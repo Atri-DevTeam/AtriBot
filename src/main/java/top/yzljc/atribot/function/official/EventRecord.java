@@ -19,8 +19,11 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.Alert;
+import top.yzljc.atribot.webui.impl.SseBroadcaster;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @Author YZ_Ljc_
@@ -31,6 +34,8 @@ import java.util.List;
  */
 @Slf4j
 public class EventRecord implements Listener {
+
+    private static final Set<String> c2cNotifiedUsers = new HashSet<>();
 
     @EventHandler
     public void onMemberJoin(OfficialGroupMemberAddEvent event) {
@@ -80,8 +85,19 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
+        String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
-            var md = TC.md("你好喵~\n\n根据开放平台安全策略要求，" + Config.getInstance().getOfficialUsername() + "暂时不能与你聊天，您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，您可以通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
+            if (OfficialUsers.isC2CPushEnabled(userId)) {
+                if (c2cNotifiedUsers.add(userId)) {
+                    event.getUser().sendMessage(event.getMessage().getMessageId(), TC.md("你好喵~\n\n" +
+                            Config.getInstance().getOfficialUsername() + "为兼顾安全问题，未接入AI主动聊天，因此我暂时不能与你聊天。您可以使用 " +
+                            Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~"));
+                }
+                return;
+            }
+            var md = TC.md("你好喵~\n\n由于您未允许" + Config.getInstance().getOfficialUsername() +
+                    "主动聊天，因此我暂时不能与你聊天，您可以在机器人权限设置中允许我主动聊天。同时，您也可以使用 " +
+                    Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
             event.getUser().sendMessage(event.getMessage().getMessageId(), md);
         }
     }
@@ -89,17 +105,41 @@ public class EventRecord implements Listener {
     @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
         log.info("New friend added: {}", event.getUnionOpenId());
+        OfficialUsers.registerUser(event.getUnionOpenId());
+        log.info("Registered official user data for new friend: {}", event.getUnionOpenId());
         Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUnionOpenId());
     }
 
     @EventHandler
     public void onFriendDel(OfficialFriendDelEvent event) {
         log.info("Friend removed: {}", event.getUnionOpenId());
+        if (OfficialUsers.removeUser(event.getUnionOpenId())) {
+            log.info("Removed official user data for deleted friend: {}", event.getUnionOpenId());
+        } else {
+            log.warn("Failed to remove official user data for deleted friend: {}", event.getUnionOpenId());
+        }
         Alert.notify("有好友删除了亚托莉喵，OpenID: " + event.getUnionOpenId());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void callback(OfficialInteractionEvent event) {
+    @EventHandler
+    public void onC2CAuthorizeModified(OfficialC2CAuthorizeModifyEvent event) {
+        if (event.getOptScene() == OfficialC2CAuthorizeModifyEvent.OptScene.SETTING
+                && event.getScope() == OfficialC2CAuthorizeModifyEvent.Scope.C2C_PUSH) {
+            boolean c2cPushStatus = event.getAuthorizeData().isAllowedC2CPush();
+            String userOpenId = event.getUserOpenId();
+            if (userOpenId == null || userOpenId.isBlank()) {
+                log.warn("收到 C2C 主动消息授权变更，但缺少用户 OpenID，eventId: {}", event.getEventId());
+                return;
+            }
+            OfficialUsers.setC2CPush(userOpenId, c2cPushStatus);
+            SseBroadcaster.broadcastC2CPushStatus(userOpenId, c2cPushStatus);
+            log.info("C2C 主动消息授权变更: userOpenId={}, enabled={}", userOpenId, c2cPushStatus);
+            Alert.notify("C2C 主动消息授权变更: " + userOpenId + " -> " + (c2cPushStatus ? "开启" : "关闭"));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void callback(OfficialButtonInteractionEvent event) {
         if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(Config.getInstance().getDebugGroupOpenId()))
             return;
         if (OfficialUsers.isIgnored(event.getUnionOpenId()) || OfficialUsers.isBlocked(event.getUnionOpenId())) {

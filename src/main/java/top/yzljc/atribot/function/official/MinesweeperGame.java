@@ -24,6 +24,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
     private static final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
 
+    private static final int ROWS = 5;
+    private static final int COLS = 6;
+    private static final int DEFAULT_MINES = 6;
+    private static final int MAX_MINES = 29;
     private static final String[] NUM_EMOJIS = {"⬜", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"};
 
     @Override
@@ -45,14 +49,14 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
         // 2. 处理游戏开始指令
         if (action.equals("start")) {
-            int mines = 5;
+            int mines = DEFAULT_MINES;
             if (args.length > 1) {
                 try {
                     mines = Integer.parseInt(args[1]);
                 } catch (NumberFormatException ignored) {
                 }
             }
-            mines = Math.max(1, Math.min(mines, 20));
+            mines = Math.max(1, Math.min(mines, MAX_MINES));
             handleStartGame(sessionId, sender, mines);
             return true;
         }
@@ -69,10 +73,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         if (args.length < 2) return true;
 
         String coordStr = args[1].toUpperCase();
-        if (!coordStr.matches("^[A-E][1-5]$")) return true;
+        if (!coordStr.matches("^[A-E][1-6]$")) return true;
 
         int row = coordStr.charAt(0) - 'A';
-        int col = coordStr.charAt(1) - '1';
+        int col = Integer.parseInt(coordStr.substring(1)) - 1;
 
         synchronized (game) {
             if (game.isGameOver) {
@@ -96,18 +100,18 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         String markdown = """
-                **扫雷小游戏 (5x5)**
+                **扫雷小游戏 (6x5)**
 
                 **规则与操作:**
-                1. **挖开雷区**：点击消息最底部的**按钮键盘**。
-                2. **插旗/拔旗**：点击消息文本里蓝色的**方块字符**。
+                1. 使用“扫雷区”按钮挖开格子。
+                2. 使用“插旗区”按钮插旗或拔旗。
                 3. 与传统扫雷游戏一致，排除所有地雷后获胜！
 
                 请点击下方按钮开始游戏：
                 """;
 
         List<List<Button>> layout = new ArrayList<>();
-        layout.add(List.of(new Button("btn_start", "开始游戏 (默认5雷)", "/扫雷 start 5",
+        layout.add(List.of(new Button("btn_start", "开始游戏 (默认" + DEFAULT_MINES + "雷)", "/扫雷 start " + DEFAULT_MINES,
                 true, ButtonStyle.BLUE, ButtonType.COMMAND)));
         layout.add(List.of(new Button("btn_custom", "自定义雷数并开始", "/扫雷 start ",
                 false, ButtonStyle.GRAY, ButtonType.COMMAND)));
@@ -174,7 +178,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         for (int i = 0; i < 8; i++) {
             int nr = r + dr[i];
             int nc = c + dc[i];
-            if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                 if (!game.revealed[nr][nc] && !game.flagged[nr][nc]) {
                     game.revealed[nr][nc] = true;
                     if (game.board[nr][nc] == 0) floodFill(game, nr, nc);
@@ -185,8 +189,8 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
     private void checkWinCondition(GameState game, String sessionId, CommandSender sender) {
         int unrevealedCount = 0;
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLS; j++) {
                 if (!game.revealed[i][j]) unrevealedCount++;
             }
         }
@@ -198,8 +202,8 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     }
 
     private void revealAllMines(GameState game) {
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLS; j++) {
                 if (game.board[i][j] == -1) game.revealed[i][j] = true;
             }
         }
@@ -225,10 +229,11 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 **耗时:** %d 秒
                 **参与者:** %s
 
-                <qqbot-cmd-input text="/扫雷" show="点击此处再次开始" reference="false" />
+                %s
 
                 最终棋盘如下：
-                """, resultMsg, game.minesCount, timeTaken, participantsMarkdown);
+                """, resultMsg, game.minesCount, timeTaken, participantsMarkdown,
+                buildInlineCmd("/扫雷", "再来一局"));
 
         sendKeyboardMessage(game, sender, markdown);
     }
@@ -237,40 +242,54 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         long timeElapsed = (System.currentTimeMillis() - game.startTime) / 1000;
 
         int flagCount = 0;
-        for (int r = 0; r < 5; r++) {
-            for (int c = 0; c < 5; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
                 if (game.flagged[r][c]) flagCount++;
             }
         }
 
-        StringBuilder textBoard = new StringBuilder();
-        for (int r = 0; r < 5; r++) {
-            for (int c = 0; c < 5; c++) {
+        StringBuilder flagBoard = new StringBuilder();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                String coord = "" + (char) ('A' + r) + (c + 1);
+                String displayChar;
+                String command;
                 if (game.revealed[r][c]) {
-                    if (game.board[r][c] == -1) textBoard.append("💥");
-                    else textBoard.append(NUM_EMOJIS[game.board[r][c]]);
+                    displayChar = displayCell(game, r, c);
+                    command = "/扫雷 l " + coord;
                 } else {
-                    String coord = "" + (char) ('A' + r) + (c + 1);
-                    String displayChar = game.flagged[r][c] ? "🚩" : "🔲";
-                    textBoard.append(buildInlineCmd("/扫雷 q " + coord, displayChar));
+                    displayChar = game.flagged[r][c] ? "🚩" : "🔲";
+                    command = "/扫雷 q " + coord;
                 }
-                textBoard.append(" ");
+                flagBoard.append(buildInlineCmd(command, displayChar)).append(" ");
             }
-            textBoard.append("\n");
+            flagBoard.append("\n");
         }
 
         String markdown = String.format("""
                 **扫雷** | 用时: %d秒
                 > **状态: %s**
-                > 旗帜数量: %d
+                > 旗帜数量: %d/%d
 
-                **🚩 点击此处插拔旗帜**
+                **插旗区**
                 %s
 
-                **⛏ 点击此处进行扫雷**
-                """, timeElapsed, actionMsg, flagCount, textBoard);
+                **扫雷区**
+                """, timeElapsed, actionMsg, flagCount, game.minesCount, flagBoard);
 
         sendKeyboardMessage(game, sender, markdown);
+    }
+
+    private String displayCell(GameState game, int r, int c) {
+        if (game.board[r][c] == -1) return "💥";
+        if (game.board[r][c] == 0) return "⬜";
+        return NUM_EMOJIS[game.board[r][c]];
+    }
+
+    private String displayButtonCell(GameState game, int r, int c) {
+        if (game.board[r][c] == -1) return "💥";
+        if (game.board[r][c] == 0) return "⬜";
+        return String.valueOf(game.board[r][c]);
     }
 
     private String buildInlineCmd(String text, String show) {
@@ -286,9 +305,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     private void sendKeyboardMessage(GameState game, CommandSender sender, String markdown) {
 
         List<List<Button>> layout = new ArrayList<>();
-        for (int r = 0; r < 5; r++) {
+
+        for (int r = 0; r < ROWS; r++) {
             List<Button> rowBtn = new ArrayList<>();
-            for (int c = 0; c < 5; c++) {
+            for (int c = 0; c < COLS; c++) {
 
                 String coord = "" + (char) ('A' + r) + (c + 1);
                 String btnId = "ms_" + coord;
@@ -298,9 +318,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
                 if (game.revealed[r][c]) {
                     style = ButtonStyle.BLUE;
-                    if (game.board[r][c] == -1) text = "💥";
-                    else if (game.board[r][c] == 0) text = "⬜";
-                    else text = String.valueOf(game.board[r][c]);
+                    text = displayButtonCell(game, r, c);
                 } else {
                     style = ButtonStyle.GRAY;
                     text = game.flagged[r][c] ? "🚩" : "🔲";
@@ -336,9 +354,9 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     }
 
     private static class GameState {
-        int[][] board = new int[5][5];
-        boolean[][] revealed = new boolean[5][5];
-        boolean[][] flagged = new boolean[5][5];
+        int[][] board = new int[ROWS][COLS];
+        boolean[][] revealed = new boolean[ROWS][COLS];
+        boolean[][] flagged = new boolean[ROWS][COLS];
 
         long startTime = System.currentTimeMillis();
         int minesCount;
@@ -359,22 +377,22 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             Random random = new Random();
             int placedMines = 0;
             while (placedMines < minesCount) {
-                int r = random.nextInt(5);
-                int c = random.nextInt(5);
+                int r = random.nextInt(ROWS);
+                int c = random.nextInt(COLS);
                 if (board[r][c] != -1) {
                     board[r][c] = -1;
                     placedMines++;
                 }
             }
-            for (int r = 0; r < 5; r++) {
-                for (int c = 0; c < 5; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                for (int c = 0; c < COLS; c++) {
                     if (board[r][c] == -1) continue;
                     int count = 0;
                     for (int i = -1; i <= 1; i++) {
                         for (int j = -1; j <= 1; j++) {
                             int nr = r + i;
                             int nc = c + j;
-                            if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5 && board[nr][nc] == -1) {
+                            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] == -1) {
                                 count++;
                             }
                         }

@@ -13,7 +13,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialInteractionEvent;
+import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
 
@@ -93,7 +93,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onChoiceCallback(OfficialInteractionEvent event) {
+    public void onChoiceCallback(OfficialButtonInteractionEvent event) {
         if (!"rps_choice".equals(event.getButtonValue())) return;
 
         String sessionId = event.getGroupOpenId();
@@ -159,7 +159,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         }
     }
 
-    private void sendWaitingForOther(GameState game, OfficialInteractionEvent event) {
+    private void sendWaitingForOther(GameState game, OfficialButtonInteractionEvent event) {
         String whoChose;
         String whoWaiting;
 
@@ -188,7 +188,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         game.lastMessageId = messageId;
     }
 
-    private void sendResult(GameState game, OfficialInteractionEvent event) {
+    private void sendResult(GameState game, OfficialButtonInteractionEvent event) {
         String choiceA = game.playerAChoice;
         String choiceB = game.playerBChoice;
 

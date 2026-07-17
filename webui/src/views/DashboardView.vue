@@ -46,13 +46,21 @@
                         @click="selectGroup(group.groupOpenId); closeDropdown()">
                   <span class="item-id">{{ group.groupOpenId }}</span>
                   <span class="item-badges">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
-                      <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
-                      <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                      <template v-else><line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/></template>
+                    <svg :class="['group-status-mark', 'status-active', { 'is-enabled': group.allowedActive }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.allowedActive ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                      <path class="status-surface" d="M4.5 6.8A3.3 3.3 0 0 1 7.8 3.5h7.7a3.3 3.3 0 0 1 3.3 3.3v4.7a3.3 3.3 0 0 1-3.3 3.3h-5.1l-4.2 3.7v-4.1a3.3 3.3 0 0 1-1.7-2.9V6.8Z"/>
+                      <path class="status-line" d="M14.9 7.1c1.1.7 1.8 1.8 1.8 3.1s-.7 2.4-1.8 3.1M12.7 8.7c.5.4.8.9.8 1.5s-.3 1.1-.8 1.5"/>
                     </svg>
-                    <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'" :title="group.whitelist ? '白名单' : '未白名单'"></span>
-                    <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'" :title="group.blacklisted ? '黑名单' : '未拉黑'"></span>
+                    <svg :class="['group-status-mark', 'status-whitelist', { 'is-enabled': group.whitelist }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.whitelist ? '白名单' : '未加入白名单' }}</title>
+                      <path class="status-surface" d="M12 3.2 19 6v5.1c0 4.3-2.5 7.5-7 9.7-4.5-2.2-7-5.4-7-9.7V6l7-2.8Z"/>
+                      <path class="status-line" d="m8.4 11.8 2.2 2.2 5-5"/>
+                    </svg>
+                    <svg :class="['group-status-mark', 'status-blacklist', { 'is-enabled': group.blacklisted }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.blacklisted ? '黑名单' : '未加入黑名单' }}</title>
+                      <path class="status-surface" d="m8 3.5-4.5 4.5v8L8 20.5h8l4.5-4.5V8L16 3.5H8Z"/>
+                      <path class="status-line" d="M8 12h8"/>
+                    </svg>
                   </span>
                 </button>
               </div>
@@ -78,13 +86,21 @@
                         @click="selectGroup(group.groupOpenId)">
                   <span class="group-list-id">{{ group.groupOpenId }}</span>
                   <span class="group-list-badges">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" :title="group.allowedActive ? '主动推送已开启' : '主动推送已关闭'">
-                      <circle cx="8" cy="8" r="7" :fill="group.allowedActive ? '#10b981' : 'none'" :stroke="group.allowedActive ? '#10b981' : '#9ca3af'" stroke-width="1.5"/>
-                      <path v-if="group.allowedActive" d="M4 7l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                      <template v-else><line x1="5" y1="5" x2="11" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/></template>
+                    <svg :class="['group-status-mark', 'group-status-mark--card', 'status-active', { 'is-enabled': group.allowedActive }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.allowedActive ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                      <path class="status-surface" d="M4.5 6.8A3.3 3.3 0 0 1 7.8 3.5h7.7a3.3 3.3 0 0 1 3.3 3.3v4.7a3.3 3.3 0 0 1-3.3 3.3h-5.1l-4.2 3.7v-4.1a3.3 3.3 0 0 1-1.7-2.9V6.8Z"/>
+                      <path class="status-line" d="M14.9 7.1c1.1.7 1.8 1.8 1.8 3.1s-.7 2.4-1.8 3.1M12.7 8.7c.5.4.8.9.8 1.5s-.3 1.1-.8 1.5"/>
                     </svg>
-                    <span class="item-dot" :class="group.whitelist ? 'green' : 'gray'"></span>
-                    <span class="item-dot" :class="group.blacklisted ? 'red' : 'gray'"></span>
+                    <svg :class="['group-status-mark', 'group-status-mark--card', 'status-whitelist', { 'is-enabled': group.whitelist }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.whitelist ? '白名单' : '未加入白名单' }}</title>
+                      <path class="status-surface" d="M12 3.2 19 6v5.1c0 4.3-2.5 7.5-7 9.7-4.5-2.2-7-5.4-7-9.7V6l7-2.8Z"/>
+                      <path class="status-line" d="m8.4 11.8 2.2 2.2 5-5"/>
+                    </svg>
+                    <svg :class="['group-status-mark', 'group-status-mark--card', 'status-blacklist', { 'is-enabled': group.blacklisted }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ group.blacklisted ? '黑名单' : '未加入黑名单' }}</title>
+                      <path class="status-surface" d="m8 3.5-4.5 4.5v8L8 20.5h8l4.5-4.5V8L16 3.5H8Z"/>
+                      <path class="status-line" d="M8 12h8"/>
+                    </svg>
                   </span>
                 </button>
                 <div v-if="groups.length === 0" class="empty-state">暂无群聊数据</div>
@@ -243,13 +259,17 @@
               <button class="primary-button" :disabled="!newPermNode.trim()">添加</button>
             </form>
             <h4 style="margin:10px 0 4px">状态</h4>
-            <label class="checkbox-label" style="margin-bottom:6px">
+            <label class="checkbox-label">
               <input type="checkbox" v-model="pendingIsBlocked" />
               拉黑（禁止使用指令）
             </label>
             <label class="checkbox-label">
               <input type="checkbox" v-model="pendingIsIgnored" />
               屏蔽（静默忽略所有交互）
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="pendingC2CPush" />
+              主动消息
             </label>
             <div class="perm-modal-actions">
               <button class="ghost-button" @click="showPermModal = false">关闭</button>
@@ -347,6 +367,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { useRouter, useRoute } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
+import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -394,6 +415,7 @@ const pendingPermRole = ref('')
 const pendingPermNodes = ref([])
 const pendingIsBlocked = ref(false)
 const pendingIsIgnored = ref(false)
+const pendingC2CPush = ref(true)
 const newPermNode = ref('')
 const roles = ['USER', 'ADMIN', 'OWNER']
 function roleLabel(r) {
@@ -515,7 +537,7 @@ function persistGroupFilter() {
 function returnToGroupFilter() {
   selectedGroupId.value = ''
   closeDropdown()
-  showInspector.value = true
+  showInspector.value = !window.matchMedia('(max-width: 640px)').matches
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
@@ -736,7 +758,8 @@ async function openPermModal(message) {
     pendingPermNodes.value = [...(data?.permissions || [])]
     pendingIsBlocked.value = data?.isBlocked || false
     pendingIsIgnored.value = data?.isIgnored || false
-  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = []; pendingIsBlocked.value = false; pendingIsIgnored.value = false }
+    pendingC2CPush.value = data?.c2cPush !== false
+  } catch { pendingPermRole.value = 'USER'; pendingPermNodes.value = []; pendingIsBlocked.value = false; pendingIsIgnored.value = false; pendingC2CPush.value = true }
   newPermNode.value = ''
   showPermModal.value = true
 }
@@ -747,6 +770,7 @@ async function confirmPermRole() {
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/role?role=${pendingPermRole.value}`, { method: 'POST' })
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/blocked?value=${pendingIsBlocked.value}`, { method: 'POST' })
     await api(`/c2c/${encodeURIComponent(permTarget.value)}/ignored?value=${pendingIsIgnored.value}`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(permTarget.value)}/push?value=${pendingC2CPush.value}`, { method: 'POST' })
   } catch (e) { notice.value = e.message }
 }
 
@@ -1113,85 +1137,6 @@ function normalizeAttachment(att) {
     }
   }
   return null
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function renderMd(text) {
-  if (!text) return ''
-  let html = text
-
-  // 代码块 ``` ... ``` (在 HTML 转义之前处理)
-  const codeBlocks = []
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    codeBlocks.push({ lang, code: code.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') })
-    return `CODE${codeBlocks.length - 1}`
-  })
-
-  // 转义 HTML
-  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  // 图片 ![alt #Wpx #Hpx](url)
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-    const m = alt.match(/#(\d+)px\s*#(\d+)px/)
-    let style = ''
-    let cleanAlt = alt
-    if (m) {
-      style = `max-width:100%;max-height:320px;width:${m[1]}px;height:auto`
-      cleanAlt = alt.replace(m[0], '').trim()
-    }
-    return `<img src="${url}" alt="${cleanAlt}" style="${style}">`
-  })
-
-  // 链接 [text](url) 和 <url>
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-  html = html.replace(/<(https?:\/\/[^>]+)>/g, '<a href="$1" target="_blank">$1</a>')
-
-  // 水平分割线
-  html = html.replace(/^(\*{3,}|-{3,})$/gm, '<hr>')
-
-  // 块引用
-  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
-  html = html.replace(/<\/blockquote>\n?<blockquote>/g, '\n')
-
-  // 标题
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>')
-
-  // 有序列表 (行首 "1. " 或 "2. " 等)
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-  // 无序列表 (行首 "- " 或 "* ")
-  html = html.replace(/^[\-*] (.+)$/gm, '<li>$1</li>')
-  // 包裹连续的 <li>
-  html = html.replace(/(<li>.+<\/li>(\n|$))+/g, '<ul>$&</ul>')
-
-  // 行内样式
-  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>')
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/__([^_]+)__/g, '<strong><u>$1</u></strong>')
-  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-  html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>')
-  html = html.replace(/`(.+?)`/g, '<code>$1</code>')
-
-  // 换行：连续 \n 合并为一个段落间距
-  html = html.replace(/\n{2,}/g, '\n')
-  html = html.replace(/\n/g, '<br>')
-
-  // 还原代码块
-  html = html.replace(/CODE(\d+)/g, (_, i) => {
-    const b = codeBlocks[+i]
-    return `<pre><code>${b.code}</code></pre>`
-  })
-
-  return html
 }
 
 function avatarUrl(message) {

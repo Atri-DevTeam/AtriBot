@@ -11,7 +11,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialInteractionEvent;
+import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.webui.impl.WebUISessionManager;
@@ -49,7 +49,7 @@ public class WebUICommand implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void onCallback(OfficialInteractionEvent event) {
+    public void onCallback(OfficialButtonInteractionEvent event) {
         if (!"webui_session".equals(event.getButtonValue())) return;
 
         AnswerCode code = AnswerCode.SUCCESS;

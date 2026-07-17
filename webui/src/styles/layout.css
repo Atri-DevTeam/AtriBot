@@ -538,6 +538,18 @@
   flex-direction: row-reverse;
 }
 
+.system-message {
+  align-self: center;
+  max-width: min(80%, 520px);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .message-main {
   display: flex;
   flex-direction: column;
@@ -675,65 +687,100 @@
 
 .md-body {
   color: #111827;
-  line-height: 1.65;
+  font-size: 14px;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.md-body h1, .md-body h2, .md-body h3 {
-  margin: 6px 0 4px;
+.md-body > :first-child { margin-top: 0; }
+.md-body > :last-child { margin-bottom: 0; }
+
+.md-body p {
+  margin: 0 0 6px;
+}
+
+.md-body h1,
+.md-body h2,
+.md-body h3,
+.md-body h4,
+.md-body h5,
+.md-body h6 {
+  margin: 8px 0 4px;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .md-body h1 { font-size: 18px; }
 .md-body h2 { font-size: 16px; }
-.md-body h3 { font-size: 14px; }
+.md-body h3 { font-size: 15px; }
+.md-body h4,
+.md-body h5,
+.md-body h6 { font-size: 14px; }
 
-.md-body ul {
-  margin: 4px 0;
+.md-body ul,
+.md-body ol {
+  margin: 3px 0 6px;
   padding-left: 20px;
 }
 
 .md-body li {
-  margin: 2px 0;
+  margin: 1px 0;
+  padding-left: 1px;
 }
 
 .md-body blockquote {
-  margin: 6px 0;
-  padding: 4px 10px;
-  border-left: 3px solid #d1d5db;
-  color: #6b7280;
+  margin: 4px 0 6px;
+  padding: 5px 9px;
+  border-left: 3px solid #cbd5e1;
+  border-radius: 0 4px 4px 0;
+  color: #64748b;
+  background: rgba(241, 245, 249, 0.78);
 }
 
 .md-body hr {
   border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 4px 0;
+  border-top: 1px solid #dbe3ea;
+  margin: 7px 0;
 }
 
 .md-body code {
   padding: 1px 4px;
-  border-radius: 3px;
-  background: #e5e7eb;
-  font-size: 13px;
+  border: 1px solid #dbe3ea;
+  border-radius: 4px;
+  color: #334155;
+  background: #f1f5f9;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9em;
 }
 
 .md-body pre {
-  margin: 6px 0;
-  padding: 8px 10px;
+  margin: 5px 0 7px;
+  padding: 9px 10px;
+  border: 1px solid #dbe3ea;
   border-radius: 6px;
-  background: #f3f4f6;
+  background: #f8fafc;
   overflow-x: auto;
+  white-space: pre;
 }
 
 .md-body pre code {
   padding: 0;
+  border: none;
   background: none;
   font-size: 12px;
 }
 
 .md-body a {
   color: #0f766e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.md-body img {
+  display: block;
+  height: auto;
+  margin: 4px 0;
 }
 
 .media-placeholder {
@@ -1182,6 +1229,12 @@
   background: #f3f4f6;
 }
 
+.func-box .checkbox-label + .checkbox-label,
+.perm-modal .checkbox-label + .checkbox-label,
+.modal-body .checkbox-label + .checkbox-label {
+  margin-top: 6px;
+}
+
 .dot {
   width: 8px;
   height: 8px;
@@ -1214,7 +1267,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 5px;
   padding: 10px 14px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1235,7 +1288,103 @@
   white-space: nowrap;
 }
 
-.group-list-badges { display: flex; gap: 4px; flex-shrink: 0; }
+.group-list-badges { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+.group-status-mark {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  display: block;
+}
+
+.group-status-mark--card {
+  width: 17px;
+  height: 17px;
+  flex-basis: 17px;
+}
+
+.group-status-mark .status-surface {
+  fill: #f8fafc;
+  stroke: #94a3b8;
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+}
+
+.group-status-mark .status-line {
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.group-status-mark.status-active.is-enabled .status-surface {
+  fill: #d1fae5;
+  stroke: #10b981;
+}
+
+.group-status-mark.status-active.is-enabled .status-line {
+  stroke: #047857;
+}
+
+.group-status-mark.status-whitelist.is-enabled .status-surface {
+  fill: #0ea5e9;
+  stroke: #0284c7;
+}
+
+.group-status-mark.status-whitelist.is-enabled .status-line,
+.group-status-mark.status-blacklist.is-enabled .status-line {
+  stroke: #ffffff;
+}
+
+.group-status-mark.status-blacklist.is-enabled .status-surface {
+  fill: #ef4444;
+  stroke: #dc2626;
+}
+
+.c2c-push-mark {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: #0f766e;
+  display: block;
+}
+
+.c2c-push-mark--card {
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+}
+
+.c2c-push-mark .push-bubble {
+  fill: #d1fae5;
+  stroke: #10b981;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.c2c-push-mark .push-wave {
+  fill: none;
+  stroke: #047857;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.c2c-push-mark .push-slash {
+  fill: none;
+  stroke: #6b7280;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.c2c-push-mark.is-off .push-bubble {
+  fill: #f3f4f6;
+  stroke: #9ca3af;
+}
+
+.c2c-push-mark.is-off .push-wave {
+  stroke: #9ca3af;
+}
 
 .real-group-input {
   width: 100%;

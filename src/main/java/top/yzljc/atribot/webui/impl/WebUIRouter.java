@@ -33,6 +33,8 @@ public class WebUIRouter {
         server.before("/official-webui/api/*", WebUIRouter::auth);
         server.before("/webui/api/*", WebUIRouter::auth);
 
+        registerPublicOfficialRoutes(server, "/webui/api/public/official");
+
         // API routes — both paths
         server.get("/official-webui/api/auth/challenge", WebUIController::createChallenge);
         server.post("/official-webui/api/auth/verify", WebUIController::login);
@@ -83,6 +85,7 @@ public class WebUIRouter {
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", WebUIController::toggleC2CUserPermission);
         server.post("/webui/api/c2c/{userOpenId}/blocked", WebUIController::setC2CUserBlocked);
         server.post("/webui/api/c2c/{userOpenId}/ignored", WebUIController::setC2CUserIgnored);
+        server.post("/webui/api/c2c/{userOpenId}/push", WebUIController::setC2CUserPush);
         server.get("/webui/api/c2c/{userOpenId}/messages", WebUIController::fetchC2CMessages);
         server.post("/webui/api/c2c/send", WebUIController::sendC2CMessage);
         server.post("/webui/api/c2c/recall", WebUIController::recallC2CMessage);
@@ -101,6 +104,9 @@ public class WebUIRouter {
     }
 
     private static void activeGuard(io.javalin.http.Context ctx) {
+        if (ctx.path().contains("/api/public/")) {
+            return;
+        }
         if (!WebUISessionManager.isActive()) {
             log.warn("WebUI 未开启，拦截请求: {}", ctx.path());
             ctx.status(503).result("");
@@ -112,6 +118,9 @@ public class WebUIRouter {
         String path = ctx.path();
         String method = ctx.method().toString();
         if (path.endsWith("/api/auth/challenge") || (path.endsWith("/api/auth/verify") && "POST".equalsIgnoreCase(method))) {
+            return;
+        }
+        if (path.contains("/api/public/")) {
             return;
         }
 
@@ -142,5 +151,15 @@ public class WebUIRouter {
             ctx.contentType("text/html; charset=utf-8");
             ctx.result(in);
         }
+    }
+
+    private static void registerPublicOfficialRoutes(Javalin server, String prefix) {
+        server.get(prefix + "/group/messages/received", WebUIController::publicOfficialGroupReceivedMessages);
+        server.get(prefix + "/group/messages/sent", WebUIController::publicOfficialGroupSentMessages);
+        server.get(prefix + "/c2c/messages/received", WebUIController::publicOfficialC2CReceivedMessages);
+        server.get(prefix + "/c2c/messages/sent", WebUIController::publicOfficialC2CSentMessages);
+        server.get(prefix + "/dau", WebUIController::publicOfficialDau);
+        server.get(prefix + "/users/{userOpenId}", WebUIController::publicOfficialUserInfo);
+        server.get(prefix + "/groups/{groupOpenId}", WebUIController::publicOfficialGroupInfo);
     }
 }

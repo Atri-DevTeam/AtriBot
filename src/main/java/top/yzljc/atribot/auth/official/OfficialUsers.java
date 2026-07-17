@@ -29,7 +29,7 @@ public class OfficialUsers {
             PermissionRole role = PermissionRole.fromString(row.role());
             Set<String> permissions = parsePermissions(row.permissions());
             cache.put(row.userOpenId(), new UserData(row.userOpenId(), role, permissions,
-                    row.isBlocked(), row.isIgnored()));
+                    row.isBlocked(), row.isIgnored(), row.c2cPush()));
         }
         log.info("OfficialUsers 缓存加载完成，共 {} 条", cache.size());
     }
@@ -38,7 +38,7 @@ public class OfficialUsers {
      * 获取权限数据（缓存中没有则返回默认值，不写库）
      */
     public static UserData getData(String userOpenId) {
-        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, false));
+        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, false, true));
     }
 
     /**
@@ -87,9 +87,9 @@ public class OfficialUsers {
         if (C2CRepository.setBlocked(userOpenId, blocked)) {
             UserData existing = cache.get(userOpenId);
             if (existing != null) {
-                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), blocked, existing.isIgnored()));
+                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), blocked, existing.isIgnored(), existing.c2cPush()));
             } else {
-                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), blocked, false));
+                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), blocked, false, true));
             }
         }
     }
@@ -101,9 +101,31 @@ public class OfficialUsers {
         if (C2CRepository.setIgnored(userOpenId, ignored)) {
             UserData existing = cache.get(userOpenId);
             if (existing != null) {
-                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), existing.isBlocked(), ignored));
+                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), existing.isBlocked(), ignored, existing.c2cPush()));
             } else {
-                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, ignored));
+                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, ignored, true));
+            }
+        }
+    }
+
+    /**
+     * 查询私聊主动消息授权状态，默认开启。
+     */
+    public static boolean isC2CPushEnabled(String userOpenId) {
+        return getData(userOpenId).c2cPush();
+    }
+
+    /**
+     * 设置私聊主动消息授权状态。如果用户不在缓存中则自动补全并写入数据库。
+     */
+    public static void setC2CPush(String userOpenId, boolean c2cPush) {
+        if (C2CRepository.setC2CPush(userOpenId, c2cPush)) {
+            UserData existing = cache.get(userOpenId);
+            if (existing != null) {
+                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(),
+                        existing.isBlocked(), existing.isIgnored(), c2cPush));
+            } else {
+                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, false, c2cPush));
             }
         }
     }
@@ -144,9 +166,10 @@ public class OfficialUsers {
         UserData existing = cache.get(userOpenId);
         boolean blocked = existing != null && existing.isBlocked();
         boolean ignored = existing != null && existing.isIgnored();
+        boolean c2cPush = existing == null || existing.c2cPush();
 
-        if (C2CRepository.upsertFull(userOpenId, role.name(), permissionsString, blocked, ignored)) {
-            cache.put(userOpenId, new UserData(userOpenId, role, permissions, blocked, ignored));
+        if (C2CRepository.upsertFull(userOpenId, role.name(), permissionsString, blocked, ignored, c2cPush)) {
+            cache.put(userOpenId, new UserData(userOpenId, role, permissions, blocked, ignored, c2cPush));
             return true;
         }
         return false;
@@ -178,6 +201,7 @@ public class OfficialUsers {
      * 删除整个用户数据
      */
     public static boolean removeUser(String userOpenId) {
+        if (isBlocked(userOpenId) || isIgnored(userOpenId)) return false; // 不允许删除被封禁或忽略的用户
         if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
             return true;
@@ -196,6 +220,6 @@ public class OfficialUsers {
     }
 
     public record UserData(String userOpenId, PermissionRole role, Set<String> permissions,
-                           boolean isBlocked, boolean isIgnored) {
+                           boolean isBlocked, boolean isIgnored, boolean c2cPush) {
     }
 }

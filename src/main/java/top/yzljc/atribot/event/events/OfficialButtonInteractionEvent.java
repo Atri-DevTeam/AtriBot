@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Cancellable;
-import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.event.impl.AnswerCode;
+import top.yzljc.atribot.event.impl.UnknownButtonInteractionScene;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.util.Map;
@@ -24,28 +24,19 @@ import java.util.Map;
  * @Package top.yzljc.atribot.event.impl
  */
 @Getter
-public class OfficialInteractionEvent extends Event implements Cancellable {
-    private final String eventId;
+public class OfficialButtonInteractionEvent extends OfficialInteractionEvents implements Cancellable {
     private final int chatType;
     private final Data data;
     private final String groupOpenId;
     private final String unionOpenId;
-    private final String id;
-    private final String scene;
-    private final String timestamp;
-    private final int type;
     private boolean cancelled;
 
-    public OfficialInteractionEvent(String eventId, int chatType, Data data, String groupOpenId, String unionOpenId, String id, String scene, String timestamp, int type) {
-        this.eventId = eventId;
+    public OfficialButtonInteractionEvent(String applicationId, String eventId, int chatType, Data data, String groupOpenId, String unionOpenId, String id, String scene, String timestamp, int type, int version) {
+        super(applicationId, eventId, id, scene, timestamp, type, version);
         this.chatType = chatType;
         this.data = data;
         this.groupOpenId = groupOpenId;
         this.unionOpenId = unionOpenId;
-        this.id = id;
-        this.scene = scene;
-        this.timestamp = timestamp;
-        this.type = type;
     }
 
     @Override
@@ -88,19 +79,61 @@ public class OfficialInteractionEvent extends Event implements Cancellable {
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown) {
+        return replyMessage(markdown, false);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(Markdown markdown, boolean at) {
         if (this.chatType == 1) {
-            return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown);
+            if (at) {
+                return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown);
+            }
+            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown);
+        } else if (this.chatType == 2) {
+            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, markdown);
         } else {
-            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown, Object keyboard) {
+        return replyMessage(markdown, keyboard, false);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(Markdown markdown, Object keyboard, boolean at) {
         if (this.chatType == 1) {
-            return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown, keyboard);
+            if (at) {
+                return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown, keyboard);
+            }
+            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown, keyboard);
+        } else if (this.chatType == 2) {
+            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, markdown, keyboard);
         } else {
-            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(String text) {
+        if (this.chatType == 1) {
+            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, text);
+        } else if (this.chatType == 2) {
+            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, text);
+        } else {
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
+        }
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(ImageType type, String value) {
+        if (this.chatType == 1) {
+            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, type, value);
+        } else if (this.chatType == 2) {
+            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, type, value);
+        } else {
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 
@@ -111,7 +144,7 @@ public class OfficialInteractionEvent extends Event implements Cancellable {
         } else if (this.chatType == 2) {
             return C2CChat.sendMessage(this.unionOpenId, text);
         } else {
-            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 
@@ -122,7 +155,7 @@ public class OfficialInteractionEvent extends Event implements Cancellable {
         } else if (this.chatType == 2) {
             return C2CChat.sendMessage(this.unionOpenId, content);
         } else {
-            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 
@@ -133,7 +166,7 @@ public class OfficialInteractionEvent extends Event implements Cancellable {
         } else if (this.chatType == 2) {
             return C2CChat.sendMessage(this.unionOpenId, content, keyboard);
         } else {
-            throw new UnsupportedOperationException("Unsupported chat type: " + this.chatType);
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 }
