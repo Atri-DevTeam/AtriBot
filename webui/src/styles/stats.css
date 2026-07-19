@@ -1,0 +1,555 @@
+/*
+ * 统计数据 页面样式
+ *
+ * 结构原则：只保留一层卡片（.stats-section）。
+ * 卡片内部一律用发丝线（--color-hairline）分区，不再嵌套边框 / 阴影 / 灰底。
+ */
+
+/* ── 页面容器（覆盖 .content 的双栏 grid） ── */
+
+.stats-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding-bottom: var(--space-5);
+  overflow-y: auto;
+}
+
+/* 唯一的一层面板 */
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /*
+   * 父级 .stats-layout 是纵向 flex，子项默认 flex-shrink:1。
+   * 内容高于容器时 section 会被压缩，叠加下面的 overflow:hidden 就会把图表裁掉
+   * （窄屏尤其明显：主图 X 轴和 DAU 图整个被切没）。这里禁止收缩，交给容器滚动。
+   */
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.stats-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.stats-section-title {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+}
+
+.stats-range-hint {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+/* ── 日期范围控制：单行、紧凑 ── */
+
+.stats-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.stats-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stats-field-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  white-space: nowrap;
+}
+
+.stats-input {
+  height: 32px;
+  min-width: 0;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stats-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.stats-input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.stats-input--wide {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 共享按钮在本页的尺寸对齐（.primary-button 默认 align-self: end） */
+.stats-toolbar .primary-button,
+.stats-toolbar .ghost-button,
+.stats-lookup-form .primary-button {
+  align-self: center;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-4);
+}
+
+.stats-toolbar-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--space-1);
+  background: var(--color-hairline);
+}
+
+.stats-presets {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ── 指标网格：6 项，列数只取 6 的因数，永不落单 ── */
+
+.stats-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.stats-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+}
+
+.stats-metric-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+}
+
+.stats-metric-value {
+  color: var(--color-text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-tight);
+}
+
+.stats-metric--hero .stats-metric-value {
+  color: var(--color-accent-text);
+  font-size: var(--text-2xl);
+}
+
+.stats-metric-sub {
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--leading-tight);
+}
+
+/* ── 消息量趋势图（手写内联 SVG，无图表库） ── */
+
+/*
+ * 系列色：刻意不放进 tokens.css —— 这四个色只服务于图表的「身份识别」，
+ * 不是全站语义色。取自经过校验的分类色板前四槽（蓝 / 绿 / 品红 / 黄），
+ * 相邻与全对色觉分离度均达标，且不是四档同色相的青绿深浅。
+ * 品红与黄在白底上对比度不足 3:1，因此图上同时给了线端直标作为兜底。
+ */
+.stats-chart {
+  --series-1: #2a78d6;
+  --series-2: #008300;
+  --series-3: #e87ba4;
+  --series-4: #eda100;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.stats-chart-state {
+  padding: var(--space-2) 0 0;
+}
+
+.stats-plots {
+  position: relative;
+  min-width: 0;
+}
+
+.stats-svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.stats-plot-caption {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+}
+
+.stats-grid-line {
+  stroke: var(--color-hairline);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.stats-axis-label {
+  fill: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-guide {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.stats-line {
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stats-dot {
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+}
+
+/* 线端直标：文字用文本色，身份靠旁边的色点承载 */
+.stats-end-label {
+  fill: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* ── 悬浮提示 ── */
+
+.stats-tooltip {
+  position: absolute;
+  top: var(--space-2);
+  z-index: 2;
+  min-width: 148px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+
+.stats-tooltip-date {
+  margin-bottom: var(--space-1);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.stats-tooltip-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 1px 0;
+}
+
+.stats-tooltip-row--dau {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.stats-tooltip-name {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.stats-tooltip-value {
+  color: var(--color-text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+
+.stats-subhead-title {
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* 图例即开关：点击隐藏 / 显示对应系列 */
+.stats-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.stats-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2) 2px var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.stats-legend-item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.stats-legend-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.stats-legend-item.is-off {
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+
+.stats-swatch {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-border-strong);
+}
+
+.stats-footnote {
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+}
+
+/* ── 查询区：两块并排，高度随内容 ── */
+
+.stats-lookup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.stats-lookup {
+  align-self: start;
+}
+
+.stats-lookup-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.stats-detail:not(:empty) {
+  border-top: 1px solid var(--color-hairline);
+}
+
+/* 空 / 加载 / 错误：单行提示，不再撑出大片空白 */
+.empty-state.stats-state {
+  display: block;
+  min-height: 0;
+  padding: 0 var(--space-4) var(--space-3);
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.empty-state.error.stats-state {
+  color: var(--color-danger);
+}
+
+/* ── 明细列表 ── */
+
+.stats-detail {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.stats-detail-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.stats-detail-row:last-child {
+  border-bottom: none;
+}
+
+.stats-detail-row dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+}
+
+.stats-detail-row dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  word-break: break-all;
+}
+
+.stats-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.stats-flag,
+.stats-perm {
+  min-height: 20px;
+  padding: 1px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+}
+
+.stats-flag.is-on {
+  background: var(--color-success-soft);
+  border-color: transparent;
+  color: var(--color-success-strong);
+}
+
+.stats-flag.is-off {
+  background: var(--color-surface-sunken);
+  border-color: transparent;
+  color: var(--color-text-subtle);
+}
+
+.stats-perm {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+}
+
+/* ── 断点：列数始终是 6 的因数（6 / 3 / 2） ── */
+
+@media (min-width: 1240px) {
+  .stats-metrics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .stats-lookup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .stats-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-section-head,
+  .stats-toolbar,
+  .stats-lookup-form {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .stats-metric,
+  .stats-chart,
+  .stats-detail-row {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .stats-field {
+    flex: 1 1 auto;
+  }
+
+  .stats-input {
+    flex: 1;
+  }
+
+  .stats-metric--hero .stats-metric-value {
+    font-size: var(--text-xl);
+  }
+
+  .stats-subhead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .stats-detail-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}

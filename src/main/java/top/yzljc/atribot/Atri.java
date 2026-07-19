@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
@@ -269,6 +270,7 @@ public class Atri {
         TufeElecRepository.init();
         SignRepository.init();
         FeedbackRepository.init();
+        ErrorReportRepository.init();
 
         RunScheduleTask.runAllTasks();
         this.taskScheduler = new TaskScheduler();

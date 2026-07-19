@@ -34,6 +34,8 @@ public class WebUIRouter {
         server.before("/webui/api/*", WebUIRouter::auth);
 
         registerPublicOfficialRoutes(server, "/webui/api/public/official");
+        // 开发环境走 /official-webui/api 前缀，公开查询接口同样需要挂一份，否则 dev 下 404
+        registerPublicOfficialRoutes(server, "/official-webui/api/public/official");
 
         // API routes — both paths
         server.get("/official-webui/api/auth/challenge", WebUIController::createChallenge);
@@ -54,6 +56,9 @@ public class WebUIRouter {
         server.post("/official-webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
         server.post("/official-webui/api/napcat/recall", WebUIController::recallNapcatMessages);
         server.post("/official-webui/api/debug/official/request", WebUIController::debugOfficialApi);
+        server.get("/official-webui/api/errors/list", WebUIController::listErrorReports);
+        server.get("/official-webui/api/errors/stats", WebUIController::errorReportStats);
+        server.get("/official-webui/api/errors/{traceId}", WebUIController::getErrorReport);
 
         server.get("/webui/api/auth/challenge", WebUIController::createChallenge);
         server.post("/webui/api/auth/verify", WebUIController::login);
@@ -101,6 +106,11 @@ public class WebUIRouter {
 
         // 用户列表
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
+
+        // 错误报告（非公开，走 /webui/api/* 的会话鉴权）
+        server.get("/webui/api/errors/list", WebUIController::listErrorReports);
+        server.get("/webui/api/errors/stats", WebUIController::errorReportStats);
+        server.get("/webui/api/errors/{traceId}", WebUIController::getErrorReport);
 
         server.error(404, WebUIRouter::spaFallback);
     }
@@ -161,6 +171,7 @@ public class WebUIRouter {
         server.get(prefix + "/c2c/messages/received", WebUIController::publicOfficialC2CReceivedMessages);
         server.get(prefix + "/c2c/messages/sent", WebUIController::publicOfficialC2CSentMessages);
         server.get(prefix + "/dau", WebUIController::publicOfficialDau);
+        server.get(prefix + "/series", WebUIController::publicOfficialSeries);
         server.get(prefix + "/users/{userOpenId}", WebUIController::publicOfficialUserInfo);
         server.get(prefix + "/groups/{groupOpenId}", WebUIController::publicOfficialGroupInfo);
     }

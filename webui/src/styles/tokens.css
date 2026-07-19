@@ -1,0 +1,113 @@
+/*
+ * 设计 token —— 全站唯一的颜色 / 字阶 / 圆角 / 间距 / 阴影来源
+ *
+ * 设计取向：克制的控制台风格。
+ *   - 层级靠留白与发丝线区分，不靠层层描边和阴影堆叠；
+ *   - 圆角一律小，只有头像圆形、徽章胶囊；
+ *   - 颜色以中性灰为主，主色只用在真正需要引导的地方，状态色只做点缀。
+ */
+
+:root {
+    /* ── 表面 ── */
+    --color-bg: #f5f6f8;
+    --color-surface: #ffffff;
+    --color-surface-alt: #fafbfc;
+    --color-surface-sunken: #f0f2f5;
+    --color-surface-hover: #f7f8fa;
+
+    /* ── 描边：只保留两级，发丝线用于内部分隔 ── */
+    --color-hairline: #ebedf0;
+    --color-border: #dfe2e7;
+    --color-border-strong: #cbd0d8;
+    --color-border-input: #d5d9e0;
+
+    /* ── 文字：四级，拉开对比 ── */
+    --color-text: #1a1d23;
+    --color-text-secondary: #4a5160;
+    --color-text-muted: #767f8f;
+    --color-text-subtle: #9aa3b2;
+    --color-text-strong: #0d0f13;
+
+    /* ── 主色（青绿，沿用原有品牌色但收敛使用范围） ── */
+    --color-accent: #0f766e;
+    --color-accent-hover: #0c5f58;
+    --color-accent-active: #094943;
+    --color-accent-soft: #eaf5f3;
+    --color-accent-border: #b3d9d4;
+    --color-accent-text: #0b5f58;
+
+    /* ── 侧边栏 ── */
+    --color-sidebar-bg: #14181f;
+    --color-sidebar-bg-alt: #1b2029;
+    --color-sidebar-text: #a8b0bd;
+    --color-sidebar-text-muted: #6d7683;
+    --color-sidebar-active-bg: rgba(255, 255, 255, 0.07);
+    --color-sidebar-active-text: #ffffff;
+    --color-sidebar-hover-bg: rgba(255, 255, 255, 0.04);
+    --color-sidebar-border: rgba(255, 255, 255, 0.07);
+    --color-sidebar-accent: #4ecdc4;
+
+    /* 登录页专用的亮青色，深色背景上需要更高明度才压得住 */
+    --color-accent-bright: #8bd3dd;
+    --color-accent-bright-hover: #a5e2ea;
+
+    /* ── 状态色 ── */
+    --color-success: #12805c;
+    --color-success-soft: #e6f5ef;
+    --color-success-strong: #0b5c42;
+    --color-danger: #c1362f;
+    --color-danger-soft: #fceceb;
+    --color-danger-strong: #96241e;
+    --color-warning: #a76100;
+    --color-warning-soft: #fdf3e3;
+    --color-warning-strong: #7d4900;
+    --color-info: #1f5fa8;
+    --color-info-soft: #eaf1fa;
+
+    /* ── 圆角：刻意克制 ── */
+    --radius-sm: 3px;
+    --radius-md: 5px;
+    --radius-lg: 7px;
+    --radius-pill: 999px;
+    --radius-circle: 50%;
+
+    /* ── 间距 ── */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 28px;
+    --space-7: 40px;
+
+    /* ── 字阶：原先全站挤在 13–14px，这里拉开 ── */
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-base: 13px;
+    --text-md: 14px;
+    --text-lg: 16px;
+    --text-xl: 19px;
+    --text-2xl: 26px;
+
+    --leading-tight: 1.25;
+    --leading-normal: 1.55;
+
+    /* 小号标签统一加字距，弥补中文小字发糊 */
+    --tracking-label: 0.04em;
+
+    /* ── 阴影：只在浮层用，平面不用 ── */
+    --shadow-sm: 0 1px 2px rgba(16, 20, 28, 0.05);
+    --shadow-md: 0 4px 12px rgba(16, 20, 28, 0.09);
+    --shadow-lg: 0 12px 32px rgba(16, 20, 28, 0.16);
+
+    /* ── 结构尺寸 ── */
+    --sidebar-width: 216px;
+    --topbar-height: 52px;
+    --row-height: 44px;
+
+    /* ── 字体 ── */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.16);
+}

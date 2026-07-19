@@ -14,7 +14,7 @@
   gap: 8px;
   padding: 12px 18px;
   background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .userlist-search-input {
@@ -22,28 +22,28 @@
   min-width: 0;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
   font-size: 14px;
   color: #1e293b;
   outline: none;
-  background: #f8fafc;
+  background: var(--color-surface-alt);
   transition: border-color 0.15s;
 }
 
 .userlist-search-input:focus {
-  border-color: #0f766e;
+  border-color: var(--color-accent);
   background: #fff;
 }
 
 .userlist-search-input::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .userlist-content {
   overflow-y: auto;
   padding: 18px;
-  background: #f8fafc;
+  background: var(--color-surface-alt);
 }
 
 /* card list */
@@ -55,8 +55,8 @@
 
 .userlist-card {
   background: #fff;
-  border: 1px solid #d9dee7;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
   align-items: flex-start;
@@ -66,10 +66,10 @@
 .userlist-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   flex-shrink: 0;
   object-fit: cover;
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 .userlist-info {
@@ -95,14 +95,14 @@
 
 .userlist-role {
   padding: 1px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 600;
 }
 
 .userlist-role.role-owner {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
 }
 
 .userlist-role.role-admin {
@@ -111,35 +111,35 @@
 }
 
 .userlist-role.role-member {
-  background: #e2e8f0;
+  background: var(--color-border);
   color: #475569;
 }
 
 .userlist-perm {
   padding: 1px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 600;
 }
 
 .userlist-perm.perm-owner {
-  background: #fef3c7;
+  background: var(--color-warning-soft);
   color: #92400e;
 }
 
 .userlist-perm.perm-admin {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 
 .userlist-perm.perm-blacklist {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
 }
 
 .userlist-perm.perm-user {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
 }
 
 .userlist-row2 {
@@ -148,7 +148,7 @@
   gap: 16px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   font-family: monospace;
 }
 
@@ -178,22 +178,22 @@
 .userlist-action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
   background: #fff;
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--color-text-muted);
   transition: background 0.15s, border-color 0.15s;
 }
 
 .userlist-action-btn:hover {
-  background: #f1f5f9;
-  border-color: #0f766e;
-  color: #0f766e;
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .userlist-msg {
@@ -215,29 +215,29 @@
   gap: 4px;
   margin-left: 16px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .pager-arrow {
   width: 24px;
   height: 24px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
   background: #fff;
   font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--color-text-muted);
   padding: 0;
   line-height: 1;
 }
 
 .pager-arrow:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #0f766e;
-  color: #0f766e;
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .pager-arrow:disabled {
