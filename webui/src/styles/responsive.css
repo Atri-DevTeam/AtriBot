@@ -42,8 +42,8 @@
   height: 34px;
   padding: 0;
   border: 1px solid #d8e1ea;
-  border-radius: 50%;
-  color: #64748b;
+  border-radius: var(--radius-circle);
+  color: var(--color-text-muted);
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   cursor: pointer;
@@ -52,9 +52,9 @@
 
 .info-toggle:hover,
 .info-toggle.active {
-  color: #0f766e;
-  background: #e7f7f3;
-  border-color: #8bd3dd;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border-color: var(--color-sidebar-active-text);
   box-shadow: 0 4px 12px rgba(15, 118, 110, 0.14);
 }
 
@@ -64,8 +64,8 @@
 
 .info-toggle.active {
   color: #ffffff;
-  background: #0f766e;
-  border-color: #0f766e;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .info-toggle svg { display: block; }
@@ -105,7 +105,7 @@
   .chat-panel {
     border: none;
     border-radius: 0;
-    background: #eef1f5;
+    background: var(--color-bg);
   }
 
   .topbar {
@@ -117,7 +117,7 @@
     margin-left: -8px;
     margin-bottom: 0;
     background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .topbar {
@@ -165,13 +165,13 @@
   .inspector {
     border: none;
     border-radius: 0;
-    background: #eef1f5;
+    background: var(--color-bg);
   }
 
   .message-list {
     padding: 8px max(10px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left));
     gap: 8px;
-    background: #eef1f5;
+    background: var(--color-bg);
   }
 
   .msg-uid { display: none; }
@@ -204,7 +204,7 @@
     max-width: 100%;
     padding: 8px 12px;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
@@ -229,7 +229,7 @@
   .chat-panel {
     border: none !important;
     border-radius: 0 !important;
-    background: #eef1f5;
+    background: var(--color-bg);
   }
 
   .chat-head {
@@ -287,6 +287,12 @@
     max-width: 90vw;
   }
 
+  /* 窄屏放不下整条 ID，恢复换行（PC 端才是 nowrap） */
+  .item-id {
+    white-space: normal;
+    word-break: break-all;
+  }
+
   .chat-head-right .status-pill { font-size: 11px; }
 
   .chat-head-right .info-toggle { padding: 2px; }
@@ -318,8 +324,8 @@
 
   .paste-preview { max-width: 120px; max-height: 80px; }
 
-  .ctx-menu { min-width: 100px; border-radius: 10px; }
-  .ctx-menu button { padding: 8px 14px; font-size: 13px; border: none; border-radius: 8px; }
+  .ctx-menu { min-width: 100px; border-radius: var(--radius-md); }
+  .ctx-menu button { padding: 8px 14px; font-size: 13px; border: none; border-radius: var(--radius-md); }
 
   .dropdown-menu {
     max-height: 260px;

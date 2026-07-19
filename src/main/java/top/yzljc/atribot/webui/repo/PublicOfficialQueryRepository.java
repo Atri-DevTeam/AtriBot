@@ -8,6 +8,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Slf4j
 public class PublicOfficialQueryRepository {
@@ -272,6 +276,85 @@ public class PublicOfficialQueryRepository {
         });
     }
 
+    /**
+     * 按天聚合消息量与 DAU，供统计页画折线图
+     *
+     * @param start 起始时间，闭区间
+     * @param end   结束时间，开区间
+     * @return 按日期升序排列的数据点，仅包含有记录的日期
+     */
+    public static List<DailyPoint> queryDailySeries(LocalDateTime start, LocalDateTime end) {
+        Map<String, long[]> buckets = new TreeMap<>();
+
+        // 四个消息量指标：用 UNION ALL 把两张表拼起来后按日期聚合，避免四次往返
+        String messageSql = "SELECT d, SUM(g_recv) AS g_recv, SUM(g_sent) AS g_sent, " +
+                "SUM(c_recv) AS c_recv, SUM(c_sent) AS c_sent FROM (" +
+                "  SELECT DATE(created_at) AS d," +
+                "    CASE WHEN event_type <> ? THEN 1 ELSE 0 END AS g_recv," +
+                "    CASE WHEN event_type = ? THEN 1 ELSE 0 END AS g_sent," +
+                "    0 AS c_recv, 0 AS c_sent" +
+                "  FROM `" + GROUP_TABLE + "` WHERE created_at >= ? AND created_at < ?" +
+                "  UNION ALL" +
+                "  SELECT DATE(created_at) AS d, 0, 0," +
+                "    CASE WHEN source <> ? THEN 1 ELSE 0 END," +
+                "    CASE WHEN source = ? THEN 1 ELSE 0 END" +
+                "  FROM `" + C2C_TABLE + "` WHERE created_at >= ? AND created_at < ?" +
+                ") t GROUP BY d ORDER BY d";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(messageSql)) {
+            ps.setString(1, BOT_SEND);
+            ps.setString(2, BOT_SEND);
+            ps.setTimestamp(3, Timestamp.valueOf(start));
+            ps.setTimestamp(4, Timestamp.valueOf(end));
+            ps.setString(5, BOT_SEND);
+            ps.setString(6, BOT_SEND);
+            ps.setTimestamp(7, Timestamp.valueOf(start));
+            ps.setTimestamp(8, Timestamp.valueOf(end));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    buckets.computeIfAbsent(rs.getString("d"), k -> new long[5])[0] = rs.getLong("g_recv");
+                    long[] row = buckets.get(rs.getString("d"));
+                    row[1] = rs.getLong("g_sent");
+                    row[2] = rs.getLong("c_recv");
+                    row[3] = rs.getLong("c_sent");
+                }
+            }
+        } catch (SQLException e) {
+            log.error("按日聚合消息量失败: {}", e.getMessage(), e);
+        }
+
+        // DAU 需要跨两张表去重，不能和上面的求和混在一次聚合里
+        String dauSql = "SELECT active_date, COUNT(DISTINCT user_id) AS dau FROM (" +
+                "  SELECT DATE(created_at) AS active_date, union_openId AS user_id" +
+                "  FROM `" + GROUP_TABLE + "` WHERE event_type <> ? AND created_at >= ? AND created_at < ?" +
+                "  UNION ALL" +
+                "  SELECT DATE(created_at) AS active_date, union_openId AS user_id" +
+                "  FROM `" + C2C_TABLE + "` WHERE source <> ? AND created_at >= ? AND created_at < ?" +
+                ") t GROUP BY active_date ORDER BY active_date";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(dauSql)) {
+            ps.setString(1, BOT_SEND);
+            ps.setTimestamp(2, Timestamp.valueOf(start));
+            ps.setTimestamp(3, Timestamp.valueOf(end));
+            ps.setString(4, BOT_SEND);
+            ps.setTimestamp(5, Timestamp.valueOf(start));
+            ps.setTimestamp(6, Timestamp.valueOf(end));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    buckets.computeIfAbsent(rs.getString("active_date"), k -> new long[5])[4] = rs.getLong("dau");
+                }
+            }
+        } catch (SQLException e) {
+            log.error("按日聚合 DAU 失败: {}", e.getMessage(), e);
+        }
+
+        List<DailyPoint> points = new ArrayList<>(buckets.size());
+        buckets.forEach((date, v) -> points.add(new DailyPoint(date, v[0], v[1], v[2], v[3], v[4])));
+        return points;
+    }
+
     private static long queryLong(String sql, StatementBinder binder) {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -319,6 +402,10 @@ public class PublicOfficialQueryRepository {
 
     private interface StatementBinder {
         void bind(PreparedStatement ps) throws SQLException;
+    }
+
+    public record DailyPoint(String date, long groupReceived, long groupSent,
+                             long c2cReceived, long c2cSent, long dau) {
     }
 
     public record DauStats(long groupReceiveUsers, long groupSendGroups, long c2cReceiveUsers,

@@ -1,6 +1,6 @@
 :root {
-  color: #1f2937;
-  background: #eef1f5;
+  color: var(--color-text);
+  background: var(--color-bg);
   font-family: Inter, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -39,7 +39,7 @@ button:disabled {
   gap: 24px;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #17202c 100%);
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, var(--color-sidebar-bg) 100%);
 }
 
 .login-hero {
@@ -58,8 +58,8 @@ button:disabled {
   width: min(400px, 100%);
   padding: 28px 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: #f8fafc;
+  border-radius: var(--radius-lg);
+  color: var(--color-surface-alt);
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
@@ -76,7 +76,7 @@ button:disabled {
 .login-panel label {
   display: grid;
   gap: 8px;
-  color: #cbd5e1;
+  color: var(--color-sidebar-text);
   font-size: 13px;
 }
 
@@ -85,7 +85,7 @@ button:disabled {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: #fff;
   background: rgba(15, 23, 42, 0.5);
   outline: none;
@@ -93,7 +93,7 @@ button:disabled {
 }
 
 .login-panel input:focus {
-  border-color: #8bd3dd;
+  border-color: var(--color-accent-bright);
   box-shadow: 0 0 0 3px rgba(139, 211, 221, 0.15);
 }
 
@@ -106,21 +106,21 @@ button:disabled {
   min-height: 44px;
   padding: 0 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: #0f172a;
-  background: #8bd3dd;
+  background: var(--color-accent-bright);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, opacity 0.2s;
 }
 
-.login-btn:hover { background: #a0e0e8; }
+.login-btn:hover { background: var(--color-accent-bright-hover); }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .login-notice {
   margin: 0;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   font-size: 13px;
   text-align: center;
   min-height: 1.2em;

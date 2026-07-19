@@ -43,6 +43,18 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/stats',
+      name: 'stats',
+      component: () => import('./views/StatsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/errors',
+      name: 'errors',
+      component: () => import('./views/ErrorsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/napcat',
       name: 'napcat',
       component: () => import('./views/NapcatView.vue'),

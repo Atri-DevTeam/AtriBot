@@ -23,74 +23,133 @@
 
       <section class="content debug-layout">
         <section class="chat-panel debug-panel">
-          <div class="chat-head">
-            <strong>官方 API 请求</strong>
-            <button class="primary-button debug-send-btn" :disabled="loading || !path.trim()" @click="sendRequest">
-              {{ loading ? '请求中' : '发送' }}
-            </button>
-          </div>
-          <div class="debug-body">
-            <form class="debug-request" @submit.prevent="sendRequest">
-              <label class="debug-preset-line">
-                <span>预设</span>
-                <select v-model="selectedPreset" class="debug-preset" @change="applyPreset">
-                  <option value="">-- 选择接口样例 --</option>
-                  <option v-for="item in debugPresets" :key="item.key" :value="item.key">
-                    {{ item.label }}
-                  </option>
-                </select>
-              </label>
-              <div class="debug-url-line">
-                <select v-model="method" class="debug-method">
+          <form class="debug-request" @submit.prevent="sendRequest">
+            <!-- 地址栏：方法 + 路径 + 发送，三段拼成一条，方法按动词着色 -->
+            <div class="debug-url-bar">
+              <div class="debug-method-wrap" :class="'method-' + method.toLowerCase()">
+                <select v-model="method" class="debug-method" aria-label="请求方法">
                   <option v-for="item in methods" :key="item" :value="item">{{ item }}</option>
                 </select>
-                <input class="debug-path" v-model="path" spellcheck="false" placeholder="/v2/groups/{group_openid}/messages" />
+                <span class="debug-method-caret" aria-hidden="true">▾</span>
               </div>
-              <div class="debug-editors">
-                <label>
-                  <span class="debug-editor-title">
-                    <span>Headers</span>
-                    <button type="button" class="debug-format-btn" @click="openEditor('headers')">放大</button>
-                  </span>
-                  <textarea v-model="headers" spellcheck="false" placeholder="X-Union-Appid: ..."></textarea>
-                </label>
-                <label>
-                  <span class="debug-editor-title">
-                    <span>Body</span>
-                    <span class="debug-editor-actions">
-                      <button type="button" class="debug-format-btn" @click="formatBodyJson">格式化</button>
-                      <button type="button" class="debug-format-btn" @click="openEditor('body')">放大</button>
-                    </span>
-                  </span>
-                  <textarea v-model="body" spellcheck="false" placeholder="{&#10;  &quot;content&quot;: &quot;hello&quot;&#10;}"></textarea>
-                </label>
+              <input class="debug-path" v-model="path" spellcheck="false"
+                     placeholder="/v2/groups/{group_openid}/messages" />
+              <button class="debug-send-btn" type="submit" :disabled="loading || !path.trim()">
+                {{ loading ? '请求中' : '发送' }}
+              </button>
+            </div>
+
+            <div class="debug-preset-line">
+              <span class="debug-preset-label">预设</span>
+              <select v-model="selectedPreset" class="debug-preset" @change="applyPreset">
+                <option value="">-- 选择接口样例 --</option>
+                <option v-for="item in debugPresets" :key="item.key" :value="item.key">
+                  {{ item.label }}
+                </option>
+              </select>
+              <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
+            </div>
+
+            <!-- 请求页签：Params / Headers / Body，右上角保留原有的格式化与放大 -->
+            <div class="debug-tabs" role="tablist">
+              <button v-for="tab in requestTabs" :key="tab.key" type="button" role="tab"
+                      class="debug-tab" :class="{ active: requestTab === tab.key }"
+                      :aria-selected="requestTab === tab.key"
+                      @click="requestTab = tab.key">
+                {{ tab.label }}
+                <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
+                <span v-else-if="tab.dot" class="debug-tab-dot" aria-hidden="true"></span>
+              </button>
+              <div class="debug-tab-actions">
+                <template v-if="requestTab === 'params'">
+                  <button type="button" class="debug-ghost-btn" @click="addParamRow">添加参数</button>
+                </template>
+                <template v-else-if="requestTab === 'headers'">
+                  <button type="button" class="debug-ghost-btn" @click="openEditor('headers')">放大</button>
+                </template>
+                <template v-else>
+                  <button type="button" class="debug-ghost-btn" @click="formatBodyJson">格式化</button>
+                  <button type="button" class="debug-ghost-btn" @click="openEditor('body')">放大</button>
+                </template>
               </div>
-            </form>
-          </div>
+            </div>
+
+            <div class="debug-tab-panel">
+              <!-- Query 参数表：与地址栏里的 ?a=b 双向同步 -->
+              <div v-show="requestTab === 'params'" class="debug-params">
+                <div v-if="queryParams.length === 0" class="debug-params-empty">
+                  未输入查询参数
+                </div>
+                <template v-else>
+                  <div class="debug-param-row debug-param-head">
+                    <span></span><span>参数名</span><span>值</span><span></span>
+                  </div>
+                  <div v-for="(row, index) in queryParams" :key="index" class="debug-param-row">
+                    <input type="checkbox" v-model="row.enabled" :aria-label="'启用 ' + (row.key || '参数')"
+                           @change="applyParamsToPath" />
+                    <input v-model="row.key" spellcheck="false" placeholder="key" @input="applyParamsToPath" />
+                    <input v-model="row.value" spellcheck="false" placeholder="value" @input="applyParamsToPath" />
+                    <button type="button" class="debug-param-del" title="删除该参数"
+                            @click="removeParamRow(index)">×</button>
+                  </div>
+                </template>
+              </div>
+
+              <div v-show="requestTab === 'headers'" class="debug-editor">
+                <textarea v-model="headers" spellcheck="false"
+                          placeholder="例如&#10;X-Union-Appid: 102047514"></textarea>
+              </div>
+
+              <div v-show="requestTab === 'body'" class="debug-editor">
+                <textarea v-model="body" spellcheck="false"
+                          placeholder="{&#10;  &quot;content&quot;: &quot;hello&quot;&#10;}"></textarea>
+              </div>
+            </div>
+          </form>
         </section>
 
         <section class="chat-panel debug-panel">
-          <div class="chat-head">
+          <div class="debug-response-head">
             <strong>响应结果</strong>
             <div v-if="result" class="debug-response-status">
-              <span :class="['badge', result.statusCode >= 200 && result.statusCode < 300 ? 'green' : 'red']">{{ result.statusCode }}</span>
-              <span>{{ result.durationMillis }}ms</span>
+              <span class="debug-status-code" :class="statusClass(result.statusCode)">
+                {{ result.statusCode }} {{ statusText(result.statusCode) }}
+              </span>
+              <span class="debug-stat">{{ result.durationMillis }} ms</span>
+              <span class="debug-stat">{{ responseSize }}</span>
             </div>
           </div>
-          <div class="debug-body debug-response-body">
+
+          <div v-if="result" class="debug-tabs" role="tablist">
+            <button v-for="tab in responseTabs" :key="tab.key" type="button" role="tab"
+                    class="debug-tab" :class="{ active: responseTab === tab.key }"
+                    :aria-selected="responseTab === tab.key"
+                    @click="responseTab = tab.key">
+              {{ tab.label }}
+              <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
+            </button>
+            <div class="debug-tab-actions">
+              <button type="button" class="debug-ghost-btn" :class="{ active: wrapResponse }"
+                      @click="wrapResponse = !wrapResponse">自动换行</button>
+              <button type="button" class="debug-ghost-btn" @click="copyResponse">
+                {{ copied ? '已复制' : '复制' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="debug-response-body">
             <div v-if="error" class="empty-state error">{{ error }}</div>
-            <div v-else-if="loading" class="empty-state">正在请求官方 API</div>
-            <div v-else-if="!result" class="empty-state">请求结果会显示在这里</div>
+            <div v-else-if="loading" class="empty-state">正在请求开放平台API</div>
+            <div v-else-if="!result" class="empty-state">请求结果</div>
             <template v-else>
               <div class="debug-meta">
-                <span>{{ result.method }}</span>
-                <span class="debug-final-url">{{ result.url }}</span>
+                <span class="debug-meta-method" :class="'method-' + String(result.method || '').toLowerCase()">
+                  {{ result.method }}
+                </span>
+                <span class="debug-final-url" :title="result.url">{{ result.url }}</span>
               </div>
-              <details>
-                <summary>响应头</summary>
-                <pre>{{ formatJson(result.headers) }}</pre>
-              </details>
-              <pre class="debug-output">{{ responseText }}</pre>
+              <pre v-show="responseTab === 'body'" class="debug-output" :class="{ nowrap: !wrapResponse }">{{ responseText }}</pre>
+              <pre v-show="responseTab === 'headers'" class="debug-output" :class="{ nowrap: !wrapResponse }">{{ formatJson(result.headers) }}</pre>
             </template>
           </div>
         </section>
@@ -126,7 +185,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { API_BASE, LEGACY_TOKEN_KEY } from '../router.js'
 import router from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
@@ -504,6 +563,11 @@ const expandedEditor = ref('')
 const loading = ref(false)
 const error = ref('')
 const result = ref(null)
+const requestTab = ref('body')
+const responseTab = ref('body')
+const wrapResponse = ref(true)
+const copied = ref(false)
+const queryParams = ref([])
 
 const responseText = computed(() => {
   if (!result.value) return ''
@@ -514,6 +578,119 @@ const responseText = computed(() => {
     return raw || '(空响应)'
   }
 })
+
+const headerCount = computed(() => Object.keys(parseHeaders(headers.value)).length)
+const activeParamCount = computed(() => queryParams.value.filter(r => r.enabled && r.key.trim()).length)
+
+const requestTabs = computed(() => [
+  { key: 'params', label: 'Params', count: activeParamCount.value },
+  { key: 'headers', label: 'Headers', count: headerCount.value },
+  { key: 'body', label: 'Body', dot: body.value.trim().length > 0 },
+])
+
+const responseTabs = computed(() => [
+  { key: 'body', label: 'Body' },
+  { key: 'headers', label: 'Headers', count: Object.keys(result.value?.headers || {}).length },
+])
+
+const responseSize = computed(() => {
+  const bytes = new TextEncoder().encode(result.value?.body || '').length
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+})
+
+/*
+ * path 和参数表互为镜像。任何一侧改动都会写另一侧，用 syncingPath 挡住回环：
+ * applyParamsToPath 写 path 时，watch 里不再反向解析。
+ */
+let syncingPath = false
+
+watch(path, () => {
+  if (syncingPath) return
+  parseParamsFromPath()
+})
+
+function parseParamsFromPath() {
+  const index = path.value.indexOf('?')
+  const query = index >= 0 ? path.value.slice(index + 1) : ''
+  const rows = []
+  for (const segment of query.split('&')) {
+    if (!segment) continue
+    const eq = segment.indexOf('=')
+    const key = eq < 0 ? segment : segment.slice(0, eq)
+    const value = eq < 0 ? '' : segment.slice(eq + 1)
+    rows.push({ enabled: true, key: safeDecode(key), value: safeDecode(value) })
+  }
+  // 被取消勾选的行不在 path 里，重新解析时要手动带回来，否则一取消勾选行就消失了
+  const disabled = queryParams.value.filter(row => !row.enabled)
+  queryParams.value = [...rows, ...disabled]
+}
+
+function applyParamsToPath() {
+  const index = path.value.indexOf('?')
+  const base = index >= 0 ? path.value.slice(0, index) : path.value
+  const query = queryParams.value
+    .filter(row => row.enabled && row.key.trim())
+    .map(row => `${encodeURIComponent(row.key.trim())}=${encodeURIComponent(row.value)}`)
+    .join('&')
+  syncingPath = true
+  path.value = query ? `${base}?${query}` : base
+  nextTick(() => { syncingPath = false })
+}
+
+function addParamRow() {
+  queryParams.value.push({ enabled: true, key: '', value: '' })
+}
+
+function removeParamRow(index) {
+  queryParams.value.splice(index, 1)
+  applyParamsToPath()
+}
+
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '))
+  } catch {
+    return value
+  }
+}
+
+function statusClass(code) {
+  if (code >= 200 && code < 300) return 'is-2xx'
+  if (code >= 300 && code < 400) return 'is-3xx'
+  if (code >= 400 && code < 500) return 'is-4xx'
+  if (code >= 500) return 'is-5xx'
+  return 'is-other'
+}
+
+const STATUS_TEXT = {
+  200: 'OK', 201: 'Created', 204: 'No Content', 301: 'Moved Permanently', 302: 'Found',
+  304: 'Not Modified', 400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
+  404: 'Not Found', 405: 'Method Not Allowed', 429: 'Too Many Requests',
+  500: 'Internal Server Error', 502: 'Bad Gateway', 503: 'Service Unavailable', 504: 'Gateway Timeout',
+}
+
+function statusText(code) {
+  return STATUS_TEXT[code] || ''
+}
+
+async function copyResponse() {
+  const text = responseTab.value === 'headers' ? formatJson(result.value?.headers) : responseText.value
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // 非安全上下文下 clipboard 不可用，退回到 execCommand
+    const area = document.createElement('textarea')
+    area.value = text
+    document.body.appendChild(area)
+    area.select()
+    document.execCommand('copy')
+    document.body.removeChild(area)
+  }
+  copied.value = true
+  setTimeout(() => { copied.value = false }, 1200)
+}
 
 onMounted(loadConfig)
 
@@ -557,6 +734,7 @@ async function sendRequest() {
   if (!path.value.trim()) return
   loading.value = true
   error.value = ''
+  responseTab.value = 'body'
   try {
     result.value = await api('/debug/official/request', {
       method: 'POST',
@@ -621,6 +799,9 @@ function applyPreset() {
   method.value = preset.method
   path.value = preset.path
   body.value = preset.body == null ? '' : JSON.stringify(preset.body, null, 2)
+  queryParams.value = []
+  parseParamsFromPath()
+  requestTab.value = preset.body == null ? 'params' : 'body'
   error.value = ''
   result.value = null
 }
@@ -631,6 +812,8 @@ function resetRequest() {
   path.value = '/gateway'
   headers.value = ''
   body.value = ''
+  queryParams.value = []
+  requestTab.value = 'body'
   error.value = ''
   result.value = null
 }

@@ -14,7 +14,9 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
+import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
@@ -845,6 +847,89 @@ public class WebUIController {
         private boolean isHidden;
     }
 
+    public static void listErrorReports(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        if (pageSize > 200) {
+            pageSize = 200;
+        }
+        String keyword = ctx.queryParam("keyword");
+        String exceptionType = ctx.queryParam("exceptionType");
+
+        int total = ErrorReportRepository.count(keyword, exceptionType);
+        List<ErrorItemDTO> items = ErrorReportRepository.findPaginated(page, pageSize, keyword, exceptionType)
+                .stream()
+                .map(WebUIController::toErrorItem)
+                .toList();
+
+        ctx.json(Result.success(new ErrorListResult(items, total, page, pageSize)));
+    }
+
+    /**
+     * 按 traceId 查询单条错误详情，含完整堆栈
+     */
+    public static void getErrorReport(Context ctx) {
+        String traceId = ctx.pathParam("traceId");
+        if (isBlank(traceId)) {
+            ctx.json(Result.fail(400, "traceId 不能为空"));
+            return;
+        }
+
+        ErrorReportDTO report = ErrorReportRepository.findByTraceId(traceId.trim());
+        if (report == null) {
+            ctx.json(Result.fail(404, "未找到该 traceId 对应的错误报告"));
+            return;
+        }
+
+        ctx.json(Result.success(new ErrorDetailDTO(
+                report.getTraceId(),
+                report.getClassName(),
+                report.getExceptionType(),
+                report.getExceptionMessage(),
+                report.getStackTrace() != null ? report.getStackTrace() : List.of(),
+                report.getCauseType(),
+                report.getCauseMessage(),
+                report.getCauseStackTrace() != null ? report.getCauseStackTrace() : List.of(),
+                formatFeedbackTime(report.getCreateTime())
+        )));
+    }
+
+    public static void errorReportStats(Context ctx) {
+        ctx.json(Result.success(new ErrorStatsDTO(
+                ErrorReportRepository.count(null, null),
+                ErrorReportRepository.countSince(24),
+                ErrorReportRepository.countSince(24 * 7),
+                ErrorReportRepository.topExceptionTypes(8)
+        )));
+    }
+
+    private static ErrorItemDTO toErrorItem(ErrorReportDTO report) {
+        return new ErrorItemDTO(
+                report.getTraceId(),
+                report.getClassName(),
+                report.getExceptionType(),
+                report.getExceptionMessage(),
+                report.getCauseType(),
+                report.getCauseMessage(),
+                formatFeedbackTime(report.getCreateTime())
+        );
+    }
+
+    private static String formatFeedbackTime(java.sql.Timestamp ts) {
+        return ts != null ? ts.toLocalDateTime().format(FEEDBACK_TIME_FMT) : null;
+    }
+
+    public record ErrorItemDTO(String traceId, String className, String exceptionType, String exceptionMessage,
+                               String causeType, String causeMessage, String createTime) {}
+
+    public record ErrorDetailDTO(String traceId, String className, String exceptionType, String exceptionMessage,
+                                 List<String> stackTrace, String causeType, String causeMessage,
+                                 List<String> causeStackTrace, String createTime) {}
+
+    public record ErrorListResult(List<ErrorItemDTO> items, int total, int page, int pageSize) {}
+
+    public record ErrorStatsDTO(int total, int last24h, int last7d, Map<String, Integer> topExceptionTypes) {}
+
     // ═══════════════ 用户列表 ═══════════════
 
     public static void listUserMessages(Context ctx) {
@@ -866,6 +951,24 @@ public class WebUIController {
                                      Integer messageType, String attachments, String mentions,
                                      String eventTimestamp, String createdAt) {}
     public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
+
+    public static void listUserC2CMessages(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        String search = ctx.queryParam("search");
+        var result = ChatContentRecord.fetchAllC2CMessages(page, pageSize, search);
+        List<UserC2CMessageItemDTO> items = result.records().stream()
+                .map(r -> new UserC2CMessageItemDTO(
+                        r.unionOpenId(), r.username(), r.content(), r.userRole(),
+                        r.source(), r.messageType(), r.eventTimestamp(), r.createdAt()))
+                .toList();
+        ctx.json(Result.success(new UserC2CMessageListResult(items, result.total(), result.page(), result.pageSize())));
+    }
+
+    public record UserC2CMessageItemDTO(String unionOpenId, String username, String content,
+                                        String userRole, String source, Integer messageType,
+                                        String eventTimestamp, String createdAt) {}
+    public record UserC2CMessageListResult(List<UserC2CMessageItemDTO> items, long total, int page, int pageSize) {}
 
     // ═══════════════ 公开官方机器人查询 ═══════════════
 
@@ -964,6 +1067,24 @@ public class WebUIController {
             );
         });
     }
+
+    /**
+     * 按日聚合的消息量与 DAU 序列，供统计页画折线图。
+     * 单点接口只能给出区间总量，画不出趋势。
+     */
+    public static void publicOfficialSeries(Context ctx) {
+        QueryWindow window = parseQueryWindowOrFail(ctx);
+        if (window == null) return;
+        String cacheKey = publicCacheKey("series", window, null, null);
+        publicAsyncCached(ctx, cacheKey, () -> new PublicSeriesDTO(
+                window.startString(),
+                window.endString(),
+                PublicOfficialQueryRepository.queryDailySeries(window.start(), window.end())
+        ));
+    }
+
+    public record PublicSeriesDTO(String startTime, String endTime,
+                                  List<PublicOfficialQueryRepository.DailyPoint> points) {}
 
     public static void publicOfficialUserInfo(Context ctx) {
         String userOpenId = trimToNull(firstNonBlank(ctx.pathParam("userOpenId"), ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));

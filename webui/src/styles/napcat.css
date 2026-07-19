@@ -30,7 +30,7 @@
 .napcat-group-select label {
   display: grid;
   gap: 6px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -38,9 +38,9 @@
   width: 100%;
   min-width: 0;
   padding: 7px 9px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #374151;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
   background: #ffffff;
   outline: none;
 }
@@ -57,22 +57,22 @@
   gap: 10px;
   width: 100%;
   padding: 9px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  color: #374151;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
   background: #ffffff;
   text-align: left;
   cursor: pointer;
 }
 
 .napcat-feature-row:hover {
-  border-color: #8bd3dd;
-  background: #f8fafc;
+  border-color: var(--color-sidebar-active-text);
+  background: var(--color-surface-alt);
 }
 
 .napcat-feature-row.enabled {
   border-color: #b7e4dc;
-  background: #e7f7f3;
+  background: var(--color-accent-soft);
 }
 
 .napcat-feature-row span:first-child {
@@ -88,8 +88,8 @@
   position: relative;
   width: 34px;
   height: 18px;
-  border-radius: 999px;
-  background: #cbd5e1;
+  border-radius: var(--radius-pill);
+  background: var(--color-sidebar-text);
   transition: background 0.15s;
 }
 
@@ -99,13 +99,13 @@
   left: 3px;
   width: 12px;
   height: 12px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: #ffffff;
   transition: transform 0.15s;
 }
 
 .napcat-switch.on {
-  background: #0f766e;
+  background: var(--color-accent);
 }
 
 .napcat-switch.on span {
@@ -122,16 +122,16 @@
   justify-content: space-between;
   gap: 12px;
   padding: 8px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
 }
 
 .napcat-message-toolbar label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #4b5563;
+  color: var(--color-text);
   font-size: 12px;
 }
 
@@ -143,8 +143,8 @@
 
 .napcat-pager .pager-arrow.active {
   color: #ffffff;
-  background: #0f766e;
-  border-color: #0f766e;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .napcat-message-list {
@@ -158,14 +158,14 @@
   gap: 10px;
   align-items: start;
   padding: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   background: #ffffff;
 }
 
 .napcat-message.recalled {
-  color: #94a3b8;
-  background: #f3f4f6;
+  color: var(--color-text-subtle);
+  background: var(--color-surface-sunken);
 }
 
 .napcat-message-check {
@@ -190,38 +190,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #111827;
+  color: var(--color-text-strong);
   font-size: 13px;
 }
 
 .napcat-message-head time {
   margin-left: auto;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
   font-size: 11px;
 }
 
 .napcat-message p {
   margin: 0;
-  color: #374151;
+  color: var(--color-text);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .napcat-message.recalled p {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   text-decoration: line-through;
 }
 
 .napcat-recall-btn {
   min-height: 28px;
   padding: 0 10px;
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 12px;
 }
 
 .napcat-recalled-text {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   font-size: 12px;
 }
 
