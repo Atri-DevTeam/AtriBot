@@ -1,5 +1,7 @@
 <template>
-  <div class="shell">
+  <!-- legacy-chat：聊天页沿用 layout.css / responsive.css 的原始视觉，polish.css 的
+       新版外观层不作用于此，避免桌面端卡片样式泄漏到手机端布局上 -->
+  <div class="shell legacy-chat">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
         <button class="ghost-button" :disabled="loadingGroups" @click="loadGroups">刷新</button>

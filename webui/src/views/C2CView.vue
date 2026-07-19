@@ -1,5 +1,6 @@
 <template>
-  <div class="shell">
+  <!-- legacy-chat：见 DashboardView.vue 的说明，私聊页同样保持原始聊天视觉 -->
+  <div class="shell legacy-chat">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
         <button class="ghost-button" :disabled="loadingUsers" @click="loadUsers">刷新</button>

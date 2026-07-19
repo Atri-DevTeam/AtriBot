@@ -26,6 +26,19 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/*
+ * 上面那条 body 规则改了全站的字体族、字号（16px → 13px）、行高和正文色，
+ * 而 base.css 里 `button, textarea, input { font: inherit }` 会把它一路带进
+ * 聊天页的输入控件。这里把聊天页的排版基线还原成 base.css 原来的取值，
+ * 数值直接照抄原版，不走 tokens——tokens 是新视觉层的，不该反向影响旧页面。
+ */
+.legacy-chat {
+    color: #1f2937;
+    font-family: Inter, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 16px;
+    line-height: normal;
+}
+
 *:focus { outline: none; }
 
 *:focus-visible {
@@ -137,14 +150,22 @@ body {
     border-top: 1px solid var(--color-sidebar-border);
 }
 
-/* ══════════ 工作区：顶栏不再是一条白色横幅 ══════════ */
+/* ══════════ 工作区：顶栏不再是一条白色横幅 ══════════
+ *
+ * 以下所有规则都用 :where(.shell:not(.legacy-chat)) 前缀把聊天页排除在外。
+ * 原因：本文件没有任何 @media，而它在 main.js 里最后加载，所以在同等特异性下
+ * 会盖掉 responsive.css 里整套手机端聊天布局（面板去边框、去圆角、铺 #eef1f5
+ * 灰底、safe-area 内边距、触控尺寸）。聊天页的视觉一律交回 layout.css /
+ * responsive.css 原版负责。
+ * :where() 本身不贡献特异性，所以加前缀后各条规则的权重与原来完全一致。
+ */
 
-.workspace {
+:where(.shell:not(.legacy-chat)) .workspace {
     padding: 0;
     background: var(--color-bg);
 }
 
-.topbar {
+:where(.shell:not(.legacy-chat)) .topbar {
     flex-shrink: 0;
     gap: var(--space-4);
     min-height: var(--topbar-height);
@@ -155,20 +176,20 @@ body {
     border-bottom: 1px solid var(--color-border);
 }
 
-.topbar h2,
-.topbar h2:only-child {
+:where(.shell:not(.legacy-chat)) .topbar h2,
+:where(.shell:not(.legacy-chat)) .topbar h2:only-child {
     font-size: var(--text-lg);
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--color-text-strong);
 }
 
-.topbar p {
+:where(.shell:not(.legacy-chat)) .topbar p {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
 }
 
-.content {
+:where(.shell:not(.legacy-chat)) .content {
     gap: var(--space-4);
     padding: var(--space-5);
     overflow: auto;
@@ -176,31 +197,31 @@ body {
 
 /* ══════════ 面板：拍平，去阴影，发丝线分隔 ══════════ */
 
-.chat-panel,
-.inspector {
+:where(.shell:not(.legacy-chat)) .chat-panel,
+:where(.shell:not(.legacy-chat)) .inspector {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
     box-shadow: none;
 }
 
-.chat-head {
+:where(.shell:not(.legacy-chat)) .chat-head {
     min-height: 46px;
     padding: 0 var(--space-4);
     border-bottom: 1px solid var(--color-hairline);
 }
 
-.chat-head h3,
-.chat-head h2 {
+:where(.shell:not(.legacy-chat)) .chat-head h3,
+:where(.shell:not(.legacy-chat)) .chat-head h2 {
     font-size: var(--text-md);
     font-weight: 600;
     color: var(--color-text-strong);
 }
 
-/* 列表卡片不再各自浮起，改为发丝线分隔的行 */
+/* 列表卡片不再各自浮起，改为发丝线分隔的行。
+   .group-list-card 只出现在群聊页，故不在此列，保持原版卡片观感。 */
 .feedback-card,
-.userlist-card,
-.group-list-card {
+.userlist-card {
     border-color: var(--color-hairline);
     border-radius: var(--radius-md);
     box-shadow: none;
@@ -208,8 +229,7 @@ body {
 }
 
 .feedback-card:hover,
-.userlist-card:hover,
-.group-list-card:hover {
+.userlist-card:hover {
     background: var(--color-surface-hover);
     border-color: var(--color-border);
     box-shadow: none;
@@ -217,9 +237,15 @@ body {
 
 /* ══════════ 按钮 ══════════ */
 
-.primary-button,
-.ghost-button,
-.icon-button {
+/* 侧边栏里的按钮不受 .legacy-chat 影响，所以按钮基线规则拆成
+   「非聊天页的任意按钮」＋「侧边栏按钮」两条，聊天页正文里的按钮保持原尺寸
+   （原版手机端有更大的触控区，压到 30px 会不好点）。 */
+:where(.shell:not(.legacy-chat)) .primary-button,
+:where(.shell:not(.legacy-chat)) .ghost-button,
+:where(.shell:not(.legacy-chat)) .icon-button,
+.sidebar .primary-button,
+.sidebar .ghost-button,
+.sidebar .icon-button {
     min-height: 30px;
     padding: 0 var(--space-3);
     border-radius: var(--radius-md);
@@ -229,30 +255,32 @@ body {
     transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
-.icon-button {
+:where(.shell:not(.legacy-chat)) .icon-button,
+.sidebar .icon-button {
     width: 30px;
     padding: 0;
 }
 
-.primary-button {
+:where(.shell:not(.legacy-chat)) .primary-button,
+.sidebar .primary-button {
     color: #ffffff;
     background: var(--color-accent);
     border-color: var(--color-accent);
     box-shadow: none;
 }
 
-.primary-button:hover:not(:disabled) { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
-.primary-button:active:not(:disabled) { background: var(--color-accent-active); }
+:where(.shell:not(.legacy-chat)) .primary-button:hover:not(:disabled) { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+:where(.shell:not(.legacy-chat)) .primary-button:active:not(:disabled) { background: var(--color-accent-active); }
 
-.workspace .ghost-button,
-.workspace .icon-button {
+:where(.shell:not(.legacy-chat)) .workspace .ghost-button,
+:where(.shell:not(.legacy-chat)) .workspace .icon-button {
     color: var(--color-text-secondary);
     background: var(--color-surface);
     border-color: var(--color-border);
 }
 
-.workspace .ghost-button:hover:not(:disabled),
-.workspace .icon-button:hover:not(:disabled) {
+:where(.shell:not(.legacy-chat)) .workspace .ghost-button:hover:not(:disabled),
+:where(.shell:not(.legacy-chat)) .workspace .icon-button:hover:not(:disabled) {
     background: var(--color-surface-hover);
     border-color: var(--color-border-strong);
     color: var(--color-text);
@@ -271,22 +299,22 @@ body {
     color: #ffffff;
 }
 
-.primary-button:disabled,
-.ghost-button:disabled,
-.icon-button:disabled {
+:where(.shell:not(.legacy-chat)) .primary-button:disabled,
+:where(.shell:not(.legacy-chat)) .ghost-button:disabled,
+:where(.shell:not(.legacy-chat)) .icon-button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
 
-.ghost-button.danger {
+:where(.shell:not(.legacy-chat)) .ghost-button.danger {
     color: var(--color-danger);
     border-color: var(--color-border);
 }
-.ghost-button.danger:hover:not(:disabled) {
+:where(.shell:not(.legacy-chat)) .ghost-button.danger:hover:not(:disabled) {
     background: var(--color-danger-soft);
     border-color: var(--color-danger);
 }
-.primary-button.danger {
+:where(.shell:not(.legacy-chat)) .primary-button.danger {
     color: #ffffff;
     background: var(--color-danger);
     border-color: var(--color-danger);
@@ -294,22 +322,25 @@ body {
 
 /* ══════════ 表单控件 ══════════ */
 
-input[type="text"],
-input[type="search"],
-input[type="date"],
-input[type="number"],
-input[type="password"],
-select,
-textarea {
+/* 聊天页的输入框、发送框由 layout.css / responsive.css 原样负责，
+   尤其手机端 .composer textarea 有自己的尺寸，别被这里的 30px 压掉 */
+:where(.shell:not(.legacy-chat)) :is(
+    input[type="text"],
+    input[type="search"],
+    input[type="date"],
+    input[type="number"],
+    input[type="password"],
+    select,
+    textarea) {
     font-family: inherit;
     font-size: var(--text-base);
     color: var(--color-text);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
-.workspace input:not([type="checkbox"]):not([type="radio"]),
-.workspace select,
-.workspace textarea {
+:where(.shell:not(.legacy-chat)) .workspace input:not([type="checkbox"]):not([type="radio"]),
+:where(.shell:not(.legacy-chat)) .workspace select,
+:where(.shell:not(.legacy-chat)) .workspace textarea {
     min-height: 30px;
     padding: 0 var(--space-3);
     border: 1px solid var(--color-border-input);
@@ -317,37 +348,38 @@ textarea {
     background: var(--color-surface);
 }
 
-.workspace textarea {
+:where(.shell:not(.legacy-chat)) .workspace textarea {
     padding: var(--space-2) var(--space-3);
     line-height: var(--leading-normal);
 }
 
-.workspace input:hover:not(:focus),
-.workspace select:hover:not(:focus) {
+:where(.shell:not(.legacy-chat)) .workspace input:hover:not(:focus),
+:where(.shell:not(.legacy-chat)) .workspace select:hover:not(:focus) {
     border-color: var(--color-border-strong);
 }
 
-.workspace input:focus,
-.workspace select:focus,
-.workspace textarea:focus {
+:where(.shell:not(.legacy-chat)) .workspace input:focus,
+:where(.shell:not(.legacy-chat)) .workspace select:focus,
+:where(.shell:not(.legacy-chat)) .workspace textarea:focus {
     border-color: var(--color-accent);
     box-shadow: var(--focus-ring);
     outline: none;
 }
 
-.workspace input::placeholder,
-.workspace textarea::placeholder {
+:where(.shell:not(.legacy-chat)) .workspace input::placeholder,
+:where(.shell:not(.legacy-chat)) .workspace textarea::placeholder {
     color: var(--color-text-subtle);
 }
 
 /* ══════════ 徽章 / 状态 ══════════ */
 
-.badge,
-.status-pill,
-.role-badge,
-.badge-tag,
-.type-tag,
-.status-chip {
+:where(.shell:not(.legacy-chat)) :is(
+    .badge,
+    .status-pill,
+    .role-badge,
+    .badge-tag,
+    .type-tag,
+    .status-chip) {
     font-size: var(--text-xs);
     font-weight: 500;
     letter-spacing: var(--tracking-label);
@@ -362,40 +394,40 @@ textarea {
 
 /* ══════════ 空状态 ══════════ */
 
-.empty-state {
+:where(.shell:not(.legacy-chat)) .empty-state {
     padding: var(--space-6) var(--space-4);
     color: var(--color-text-subtle);
     font-size: var(--text-base);
     text-align: center;
 }
 
-.empty-state.error {
+:where(.shell:not(.legacy-chat)) .empty-state.error {
     color: var(--color-danger-strong);
 }
 
 /* ══════════ 浮层：阴影只在这里出现 ══════════ */
 
-.modal {
+:where(.shell:not(.legacy-chat)) .modal {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
 }
 
-.modal-backdrop {
+:where(.shell:not(.legacy-chat)) .modal-backdrop {
     background: rgba(13, 15, 19, 0.5);
     backdrop-filter: blur(2px);
 }
 
-.modal-head {
+:where(.shell:not(.legacy-chat)) .modal-head {
     min-height: 46px;
     border-bottom: 1px solid var(--color-hairline);
 }
 
-.modal-head h3 {
+:where(.shell:not(.legacy-chat)) .modal-head h3 {
     font-size: var(--text-md);
     font-weight: 600;
 }
 
-.modal-foot {
+:where(.shell:not(.legacy-chat)) .modal-foot {
     border-top: 1px solid var(--color-hairline);
 }
