@@ -842,6 +842,90 @@ public class ChatContentRecord implements Listener {
                                      String eventTimestamp, String createdAt) {
     }
 
+    /**
+     * 与 {@link #fetchAllGroupMessages} 对应的私聊版本，供用户列表页切换「全部私聊消息」使用。
+     * 同样只取用户侧的消息（sender_is_bot = FALSE），机器人回复不进列表。
+     * 私聊表没有 group_openId / member_role / attachments / mentions 这几列，所以字段比群聊版少。
+     */
+    public static MessagePage<AllC2CUserRecord> fetchAllC2CMessages(int page, int pageSize, String search) {
+        int safePage = Math.max(page, 1);
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        int offset = (safePage - 1) * safePageSize;
+
+        boolean hasSearch = search != null && !search.isBlank();
+        String likePattern = hasSearch ? "%" + search.trim() + "%" : null;
+
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM `")
+                .append(C2C_TABLE)
+                .append("` WHERE sender_is_bot = FALSE");
+        StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, content, source, ")
+                .append("message_type, event_timestamp, created_at FROM `")
+                .append(C2C_TABLE)
+                .append("` WHERE sender_is_bot = FALSE");
+
+        if (hasSearch) {
+            String searchClause = " AND (username LIKE ? OR union_openId LIKE ? OR content LIKE ?)";
+            countSql.append(searchClause);
+            dataSql.append(searchClause);
+        }
+
+        dataSql.append(" ORDER BY id DESC LIMIT ? OFFSET ?");
+
+        long total = 0;
+        List<AllC2CUserRecord> records = new ArrayList<>();
+
+        try (var conn = DatabaseManager.getConnection();
+             var countStmt = conn.prepareStatement(countSql.toString());
+             var dataStmt = conn.prepareStatement(dataSql.toString())) {
+
+            int countIdx = 1;
+            if (hasSearch) {
+                countStmt.setString(countIdx++, likePattern);
+                countStmt.setString(countIdx++, likePattern);
+                countStmt.setString(countIdx, likePattern);
+            }
+            var countRs = countStmt.executeQuery();
+            if (countRs.next()) total = countRs.getLong(1);
+
+            int dataIdx = 1;
+            if (hasSearch) {
+                dataStmt.setString(dataIdx++, likePattern);
+                dataStmt.setString(dataIdx++, likePattern);
+                dataStmt.setString(dataIdx++, likePattern);
+            }
+            dataStmt.setInt(dataIdx++, safePageSize);
+            dataStmt.setInt(dataIdx, offset);
+            var rs = dataStmt.executeQuery();
+            while (rs.next()) {
+                String unionOpenId = rs.getString("union_openId");
+                String userRole = "-";
+                if (unionOpenId != null && !unionOpenId.isBlank()) {
+                    var userData = OfficialUsers.getData(unionOpenId);
+                    if (userData != null) userRole = userData.role().name();
+                }
+                records.add(new AllC2CUserRecord(
+                        unionOpenId,
+                        rs.getString("username"),
+                        rs.getString("content"),
+                        userRole,
+                        rs.getString("source"),
+                        (Integer) rs.getObject("message_type"),
+                        rs.getString("event_timestamp"),
+                        rs.getString("created_at")
+                ));
+            }
+        } catch (SQLException e) {
+            log.error("聚合查询所有私聊消息失败, page={}, pageSize={}: {}", safePage, safePageSize, e.getMessage(), e);
+        }
+
+        return new MessagePage<>(safePage, safePageSize, total, records);
+    }
+
+    public record AllC2CUserRecord(String unionOpenId, String username, String content,
+                                   String userRole, String source, Integer messageType,
+                                   String eventTimestamp, String createdAt) {
+    }
+
     public static MessagePage<C2CMessageRecord> fetchC2CMessages(String userOpenId, int page, int pageSize) {
         int safePage = Math.max(page, 1);
         int safePageSize = Math.max(1, Math.min(pageSize, 200));

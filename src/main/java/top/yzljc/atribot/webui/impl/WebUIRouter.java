@@ -106,6 +106,10 @@ public class WebUIRouter {
 
         // 用户列表
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
+        server.get("/webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
+        // 开发环境走 /official-webui/api 前缀，同样挂一份，否则用户列表页在 dev 下 404
+        server.get("/official-webui/api/users/messages", WebUIController::listUserMessages);
+        server.get("/official-webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
 
         // 错误报告（非公开，走 /webui/api/* 的会话鉴权）
         server.get("/webui/api/errors/list", WebUIController::listErrorReports);

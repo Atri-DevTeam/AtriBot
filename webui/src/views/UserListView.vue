@@ -26,7 +26,7 @@
             v-model="searchText"
             class="userlist-search-input"
             type="text"
-            placeholder="搜索用户名 / 用户ID / 群ID / 聊天内容..."
+            :placeholder="source === 'c2c' ? '搜索用户名 / 用户ID / 聊天内容...' : '搜索用户名 / 用户ID / 群ID / 聊天内容...'"
             @keyup.enter="doSearch"
           />
           <button class="primary-button" :disabled="loading" @click="doSearch">搜索</button>
@@ -35,7 +35,12 @@
 
         <section class="chat-panel userlist-panel">
           <div class="chat-head">
-            <strong>全部群消息</strong>
+            <div class="userlist-source-tabs" role="tablist">
+              <button v-for="tab in sourceTabs" :key="tab.key"
+                      class="userlist-source-tab" :class="{ active: source === tab.key }"
+                      type="button" role="tab" :aria-selected="source === tab.key"
+                      @click="switchSource(tab.key)">{{ tab.label }}</button>
+            </div>
             <div class="userlist-top-pager">
               <button class="pager-arrow" :disabled="page <= 1" @click="goPage(page - 1)">◂</button>
               <span>{{ page }} / {{ totalPages }}</span>
@@ -49,7 +54,7 @@
             <div v-else-if="items.length === 0" class="empty-state">暂无数据</div>
 
             <div v-else class="userlist-list">
-              <article v-for="item in items" :key="`${item.groupOpenId}-${item.unionOpenId}-${item.createdAt}`" class="userlist-card">
+              <article v-for="item in items" :key="`${item.groupOpenId || 'c2c'}-${item.unionOpenId}-${item.createdAt}`" class="userlist-card">
                 <img
                   class="userlist-avatar"
                   :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${item.unionOpenId}/100`"
@@ -65,7 +70,8 @@
                   </div>
                   <div class="userlist-row2">
                     <span class="userlist-id" :title="item.unionOpenId">UID: {{ item.unionOpenId || '-' }}</span>
-                    <span class="userlist-gid" :title="item.groupOpenId">GID: {{ item.groupOpenId || '-' }}</span>
+                    <span v-if="source === 'group'" class="userlist-gid" :title="item.groupOpenId">GID: {{ item.groupOpenId || '-' }}</span>
+                    <span v-else-if="item.source" class="userlist-gid" :title="item.source">来源: {{ item.source }}</span>
                     <span v-if="item.eventTimestamp" class="userlist-time">{{ formatTime(item.eventTimestamp) }}</span>
                   </div>
                   <div class="userlist-row3">
@@ -77,12 +83,21 @@
                     class="userlist-action-btn"
                     title="更改用户信息"
                     @click="openPermModal(item.unionOpenId)">⚙</button>
-                  <button v-if="item.groupOpenId"
+                  <button v-if="source === 'group' && item.groupOpenId"
                     class="userlist-action-btn"
                     title="跳转到群"
                     @click="$router.push({ path: '/', query: { group: item.groupOpenId } })">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                  <button v-else-if="source === 'c2c' && item.unionOpenId"
+                    class="userlist-action-btn"
+                    title="跳转到私聊"
+                    @click="$router.push({ path: '/c2c', query: { user: item.unionOpenId } })">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="10" r="1.1" fill="currentColor" stroke="none"/>
                     </svg>
                   </button>
                 </div>
@@ -163,6 +178,25 @@ const page = ref(1)
 const pageSize = 20
 const searchText = ref('')
 const currentSearch = ref('')
+
+// 消息来源切换：群消息 / 私聊消息。两边分页与搜索参数一致，只是接口不同
+const sourceTabs = [
+  { key: 'group', label: '全部群消息', endpoint: '/users/messages' },
+  { key: 'c2c', label: '全部私聊消息', endpoint: '/users/c2c-messages' },
+]
+const source = ref('group')
+const sourceEndpoint = computed(
+  () => sourceTabs.find(t => t.key === source.value)?.endpoint || sourceTabs[0].endpoint
+)
+
+function switchSource(key) {
+  if (source.value === key) return
+  source.value = key
+  page.value = 1
+  items.value = []
+  total.value = 0
+  fetchList()
+}
 
 // perm modal
 const showPermModal = ref(false)
@@ -253,7 +287,7 @@ async function fetchList() {
   try {
     const params = new URLSearchParams({ page: page.value, pageSize })
     if (currentSearch.value) params.set('search', currentSearch.value)
-    const data = await api(`/users/messages?${params}`)
+    const data = await api(`${sourceEndpoint.value}?${params}`)
     items.value = data.items
     total.value = data.total
   } catch (e) {
@@ -354,7 +388,7 @@ function connectSSE() {
       // 任何群有新消息，静默刷新第一页（仅在无搜索且首页时）
       if (page.value === 1 && !currentSearch.value) {
         const params = new URLSearchParams({ page: 1, pageSize: String(pageSize) })
-        const data = await api(`/users/messages?${params}`)
+        const data = await api(`${sourceEndpoint.value}?${params}`)
         items.value = data.items
         total.value = data.total
       }

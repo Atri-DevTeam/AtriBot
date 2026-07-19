@@ -31,11 +31,13 @@
                   <span>{{ selectedGroupId || '选择群聊' }}</span>
                   <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
                 </button>
-                <button class="filter-return-btn" type="button" title="回到群筛选" aria-label="回到群筛选" @click="returnToGroupFilter">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 5h18"/>
-                    <path d="M6 12h12"/>
-                    <path d="M10 19h4"/>
+                <button class="filter-return-btn" type="button" title="返回群聊总览" aria-label="返回群聊总览" @click="returnToGroupFilter">
+                  <!-- 九宫格＝“回到总览”，比原来那三条横线（更像筛选/汉堡菜单）语义清楚 -->
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+                    <rect x="3.25" y="3.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="13.25" y="3.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="3.25" y="13.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="13.25" y="13.25" width="7.5" height="7.5" rx="1.8"/>
                   </svg>
                 </button>
               </div>

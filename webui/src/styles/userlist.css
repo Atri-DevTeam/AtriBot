@@ -279,3 +279,47 @@
     word-break: break-all;
   }
 }
+
+/* ══════════ 消息来源切换（全部群消息 / 全部私聊消息）══════════ */
+
+.userlist-source-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.userlist-source-tab {
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.userlist-source-tab:hover {
+  color: var(--color-text-strong);
+}
+
+.userlist-source-tab.active {
+  color: var(--color-accent);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 640px) {
+  .userlist-source-tab {
+    padding: 4px 9px;
+    font-size: var(--text-xs);
+  }
+}

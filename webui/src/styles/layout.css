@@ -252,7 +252,15 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  width: 38ch;
+  /*
+   * groupOpenId / userOpenId 都是 32 位十六进制串，等宽 12px 下约 231px，
+   * 加上左右内边距、头像和状态图标要 380px 上下才放得下。原来固定 38ch 按
+   * 非等宽字体算，PC 端会把 ID 挤到换行。这里改成按内容撑开、下限保证不换行，
+   * 上限防止条目过长时菜单溢出屏幕。窄屏由 responsive.css 覆盖成 100% 宽。
+   */
+  width: max-content;
+  min-width: 400px;
+  max-width: min(560px, 92vw);
   max-height: 340px;
   overflow: auto;
   border: 1px solid var(--color-border);
@@ -307,8 +315,10 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  font-family: Consolas, Monaco, monospace;
   font-weight: 600;
-  word-break: break-all;
+  /* PC 端菜单已按内容撑开，这里不允许换行，避免一个 ID 被拆成两行 */
+  white-space: nowrap;
 }
 
 .item-badges {
@@ -1647,7 +1657,8 @@
 
 .group-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* 340px 才够一条 32 位 ID 加状态图标不被省略号截断 */
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 6px;
   align-content: start;
 }

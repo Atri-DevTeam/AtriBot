@@ -287,6 +287,12 @@
     max-width: 90vw;
   }
 
+  /* 窄屏放不下整条 ID，恢复换行（PC 端才是 nowrap） */
+  .item-id {
+    white-space: normal;
+    word-break: break-all;
+  }
+
   .chat-head-right .status-pill { font-size: 11px; }
 
   .chat-head-right .info-toggle { padding: 2px; }

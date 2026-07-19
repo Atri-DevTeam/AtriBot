@@ -954,6 +954,24 @@ public class WebUIController {
                                      String eventTimestamp, String createdAt) {}
     public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
 
+    public static void listUserC2CMessages(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        String search = ctx.queryParam("search");
+        var result = ChatContentRecord.fetchAllC2CMessages(page, pageSize, search);
+        List<UserC2CMessageItemDTO> items = result.records().stream()
+                .map(r -> new UserC2CMessageItemDTO(
+                        r.unionOpenId(), r.username(), r.content(), r.userRole(),
+                        r.source(), r.messageType(), r.eventTimestamp(), r.createdAt()))
+                .toList();
+        ctx.json(Result.success(new UserC2CMessageListResult(items, result.total(), result.page(), result.pageSize())));
+    }
+
+    public record UserC2CMessageItemDTO(String unionOpenId, String username, String content,
+                                        String userRole, String source, Integer messageType,
+                                        String eventTimestamp, String createdAt) {}
+    public record UserC2CMessageListResult(List<UserC2CMessageItemDTO> items, long total, int page, int pageSize) {}
+
     // ═══════════════ 公开官方机器人查询 ═══════════════
 
     private static final DateTimeFormatter PUBLIC_QUERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

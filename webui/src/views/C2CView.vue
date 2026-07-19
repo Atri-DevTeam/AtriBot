@@ -25,10 +25,20 @@
         <section class="chat-panel">
           <div class="chat-head">
             <div class="group-picker">
-              <button class="group-picker-trigger" @click="toggleDropdown">
-                <span>{{ selectedUserId || '选择用户' }}</span>
-                <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
-              </button>
+              <div class="group-picker-row">
+                <button class="group-picker-trigger" @click="toggleDropdown">
+                  <span>{{ selectedUserId || '选择用户' }}</span>
+                  <span class="arrow" :class="{ up: dropdownOpen }">▾</span>
+                </button>
+                <button class="filter-return-btn" type="button" title="返回用户总览" aria-label="返回用户总览" @click="returnToUserList">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+                    <rect x="3.25" y="3.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="13.25" y="3.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="3.25" y="13.25" width="7.5" height="7.5" rx="1.8"/>
+                    <rect x="13.25" y="13.25" width="7.5" height="7.5" rx="1.8"/>
+                  </svg>
+                </button>
+              </div>
               <div v-if="dropdownOpen" ref="dropdownRef" class="dropdown-menu">
                 <input v-model="userSearch" class="dropdown-search" placeholder="搜索用户 openId…" @click.stop />
                 <button v-for="user in filteredUsers" :key="user.userOpenId"
@@ -137,7 +147,6 @@
                         <rect x="36" y="28" width="4" height="8" rx="2" fill="#12B7F5"/>
                       </svg>
                     </template>
-                    <span class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</span>
                   </div>
                   <div class="bubble"
                        @contextmenu.prevent.stop="onContextMenu($event, message)">
@@ -165,6 +174,8 @@
                     <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
                     <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                   </div>
+                  <!-- 时间放在气泡下方，与群聊消息保持一致 -->
+                  <div class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</div>
                 </div>
               </article>
             </template>
@@ -354,13 +365,14 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const users = ref([])
 const messages = ref([])
@@ -441,6 +453,9 @@ onMounted(async () => {
   document.addEventListener('click', onDocumentClick)
   await loadMeta()
   await loadUsers()
+  // 支持从用户列表页 /c2c?user=xxx 直接跳到某个会话
+  const targetUser = route.query.user
+  if (targetUser) selectUser(String(targetUser))
   connectSse()
 })
 
@@ -628,6 +643,20 @@ function closeDropdown() {
   const el = dropdownRef.value
   if (el) dropdownScrollTop.value = el.scrollTop
   dropdownOpen.value = false
+}
+
+/** 回到「未选中用户」状态，消息列表位置会重新渲染成用户总览卡片网格 */
+function returnToUserList() {
+  selectedUserId.value = ''
+  closeDropdown()
+  // 不动 showInspector：这里没有像群聊那样藏在信息面板里的筛选器，
+  // 而且未选中用户时面板内容是空的，强行展开只会留一块空白
+  messages.value = []
+  totalMessages.value = 0
+  currentPage.value = 0
+  replyTo.value = null
+  ctxMenu.visible = false
+  permTargetId.value = ''
 }
 
 async function selectUser(userOpenId) {
