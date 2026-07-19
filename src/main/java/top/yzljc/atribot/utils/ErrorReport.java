@@ -21,7 +21,7 @@ import java.util.UUID;
 public class ErrorReport {
 
     /**
-     * 单条错误最多保留的堆栈行数，防止超长堆栈撑爆 MEDIUMTEXT
+     * 单条错误最多保留的堆栈行数
      */
     private static final int MAX_STACK_LINES = 200;
 
@@ -54,7 +54,6 @@ public class ErrorReport {
         if (ErrorReportRepository.insert(dto)) {
             log.info("错误报告已入库: traceId={} (类: {}, 异常: {})", traceId, className, e.getClass().getSimpleName());
         } else {
-            // 入库失败时至少把完整堆栈留在日志里，避免现场丢失
             log.error("错误报告入库失败，原始异常如下 (traceId={}, 类: {})", traceId, className, e);
         }
 

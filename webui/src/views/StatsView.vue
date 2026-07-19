@@ -131,7 +131,7 @@
                   </g>
                 </svg>
 
-                <div class="stats-plot-caption">活跃用户 DAU（独立坐标轴）</div>
+                <div class="stats-plot-caption">活跃用户 DAU 数据</div>
 
                 <svg class="stats-svg" :width="plotWidth" :height="DAU_H" :viewBox="`0 0 ${plotWidth} ${DAU_H}`"
                      role="img" aria-label="每日活跃用户按日趋势"
@@ -182,21 +182,21 @@
             </header>
             <div class="stats-lookup-form">
               <input v-model="groupOpenIdInput" class="stats-input stats-input--wide" type="text"
-                     placeholder="输入 groupOpenId" @keyup.enter="fetchGroupStats"/>
+                     placeholder="群聊开放平台ID" @keyup.enter="fetchGroupStats"/>
               <button class="primary-button" :disabled="groupLoading || !groupOpenIdInput.trim()" @click="fetchGroupStats">
                 {{ groupLoading ? '查询中...' : '查询' }}
               </button>
             </div>
             <div v-if="groupLoading" class="empty-state stats-state">加载中...</div>
             <div v-else-if="groupError" class="empty-state error stats-state">{{ groupError }}</div>
-            <div v-else-if="!groupStats" class="empty-state stats-state">输入 groupOpenId 后回车或点击查询</div>
+            <div v-else-if="!groupStats" class="empty-state stats-state">使用群聊开放平台ID查询</div>
             <dl v-else class="stats-detail">
               <div class="stats-detail-row">
-                <dt>群 OpenId</dt>
+                <dt>群聊开放平台ID</dt>
                 <dd class="stats-mono">{{ groupStats.groupOpenId || '-' }}</dd>
               </div>
               <div class="stats-detail-row">
-                <dt>操作成员 OpenId</dt>
+                <dt>邀请人开放平台ID</dt>
                 <dd class="stats-mono">{{ groupStats.opMemberOpenId || '-' }}</dd>
               </div>
               <div class="stats-detail-row">
@@ -244,21 +244,21 @@
             </header>
             <div class="stats-lookup-form">
               <input v-model="userOpenIdInput" class="stats-input stats-input--wide" type="text"
-                     placeholder="输入 userOpenId" @keyup.enter="fetchUserStats"/>
+                     placeholder="用户开放平台ID" @keyup.enter="fetchUserStats"/>
               <button class="primary-button" :disabled="userLoading || !userOpenIdInput.trim()" @click="fetchUserStats">
                 {{ userLoading ? '查询中...' : '查询' }}
               </button>
             </div>
             <div v-if="userLoading" class="empty-state stats-state">加载中...</div>
             <div v-else-if="userError" class="empty-state error stats-state">{{ userError }}</div>
-            <div v-else-if="!userStats" class="empty-state stats-state">输入 userOpenId 后回车或点击查询</div>
+            <div v-else-if="!userStats" class="empty-state stats-state">使用用户开放平台ID查询</div>
             <dl v-else class="stats-detail">
               <div class="stats-detail-row">
-                <dt>用户 OpenId</dt>
+                <dt>用户开放平台ID</dt>
                 <dd class="stats-mono">{{ userStats.userOpenId || '-' }}</dd>
               </div>
               <div class="stats-detail-row">
-                <dt>最近昵称</dt>
+                <dt>最近用户名</dt>
                 <dd>{{ userStats.lastUsername || '-' }}</dd>
               </div>
               <div class="stats-detail-row">

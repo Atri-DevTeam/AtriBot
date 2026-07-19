@@ -277,8 +277,7 @@ public class PublicOfficialQueryRepository {
     }
 
     /**
-     * 按天聚合消息量与 DAU，供统计页画折线图。
-     * 单点查询只能给出区间总量，画不出趋势，因此这里下沉到日粒度。
+     * 按天聚合消息量与 DAU，供统计页画折线图
      *
      * @param start 起始时间，闭区间
      * @param end   结束时间，开区间

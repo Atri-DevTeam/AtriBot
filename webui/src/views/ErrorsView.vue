@@ -60,7 +60,7 @@
               v-model="searchInput"
               class="errors-search-input"
               type="text"
-              placeholder="粘贴 traceId 精确查询，或输入关键字搜索类名 / 异常类型 / 错误信息"
+              placeholder="输入关键字搜索类名 / 异常类型 / 错误信息 / traceId"
               @keyup.enter="doSearch"
             />
             <select v-model="exceptionType" class="errors-type-select" @change="applyFilters">
@@ -76,7 +76,7 @@
           <p class="errors-search-hint">
             <span v-if="isTraceId(searchInput)" class="errors-hint-mode errors-hint-mode--trace">traceId 精确查询</span>
             <span v-else-if="searchInput.trim()" class="errors-hint-mode">关键字过滤</span>
-            <span v-else class="errors-hint-mode errors-hint-mode--idle">输入 36 位 traceId 精确定位单条错误，其他内容按关键字过滤列表</span>
+            <span v-else class="errors-hint-mode errors-hint-mode--idle">使用traceId以定位错误</span>
           </p>
 
           <!-- 详情视图 -->

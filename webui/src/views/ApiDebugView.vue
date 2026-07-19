@@ -78,7 +78,7 @@
               <!-- Query 参数表：与地址栏里的 ?a=b 双向同步 -->
               <div v-show="requestTab === 'params'" class="debug-params">
                 <div v-if="queryParams.length === 0" class="debug-params-empty">
-                  没有查询参数。地址栏里写 <code>?a=b</code> 会自动同步到这里，也可以点「添加参数」。
+                  未输入查询参数
                 </div>
                 <template v-else>
                   <div class="debug-param-row debug-param-head">
@@ -97,7 +97,7 @@
 
               <div v-show="requestTab === 'headers'" class="debug-editor">
                 <textarea v-model="headers" spellcheck="false"
-                          placeholder="每行一个，形如&#10;X-Union-Appid: 102047514"></textarea>
+                          placeholder="例如&#10;X-Union-Appid: 102047514"></textarea>
               </div>
 
               <div v-show="requestTab === 'body'" class="debug-editor">
@@ -139,8 +139,8 @@
 
           <div class="debug-response-body">
             <div v-if="error" class="empty-state error">{{ error }}</div>
-            <div v-else-if="loading" class="empty-state">正在请求官方 API</div>
-            <div v-else-if="!result" class="empty-state">请求结果会显示在这里</div>
+            <div v-else-if="loading" class="empty-state">正在请求开放平台API</div>
+            <div v-else-if="!result" class="empty-state">请求结果</div>
             <template v-else>
               <div class="debug-meta">
                 <span class="debug-meta-method" :class="'method-' + String(result.method || '').toLowerCase()">

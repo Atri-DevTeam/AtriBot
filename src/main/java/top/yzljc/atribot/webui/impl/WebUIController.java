@@ -847,8 +847,6 @@ public class WebUIController {
         private boolean isHidden;
     }
 
-    // ═══════════════ 错误报告 ═══════════════
-
     public static void listErrorReports(Context ctx) {
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
