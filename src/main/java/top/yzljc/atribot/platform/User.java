@@ -213,4 +213,8 @@ public class User {
         if (OfficialUsers.isAdmin(this.userId)) return true;
         return OfficialUsers.hasPermission(this.userId, permission);
     }
+
+    public boolean isPlatformAdmin() {
+        return this.role.equals(PlatformRole.ADMIN) || this.role.equals(PlatformRole.OWNER);
+    }
 }

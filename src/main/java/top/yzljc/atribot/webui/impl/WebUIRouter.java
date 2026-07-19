@@ -81,11 +81,13 @@ public class WebUIRouter {
         // C2C 私聊
         server.get("/webui/api/c2c/users", WebUIController::listC2CUsers);
         server.get("/webui/api/c2c/{userOpenId}/permissions", WebUIController::getC2CUserPermissions);
+        server.post("/webui/api/c2c/{userOpenId}/profile", WebUIController::updateC2CUserProfile);
         server.post("/webui/api/c2c/{userOpenId}/role", WebUIController::setC2CUserRole);
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", WebUIController::toggleC2CUserPermission);
         server.post("/webui/api/c2c/{userOpenId}/blocked", WebUIController::setC2CUserBlocked);
         server.post("/webui/api/c2c/{userOpenId}/ignored", WebUIController::setC2CUserIgnored);
         server.post("/webui/api/c2c/{userOpenId}/push", WebUIController::setC2CUserPush);
+        server.delete("/webui/api/c2c/{userOpenId}", WebUIController::deleteC2CUser);
         server.get("/webui/api/c2c/{userOpenId}/messages", WebUIController::fetchC2CMessages);
         server.post("/webui/api/c2c/send", WebUIController::sendC2CMessage);
         server.post("/webui/api/c2c/recall", WebUIController::recallC2CMessage);

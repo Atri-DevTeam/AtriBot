@@ -22,10 +22,24 @@ public class OfficialGroupMemberAddEvent extends Event {
     private final String timestamp;
 
     public String sendMessage(Markdown markdown) {
-        return GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown);
+        return GroupChat.replyEventMessage(groupOpenId, eventId, markdown);
     }
 
     public String sendMessage(Markdown markdown, Object buttons) {
+        return GroupChat.replyEventMessage(groupOpenId, eventId, markdown, buttons);
+    }
+
+    public String sendMessage(Markdown markdown, boolean at) {
+        if (!at) {
+            return GroupChat.replyEventMessage(groupOpenId, eventId, markdown);
+        }
+        return GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown);
+    }
+
+    public String sendMessage(Markdown markdown, Object buttons, boolean at) {
+        if (!at) {
+            return GroupChat.replyEventMessage(groupOpenId, eventId, markdown, buttons);
+        }
         return GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown, buttons);
     }
 }

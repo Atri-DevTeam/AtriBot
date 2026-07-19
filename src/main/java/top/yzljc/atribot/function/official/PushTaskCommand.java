@@ -37,7 +37,7 @@ public class PushTaskCommand implements CommandExecutor {
         String groupOpenId = sender.getGroupId();
 
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP) {
-            if (sender.getPlatform() == Platform.OFFICIAL_C2C) sender.sendMessage(TC.md("> 推送任务只在群聊中有效，等待官方开放私聊主动消息后更新!"));
+            if (sender.getPlatform() == Platform.OFFICIAL_C2C) sender.sendMessage(TC.md("> 推送任务只在群聊中有效，单聊场景尚未制作!"));
             return true;
         }
 
@@ -74,10 +74,18 @@ public class PushTaskCommand implements CommandExecutor {
                     return true;
                 }
                 case "开启" -> {
+                    if (!sender.isPlatformAdmin()) {
+                        sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                        return true;
+                    }
                     task.enable(groupOpenId, sender.getUserId(), sender.getMessageId());
                     return true;
                 }
                 case "关闭" -> {
+                    if (!sender.isPlatformAdmin()) {
+                        sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                        return true;
+                    }
                     task.disable(groupOpenId, sender.getUserId(), sender.getMessageId());
                     return true;
                 }

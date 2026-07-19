@@ -123,7 +123,7 @@ public class HttpService {
         try {
             Builder requestBuilder = java.net.http.HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(20))
+                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .POST(java.net.http.HttpRequest.BodyPublishers.noBody());
 
@@ -171,6 +171,7 @@ public class HttpService {
         try {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
@@ -197,7 +198,9 @@ public class HttpService {
 
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-Type", "application/json");
+            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
@@ -219,12 +222,10 @@ public class HttpService {
         try {
             Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
+                    .timeout(duration != null ? duration : Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", DEFAULT_USER_AGENT);
             applyHeaders(builder, headers);
-            if (duration != null) {
-                builder.timeout(duration);
-            }
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());

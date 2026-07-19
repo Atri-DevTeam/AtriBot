@@ -12,10 +12,6 @@ public class GroupConfigInfo implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
-            return true;
-        }
         getGroupStatusDescription(sender.getGroupId());
         return true;
     }

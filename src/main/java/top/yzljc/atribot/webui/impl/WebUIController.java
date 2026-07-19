@@ -637,6 +637,65 @@ public class WebUIController {
         ctx.json(Result.success("ok"));
     }
 
+    public static void updateC2CUserProfile(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        UpdateC2CUserProfileDTO dto = ctx.bodyAsClass(UpdateC2CUserProfileDTO.class);
+        if (dto == null) {
+            dto = new UpdateC2CUserProfileDTO();
+        }
+        if (isBlank(userOpenId)) {
+            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            return;
+        }
+
+        PermissionRole role = OfficialUsers.getData(userOpenId).role();
+        if (!isBlank(dto.getRole())) {
+            try {
+                role = PermissionRole.valueOf(dto.getRole().trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                ctx.json(Result.fail(400, "无效的角色: " + dto.getRole()));
+                return;
+            }
+        }
+
+        java.util.Set<String> permissions = new java.util.LinkedHashSet<>();
+        if (dto.getPermissions() != null) {
+            for (String perm : dto.getPermissions()) {
+                if (perm != null && !perm.trim().isBlank()) {
+                    permissions.add(perm.trim());
+                }
+            }
+        }
+
+        boolean blocked = dto.isBlocked();
+        boolean ignored = dto.isIgnored();
+        boolean c2cPush = dto.isC2cPush();
+        boolean pushChanged = OfficialUsers.getData(userOpenId).c2cPush() != c2cPush;
+
+        OfficialUsers.setPermissionGroup(userOpenId, role, permissions);
+        OfficialUsers.setBlocked(userOpenId, blocked);
+        OfficialUsers.setIgnored(userOpenId, ignored);
+        OfficialUsers.setC2CPush(userOpenId, c2cPush);
+        if (pushChanged) {
+            SseBroadcaster.broadcastC2CPushStatus(userOpenId, c2cPush);
+        }
+
+        ctx.json(Result.success(toC2CUserDTO(OfficialUsers.getData(userOpenId))));
+    }
+
+    public static void deleteC2CUser(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        if (isBlank(userOpenId)) {
+            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            return;
+        }
+        if (!OfficialUsers.removeUser(userOpenId)) {
+            ctx.json(Result.fail(404, "用户档案不存在或已删除"));
+            return;
+        }
+        ctx.json(Result.success("ok"));
+    }
+
     public static void fetchC2CMessages(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
         int page = parseInt(ctx.queryParam("page"), 1);
@@ -696,6 +755,15 @@ public class WebUIController {
         private String imageType;
         private String imageValue;
         private String replyMessageId;
+    }
+
+    @Data
+    public static class UpdateC2CUserProfileDTO {
+        private String role;
+        private java.util.List<String> permissions;
+        private boolean blocked;
+        private boolean ignored;
+        private boolean c2cPush;
     }
 
     // ═══════════════ 反馈管理 ═══════════════

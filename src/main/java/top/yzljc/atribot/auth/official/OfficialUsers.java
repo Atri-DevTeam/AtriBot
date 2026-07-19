@@ -201,7 +201,6 @@ public class OfficialUsers {
      * 删除整个用户数据
      */
     public static boolean removeUser(String userOpenId) {
-        if (isBlocked(userOpenId) || isIgnored(userOpenId)) return false; // 不允许删除被封禁或忽略的用户
         if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
             return true;

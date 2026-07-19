@@ -34,14 +34,28 @@
                 <button v-for="user in filteredUsers" :key="user.userOpenId"
                         class="dropdown-item" :class="{ active: user.userOpenId === selectedUserId }"
                         @click="selectUser(user.userOpenId); closeDropdown()">
-                  <span class="item-id">{{ user.userOpenId }}</span>
-                  <svg :class="['c2c-push-mark', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
-                    <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
-                    <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
-                    <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
-                    <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
-                    <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
-                  </svg>
+                  <span class="c2c-user-head">
+                    <span class="c2c-user-avatar">
+                      <img
+                        v-show="!avatarFailed[user.userOpenId] && avatarUrlForUser(user)"
+                        :src="avatarUrlForUser(user)"
+                        :alt="user.userOpenId"
+                        referrerpolicy="no-referrer"
+                        @error="avatarFailed[user.userOpenId] = true"
+                      />
+                      <span v-show="!avatarUrlForUser(user) || avatarFailed[user.userOpenId]">{{ avatarTextForUser(user) }}</span>
+                    </span>
+                    <span class="item-id">{{ user.userOpenId }}</span>
+                  </span>
+                  <span class="item-badges">
+                    <svg :class="['c2c-push-mark', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                      <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
+                      <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
+                      <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
+                      <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
+                    </svg>
+                  </span>
                 </button>
               </div>
             </div>
@@ -63,14 +77,28 @@
                 <button v-for="user in users" :key="user.userOpenId"
                         class="group-list-card"
                         @click="selectUser(user.userOpenId)">
-                  <span class="group-list-id">{{ user.userOpenId }}</span>
-                  <svg :class="['c2c-push-mark', 'c2c-push-mark--card', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
-                    <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
-                    <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
-                    <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
-                    <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
-                    <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
-                  </svg>
+                  <span class="c2c-user-head">
+                    <span class="c2c-user-avatar c2c-user-avatar--card">
+                      <img
+                        v-show="!avatarFailed[user.userOpenId] && avatarUrlForUser(user)"
+                        :src="avatarUrlForUser(user)"
+                        :alt="user.userOpenId"
+                        referrerpolicy="no-referrer"
+                        @error="avatarFailed[user.userOpenId] = true"
+                      />
+                      <span v-show="!avatarUrlForUser(user) || avatarFailed[user.userOpenId]">{{ avatarTextForUser(user) }}</span>
+                    </span>
+                    <span class="group-list-id">{{ user.userOpenId }}</span>
+                  </span>
+                  <span class="group-list-badges">
+                    <svg :class="['c2c-push-mark', 'c2c-push-mark--card', { 'is-off': !isC2CPushOn(user) }]" viewBox="0 0 24 24" aria-hidden="true">
+                      <title>{{ isC2CPushOn(user) ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                      <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
+                      <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
+                      <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
+                      <path v-if="!isC2CPushOn(user)" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
+                    </svg>
+                  </span>
                 </button>
                 <div v-if="users.length === 0" class="empty-state">暂无用户数据</div>
               </div>
@@ -190,41 +218,133 @@
             <dt>用户开放平台ID</dt>
             <dd>{{ selectedUser.userOpenId }}</dd>
           </dl>
-          <!-- 权限组 -->
-          <div v-if="selectedUser" class="func-box">
-            <h4>权限组</h4>
-            <div class="perm-roles">
-              <button v-for="r in roles" :key="r" :class="['badge', 'clickable', permRole === r ? 'green' : 'gray']"
-                      @click="setPermRole(r)">{{ r }}</button>
+          <div v-if="selectedUser" class="c2c-profile-card">
+            <div class="c2c-profile-head">
+              <div class="c2c-profile-avatar">
+                <img
+                  v-show="!avatarFailed[selectedUser.userOpenId] && avatarUrlForUser(selectedUser)"
+                  :src="avatarUrlForUser(selectedUser)"
+                  :alt="selectedUser.userOpenId"
+                  referrerpolicy="no-referrer"
+                  @error="avatarFailed[selectedUser.userOpenId] = true"
+                />
+                <span v-show="!avatarUrlForUser(selectedUser) || avatarFailed[selectedUser.userOpenId]">{{ avatarTextForUser(selectedUser) }}</span>
+              </div>
+              <div class="c2c-profile-meta">
+                <strong>{{ selectedUser.userOpenId }}</strong>
+                <span>当前：{{ c2cRoleLabel(permDraft.role) }} · {{ permNodes.length }} 规则</span>
+              </div>
             </div>
-            <h4>权限节点</h4>
-            <div v-for="p in permNodes" :key="p" class="func-row">
-              <span class="func-name">{{ p }}</span>
-              <button class="perm-del" @click="removePerm(p)">×</button>
+
+            <div class="c2c-profile-section">
+              <div class="perm-editor-label">权限组</div>
+              <div class="perm-role-grid">
+                <button
+                  v-for="role in c2cRoleOptions"
+                  :key="role.key"
+                  type="button"
+                  class="perm-role-card"
+                  :class="['role-' + role.key.toLowerCase(), { active: permDraft.role === role.key }]"
+                  @click="permDraft.role = role.key"
+                >
+                  <svg v-if="role.key === 'USER'" class="perm-role-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M5.5 19c1.6-3.2 4-4.8 6.5-4.8s4.9 1.6 6.5 4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="role.key === 'ADMIN'" class="perm-role-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3.5 19 7v6c0 4-2.5 6.8-7 8.9-4.5-2.1-7-4.9-7-8.9V7l7-3.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="m8.5 12 2 2 4.8-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <svg v-else class="perm-role-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m5 15 2.2-7.2L12 12l4.8-4.2L19 15H5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M6 17h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                  <span class="perm-role-card__label">{{ role.label }}</span>
+                </button>
+              </div>
             </div>
-            <form class="perm-add" @submit.prevent="addPerm(newPerm)">
-              <input v-model="newPerm" placeholder="新权限节点" />
-              <button class="primary-button" :disabled="!newPerm.trim()">添加</button>
-            </form>
-            <h4>状态</h4>
-            <label class="checkbox-label">
-              <input type="checkbox" :checked="permBlocked" @change="toggleBlocked" />
-              拉黑
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" :checked="permIgnored" @change="toggleIgnored" />
-              屏蔽
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" :checked="permC2CPush" @change="toggleC2CPush" />
-              主动消息
-            </label>
+
+            <div class="c2c-profile-section">
+              <div class="perm-editor-label">权限节点</div>
+              <div v-if="permNodes.length" class="perm-token-list">
+                <button
+                  v-for="p in permNodes"
+                  :key="p"
+                  type="button"
+                  class="perm-token"
+                  @click="removePerm(p)"
+                >
+                  <span>{{ p }}</span>
+                  <span aria-hidden="true">×</span>
+                </button>
+              </div>
+              <div v-else class="c2c-perm-empty">暂无权限节点</div>
+              <form class="perm-add" @submit.prevent="addPerm(newPerm)">
+                <input v-model="newPerm" placeholder="添加权限节点" />
+                <button type="submit" class="primary-button" :disabled="!newPerm.trim()">添加</button>
+              </form>
+            </div>
+
+            <div class="c2c-profile-section">
+              <div class="perm-editor-label">状态</div>
+              <div class="perm-switch-grid">
+                <button type="button" class="switch-chip" :class="{ active: permBlocked }" @click="permBlocked = !permBlocked">
+                  <span class="switch-dot switch-dot--blocked" />
+                  <span>拉黑</span>
+                </button>
+                <button type="button" class="switch-chip" :class="{ active: permIgnored }" @click="permIgnored = !permIgnored">
+                  <span class="switch-dot switch-dot--ignored" />
+                  <span>屏蔽</span>
+                </button>
+                <button type="button" class="switch-chip" :class="{ active: permC2CPush }" @click="permC2CPush = !permC2CPush">
+                  <svg :class="['c2c-push-mark', 'c2c-push-mark--inline', { 'is-off': !permC2CPush }]" viewBox="0 0 24 24" aria-hidden="true">
+                    <title>{{ permC2CPush ? '主动消息已开启' : '主动消息已关闭' }}</title>
+                    <path class="push-bubble" d="M5.25 6.5A3.25 3.25 0 0 1 8.5 3.25h5.9a3.25 3.25 0 0 1 3.25 3.25v4.2a3.25 3.25 0 0 1-3.25 3.25H10.1l-3.55 3.1v-3.18a3.25 3.25 0 0 1-1.3-2.6V6.5Z"/>
+                    <path class="push-wave" d="M14.9 6.8c1.05.76 1.72 1.9 1.72 3.2s-.67 2.44-1.72 3.2"/>
+                    <path class="push-wave" d="M12.85 8.35c.46.4.75.98.75 1.65s-.29 1.25-.75 1.65"/>
+                    <path v-if="!permC2CPush" class="push-slash" d="M4.6 4.6 19.4 19.4"/>
+                  </svg>
+                  <span>主动消息</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="c2c-profile-actions">
+              <button type="button" class="primary-button" :disabled="permSaving" @click="savePermEditor">
+                {{ permSaving ? '保存中...' : '确认修改' }}
+              </button>
+              <button type="button" class="ghost-button danger" @click="openDeleteConfirm">清除档案</button>
+            </div>
           </div>
           <div v-else class="hint">选择用户后显示详情</div>
           <div class="log-box"><strong>请求状态</strong><p>{{ notice }}</p></div>
         </aside>
       </section>
     </main>
+
+    <div v-if="deleteConfirmOpen" class="perm-modal-backdrop" @click="closeDeleteConfirm">
+      <div class="perm-modal perm-modal--danger" @click.stop>
+        <h3>清除用户数据</h3>
+        <p class="perm-uid">{{ permTargetId || selectedUserId }}</p>
+        <p class="perm-warning">此操作会删除该用户的私聊档案数据</p>
+        <div class="danger-confirm">
+          <label>输入该用户 openId 以确认</label>
+          <input v-model="deleteConfirmText" :placeholder="permTargetId || selectedUserId" />
+        </div>
+        <div v-if="deleteError" class="perm-editor-error">{{ deleteError }}</div>
+        <div class="perm-modal-actions">
+          <button type="button" class="ghost-button" @click="closeDeleteConfirm">取消</button>
+          <button
+            type="button"
+            class="primary-button danger"
+            :disabled="deleteDeleting || deleteConfirmText.trim() !== (permTargetId || selectedUserId)"
+            @click="confirmDeleteUser"
+          >
+            {{ deleteDeleting ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="previewImg" class="lightbox" @click="previewImg = null">
       <img :src="previewImg" referrerpolicy="no-referrer" @click.stop  alt="t-1"/>
@@ -277,10 +397,27 @@ const permBlocked = ref(false)
 const permIgnored = ref(false)
 const permC2CPush = ref(true)
 const permNodes = ref([])
-const roles = ['USER', 'ADMIN', 'OWNER']
-function roleLabel(r) {
-  const map = { OWNER: '群主', ADMIN: '管理员', USER: '成员' }
-  return map[r] || r
+const permTargetId = ref('')
+const permSaving = ref(false)
+const permError = ref('')
+const deleteConfirmOpen = ref(false)
+const deleteConfirmText = ref('')
+const deleteDeleting = ref(false)
+const deleteError = ref('')
+const permDraft = reactive({
+  role: 'USER',
+  permissions: [],
+  blocked: false,
+  ignored: false,
+  c2cPush: true
+})
+const c2cRoleOptions = [
+  { key: 'USER', label: '普通' },
+  { key: 'ADMIN', label: '管理员' },
+  { key: 'OWNER', label: '所有者' }
+]
+function c2cRoleLabel(r) {
+  return c2cRoleOptions.find(item => item.key === r)?.label || '普通'
 }
 const newPerm = ref('')
 
@@ -356,6 +493,7 @@ function updateC2CPushState(userOpenId, enabled) {
   if (user) user.c2cPush = enabled
   if (userOpenId === selectedUserId.value) {
     permC2CPush.value = enabled
+    permDraft.c2cPush = enabled
   }
 }
 
@@ -424,8 +562,36 @@ function avatarUrl(message) {
   return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${message.unionOpenId}/640`
 }
 
+function avatarUrlForUser(user) {
+  if (!appId.value || !user?.userOpenId) return null
+  return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${user.userOpenId}/640`
+}
+
 function isC2CPushOn(user) {
   return user?.c2cPush !== false
+}
+
+function syncSelectedUserState(data) {
+  if (!data?.userOpenId) return
+  const idx = users.value.findIndex(u => u.userOpenId === data.userOpenId)
+  if (idx >= 0) {
+    users.value[idx] = { ...users.value[idx], ...data }
+  } else {
+    users.value.unshift({ ...data })
+  }
+
+  if (selectedUserId.value === data.userOpenId) {
+    permRole.value = data.role || 'USER'
+    permNodes.value = [...(data.permissions || [])]
+    permBlocked.value = data.isBlocked ?? false
+    permIgnored.value = data.isIgnored ?? false
+    permC2CPush.value = data.c2cPush !== false
+    permDraft.role = permRole.value
+    permDraft.permissions = [...permNodes.value]
+    permDraft.blocked = permBlocked.value
+    permDraft.ignored = permIgnored.value
+    permDraft.c2cPush = permC2CPush.value
+  }
 }
 
 async function logout() {
@@ -467,6 +633,27 @@ function closeDropdown() {
 async function selectUser(userOpenId) {
   if (selectedUserId.value === userOpenId) return
   selectedUserId.value = userOpenId
+  const current = users.value.find(u => u.userOpenId === userOpenId)
+  if (current) {
+    permRole.value = current.role || 'USER'
+    permNodes.value = [...(current.permissions || [])]
+    permBlocked.value = current.isBlocked ?? false
+    permIgnored.value = current.isIgnored ?? false
+    permC2CPush.value = current.c2cPush !== false
+  } else {
+    permRole.value = 'USER'
+    permNodes.value = []
+    permBlocked.value = false
+    permIgnored.value = false
+    permC2CPush.value = true
+  }
+  permDraft.role = permRole.value
+  permDraft.permissions = [...permNodes.value]
+  permDraft.blocked = permBlocked.value
+  permDraft.ignored = permIgnored.value
+  permDraft.c2cPush = permC2CPush.value
+  permTargetId.value = ''
+  deleteConfirmOpen.value = false
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
@@ -478,66 +665,107 @@ async function loadPerms() {
   if (!selectedUserId.value) return
   try {
     const data = await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions`)
-    permRole.value = data?.role || 'USER'
-    permNodes.value = data?.permissions || []
-    permBlocked.value = data?.isBlocked || false
-    permIgnored.value = data?.isIgnored || false
-    permC2CPush.value = data?.c2cPush !== false
-  } catch { permRole.value = 'USER'; permNodes.value = []; permBlocked.value = false; permIgnored.value = false; permC2CPush.value = true }
+    syncSelectedUserState(data)
+  } catch {
+    permRole.value = 'USER'
+    permNodes.value = []
+    permBlocked.value = false
+    permIgnored.value = false
+    permC2CPush.value = true
+    permDraft.role = 'USER'
+    permDraft.permissions = []
+    permDraft.blocked = false
+    permDraft.ignored = false
+    permDraft.c2cPush = true
+  }
 }
 
-async function toggleBlocked() {
+function addPerm(perm) {
+  const key = perm?.trim()
+  if (!key) return
+  if (!permNodes.value.includes(key)) {
+    permNodes.value = [...permNodes.value, key]
+    permDraft.permissions = [...permNodes.value]
+  }
+  newPerm.value = ''
+}
+
+function removePerm(perm) {
+  permNodes.value = permNodes.value.filter(p => p !== perm)
+  permDraft.permissions = [...permNodes.value]
+}
+
+async function savePermEditor() {
+  const target = selectedUserId.value
+  if (!target) return
+  permSaving.value = true
+  permError.value = ''
+  try {
+    const data = await api(`/c2c/${encodeURIComponent(target)}/profile`, {
+      method: 'POST',
+      body: JSON.stringify({
+        role: permDraft.role,
+        permissions: permDraft.permissions,
+        blocked: permDraft.blocked,
+        ignored: permDraft.ignored,
+        c2cPush: permDraft.c2cPush
+      })
+    })
+    syncSelectedUserState(data)
+    notice.value = '已保存'
+  } catch (e) {
+    permError.value = e.message
+  } finally {
+    permSaving.value = false
+  }
+}
+
+function openDeleteConfirm() {
   if (!selectedUserId.value) return
-  const val = !permBlocked.value
-  try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/blocked?value=${val}`, { method: 'POST' })
-    permBlocked.value = val
-  } catch (e) { notice.value = e.message }
+  permTargetId.value = selectedUserId.value
+  deleteConfirmText.value = ''
+  deleteError.value = ''
+  deleteConfirmOpen.value = true
 }
 
-async function toggleIgnored() {
-  if (!selectedUserId.value) return
-  const val = !permIgnored.value
-  try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/ignored?value=${val}`, { method: 'POST' })
-    permIgnored.value = val
-  } catch (e) { notice.value = e.message }
+function closeDeleteConfirm() {
+  deleteConfirmOpen.value = false
+  deleteConfirmText.value = ''
+  deleteError.value = ''
 }
 
-async function toggleC2CPush() {
-  if (!selectedUserId.value) return
-  const val = !permC2CPush.value
+async function confirmDeleteUser() {
+  const target = permTargetId.value || selectedUserId.value
+  if (!target || deleteConfirmText.value.trim() !== target) return
+  deleteDeleting.value = true
+  deleteError.value = ''
   try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/push?value=${val}`, { method: 'POST' })
-    permC2CPush.value = val
-    const user = users.value.find(u => u.userOpenId === selectedUserId.value)
-    if (user) user.c2cPush = val
-  } catch (e) { notice.value = e.message }
-}
-
-async function setPermRole(role) {
-  if (!selectedUserId.value) return
-  try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/role?role=${role}`, { method: 'POST' })
-    permRole.value = role
-  } catch (e) { notice.value = e.message }
-}
-
-async function addPerm(perm) {
-  if (!selectedUserId.value || !perm?.trim()) return
-  try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions/${encodeURIComponent(perm.trim())}?enabled=true`, { method: 'POST' })
-    permNodes.value.push(perm.trim())
-    newPerm.value = ''
-  } catch (e) { notice.value = e.message }
-}
-
-async function removePerm(perm) {
-  if (!selectedUserId.value) return
-  try {
-    await api(`/c2c/${encodeURIComponent(selectedUserId.value)}/permissions/${encodeURIComponent(perm)}?enabled=false`, { method: 'POST' })
-    permNodes.value = permNodes.value.filter(p => p !== perm)
-  } catch (e) { notice.value = e.message }
+    await api(`/c2c/${encodeURIComponent(target)}`, { method: 'DELETE' })
+    users.value = users.value.filter(u => u.userOpenId !== target)
+    delete avatarFailed[target]
+    if (selectedUserId.value === target) {
+      selectedUserId.value = ''
+      messages.value = []
+      totalMessages.value = 0
+      currentPage.value = 0
+      permRole.value = 'USER'
+      permNodes.value = []
+      permBlocked.value = false
+      permIgnored.value = false
+      permC2CPush.value = true
+      permDraft.role = 'USER'
+      permDraft.permissions = []
+      permDraft.blocked = false
+      permDraft.ignored = false
+      permDraft.c2cPush = true
+    }
+    closeDeleteConfirm()
+    notice.value = '用户档案数据已删除'
+  } catch (e) {
+    deleteError.value = e.message
+  } finally {
+    deleteDeleting.value = false
+  }
 }
 
 async function loadLatestMessages() {
@@ -695,6 +923,11 @@ function fmtTime(ts) {
 function avatarText(message) {
   const name = message.username || (isMe(message) ? 'Bot' : '?')
   return name.slice(0, 1).toUpperCase()
+}
+
+function avatarTextForUser(user) {
+  const value = (user?.username || user?.userOpenId || '?').trim()
+  return value ? value.slice(0, 1).toUpperCase() : '?'
 }
 
 watch(msgType, () => { pastePreview.value = null })

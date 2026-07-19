@@ -235,6 +235,42 @@ public class HypixelReward implements CommandExecutor, Listener {
         }
     }
 
+    @EventHandler
+    public void onNapcatGroupMessage(NapcatGroupMessageEvent event) {
+        if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "get_hypixel_reward")) return;
+        var content = event.getMessage().getContent();
+        if (content.contains("/cl ")) return;
+        Matcher findLink = URL_PATTERN.matcher(content.trim());
+        if (findLink.find()) {
+            String url = findLink.group();
+
+            if (client == null || !client.isOpen()) {
+                event.sendMessage("请求失败，请向开发者报告此问题！");
+                return;
+            }
+
+            RewardSession existingSession = getSessionByUserId(event.getUser().getUserId());
+            if (existingSession != null) {
+                event.sendMessage("⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
+                return;
+            }
+
+            String sessionId = UUID.randomUUID().toString();
+            RewardSession session = new RewardSession(
+                    sessionId, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.NAPCAT_GROUP
+            );
+            activeSessions.put(sessionId, session);
+
+            ObjectNode request = mapper.createObjectNode();
+            request.put("action", "fetch");
+            request.put("url", url);
+            request.put("session_id", sessionId);
+
+            client.send(request.toString());
+            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), "2", sessionId);
+        }
+    }
+
     private static class RewardSession {
         String sessionId;
         String userId;
@@ -389,6 +425,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append(r.asText()).append("\n");
                         }
+                        sb.append("使用机器人3889798968以获得更佳体验！");
                         GroupMessage.replyMessage(session.userId, session.groupId, session.messageId, false, sb.toString());
                     } else if (session.platform == Platform.OFFICIAL_GROUP) {
                         for (JsonNode r : response.path("rewards")) {

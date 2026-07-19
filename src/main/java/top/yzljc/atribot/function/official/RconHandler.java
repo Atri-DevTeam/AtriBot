@@ -51,7 +51,7 @@ public class RconHandler implements CommandExecutor {
                 sender.sendMessage("执行操作失败: 群聊不在白名单内，拒绝执行操作！");
                 return true;
             }
-            if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.hasPermission()) {
+            if (sender.getPlatform().equals(Platform.OFFICIAL_C2C) && !sender.hasPermission()) {
                 sender.sendMessage("执行操作失败: 用户不在白名单内，拒绝执行操作！");
                 return true;
             }
