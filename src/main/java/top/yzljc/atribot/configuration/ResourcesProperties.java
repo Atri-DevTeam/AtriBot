@@ -9,9 +9,6 @@ package top.yzljc.atribot.configuration;
  */
 public final class ResourcesProperties {
 
-    private ResourcesProperties() {
-    }
-
     private static final String API = Config.getInstance().getApiUrl();
 
     private static final String UGC_API = Config.getInstance().getUgcApiUrl();
@@ -99,8 +96,8 @@ public final class ResourcesProperties {
     // @ClassName PlayerProfile
     public static final String PLAYER_FRIENDS_UUID_API = "https://www.yzljc.top/data/api/v2/player/friends/uuid/{uuid}";
 
-    // @ClassName PlayerProfile
-    public static final String PLAYER_GAMESTATS_NAME_API = "https://www.yzljc.top/data/api/v2/player/gamestats/name/{name}";
+    // @ClassName PingCommand
+    public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
 
     // @ClassName PlayerProfile
     public static final String PLAYER_GAMESTATS_UUID_API = "https://www.yzljc.top/data/api/v2/player/gamestats/uuid/{uuid}";

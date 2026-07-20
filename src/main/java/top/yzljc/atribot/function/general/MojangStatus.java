@@ -1,12 +1,11 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.media.ImageType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
@@ -21,7 +20,7 @@ import java.util.Map;
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.overall
  */
-public class MojangStatus implements CommandExecutor {
+public class MojangStatus implements CommandExecutor, SlashCommandExecutor {
 
     private static final String secret = Config.getInstance().getAtribotKeySecret();
 
@@ -57,6 +56,25 @@ public class MojangStatus implements CommandExecutor {
         } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
             sender.sendMessage(data.url(), ImageType.URL);
             return true;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onSlashCommand(DiscordSlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
+        sender.sendMessage("正在检查 Mojang 服务状态，请稍候...");
+
+        String apiUrl = ResourcesProperties.MOJANG_STATUS_API + "?key=" + secret;
+
+        var data = PreImageGenerate.dump(apiUrl, Map.of());
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            sender.sendMessage("检查 Mojang 服务状态失败，请稍后重试: " + errMsg);
+            return true;
+        }
+
+        if (sender.getPlatform().isDiscordSlashCommand()) {
+            sender.sendEmbed(new DiscordEmbed().image(data.url()));
         }
         return true;
     }

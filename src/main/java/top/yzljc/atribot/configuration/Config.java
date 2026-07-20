@@ -118,6 +118,16 @@ public class Config {
     @Getter
     private boolean newBot;
 
+    // ########## Discord 配置参数 ##########
+    @Getter
+    private boolean discordEnabled;
+    @Getter
+    private String discordBotToken;
+    @Getter
+    private String discordApiBaseUrl;
+    @Getter
+    private int discordIntents;
+
     // Email configuration
     @Getter
     private boolean emailEnabled;
@@ -246,6 +256,12 @@ public class Config {
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
             this.newBot = yaml.getBoolean("qq.is-new-bot", false);
+
+            // ########## Discord 配置参数 ##########
+            this.discordEnabled = yaml.getBoolean("discord.enabled", false);
+            this.discordBotToken = yaml.getString("discord.bot-token", "");
+            this.discordApiBaseUrl = yaml.getString("discord.api-base-url", "https://discord.com/api/v10");
+            this.discordIntents = yaml.getInt("discord.intents", (1 << 0) | (1 << 9) | (1 << 12) | (1 << 15));
 
             // ########## 特殊群专用内容设置区域 ##########
             this.manosabaGroupId = yaml.getString("manosaba-group-id", "null");

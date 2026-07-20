@@ -36,6 +36,8 @@ import top.yzljc.atribot.platform.napcat.RequestReceiver;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
+import top.yzljc.atribot.platform.discord.DiscordEvents;
+import top.yzljc.atribot.platform.discord.DiscordManager;
 import top.yzljc.atribot.platform.official.OfficialManager;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
@@ -87,6 +89,7 @@ public class Atri {
     private final MinecraftNews minecraftNews;
     @Getter
     private final HypixelAnnouncements hypixelAnnouncements;
+    private final DiscordManager discordManager;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private IMAP imap;
@@ -110,6 +113,9 @@ public class Atri {
         this.minecraftVersionCheck = new MinecraftVersionCheck();
         this.minecraftNews = new MinecraftNews();
         this.hypixelAnnouncements = new HypixelAnnouncements();
+        this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
+                ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
+                : null;
 
         int qqBotPort = config.getListenPort();
 
@@ -175,6 +181,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
+        EventManager.getInstance().registerEvents(new DiscordEvents());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
@@ -355,6 +362,9 @@ public class Atri {
             imap.close();
             imap = null;
         }
+        if (discordManager != null) {
+            discordManager.stop();
+        }
         if (taskScheduler != null) {
             taskScheduler.shutdown();
         }
@@ -376,6 +386,14 @@ public class Atri {
             bot.qqBotManagerService.start();
         } catch (Exception e) {
             log.error("QQ Bot 初始化失败: {}", e.getMessage());
+        }
+
+        if (bot.discordManager != null) {
+            try {
+                bot.discordManager.start();
+            } catch (Exception e) {
+                log.error("Discord Bot 初始化失败: {}", e.getMessage(), e);
+            }
         }
 
         new Thread(() -> {

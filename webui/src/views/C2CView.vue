@@ -230,7 +230,8 @@
             <dt>用户开放平台ID</dt>
             <dd>{{ selectedUser.userOpenId }}</dd>
           </dl>
-          <div v-if="selectedUser" class="c2c-profile-card">
+          <template v-if="selectedUser">
+          <div class="c2c-profile-card">
             <div class="c2c-profile-head">
               <div class="c2c-profile-avatar">
                 <img
@@ -328,8 +329,43 @@
               <button type="button" class="ghost-button danger" @click="openDeleteConfirm">清除档案</button>
             </div>
           </div>
+          </template>
           <div v-else class="hint">选择用户后显示详情</div>
           <div class="log-box"><strong>请求状态</strong><p>{{ notice }}</p></div>
+          <section v-if="selectedUser" class="stats-section stats-lookup sidebar-stats-section">
+            <header class="stats-section-head">
+              <h3 class="stats-section-title">用户统计</h3>
+            </header>
+            <div v-if="userStatsLoading" class="empty-state stats-state">加载中...</div>
+            <div v-else-if="userStatsError" class="empty-state error stats-state">{{ userStatsError }}</div>
+            <div v-else-if="!userStats" class="empty-state stats-state">暂无统计数据</div>
+            <dl v-else class="stats-detail">
+              <div class="stats-detail-row">
+                <dt>最近用户名</dt>
+                <dd>{{ userStats.lastUsername || '-' }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>私聊接收消息</dt>
+                <dd>{{ formatNumber(userStats.c2cReceivedMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>私聊发送消息</dt>
+                <dd>{{ formatNumber(userStats.c2cSentMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>群聊接收消息</dt>
+                <dd>{{ formatNumber(userStats.groupReceivedMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>首次记录</dt>
+                <dd>{{ formatStatsTime(userStats.firstSeenAt) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>最近记录</dt>
+                <dd>{{ formatStatsTime(userStats.lastSeenAt) }}</dd>
+              </div>
+            </dl>
+          </section>
         </aside>
       </section>
     </main>
@@ -413,6 +449,9 @@ const permNodes = ref([])
 const permTargetId = ref('')
 const permSaving = ref(false)
 const permError = ref('')
+const userStats = ref(null)
+const userStatsLoading = ref(false)
+const userStatsError = ref('')
 const deleteConfirmOpen = ref(false)
 const deleteConfirmText = ref('')
 const deleteDeleting = ref(false)
@@ -658,10 +697,16 @@ function returnToUserList() {
   replyTo.value = null
   ctxMenu.visible = false
   permTargetId.value = ''
+  userStats.value = null
+  userStatsError.value = ''
+  userStatsLoading.value = false
 }
 
 async function selectUser(userOpenId) {
-  if (selectedUserId.value === userOpenId) return
+  if (selectedUserId.value === userOpenId) {
+    void loadUserStats()
+    return
+  }
   selectedUserId.value = userOpenId
   const current = users.value.find(u => u.userOpenId === userOpenId)
   if (current) {
@@ -689,6 +734,27 @@ async function selectUser(userOpenId) {
   currentPage.value = 0
   loadPerms()
   await loadLatestMessages()
+  void loadUserStats()
+}
+
+async function loadUserStats() {
+  const userOpenId = selectedUserId.value
+  if (!userOpenId) {
+    userStats.value = null
+    userStatsError.value = ''
+    userStatsLoading.value = false
+    return
+  }
+  userStatsLoading.value = true
+  userStatsError.value = ''
+  try {
+    userStats.value = await api(`/public/official/users/${encodeURIComponent(userOpenId)}`)
+  } catch (e) {
+    userStats.value = null
+    userStatsError.value = e.message
+  } finally {
+    userStatsLoading.value = false
+  }
 }
 
 async function loadPerms() {
@@ -788,6 +854,9 @@ async function confirmDeleteUser() {
       permDraft.blocked = false
       permDraft.ignored = false
       permDraft.c2cPush = true
+      userStats.value = null
+      userStatsError.value = ''
+      userStatsLoading.value = false
     }
     closeDeleteConfirm()
     notice.value = '用户档案数据已删除'
@@ -948,6 +1017,21 @@ function fmtTime(ts) {
   if (isNaN(d.getTime())) return ts
   const pad = n => String(n).padStart(2, '0')
   return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function formatStatsTime(value) {
+  if (!value) return '-'
+  const raw = String(value)
+  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return raw
+  const pad = n => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function formatNumber(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '-'
+  return num.toLocaleString('zh-CN')
 }
 
 function avatarText(message) {

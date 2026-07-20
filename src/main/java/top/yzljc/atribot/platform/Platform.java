@@ -11,5 +11,11 @@ public enum Platform {
     OFFICIAL_GROUP,
     OFFICIAL_C2C,
     NAPCAT_GROUP,
-    NAPCAT_PRIVATE;
+    NAPCAT_PRIVATE,
+    DISCORD_GUILD,
+    DISCORD_DM;
+
+    public boolean isDiscordSlashCommand() {
+        return this == DISCORD_GUILD || this == DISCORD_DM;
+    }
 }

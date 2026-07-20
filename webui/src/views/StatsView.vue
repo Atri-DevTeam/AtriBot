@@ -224,7 +224,7 @@
                 <dd>{{ formatTime(groupStats.lastSeenAt) }}</dd>
               </div>
               <div class="stats-detail-row">
-                <dt>入群时间戳</dt>
+                <dt>入群时间</dt>
                 <dd>{{ formatEpoch(groupStats.timestamp) }}</dd>
               </div>
               <div class="stats-detail-row">

@@ -1154,6 +1154,10 @@
   word-break: break-all;
 }
 
+.sidebar-stats-section {
+  margin-top: 14px;
+}
+
 .c2c-profile-card {
   display: grid;
   gap: 14px;

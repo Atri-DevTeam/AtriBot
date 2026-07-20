@@ -4,6 +4,11 @@ import com.sun.management.OperatingSystemMXBean;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.command.DiscordSlashCommandSender;
+import top.yzljc.atribot.service.request.HttpService;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -16,7 +21,7 @@ import java.lang.management.ManagementFactory;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.general
  */
-public class PingCommand implements CommandExecutor {
+public class PingCommand implements CommandExecutor, SlashCommandExecutor {
 
     private static final OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
@@ -31,15 +36,13 @@ public class PingCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        sender.sendMessage(buildStatus());
+        return true;
+    }
 
-        String status = String.format(
-                "Pong!\n当前服务运行状态:\nCPU使用率: %.2f%%\n内存使用率: %.2f%%\n磁盘使用率: %.2f%%\n机器人运行时间: %s",
-                getCpuUsage(),
-                getMemoryUsage(),
-                getDiskUsage(),
-                getSystemOperatingTime()
-        );
-        sender.sendMessage(status);
+    @Override
+    public boolean onSlashCommand(DiscordSlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
+        sender.sendMessage(buildStatus());
         return true;
     }
 
@@ -67,5 +70,30 @@ public class PingCommand implements CommandExecutor {
         long hours = uptime / (1000 * 60 * 60) % 24;
         long days = uptime / (1000 * 60 * 60 * 24);
         return String.format("%d天%02d小时%02d分钟%02d秒", days, hours, minutes, seconds);
+    }
+
+    private static String buildStatus() {
+        var ugc_status = HttpService.sendGetRequest(ResourcesProperties.UGC_STATUS_API);
+        String ugc_status_str = "CPU使用率: $cpu\n内存使用率: $meo\n磁盘使用率: $disk\n运行时间: $upt";
+        if (ugc_status == null || ugc_status.path("status").asInt() != 200) {
+            ugc_status_str = "获取状态失败";
+        } else {
+            var d = ugc_status.path("data");
+            String cpu = d.path("cpuUsage").asText(null);
+            String memory = d.path("memoryUsage").asText(null);
+            String disk = d.path("diskUsage").asText(null);
+            String uptime = d.path("uptime").asText(null);
+            ugc_status_str = ugc_status_str.replace("$cpu", cpu).replace("$meo", memory).replace("$disk", disk).replace("$upt", uptime);
+        }
+
+        return String.format(
+                "Pong!\n● 机器人运行状态:\nCPU使用率: %.2f%%\n内存使用率: %.2f%%\n磁盘使用率: %.2f%%\n运行时间: %s\n" +
+                        "● 图源服务运行状态:\n%s",
+                getCpuUsage(),
+                getMemoryUsage(),
+                getDiskUsage(),
+                getSystemOperatingTime(),
+                ugc_status_str
+        );
     }
 }

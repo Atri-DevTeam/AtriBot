@@ -138,6 +138,14 @@ qq:
   # Debug 群 OpenId
   debug-group-openId: "null"
 
+# ========== Discord 机器人配置参数 ==========
+discord:
+  enabled: false
+  bot-token: ""
+  api-base-url: "https://discord.com/api/v10"
+  # 默认包含 GUILDS / GUILD_MESSAGES / DIRECT_MESSAGES / MESSAGE_CONTENT
+  intents: 37377
+
 # ========== 特殊群专用内容设置区域 ==========
 
 # ManoDate 推送群号（保密项目）

@@ -355,6 +355,37 @@
             <strong>请求状态</strong>
             <p>{{ notice }}</p>
           </div>
+
+          <section v-if="selectedGroupId" class="stats-section stats-lookup sidebar-stats-section">
+            <header class="stats-section-head">
+              <h3 class="stats-section-title">群聊统计</h3>
+            </header>
+            <div v-if="groupStatsLoading" class="empty-state stats-state">加载中...</div>
+            <div v-else-if="groupStatsError" class="empty-state error stats-state">{{ groupStatsError }}</div>
+            <div v-else-if="!groupStats" class="empty-state stats-state">暂无统计数据</div>
+            <dl v-else class="stats-detail">
+              <div class="stats-detail-row">
+                <dt>接收消息</dt>
+                <dd>{{ formatNumber(groupStats.receivedMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>发送消息</dt>
+                <dd>{{ formatNumber(groupStats.sentMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>活跃用户数</dt>
+                <dd>{{ formatNumber(groupStats.activeUsers) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>首次记录</dt>
+                <dd>{{ formatStatsTime(groupStats.firstSeenAt) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>最近记录</dt>
+                <dd>{{ formatStatsTime(groupStats.lastSeenAt) }}</dd>
+              </div>
+            </dl>
+          </section>
         </aside>
       </section>
     </main>
@@ -414,6 +445,9 @@ const funcEntries = ref([])
 const newFunctionKey = ref('')
 const showInspector = ref(false)
 const showPermModal = ref(false)
+const groupStats = ref(null)
+const groupStatsLoading = ref(false)
+const groupStatsError = ref('')
 const permTarget = ref('')
 const pendingPermRole = ref('')
 const pendingPermNodes = ref([])
@@ -546,6 +580,9 @@ function returnToGroupFilter() {
   totalMessages.value = 0
   currentPage.value = 0
   funcEntries.value = []
+  groupStats.value = null
+  groupStatsError.value = ''
+  groupStatsLoading.value = false
   replyTo.value = null
   refMode.value = false
   if (groupFilter.value === 'function') {
@@ -1196,7 +1233,10 @@ function closeDropdown() {
 }
 
 async function selectGroup(groupOpenId) {
-  if (selectedGroupId.value === groupOpenId) return
+  if (selectedGroupId.value === groupOpenId) {
+    void loadGroupStats()
+    return
+  }
   selectedGroupId.value = groupOpenId
   messages.value = []
   totalMessages.value = 0
@@ -1204,6 +1244,27 @@ async function selectGroup(groupOpenId) {
   funcEntries.value = []
   await loadLatestMessages()
   loadGroupFunctions()
+  void loadGroupStats()
+}
+
+async function loadGroupStats() {
+  const groupOpenId = selectedGroupId.value
+  if (!groupOpenId) {
+    groupStats.value = null
+    groupStatsError.value = ''
+    groupStatsLoading.value = false
+    return
+  }
+  groupStatsLoading.value = true
+  groupStatsError.value = ''
+  try {
+    groupStats.value = await api(`/public/official/groups/${encodeURIComponent(groupOpenId)}`)
+  } catch (e) {
+    groupStats.value = null
+    groupStatsError.value = e.message
+  } finally {
+    groupStatsLoading.value = false
+  }
 }
 
 async function loadLatestMessages() {
@@ -1310,6 +1371,21 @@ function shortId(value) {
 function formatTime(ts) {
   if (!ts || ts <= 0) return '-'
   return new Date(ts * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+}
+
+function formatStatsTime(value) {
+  if (!value) return '-'
+  const raw = String(value)
+  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return raw
+  const pad = n => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function formatNumber(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '-'
+  return num.toLocaleString('zh-CN')
 }
 
 function avatarText(message) {
