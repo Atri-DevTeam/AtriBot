@@ -16,6 +16,11 @@ import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
+import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.PendingNoticeRepository;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
+import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
@@ -194,6 +199,7 @@ public class Atri {
         UpdatePushCommand updatePushCommand = new UpdatePushCommand();
         EventManager.getInstance().registerEvents(updatePushCommand);
         EventManager.getInstance().registerEvents(new EmailNotify());
+        EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -253,6 +259,8 @@ public class Atri {
         CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
         CommandManager.getCommand("golds").setExecutor(new CoinsCommand());
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
+        CommandManager.getCommand("投稿").setExecutor(new ImageSubmitCommand());
+        CommandManager.getCommand("图源").setExecutor(new ImageSourceStatsCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -278,6 +286,8 @@ public class Atri {
         SignRepository.init();
         FeedbackRepository.init();
         ErrorReportRepository.init();
+        ImageSourceRepository.init();
+        PendingNoticeRepository.init();
 
         RunScheduleTask.runAllTasks();
         this.taskScheduler = new TaskScheduler();

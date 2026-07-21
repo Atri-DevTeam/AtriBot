@@ -43,6 +43,15 @@
         反馈管理
         <span v-if="feedbackBadge > 0" class="feedback-nav-badge">{{ feedbackBadge }}</span>
       </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/gallery' }" @click="go('/gallery')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+        图源管理
+        <span v-if="galleryBadge > 0" class="feedback-nav-badge">{{ galleryBadge }}</span>
+      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/stats' }" @click="go('/stats')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10" />
@@ -104,6 +113,10 @@ defineProps({
     default: 'AtriBot'
   },
   feedbackBadge: {
+    type: Number,
+    default: 0
+  },
+  galleryBadge: {
     type: Number,
     default: 0
   }

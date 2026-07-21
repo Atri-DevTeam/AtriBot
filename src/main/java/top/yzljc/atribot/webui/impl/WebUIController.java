@@ -16,8 +16,14 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
+import top.yzljc.atribot.database.ImageReviewStatus;
+import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
+import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
+import top.yzljc.atribot.function.general.Feedback;
 import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
@@ -823,6 +829,8 @@ public class WebUIController {
         }
         boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden());
         if (success) {
+            // 主动推送涉及网络，别阻塞 WebUI 请求线程
+            ThreadManager.execute(() -> Feedback.dispatchReply(dto.getId()));
             ctx.json(Result.success("ok"));
         } else {
             ctx.json(Result.fail(500, "回复失败，可能该反馈不存在"));
@@ -1287,5 +1295,173 @@ public class WebUIController {
                                      boolean whitelist, boolean blacklisted, boolean allowedActive,
                                      Long realGroupId, long receivedMessages, long sentMessages,
                                      long activeUsers, String firstSeenAt, String lastSeenAt) {
+    }
+
+    // ═══════════════ 图源管理 ═══════════════
+
+    private static final DateTimeFormatter GALLERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public static void listGallery(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 24));
+        String status = ctx.queryParam("status"); // PENDING | REVIEWED | DENIED | all
+
+        String filter = ImageReviewStatus.isValid(status) ? status.toUpperCase() : null;
+        int total = ImageSourceRepository.countByStatus(filter);
+        List<ImageSourceDTO> list = ImageSourceRepository.findPaginated(filter, page, pageSize);
+
+        List<GalleryItemDTO> items = list.stream().map(WebUIController::toGalleryItem).toList();
+        ctx.json(Result.success(new GalleryListResult(items, total, page, pageSize)));
+    }
+
+    public static void countGallery(Context ctx) {
+        int pending = ImageSourceRepository.countByStatus(ImageReviewStatus.PENDING.name());
+        int reviewed = ImageSourceRepository.countByStatus(ImageReviewStatus.REVIEWED.name());
+        int denied = ImageSourceRepository.countByStatus(ImageReviewStatus.DENIED.name());
+        int all = ImageSourceRepository.countByStatus(null);
+        ctx.json(Result.success(new GalleryCountDTO(pending, reviewed, denied, all)));
+    }
+
+    public static void reviewGallery(Context ctx) {
+        ReviewGalleryDTO dto = ctx.bodyAsClass(ReviewGalleryDTO.class);
+        if (isBlank(dto.getId()) || !ImageReviewStatus.isValid(dto.getStatus())) {
+            ctx.json(Result.fail(400, "id 与合法的 status 不能为空"));
+            return;
+        }
+        boolean success = ImageReviewService.review(dto.getId(), ImageReviewStatus.of(dto.getStatus()),
+                REVIEWER_NAME, dto.getRemark());
+        ctx.json(success ? Result.success("ok") : Result.fail(500, "审核失败，可能该投稿不存在"));
+    }
+
+    public static void reviewGalleryBatch(Context ctx) {
+        ReviewGalleryBatchDTO dto = ctx.bodyAsClass(ReviewGalleryBatchDTO.class);
+        if (dto.getIds() == null || dto.getIds().isEmpty() || !ImageReviewStatus.isValid(dto.getStatus())) {
+            ctx.json(Result.fail(400, "ids 与合法的 status 不能为空"));
+            return;
+        }
+        ImageReviewStatus status = ImageReviewStatus.of(dto.getStatus());
+        int ok = 0;
+        for (String id : dto.getIds()) {
+            if (isBlank(id)) continue;
+            if (ImageReviewService.review(id, status, REVIEWER_NAME, dto.getRemark())) ok++;
+        }
+        ctx.json(Result.success(new GalleryBatchResult(ok, dto.getIds().size())));
+    }
+
+    public static void deleteGallery(Context ctx) {
+        DeleteGalleryDTO dto = ctx.bodyAsClass(DeleteGalleryDTO.class);
+        if (isBlank(dto.getId())) {
+            ctx.json(Result.fail(400, "id 不能为空"));
+            return;
+        }
+        boolean success = ImageSourceRepository.delete(dto.getId());
+        ctx.json(success ? Result.success("ok") : Result.fail(500, "删除失败，可能该投稿不存在"));
+    }
+
+    private static GalleryItemDTO toGalleryItem(ImageSourceDTO dto) {
+        return new GalleryItemDTO(
+                dto.getId(), dto.getImageUuid(), dto.getPlatform(), dto.getUploaderId(), dto.getUploaderName(),
+                dto.getGroupId(), ImageSourceClient.viewUrl(dto), dto.getFileName(), dto.getContentType(),
+                dto.getWidth(), dto.getHeight(), dto.getFileSize(), dto.getHash(), dto.getReviewStatus(),
+                dto.getReviewer(), dto.getReviewRemark(),
+                dto.getReviewTime() != null ? dto.getReviewTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
+                dto.getCreateTime() != null ? dto.getCreateTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
+                dto.isNotified()
+        );
+    }
+
+    /** WebUI 目前只有单一管理员会话，没有独立账号体系，审核人统一记为 webui */
+    private static final String REVIEWER_NAME = "webui";
+
+    /**
+     * 远端图床回调：告知某张图片的审核结论。
+     *
+     * <p>挂在 {@code /api/public/} 下，绕过 WebUI 的会话鉴权，因此改用 image-source.token
+     * 做共享密钥校验——否则任何人都能伪造审核结果并触发对用户的推送。
+     *
+     * <p>Body: {@code {uuid, review, reviewer, remark}}，review 取 REVIEWED / DENIED / PENDING。
+     */
+    public static void remoteImageReview(Context ctx) {
+        if (!verifyImageSourceToken(ctx)) {
+            ctx.json(Result.fail(401, "未授权"));
+            return;
+        }
+
+        RemoteImageReviewDTO dto;
+        try {
+            dto = ctx.bodyAsClass(RemoteImageReviewDTO.class);
+        } catch (Exception e) {
+            ctx.json(Result.fail(400, "请求体格式错误"));
+            return;
+        }
+
+        if (dto == null || isBlank(dto.getUuid()) || !ImageReviewStatus.isValid(dto.getReview())) {
+            ctx.json(Result.fail(400, "uuid 与合法的 review 不能为空"));
+            return;
+        }
+
+        boolean success = ImageReviewService.applyRemoteReview(dto.getUuid(),
+                ImageReviewStatus.of(dto.getReview()), dto.getReviewer(), dto.getRemark());
+        ctx.json(success ? Result.success("ok") : Result.fail(404, "未找到对应的投稿记录"));
+    }
+
+    /**
+     * 校验回调携带的共享密钥，接受 {@code Authorization: Bearer <token>} 或 {@code X-Image-Source-Token}。
+     * token 未配置时一律拒绝，避免误开放。
+     */
+    private static boolean verifyImageSourceToken(Context ctx) {
+        String expected = Config.getInstance().getImageSourceToken();
+        if (isBlank(expected) || "null".equalsIgnoreCase(expected.trim())) {
+            return false;
+        }
+        String header = ctx.header("Authorization");
+        String provided = header != null && header.startsWith("Bearer ")
+                ? header.substring(7).trim()
+                : ctx.header("X-Image-Source-Token");
+        return expected.equals(provided);
+    }
+
+    @Data
+    public static class RemoteImageReviewDTO {
+        private String uuid;
+        private String review;
+        private String reviewer;
+        private String remark;
+    }
+
+    public record GalleryItemDTO(String id, String imageUuid, String platform, String uploaderId,
+                                 String uploaderName, String groupId, String displayUrl, String fileName,
+                                 String contentType, int width, int height, long fileSize, String hash,
+                                 String reviewStatus, String reviewer, String reviewRemark,
+                                 String reviewTime, String createTime,
+                                 @JsonProperty("isNotified") boolean isNotified) {
+    }
+
+    public record GalleryListResult(List<GalleryItemDTO> items, int total, int page, int pageSize) {
+    }
+
+    public record GalleryCountDTO(int pending, int reviewed, int denied, int all) {
+    }
+
+    public record GalleryBatchResult(int success, int total) {
+    }
+
+    @Data
+    public static class ReviewGalleryDTO {
+        private String id;
+        private String status;
+        private String remark;
+    }
+
+    @Data
+    public static class ReviewGalleryBatchDTO {
+        private List<String> ids;
+        private String status;
+        private String remark;
+    }
+
+    @Data
+    public static class DeleteGalleryDTO {
+        private String id;
     }
 }

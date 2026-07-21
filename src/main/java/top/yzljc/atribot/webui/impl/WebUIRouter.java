@@ -104,6 +104,19 @@ public class WebUIRouter {
         server.get("/webui/api/feedback/count", WebUIController::countFeedback);
         server.post("/webui/api/feedback/reply", WebUIController::replyFeedback);
 
+        // 图源：远端图床的审核结果回调（公开路径，靠 image-source.token 自行鉴权）
+        server.post("/webui/api/public/imagesource/review", WebUIController::remoteImageReview);
+        server.post("/official-webui/api/public/imagesource/review", WebUIController::remoteImageReview);
+
+        // 图源管理
+        for (String prefix : new String[]{"/webui/api", "/official-webui/api"}) {
+            server.get(prefix + "/gallery/list", WebUIController::listGallery);
+            server.get(prefix + "/gallery/count", WebUIController::countGallery);
+            server.post(prefix + "/gallery/review", WebUIController::reviewGallery);
+            server.post(prefix + "/gallery/review-batch", WebUIController::reviewGalleryBatch);
+            server.post(prefix + "/gallery/delete", WebUIController::deleteGallery);
+        }
+
         // 用户列表
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
         server.get("/webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
