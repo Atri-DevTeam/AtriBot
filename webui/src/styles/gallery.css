@@ -279,6 +279,7 @@
 }
 
 .gallery-meta-sub {
+  flex-wrap: wrap;
   margin-top: 3px;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
@@ -301,6 +302,22 @@
   height: 28px;
   padding: 0;
   font-size: var(--text-sm);
+}
+
+.gallery-grid--dense .gallery-meta {
+  padding: 8px 8px 10px;
+}
+
+.gallery-grid--dense .gallery-actions {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.gallery-grid--dense .gallery-act {
+  min-height: 24px;
+  height: 24px;
+  padding: 0 4px;
+  font-size: var(--text-xs);
 }
 
 .gallery-review-note {
@@ -331,6 +348,10 @@
 
 .link-button:hover:not(:disabled) {
   text-decoration: underline;
+}
+
+.link-button.danger {
+  color: var(--color-danger);
 }
 
 .link-button:disabled {
@@ -569,6 +590,86 @@
 }
 
 @media (max-width: 640px) {
+  .shell .gallery-topbar {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "menu title density"
+      "tabs tabs tabs";
+    align-items: center;
+    gap: 8px;
+    height: auto;
+    min-height: 0;
+    padding: 8px 10px 10px;
+  }
+
+  .gallery-topbar .topbar-left {
+    display: contents;
+    padding-left: 0;
+    min-width: 0;
+  }
+
+  .gallery-topbar .menu-btn {
+    grid-area: menu;
+    position: static;
+    width: 30px;
+    height: 30px;
+    padding: 4px;
+    z-index: auto;
+  }
+
+  .gallery-topbar .feedback-title {
+    grid-area: title;
+    position: static;
+    transform: none;
+    justify-self: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+
+  .gallery-topbar .topbar-right {
+    grid-area: density;
+    align-self: center;
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .gallery-topbar .gallery-density {
+    display: inline-flex;
+  }
+
+  .gallery-topbar .gallery-density button {
+    width: 24px;
+    height: 22px;
+  }
+
+  .gallery-topbar .feedback-tabs {
+    grid-area: tabs;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .gallery-topbar .feedback-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gallery-topbar .feedback-tabs button {
+    flex: 0 0 auto;
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
   .gallery-grid {
     padding: var(--space-3);
   }
@@ -579,10 +680,6 @@
 
   .gallery-grid--dense {
     column-width: 110px;
-  }
-
-  .gallery-density {
-    display: none;
   }
 
   .gallery-bulk {

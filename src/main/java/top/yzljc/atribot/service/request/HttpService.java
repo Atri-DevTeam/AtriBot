@@ -362,6 +362,29 @@ public class HttpService {
         return null;
     }
 
+    public static JsonNode sendDeleteRequest(String url, String... headers) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE();
+            applyHeaders(builder, headers);
+            HttpRequest request = builder.build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
+            } else {
+                logHttpFailure("DELETE", url, response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            logRequestError("DELETE", url, e);
+        }
+        return null;
+    }
+
     public static String deleteRequestStr(String url, String... headers) {
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()

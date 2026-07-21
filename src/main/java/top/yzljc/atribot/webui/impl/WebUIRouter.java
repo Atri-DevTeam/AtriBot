@@ -104,10 +104,6 @@ public class WebUIRouter {
         server.get("/webui/api/feedback/count", WebUIController::countFeedback);
         server.post("/webui/api/feedback/reply", WebUIController::replyFeedback);
 
-        // 图源：远端图床的审核结果回调（公开路径，靠 image-source.token 自行鉴权）
-        server.post("/webui/api/public/imagesource/review", WebUIController::remoteImageReview);
-        server.post("/official-webui/api/public/imagesource/review", WebUIController::remoteImageReview);
-
         // 图源管理
         for (String prefix : new String[]{"/webui/api", "/official-webui/api"}) {
             server.get(prefix + "/gallery/list", WebUIController::listGallery);

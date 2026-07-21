@@ -37,6 +37,12 @@ public class ImageSourceDTO {
     private int width;
     private int height;
     private long fileSize;
+    /** 远端转储/压缩后的图片宽度 */
+    private int processedWidth;
+    /** 远端转储/压缩后的图片高度 */
+    private int processedHeight;
+    /** 远端转储/压缩后的图片大小 */
+    private long processedFileSize;
     /** 图片内容 hash，用于查重 */
     private String hash;
     /** PENDING / REVIEWED / DENIED */

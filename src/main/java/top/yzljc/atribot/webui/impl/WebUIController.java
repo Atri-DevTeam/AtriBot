@@ -1354,6 +1354,16 @@ public class WebUIController {
             ctx.json(Result.fail(400, "id 不能为空"));
             return;
         }
+        ImageSourceDTO image = ImageSourceRepository.findById(dto.getId());
+        if (image == null) {
+            ctx.json(Result.fail(404, "投稿记录不存在"));
+            return;
+        }
+        ImageSourceClient.RemoteResult remoteResult = ImageSourceClient.delete(image);
+        if (!remoteResult.ok()) {
+            ctx.json(Result.fail(500, "远端删除失败：" + remoteResult.message()));
+            return;
+        }
         boolean success = ImageSourceRepository.delete(dto.getId());
         ctx.json(success ? Result.success("ok") : Result.fail(500, "删除失败，可能该投稿不存在"));
     }
@@ -1362,7 +1372,9 @@ public class WebUIController {
         return new GalleryItemDTO(
                 dto.getId(), dto.getImageUuid(), dto.getPlatform(), dto.getUploaderId(), dto.getUploaderName(),
                 dto.getGroupId(), ImageSourceClient.viewUrl(dto), dto.getFileName(), dto.getContentType(),
-                dto.getWidth(), dto.getHeight(), dto.getFileSize(), dto.getHash(), dto.getReviewStatus(),
+                dto.getWidth(), dto.getHeight(), dto.getFileSize(),
+                dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize(),
+                dto.getHash(), dto.getReviewStatus(),
                 dto.getReviewer(), dto.getReviewRemark(),
                 dto.getReviewTime() != null ? dto.getReviewTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
                 dto.getCreateTime() != null ? dto.getCreateTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
@@ -1373,65 +1385,10 @@ public class WebUIController {
     /** WebUI 目前只有单一管理员会话，没有独立账号体系，审核人统一记为 webui */
     private static final String REVIEWER_NAME = "webui";
 
-    /**
-     * 远端图床回调：告知某张图片的审核结论。
-     *
-     * <p>挂在 {@code /api/public/} 下，绕过 WebUI 的会话鉴权，因此改用 image-source.token
-     * 做共享密钥校验——否则任何人都能伪造审核结果并触发对用户的推送。
-     *
-     * <p>Body: {@code {uuid, review, reviewer, remark}}，review 取 REVIEWED / DENIED / PENDING。
-     */
-    public static void remoteImageReview(Context ctx) {
-        if (!verifyImageSourceToken(ctx)) {
-            ctx.json(Result.fail(401, "未授权"));
-            return;
-        }
-
-        RemoteImageReviewDTO dto;
-        try {
-            dto = ctx.bodyAsClass(RemoteImageReviewDTO.class);
-        } catch (Exception e) {
-            ctx.json(Result.fail(400, "请求体格式错误"));
-            return;
-        }
-
-        if (dto == null || isBlank(dto.getUuid()) || !ImageReviewStatus.isValid(dto.getReview())) {
-            ctx.json(Result.fail(400, "uuid 与合法的 review 不能为空"));
-            return;
-        }
-
-        boolean success = ImageReviewService.applyRemoteReview(dto.getUuid(),
-                ImageReviewStatus.of(dto.getReview()), dto.getReviewer(), dto.getRemark());
-        ctx.json(success ? Result.success("ok") : Result.fail(404, "未找到对应的投稿记录"));
-    }
-
-    /**
-     * 校验回调携带的共享密钥，接受 {@code Authorization: Bearer <token>} 或 {@code X-Image-Source-Token}。
-     * token 未配置时一律拒绝，避免误开放。
-     */
-    private static boolean verifyImageSourceToken(Context ctx) {
-        String expected = Config.getInstance().getImageSourceToken();
-        if (isBlank(expected) || "null".equalsIgnoreCase(expected.trim())) {
-            return false;
-        }
-        String header = ctx.header("Authorization");
-        String provided = header != null && header.startsWith("Bearer ")
-                ? header.substring(7).trim()
-                : ctx.header("X-Image-Source-Token");
-        return expected.equals(provided);
-    }
-
-    @Data
-    public static class RemoteImageReviewDTO {
-        private String uuid;
-        private String review;
-        private String reviewer;
-        private String remark;
-    }
-
     public record GalleryItemDTO(String id, String imageUuid, String platform, String uploaderId,
                                  String uploaderName, String groupId, String displayUrl, String fileName,
-                                 String contentType, int width, int height, long fileSize, String hash,
+                                 String contentType, int width, int height, long fileSize,
+                                 int processedWidth, int processedHeight, long processedFileSize, String hash,
                                  String reviewStatus, String reviewer, String reviewRemark,
                                  String reviewTime, String createTime,
                                  @JsonProperty("isNotified") boolean isNotified) {

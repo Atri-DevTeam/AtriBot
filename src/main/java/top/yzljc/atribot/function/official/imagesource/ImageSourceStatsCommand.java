@@ -16,10 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * {@code /图源} —— 查询图源投稿的数据情况。
- *
- * <p>普通用户看到全站汇总 + 自己的投稿情况；管理员额外看到待送达通知数与最近的待审列表。
- *
  * @Author YZ_Ljc_
  * @ClassName ImageSourceStatsCommand
  * @Created_at 2026/07/21
@@ -36,14 +32,12 @@ public class ImageSourceStatsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
-            sender.sendMessage("图源统计目前仅支持 QQ 官方机器人哦~");
             return true;
         }
 
         boolean admin = sender.hasPermission();
-        // 管理员可用 /图源 list 直接看待审队列
         if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
-            if (!admin) return false;
+            if (!admin) return true;
             return handlePendingList(sender);
         }
 

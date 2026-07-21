@@ -166,7 +166,7 @@ public class Config {
     @Getter
     private String imageSourceUploadUrl;
     @Getter
-    private String imageSourceReviewUrl;
+    private String imageSourceDeleteUrl;
     @Getter
     private String imageSourceViewBaseUrl;
     @Getter
@@ -292,7 +292,7 @@ public class Config {
             // ########## 图源投稿设置区域 ##########
             this.imageSourceEnabled = yaml.getBoolean("image-source.enabled", false);
             this.imageSourceUploadUrl = yaml.getString("image-source.upload-url", "null");
-            this.imageSourceReviewUrl = yaml.getString("image-source.review-url", "null");
+            this.imageSourceDeleteUrl = yaml.getString("image-source.delete-url", "null");
             this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
             this.imageSourceToken = yaml.getString("image-source.token", "null");
             this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);

@@ -38,6 +38,9 @@ public class ImageSourceRepository {
                 "  `width` INT NOT NULL DEFAULT 0," +
                 "  `height` INT NOT NULL DEFAULT 0," +
                 "  `file_size` BIGINT NOT NULL DEFAULT 0," +
+                "  `processed_width` INT NOT NULL DEFAULT 0," +
+                "  `processed_height` INT NOT NULL DEFAULT 0," +
+                "  `processed_file_size` BIGINT NOT NULL DEFAULT 0," +
                 "  `hash` VARCHAR(128) NULL," +
                 "  `review_status` VARCHAR(16) NOT NULL DEFAULT 'PENDING'," +
                 "  `reviewer` VARCHAR(255) NULL," +
@@ -71,9 +74,10 @@ public class ImageSourceRepository {
     public static String insert(ImageSourceDTO dto) {
         String id = UUID.randomUUID().toString();
         String sql = "INSERT INTO `image_source` (`id`, `image_uuid`, `platform`, `uploader_id`, `uploader_name`, " +
-                "`group_id`, `source_url`, `file_name`, `content_type`, `width`, `height`, `file_size`, `hash`, " +
+                "`group_id`, `source_url`, `file_name`, `content_type`, `width`, `height`, `file_size`, " +
+                "`processed_width`, `processed_height`, `processed_file_size`, `hash`, " +
                 "`review_status`, `create_time`, `is_notified`) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -89,9 +93,12 @@ public class ImageSourceRepository {
             ps.setInt(10, dto.getWidth());
             ps.setInt(11, dto.getHeight());
             ps.setLong(12, dto.getFileSize());
-            ps.setString(13, dto.getHash());
-            ps.setString(14, dto.getReviewStatus() != null ? dto.getReviewStatus() : ImageReviewStatus.PENDING.name());
-            ps.setTimestamp(15, dto.getCreateTime() != null ? dto.getCreateTime() : new Timestamp(System.currentTimeMillis()));
+            ps.setInt(13, dto.getProcessedWidth());
+            ps.setInt(14, dto.getProcessedHeight());
+            ps.setLong(15, dto.getProcessedFileSize());
+            ps.setString(16, dto.getHash());
+            ps.setString(17, dto.getReviewStatus() != null ? dto.getReviewStatus() : ImageReviewStatus.PENDING.name());
+            ps.setTimestamp(18, dto.getCreateTime() != null ? dto.getCreateTime() : new Timestamp(System.currentTimeMillis()));
             ps.executeUpdate();
             log.info("图源投稿写入成功: id={}, imageUuid={}, uploader={}", id, dto.getImageUuid(), dto.getUploaderId());
             return id;
@@ -121,6 +128,20 @@ public class ImageSourceRepository {
     public static ImageSourceDTO findByImageUuid(String imageUuid) {
         if (imageUuid == null || imageUuid.isBlank()) return null;
         return querySingle("SELECT * FROM `image_source` WHERE `image_uuid` = ? LIMIT 1", imageUuid);
+    }
+
+    public static ImageSourceDTO findRandomReviewed() {
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement("SELECT * FROM `image_source` WHERE `review_status` = ? " +
+                     "AND `image_uuid` IS NOT NULL ORDER BY RAND() LIMIT 1")) {
+            ps.setString(1, ImageReviewStatus.REVIEWED.name());
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) return rowToDTO(rs);
+            }
+        } catch (Exception e) {
+            log.error("随机查询已通过图源失败", e);
+        }
+        return null;
     }
 
     /**
@@ -179,6 +200,22 @@ public class ImageSourceRepository {
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             log.error("删除图源记录失败: id={}", id, e);
+            return false;
+        }
+    }
+
+    public static boolean updateProcessedInfo(String id, int processedWidth, int processedHeight, long processedFileSize) {
+        String sql = "UPDATE `image_source` SET `processed_width` = ?, `processed_height` = ?, " +
+                "`processed_file_size` = ? WHERE `id` = ?";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setInt(1, processedWidth);
+            ps.setInt(2, processedHeight);
+            ps.setLong(3, processedFileSize);
+            ps.setString(4, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            log.error("更新图源转储信息失败: id={}", id, e);
             return false;
         }
     }
@@ -338,6 +375,9 @@ public class ImageSourceRepository {
         dto.setWidth(rs.getInt("width"));
         dto.setHeight(rs.getInt("height"));
         dto.setFileSize(rs.getLong("file_size"));
+        dto.setProcessedWidth(rs.getInt("processed_width"));
+        dto.setProcessedHeight(rs.getInt("processed_height"));
+        dto.setProcessedFileSize(rs.getLong("processed_file_size"));
         dto.setHash(rs.getString("hash"));
         dto.setReviewStatus(rs.getString("review_status"));
         dto.setReviewer(rs.getString("reviewer"));

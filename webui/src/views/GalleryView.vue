@@ -10,7 +10,7 @@
     <div class="sidebar-spacer"/>
 
     <main class="workspace">
-      <header class="topbar">
+      <header class="topbar gallery-topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -119,8 +119,12 @@
                     <span class="gallery-time">{{ formatTime(item.createTime) }}</span>
                   </div>
                   <div class="gallery-meta-row gallery-meta-sub">
-                    <span class="gallery-dim">{{ item.width || '?' }}×{{ item.height || '?' }}</span>
+                    <span class="gallery-dim">原 {{ formatDimensions(item.width, item.height) }}</span>
                     <span class="gallery-size">{{ formatSize(item.fileSize) }}</span>
+                    <span v-if="hasProcessedInfo(item)" class="gallery-dim">
+                      存 {{ formatDimensions(item.processedWidth, item.processedHeight) }}
+                    </span>
+                    <span v-if="hasProcessedInfo(item)" class="gallery-size">{{ formatSize(item.processedFileSize) }}</span>
                     <span class="gallery-id" :title="item.imageUuid || item.id">#{{ shortId(item.imageUuid || item.id) }}</span>
                   </div>
                   <div v-if="item.reviewStatus === 'PENDING'" class="gallery-actions">
@@ -130,10 +134,14 @@
                     <button class="ghost-button danger gallery-act" :disabled="busy === item.id"
                             @click="openDeny(item)">拒绝
                     </button>
+                    <button class="ghost-button danger gallery-act" :disabled="busy === item.id"
+                            @click="deleteImage(item)">删除
+                    </button>
                   </div>
                   <div v-else class="gallery-review-note">
                     <span>{{ item.reviewer || '系统' }} · {{ formatTime(item.reviewTime) }}</span>
                     <button class="link-button" :disabled="busy === item.id" @click="review(item, 'PENDING')">撤销</button>
+                    <button class="link-button danger" :disabled="busy === item.id" @click="deleteImage(item)">删除</button>
                   </div>
                   <div v-if="item.reviewRemark" class="gallery-remark" :title="item.reviewRemark">
                     备注：{{ item.reviewRemark }}
@@ -193,8 +201,14 @@
           <div><dt>用户 ID</dt><dd class="mono break">{{ viewer.uploaderId }}</dd></div>
           <div v-if="viewer.groupId"><dt>来源群</dt><dd class="mono break">{{ viewer.groupId }}</dd></div>
           <div><dt>投稿时间</dt><dd>{{ formatTime(viewer.createTime) }}</dd></div>
-          <div><dt>尺寸</dt><dd>{{ viewer.width || '?' }} × {{ viewer.height || '?' }}</dd></div>
-          <div><dt>大小</dt><dd>{{ formatSize(viewer.fileSize) }}</dd></div>
+          <div><dt>原始尺寸</dt><dd>{{ formatDimensions(viewer.width, viewer.height) }}</dd></div>
+          <div><dt>原始大小</dt><dd>{{ formatSize(viewer.fileSize) }}</dd></div>
+          <div v-if="hasProcessedInfo(viewer)">
+            <dt>转储尺寸</dt><dd>{{ formatDimensions(viewer.processedWidth, viewer.processedHeight) }}</dd>
+          </div>
+          <div v-if="hasProcessedInfo(viewer)">
+            <dt>转储大小</dt><dd>{{ formatSize(viewer.processedFileSize) }}</dd>
+          </div>
           <div v-if="viewer.fileName"><dt>文件名</dt><dd class="mono break">{{ viewer.fileName }}</dd></div>
           <div v-if="viewer.imageUuid"><dt>图片 UUID</dt><dd class="mono break">{{ viewer.imageUuid }}</dd></div>
           <div v-if="viewer.hash"><dt>Hash</dt><dd class="mono break">{{ viewer.hash }}</dd></div>
@@ -211,6 +225,7 @@
           <template v-else>
             <button class="ghost-button" :disabled="busy === viewer.id" @click="review(viewer, 'PENDING')">撤销审核</button>
           </template>
+          <button class="ghost-button danger" :disabled="busy === viewer.id" @click="deleteImage(viewer)">删除</button>
           <a v-if="viewer.displayUrl" class="ghost-button" :href="viewer.displayUrl" target="_blank"
              rel="noopener noreferrer">原图</a>
         </div>
@@ -423,6 +438,24 @@ async function bulkReview(status) {
   }
 }
 
+async function deleteImage(item) {
+  if (!item || !confirm(`确定删除 #${shortId(item.id)} 吗？这个操作会从图源管理里移除该记录。`)) return
+  busy.value = item.id
+  try {
+    await api('/gallery/delete', {
+      method: 'POST',
+      body: JSON.stringify({id: item.id})
+    })
+    selection.delete(item.id)
+    if (viewer.value && viewer.value.id === item.id) closeViewer()
+    await refresh()
+  } catch (e) {
+    alert('删除失败: ' + e.message)
+  } finally {
+    busy.value = ''
+  }
+}
+
 function openViewer(item) {
   viewer.value = item
 }
@@ -481,6 +514,16 @@ function formatSize(bytes) {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
   return `${(n / 1024 / 1024).toFixed(2)} MB`
+}
+
+function formatDimensions(width, height) {
+  const w = Number(width)
+  const h = Number(height)
+  return w > 0 && h > 0 ? `${w}×${h}` : '-'
+}
+
+function hasProcessedInfo(item) {
+  return Number(item?.processedWidth) > 0 || Number(item?.processedHeight) > 0 || Number(item?.processedFileSize) > 0
 }
 
 function formatTime(value) {

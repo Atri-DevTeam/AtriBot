@@ -18,12 +18,6 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * {@code /投稿 [图片]} —— 官方 Bot 图源投稿。
- *
- * <p>图片直链从触发本次指令的消息附件中取，见 {@link CommandSender#getImageUrls()}。
- * 平台给的 url 带会过期的 rkey，因此这里立刻把图片拉下来算 hash 并上报远端图床，
- * 本地只留元数据与远端返回的 uuid。
- *
  * @Author YZ_Ljc_
  * @ClassName ImageSubmitCommand
  * @Created_at 2026/07/21
@@ -35,9 +29,7 @@ public class ImageSubmitCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // 附件只在官方 Bot 的消息体里，Napcat 侧的 CQ 码结构不同，这里明确只支持官方 Bot
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
-            sender.sendMessage("图源投稿目前仅支持 QQ 官方机器人哦~");
             return true;
         }
 
@@ -59,22 +51,17 @@ public class ImageSubmitCommand implements CommandExecutor {
             return true;
         }
 
-        // 一次只收第一张，多图给出提示，避免刷屏式投稿
-        String imageUrl = imageUrls.get(0);
+        String imageUrl = imageUrls.getFirst();
         JsonNode attachment = sender.getFirstImageAttachment();
 
         ImageSourceDTO dto = buildDTO(sender, imageUrl, attachment);
 
-        sender.sendMessage(imageUrls.size() > 1
-                ? "收到啦！本次只受理第一张图片，其余的请分次投稿~\n正在处理中，稍等一下下…"
-                : "图片收到啦！正在处理中，稍等一下下…");
-
-        // 拉图 + 算 hash + 上报远端都是网络操作，扔到线程池，别卡住事件线程
-        ThreadManager.execute(() -> process(sender, dto));
+        var t = imageUrls.size();
+        ThreadManager.execute(() -> process(sender, dto, t));
         return true;
     }
 
-    private void process(CommandSender sender, ImageSourceDTO dto) {
+    private void process(CommandSender sender, ImageSourceDTO dto, int size) {
         try {
             String hash = ImageSourceClient.fetchAndHash(dto.getSourceUrl());
             if (hash == null) {
@@ -89,7 +76,7 @@ public class ImageSubmitCommand implements CommandExecutor {
                 return;
             }
 
-            // uuid 由本端生成，先落库再上报，保证远端回调时本地一定查得到这条记录
+            // uuid 由本端生成，先落库再上报，保证 WebUI 能立即看到这条待审记录
             String id = ImageSourceRepository.insert(dto);
             if (id == null) {
                 sender.sendMessage("投稿保存失败了呢，请稍后再试！");
@@ -97,15 +84,24 @@ public class ImageSubmitCommand implements CommandExecutor {
             }
             dto.setId(id);
 
-            if (!ImageSourceClient.upload(dto)) {
+            ImageSourceClient.UploadResult uploadResult = ImageSourceClient.upload(dto);
+            if (!uploadResult.ok()) {
                 // 远端没收下，本地记录也一并回滚，否则这张图的 hash 会挡住用户重试
                 ImageSourceRepository.delete(id);
-                sender.sendMessage("图片上传失败了呢，请稍后再试一次 /投稿~");
+                sender.sendMessage("图片上传失败了呢" + reasonSuffix(uploadResult.message()) + "，请稍后再试一次 /投稿~");
                 return;
             }
+            dto.setProcessedWidth(uploadResult.width());
+            dto.setProcessedHeight(uploadResult.height());
+            dto.setProcessedFileSize(uploadResult.fileSize());
+            ImageSourceRepository.updateProcessedInfo(id, dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize());
 
-            sender.sendMessage("投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id) +
-                    "\n审核结果出来后会第一时间通知你！");
+            String notify = "投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id);
+            if (size > 1) {
+                notify += "，单次仅能收录一张图片哦";
+            }
+
+            sender.sendMessage(notify);
 
             Alert.notify("收到图源投稿: 编号 " + shortId(id) +
                     " 来自用户: " + dto.getUploaderName() +
@@ -117,7 +113,6 @@ public class ImageSubmitCommand implements CommandExecutor {
             try {
                 sender.sendMessage("投稿处理出错了呢，请稍后再试！");
             } catch (Exception ignored) {
-                // 被动回复窗口可能已经过期，忽略
             }
         }
     }
@@ -145,5 +140,12 @@ public class ImageSubmitCommand implements CommandExecutor {
     private static String shortId(String id) {
         if (id == null) return "-";
         return id.length() <= 8 ? id : id.substring(0, 8);
+    }
+
+    private static String reasonSuffix(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "";
+        }
+        return "：" + reason.trim();
     }
 }

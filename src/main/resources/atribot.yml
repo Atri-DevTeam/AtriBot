@@ -125,6 +125,7 @@ commands:
       - gallery
       - 图源统计
       - 投稿统计
+      - imgs
   perm:
     description: 权限管理
     aliases:

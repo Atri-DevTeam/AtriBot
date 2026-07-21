@@ -115,8 +115,6 @@ public class DiscordManager {
             log.info("Discord session resumed successfully");
             return;
         }
-
-        log.debug("Discord event received: {}", eventType);
     }
 
     synchronized void onHeartbeatAck() {
