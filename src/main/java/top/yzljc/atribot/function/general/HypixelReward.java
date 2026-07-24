@@ -28,8 +28,6 @@ import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.utils.ErrorReport;
-import top.yzljc.atribot.utils.RemoteServerErrorException;
 
 import java.net.URI;
 import java.util.List;
@@ -93,8 +91,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             // 判断该用户是否已经在领奖了
             RewardSession existingSession = getSessionByUserId(userId);
             if (existingSession != null) {
-                sender.sendMessage(groupId != null ? groupId : "", messageId,
-                        "⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
+                sender.sendMessage("⚠️ 你已经有一个正在进行的任务了，请先完成或等待超时喵！");
                 return true;
             }
 
@@ -111,7 +108,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", userId, session.platform, sessionId);
 
         } else {
-            sender.sendMessage(groupId, messageId, "⚠️ 链接格式错误或未检测到链接喵！");
+            sender.sendMessage("⚠️ 链接格式错误或未检测到链接喵！");
         }
         return true;
     }
@@ -439,9 +436,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK)
+                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取")
                                         )
                                 ))
                         );
@@ -453,9 +450,9 @@ public class HypixelReward implements CommandExecutor, Listener {
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK)
+                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取")
                                         )
                                 ))
                         );

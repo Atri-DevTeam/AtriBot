@@ -187,9 +187,9 @@
                         </div>
                       </template>
                     </div>
-                    <pre v-if="message.messageType !== 2 && message.messageType !== 7 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="message.messageType === 7" class="media-placeholder">📷 媒体消息</div>
-                    <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                    <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
+                    <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                   </template>
                 </div>
                 <div class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</div>
@@ -211,15 +211,14 @@
             <textarea
               v-model="draft"
               :disabled="!selectedGroupId || sending"
-              :placeholder="msgType === 'image' ? '图片 URL / Base64 / 直接粘贴图片' : msgType === 'markdown' ? 'Markdown 内容' : '文本消息'"
+              :placeholder="msgType === 'image' ? '图片说明文字（可选）' : msgType === 'markdown' ? 'Markdown 内容' : '文本消息'"
               rows="3"
               @paste="onPaste"
             ></textarea>
             <div class="composer-image-opts" v-if="msgType === 'image'">
-              <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
-              <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
               <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
-              <label @click="$refs.fileInputRef.click()">上传</label>
+              <label @click="$refs.fileInputRef.click()">上传图片</label>
+              <span v-if="pastePreview" class="composer-image-hint">已选择图片，点击预览可清除</span>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
@@ -403,7 +402,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
+import { hasArkMessage } from '../lib/ark.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import ArkMessageCard from '../components/ArkMessageCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -417,9 +418,9 @@ const loadingMore = ref(false)
 const sending = ref(false)
 const draft = ref('')
 const msgType = ref('text')
-const imageType = ref('url')
+const imageData = ref(null)
 
-watch(msgType, () => { pastePreview.value = null })
+watch(msgType, () => { pastePreview.value = null; imageData.value = null })
 const totalMessages = ref(0)
 const notice = ref('等待操作')
 const appId = ref('')
@@ -626,8 +627,9 @@ async function loadFunctionKeys() {
 const hasMore = computed(() => messages.value.length < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
-  return !(!selectedGroupId.value || !draft.value.trim() || sending.value);
-
+  if (!selectedGroupId.value || sending.value) return false
+  if (msgType.value === 'image') return !!(imageData.value || draft.value.trim())
+  return !!draft.value.trim()
 })
 
 onMounted(async () => {
@@ -685,9 +687,7 @@ function onPaste(e) {
       const blob = item.getAsFile()
       const reader = new FileReader()
       reader.onload = () => {
-        const b64 = reader.result.split(',')[1]
-        draft.value = b64
-        imageType.value = 'base64'
+        imageData.value = reader.result.split(',')[1]
         pastePreview.value = reader.result
       }
       reader.readAsDataURL(blob)
@@ -701,9 +701,7 @@ function onFilePicked(e) {
   if (!file || !file.type.startsWith('image/')) return
   const reader = new FileReader()
   reader.onload = () => {
-    const b64 = reader.result.split(',')[1]
-    draft.value = b64
-    imageType.value = 'base64'
+    imageData.value = reader.result.split(',')[1]
     pastePreview.value = reader.result
   }
   reader.readAsDataURL(file)
@@ -952,6 +950,10 @@ function renderContent(message) {
   return text
 }
 
+function hasArk(message) {
+  return hasArkMessage(message?.ark)
+}
+
 function renderRefContent(ref) {
   const parts = []
   if (ref.content) {
@@ -981,11 +983,111 @@ function parseMsgRef(raw) {
     if (!Array.isArray(arr) || !arr[0]) return {}
     const ref = arr[0]
     return {
-      author: ref.author?.username || '',
-      content: ref.content || '',
-      attachments: (ref.attachments || []).filter(a => a.url || a.voice_wav_url)
+      author: findRefAuthor(ref),
+      content: findRefContent(ref),
+      attachments: findRefAttachments(ref)
     }
   } catch { return {} }
+}
+
+function findRefAuthor(ref) {
+  const direct = firstText(
+    ref?.author?.username,
+    ref?.author?.user_name,
+    ref?.author?.nickname,
+    ref?.author?.nick,
+    ref?.author?.name,
+    ref?.sender?.username,
+    ref?.sender?.user_name,
+    ref?.sender?.nickname,
+    ref?.sender?.nick,
+    ref?.sender?.name,
+    ref?.user?.username,
+    ref?.user?.user_name,
+    ref?.user?.nickname,
+    ref?.user?.nick,
+    ref?.user?.name,
+    ref?.username,
+    ref?.user_name,
+    ref?.nickname,
+    ref?.nick,
+    ref?.author_name,
+    ref?.sender_name
+  )
+  if (direct) return direct
+  return findNestedText(ref, new Set(['username', 'user_name', 'nickname', 'nick', 'author_name', 'sender_name']))
+}
+
+function findRefContent(ref) {
+  return firstText(ref?.content, ref?.text, ref?.message, ref?.raw_message, ref?.rawMessage)
+      || findNestedText(ref, new Set(['content', 'text', 'raw_message', 'rawMessage']))
+      || ''
+}
+
+function findRefAttachments(ref) {
+  const attachments = firstArray(ref?.attachments, ref?.attachment, ref?.files, ref?.file)
+      || findNestedArray(ref, new Set(['attachments', 'attachment', 'files', 'file']))
+      || []
+  return attachments.filter(a => a && (a.url || a.voice_wav_url))
+}
+
+function firstText(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return ''
+}
+
+function firstArray(...values) {
+  for (const value of values) {
+    if (Array.isArray(value)) return value
+  }
+  return null
+}
+
+function findNestedText(value, keys, seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return ''
+  seen.add(value)
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findNestedText(item, keys, seen)
+      if (found) return found
+    }
+    return ''
+  }
+  for (const [key, candidate] of Object.entries(value)) {
+    if (keys.has(key) && typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim()
+    }
+  }
+  for (const candidate of Object.values(value)) {
+    const found = findNestedText(candidate, keys, seen)
+    if (found) return found
+  }
+  return ''
+}
+
+function findNestedArray(value, keys, seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return null
+  seen.add(value)
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findNestedArray(item, keys, seen)
+      if (found) return found
+    }
+    return null
+  }
+  for (const [key, candidate] of Object.entries(value)) {
+    if (keys.has(key)) {
+      if (Array.isArray(candidate)) return candidate
+      if (candidate && typeof candidate === 'object') return [candidate]
+    }
+  }
+  for (const candidate of Object.values(value)) {
+    const found = findNestedArray(candidate, keys, seen)
+    if (found) return found
+  }
+  return null
 }
 
 function getRefTargetMsgIdx(message) {
@@ -1034,7 +1136,7 @@ async function jumpToReference(message) {
   const ref = parseMsgRef(message.messageReference)
   if (!selectedGroupId.value) return
 
-  const loaded = findLoadedReference(message, msgIdx)
+  const loaded = isReferenceComplete(ref) ? findLoadedReference(message, msgIdx) : null
   if (loaded) {
     await nextTick()
     highlightMessage(loaded.id)
@@ -1068,6 +1170,10 @@ async function jumpToReference(message) {
   } catch (error) {
     notice.value = error.message
   }
+}
+
+function isReferenceComplete(ref) {
+  return !!(ref?.author && (ref.content || (ref.attachments && ref.attachments.length)))
 }
 
 function findLoadedReference(message, refIdx) {
@@ -1331,9 +1437,9 @@ async function sendMessage() {
     if (msgType.value === 'markdown') {
       body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
     }
-    if (msgType.value === 'image') {
-      body.imageType = imageType.value
-      body.imageValue = draft.value.trim()
+    if (msgType.value === 'image' && imageData.value) {
+      body.imageType = 'base64'
+      body.imageValue = imageData.value
     }
     if (replyTo.value) {
       if (refMode.value) {
@@ -1350,6 +1456,7 @@ async function sendMessage() {
       body: JSON.stringify(body)
     })
     draft.value = ''
+    imageData.value = null
     pastePreview.value = null
     replyTo.value = null
     refMode.value = false

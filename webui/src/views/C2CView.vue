@@ -172,8 +172,9 @@
                         </div>
                       </template>
                     </div>
-                    <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                    <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
+                    <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                   </div>
                   <!-- 时间放在气泡下方，与群聊消息保持一致 -->
                   <div class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</div>
@@ -191,17 +192,17 @@
               <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
               <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType" value="markdown" />Markdown</label>
               <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image" />图片</label>
+              <label :class="{ active: msgType === 'stream' }"><input type="radio" v-model="msgType" value="stream" />流式</label>
             </div>
             <textarea v-model="draft" :disabled="!selectedUserId || sending"
-                      :placeholder="msgType === 'image' ? '图片 URL / Base64 / 直接粘贴图片' : msgType === 'markdown' ? 'Markdown 内容' : '文本消息'"
+                      :placeholder="msgType === 'image' ? '图片消息' : msgType === 'markdown' ? 'Markdown 内容' : msgType === 'stream' ? '每行一个 delta' : '文本消息'"
                       rows="3" @paste="onPaste"></textarea>
             <div class="composer-image-opts" v-if="msgType === 'image'">
-              <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
-              <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
               <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
-              <label @click="$refs.fileInputRef.click()">上传</label>
+              <label @click="$refs.fileInputRef.click()">上传图片</label>
+              <span v-if="pastePreview" class="composer-image-hint">已选择图片，点击预览可清除</span>
             </div>
-            <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
+            <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="clearSelectedImage" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
           </form>
 
@@ -407,6 +408,8 @@ import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import ArkMessageCard from '../components/ArkMessageCard.vue'
+import { hasArkMessage } from '../lib/ark.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -437,7 +440,7 @@ const replyTo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const msgType = ref('text')
-const imageType = ref('url')
+const imageData = ref(null)
 const pastePreview = ref(null)
 const previewImg = ref(null)
 const pageSize = 80
@@ -483,8 +486,9 @@ const persistedMessageCount = computed(() => messages.value.filter(m => !m.syste
 const hasMore = computed(() => persistedMessageCount.value < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
-  if (!selectedUserId.value || !draft.value.trim() || sending.value) return false
-  return true
+  if (!selectedUserId.value || sending.value) return false
+  if (msgType.value === 'image') return !!imageData.value
+  return !!draft.value.trim()
 })
 
 let eventSource = null
@@ -910,12 +914,18 @@ async function sendMessage() {
   if (!canSend.value) return
   sending.value = true
   try {
-    const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
-    if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
-    if (msgType.value === 'image') { body.imageType = imageType.value; body.imageValue = draft.value.trim() }
-    if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
-    await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
-    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
+    if (msgType.value === 'stream') {
+      const body = { userOpenId: selectedUserId.value, content: draft.value }
+      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      await api('/c2c/stream', { method: 'POST', body: JSON.stringify(body) })
+    } else {
+      const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
+      if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
+      if (msgType.value === 'image' && imageData.value) { body.imageType = 'base64'; body.imageValue = imageData.value }
+      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
+    }
+    draft.value = ''; imageData.value = null; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -927,6 +937,10 @@ function renderContent(message) {
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
+}
+
+function hasArk(message) {
+  return hasArkMessage(message?.ark)
 }
 
 function parseAttach(raw) {
@@ -962,7 +976,7 @@ function onPaste(e) {
       e.preventDefault()
       const blob = item.getAsFile()
       const reader = new FileReader()
-      reader.onload = () => { draft.value = reader.result.split(',')[1]; imageType.value = 'base64'; pastePreview.value = reader.result }
+      reader.onload = () => { imageData.value = reader.result.split(',')[1]; pastePreview.value = reader.result }
       reader.readAsDataURL(blob)
       return
     }
@@ -974,13 +988,16 @@ function onFilePicked(e) {
   if (!file || !file.type.startsWith('image/')) return
   const reader = new FileReader()
   reader.onload = () => {
-    const b64 = reader.result.split(',')[1]
-    draft.value = b64
-    imageType.value = 'base64'
+    imageData.value = reader.result.split(',')[1]
     pastePreview.value = reader.result
   }
   reader.readAsDataURL(file)
   e.target.value = ''
+}
+
+function clearSelectedImage() {
+  imageData.value = null
+  pastePreview.value = null
 }
 
 function onContextMenu(e, message) { ctxMenu.visible = true; ctxMenu.x = e.clientX; ctxMenu.y = e.clientY; ctxMenu.message = message }
@@ -1044,5 +1061,5 @@ function avatarTextForUser(user) {
   return value ? value.slice(0, 1).toUpperCase() : '?'
 }
 
-watch(msgType, () => { pastePreview.value = null })
+watch(msgType, () => { pastePreview.value = null; imageData.value = null })
 </script>

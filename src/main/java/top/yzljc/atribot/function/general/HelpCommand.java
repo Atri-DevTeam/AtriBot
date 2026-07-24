@@ -16,6 +16,7 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.GetProjectInfo;
 
@@ -40,7 +41,7 @@ public class HelpCommand implements CommandExecutor {
 
         if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
 
-            Markdown md = TC.md("✨ **" + Config.getInstance().getOfficialUsername() + "帮助菜单**\n\n" +
+            Markdown md = TC.md("✨ **" + OfficialBot.BOT_NAME + "帮助菜单**\n\n" +
                     "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
                     Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 16, 16) + Markdown.enterCommand("/mc",  "MC功能  ") + " | " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡") + "\n\n" +
                     Markdown.enterCommand("/games", "\uD83C\uDF40小游戏   ") + " | " + Markdown.enterCommand("/hitokoto", "\uD83D\uDCAB随机一言") + "\n\n" +

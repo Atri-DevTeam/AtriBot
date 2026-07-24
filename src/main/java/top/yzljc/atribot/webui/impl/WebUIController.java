@@ -28,6 +28,7 @@ import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
@@ -38,6 +39,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -118,8 +120,18 @@ public class WebUIController {
                 }
             } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {
                 // 被动回复
-                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
-                messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
+                if ("image".equals(msgType)) {
+                    if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                        ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
+                    }
+                    ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                    messageId = isBlank(dto.getContent())
+                            ? GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), type, dto.getImageValue())
+                            : GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent(), type, dto.getImageValue());
+                } else {
+                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
+                }
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
@@ -127,10 +139,13 @@ public class WebUIController {
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
-                        String imageType = dto.getImageType(); String imageValue = dto.getImageValue();
-                        if (isBlank(imageType) || isBlank(imageValue)) { ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null; }
-                        yield GroupChat.sendMessage(dto.getGroupOpenId(),
-                                "base64".equalsIgnoreCase(imageType) ? ImageType.BASE64 : ImageType.URL, imageValue);
+                        if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                            ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                        }
+                        ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                        yield isBlank(dto.getContent())
+                                ? GroupChat.sendMessage(dto.getGroupOpenId(), type, dto.getImageValue())
+                                : GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent(), type, dto.getImageValue());
                     }
                     default -> {
                         if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); yield null; }
@@ -184,8 +199,10 @@ public class WebUIController {
         ctx.json(Result.success(new ConfigDTO(
                 Config.getInstance().getQqAppId(),
                 Config.getInstance().getOfficialOpenId(),
-                Config.getInstance().getOfficialUsername(),
-                Config.getInstance().getQqApiBaseUrl()
+                OfficialBot.BOT_NAME,
+                Config.getInstance().getQqApiBaseUrl(),
+                Config.getInstance().getDebugGroupOpenId(),
+                Config.getInstance().getSuperAdminId()
         )));
     }
 
@@ -269,7 +286,8 @@ public class WebUIController {
         private String proof;
     }
 
-    public record ConfigDTO(String appId, String botOpenId, String botName, String apiBaseUrl) {
+    public record ConfigDTO(String appId, String botOpenId, String botName, String apiBaseUrl,
+                            String debugGroupId, String superAdminId) {
     }
 
     private static int parseInt(String value, int defaultValue) {
@@ -722,8 +740,18 @@ public class WebUIController {
         String messageId;
         try {
             if (replyId != null && !replyId.isBlank()) {
-                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
-                messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
+                if ("image".equals(msgType)) {
+                    if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                        ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
+                    }
+                    ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                    messageId = isBlank(dto.getContent())
+                            ? C2CChat.replyMessage(dto.getUserOpenId(), replyId, type, dto.getImageValue())
+                            : C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent(), type, dto.getImageValue());
+                } else {
+                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                    messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
+                }
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
@@ -734,9 +762,10 @@ public class WebUIController {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
                             ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
                         }
-                        yield C2CChat.sendMessage(dto.getUserOpenId(),
-                                "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL,
-                                dto.getImageValue());
+                        ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                        yield isBlank(dto.getContent())
+                                ? C2CChat.sendMessage(dto.getUserOpenId(), type, dto.getImageValue())
+                                : C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent(), type, dto.getImageValue());
                     }
                     default -> {
                         if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
@@ -748,8 +777,55 @@ public class WebUIController {
             ctx.json(Result.fail(500, "发送失败: " + e.getMessage()));
             return;
         }
-        if (messageId == null) return;
+        if (messageId == null) {
+            ctx.json(Result.fail(500, "发送失败：未返回消息ID"));
+            return;
+        }
         ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
+    }
+
+    public static void sendC2CStreamMessage(Context ctx) {
+        SendC2CStreamDTO dto = ctx.bodyAsClass(SendC2CStreamDTO.class);
+        if (isBlank(dto.getUserOpenId())) {
+            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            return;
+        }
+        if (isBlank(dto.getContent())) {
+            ctx.json(Result.fail(400, "内容不能为空"));
+            return;
+        }
+        List<Markdown> deltas = java.util.Arrays.stream(dto.getContent().split("\n"))
+                .filter(s -> !s.isBlank())
+                .map(Markdown::new)
+                .toList();
+        if (deltas.isEmpty()) {
+            ctx.json(Result.fail(400, "内容不能为空"));
+            return;
+        }
+        String messageId;
+        try {
+            String replyId = dto.getReplyMessageId();
+            if (!isBlank(replyId)) {
+                messageId = C2CChat.replyStreamDeltas(dto.getUserOpenId(), replyId, deltas);
+            } else {
+                messageId = C2CChat.streamDeltas(dto.getUserOpenId(), deltas);
+            }
+        } catch (Exception e) {
+            ctx.json(Result.fail(500, "发送失败: " + e.getMessage()));
+            return;
+        }
+        if (messageId == null) {
+            ctx.json(Result.fail(500, "发送失败：未返回消息ID"));
+            return;
+        }
+        ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
+    }
+
+    @Data
+    public static class SendC2CStreamDTO {
+        private String userOpenId;
+        private String content;
+        private String replyMessageId;
     }
 
     public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,
@@ -949,14 +1025,14 @@ public class WebUIController {
                 .map(r -> new UserMessageItemDTO(
                         r.unionOpenId(), r.username(), r.groupOpenId(), r.content(),
                         r.memberRole(), r.userRole(), r.messageType(), r.attachments(),
-                        r.mentions(), r.eventTimestamp(), r.createdAt()))
+                        r.ark(), r.mentions(), r.eventTimestamp(), r.createdAt()))
                 .toList();
         ctx.json(Result.success(new UserMessageListResult(items, result.total(), result.page(), result.pageSize())));
     }
 
     public record UserMessageItemDTO(String unionOpenId, String username, String groupOpenId,
                                      String content, String memberRole, String userRole,
-                                     Integer messageType, String attachments, String mentions,
+                                     Integer messageType, String attachments, String ark, String mentions,
                                      String eventTimestamp, String createdAt) {}
     public record UserMessageListResult(List<UserMessageItemDTO> items, long total, int page, int pageSize) {}
 
@@ -968,19 +1044,20 @@ public class WebUIController {
         List<UserC2CMessageItemDTO> items = result.records().stream()
                 .map(r -> new UserC2CMessageItemDTO(
                         r.unionOpenId(), r.username(), r.content(), r.userRole(),
-                        r.source(), r.messageType(), r.eventTimestamp(), r.createdAt()))
+                        r.source(), r.messageType(), r.eventTimestamp(), r.attachments(), r.ark(), r.createdAt()))
                 .toList();
         ctx.json(Result.success(new UserC2CMessageListResult(items, result.total(), result.page(), result.pageSize())));
     }
 
     public record UserC2CMessageItemDTO(String unionOpenId, String username, String content,
                                         String userRole, String source, Integer messageType,
-                                        String eventTimestamp, String createdAt) {}
+                                        String eventTimestamp, String attachments, String ark, String createdAt) {}
     public record UserC2CMessageListResult(List<UserC2CMessageItemDTO> items, long total, int page, int pageSize) {}
 
     // ═══════════════ 公开官方机器人查询 ═══════════════
 
     private static final DateTimeFormatter PUBLIC_QUERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ZoneId BEIJING_ZONE = ZoneId.of("Asia/Shanghai");
     private static final long PUBLIC_QUERY_CACHE_TTL_MILLIS = 60_000L;
     private static final ConcurrentHashMap<String, PublicQueryCacheEntry> PUBLIC_QUERY_CACHE = new ConcurrentHashMap<>();
 
@@ -1218,7 +1295,7 @@ public class WebUIController {
         LocalDateTime end;
 
         if (isBlank(startValue) && isBlank(endValue)) {
-            start = LocalDate.now().atStartOfDay();
+            start = LocalDate.now(BEIJING_ZONE).atStartOfDay();
             end = start.plusDays(1);
         } else if (isBlank(startValue)) {
             end = parsePublicQueryTime(endValue, true);

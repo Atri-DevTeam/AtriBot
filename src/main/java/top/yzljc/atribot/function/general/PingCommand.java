@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.general;
 
 import com.sun.management.OperatingSystemMXBean;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -8,10 +9,12 @@ import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.command.DiscordSlashCommandSender;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 
 
 /**
@@ -36,6 +39,13 @@ public class PingCommand implements CommandExecutor, SlashCommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender.getPlatform().equals(Platform.OFFICIAL_C2C)) {
+            var t = Arrays.stream(buildStatus().split("\n", -1))
+                    .map(line -> TC.md(line + "\n\n"))
+                    .toList();
+            sender.sendStreamMarkdownMessage(t);
+            return true;
+        }
         sender.sendMessage(buildStatus());
         return true;
     }
@@ -87,7 +97,7 @@ public class PingCommand implements CommandExecutor, SlashCommandExecutor {
         }
 
         return String.format(
-                "Pong!\n● 机器人运行状态:\nCPU使用率: %.2f%%\n内存使用率: %.2f%%\n磁盘使用率: %.2f%%\n运行时间: %s\n" +
+                "Pong! \n● 机器人运行状态:\nCPU使用率: %.2f%%\n内存使用率: %.2f%%\n磁盘使用率: %.2f%%\n运行时间: %s\n" +
                         "● 图源服务运行状态:\n%s",
                 getCpuUsage(),
                 getMemoryUsage(),

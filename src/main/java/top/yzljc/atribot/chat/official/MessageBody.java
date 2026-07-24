@@ -1,6 +1,7 @@
 package top.yzljc.atribot.chat.official;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
@@ -44,4 +45,7 @@ public class MessageBody {
     
     @JsonProperty("is_wakeup")
     private Boolean isWakeup;
+
+    @JsonIgnore
+    private String recordAttachments;
 }

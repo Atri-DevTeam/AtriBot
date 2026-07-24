@@ -2,6 +2,7 @@ package top.yzljc.atribot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
+import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.event.EventType;
@@ -67,7 +68,7 @@ public class CommandSender extends User {
     }
 
     /**
-     * 从附件中筛出图片直链。
+     * 从附件中筛出图片直链
      *
      * <p>官方 Bot 的图片附件形如
      * {@code {"content_type":"image/png","filename":"...","url":"multimedia.nt.qq.com.cn/download?...","width":765,"height":160,"size":27783}}，
@@ -145,6 +146,26 @@ public class CommandSender extends User {
     }
 
     @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(Markdown markdown, boolean at) {
+        switch (platform) {
+            case OFFICIAL_GROUP -> {
+                return super.sendMessage(this.groupId, this.messageId, markdown, at);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(Markdown markdown, Object buttons, boolean at) {
+        switch (platform) {
+            case OFFICIAL_GROUP -> {
+                return super.sendMessage(this.groupId, this.messageId, markdown, buttons, at);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown, Object buttons)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String data, ImageType type) {
         switch (platform) {
             case OFFICIAL_GROUP -> {
@@ -155,6 +176,19 @@ public class CommandSender extends User {
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String data, ImageType type)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String text, String data, ImageType type) {
+        switch (platform) {
+            case OFFICIAL_GROUP -> {
+                return super.sendMessage(this.groupId, this.messageId, text, data, type);
+            }
+            case OFFICIAL_C2C -> {
+                return C2CChat.replyMessage(this.userId, this.messageId, text, type, data);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String text, String data, ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -175,6 +209,26 @@ public class CommandSender extends User {
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String text, String data, MessageUtils.ImageType type)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendStreamTextMessage(List<String> textDeltas) {
+        switch (platform) {
+            case OFFICIAL_C2C -> {
+                return C2CChat.replyTextStreamDeltas(userId, messageId, textDeltas);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(List<String> textDeltas)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendStreamMarkdownMessage(List<Markdown> textDeltas) {
+        switch (platform) {
+            case OFFICIAL_C2C -> {
+                return C2CChat.replyStreamDeltas(userId, messageId, textDeltas);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(List<String> textDeltas)");
     }
 
     @SuppressWarnings("UnusedReturnValue")

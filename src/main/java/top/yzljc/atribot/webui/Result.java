@@ -36,4 +36,11 @@ public class Result<T> {
         return resultData;
     }
 
+    public static <T> Result<T> custom(int code, String message, T data) {
+        Result<T> resultData = new Result<>();
+        resultData.setStatus(code);
+        resultData.setMessage(message);
+        resultData.setData(data);
+        return resultData;
+    }
 }

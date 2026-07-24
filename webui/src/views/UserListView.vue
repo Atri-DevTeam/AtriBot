@@ -170,6 +170,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
+import { renderArkSummary } from '../lib/ark.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -358,6 +359,9 @@ function formatTime(value) {
 }
 
 function renderContent(item) {
+  const ark = renderArkSummary(item.ark)
+  if (ark) return ark
+
   let text = item.content || ''
   text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')

@@ -25,7 +25,7 @@ public class NapcatGroupMessageEvent extends Event {
     }
 
     public String sendMessage(String content) {
-        return this.user.sendMessage(this.message.getMessageId(), content);
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), content);
     }
 
     public String sendMessage(List<MessageSegment> data) {

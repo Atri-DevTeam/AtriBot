@@ -2,8 +2,6 @@ package top.yzljc.atribot.function.official.minecraft;
 
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
-import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.command.Command;
@@ -22,8 +20,6 @@ import java.util.stream.Collectors;
  * @Package top.yzljc.qqbot.functions.official.minecraft
  */
 public abstract class MinecraftNetwork {
-
-    protected static final ChatService service = Atri.getInstance().getChatService();
 
     private final boolean isSelf;
     private final String host;

@@ -112,9 +112,12 @@ public class Config {
     @Getter
     private String officialOpenId;
     @Getter
+    @Deprecated(since = "3.1.7") // 直接 /users/@me 拿，硬编码狗都不用
     private String officialUsername;
     @Getter
     private String debugGroupOpenId;
+    @Getter
+    private String superAdminId;
     @Getter
     private boolean newBot;
 
@@ -267,6 +270,7 @@ public class Config {
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
+            this.superAdminId = yaml.getString("qq.super_admin_id", "null");
             this.newBot = yaml.getBoolean("qq.is-new-bot", false);
 
             // ########## Discord 配置参数 ##########

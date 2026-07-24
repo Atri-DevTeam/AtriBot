@@ -97,7 +97,8 @@ public class PreImageGenerate {
         JsonNode resp = HttpService.postJson(url, body);
 
         if (resp == null || resp.path("status").asInt() != 200) {
-            return new ImageDTO(null, 0, 0, "在执行操作时出现错误: 访问远程服务器失败", ErrorReport.report("PreImageGenerate", new ServerNoResponseException()));
+            var err = ErrorReport.report(PreImageGenerate.class.getName(), new ServerNoResponseException());
+            return new ImageDTO(null, 0, 0, "访问远程数据失败，如持续发生请向开发者报告此问题，traceId: " + err, err);
         }
 
         String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();

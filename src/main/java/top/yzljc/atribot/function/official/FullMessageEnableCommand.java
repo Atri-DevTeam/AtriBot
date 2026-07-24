@@ -7,12 +7,12 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CPushFailEvent;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.official.OfficialBot;
 
 /**
  * @Author YZ_Ljc_
@@ -25,15 +25,16 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP)  return true;
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
 
         if (args.length < 1) {
+            var pt = sender.getPlatform().equals(Platform.OFFICIAL_GROUP) ? "群主" : "您";
             Markdown md = TC.md(
                     "启用全量消息\n\n" +
-                            "全量消息包括`主动消息`和`获取全部消息`，群主完成授权启用主动消息后，"
-                            + Config.getInstance().getOfficialUsername() +
+                            "全量消息包括`主动消息`和`获取全部消息`，" + pt + "完成授权启用主动消息后，"
+                            + OfficialBot.BOT_NAME +
                             "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供部分推送功能；" +
-                            "启用获取全部消息后，无需@" + Config.getInstance().getOfficialUsername() + "即可处理指令\n\n" +
+                            "启用获取全部消息后，无需@" + OfficialBot.BOT_NAME + "即可处理指令（仅群聊）\n\n" +
                             Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
             );
             sender.sendMessage(md);
@@ -92,7 +93,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
             OfficialGroups.setAllowedActiveMessage(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
-                    if (task.getFunctionId().equals("member_add_welcome")) continue;
+                    if (!task.isNeedActiveMessage()) continue;
                     OfficialGroups.setFunctionEnabled(groupOpenId, task.getFunctionId(), false, "system_active_message_fail");
                 }
             }
@@ -104,6 +105,12 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         String userId = event.getUserId();
         if (OfficialUsers.isC2CPushEnabled(userId) && event.getErrorCode() == 40034105 && userId != null) {
             OfficialUsers.setC2CPush(userId, false);
+            for (var task : PushTaskCommand.getTasks()) {
+                if (task.isUserEnabled(userId)) {
+                    if (!task.isNeedActiveMessage()) continue;
+                    OfficialUsers.setFunctionEnabled(userId, task.getFunctionId(), false, "system_c2c_push_fail");
+                }
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.DiceImpl;
 import top.yzljc.atribot.function.official.minecraft.MinecraftCapes;
 import top.yzljc.atribot.function.official.minecraft.MinecraftVersionCheck;
+import top.yzljc.atribot.function.official.minecraft.PackMcmetaGenerator;
 import top.yzljc.atribot.platform.Platform;
 
 /**
@@ -27,7 +28,8 @@ public class MinecraftCommand implements CommandExecutor {
                     "1. " + Markdown.enterCommand("/mc dice", "/mc dice") + " - Skyblock High Class Archfiend Dice\n\n" +
                     "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本\n\n" +
                     "3. " + Markdown.enterCommand("/bantracker", "/bantracker") + " - Hypixel BanTracker查询\n\n" +
-                    "4. " + Markdown.enterCommand("/mc capes", "/mc capes") + " - Minecraft全部Capes使用情况"
+                    "4. " + Markdown.enterCommand("/mc capes", "/mc capes") + " - Minecraft全部Capes使用情况\n\n" +
+                    "5. " + Markdown.enterCommand("/mc pack ", "/mc pack [版本]") + " - 生成MC资源包版本信息"
     );
 
     @Override
@@ -52,13 +54,18 @@ public class MinecraftCommand implements CommandExecutor {
             return true;
         }
 
-        if (subCommand.equals("version") || subCommand.equals("ver")) {
-            MinecraftVersionCheck.onCommand(sender);
-            return true;
-        }
-
-        if (subCommand.equals("capes") || subCommand.equals("cape")) {
-            return MinecraftCapes.handleCapesCommand(sender);
+        switch (subCommand) {
+            case "version", "ver" -> {
+                MinecraftVersionCheck.onCommand(sender);
+                return true;
+            }
+            case "capes", "cape" -> {
+                return MinecraftCapes.handleCapesCommand(sender);
+            }
+            case "pack" -> {
+                PackMcmetaGenerator.handle(sender, args);
+                return true;
+            }
         }
 
         sender.sendMessage(ValidCommands);

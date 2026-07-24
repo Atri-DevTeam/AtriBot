@@ -20,6 +20,7 @@ import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
 import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
@@ -124,13 +125,10 @@ public class Atri {
 
         int qqBotPort = config.getListenPort();
 
+        OfficialBot.fetchBotInfo();
+
         server = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
-            cfg.staticFiles.add(staticFiles -> {
-                staticFiles.hostedPath = "/official-webui";
-                staticFiles.directory = "/official-webui";
-                staticFiles.location = Location.CLASSPATH;
-            });
             cfg.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/webui";
                 staticFiles.directory = "/official-webui";
@@ -142,9 +140,6 @@ public class Atri {
             cfg.http.maxRequestSize = 10_000_000;
         }).start(qqBotPort);
 
-        server.before("/official-webui/*", ctx -> {
-            log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
-        });
         server.before("/webui/*", ctx -> {
             log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
         });

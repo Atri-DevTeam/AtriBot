@@ -15,6 +15,7 @@ import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.webui.impl.SseBroadcaster;
 
 import java.sql.SQLException;
@@ -31,7 +32,6 @@ public class ChatContentRecord implements Listener {
     private static final String GROUP_TABLE = "official_group_record";
     private static final String C2C_TABLE = "official_c2c_record";
     private static final String BOT_UNION_OPEN_ID = Config.getInstance().getOfficialOpenId();
-    private static final String BOT_USERNAME = Config.getInstance().getOfficialUsername();
     private static final DateTimeFormatter LOCAL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int REFERENCE_SCAN_LIMIT = 500;
 
@@ -49,6 +49,7 @@ public class ChatContentRecord implements Listener {
                 "  `message_type` INT NULL," +
                 "  `event_timestamp` VARCHAR(64) NULL," +
                 "  `attachments` MEDIUMTEXT NULL," +
+                "  `ark` MEDIUMTEXT NULL," +
                 "  `mentions` MEDIUMTEXT NULL," +
                 "  `message_reference` MEDIUMTEXT NULL," +
                 "  `ref_idx` VARCHAR(256) NULL," +
@@ -77,6 +78,8 @@ public class ChatContentRecord implements Listener {
                 "  `source` VARCHAR(64) NOT NULL," +
                 "  `message_type` INT NULL," +
                 "  `event_timestamp` VARCHAR(64) NULL," +
+                "  `attachments` MEDIUMTEXT NULL," +
+                "  `ark` MEDIUMTEXT NULL," +
                 "  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  PRIMARY KEY (`id`)," +
                 "  UNIQUE KEY `uk_c2c_message_openId` (`message_openId`)," +
@@ -93,22 +96,25 @@ public class ChatContentRecord implements Listener {
              var c2cStmt = conn.prepareStatement(c2cSql)) {
             groupStmt.execute();
             c2cStmt.execute();
-            ensureColumn("official_group_record", "event_type", "VARCHAR(64) NOT NULL DEFAULT 'UNKNOWN' AFTER `sender_is_bot`");
-            ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `sender_is_bot`");
-            ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
-            ensureIndex(GROUP_TABLE, "idx_group_union_openId", "`union_openId`");
-            ensureIndex(GROUP_TABLE, "idx_group_ref_idx", "`ref_idx`");
-            ensureIndex(GROUP_TABLE, "idx_group_sender_created", "`sender_is_bot`, `created_at`");
-            ensureIndex(GROUP_TABLE, "idx_group_open_sender_created", "`group_openId`, `sender_is_bot`, `created_at`");
-            ensureIndex(GROUP_TABLE, "idx_group_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
-            ensureIndex(C2C_TABLE, "idx_c2c_sender_created", "`sender_is_bot`, `created_at`");
-            ensureIndex(C2C_TABLE, "idx_c2c_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
-            ensureIndex(GROUP_TABLE, "idx_group_event_created", "`event_type`, `created_at`");
-            ensureIndex(GROUP_TABLE, "idx_group_open_event_created", "`group_openId`, `event_type`, `created_at`");
-            ensureIndex(GROUP_TABLE, "idx_group_union_event_created", "`union_openId`, `event_type`, `created_at`");
-            ensureIndex(C2C_TABLE, "idx_c2c_source_created", "`source`, `created_at`");
-            ensureIndex(C2C_TABLE, "idx_c2c_union_source_created", "`union_openId`, `source`, `created_at`");
-            dropColumnIfExists(C2C_TABLE, "user_openId");
+//            ensureColumn("official_group_record", "event_type", "VARCHAR(64) NOT NULL DEFAULT 'UNKNOWN' AFTER `sender_is_bot`");
+//            ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `sender_is_bot`");
+//            ensureColumn(GROUP_TABLE, "ark", "MEDIUMTEXT NULL AFTER `attachments`");
+//            ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
+//            ensureColumn(C2C_TABLE, "ark", "MEDIUMTEXT NULL AFTER `event_timestamp`");
+            ensureColumn(C2C_TABLE, "attachments", "MEDIUMTEXT NULL AFTER `event_timestamp`");
+//            ensureIndex(GROUP_TABLE, "idx_group_union_openId", "`union_openId`");
+//            ensureIndex(GROUP_TABLE, "idx_group_ref_idx", "`ref_idx`");
+//            ensureIndex(GROUP_TABLE, "idx_group_sender_created", "`sender_is_bot`, `created_at`");
+//            ensureIndex(GROUP_TABLE, "idx_group_open_sender_created", "`group_openId`, `sender_is_bot`, `created_at`");
+//            ensureIndex(GROUP_TABLE, "idx_group_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
+//            ensureIndex(C2C_TABLE, "idx_c2c_sender_created", "`sender_is_bot`, `created_at`");
+//            ensureIndex(C2C_TABLE, "idx_c2c_union_sender_created", "`union_openId`, `sender_is_bot`, `created_at`");
+//            ensureIndex(GROUP_TABLE, "idx_group_event_created", "`event_type`, `created_at`");
+//            ensureIndex(GROUP_TABLE, "idx_group_open_event_created", "`group_openId`, `event_type`, `created_at`");
+//            ensureIndex(GROUP_TABLE, "idx_group_union_event_created", "`union_openId`, `event_type`, `created_at`");
+//            ensureIndex(C2C_TABLE, "idx_c2c_source_created", "`source`, `created_at`");
+//            ensureIndex(C2C_TABLE, "idx_c2c_union_source_created", "`union_openId`, `source`, `created_at`");
+//            dropColumnIfExists(C2C_TABLE, "user_openId");
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
             log.error("初始化官方机器人消息记录表失败: {}", e.getMessage(), e);
@@ -136,7 +142,9 @@ public class ChatContentRecord implements Listener {
                 user.isBot(),
                 "C2C_MESSAGE_CREATE",
                 0,
-                event.getTimestamp()
+                event.getTimestamp(),
+                toJson(event.getMessage().getAttachments()),
+                toJsonOrNull(event.getMessage().getArk())
         );
     }
 
@@ -163,6 +171,7 @@ public class ChatContentRecord implements Listener {
                 0,
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
+                toJsonOrNull(event.getMessage().getArk()),
                 null,
                 toJson(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
@@ -185,6 +194,7 @@ public class ChatContentRecord implements Listener {
                 event.getMessage().getType(),
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
+                toJsonOrNull(event.getMessage().getArk()),
                 toJson(event.getMessage().getMentionedUsers()),
                 toJson(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
@@ -252,7 +262,7 @@ public class ChatContentRecord implements Listener {
         recordGroupMessage(
                 groupOpenId,
                 BOT_UNION_OPEN_ID,
-                BOT_USERNAME,
+                OfficialBot.BOT_NAME,
                 extractContent(request),
                 messageOpenId,
                 true,
@@ -260,7 +270,8 @@ public class ChatContentRecord implements Listener {
                 "BOT_SEND",
                 request.getMsgType(),
                 nowLocalTime(),
-                null,
+                request.getRecordAttachments(),
+                toJsonOrNull(request.getArk()),
                 null,
                 messageReference,
                 null
@@ -271,13 +282,15 @@ public class ChatContentRecord implements Listener {
         recordC2CMessage(
                 null,
                 userOpenId,
-                BOT_USERNAME,
+                OfficialBot.BOT_NAME,
                 extractContent(request),
                 messageOpenId,
                 true,
                 "BOT_SEND",
                 request.getMsgType(),
-                nowLocalTime()
+                nowLocalTime(),
+                request.getRecordAttachments(),
+                toJsonOrNull(request.getArk())
         );
     }
 
@@ -288,7 +301,7 @@ public class ChatContentRecord implements Listener {
 
         String countSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
         String dataSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
-                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, ark, mentions, message_reference, ref_idx, created_at " +
                 "FROM `" + GROUP_TABLE + "` WHERE group_openId = ? ORDER BY id DESC LIMIT ? OFFSET ?";
 
         long total = 0;
@@ -308,7 +321,7 @@ public class ChatContentRecord implements Listener {
             dataStmt.setInt(3, offset);
             var rs = dataStmt.executeQuery();
             while (rs.next()) {
-                records.add(toGroupMessageRecord(rs));
+                records.add(toGroupMessageRecord(conn, rs));
             }
         } catch (SQLException e) {
             log.error("查询官方群消息失败, groupOpenId={}, page={}, pageSize={}: {}", groupOpenId, safePage, safePageSize, e.getMessage(), e);
@@ -325,7 +338,7 @@ public class ChatContentRecord implements Listener {
         int safePageSize = Math.max(1, Math.min(pageSize, 200));
         String excludeClause = excludeId > 0 ? " AND id <> ?" : "";
         String targetSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
-                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, ark, mentions, message_reference, ref_idx, created_at " +
                 "FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND ref_idx = ?" + excludeClause + " ORDER BY id DESC LIMIT 1";
         String newerCountSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND id > ?";
 
@@ -343,7 +356,7 @@ public class ChatContentRecord implements Listener {
                 return null;
             }
 
-            GroupMessageRecord record = toGroupMessageRecord(rs);
+            GroupMessageRecord record = toGroupMessageRecord(conn, rs);
             countStmt.setString(1, groupOpenId);
             countStmt.setLong(2, record.id());
             var countRs = countStmt.executeQuery();
@@ -380,7 +393,7 @@ public class ChatContentRecord implements Listener {
         int safePageSize = Math.max(1, Math.min(pageSize, 200));
         String idClause = excludeId > 0 ? " AND id < ?" : "";
         String scanSql = "SELECT id, group_openId, union_openId, username, content, message_openId, " +
-                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx, created_at " +
+                "sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, ark, mentions, message_reference, ref_idx, created_at " +
                 "FROM `" + GROUP_TABLE + "` WHERE group_openId = ?" + idClause + " ORDER BY id DESC LIMIT ?";
         String newerCountSql = "SELECT COUNT(*) FROM `" + GROUP_TABLE + "` WHERE group_openId = ? AND id > ?";
 
@@ -400,7 +413,7 @@ public class ChatContentRecord implements Listener {
 
             var rs = scanStmt.executeQuery();
             while (rs.next()) {
-                GroupMessageRecord record = toGroupMessageRecord(rs);
+                GroupMessageRecord record = toGroupMessageRecord(conn, rs);
                 if (!matchesReference(record, targetAuthor, targetText, targetAttachments)) {
                     continue;
                 }
@@ -503,10 +516,11 @@ public class ChatContentRecord implements Listener {
         return null;
     }
 
-    private static GroupMessageRecord toGroupMessageRecord(java.sql.ResultSet rs) throws SQLException {
+    private static GroupMessageRecord toGroupMessageRecord(java.sql.Connection conn, java.sql.ResultSet rs) throws SQLException {
+        String groupOpenId = rs.getString("group_openId");
         return new GroupMessageRecord(
                 rs.getLong("id"),
-                rs.getString("group_openId"),
+                groupOpenId,
                 rs.getString("union_openId"),
                 rs.getString("username"),
                 rs.getString("content"),
@@ -517,25 +531,267 @@ public class ChatContentRecord implements Listener {
                 (Integer) rs.getObject("message_type"),
                 rs.getString("event_timestamp"),
                 rs.getString("attachments"),
+                rs.getString("ark"),
                 rs.getString("mentions"),
-                rs.getString("message_reference"),
+                enrichMessageReference(conn, groupOpenId, rs.getString("message_reference")),
                 rs.getString("ref_idx"),
                 rs.getString("created_at")
         );
     }
 
+    private static String enrichMessageReference(java.sql.Connection conn, String groupOpenId, String rawReference) {
+        if (isBlank(groupOpenId) || isBlank(rawReference)) {
+            return rawReference;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(rawReference);
+            JsonNode refNode = root.isArray() && root.size() > 0 ? root.get(0) : root;
+            if (refNode == null || refNode.isMissingNode() || refNode.isNull()) {
+                return rawReference;
+            }
+            if (isReferenceComplete(refNode)) {
+                return rawReference;
+            }
+
+            ReferenceSource source = findReferenceSource(conn, groupOpenId, refNode);
+            if (source == null) {
+                return rawReference;
+            }
+
+            var enrichedRoot = root.deepCopy();
+            JsonNode enrichedRefNode = enrichedRoot.isArray() && enrichedRoot.size() > 0 ? enrichedRoot.get(0) : enrichedRoot;
+            if (!(enrichedRefNode instanceof com.fasterxml.jackson.databind.node.ObjectNode refObj)) {
+                return rawReference;
+            }
+
+            JsonNode authorJson = refObj.get("author");
+            com.fasterxml.jackson.databind.node.ObjectNode authorNode;
+            if (authorJson instanceof com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+                authorNode = objectNode;
+            } else {
+                authorNode = objectMapper.createObjectNode();
+                refObj.set("author", authorNode);
+            }
+            if (isBlank(findReferenceAuthor(refObj))) {
+                authorNode.put("username", emptyToNull(source.username()));
+            }
+            if (isBlank(findReferenceContent(refObj))) {
+                refObj.put("content", source.content() == null ? "" : source.content());
+            }
+            if (!hasReferenceAttachments(refObj) && !isBlank(source.attachments())) {
+                try {
+                    refObj.set("attachments", objectMapper.readTree(source.attachments()));
+                } catch (Exception ignored) {
+                }
+            }
+            if (isBlank(findRefIdxValue(refObj)) && !isBlank(source.refIdx())) {
+                refObj.put("msg_idx", source.refIdx());
+            }
+            return objectMapper.writeValueAsString(enrichedRoot);
+        } catch (Exception e) {
+            log.debug("补全引用消息展示数据失败: {}", e.getMessage());
+            return rawReference;
+        }
+    }
+
+    private static ReferenceSource findReferenceSource(java.sql.Connection conn, String groupOpenId, JsonNode refNode) throws SQLException {
+        String refMsgIdx = findRefIdxValue(refNode);
+        if (!isBlank(refMsgIdx)) {
+            String sql = "SELECT username, content, attachments, ref_idx FROM `" + GROUP_TABLE + "` " +
+                    "WHERE group_openId = ? AND ref_idx = ? ORDER BY id DESC LIMIT 1";
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, groupOpenId);
+                stmt.setString(2, refMsgIdx);
+                var rs = stmt.executeQuery();
+                if (rs.next()) {
+                    return new ReferenceSource(
+                            rs.getString("username"),
+                            rs.getString("content"),
+                            rs.getString("attachments"),
+                            rs.getString("ref_idx")
+                    );
+                }
+            }
+        }
+
+        String targetAuthor = emptyToNull(findReferenceAuthor(refNode));
+        String targetText = normalizeReferenceText(findReferenceContent(refNode));
+        List<AttachmentFingerprint> targetAttachments = referenceAttachments(refNode);
+        if (isBlank(targetText) && targetAttachments.isEmpty()) {
+            return null;
+        }
+
+        String scanSql = "SELECT username, content, attachments, ref_idx FROM `" + GROUP_TABLE + "` " +
+                "WHERE group_openId = ? ORDER BY id DESC LIMIT ?";
+        try (var stmt = conn.prepareStatement(scanSql)) {
+            stmt.setString(1, groupOpenId);
+            stmt.setInt(2, REFERENCE_SCAN_LIMIT);
+            var rs = stmt.executeQuery();
+            while (rs.next()) {
+                String username = rs.getString("username");
+                if (!isBlank(targetAuthor) && !targetAuthor.equals(username)) {
+                    continue;
+                }
+
+                if (matchesReferenceSource(
+                        rs.getString("content"),
+                        rs.getString("attachments"),
+                        targetText,
+                        targetAttachments
+                )) {
+                    return new ReferenceSource(
+                            username,
+                            rs.getString("content"),
+                            rs.getString("attachments"),
+                            rs.getString("ref_idx")
+                    );
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isReferenceComplete(JsonNode node) {
+        return !isBlank(findReferenceAuthor(node))
+                && (!isBlank(findReferenceContent(node)) || hasReferenceAttachments(node));
+    }
+
+    private static boolean matchesReferenceSource(String content, String attachments,
+                                                  String refText, List<AttachmentFingerprint> refAttachments) {
+        if (!isBlank(refText)) {
+            String normalizedContent = normalizeReferenceText(content);
+            if (refText.equals(normalizedContent)) {
+                return true;
+            }
+            if (refText.length() >= 6 && !isBlank(normalizedContent)
+                    && (normalizedContent.contains(refText) || refText.contains(normalizedContent))) {
+                return true;
+            }
+        }
+
+        if (!refAttachments.isEmpty()) {
+            List<AttachmentFingerprint> sourceAttachments = parseAttachmentFingerprints(attachments);
+            for (AttachmentFingerprint refAttachment : refAttachments) {
+                for (AttachmentFingerprint sourceAttachment : sourceAttachments) {
+                    if (refAttachment.matches(sourceAttachment)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static List<AttachmentFingerprint> referenceAttachments(JsonNode node) {
+        JsonNode attachments = node.get("attachments");
+        if (attachments == null || !attachments.isArray()) {
+            return List.of();
+        }
+        return parseAttachmentFingerprints(attachments.toString());
+    }
+
+    private record ReferenceSource(String username, String content, String attachments, String refIdx) {
+    }
+
+    private static String findReferenceAuthor(JsonNode node) {
+        return firstJsonText(
+                node.at("/author/username"),
+                node.at("/author/user_name"),
+                node.at("/author/nickname"),
+                node.at("/author/nick"),
+                node.at("/author/name"),
+                node.at("/sender/username"),
+                node.at("/sender/user_name"),
+                node.at("/sender/nickname"),
+                node.at("/sender/nick"),
+                node.at("/sender/name"),
+                node.at("/user/username"),
+                node.at("/user/user_name"),
+                node.at("/user/nickname"),
+                node.at("/user/nick"),
+                node.at("/user/name"),
+                node.get("username"),
+                node.get("user_name"),
+                node.get("nickname"),
+                node.get("nick"),
+                node.get("author_name"),
+                node.get("sender_name")
+        );
+    }
+
+    private static String findReferenceContent(JsonNode node) {
+        return firstJsonText(
+                node.get("content"),
+                node.get("text"),
+                node.get("message"),
+                node.get("raw_message"),
+                node.get("rawMessage")
+        );
+    }
+
+    private static boolean hasReferenceAttachments(JsonNode node) {
+        JsonNode attachments = node.get("attachments");
+        return attachments != null && attachments.isArray() && !attachments.isEmpty();
+    }
+
+    private static String findRefIdxValue(JsonNode node) {
+        if (node == null || node.isNull() || node.isMissingNode()) {
+            return null;
+        }
+        if (node.isObject()) {
+            String direct = firstJsonText(
+                    node.get("msg_idx"),
+                    node.get("msgIdx"),
+                    node.get("ref_idx"),
+                    node.get("refIdx"),
+                    node.get("message_id"),
+                    node.get("messageId"),
+                    node.get("msg_id"),
+                    node.get("msgId")
+            );
+            if (!isBlank(direct)) {
+                return direct;
+            }
+            var fields = node.fields();
+            while (fields.hasNext()) {
+                String found = findRefIdxValue(fields.next().getValue());
+                if (!isBlank(found)) {
+                    return found;
+                }
+            }
+        } else if (node.isArray()) {
+            for (JsonNode item : node) {
+                String found = findRefIdxValue(item);
+                if (!isBlank(found)) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String firstJsonText(JsonNode... nodes) {
+        for (JsonNode node : nodes) {
+            if (node != null && node.isTextual() && !node.asText().isBlank()) {
+                return node.asText();
+            }
+        }
+        return null;
+    }
+
     private static void recordGroupMessage(String groupOpenId, String unionOpenId, String username, String content,
                                            String messageOpenId, boolean senderIsBot, String memberRole,
                                            String source, Integer messageType, String eventTimestamp,
-                                           String attachments, String mentions, String messageReference, String refIdx) {
+                                           String attachments, String ark, String mentions, String messageReference, String refIdx) {
         if (isBlank(groupOpenId)) {
             log.warn("跳过官方群消息记录：groupOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
             return;
         }
 
         String sql = "INSERT INTO `" + GROUP_TABLE + "` " +
-                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, mentions, message_reference, ref_idx) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "(group_openId, union_openId, username, content, message_openId, sender_is_bot, member_role, event_type, message_type, event_timestamp, attachments, ark, mentions, message_reference, ref_idx) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE " +
                 "content = VALUES(content), " +
                 "username = VALUES(username), " +
@@ -545,6 +801,7 @@ public class ChatContentRecord implements Listener {
                 "message_type = COALESCE(VALUES(message_type), message_type), " +
                 "event_timestamp = COALESCE(VALUES(event_timestamp), event_timestamp), " +
                 "attachments = COALESCE(VALUES(attachments), attachments), " +
+                "ark = COALESCE(VALUES(ark), ark), " +
                 "mentions = COALESCE(VALUES(mentions), mentions), " +
                 "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
                 "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
@@ -566,9 +823,10 @@ public class ChatContentRecord implements Listener {
             }
             stmt.setString(10, emptyToNull(eventTimestamp));
             stmt.setString(11, emptyToNull(attachments));
-            stmt.setString(12, emptyToNull(mentions));
-            stmt.setString(13, emptyToNull(messageReference));
-            stmt.setString(14, emptyToNull(refIdx));
+            stmt.setString(12, emptyToNull(ark));
+            stmt.setString(13, emptyToNull(mentions));
+            stmt.setString(14, emptyToNull(messageReference));
+            stmt.setString(15, emptyToNull(refIdx));
             stmt.executeUpdate();
 
             // SSE 实时推送 — 只发刷新信号，前端自己拉数据
@@ -597,23 +855,23 @@ public class ChatContentRecord implements Listener {
             log.error("为表 {} 补充字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
         }
     }
-
-    private static void ensureIndex(String tableName, String indexName, String columns) {
-        String sql = "ALTER TABLE `" + tableName + "` ADD INDEX `" + indexName + "` (" + columns + ")";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1061) {
-                return;
-            }
-            log.error("为表 {} 补充索引 {} 失败: {}", tableName, indexName, e.getMessage(), e);
-        }
-    }
+//
+//    private static void ensureIndex(String tableName, String indexName, String columns) {
+//        String sql = "ALTER TABLE `" + tableName + "` ADD INDEX `" + indexName + "` (" + columns + ")";
+//        try (var conn = DatabaseManager.getConnection();
+//             var stmt = conn.prepareStatement(sql)) {
+//            stmt.execute();
+//        } catch (SQLException e) {
+//            if (e.getErrorCode() == 1061) {
+//                return;
+//            }
+//            log.error("为表 {} 补充索引 {} 失败: {}", tableName, indexName, e.getMessage(), e);
+//        }
+//    }
 
     private static void recordC2CMessage(String userOpenId, String unionOpenId, String username, String content,
                                          String messageOpenId, boolean senderIsBot, String source,
-                                         Integer messageType, String eventTimestamp) {
+                                         Integer messageType, String eventTimestamp, String attachments, String ark) {
         String conversationOpenId = firstNonBlank(unionOpenId, userOpenId);
         if (isBlank(conversationOpenId)) {
             log.warn("跳过官方 C2C 消息记录：userOpenId/unionOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
@@ -621,9 +879,11 @@ public class ChatContentRecord implements Listener {
         }
 
         String sql = "INSERT INTO `" + C2C_TABLE + "` " +
-                "(union_openId, username, content, message_openId, sender_is_bot, source, message_type, event_timestamp) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE content = VALUES(content), username = VALUES(username), source = VALUES(source)";
+                "(union_openId, username, content, message_openId, sender_is_bot, source, message_type, event_timestamp, attachments, ark) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE content = VALUES(content), username = COALESCE(VALUES(username), username), source = VALUES(source), " +
+                "attachments = COALESCE(VALUES(attachments), attachments), " +
+                "ark = COALESCE(VALUES(ark), ark)";
 
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -639,6 +899,8 @@ public class ChatContentRecord implements Listener {
                 stmt.setInt(7, messageType);
             }
             stmt.setString(8, emptyToNull(eventTimestamp));
+            stmt.setString(9, emptyToNull(attachments));
+            stmt.setString(10, emptyToNull(ark));
             stmt.executeUpdate();
 
             // SSE — C2C 刷新信号
@@ -678,6 +940,9 @@ public class ChatContentRecord implements Listener {
             return toJson(request.getArk());
         }
         if (request.getMedia() != null) {
+            if (!isBlank(request.getRecordAttachments())) {
+                return "";
+            }
             return "[media] " + toJson(request.getMedia());
         }
         if (request.getKeyboard() != null) {
@@ -701,6 +966,13 @@ public class ChatContentRecord implements Listener {
         } catch (Exception e) {
             return String.valueOf(value);
         }
+    }
+
+    private static String toJsonOrNull(Object value) {
+        if (value instanceof JsonNode node && (node.isNull() || node.isMissingNode())) {
+            return null;
+        }
+        return value == null ? null : toJson(value);
     }
 
     private static String firstNonBlank(String... values) {
@@ -732,7 +1004,7 @@ public class ChatContentRecord implements Listener {
                                      boolean senderIsBot, String memberRole,
                                      String eventType,
                                      Integer messageType, String eventTimestamp,
-                                     String attachments, String mentions, String messageReference,
+                                     String attachments, String ark, String mentions, String messageReference,
                                      String refIdx, String createdAt) {
     }
 
@@ -751,7 +1023,7 @@ public class ChatContentRecord implements Listener {
     public record C2CMessageRecord(long id, String unionOpenId, String username,
                                    String content, String messageOpenId,
                                    boolean senderIsBot, Integer messageType,
-                                   String eventTimestamp, String createdAt) {
+                                   String eventTimestamp, String attachments, String ark, String createdAt) {
     }
 
     /**
@@ -769,7 +1041,7 @@ public class ChatContentRecord implements Listener {
                 .append(GROUP_TABLE)
                 .append("` WHERE sender_is_bot = FALSE");
         StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, group_openId, content, member_role, ")
-                .append("message_type, attachments, mentions, event_timestamp, created_at FROM `")
+                .append("message_type, attachments, ark, mentions, event_timestamp, created_at FROM `")
                 .append(GROUP_TABLE)
                 .append("` WHERE sender_is_bot = FALSE");
 
@@ -824,6 +1096,7 @@ public class ChatContentRecord implements Listener {
                         userRole,
                         (Integer) rs.getObject("message_type"),
                         rs.getString("attachments"),
+                        rs.getString("ark"),
                         rs.getString("mentions"),
                         rs.getString("event_timestamp"),
                         rs.getString("created_at")
@@ -838,7 +1111,7 @@ public class ChatContentRecord implements Listener {
 
     public record AllGroupUserRecord(String unionOpenId, String username, String groupOpenId,
                                      String content, String memberRole, String userRole,
-                                     Integer messageType, String attachments, String mentions,
+                                     Integer messageType, String attachments, String ark, String mentions,
                                      String eventTimestamp, String createdAt) {
     }
 
@@ -859,7 +1132,7 @@ public class ChatContentRecord implements Listener {
                 .append(C2C_TABLE)
                 .append("` WHERE sender_is_bot = FALSE");
         StringBuilder dataSql = new StringBuilder("SELECT union_openId, username, content, source, ")
-                .append("message_type, event_timestamp, created_at FROM `")
+                .append("message_type, event_timestamp, attachments, ark, created_at FROM `")
                 .append(C2C_TABLE)
                 .append("` WHERE sender_is_bot = FALSE");
 
@@ -895,9 +1168,14 @@ public class ChatContentRecord implements Listener {
             }
             dataStmt.setInt(dataIdx++, safePageSize);
             dataStmt.setInt(dataIdx, offset);
+            java.util.Map<String, String> knownUsernames = new java.util.HashMap<>();
             var rs = dataStmt.executeQuery();
             while (rs.next()) {
                 String unionOpenId = rs.getString("union_openId");
+                String username = rs.getString("username");
+                if (isBlank(username)) {
+                    username = knownUsernames.computeIfAbsent(unionOpenId, id -> findLatestKnownUsername(conn, id));
+                }
                 String userRole = "-";
                 if (unionOpenId != null && !unionOpenId.isBlank()) {
                     var userData = OfficialUsers.getData(unionOpenId);
@@ -905,12 +1183,14 @@ public class ChatContentRecord implements Listener {
                 }
                 records.add(new AllC2CUserRecord(
                         unionOpenId,
-                        rs.getString("username"),
+                        username,
                         rs.getString("content"),
                         userRole,
                         rs.getString("source"),
                         (Integer) rs.getObject("message_type"),
                         rs.getString("event_timestamp"),
+                        rs.getString("attachments"),
+                        rs.getString("ark"),
                         rs.getString("created_at")
                 ));
             }
@@ -923,7 +1203,7 @@ public class ChatContentRecord implements Listener {
 
     public record AllC2CUserRecord(String unionOpenId, String username, String content,
                                    String userRole, String source, Integer messageType,
-                                   String eventTimestamp, String createdAt) {
+                                   String eventTimestamp, String attachments, String ark, String createdAt) {
     }
 
     public static MessagePage<C2CMessageRecord> fetchC2CMessages(String userOpenId, int page, int pageSize) {
@@ -933,7 +1213,7 @@ public class ChatContentRecord implements Listener {
 
         String countSql = "SELECT COUNT(*) FROM `" + C2C_TABLE + "` WHERE union_openId = ?";
         String dataSql = "SELECT id, union_openId, username, content, message_openId, " +
-                "sender_is_bot, message_type, event_timestamp, created_at " +
+                "sender_is_bot, message_type, event_timestamp, attachments, ark, created_at " +
                 "FROM `" + C2C_TABLE + "` WHERE union_openId = ? ORDER BY id DESC LIMIT ? OFFSET ?";
 
         long total = 0;
@@ -942,6 +1222,7 @@ public class ChatContentRecord implements Listener {
         try (var conn = DatabaseManager.getConnection();
              var countStmt = conn.prepareStatement(countSql);
              var dataStmt = conn.prepareStatement(dataSql)) {
+            String fallbackUsername = findLatestKnownUsername(conn, userOpenId);
             countStmt.setString(1, userOpenId);
             var countRs = countStmt.executeQuery();
             if (countRs.next()) total = countRs.getLong(1);
@@ -951,15 +1232,22 @@ public class ChatContentRecord implements Listener {
             dataStmt.setInt(3, offset);
             var rs = dataStmt.executeQuery();
             while (rs.next()) {
+                boolean senderIsBot = rs.getBoolean("sender_is_bot");
+                String username = rs.getString("username");
+                if (!senderIsBot && isBlank(username)) {
+                    username = fallbackUsername;
+                }
                 records.add(new C2CMessageRecord(
                         rs.getLong("id"),
                         rs.getString("union_openId"),
-                        rs.getString("username"),
+                        username,
                         rs.getString("content"),
                         rs.getString("message_openId"),
-                        rs.getBoolean("sender_is_bot"),
+                        senderIsBot,
                         (Integer) rs.getObject("message_type"),
                         rs.getString("event_timestamp"),
+                        rs.getString("attachments"),
+                        rs.getString("ark"),
                         rs.getString("created_at")
                 ));
             }
@@ -968,5 +1256,29 @@ public class ChatContentRecord implements Listener {
         }
 
         return new MessagePage<>(safePage, safePageSize, total, records);
+    }
+
+    private static String findLatestKnownUsername(java.sql.Connection conn, String userOpenId) {
+        if (isBlank(userOpenId)) {
+            return null;
+        }
+        String sql = "SELECT username FROM (" +
+                "SELECT username, created_at FROM `" + C2C_TABLE + "` " +
+                "WHERE union_openId = ? AND sender_is_bot = FALSE AND username IS NOT NULL AND TRIM(username) <> '' " +
+                "UNION ALL " +
+                "SELECT username, created_at FROM `" + GROUP_TABLE + "` " +
+                "WHERE union_openId = ? AND sender_is_bot = FALSE AND username IS NOT NULL AND TRIM(username) <> ''" +
+                ") known_usernames ORDER BY created_at DESC LIMIT 1";
+        try (var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, userOpenId);
+            stmt.setString(2, userOpenId);
+            var rs = stmt.executeQuery();
+            if (rs.next()) {
+                return emptyToNull(rs.getString("username"));
+            }
+        } catch (SQLException e) {
+            log.error("查询官方用户最近用户名失败, userOpenId={}: {}", userOpenId, e.getMessage(), e);
+        }
+        return null;
     }
 }

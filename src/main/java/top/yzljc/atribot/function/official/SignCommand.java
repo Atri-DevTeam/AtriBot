@@ -16,10 +16,10 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
-import java.time.LocalTime;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -66,6 +66,7 @@ public class SignCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(2, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId());
         }
@@ -73,6 +74,7 @@ public class SignCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void onC2CChat(OfficialC2CMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(1, event.getUser().getUserId(), null, event.getMessage().getMessageId());
         }
@@ -80,6 +82,7 @@ public class SignCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void onGroupAt(OfficialGroupAtMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(2, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId());
         }
@@ -119,13 +122,14 @@ public class SignCommand implements CommandExecutor, Listener {
 
             Markdown md = null;
             if (result != null) {
+                var d = ImageSourceClient.getRandomImage();
                 md = TC.md(
-                        "## 打卡成功\n\n" +
+                        (label == 1 ? "" : (Markdown.at(unionOpenId) + " ")) + "打卡成功\n\n" +
+                                ((d == null || d.url() == null) ? "" : Markdown.img(d.url(), d.w(), d.h()) + "\n\n") +
+                                "> 收集自网络，可联系删除 " + Markdown.enterCommand("/投稿 ", "投稿图片") + "\n" +
                                 "> 你已累计打卡**" + result.totalCount() + "**次！\n" +
                                 "> 今天已有**" + result.rank() + "**人参与了打卡！\n" +
-                                "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + "\n\n" +
-                                getGreetingByTime()
-                );
+                                "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数"));
             }
 
             Object buttons = TC.keyboard(List.of(
@@ -135,19 +139,19 @@ public class SignCommand implements CommandExecutor, Listener {
             if (label == 1) {
                 C2CChat.replyMessage(unionOpenId, messageOpenId, md, buttons);
             } else {
-                GroupChat.replyMessage(groupOpenId, unionOpenId, messageOpenId, md, buttons);
+                GroupChat.replyMessage(groupOpenId, messageOpenId, md, buttons);
             }
         });
     }
-
-    public static String getGreetingByTime() {
-        int hour = LocalTime.now().getHour();
-        if (hour < 5) return "夜阑人静，星月交辉";
-        if (hour < 12) return "晨光熹微，万物初醒";
-        if (hour < 14) return "日正中天，光阴正好";
-        if (hour < 18) return "午后斜阳，岁月从容";
-        return "暮色苍茫，灯火可亲";
-    }
+//
+//    public static String getGreetingByTime() {
+//        int hour = LocalTime.now().getHour();
+//        if (hour < 5) return "夜阑人静，星月交辉";
+//        if (hour < 12) return "晨光熹微，万物初醒";
+//        if (hour < 14) return "日正中天，光阴正好";
+//        if (hour < 18) return "午后斜阳，岁月从容";
+//        return "暮色苍茫，灯火可亲";
+//    }
 
     public static boolean isMatch(String message) {
         if (message.trim().equals("打卡") || message.trim().equals("签到")) {

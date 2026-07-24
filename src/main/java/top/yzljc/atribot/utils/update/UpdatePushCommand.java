@@ -3,12 +3,12 @@ package top.yzljc.atribot.utils.update;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.Arrays;
  */
 public class UpdatePushCommand implements Listener, CommandExecutor {
 
-    private static final String layout = Config.getInstance().getOfficialUsername() + "近期更新日志:\n";
+    private static final String layout = OfficialBot.BOT_NAME + "近期更新日志:\n";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

@@ -50,6 +50,17 @@
               <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
             </div>
 
+            <div class="debug-template-line">
+              <label class="debug-template-field">
+                <span>{group_openid}</span>
+                <input v-model="templateGroupOpenId" spellcheck="false" placeholder="qq.debug-group-openId" />
+              </label>
+              <label class="debug-template-field">
+                <span>{user_openid}</span>
+                <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id" />
+              </label>
+            </div>
+
             <!-- 请求页签：Params / Headers / Body，右上角保留原有的格式化与放大 -->
             <div class="debug-tabs" role="tablist">
               <button v-for="tab in requestTabs" :key="tab.key" type="button" role="tab"
@@ -229,6 +240,27 @@ const debugPresets = [
     }
   },
   {
+    key: 'bot-profile',
+    label: '机器人详情',
+    method: 'GET',
+    path: '/users/@me',
+    body: null
+  },
+  {
+    key: 'group-info',
+    label: '群聊 /info - 获取群基础信息',
+    method: 'GET',
+    path: '/v2/groups/{group_openid}/info',
+    body: null
+  },
+  {
+    key: 'group-bot-state',
+    label: '群聊 /bot_state - 获取机器人群内状态',
+    method: 'GET',
+    path: '/v2/groups/{group_openid}/bot_state',
+    body: null
+  },
+  {
     key: 'group-active-text',
     label: '群聊 /messages - 主动文本',
     method: 'POST',
@@ -242,7 +274,7 @@ const debugPresets = [
     key: 'private-active-text',
     label: '私聊 /messages - 主动文本',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 0,
       content: 'hello'
@@ -277,7 +309,7 @@ const debugPresets = [
     key: 'private-active-markdown',
     label: '私聊 /messages - 主动 Markdown',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 2,
       markdown: {
@@ -302,7 +334,7 @@ const debugPresets = [
     key: 'private-active-markdown-keyboard',
     label: '私聊 /messages - Markdown + 按钮',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 2,
       markdown: {
@@ -327,7 +359,7 @@ const debugPresets = [
     key: 'private-reply-text',
     label: '私聊 /messages - 被动回复文本',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 0,
       msg_id: 'MESSAGE_ID',
@@ -353,7 +385,7 @@ const debugPresets = [
     key: 'private-reply-markdown',
     label: '私聊 /messages - 被动回复 Markdown',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 2,
       msg_id: 'MESSAGE_ID',
@@ -382,7 +414,7 @@ const debugPresets = [
     key: 'private-reply-markdown-keyboard',
     label: '私聊 /messages - 回复 Markdown + 按钮',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 2,
       msg_id: 'MESSAGE_ID',
@@ -424,7 +456,7 @@ const debugPresets = [
     key: 'private-upload-image-url',
     label: '私聊 /files - 上传图片 URL',
     method: 'POST',
-    path: '/v2/users/{open_id}/files',
+    path: '/v2/users/{user_openid}/files',
     body: {
       file_type: 1,
       url: 'https://example.com/a.png',
@@ -435,7 +467,7 @@ const debugPresets = [
     key: 'private-upload-image-base64',
     label: '私聊 /files - 上传图片 Base64',
     method: 'POST',
-    path: '/v2/users/{open_id}/files',
+    path: '/v2/users/{user_openid}/files',
     body: {
       file_type: 1,
       file_data: 'BASE64_DATA',
@@ -479,7 +511,7 @@ const debugPresets = [
     key: 'private-send-media',
     label: '私聊 /messages - 发送媒体 file_info',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 7,
       media: {
@@ -503,7 +535,7 @@ const debugPresets = [
     key: 'private-reply-media',
     label: '私聊 /messages - 回复媒体 file_info',
     method: 'POST',
-    path: '/v2/users/{open_id}/messages',
+    path: '/v2/users/{user_openid}/messages',
     body: {
       msg_type: 7,
       msg_id: 'MESSAGE_ID',
@@ -568,6 +600,8 @@ const responseTab = ref('body')
 const wrapResponse = ref(true)
 const copied = ref(false)
 const queryParams = ref([])
+const templateGroupOpenId = ref('')
+const templateUserOpenId = ref('')
 
 const responseText = computed(() => {
   if (!result.value) return ''
@@ -727,6 +761,8 @@ async function loadConfig() {
     appId.value = data.appId || ''
     botOpenId.value = data.botOpenId || ''
     botName.value = data.botName || 'AtriBot'
+    templateGroupOpenId.value = normalizeTemplateValue(data.debugGroupId || data.debugGroupOpenId)
+    templateUserOpenId.value = normalizeTemplateValue(data.superAdminId || data.superAdminOpenId)
   } catch { /* ignore */ }
 }
 
@@ -736,13 +772,21 @@ async function sendRequest() {
   error.value = ''
   responseTab.value = 'body'
   try {
+    const missing = missingTemplateValues(`${path.value}\n${headers.value}\n${body.value}`)
+    if (missing.length > 0) {
+      error.value = `缺少模板值：${missing.join('、')}`
+      return
+    }
+    const resolvedPath = applyTemplateVariables(path.value.trim())
+    const resolvedHeaders = applyTemplateVariables(headers.value)
+    const resolvedBody = body.value ? applyTemplateVariables(body.value) : body.value
     result.value = await api('/debug/official/request', {
       method: 'POST',
       body: JSON.stringify({
         method: method.value,
-        path: path.value.trim(),
-        headers: parseHeaders(headers.value),
-        body: body.value
+        path: resolvedPath,
+        headers: parseHeaders(resolvedHeaders),
+        body: resolvedBody
       })
     })
   } catch (e) {
@@ -750,6 +794,25 @@ async function sendRequest() {
   } finally {
     loading.value = false
   }
+}
+
+function normalizeTemplateValue(value) {
+  const text = String(value || '').trim()
+  return text && text.toLowerCase() !== 'null' ? text : ''
+}
+
+function applyTemplateVariables(value) {
+  return String(value || '')
+    .replace(/\{group_openid\}/g, templateGroupOpenId.value.trim())
+    .replace(/\{user_openid\}/g, templateUserOpenId.value.trim())
+}
+
+function missingTemplateValues(value) {
+  const text = String(value || '')
+  const missing = []
+  if (text.includes('{group_openid}') && !templateGroupOpenId.value.trim()) missing.push('{group_openid}')
+  if (text.includes('{user_openid}') && !templateUserOpenId.value.trim()) missing.push('{user_openid}')
+  return missing
 }
 
 function parseHeaders(raw) {

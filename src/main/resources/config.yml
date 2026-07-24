@@ -137,6 +137,8 @@ qq:
   official-username: "null"
   # Debug 群 OpenId
   debug-group-openId: "null"
+  # 超级管理员用户 OpenId，用于官方调试页 {user_openid} 模板
+  super_admin_id: "null"
 
 # ========== Discord 机器人配置参数 ==========
 discord:

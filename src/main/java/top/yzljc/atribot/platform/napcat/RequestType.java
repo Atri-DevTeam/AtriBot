@@ -26,6 +26,7 @@ public enum RequestType {
     SET_GROUP_KICK_MEMBER("/set_group_kick_members"),
     FETCH_PTT_TEXT("/fetch_ptt_text"),
     BOT_UIN_RANGE("/get_robot_uin_range"),
+    GET_STRANGER_INFO("/get_stranger_info"),
     RECALL_MESSAGE("/delete_msg");
 
     private final String requestLink;

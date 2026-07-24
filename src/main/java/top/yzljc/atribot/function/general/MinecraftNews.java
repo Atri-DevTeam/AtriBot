@@ -1,5 +1,8 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -7,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
@@ -286,8 +288,12 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
                     "> 时间：" + t;
 
             List<String> activeGroups = OfficialGroups.enabledGroups("mc_news");
+            List<String> userLists = OfficialUsers.enabledUsers("mc_news");
             for (String groupOpenId : activeGroups) {
-                Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(groupOpenId, TC.md(markdown));
+                GroupChat.sendMessage(groupOpenId, TC.md(markdown));
+            }
+            for (String uid : userLists) {
+                C2CChat.sendMessage(uid, TC.md(markdown));
             }
 
         } catch (Exception e) {

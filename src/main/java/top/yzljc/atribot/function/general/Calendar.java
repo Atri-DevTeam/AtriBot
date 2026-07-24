@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +71,13 @@ public class Calendar implements CommandExecutor {
 
             String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n> 夜已深，世界安静了。早点休息，好梦。";
 
-            for (String gid : OfficialGroups.enabledGroups("daily_calendar")) {
+            var groupLists = OfficialGroups.enabledGroups("daily_calendar");
+            var userLists = OfficialUsers.enabledUsers("daily_calendar");
+            for (String gid : groupLists) {
                 GroupChat.sendMessage(gid, TC.md(today));
+            }
+            for (String uid : userLists) {
+                C2CChat.sendMessage(uid, TC.md(today));
             }
         });
     }

@@ -1,9 +1,12 @@
 package top.yzljc.atribot.chat.official;
 
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.PermissionType;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
@@ -17,7 +20,50 @@ public class TC {
         return new Markdown(text);
     }
 
-    public static Object keyboard(List<List<Button>> buttons) {
-        return Atri.getInstance().getChatService().buildButtonKeyboard(buttons);
+    public static Object keyboard(List<List<Button>> layout) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        for (List<Button> rowBtns : layout) {
+            List<Map<String, Object>> buttons = new ArrayList<>();
+
+            for (Button btn : rowBtns) {
+                Map<String, Object> action = new HashMap<>();
+                action.put("type", btn.getActionType().getCode());
+                action.put("data", btn.getData());
+                action.put("enter", btn.isEnter());
+                action.put("unsupport_tips", "当前客户端版本不支持此按钮");
+                if (btn.isReply()) {
+                    action.put("reply", true);
+                }
+
+                Map<String, Object> permission = new HashMap<>();
+                permission.put("type", btn.getPermissionType().getCode());
+                if (btn.getPermissionType() == PermissionType.SPECIFIC_USER
+                        && !btn.getAllowedOpenIds().isEmpty()) {
+                    permission.put("specify_user_ids", btn.getAllowedOpenIds());
+                }
+                action.put("permission", permission);
+
+                Map<String, Object> renderData = new HashMap<>();
+                renderData.put("label", btn.getDisplayText());
+                renderData.put("visited_label", btn.getVisitedDisplayText());
+                renderData.put("style", btn.getStyle().getCode());
+
+                Map<String, Object> button = new HashMap<>();
+                button.put("id", btn.getButtonId());
+                button.put("render_data", renderData);
+                button.put("action", action);
+
+                buttons.add(button);
+            }
+            Map<String, Object> row = new HashMap<>();
+            row.put("buttons", buttons);
+            rows.add(row);
+        }
+        Map<String, Object> keyboard = new HashMap<>();
+        Map<String, Object> content = new HashMap<>();
+        content.put("rows", rows);
+        keyboard.put("content", content);
+        return keyboard;
     }
 }

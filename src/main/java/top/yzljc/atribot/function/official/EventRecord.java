@@ -18,6 +18,7 @@ import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.utils.tools.Alert;
 import top.yzljc.atribot.webui.impl.SseBroadcaster;
 
@@ -89,13 +90,18 @@ public class EventRecord implements Listener {
         if (!event.getMessage().isCommand()) {
             if (OfficialUsers.isC2CPushEnabled(userId)) {
                 if (c2cNotifiedUsers.add(userId)) {
-                    event.getUser().sendMessage(event.getMessage().getMessageId(), TC.md("你好喵~\n\n" +
-                            Config.getInstance().getOfficialUsername() + "为兼顾安全问题，未接入AI主动聊天，因此我暂时不能与你聊天。您可以使用 " +
-                            Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~"));
+                    List<Markdown> greeting = List.of(
+                            TC.md("你好喵~\n\n"),
+                                    TC.md(OfficialBot.BOT_NAME + "为兼顾安全问题，未接入AI主动聊天，因此我暂时不能与你聊天。"),
+                                    TC.md("您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~")
+
+
+                    );
+                    event.sendStreamMarkdownMessageD(greeting);
                 }
                 return;
             }
-            var md = TC.md("你好喵~\n\n由于您未允许" + Config.getInstance().getOfficialUsername() +
+            var md = TC.md("你好喵~\n\n由于您未允许" + OfficialBot.BOT_NAME +
                     "主动聊天，因此我暂时不能与你聊天，您可以在机器人权限设置中允许我主动聊天。同时，您也可以使用 " +
                     Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
             event.getUser().sendMessage(event.getMessage().getMessageId(), md);
@@ -134,7 +140,14 @@ public class EventRecord implements Listener {
             OfficialUsers.setC2CPush(userOpenId, c2cPushStatus);
             SseBroadcaster.broadcastC2CPushStatus(userOpenId, c2cPushStatus);
             log.info("C2C 主动消息授权变更: userOpenId={}, enabled={}", userOpenId, c2cPushStatus);
-            Alert.notify("C2C 主动消息授权变更: " + userOpenId + " -> " + (c2cPushStatus ? "开启" : "关闭"));
+            if (!c2cPushStatus) {
+                for (var task : PushTaskCommand.getTasks()) {
+                    if (task.isUserEnabled(userOpenId)) {
+                        if (!task.isNeedActiveMessage()) continue;
+                        OfficialUsers.setFunctionEnabled(userOpenId, task.getFunctionId(), false, "system_c2c_push_fail");
+                    }
+                }
+            }
         }
     }
 

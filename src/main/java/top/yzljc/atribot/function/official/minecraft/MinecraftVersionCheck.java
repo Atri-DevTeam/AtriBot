@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.CommandSender;
@@ -207,7 +207,7 @@ public final class MinecraftVersionCheck implements ScheduledTask {
         groups.stream().filter(group -> GroupConfigManager.isFeatureEnabled(group, "mc_news"))
                 .forEach(group -> GroupMessage.chatMessage(group, textInfo));
 
-        officialGroups.forEach(group -> Atri.getInstance().getChatService().sendActiveGroupMarkdownMessage(group, TC.md(markdownInfo)));
+        officialGroups.forEach(group -> GroupChat.sendMessage(group, TC.md(markdownInfo)));
 
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
     }

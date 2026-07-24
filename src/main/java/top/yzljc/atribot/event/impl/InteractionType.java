@@ -14,8 +14,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum InteractionType {
     BUTTON_CLICK(11),
-    C2C_PUSH_SWITCH(18),
-    GROUP_DEV_SETTINGS(20);
+    CALLBACK_COMMAND(12),
+    USER_AUTHORIZE(18),
+    GROUP_AUTHORIZE(19),
+    GROUP_AUTHORIZE_STATUS(20);
 
     private final int interactionType;
 

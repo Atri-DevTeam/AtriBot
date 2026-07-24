@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.official.pushtask;
 
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.platform.Platform;
 
 /**
  * @Author YZ_Ljc_
@@ -16,7 +17,7 @@ public final class HypixelNewsTask extends PushTask {
     }
 
     @Override
-    public Markdown getDescription(String groupOpenId) {
-        return TC.md("**Hypixel公告推送**\n\nHypixel Announcements 论坛公告推送，每小时检查一次并完成公告推送\n\n" + getStatus(groupOpenId));
+    public Markdown getDescription(Platform platform, String platformIdentifyId) {
+        return TC.md("**Hypixel公告推送**\n\nHypixel Announcements 论坛公告推送，每小时检查一次并完成公告推送\n\n" + getStatus(platform, platformIdentifyId));
     }
 }

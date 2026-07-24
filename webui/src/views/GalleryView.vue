@@ -95,7 +95,8 @@
               <figure v-for="item in items" :key="item.id" class="gallery-card"
                       :class="[`gallery-card--${item.reviewStatus.toLowerCase()}`, { selected: selection.has(item.id) }]">
                 <div class="gallery-thumb" @click="openViewer(item)">
-                  <img v-if="item.displayUrl && !failed.has(item.id)" :src="item.displayUrl" :alt="item.fileName || '投稿图片'"
+                  <img v-if="item.displayUrl && !failed.has(item.id)" :src="item.displayUrl"
+                       :alt="item.fileName || '投稿图片'"
                        loading="lazy" decoding="async" @error="failed.add(item.id)"/>
                   <div v-else class="gallery-broken">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -124,8 +125,12 @@
                     <span v-if="hasProcessedInfo(item)" class="gallery-dim">
                       存 {{ formatDimensions(item.processedWidth, item.processedHeight) }}
                     </span>
-                    <span v-if="hasProcessedInfo(item)" class="gallery-size">{{ formatSize(item.processedFileSize) }}</span>
-                    <span class="gallery-id" :title="item.imageUuid || item.id">#{{ shortId(item.imageUuid || item.id) }}</span>
+                    <span v-if="hasProcessedInfo(item)" class="gallery-size">{{
+                        formatSize(item.processedFileSize)
+                      }}</span>
+                    <span class="gallery-id" :title="item.imageUuid || item.id">#{{
+                        shortId(item.imageUuid || item.id)
+                      }}</span>
                   </div>
                   <div v-if="item.reviewStatus === 'PENDING'" class="gallery-actions">
                     <button class="primary-button gallery-act" :disabled="busy === item.id"
@@ -140,8 +145,10 @@
                   </div>
                   <div v-else class="gallery-review-note">
                     <span>{{ item.reviewer || '系统' }} · {{ formatTime(item.reviewTime) }}</span>
-                    <button class="link-button" :disabled="busy === item.id" @click="review(item, 'PENDING')">撤销</button>
-                    <button class="link-button danger" :disabled="busy === item.id" @click="deleteImage(item)">删除</button>
+                    <button class="link-button" :disabled="busy === item.id" @click="review(item, 'PENDING')">撤销
+                    </button>
+                    <button class="link-button danger" :disabled="busy === item.id" @click="deleteImage(item)">删除
+                    </button>
                   </div>
                   <div v-if="item.reviewRemark" class="gallery-remark" :title="item.reviewRemark">
                     备注：{{ item.reviewRemark }}
@@ -197,33 +204,76 @@
           <span class="gallery-viewer-count">{{ viewerIndex + 1 }} / {{ items.length }}</span>
         </div>
         <dl class="gallery-facts">
-          <div><dt>投稿人</dt><dd>{{ viewer.uploaderName || '匿名' }}</dd></div>
-          <div><dt>用户 ID</dt><dd class="mono break">{{ viewer.uploaderId }}</dd></div>
-          <div v-if="viewer.groupId"><dt>来源群</dt><dd class="mono break">{{ viewer.groupId }}</dd></div>
-          <div><dt>投稿时间</dt><dd>{{ formatTime(viewer.createTime) }}</dd></div>
-          <div><dt>原始尺寸</dt><dd>{{ formatDimensions(viewer.width, viewer.height) }}</dd></div>
-          <div><dt>原始大小</dt><dd>{{ formatSize(viewer.fileSize) }}</dd></div>
-          <div v-if="hasProcessedInfo(viewer)">
-            <dt>转储尺寸</dt><dd>{{ formatDimensions(viewer.processedWidth, viewer.processedHeight) }}</dd>
+          <div>
+            <dt>投稿人</dt>
+            <dd>{{ viewer.uploaderName || '匿名' }}</dd>
+          </div>
+          <div>
+            <dt>用户 ID</dt>
+            <dd class="mono break">{{ viewer.uploaderId }}</dd>
+          </div>
+          <div v-if="viewer.groupId">
+            <dt>来源群</dt>
+            <dd class="mono break">{{ viewer.groupId }}</dd>
+          </div>
+          <div>
+            <dt>投稿时间</dt>
+            <dd>{{ formatTime(viewer.createTime) }}</dd>
+          </div>
+          <div>
+            <dt>原始尺寸</dt>
+            <dd>{{ formatDimensions(viewer.width, viewer.height) }}</dd>
+          </div>
+          <div>
+            <dt>原始大小</dt>
+            <dd>{{ formatSize(viewer.fileSize) }}</dd>
           </div>
           <div v-if="hasProcessedInfo(viewer)">
-            <dt>转储大小</dt><dd>{{ formatSize(viewer.processedFileSize) }}</dd>
+            <dt>转储尺寸</dt>
+            <dd>{{ formatDimensions(viewer.processedWidth, viewer.processedHeight) }}</dd>
           </div>
-          <div v-if="viewer.fileName"><dt>文件名</dt><dd class="mono break">{{ viewer.fileName }}</dd></div>
-          <div v-if="viewer.imageUuid"><dt>图片 UUID</dt><dd class="mono break">{{ viewer.imageUuid }}</dd></div>
-          <div v-if="viewer.hash"><dt>Hash</dt><dd class="mono break">{{ viewer.hash }}</dd></div>
-          <div v-if="viewer.reviewer"><dt>审核人</dt><dd>{{ viewer.reviewer }}</dd></div>
-          <div v-if="viewer.reviewTime"><dt>审核时间</dt><dd>{{ formatTime(viewer.reviewTime) }}</dd></div>
-          <div v-if="viewer.reviewRemark"><dt>备注</dt><dd>{{ viewer.reviewRemark }}</dd></div>
-          <div><dt>结果送达</dt><dd>{{ viewer.isNotified ? '已送达' : (viewer.reviewStatus === 'PENDING' ? '—' : '待送达') }}</dd></div>
+          <div v-if="hasProcessedInfo(viewer)">
+            <dt>转储大小</dt>
+            <dd>{{ formatSize(viewer.processedFileSize) }}</dd>
+          </div>
+          <div v-if="viewer.fileName">
+            <dt>文件名</dt>
+            <dd class="mono break">{{ viewer.fileName }}</dd>
+          </div>
+          <div v-if="viewer.imageUuid">
+            <dt>图片 UUID</dt>
+            <dd class="mono break">{{ viewer.imageUuid }}</dd>
+          </div>
+          <div v-if="viewer.hash">
+            <dt>Hash</dt>
+            <dd class="mono break">{{ viewer.hash }}</dd>
+          </div>
+          <div v-if="viewer.reviewer">
+            <dt>审核人</dt>
+            <dd>{{ viewer.reviewer }}</dd>
+          </div>
+          <div v-if="viewer.reviewTime">
+            <dt>审核时间</dt>
+            <dd>{{ formatTime(viewer.reviewTime) }}</dd>
+          </div>
+          <div v-if="viewer.reviewRemark">
+            <dt>备注</dt>
+            <dd>{{ viewer.reviewRemark }}</dd>
+          </div>
+          <div>
+            <dt>结果送达</dt>
+            <dd>{{ viewer.isNotified ? '已送达' : (viewer.reviewStatus === 'PENDING' ? '—' : '待送达') }}</dd>
+          </div>
         </dl>
         <div class="gallery-viewer-actions">
           <template v-if="viewer.reviewStatus === 'PENDING'">
-            <button class="primary-button" :disabled="busy === viewer.id" @click="review(viewer, 'REVIEWED')">通过</button>
+            <button class="primary-button" :disabled="busy === viewer.id" @click="review(viewer, 'REVIEWED')">通过
+            </button>
             <button class="ghost-button danger" :disabled="busy === viewer.id" @click="openDeny(viewer)">拒绝</button>
           </template>
           <template v-else>
-            <button class="ghost-button" :disabled="busy === viewer.id" @click="review(viewer, 'PENDING')">撤销审核</button>
+            <button class="ghost-button" :disabled="busy === viewer.id" @click="review(viewer, 'PENDING')">撤销审核
+            </button>
           </template>
           <button class="ghost-button danger" :disabled="busy === viewer.id" @click="deleteImage(viewer)">删除</button>
           <a v-if="viewer.displayUrl" class="ghost-button" :href="viewer.displayUrl" target="_blank"
@@ -247,7 +297,7 @@
         <div class="modal-body">
           <div class="reply-context">
             <div class="feedback-label">#{{ shortId(denyTarget.id) }} · {{ denyTarget.uploaderName || '匿名' }}</div>
-            <div class="feedback-text">拒绝理由会随审核结果一并通知投稿人。</div>
+            <div class="feedback-text">拒绝理由会随审核结果一并通知</div>
           </div>
           <select v-if="denyReasons.length" v-model="denyRemark" class="quick-reply-select">
             <option value="" disabled>快捷理由…</option>
@@ -274,10 +324,11 @@ import AppSidebar from '../components/AppSidebar.vue'
 
 const denyReasons = [
   '图片内容与图源主题无关',
-  '图片清晰度不足',
+  '图片过于模糊',
   '涉及版权或未授权内容',
   '内容不适宜公开展示',
-  '与图库中已有图片重复'
+  '与图库中已有图片重复',
+  '何意味'
 ]
 
 const router = useRouter()
