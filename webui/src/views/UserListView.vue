@@ -81,7 +81,7 @@
                   <button v-if="source === 'group' && item.groupOpenId"
                     class="userlist-action-btn"
                     title="跳转到群"
-                    @click="$router.push({ path: '/', query: { group: item.groupOpenId } })">
+                    @click="$router.push({ path: '/groups', query: { group: item.groupOpenId } })">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
@@ -376,6 +376,8 @@ function renderAttachmentSummary(raw) {
   const voice = attachments.find(att => att.content_type === 'voice')
   if (voice) return voice.asr_refer_text || '[语音]'
   if (attachments.some(att => (att.content_type || '').startsWith('image/'))) return '[图片]'
+  if (attachments.some(att => (att.content_type || '').startsWith('video/'))) return '[视频]'
+  if (attachments.some(att => att.content_type === 'file')) return '[文件]'
   if (attachments.length > 0) return '[附件]'
   return ''
 }

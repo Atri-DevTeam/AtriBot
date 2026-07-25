@@ -13,6 +13,8 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.napcat.impl.MojiraIssueSummarizer;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.napcat.PostRequest;
+import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -21,8 +23,10 @@ import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.tools.RM;
 
 import java.io.*;
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -40,7 +44,9 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
     private static final String CACHE_FILE = Properties.MOJIRA_CACHE;
     private static final String FEATURE_KEY = "mojira_tracker";
     private static final String MOJIRA_API = "https://bugs.mojang.com/api/jql-search-post";
+    private static final String ATTACHMENT_API = "https://bugs.mojang.com/api/issue-attachment-get?attachmentId=";
     private static final int MAX_RESULTS = 25;
+    private static final Duration SEND_MESSAGE_TIMEOUT = Duration.ofMinutes(5);
 
     private static final int MAX_CACHE_SIZE = 100;
     private static final Set<String> knownIssues = Collections.synchronizedSet(new LinkedHashSet<>());
@@ -132,7 +138,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
     public record Attachment(
             String id,
             String filename,
-            String url
+            String mimeType
     ) {
     }
 
@@ -246,7 +252,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
                     attachments.add(new Attachment(
                             att.path("id").asText(),
                             att.path("filename").asText(),
-                            att.path("content").asText()
+                            att.path("mimeType").asText()
                     ));
                 }
 
@@ -310,17 +316,83 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
                 nodes.add(GroupMessage.createTextNode("中文翻译：\n" + translated));
             }
         }
+        addAttachmentNodes(nodes, issue.attachments());
 
         for (String groupId : GroupInformation.fetchAllGroupIds()) {
             if (!GroupConfigManager.isFeatureEnabled(groupId, FEATURE_KEY)) continue;
             ThreadManager.execute(() -> {
                 try {
-                    GroupMessage.forwardMessage(groupId, nodes, "Mojira 漏洞追踪器动态", "查看MOJANG新的石山代码", "编号: " + issue.key, "时间: " + time, "版本: " + versions, "标题: " + issue.summary());
-                    log.info("[Mojira] 已推送 {} 到群 {}", issue.key(), groupId);
+                    String messageId = sendForwardMessage(groupId, nodes, SEND_MESSAGE_TIMEOUT, "Mojira 漏洞追踪器动态", "查看MOJANG新的石山代码", "编号: " + issue.key, "时间: " + time, "版本: " + versions, "标题: " + issue.summary());
+                    if (messageId == null) {
+                        log.warn("[Mojira] 推送 {} 到群 {} 失败: Napcat 未返回 message_id", issue.key(), groupId);
+                        return;
+                    }
+                    log.info("[Mojira] 已推送 {} 到群 {}, messageId={}", issue.key(), groupId, messageId);
                 } catch (Exception e) {
                     log.warn("[Mojira] 推送 {} 到群 {} 失败: {}", issue.key(), groupId, e.getMessage());
                 }
             });
         }
+    }
+
+    private static void addAttachmentNodes(List<MessageSegment> nodes, List<Attachment> attachments) {
+        if (attachments == null || attachments.isEmpty()) return;
+        for (Attachment attachment : attachments) {
+            String attachmentUrl = buildAttachmentUrl(attachment);
+            if (isImageAttachment(attachment)) {
+                nodes.add(GroupMessage.createImageNode(attachmentUrl));
+                continue;
+            }
+            if (isVideoAttachment(attachment)) {
+                nodes.add(GroupMessage.createVideoNode(attachmentUrl));
+                continue;
+            }
+            nodes.add(GroupMessage.createTextNode("附件：" + attachment.filename() + "\n" + attachmentUrl));
+        }
+    }
+
+    private static String buildAttachmentUrl(Attachment attachment) {
+        return ATTACHMENT_API + attachment.id();
+    }
+
+    private static boolean isImageAttachment(Attachment attachment) {
+        String mimeType = attachment.mimeType();
+        if (mimeType != null && mimeType.startsWith("image/")) return true;
+        String filename = attachment.filename() == null ? "" : attachment.filename().toLowerCase(Locale.ROOT);
+        return filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".jpeg") || filename.endsWith(".gif") || filename.endsWith(".webp");
+    }
+
+    private static boolean isVideoAttachment(Attachment attachment) {
+        String mimeType = attachment.mimeType();
+        if (mimeType != null && mimeType.startsWith("video/")) return true;
+        String filename = attachment.filename() == null ? "" : attachment.filename().toLowerCase(Locale.ROOT);
+        return filename.endsWith(".mp4") || filename.endsWith(".mov") || filename.endsWith(".webm") || filename.endsWith(".mkv");
+    }
+
+    private static String sendForwardMessage(String groupId, Collection<MessageSegment> nodes, Duration timeout, String title, String summary, String... textVars) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("group_id", groupId);
+        payload.put("messages", nodes);
+        payload.put("news", buildNews(textVars));
+        payload.put("source", title);
+        payload.put("summary", summary);
+
+        JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_FORWARD_MSG, payload, timeout);
+        String messageId = resp == null ? null : resp.path("data").path("message_id").asText(null);
+        if (messageId != null && !messageId.isEmpty()) {
+            RM.recordLastMsg(groupId, messageId);
+        }
+        return messageId;
+    }
+
+    private static List<Map<String, String>> buildNews(String... textVars) {
+        List<Map<String, String>> news = new ArrayList<>();
+        if (textVars == null) return news;
+        for (String textVar : textVars) {
+            if (textVar != null && !textVar.isEmpty()) {
+                news.add(Map.of("text", textVar));
+            }
+        }
+        return news;
     }
 }

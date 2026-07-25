@@ -189,6 +189,14 @@ public class GroupMessage {
         return MessageUtils.createImageNodeSegment(url, uin, name);
     }
 
+    public static MessageSegment createVideoNode(String url) {
+        return MessageUtils.createVideoNodeSegment(url);
+    }
+
+    public static MessageSegment createVideoNode(String url, String uin, String name) {
+        return MessageUtils.createVideoNodeSegment(url, uin, name);
+    }
+
     public static void handleRequest(boolean approve, String flag, String reason) {
         MessageUtils.handleGroupRequest(approve, flag, reason);
     }

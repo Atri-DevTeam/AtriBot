@@ -20,6 +20,10 @@ public class TC {
         return new Markdown(text);
     }
 
+    public static Object promptKeyboard(List<List<Button>> layout) {
+        return Map.of("keyboard", keyboard(layout));
+    }
+
     public static Object keyboard(List<List<Button>> layout) {
         List<Map<String, Object>> rows = new ArrayList<>();
 

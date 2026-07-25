@@ -75,7 +75,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         List<List<Button>> layout = buildChoiceButtons();
         Object keyboard = TC.keyboard(layout);
 
-        String messageId = sender.sendMessage(TC.md(markdown), keyboard);
+        String messageId = sender.sendMessage(TC.md(markdown), keyboard, false);
         game.lastCmdMsgId = sender.getMessageId();
         game.lastMessageId = messageId;
 
@@ -94,6 +94,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
 
     @EventHandler(ignoreCancelled = true)
     public void onChoiceCallback(OfficialButtonInteractionEvent event) {
+        if (event.shouldIgnore()) return;
         if (!"rps_choice".equals(event.getButtonValue())) return;
 
         String sessionId = event.getGroupOpenId();

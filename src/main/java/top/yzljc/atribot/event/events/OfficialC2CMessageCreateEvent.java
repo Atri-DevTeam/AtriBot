@@ -48,4 +48,8 @@ public class OfficialC2CMessageCreateEvent extends Event {
     public String sendStreamTextMessageD(List<String> textDeltas) {
         return C2CChat.replyTextStreamDeltas(this.user.getUserId(), this.message.getMessageId(), textDeltas);
     }
+
+    public boolean shouldIgnore() {
+        return this.user.isBlocked();
+    }
 }

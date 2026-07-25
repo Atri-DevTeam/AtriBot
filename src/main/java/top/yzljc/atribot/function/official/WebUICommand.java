@@ -41,7 +41,7 @@ public class WebUICommand implements CommandExecutor, Listener {
                 )
         ));
 
-        Markdown md = TC.md("**启用WebUI**\n\n> 请在使用后自行关闭\n\n> 当前状态: " + (WebUISessionManager.isActive() ? "已启用" : "未启用"));
+        Markdown md = TC.md("**启用WebUI**\n\n> 请在使用后自行关闭\n> 当前状态: " + (WebUISessionManager.isActive() ? "已启用" : "未启用"));
 
         sender.sendMessage(md, keyboard);
 
@@ -55,16 +55,28 @@ public class WebUICommand implements CommandExecutor, Listener {
         AnswerCode code = AnswerCode.SUCCESS;
         if (!OfficialUsers.isAdmin(event.getUnionOpenId())) code = AnswerCode.NO_PERMISSION;
 
-        if (event.getButtonId().equals("start")) {
-            WebUISessionManager.start();
-            event.answer(code);
-            return;
+        try {
+            if (event.getButtonId().equals("start")) {
+                WebUISessionManager.start();
+                event.answer(code);
+                return;
+            }
+            if (event.getButtonId().equals("stop")) {
+                WebUISessionManager.stop();
+                event.answer(code);
+                return;
+            }
+            event.answer(AnswerCode.FAIL);
+        } finally {
+            Object keyboard = TC.keyboard(
+                    List.of(
+                            List.of(new Button("start", "启用", "webui_session", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
+                                    new Button("stop", "关闭", "webui_session", true, ButtonStyle.GRAY, ButtonType.CALLBACK)
+                            )
+                    ));
+
+            Markdown md = TC.md("**启用WebUI**\n\n> 请在使用后自行关闭\n> 当前状态: " + (WebUISessionManager.isActive() ? "已启用" : "未启用"));
+            event.replyMessage(md, keyboard, true);
         }
-        if (event.getButtonId().equals("stop")) {
-            WebUISessionManager.stop();
-            event.answer(code);
-            return;
-        }
-        event.answer(AnswerCode.FAIL);
     }
 }

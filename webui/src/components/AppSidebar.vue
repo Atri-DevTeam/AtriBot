@@ -14,7 +14,16 @@
     <AppBrand :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName" />
 
     <nav class="side-nav">
-      <button class="side-nav-item" :class="{ active: route.path === '/' }" @click="go('/')">
+      <button class="side-nav-item" :class="{ active: route.path === '/' }" title="聊天" @click="go('/')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3c5 0 9 3.4 9 7.6 0 4.2-4 7.6-9 7.6-.9 0-1.8-.1-2.6-.3L5 20.5l.9-3.2C4.1 15.9 3 13.9 3 10.6 3 6.4 7 3 12 3Z" />
+          <circle cx="8.5" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+          <circle cx="15.5" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+        </svg>
+        <span class="side-nav-label">聊天</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/groups' }" @click="go('/groups')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
@@ -68,6 +77,16 @@
         </svg>
         错误报告
       </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/send-logs' }" @click="go('/send-logs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5.5h9" />
+          <path d="M4 12h7" />
+          <path d="M4 18.5h9" />
+          <path d="m15 8 5 4-5 4" />
+          <path d="M11 12h9" />
+        </svg>
+        发送日志
+      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/napcat' }" @click="go('/napcat')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="14" rx="3" />
@@ -88,12 +107,56 @@
     <div class="side-toolbar">
       <slot name="toolbar" />
     </div>
+
+    <!-- 桌面端：收窄/展开导航栏（手机端隐藏，手机端用抽屉模式） -->
+    <button class="nav-collapse-btn" :title="collapsed ? '展开导航栏' : '收窄导航栏'"
+            :aria-label="collapsed ? '展开导航栏' : '收窄导航栏'" @click="toggleCollapsed">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline v-if="collapsed" points="9 6 15 12 9 18" />
+        <polyline v-else points="15 6 9 12 15 18" />
+      </svg>
+      <span class="side-nav-label">{{ collapsed ? '' : '收起' }}</span>
+    </button>
   </aside>
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppBrand from './AppBrand.vue'
+
+const NAV_COLLAPSED_KEY = 'atri.webui.nav_collapsed'
+const collapsed = ref(false)
+
+onMounted(() => {
+  try {
+    collapsed.value = localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
+  } catch { /* ignore */ }
+  applyCollapsed()
+})
+
+function applyCollapsed() {
+  document.documentElement.classList.toggle('nav-collapsed', collapsed.value)
+}
+
+function toggleCollapsed() {
+  collapsed.value = !collapsed.value
+  try {
+    localStorage.setItem(NAV_COLLAPSED_KEY, collapsed.value ? '1' : '0')
+  } catch { /* ignore */ }
+  applyCollapsed()
+}
+
+/** 供外部「重置布局」调用：导航栏收窄状态归位，键名不外泄 */
+function resetCollapsed() {
+  collapsed.value = false
+  try {
+    localStorage.removeItem(NAV_COLLAPSED_KEY)
+  } catch { /* ignore */ }
+  applyCollapsed()
+}
+
+defineExpose({ resetCollapsed })
 
 defineProps({
   open: {

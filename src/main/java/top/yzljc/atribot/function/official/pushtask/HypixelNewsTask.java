@@ -18,6 +18,6 @@ public final class HypixelNewsTask extends PushTask {
 
     @Override
     public Markdown getDescription(Platform platform, String platformIdentifyId) {
-        return TC.md("**Hypixel公告推送**\n\nHypixel Announcements 论坛公告推送，每小时检查一次并完成公告推送\n\n" + getStatus(platform, platformIdentifyId));
+        return TC.md("**Hypixel公告推送**\n\nHypixel Announcements 论坛公告内容，每小时检查一次并完成公告推送\n\n" + getStatus(platform, platformIdentifyId));
     }
 }

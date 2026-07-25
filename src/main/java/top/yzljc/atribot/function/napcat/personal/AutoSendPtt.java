@@ -81,7 +81,7 @@ public class AutoSendPtt implements Listener {
                 var t = a.path("asr_refer_text").asText(null);
                 var md5 = a.path("filename").asText("-");
                 if (t != null) {
-                    var text = event.getUser().getUsername() + "说: " + t;
+                    var text = "[语音]" + event.getUser().getUsername() + ": " + t;
                     log.info("转文字-> {}", text);
                     String napcatGroupId = String.valueOf(OfficialGroups.getRealGroupId(event.getGroupId()));
                     if (napcatGroupId != null && !napcatGroupId.equals("0")) {

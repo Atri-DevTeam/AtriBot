@@ -179,6 +179,37 @@
                           @click="previewImg = att.url"
                         />
                         <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                        <div v-else-if="att.type === 'video'" class="video-attach">
+                          <template v-if="att.url && !attachFailed[att.url]">
+                            <video :src="att.url" controls playsinline preload="metadata"
+                                   @error="attachFailed[att.url] = true"></video>
+                            <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
+                            <button type="button" class="video-expand" title="放大查看" aria-label="放大查看"
+                                    @click.stop="previewVideo = att.url">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                              </svg>
+                            </button>
+                          </template>
+                          <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank" rel="noreferrer">
+                            🎬 {{ att.filename || '视频' }}（点击在新标签打开）
+                          </a>
+                          <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
+                        </div>
+                        <a v-else-if="att.type === 'file'" class="file-attach"
+                           :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
+                          <span class="file-attach-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                          </span>
+                          <span class="file-attach-body">
+                            <span class="file-attach-name">{{ att.filename || '文件' }}</span>
+                            <span class="file-attach-size">{{ fmtSize(att.size) || '点击下载' }}</span>
+                          </span>
+                        </a>
                         <div v-else-if="att.type === 'voice'" class="voice-attach">
                           <div class="voice-title">语音消息</div>
                           <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
@@ -390,8 +421,9 @@
     </main>
 
     <!-- 图片灯箱 -->
-    <div v-if="previewImg" class="lightbox" @click="previewImg = null">
-      <img :src="previewImg" referrerpolicy="no-referrer" @click.stop />
+    <div v-if="previewImg || previewVideo" class="lightbox" @click="closePreview">
+      <img v-if="previewImg" :src="previewImg" referrerpolicy="no-referrer" @click.stop />
+      <video v-else :src="previewVideo" controls autoplay playsinline @click.stop></video>
     </div>
   </div>
 </template>
@@ -465,6 +497,12 @@ const attachFailed = reactive({})
 const expandedIds = reactive({})
 function toggleMsgDetail(id) { expandedIds[id] = !expandedIds[id] }
 const previewImg = ref(null)
+const previewVideo = ref(null)
+
+function closePreview() {
+  previewImg.value = null
+  previewVideo.value = null
+}
 const pastePreview = ref(null)
 const highlightedMessageId = ref(null)
 const pageSize = 80
@@ -966,7 +1004,10 @@ function renderRefContent(ref) {
   if (ref.attachments && ref.attachments.length) {
     for (const a of ref.attachments) {
       if ((a.content_type || '').startsWith('image/') && a.url) {
-        parts.push(`<img src="${a.url}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+        parts.push(`<img src="${absUrl(a.url)}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" onerror="this.outerHTML='<span style=font-size:12px;color:#94a3b8>📷 图片</span>'">`)
+      } else if ((a.content_type || '').startsWith('video/')) {
+        // 引用块只有 120×80，塞播放器没意义，标一下类型就够
+        parts.push(`<span class="voice-ref">🎬 ${escapeHtml(a.filename || '视频')}</span>`)
       } else if (a.content_type === 'voice') {
         const text = a.asr_refer_text || a.filename || '语音消息'
         parts.push(`<span class="voice-ref">${escapeHtml(text)}</span>`)
@@ -1270,20 +1311,46 @@ function parseAttach(raw) {
   } catch { return [] }
 }
 
+/* 官方 Bot 的附件 url 不带协议头，直接塞进 src 会被当成站内相对路径 */
+function absUrl(url) {
+  if (!url) return ''
+  if (/^(https?:)?\/\//i.test(url)) return url.startsWith('//') ? 'https:' + url : url
+  if (url.startsWith('data:')) return url
+  return 'https://' + url
+}
+
 function normalizeAttachment(att) {
   const contentType = att?.content_type || ''
   if (att?.url && contentType.startsWith('image/')) {
-    return { ...att, type: 'image' }
+    return { ...att, type: 'image', url: absUrl(att.url) }
+  }
+  if (contentType.startsWith('video/')) {
+    return { ...att, type: 'video', url: absUrl(att.url) }
   }
   if (contentType === 'voice') {
     return {
       ...att,
       type: 'voice',
+      url: absUrl(att.url),
       asrText: att.asr_refer_text || '',
-      voiceUrl: att.voice_wav_url || ''
+      voiceUrl: absUrl(att.voice_wav_url)
     }
   }
+  // file 及任何有 url 但类型不认识的附件，按文件卡片兜底，别静默丢掉
+  if (att?.url) {
+    return { ...att, type: 'file', url: absUrl(att.url) }
+  }
   return null
+}
+
+function fmtSize(bytes) {
+  const n = Number(bytes)
+  if (!Number.isFinite(n) || n <= 0) return ''
+  const units = ['B', 'KB', 'MB', 'GB']
+  let i = 0
+  let value = n
+  while (value >= 1024 && i < units.length - 1) { value /= 1024; i++ }
+  return `${value >= 10 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`
 }
 
 function avatarUrl(message) {

@@ -138,7 +138,8 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
                 C2CChat.sendMessage(uid, md);
             }
 
-            for (String gid : GroupInformation.fetchAllGroupIds()) {
+            Set<String> gids = GroupInformation.fetchAllGroupIds();
+            for (String gid : gids) {
                 if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_news")) continue;
                 if (banner != null) {
                     GroupMessage.chatMessage(gid, text, banner.url(), MessageUtils.ImageType.URL);

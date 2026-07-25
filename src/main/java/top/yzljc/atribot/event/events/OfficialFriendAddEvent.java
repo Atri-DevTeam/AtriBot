@@ -14,6 +14,6 @@ import top.yzljc.atribot.event.Event;
 @Getter
 @AllArgsConstructor
 public class OfficialFriendAddEvent extends Event {
-    private final String unionOpenId;
+    private final String userOpenId;
     private final String timestamp;
 }

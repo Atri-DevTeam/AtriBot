@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.auth.official.OfficialGroups;
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -168,5 +170,19 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
+    }
+
+    public boolean shouldIgnore() {
+        if (this.groupOpenId != null) {
+            if (OfficialGroups.isGroupBlacklisted(this.groupOpenId)) {
+                answer(AnswerCode.FAIL);
+                return true;
+            }
+        }
+        if (OfficialUsers.isBlocked(this.unionOpenId) || OfficialUsers.isIgnored(this.unionOpenId)) {
+            answer(AnswerCode.FAIL);
+            return true;
+        }
+        return false;
     }
 }

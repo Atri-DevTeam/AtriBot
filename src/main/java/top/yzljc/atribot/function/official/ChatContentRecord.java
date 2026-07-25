@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class ChatContentRecord implements Listener {
@@ -80,10 +81,13 @@ public class ChatContentRecord implements Listener {
                 "  `event_timestamp` VARCHAR(64) NULL," +
                 "  `attachments` MEDIUMTEXT NULL," +
                 "  `ark` MEDIUMTEXT NULL," +
+                "  `message_reference` MEDIUMTEXT NULL," +
+                "  `ref_idx` VARCHAR(256) NULL," +
                 "  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  PRIMARY KEY (`id`)," +
                 "  UNIQUE KEY `uk_c2c_message_openId` (`message_openId`)," +
                 "  KEY `idx_c2c_union_openId` (`union_openId`)," +
+                "  KEY `idx_c2c_ref_idx` (`ref_idx`)," +
                 "  KEY `idx_c2c_created_at` (`created_at`)," +
                 "  KEY `idx_c2c_sender_created` (`sender_is_bot`, `created_at`)," +
                 "  KEY `idx_c2c_union_sender_created` (`union_openId`, `sender_is_bot`, `created_at`)," +
@@ -101,7 +105,12 @@ public class ChatContentRecord implements Listener {
 //            ensureColumn(GROUP_TABLE, "ark", "MEDIUMTEXT NULL AFTER `attachments`");
 //            ensureColumn(GROUP_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
 //            ensureColumn(C2C_TABLE, "ark", "MEDIUMTEXT NULL AFTER `event_timestamp`");
-            ensureColumn(C2C_TABLE, "attachments", "MEDIUMTEXT NULL AFTER `event_timestamp`");
+//            ensureColumn(C2C_TABLE, "attachments", "MEDIUMTEXT NULL AFTER `event_timestamp`");
+//            // 私聊引用消息：老库补列 + 补索引，新库由上面的 DDL 直接建好
+//            ensureColumn(C2C_TABLE, "message_reference", "MEDIUMTEXT NULL AFTER `ark`");
+//            ensureColumn(C2C_TABLE, "ref_idx", "VARCHAR(256) NULL AFTER `message_reference`");
+//            // 引用定位按 ref_idx 精确查，没索引会全表扫
+//            ensureIndex(C2C_TABLE, "idx_c2c_ref_idx", "`ref_idx`");
 //            ensureIndex(GROUP_TABLE, "idx_group_union_openId", "`union_openId`");
 //            ensureIndex(GROUP_TABLE, "idx_group_ref_idx", "`ref_idx`");
 //            ensureIndex(GROUP_TABLE, "idx_group_sender_created", "`sender_is_bot`, `created_at`");
@@ -144,7 +153,9 @@ public class ChatContentRecord implements Listener {
                 0,
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
-                toJsonOrNull(event.getMessage().getArk())
+                toJsonOrNull(event.getMessage().getArk()),
+                toJson(event.getMessage().getReference()),
+                event.getMessage().getRefIdx()
         );
     }
 
@@ -201,11 +212,17 @@ public class ChatContentRecord implements Listener {
         );
     }
 
-    public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments) {
-        patchRefDisplayData(messageOpenId, refAuthor, refContent, refAttachments, null);
+    public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments, String refMsgIdx) {
+        patchRefDisplayData(GROUP_TABLE, messageOpenId, refAuthor, refContent, refAttachments, refMsgIdx);
     }
 
-    public static void patchRefDisplayData(String messageOpenId, String refAuthor, String refContent, String refAttachments, String refMsgIdx) {
+    public static void patchC2CRefDisplayData(String messageOpenId, String refAuthor, String refContent,
+                                              String refAttachments, String refMsgIdx) {
+        patchRefDisplayData(C2C_TABLE, messageOpenId, refAuthor, refContent, refAttachments, refMsgIdx);
+    }
+
+    private static void patchRefDisplayData(String table, String messageOpenId, String refAuthor, String refContent,
+                                            String refAttachments, String refMsgIdx) {
         if (refAuthor == null && refContent == null && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
         try {
             var refObj = objectMapper.createObjectNode();
@@ -216,10 +233,13 @@ public class ChatContentRecord implements Listener {
                 refObj.put("msg_idx", refMsgIdx);
             }
             if (refAttachments != null && !refAttachments.isBlank()) {
-                try { refObj.set("attachments", objectMapper.readTree(refAttachments)); } catch (Exception ignored) {}
+                try {
+                    refObj.set("attachments", objectMapper.readTree(refAttachments));
+                } catch (Exception ignored) {
+                }
             }
             String messageReference = objectMapper.writeValueAsString(List.of(refObj));
-            String sql = "UPDATE `" + GROUP_TABLE + "` SET message_reference = ? WHERE message_openId = ?";
+            String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE message_openId = ?";
             try (var conn = DatabaseManager.getConnection();
                  var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, messageReference);
@@ -231,34 +251,8 @@ public class ChatContentRecord implements Listener {
         }
     }
 
-    public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId) {
-        recordSentGroupMessage(groupOpenId, request, messageOpenId, null, null, null);
-    }
-
-    public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId,
-                                               String refAuthor, String refContent, String refAttachments) {
-        String messageReference = null;
-        // 如果前端传了引用消息的展示数据，直接拼成数组格式
-        if (refAuthor != null || refContent != null) {
-            try {
-                var refObj = objectMapper.createObjectNode();
-                var authorNode = refObj.putObject("author");
-                authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
-                refObj.put("content", refContent != null ? refContent : "");
-                String refMsgIdx = extractReferenceMessageId(request);
-                if (!isBlank(refMsgIdx)) {
-                    refObj.put("msg_idx", refMsgIdx);
-                }
-                if (refAttachments != null && !refAttachments.isBlank()) {
-                    try {
-                        refObj.set("attachments", objectMapper.readTree(refAttachments));
-                    } catch (Exception ignored) {}
-                }
-                messageReference = objectMapper.writeValueAsString(List.of(refObj));
-            } catch (Exception e) {
-                log.error("构建引用消息展示数据失败", e);
-            }
-        }
+    public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId, String refIdx, String timestamp) {
+        String messageReference = buildReferenceDisplayJson(true, extractReferenceMessageId(request));
         recordGroupMessage(
                 groupOpenId,
                 BOT_UNION_OPEN_ID,
@@ -269,16 +263,78 @@ public class ChatContentRecord implements Listener {
                 null,
                 "BOT_SEND",
                 request.getMsgType(),
-                nowLocalTime(),
+                timestamp,
                 request.getRecordAttachments(),
                 toJsonOrNull(request.getArk()),
                 null,
                 messageReference,
-                null
+                refIdx
         );
     }
 
-    public static void recordSentC2CMessage(String userOpenId, MessageBody request, String messageOpenId) {
+    /**
+     * 前端传了引用消息的展示数据时拼成数组格式，供 WebUI 渲染引用块和定位来源
+     */
+    private static String buildReferenceDisplayJson(boolean group, String refIdx) {
+        if (refIdx == null || isBlank(refIdx)) {
+            return null;
+        }
+        ReferenceSource dbSource = findReferenceDisplaySource(group, refIdx);
+        String refAuthor = null;
+        String refContent = null;
+        String refAttachments = null;
+        if (dbSource != null) {
+            refAuthor = dbSource.username();
+            refContent = dbSource.content();
+            refAttachments = dbSource.attachments();
+        }
+        try {
+            var refObj = objectMapper.createObjectNode();
+            var authorNode = refObj.putObject("author");
+            authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
+            refObj.put("content", refContent != null ? refContent : "");
+            if (!isBlank(refIdx)) {
+                refObj.put("msg_idx", refIdx);
+            }
+            if (refAttachments != null && !refAttachments.isBlank()) {
+                try {
+                    refObj.set("attachments", objectMapper.readTree(refAttachments));
+                } catch (Exception ignored) {
+                }
+            }
+            return objectMapper.writeValueAsString(List.of(refObj));
+        } catch (Exception e) {
+            log.error("构建引用消息展示数据失败", e);
+            return null;
+        }
+    }
+
+    private static ReferenceSource findReferenceDisplaySource(boolean group, String refMsgIdx) {
+        String table = group ? GROUP_TABLE : C2C_TABLE;
+        if (refMsgIdx == null || isBlank(refMsgIdx)) {
+            return null;
+        }
+        String sql = "SELECT username, content, attachments, ref_idx FROM `" + table + "` " +
+                "WHERE ref_idx = ? ORDER BY id DESC LIMIT 1";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, refMsgIdx);
+            var rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new ReferenceSource(
+                        rs.getString("username"),
+                        rs.getString("content"),
+                        rs.getString("attachments"),
+                        rs.getString("ref_idx")
+                );
+            }
+        } catch (SQLException e) {
+            log.error("按 ref_idx 查询引用展示数据失败, table={}, refIdx={}: {}", table, refMsgIdx, e.getMessage(), e);
+        }
+        return null;
+    }
+
+    public static void recordSentC2CMessage(String userOpenId, MessageBody request, String messageOpenId, String refIdx, String timestamp) {
         recordC2CMessage(
                 null,
                 userOpenId,
@@ -288,9 +344,11 @@ public class ChatContentRecord implements Listener {
                 true,
                 "BOT_SEND",
                 request.getMsgType(),
-                nowLocalTime(),
+                timestamp,
                 request.getRecordAttachments(),
-                toJsonOrNull(request.getArk())
+                toJsonOrNull(request.getArk()),
+                buildReferenceDisplayJson(false, extractReferenceMessageId(request)),
+                refIdx
         );
     }
 
@@ -373,9 +431,9 @@ public class ChatContentRecord implements Listener {
     }
 
     public static GroupMessageLocation locateGroupMessageByReference(String groupOpenId, String msgIdx,
-                                                                      String refAuthor, String refContent,
-                                                                      String refAttachments, int pageSize,
-                                                                      long excludeId) {
+                                                                     String refAuthor, String refContent,
+                                                                     String refAttachments, int pageSize,
+                                                                     long excludeId) {
         GroupMessageLocation byMsgIdx = locateGroupMessageByRefIdx(groupOpenId, msgIdx, pageSize, excludeId);
         if (byMsgIdx != null) {
             return byMsgIdx;
@@ -540,12 +598,21 @@ public class ChatContentRecord implements Listener {
     }
 
     private static String enrichMessageReference(java.sql.Connection conn, String groupOpenId, String rawReference) {
-        if (isBlank(groupOpenId) || isBlank(rawReference)) {
+        return enrichMessageReference(conn, GROUP_TABLE, "group_openId", groupOpenId, rawReference);
+    }
+
+    /**
+     * 原始引用数据里往往只有一个 msg_idx，缺发送者和正文，渲染出来是空引用块。
+     * 这里回查同会话的历史记录补全展示字段，群聊和私聊只差表名和会话键列。
+     */
+    private static String enrichMessageReference(java.sql.Connection conn, String table, String keyColumn,
+                                                 String keyValue, String rawReference) {
+        if (isBlank(keyValue) || isBlank(rawReference)) {
             return rawReference;
         }
         try {
             JsonNode root = objectMapper.readTree(rawReference);
-            JsonNode refNode = root.isArray() && root.size() > 0 ? root.get(0) : root;
+            JsonNode refNode = root.isArray() && !root.isEmpty() ? root.get(0) : root;
             if (refNode == null || refNode.isMissingNode() || refNode.isNull()) {
                 return rawReference;
             }
@@ -553,13 +620,13 @@ public class ChatContentRecord implements Listener {
                 return rawReference;
             }
 
-            ReferenceSource source = findReferenceSource(conn, groupOpenId, refNode);
+            ReferenceSource source = findReferenceSource(conn, table, keyColumn, keyValue, refNode);
             if (source == null) {
                 return rawReference;
             }
 
             var enrichedRoot = root.deepCopy();
-            JsonNode enrichedRefNode = enrichedRoot.isArray() && enrichedRoot.size() > 0 ? enrichedRoot.get(0) : enrichedRoot;
+            JsonNode enrichedRefNode = enrichedRoot.isArray() && !enrichedRoot.isEmpty() ? enrichedRoot.get(0) : enrichedRoot;
             if (!(enrichedRefNode instanceof com.fasterxml.jackson.databind.node.ObjectNode refObj)) {
                 return rawReference;
             }
@@ -594,13 +661,14 @@ public class ChatContentRecord implements Listener {
         }
     }
 
-    private static ReferenceSource findReferenceSource(java.sql.Connection conn, String groupOpenId, JsonNode refNode) throws SQLException {
+    private static ReferenceSource findReferenceSource(java.sql.Connection conn, String table, String keyColumn,
+                                                       String keyValue, JsonNode refNode) throws SQLException {
         String refMsgIdx = findRefIdxValue(refNode);
         if (!isBlank(refMsgIdx)) {
-            String sql = "SELECT username, content, attachments, ref_idx FROM `" + GROUP_TABLE + "` " +
-                    "WHERE group_openId = ? AND ref_idx = ? ORDER BY id DESC LIMIT 1";
+            String sql = "SELECT username, content, attachments, ref_idx FROM `" + table + "` " +
+                    "WHERE `" + keyColumn + "` = ? AND ref_idx = ? ORDER BY id DESC LIMIT 1";
             try (var stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, groupOpenId);
+                stmt.setString(1, keyValue);
                 stmt.setString(2, refMsgIdx);
                 var rs = stmt.executeQuery();
                 if (rs.next()) {
@@ -621,10 +689,10 @@ public class ChatContentRecord implements Listener {
             return null;
         }
 
-        String scanSql = "SELECT username, content, attachments, ref_idx FROM `" + GROUP_TABLE + "` " +
-                "WHERE group_openId = ? ORDER BY id DESC LIMIT ?";
+        String scanSql = "SELECT username, content, attachments, ref_idx FROM `" + table + "` " +
+                "WHERE `" + keyColumn + "` = ? ORDER BY id DESC LIMIT ?";
         try (var stmt = conn.prepareStatement(scanSql)) {
-            stmt.setString(1, groupOpenId);
+            stmt.setString(1, keyValue);
             stmt.setInt(2, REFERENCE_SCAN_LIMIT);
             var rs = stmt.executeQuery();
             while (rs.next()) {
@@ -843,18 +911,18 @@ public class ChatContentRecord implements Listener {
         }
     }
 
-    private static void ensureColumn(String tableName, String columnName, String definition) {
-        String sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition;
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1060 || "42S21".equals(e.getSQLState())) {
-                return;
-            }
-            log.error("为表 {} 补充字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
-        }
-    }
+//    private static void ensureColumn(String tableName, String columnName, String definition) {
+//        String sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition;
+//        try (var conn = DatabaseManager.getConnection();
+//             var stmt = conn.prepareStatement(sql)) {
+//            stmt.execute();
+//        } catch (SQLException e) {
+//            if (e.getErrorCode() == 1060 || "42S21".equals(e.getSQLState())) {
+//                return;
+//            }
+//            log.error("为表 {} 补充字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
+//        }
+//    }
 //
 //    private static void ensureIndex(String tableName, String indexName, String columns) {
 //        String sql = "ALTER TABLE `" + tableName + "` ADD INDEX `" + indexName + "` (" + columns + ")";
@@ -871,7 +939,8 @@ public class ChatContentRecord implements Listener {
 
     private static void recordC2CMessage(String userOpenId, String unionOpenId, String username, String content,
                                          String messageOpenId, boolean senderIsBot, String source,
-                                         Integer messageType, String eventTimestamp, String attachments, String ark) {
+                                         Integer messageType, String eventTimestamp, String attachments, String ark,
+                                         String messageReference, String refIdx) {
         String conversationOpenId = firstNonBlank(unionOpenId, userOpenId);
         if (isBlank(conversationOpenId)) {
             log.warn("跳过官方 C2C 消息记录：userOpenId/unionOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
@@ -879,11 +948,13 @@ public class ChatContentRecord implements Listener {
         }
 
         String sql = "INSERT INTO `" + C2C_TABLE + "` " +
-                "(union_openId, username, content, message_openId, sender_is_bot, source, message_type, event_timestamp, attachments, ark) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "(union_openId, username, content, message_openId, sender_is_bot, source, message_type, event_timestamp, attachments, ark, message_reference, ref_idx) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE content = VALUES(content), username = COALESCE(VALUES(username), username), source = VALUES(source), " +
                 "attachments = COALESCE(VALUES(attachments), attachments), " +
-                "ark = COALESCE(VALUES(ark), ark)";
+                "ark = COALESCE(VALUES(ark), ark), " +
+                "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
+                "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
 
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -901,6 +972,8 @@ public class ChatContentRecord implements Listener {
             stmt.setString(8, emptyToNull(eventTimestamp));
             stmt.setString(9, emptyToNull(attachments));
             stmt.setString(10, emptyToNull(ark));
+            stmt.setString(11, emptyToNull(messageReference));
+            stmt.setString(12, emptyToNull(refIdx));
             stmt.executeUpdate();
 
             // SSE — C2C 刷新信号
@@ -909,25 +982,26 @@ public class ChatContentRecord implements Listener {
                 payload.put("type", "c2c_refresh");
                 payload.put("userOpenId", conversationOpenId);
                 SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         } catch (SQLException e) {
             log.error("记录官方 C2C 消息失败, userOpenId={}, unionOpenId={}, messageOpenId={}: {}",
                     userOpenId, unionOpenId, messageOpenId, e.getMessage(), e);
         }
     }
 
-    private static void dropColumnIfExists(String tableName, String columnName) {
-        String sql = "ALTER TABLE `" + tableName + "` DROP COLUMN `" + columnName + "`";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1091 || "42000".equals(e.getSQLState())) {
-                return;
-            }
-            log.error("删除表 {} 字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
-        }
-    }
+//    private static void dropColumnIfExists(String tableName, String columnName) {
+//        String sql = "ALTER TABLE `" + tableName + "` DROP COLUMN `" + columnName + "`";
+//        try (var conn = DatabaseManager.getConnection();
+//             var stmt = conn.prepareStatement(sql)) {
+//            stmt.execute();
+//        } catch (SQLException e) {
+//            if (e.getErrorCode() == 1091 || "42000".equals(e.getSQLState())) {
+//                return;
+//            }
+//            log.error("删除表 {} 字段 {} 失败: {}", tableName, columnName, e.getMessage(), e);
+//        }
+//    }
 
     private static String extractContent(MessageBody request) {
         if (!isBlank(request.getContent())) {
@@ -984,9 +1058,9 @@ public class ChatContentRecord implements Listener {
         return null;
     }
 
-    private static String nowLocalTime() {
-        return LocalDateTime.now().format(LOCAL_TIME_FORMATTER);
-    }
+//    private static String nowLocalTime() {
+//        return LocalDateTime.now().format(LOCAL_TIME_FORMATTER);
+//    }
 
     private static String emptyToNull(String value) {
         return isBlank(value) ? null : value;
@@ -1023,7 +1097,11 @@ public class ChatContentRecord implements Listener {
     public record C2CMessageRecord(long id, String unionOpenId, String username,
                                    String content, String messageOpenId,
                                    boolean senderIsBot, Integer messageType,
-                                   String eventTimestamp, String attachments, String ark, String createdAt) {
+                                   String eventTimestamp, String attachments, String ark,
+                                   String messageReference, String refIdx, String createdAt) {
+    }
+
+    public record C2CMessageLocation(int page, int pageSize, C2CMessageRecord record) {
     }
 
     /**
@@ -1213,7 +1291,7 @@ public class ChatContentRecord implements Listener {
 
         String countSql = "SELECT COUNT(*) FROM `" + C2C_TABLE + "` WHERE union_openId = ?";
         String dataSql = "SELECT id, union_openId, username, content, message_openId, " +
-                "sender_is_bot, message_type, event_timestamp, attachments, ark, created_at " +
+                "sender_is_bot, message_type, event_timestamp, attachments, ark, message_reference, ref_idx, created_at " +
                 "FROM `" + C2C_TABLE + "` WHERE union_openId = ? ORDER BY id DESC LIMIT ? OFFSET ?";
 
         long total = 0;
@@ -1237,25 +1315,379 @@ public class ChatContentRecord implements Listener {
                 if (!senderIsBot && isBlank(username)) {
                     username = fallbackUsername;
                 }
-                records.add(new C2CMessageRecord(
-                        rs.getLong("id"),
-                        rs.getString("union_openId"),
-                        username,
-                        rs.getString("content"),
-                        rs.getString("message_openId"),
-                        senderIsBot,
-                        (Integer) rs.getObject("message_type"),
-                        rs.getString("event_timestamp"),
-                        rs.getString("attachments"),
-                        rs.getString("ark"),
-                        rs.getString("created_at")
-                ));
+                records.add(toC2CMessageRecord(conn, rs, username, senderIsBot));
             }
         } catch (SQLException e) {
             log.error("查询C2C消息失败, userOpenId={}, page={}, pageSize={}: {}", userOpenId, safePage, safePageSize, e.getMessage(), e);
         }
 
         return new MessagePage<>(safePage, safePageSize, total, records);
+    }
+
+    private static C2CMessageRecord toC2CMessageRecord(java.sql.Connection conn, java.sql.ResultSet rs,
+                                                       String username, boolean senderIsBot) throws SQLException {
+        String unionOpenId = rs.getString("union_openId");
+        return new C2CMessageRecord(
+                rs.getLong("id"),
+                unionOpenId,
+                username,
+                rs.getString("content"),
+                rs.getString("message_openId"),
+                senderIsBot,
+                (Integer) rs.getObject("message_type"),
+                rs.getString("event_timestamp"),
+                rs.getString("attachments"),
+                rs.getString("ark"),
+                enrichMessageReference(conn, C2C_TABLE, "union_openId", unionOpenId, rs.getString("message_reference")),
+                rs.getString("ref_idx"),
+                rs.getString("created_at")
+        );
+    }
+
+    /**
+     * 私聊版的引用定位，与 {@link #locateGroupMessageByReference} 同构，只是换了表和会话键
+     */
+    public static C2CMessageLocation locateC2CMessageByReference(String userOpenId, String msgIdx,
+                                                                 String refAuthor, String refContent,
+                                                                 String refAttachments, int pageSize,
+                                                                 long excludeId) {
+        C2CMessageLocation byMsgIdx = locateC2CMessageByRefIdx(userOpenId, msgIdx, pageSize, excludeId);
+        if (byMsgIdx != null) {
+            return byMsgIdx;
+        }
+        return scanC2CMessageByReference(userOpenId, refAuthor, refContent, refAttachments, pageSize, excludeId);
+    }
+
+    public static C2CMessageLocation locateC2CMessageByRefIdx(String userOpenId, String msgIdx,
+                                                              int pageSize, long excludeId) {
+        if (isBlank(userOpenId) || isBlank(msgIdx)) {
+            return null;
+        }
+
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        String excludeClause = excludeId > 0 ? " AND id <> ?" : "";
+        String targetSql = "SELECT id, union_openId, username, content, message_openId, " +
+                "sender_is_bot, message_type, event_timestamp, attachments, ark, message_reference, ref_idx, created_at " +
+                "FROM `" + C2C_TABLE + "` WHERE union_openId = ? AND ref_idx = ?" + excludeClause + " ORDER BY id DESC LIMIT 1";
+        String newerCountSql = "SELECT COUNT(*) FROM `" + C2C_TABLE + "` WHERE union_openId = ? AND id > ?";
+
+        try (var conn = DatabaseManager.getConnection();
+             var targetStmt = conn.prepareStatement(targetSql);
+             var countStmt = conn.prepareStatement(newerCountSql)) {
+            targetStmt.setString(1, userOpenId);
+            targetStmt.setString(2, msgIdx);
+            if (excludeId > 0) {
+                targetStmt.setLong(3, excludeId);
+            }
+
+            var rs = targetStmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+
+            C2CMessageRecord record = toC2CMessageRecord(conn, rs, rs.getString("username"), rs.getBoolean("sender_is_bot"));
+            return new C2CMessageLocation(pageOf(countStmt, userOpenId, record.id(), safePageSize), safePageSize, record);
+        } catch (SQLException e) {
+            log.error("定位私聊引用消息失败, userOpenId={}, msgIdx={}: {}", userOpenId, msgIdx, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private static C2CMessageLocation scanC2CMessageByReference(String userOpenId, String refAuthor,
+                                                                String refContent, String refAttachments,
+                                                                int pageSize, long excludeId) {
+        if (isBlank(userOpenId) || (isBlank(refContent) && isBlank(refAttachments))) {
+            return null;
+        }
+
+        int safePageSize = Math.max(1, Math.min(pageSize, 200));
+        String idClause = excludeId > 0 ? " AND id < ?" : "";
+        String scanSql = "SELECT id, union_openId, username, content, message_openId, " +
+                "sender_is_bot, message_type, event_timestamp, attachments, ark, message_reference, ref_idx, created_at " +
+                "FROM `" + C2C_TABLE + "` WHERE union_openId = ?" + idClause + " ORDER BY id DESC LIMIT ?";
+        String newerCountSql = "SELECT COUNT(*) FROM `" + C2C_TABLE + "` WHERE union_openId = ? AND id > ?";
+
+        String targetText = normalizeReferenceText(refContent);
+        List<AttachmentFingerprint> targetAttachments = parseAttachmentFingerprints(refAttachments);
+        String targetAuthor = emptyToNull(refAuthor);
+
+        try (var conn = DatabaseManager.getConnection();
+             var scanStmt = conn.prepareStatement(scanSql);
+             var countStmt = conn.prepareStatement(newerCountSql)) {
+            int idx = 1;
+            scanStmt.setString(idx++, userOpenId);
+            if (excludeId > 0) {
+                scanStmt.setLong(idx++, excludeId);
+            }
+            scanStmt.setInt(idx, REFERENCE_SCAN_LIMIT);
+
+            var rs = scanStmt.executeQuery();
+            while (rs.next()) {
+                String username = rs.getString("username");
+                if (!isBlank(targetAuthor) && !targetAuthor.equals(username)) {
+                    continue;
+                }
+                if (!matchesReferenceSource(rs.getString("content"), rs.getString("attachments"),
+                        targetText, targetAttachments)) {
+                    continue;
+                }
+
+                C2CMessageRecord record = toC2CMessageRecord(conn, rs, username, rs.getBoolean("sender_is_bot"));
+                return new C2CMessageLocation(pageOf(countStmt, userOpenId, record.id(), safePageSize), safePageSize, record);
+            }
+        } catch (SQLException e) {
+            log.error("扫描定位私聊引用消息失败, userOpenId={}, excludeId={}: {}", userOpenId, excludeId, e.getMessage(), e);
+        }
+        return null;
+    }
+
+    /**
+     * 目标消息之后还有多少条更新的记录，决定它落在分页的第几页
+     */
+    private static int pageOf(java.sql.PreparedStatement newerCountStmt, String keyValue,
+                              long recordId, int pageSize) throws SQLException {
+        newerCountStmt.setString(1, keyValue);
+        newerCountStmt.setLong(2, recordId);
+        var countRs = newerCountStmt.executeQuery();
+        long newerCount = countRs.next() ? countRs.getLong(1) : 0;
+        return (int) (newerCount / pageSize) + 1;
+    }
+
+    /**
+     * 群成员列表。
+     *
+     * <p>官方 API 不提供群成员名册，Bot 只能看见与它同群且<b>发过言</b>的人，
+     * 所以这里的「成员」= 在本群留下过消息记录的 union_openId，
+     * 与统计里的「群活跃人数」是同一批人，不等于真实群成员。
+     * 用户名和身份取该用户最后一条消息上的值。
+     */
+    public static List<GroupMemberRecord> fetchGroupMembers(String groupOpenId) {
+        List<GroupMemberRecord> result = new ArrayList<>();
+        if (isBlank(groupOpenId)) {
+            return result;
+        }
+
+        String sql = "SELECT r.union_openId, r.username, r.member_role, r.event_timestamp, r.created_at, t.msg_count " +
+                "FROM `" + GROUP_TABLE + "` r " +
+                "JOIN (SELECT union_openId, MAX(id) AS max_id, COUNT(*) AS msg_count FROM `" + GROUP_TABLE + "` " +
+                "      WHERE group_openId = ? AND event_type <> ? AND union_openId IS NOT NULL " +
+                "      GROUP BY union_openId) t " +
+                "ON r.id = t.max_id";
+
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, groupOpenId);
+            stmt.setString(2, "BOT_SEND");
+            var rs = stmt.executeQuery();
+            while (rs.next()) {
+                result.add(new GroupMemberRecord(
+                        rs.getString("union_openId"),
+                        rs.getString("username"),
+                        rs.getString("member_role"),
+                        rs.getLong("msg_count"),
+                        firstNonBlank(rs.getString("event_timestamp"), rs.getString("created_at"))
+                ));
+            }
+        } catch (SQLException e) {
+            log.error("查询群成员失败, groupOpenId={}: {}", groupOpenId, e.getMessage(), e);
+        }
+
+        // 群主 → 管理员 → 普通成员，同档内按最近发言时间倒序
+        result.sort((a, b) -> {
+            int rank = roleRank(a.memberRole()) - roleRank(b.memberRole());
+            if (rank != 0) return rank;
+            String ta = a.lastActiveAt() == null ? "" : a.lastActiveAt();
+            String tb = b.lastActiveAt() == null ? "" : b.lastActiveAt();
+            return tb.compareTo(ta);
+        });
+        return result;
+    }
+
+    private static int roleRank(String role) {
+        if (role == null) return 2;
+        return switch (role) {
+            case "OWNER" -> 0;
+            case "ADMIN" -> 1;
+            default -> 2;
+        };
+    }
+
+    public record GroupMemberRecord(String unionOpenId, String username, String memberRole,
+                                    long messageCount, String lastActiveAt) {
+    }
+
+//    private static final int DEFAULT_CONVERSATION_LIMIT = 300;
+//
+//    /**
+//     * 会话列表聚合查询：每个群 / 每个私聊用户各取最新一条消息记录，
+//     * 供 WebUI「聊天」页左侧会话列表使用（含最后一条消息预览与时间）。
+//     */
+//    public static List<ConversationRecord> fetchConversations() {
+//        return fetchConversations(DEFAULT_CONVERSATION_LIMIT);
+//    }
+
+    public static List<ConversationRecord> fetchConversations(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 1000));
+        List<ConversationRecord> result = new ArrayList<>();
+
+        // 每张表各自先按时间倒序截断到 safeLimit 条，避免把全部历史会话一次性拉进内存，
+        // 最终合并两表结果后再统一排序截断一次。
+        String groupSql = "SELECT r.group_openId, r.username, r.content, r.sender_is_bot, r.message_type, " +
+                "r.attachments, r.ark, r.event_timestamp, r.created_at " +
+                "FROM `" + GROUP_TABLE + "` r " +
+                "JOIN (SELECT group_openId, MAX(id) AS max_id FROM `" + GROUP_TABLE + "` GROUP BY group_openId) t " +
+                "ON r.id = t.max_id " +
+                "ORDER BY r.created_at DESC LIMIT ?";
+
+        String c2cSql = "SELECT r.union_openId, r.username, r.content, r.sender_is_bot, r.message_type, " +
+                "r.attachments, r.ark, r.event_timestamp, r.created_at " +
+                "FROM `" + C2C_TABLE + "` r " +
+                "JOIN (SELECT union_openId, MAX(id) AS max_id FROM `" + C2C_TABLE + "` " +
+                "WHERE union_openId IS NOT NULL GROUP BY union_openId) t " +
+                "ON r.id = t.max_id " +
+                "ORDER BY r.created_at DESC LIMIT ?";
+
+        try (var conn = DatabaseManager.getConnection();
+             var groupStmt = conn.prepareStatement(groupSql);
+             var c2cStmt = conn.prepareStatement(c2cSql)) {
+            groupStmt.setInt(1, safeLimit);
+            var groupRs = groupStmt.executeQuery();
+            List<Object[]> groupRows = new ArrayList<>();
+            while (groupRs.next()) {
+                groupRows.add(new Object[]{
+                        groupRs.getString("group_openId"),
+                        groupRs.getString("username"),
+                        groupRs.getString("content"),
+                        groupRs.getBoolean("sender_is_bot"),
+                        groupRs.getObject("message_type"),
+                        groupRs.getString("attachments"),
+                        groupRs.getString("ark"),
+                        groupRs.getString("event_timestamp"),
+                        groupRs.getString("created_at")
+                });
+            }
+            for (Object[] row : groupRows) {
+                String groupOpenId = (String) row[0];
+                Long realGroupId = null;
+                try {
+                    realGroupId = OfficialGroups.getData(groupOpenId).realGroupId();
+                } catch (Exception ignored) {
+                }
+                result.add(new ConversationRecord(
+                        "group",
+                        groupOpenId,
+                        null,
+                        realGroupId,
+                        (String) row[2],
+                        (String) row[1],
+                        (boolean) row[3],
+                        (Integer) row[4],
+                        (String) row[5],
+                        !isBlank((String) row[6]),
+                        (String) row[7],
+                        (String) row[8]
+                ));
+            }
+
+            c2cStmt.setInt(1, safeLimit);
+            var c2cRs = c2cStmt.executeQuery();
+            List<Object[]> c2cRows = new ArrayList<>();
+            java.util.Set<String> needsUsernameFallback = new java.util.HashSet<>();
+            while (c2cRs.next()) {
+                String unionOpenId = c2cRs.getString("union_openId");
+                boolean senderIsBot = c2cRs.getBoolean("sender_is_bot");
+                String senderName = c2cRs.getString("username");
+                if (senderIsBot || isBlank(senderName)) {
+                    needsUsernameFallback.add(unionOpenId);
+                }
+                c2cRows.add(new Object[]{
+                        unionOpenId, senderName, c2cRs.getString("content"), senderIsBot,
+                        c2cRs.getObject("message_type"), c2cRs.getString("attachments"),
+                        c2cRs.getString("ark"), c2cRs.getString("event_timestamp"), c2cRs.getString("created_at")
+                });
+            }
+            Map<String, String> fallbackNames = batchFindLatestKnownUsernames(conn, needsUsernameFallback);
+            for (Object[] row : c2cRows) {
+                String unionOpenId = (String) row[0];
+                String senderName = (String) row[1];
+                boolean senderIsBot = (boolean) row[3];
+                String displayName = (!senderIsBot && !isBlank(senderName))
+                        ? senderName
+                        : fallbackNames.get(unionOpenId);
+                result.add(new ConversationRecord(
+                        "c2c",
+                        unionOpenId,
+                        displayName,
+                        null,
+                        (String) row[2],
+                        senderName,
+                        senderIsBot,
+                        (Integer) row[4],
+                        (String) row[5],
+                        !isBlank((String) row[6]),
+                        (String) row[7],
+                        (String) row[8]
+                ));
+            }
+        } catch (SQLException e) {
+            log.error("聚合查询会话列表失败: {}", e.getMessage(), e);
+        }
+
+        // created_at 是 "yyyy-MM-dd HH:mm:ss" 格式，字典序即时间序
+        result.sort((a, b) -> {
+            String ta = a.lastCreatedAt() == null ? "" : a.lastCreatedAt();
+            String tb = b.lastCreatedAt() == null ? "" : b.lastCreatedAt();
+            return tb.compareTo(ta);
+        });
+        if (result.size() > safeLimit) {
+            result = new ArrayList<>(result.subList(0, safeLimit));
+        }
+        return result;
+    }
+
+    /**
+     * 批量版 {@link #findLatestKnownUsername}：一次查询取回一批 unionOpenId 各自最近一次
+     * 非空、非机器人发送的用户名，避免 fetchConversations 对每个私聊会话单独发一条子查询。
+     */
+    private static Map<String, String> batchFindLatestKnownUsernames(java.sql.Connection conn, java.util.Set<String> unionOpenIds) throws SQLException {
+        Map<String, String> resultMap = new java.util.HashMap<>();
+        if (unionOpenIds.isEmpty()) {
+            return resultMap;
+        }
+        String placeholders = String.join(",", java.util.Collections.nCopies(unionOpenIds.size(), "?"));
+        String sql = "SELECT union_openId, username FROM (" +
+                "  SELECT union_openId, username, created_at, " +
+                "         ROW_NUMBER() OVER (PARTITION BY union_openId ORDER BY created_at DESC) AS rn " +
+                "  FROM (" +
+                "    SELECT union_openId, username, created_at FROM `" + C2C_TABLE + "` " +
+                "    WHERE union_openId IN (" + placeholders + ") AND sender_is_bot = FALSE " +
+                "    AND username IS NOT NULL AND TRIM(username) <> '' " +
+                "    UNION ALL " +
+                "    SELECT union_openId, username, created_at FROM `" + GROUP_TABLE + "` " +
+                "    WHERE union_openId IN (" + placeholders + ") AND sender_is_bot = FALSE " +
+                "    AND username IS NOT NULL AND TRIM(username) <> '' " +
+                "  ) combined" +
+                ") ranked WHERE rn = 1";
+        try (var stmt = conn.prepareStatement(sql)) {
+            int idx = 1;
+            for (String id : unionOpenIds) {
+                stmt.setString(idx++, id);
+            }
+            for (String id : unionOpenIds) {
+                stmt.setString(idx++, id);
+            }
+            var rs = stmt.executeQuery();
+            while (rs.next()) {
+                resultMap.put(rs.getString("union_openId"), rs.getString("username"));
+            }
+        }
+        return resultMap;
+    }
+
+    public record ConversationRecord(String type, String openId, String name, Long realGroupId,
+                                     String lastContent, String lastSenderName, boolean lastSenderIsBot,
+                                     Integer lastMessageType, String lastAttachments, boolean lastArk,
+                                     String lastEventTimestamp, String lastCreatedAt) {
     }
 
     private static String findLatestKnownUsername(java.sql.Connection conn, String userOpenId) {

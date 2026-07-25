@@ -241,4 +241,11 @@ public class User {
     public boolean isPlatformAdmin() {
         return this.role.equals(PlatformRole.ADMIN) || this.role.equals(PlatformRole.OWNER);
     }
+
+    public boolean isBlocked() {
+        if (this.platform == Platform.OFFICIAL_C2C || this.platform == Platform.OFFICIAL_GROUP) {
+            return OfficialUsers.isBlocked(this.userId) || OfficialUsers.isIgnored(this.userId);
+        }
+        return false;
+    }
 }

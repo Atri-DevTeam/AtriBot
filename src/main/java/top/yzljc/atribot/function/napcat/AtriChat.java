@@ -42,7 +42,7 @@ public class AtriChat implements Listener {
             return;
         }
         if (content.startsWith("-")) {
-            var ai = AiChat.chat(AiProvider.OPENCODE, gid, userId, username, content);
+            var ai = AiChat.chat(AiProvider.OPENCODE, gid, userId, username, content.substring(1));
             if (ai != null) {
                 GroupMessage.replyMessage(gid, messageId, ai);
             }

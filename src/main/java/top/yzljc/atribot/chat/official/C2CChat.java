@@ -98,6 +98,19 @@ public final class C2CChat {
     }
 
     /**
+     * 引用回复单聊纯文本消息
+     *
+     * @param openId  用户 openId
+     * @param refIdx  被引用消息的索引 ID
+     * @param content 引用回复的文本内容
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public static String refMessage(String openId, String refIdx, String content) {
+        return await(AsyncC2CChat.refMessage(openId, refIdx, content));
+    }
+
+    /**
      * 回复单聊 Markdown 消息
      *
      * @param openId   用户 openId

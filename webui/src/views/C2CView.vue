@@ -151,6 +151,10 @@
                   </div>
                   <div class="bubble"
                        @contextmenu.prevent.stop="onContextMenu($event, message)">
+                    <div v-if="msgRef(message)" class="msg-ref">
+                      <span class="msg-ref-author">{{ msgRef(message).author || '引用消息' }}</span>
+                      <div class="msg-ref-content" v-html="renderRefContent(msgRef(message))"></div>
+                    </div>
                     <div v-if="message.attachments" class="msg-attach">
                       <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
                         <img
@@ -164,6 +168,37 @@
                           @click="previewImg = att.url"
                         />
                         <span v-if="att.type === 'image' && attachFailed[att.url]" class="attach-fail">📎 {{ att.filename }}</span>
+                        <div v-else-if="att.type === 'video'" class="video-attach">
+                          <template v-if="att.url && !attachFailed[att.url]">
+                            <video :src="att.url" controls playsinline preload="metadata"
+                                   @error="attachFailed[att.url] = true"></video>
+                            <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
+                            <button type="button" class="video-expand" title="放大查看" aria-label="放大查看"
+                                    @click.stop="previewVideo = att.url">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                              </svg>
+                            </button>
+                          </template>
+                          <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank" rel="noreferrer">
+                            🎬 {{ att.filename || '视频' }}（点击在新标签打开）
+                          </a>
+                          <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
+                        </div>
+                        <a v-else-if="att.type === 'file'" class="file-attach"
+                           :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
+                          <span class="file-attach-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                          </span>
+                          <span class="file-attach-body">
+                            <span class="file-attach-name">{{ att.filename || '文件' }}</span>
+                            <span class="file-attach-size">{{ fmtSize(att.size) || '点击下载' }}</span>
+                          </span>
+                        </a>
                         <div v-else-if="att.type === 'voice'" class="voice-attach">
                           <div class="voice-title">语音消息</div>
                           <div v-if="att.asrText" class="voice-asr">{{ att.asrText }}</div>
@@ -184,8 +219,8 @@
           </div>
 
             <div v-if="replyTo" class="reply-bar">
-              <span>回复 {{ replyTo.username || '...' }}</span>
-              <button @click="replyTo = null">×</button>
+              <span>{{ refMode ? '引用' : '回复' }} {{ replyTo.username || '...' }}</span>
+              <button @click="cancelReply">×</button>
             </div>
           <form class="composer" @submit.prevent="sendMessage">
             <div class="composer-type">
@@ -210,6 +245,10 @@
             <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
                     @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
             <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
+            <!-- 引用回复要来源消息的 ref_idx；缺了就置灰，不隐藏，免得分不清是不支持还是这条不行 -->
+            <button :disabled="!ctxMenu.message.refIdx"
+                    :title="ctxMenu.message.refIdx ? '' : '这条消息没有记录 ref_idx（引用所需），无法引用'"
+                    @click="startRefReply(ctxMenu.message); ctxMenu.visible = false">引用回复</button>
             <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
             <button v-if="isMe(ctxMenu.message) && !recalledIds[ctxMenu.message.messageOpenId]"
                     class="ctx-recall"
@@ -395,8 +434,9 @@
       </div>
     </div>
 
-    <div v-if="previewImg" class="lightbox" @click="previewImg = null">
-      <img :src="previewImg" referrerpolicy="no-referrer" @click.stop  alt="t-1"/>
+    <div v-if="previewImg || previewVideo" class="lightbox" @click="closePreview">
+      <img v-if="previewImg" :src="previewImg" referrerpolicy="no-referrer" @click.stop  alt="t-1"/>
+      <video v-else :src="previewVideo" controls autoplay playsinline @click.stop></video>
     </div>
   </div>
 </template>
@@ -406,7 +446,7 @@ import { computed, nextTick, onMounted, onBeforeUnmount, reactive, ref, watch } 
 import { useRoute, useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
-import { renderMarkdown as renderMd } from '../lib/markdown.js'
+import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
 import { hasArkMessage } from '../lib/ark.js'
@@ -437,12 +477,19 @@ const userSearch = ref('')
 const sidebarOpen = ref(false)
 const showInspector = ref(false)
 const replyTo = ref(null)
+const refMode = ref(false)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const msgType = ref('text')
 const imageData = ref(null)
 const pastePreview = ref(null)
 const previewImg = ref(null)
+const previewVideo = ref(null)
+
+function closePreview() {
+  previewImg.value = null
+  previewVideo.value = null
+}
 const pageSize = 80
 const permRole = ref('')
 const permBlocked = ref(false)
@@ -698,7 +745,7 @@ function returnToUserList() {
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
-  replyTo.value = null
+  cancelReply()
   ctxMenu.visible = false
   permTargetId.value = ''
   userStats.value = null
@@ -922,10 +969,21 @@ async function sendMessage() {
       const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
       if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
       if (msgType.value === 'image' && imageData.value) { body.imageType = 'base64'; body.imageValue = imageData.value }
-      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      if (replyTo.value) {
+        if (refMode.value) {
+          // 引用回复：后端用 refMessageId 走 C2CChat.refMessage，
+          // 来源的展示数据要一起带上，否则历史里那条引用块是空的
+          body.refMessageId = replyTo.value.refIdx
+          body.refAuthor = replyTo.value.username || ''
+          body.refContent = replyTo.value.content || ''
+          body.refAttachments = replyTo.value.attachments || null
+        } else {
+          body.replyMessageId = replyTo.value.messageOpenId
+        }
+      }
       await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
     }
-    draft.value = ''; imageData.value = null; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
+    draft.value = ''; imageData.value = null; pastePreview.value = null; cancelReply(); notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -951,20 +1009,84 @@ function parseAttach(raw) {
   } catch { return [] }
 }
 
+// 引用块：messageReference 存的是数组，取第一条
+function msgRef(message) {
+  try {
+    const raw = message.messageReference
+    if (!raw) return null
+    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+    const ref = Array.isArray(arr) ? arr[0] : arr
+    if (!ref) return null
+    return {
+      author: ref.author?.username || '',
+      content: ref.content || '',
+      attachments: Array.isArray(ref.attachments) ? ref.attachments : []
+    }
+  } catch { return null }
+}
+
+function renderRefContent(ref) {
+  const parts = []
+  if (ref.content) {
+    let t = renderFaceTags(ref.content)
+    t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
+    t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+    if (t.trim()) parts.push(`<p>${escapeHtml(t)}</p>`)
+  }
+  for (const a of ref.attachments || []) {
+    const type = a.content_type || ''
+    if (type.startsWith('image/') && a.url) {
+      parts.push(`<img src="${escapeHtml(absUrl(a.url))}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" alt="图片">`)
+    } else if (type.startsWith('video/')) {
+      parts.push(`<span class="voice-ref">🎬 ${escapeHtml(a.filename || '视频')}</span>`)
+    } else if (type === 'voice') {
+      parts.push(`<span class="voice-ref">${escapeHtml(a.asr_refer_text || a.filename || '语音消息')}</span>`)
+    }
+  }
+  if (!parts.length) return '&#8203;'
+  return parts.join('')
+}
+
+/* 官方 Bot 的附件 url 不带协议头，直接塞进 src 会被当成站内相对路径 */
+function absUrl(url) {
+  if (!url) return ''
+  if (/^(https?:)?\/\//i.test(url)) return url.startsWith('//') ? 'https:' + url : url
+  if (url.startsWith('data:')) return url
+  return 'https://' + url
+}
+
 function normalizeAttachment(att) {
   const contentType = att?.content_type || ''
   if (att?.url && contentType.startsWith('image/')) {
-    return { ...att, type: 'image' }
+    return { ...att, type: 'image', url: absUrl(att.url) }
+  }
+  if (contentType.startsWith('video/')) {
+    return { ...att, type: 'video', url: absUrl(att.url) }
   }
   if (contentType === 'voice') {
     return {
       ...att,
       type: 'voice',
+      url: absUrl(att.url),
       asrText: att.asr_refer_text || '',
-      voiceUrl: att.voice_wav_url || ''
+      voiceUrl: absUrl(att.voice_wav_url)
     }
   }
+  // file 及任何有 url 但类型不认识的附件，按文件卡片兜底，别静默丢掉
+  if (att?.url) {
+    return { ...att, type: 'file', url: absUrl(att.url) }
+  }
   return null
+}
+
+function fmtSize(bytes) {
+  const n = Number(bytes)
+  if (!Number.isFinite(n) || n <= 0) return ''
+  const units = ['B', 'KB', 'MB', 'GB']
+  let i = 0
+  let value = n
+  while (value >= 1024 && i < units.length - 1) { value /= 1024; i++ }
+  return `${value >= 10 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`
 }
 
 function onPaste(e) {
@@ -1008,6 +1130,18 @@ async function copyText(text) {
 
 function startReply(message) {
   replyTo.value = message
+  refMode.value = false
+}
+
+// 引用回复：带 message_reference 主动发，来源消息会渲染成引用块
+function startRefReply(message) {
+  replyTo.value = message
+  refMode.value = true
+}
+
+function cancelReply() {
+  replyTo.value = null
+  refMode.value = false
 }
 
 async function recallMsg(message) {

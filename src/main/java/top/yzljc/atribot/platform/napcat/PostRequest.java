@@ -9,6 +9,7 @@ import top.yzljc.atribot.service.request.HttpService;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +21,14 @@ public class PostRequest {
      * 获取 API 返回结果 (多参)
      */
     public static JsonNode getPostResult(RequestType type, Map<String, Object> params) {
-        return executeRequest(type, params);
+        return executeRequest(type, params, null);
+    }
+
+    /**
+     * 获取 API 返回结果 (多参, 自定义请求超时)
+     */
+    public static JsonNode getPostResult(RequestType type, Map<String, Object> params, Duration timeout) {
+        return executeRequest(type, params, timeout);
     }
 
     /**
@@ -30,21 +38,21 @@ public class PostRequest {
     public static JsonNode getSimplePostResult(RequestType type, String key, Object value) {
         Map<String, Object> params = new HashMap<>();
         params.put(key, value);
-        return executeRequest(type, params);
+        return executeRequest(type, params, null);
     }
 
     /**
      * 获取 API 返回结果 (无参数)
      */
     public static JsonNode getPostResult(RequestType type) {
-        return executeRequest(type, null);
+        return executeRequest(type, null, null);
     }
 
     /**
      * 发送 POST 请求 (无返回值)
      */
     public static void sendPost(RequestType type, Map<String, Object> params) {
-        executeRequest(type, params);
+        executeRequest(type, params, null);
     }
 
     /**
@@ -54,21 +62,24 @@ public class PostRequest {
     public static void sendSimplePost(RequestType type, String key, Object value) {
         Map<String, Object> params = new HashMap<>();
         params.put(key, value);
-        executeRequest(type, params);
+        executeRequest(type, params, null);
     }
 
-    private static JsonNode executeRequest(RequestType type, Map<String, Object> params) {
+    private static JsonNode executeRequest(RequestType type, Map<String, Object> params, Duration timeout) {
         try {
             String BASEURL = Config.getInstance().getNapcatServerUrl();
             String postUrl = BASEURL + type.getRequestLink();
             Map<String, Object> requestBody = params != null ? params : new HashMap<>();
 
             String json = mapper.writeValueAsString(requestBody);
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(postUrl))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            if (timeout != null) {
+                requestBuilder.timeout(timeout);
+            }
+            HttpRequest request = requestBuilder.build();
 
             HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 

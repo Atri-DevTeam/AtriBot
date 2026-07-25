@@ -15,6 +15,10 @@ import lombok.Getter;
 public enum InteractionType {
     BUTTON_CLICK(11),
     CALLBACK_COMMAND(12),
+    PROMPT_FEEDBACK(13),
+    CLEAR_SESSION(14),
+    IN_OUT_STORY(15),
+    SWITCH_MODEL(16),
     USER_AUTHORIZE(18),
     GROUP_AUTHORIZE(19),
     GROUP_AUTHORIZE_STATUS(20);

@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      QQ 的 multimedia CDN 拒绝带 referrer 的请求，图片是靠 referrerpolicy="no-referrer"
+      逐个规避的；但 <video> 没有这个属性（HTML 规范只给了 img/iframe/link/script/a），
+      只能在页面级声明。后端不校验 Referer、鉴权走 same-origin cookie，去掉它没有副作用。
+    -->
+    <meta name="referrer" content="no-referrer" />
     <title>AtriBot WebUI</title>
   </head>
   <body>

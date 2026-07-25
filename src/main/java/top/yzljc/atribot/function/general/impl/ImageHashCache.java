@@ -106,8 +106,8 @@ public class ImageHashCache {
         }
         String expected = endpointHashMap.get(endpoint);
         if (expected == null) {
-            log.debug("端点 {} 无预置哈希记录，校验失败", endpoint);
-            return false;
+            log.info("端点 {} 无预置哈希记录，无需校验", endpoint);
+            return true;
         }
         boolean ok = expected.equals(actualHash);
         if (!ok) {

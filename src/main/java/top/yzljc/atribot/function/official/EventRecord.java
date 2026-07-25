@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.official;
 
+import top.yzljc.atribot.auth.official.PermissionRole;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +46,14 @@ public class EventRecord implements Listener {
         }
         // Guided by GordonHim
         String url = ResourcesProperties.WELCOME_IMG;
+        String welStr = "欢迎新人喵~";
+        if (OfficialUsers.getRole(event.getMemberOpenId()) == PermissionRole.OWNER) {
+            welStr = "欢迎" + OfficialBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
+        } else if (OfficialUsers.getRole(event.getMemberOpenId()) == PermissionRole.ADMIN) {
+            welStr = "欢迎" + OfficialBot.BOT_NAME + "管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
+        }
         Markdown md = TC.md(
-                Markdown.at(event.getMemberOpenId()) + " 欢迎新人喵~\n\n" +
+                Markdown.at(event.getMemberOpenId()) + " " + welStr + "\n\n" +
                         Markdown.img(url, 1238, 564) + "\n\n" +
                         "> " + Markdown.enterCommand("/推送任务 关闭 member_add_welcome", "关闭欢迎提示")
         );
@@ -88,21 +95,43 @@ public class EventRecord implements Listener {
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
         String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
-            if (OfficialUsers.isC2CPushEnabled(userId)) {
-                if (c2cNotifiedUsers.add(userId)) {
-                    List<Markdown> greeting = List.of(
+            if (OfficialUsers.isC2CPushEnabled(userId)) { // c2cNotifiedUsers.add(userId)
+                if (event.getMessage().getContent().equals("查看开发者留言")) {
+                    List<Markdown> devLeaveMessage = List.of(
                             TC.md("你好喵~\n\n"),
-                                    TC.md(OfficialBot.BOT_NAME + "为兼顾安全问题，未接入AI主动聊天，因此我暂时不能与你聊天。"),
-                                    TC.md("您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~")
-
-
+                            TC.md("> 我是" + OfficialBot.BOT_NAME + "制作者YZ_Ljc_\n\n"),
+                            TC.md("首先，感谢您支持并使用本机器人的内容，为机器人的开发提供数据支撑。本机器人的主要内容为Minecraft游戏相关的内容，" +
+                                    "同时也提供了一些娱乐功能 " + Markdown.enterCommand("/games") + "，因此在通用性上比较差。\n\n"),
+                            TC.md("由于缺乏制作灵感，本机器人的大部分功能看起来并不实用，也恳请您的理解，如果您有相关功能制作建议和功能需求，欢迎通过 " +
+                                    Markdown.enterCommand("/feedback", "反馈") + " 与我联系，我会尽量考虑您的建议。\n\n")
                     );
-                    event.sendStreamMarkdownMessageD(greeting);
+
+                    event.sendStreamMarkdownMessageD(devLeaveMessage);
+                    return;
                 }
+                if (true) {
+                    //                    List<Markdown> greeting = List.of(
+//                            TC.md("你好喵~\n\n"),
+//                                    TC.md(OfficialBot.BOT_NAME + "为兼顾安全问题，暂时无法主动与你聊天。"),
+//                                    TC.md("您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~")
+//
+//
+//                    );
+                    Markdown greeting = TC.md("你好喵~\n\n" +
+                            OfficialBot.BOT_NAME + "为兼顾安全问题，暂时无法主动与你聊天。" +
+                            "您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~");
+                    Object keyboard = TC.promptKeyboard(
+                            List.of(
+                                    List.of(new Button("c1", "查看开发者留言", "", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                            )
+                    );
+                    event.sendMessage(greeting, keyboard);
+                }
+
                 return;
             }
             var md = TC.md("你好喵~\n\n由于您未允许" + OfficialBot.BOT_NAME +
-                    "主动聊天，因此我暂时不能与你聊天，您可以在机器人权限设置中允许我主动聊天。同时，您也可以使用 " +
+                    "主动聊天，因此我暂时不能与你聊天，您可以在机器人权限设置中允许我主动发言。同时，您也可以使用 " +
                     Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
             event.getUser().sendMessage(event.getMessage().getMessageId(), md);
         }
@@ -110,21 +139,21 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
-        log.info("New friend added: {}", event.getUnionOpenId());
-        OfficialUsers.registerUser(event.getUnionOpenId());
-        log.info("Registered official user data for new friend: {}", event.getUnionOpenId());
-        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUnionOpenId());
+        log.info("New friend added: {}", event.getUserOpenId());
+        OfficialUsers.registerUser(event.getUserOpenId());
+        log.info("Registered official user data for new friend: {}", event.getUserOpenId());
+        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId());
     }
 
     @EventHandler
     public void onFriendDel(OfficialFriendDelEvent event) {
-        log.info("Friend removed: {}", event.getUnionOpenId());
-        if (OfficialUsers.removeUser(event.getUnionOpenId())) {
-            log.info("Removed official user data for deleted friend: {}", event.getUnionOpenId());
+        log.info("Friend removed: {}", event.getUserOpenId());
+        if (OfficialUsers.removeUser(event.getUserOpenId())) {
+            log.info("Removed official user data for deleted friend: {}", event.getUserOpenId());
         } else {
-            log.warn("Failed to remove official user data for deleted friend: {}", event.getUnionOpenId());
+            log.warn("Failed to remove official user data for deleted friend: {}", event.getUserOpenId());
         }
-        Alert.notify("有好友删除了亚托莉喵，OpenID: " + event.getUnionOpenId());
+        Alert.notify("有好友删除了亚托莉喵，OpenID: " + event.getUserOpenId());
     }
 
     @EventHandler

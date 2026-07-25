@@ -29,7 +29,9 @@ public class PushTaskCommand implements CommandExecutor {
             new MinecraftNewsCheckTask(),
             new CalendarTask(),
             new HypixelNewsTask(),
-            new MemerAddWelcomeTask()
+            new MemerAddWelcomeTask(),
+            new SkyblockResourcePackTask(),
+            new HypixelAlphaTask()
     );
 
     @Override

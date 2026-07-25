@@ -1,18 +1,24 @@
 package top.yzljc.atribot.function.general;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.function.general.impl.FetchHitokoto;
+import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
@@ -28,11 +34,21 @@ public class Hitokoto implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of());
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
-            sender.sendMessage(FetchHitokoto.get().replace(">", ""));
+            if (!d.isError()) {
+                sender.sendMessage(d.url(), MessageUtils.ImageType.URL);
+            } else {
+                sender.sendMessage(FetchHitokoto.get().replace(">", ""));
+            }
             return true;
         }
-        sender.sendMessage(TC.md(FetchHitokoto.get()));
+
+        if (!d.isError()) {
+            sender.sendMessage(d.url(), ImageType.URL);
+        } else {
+            sender.sendMessage(TC.md(FetchHitokoto.get()));
+        }
         return true;
     }
 

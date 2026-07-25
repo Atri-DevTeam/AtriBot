@@ -77,6 +77,7 @@ atribot-key-secret: "null"
 
 # Hypixel 奖励 WebSocket 地址
 function:
+  us-api: "null"
   hypixel-reward-ws: "ws://localhost:1111"
   # SA 签到密钥
   sa-sign-key: "null"

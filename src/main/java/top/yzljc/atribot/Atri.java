@@ -17,9 +17,11 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
 import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
@@ -32,9 +34,6 @@ import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.CardLike;
 import top.yzljc.atribot.function.napcat.personal.*;
 import top.yzljc.atribot.function.official.*;
-import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
-import top.yzljc.atribot.function.official.minecraft.MinecraftRemote;
-import top.yzljc.atribot.function.official.minecraft.MinecraftVersionCheck;
 import top.yzljc.atribot.function.official.tufe.ElectricCheck;
 import top.yzljc.atribot.function.task.*;
 import top.yzljc.atribot.function.task.Calendar;
@@ -90,11 +89,15 @@ public class Atri {
     @Getter
     private final Reboot reboot;
     @Getter
-    private final MinecraftVersionCheck minecraftVersionCheck;
+    private final MinecraftVersionChecker minecraftVersionCheck;
     @Getter
     private final MinecraftNews minecraftNews;
     @Getter
     private final HypixelAnnouncements hypixelAnnouncements;
+    @Getter
+    private final HypixelAlphaForums hypixelAlphaForums;
+    @Getter
+    private final SkyblockResourcePackChecker skyblockResourcePackChecker;
     private final DiscordManager discordManager;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
@@ -116,9 +119,11 @@ public class Atri {
         this.checkMojira = new MojiraStatus();
         this.cardLike = new CardLike();
         this.reboot = new Reboot();
-        this.minecraftVersionCheck = new MinecraftVersionCheck();
+        this.minecraftVersionCheck = new MinecraftVersionChecker();
         this.minecraftNews = new MinecraftNews();
         this.hypixelAnnouncements = new HypixelAnnouncements();
+        this.hypixelAlphaForums = new HypixelAlphaForums();
+        this.skyblockResourcePackChecker = new SkyblockResourcePackChecker();
         this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
                 ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
                 : null;
@@ -246,6 +251,7 @@ public class Atri {
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
+        CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
         CommandManager.getCommand("ping").setExecutor(new PingCommand());
@@ -256,6 +262,8 @@ public class Atri {
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
         CommandManager.getCommand("投稿").setExecutor(new ImageSubmitCommand());
         CommandManager.getCommand("图源").setExecutor(new ImageSourceStatsCommand());
+        CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
+        CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -281,8 +289,10 @@ public class Atri {
         SignRepository.init();
         FeedbackRepository.init();
         ErrorReportRepository.init();
+        OfficialSendLogRepository.init();
         ImageSourceRepository.init();
         PendingNoticeRepository.init();
+        PackVersion.init();
 
         RunScheduleTask.runAllTasks();
         this.taskScheduler = new TaskScheduler();
@@ -300,6 +310,7 @@ public class Atri {
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
             GroupConfigManager.registerFeature("hyp_news", false);
+            GroupConfigManager.registerFeature("hyp_alpha_news", false);
             GroupConfigManager.registerFeature("annoy_user", true);
             GroupConfigManager.registerFeature("new_year", true);
             GroupConfigManager.registerFeature("one_text", true);

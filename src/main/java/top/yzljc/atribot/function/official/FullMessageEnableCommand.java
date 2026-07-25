@@ -9,8 +9,8 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
-import top.yzljc.atribot.event.events.OfficialC2CPushFailEvent;
+import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
+import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.official.OfficialBot;
 
@@ -87,9 +87,9 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 //    }
 
     @EventHandler
-    public void onFullMessageFail(OfficialActiveMessageFailEvent event) {
+    public void onFullMessageFail(OfficialGroupSendFailEvent event) {
         String groupOpenId = event.getGroupOpenId();
-        if (OfficialGroups.isAllowedActiveMessages(groupOpenId) && event.getErrorMessage().equals("主动消息失败, 无权限") && groupOpenId != null) {
+        if (OfficialGroups.isAllowedActiveMessages(groupOpenId)  && groupOpenId != null) {
             OfficialGroups.setAllowedActiveMessage(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
@@ -101,7 +101,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     }
 
     @EventHandler
-    public void onC2CPushFail(OfficialC2CPushFailEvent event) {
+    public void onC2CPushFail(OfficialC2CSendFailEvent event) {
         String userId = event.getUserId();
         if (OfficialUsers.isC2CPushEnabled(userId) && event.getErrorCode() == 40034105 && userId != null) {
             OfficialUsers.setC2CPush(userId, false);

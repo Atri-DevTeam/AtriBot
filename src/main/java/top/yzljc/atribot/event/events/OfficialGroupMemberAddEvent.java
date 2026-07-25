@@ -2,6 +2,8 @@ package top.yzljc.atribot.event.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.auth.official.PermissionRole;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Event;
@@ -41,5 +43,9 @@ public class OfficialGroupMemberAddEvent extends Event {
             return GroupChat.replyEventMessage(groupOpenId, eventId, markdown, buttons);
         }
         return GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown, buttons);
+    }
+
+    public PermissionRole getUserPermissionRole() {
+        return OfficialUsers.getRole(this.memberOpenId);
     }
 }

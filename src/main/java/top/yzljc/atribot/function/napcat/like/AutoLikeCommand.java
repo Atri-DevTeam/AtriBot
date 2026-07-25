@@ -18,8 +18,10 @@ public class AutoLikeCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
         if (!sender.getGroupId().equals(AUTOLIKE_GROUP_ID)) {
-            sender.sendMessage("该命令仅在指定群开放");
-            return true;
+            if (!sender.hasPermission()) {
+                sender.sendMessage("该命令仅在指定群开放");
+                return true;
+            }
         }
         if (args == null || args.length < 1) {
             return false;

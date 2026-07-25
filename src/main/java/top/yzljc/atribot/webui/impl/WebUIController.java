@@ -18,9 +18,11 @@ import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
+import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.function.general.Feedback;
@@ -70,11 +72,47 @@ public class WebUIController {
         ctx.json(Result.success(groups));
     }
 
+    /** 「聊天」页会话列表：群聊 + 私聊合并，各带最后一条消息预览 */
+    public static void listChatConversations(Context ctx) {
+        int limit = parseInt(ctx.queryParam("limit"), 300);
+        ctx.json(Result.success(ChatContentRecord.fetchConversations(limit)));
+    }
+
+    /**
+     * 置顶是 WebUI 自己的展示偏好，跟消息记录无关，所以单独走一组接口，
+     * 不往 ConversationRecord 里塞字段。返回的是会话 key 列表（group:xxx / c2c:xxx）。
+     */
+    public static void listChatPinned(Context ctx) {
+        ctx.json(Result.success(ChatPinnedStore.list()));
+    }
+
+    public static void setChatPinned(Context ctx) {
+        ChatPinnedDTO dto = ctx.bodyAsClass(ChatPinnedDTO.class);
+        if (isBlank(dto.getKey())) {
+            ctx.json(Result.fail(400, "key 不能为空"));
+            return;
+        }
+        ChatPinnedStore.setPinned(dto.getKey(), dto.isPinned());
+        ctx.json(Result.success(ChatPinnedStore.list()));
+    }
+
+    @Data
+    public static class ChatPinnedDTO {
+        private String key;
+        private boolean pinned;
+    }
+
     public static void fetchGroupMessages(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         ctx.json(Result.success(ChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
+    }
+
+    /** 群成员列表（实为「在本群发过言的人」，官方 API 不提供真实名册） */
+    public static void listGroupMembers(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        ctx.json(Result.success(ChatContentRecord.fetchGroupMembers(groupOpenId)));
     }
 
     public static void locateGroupMessageByRefIdx(Context ctx) {
@@ -729,6 +767,28 @@ public class WebUIController {
         ctx.json(Result.success(ChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize)));
     }
 
+    /** 私聊引用来源定位，与 {@link #locateGroupMessageByRefIdx} 同构 */
+    public static void locateC2CMessageByRefIdx(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        String msgIdx = firstNonBlank(ctx.queryParam("msgIdx"), ctx.queryParam("refIdx"));
+        String refAuthor = ctx.queryParam("refAuthor");
+        String refContent = ctx.queryParam("refContent");
+        String refAttachments = ctx.queryParam("refAttachments");
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
+        long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
+        if (isBlank(msgIdx) && isBlank(refContent) && isBlank(refAttachments)) {
+            ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
+            return;
+        }
+        var result = ChatContentRecord.locateC2CMessageByReference(
+                userOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
+        if (result == null) {
+            ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
+            return;
+        }
+        ctx.json(Result.success(result));
+    }
+
     public static void sendC2CMessage(Context ctx) {
         SendC2CMessageDTO dto = ctx.bodyAsClass(SendC2CMessageDTO.class);
         if (isBlank(dto.getUserOpenId())) {
@@ -737,9 +797,18 @@ public class WebUIController {
         }
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
+        String refId = dto.getRefMessageId();
         String messageId;
         try {
-            if (replyId != null && !replyId.isBlank()) {
+            if (refId != null && !refId.isBlank()) {
+                // 引用回复：发送带 message_reference 的主动消息，与群聊同逻辑
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                messageId = C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent());
+                if (messageId != null) {
+                    ChatContentRecord.patchC2CRefDisplayData(messageId,
+                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
+                }
+            } else if (replyId != null && !replyId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
                         ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
@@ -839,6 +908,10 @@ public class WebUIController {
         private String imageType;
         private String imageValue;
         private String replyMessageId;
+        private String refMessageId;
+        private String refAuthor;
+        private String refContent;
+        private String refAttachments;
     }
 
     @Data
@@ -1013,6 +1086,107 @@ public class WebUIController {
     public record ErrorListResult(List<ErrorItemDTO> items, int total, int page, int pageSize) {}
 
     public record ErrorStatsDTO(int total, int last24h, int last7d, Map<String, Integer> topExceptionTypes) {}
+
+    // ═══════════════ 发送日志 ═══════════════
+
+    public static void listOfficialSendLogs(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        if (pageSize > 200) {
+            pageSize = 200;
+        }
+        String type = normalizeSendLogType(ctx.queryParam("type"));
+        String keyword = ctx.queryParam("keyword");
+
+        int total = OfficialSendLogRepository.count(type, keyword);
+        List<SendLogItemDTO> items = OfficialSendLogRepository.findPaginated(page, pageSize, type, keyword)
+                .stream()
+                .map(WebUIController::toSendLogItem)
+                .toList();
+        ctx.json(Result.success(new SendLogListResult(items, total, page, pageSize)));
+    }
+
+    public static void getOfficialSendLog(Context ctx) {
+        long id = parseLong(ctx.pathParam("id"), -1L);
+        if (id <= 0) {
+            ctx.json(Result.fail(400, "日志 id 无效"));
+            return;
+        }
+        OfficialSendLogDTO log = OfficialSendLogRepository.findById(id);
+        if (log == null) {
+            ctx.json(Result.fail(404, "未找到该发送日志"));
+            return;
+        }
+        ctx.json(Result.success(toSendLogDetail(log)));
+    }
+
+    public static void officialSendLogStats(Context ctx) {
+        var stats = OfficialSendLogRepository.stats();
+        ctx.json(Result.success(new SendLogStatsDTO(stats.all(), stats.send(), stats.response(), stats.error())));
+    }
+
+    private static String normalizeSendLogType(String raw) {
+        if (isBlank(raw) || "ALL".equalsIgnoreCase(raw)) {
+            return null;
+        }
+        String type = raw.trim().toUpperCase();
+        return switch (type) {
+            case OfficialSendLogRepository.TYPE_SEND,
+                 OfficialSendLogRepository.TYPE_RESPONSE,
+                 OfficialSendLogRepository.TYPE_ERROR -> type;
+            default -> null;
+        };
+    }
+
+    private static SendLogItemDTO toSendLogItem(OfficialSendLogDTO log) {
+        return new SendLogItemDTO(
+                log.getId(),
+                log.getTraceId(),
+                log.getEntryType(),
+                log.getScene(),
+                log.getMethod(),
+                log.getUrl(),
+                log.getRequestJson(),
+                log.getResponseStatus(),
+                log.getResponseBody(),
+                log.getErrorCode(),
+                log.getErrorReason(),
+                log.getErrorMessage(),
+                formatFeedbackTime(log.getCreateTime())
+        );
+    }
+
+    private static SendLogDetailDTO toSendLogDetail(OfficialSendLogDTO log) {
+        return new SendLogDetailDTO(
+                log.getId(),
+                log.getTraceId(),
+                log.getEntryType(),
+                log.getScene(),
+                log.getMethod(),
+                log.getUrl(),
+                log.getRequestJson(),
+                log.getResponseStatus(),
+                log.getResponseBody(),
+                log.getErrorCode(),
+                log.getErrorReason(),
+                log.getErrorMessage(),
+                formatFeedbackTime(log.getCreateTime())
+        );
+    }
+
+    public record SendLogItemDTO(long id, String traceId, String entryType, String scene, String method, String url,
+                                 String requestJson, Integer responseStatus, String responseBody,
+                                 Integer errorCode, String errorReason, String errorMessage,
+                                 String createTime) {}
+
+    public record SendLogDetailDTO(long id, String traceId, String entryType, String scene, String method, String url,
+                                   String requestJson, Integer responseStatus, String responseBody,
+                                   Integer errorCode, String errorReason, String errorMessage,
+                                   String createTime) {}
+
+    public record SendLogListResult(List<SendLogItemDTO> items, int total, int page, int pageSize) {}
+
+    public record SendLogStatsDTO(int all, int send, int response, int error) {}
 
     // ═══════════════ 用户列表 ═══════════════
 
