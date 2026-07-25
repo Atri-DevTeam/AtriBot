@@ -224,7 +224,7 @@
                 <dd>{{ formatTime(groupStats.lastSeenAt) }}</dd>
               </div>
               <div class="stats-detail-row">
-                <dt>入群时间戳</dt>
+                <dt>入群时间</dt>
                 <dd>{{ formatEpoch(groupStats.timestamp) }}</dd>
               </div>
               <div class="stats-detail-row">
@@ -373,6 +373,17 @@ const MESSAGE_SERIES = [
   {key: 'c2cSent', name: '私聊发送', color: 'var(--series-4)'}
 ]
 const DAU_COLOR = 'var(--color-accent)'
+const BEIJING_TIME_ZONE = 'Asia/Shanghai'
+const BEIJING_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: BEIJING_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  hourCycle: 'h23'
+})
 
 const series = ref(null)
 const seriesLoading = ref(false)
@@ -697,23 +708,24 @@ function rangeQuery(extra) {
   return qs ? `?${qs}` : ''
 }
 
+function seriesRangeQuery() {
+  if (startDate.value && endDate.value && startDate.value === endDate.value) {
+    return rangeQuery({start: offsetDateValue(startDate.value, -1)})
+  }
+  return rangeQuery()
+}
+
 async function fetchOverview() {
   loading.value = true
   error.value = ''
   try {
     const query = rangeQuery()
-    const [dau, groupReceived, groupSent, c2cReceived, c2cSent] = await Promise.all([
-      publicApi(`/dau${query}`),
-      publicApi(`/group/messages/received${query}`),
-      publicApi(`/group/messages/sent${query}`),
-      publicApi(`/c2c/messages/received${query}`),
-      publicApi(`/c2c/messages/sent${query}`)
-    ])
+    const dau = await publicApi(`/dau${query}`)
     overview.value = dau
-    counts.groupReceived = groupReceived?.count ?? 0
-    counts.groupSent = groupSent?.count ?? 0
-    counts.c2cReceived = c2cReceived?.count ?? 0
-    counts.c2cSent = c2cSent?.count ?? 0
+    counts.groupReceived = dau?.groupReceiveMessages ?? 0
+    counts.groupSent = dau?.groupSendMessages ?? 0
+    counts.c2cReceived = dau?.c2cReceiveMessages ?? 0
+    counts.c2cSent = dau?.c2cSendMessages ?? 0
   } catch (e) {
     error.value = e.message
     overview.value = null
@@ -728,7 +740,7 @@ async function fetchSeries() {
   seriesError.value = ''
   hoverIndex.value = -1
   try {
-    series.value = await publicApi(`/series${rangeQuery()}`)
+    series.value = await publicApi(`/series${seriesRangeQuery()}`)
   } catch (e) {
     seriesError.value = e.message
     series.value = null
@@ -783,6 +795,14 @@ function toDateValue(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+function offsetDateValue(value, days) {
+  const parts = String(value || '').split('-').map(Number)
+  if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return value
+  const date = new Date(parts[0], parts[1] - 1, parts[2])
+  date.setDate(date.getDate() + days)
+  return toDateValue(date)
+}
+
 function formatNumber(value) {
   const num = Number(value)
   if (!Number.isFinite(num)) return '-'
@@ -798,16 +818,49 @@ function formatDecimal(value) {
 function formatEpoch(value) {
   const num = Number(value)
   if (!Number.isFinite(num) || num <= 0) return '-'
-  return formatTime(new Date(num < 1e12 ? num * 1000 : num).toISOString())
+  return formatBeijingTime(new Date(num < 1e12 ? num * 1000 : num))
 }
 
 function formatTime(value) {
   if (!value) return '-'
   const raw = String(value)
-  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
-  if (Number.isNaN(date.getTime())) return raw
-  const pad = n => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const date = parseStatsTime(raw)
+  if (!date) return raw
+  return formatBeijingTime(date)
+}
+
+function parseStatsTime(raw) {
+  const normalized = raw.trim().replace(' ', 'T')
+  if (!normalized) return null
+  if (hasExplicitTimeZone(normalized)) {
+    const date = new Date(normalized)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  const dateOnly = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (dateOnly) {
+    const [, y, m, d] = dateOnly
+    return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d), -8, 0, 0))
+  }
+  const local = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/)
+  if (!local) {
+    const date = new Date(normalized)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  const [, y, m, d, h, min, s = '0'] = local
+  const utcMillis = Date.UTC(Number(y), Number(m) - 1, Number(d), Number(h) - 8, Number(min), Number(s))
+  return new Date(utcMillis)
+}
+
+function hasExplicitTimeZone(value) {
+  return /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)
+}
+
+function formatBeijingTime(date) {
+  const parts = {}
+  for (const part of BEIJING_TIME_FORMATTER.formatToParts(date)) {
+    if (part.type !== 'literal') parts[part.type] = part.value
+  }
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`
 }
 
 onMounted(async () => {

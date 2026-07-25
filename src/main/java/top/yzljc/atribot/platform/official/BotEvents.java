@@ -228,7 +228,7 @@ public class BotEvents {
                     );
                     EventManager.getInstance().callEvent(event);
                 }
-                case C2C_PUSH_SWITCH -> {
+                case USER_AUTHORIZE -> {
                     OfficialC2CAuthorizeModifyEvent event = new OfficialC2CAuthorizeModifyEvent(
                             application_id,
                             eventId,
@@ -242,8 +242,11 @@ public class BotEvents {
                     );
                     EventManager.getInstance().callEvent(event);
                 }
-                case GROUP_DEV_SETTINGS -> {
+                case GROUP_AUTHORIZE_STATUS -> {
                     log.info("收到群开发者设置事件，内容: {}", eventData.toString());
+                }
+                default -> {
+                    log.warn("收到非常牛逼的新的交互事件类型: {}, 内容: {}", type, eventData.toString());
                 }
             }
         } catch (Exception e) {

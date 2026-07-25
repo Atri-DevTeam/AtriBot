@@ -41,11 +41,6 @@
                       type="button" role="tab" :aria-selected="source === tab.key"
                       @click="switchSource(tab.key)">{{ tab.label }}</button>
             </div>
-            <div class="userlist-top-pager">
-              <button class="pager-arrow" :disabled="page <= 1" @click="goPage(page - 1)">◂</button>
-              <span>{{ page }} / {{ totalPages }}</span>
-              <button class="pager-arrow" :disabled="page >= totalPages" @click="goPage(page + 1)">▸</button>
-            </div>
             <span class="status-pill" style="margin-left:auto"><span class="dot ok"></span>{{ total }} 条记录</span>
           </div>
           <div class="userlist-content">
@@ -103,7 +98,21 @@
                 </div>
               </article>
             </div>
-
+            <div class="userlist-bottom-pager">
+              <button class="userlist-page-btn" :disabled="page <= 1" @click="goPage(page - 1)" aria-label="上一页" title="上一页">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M13.5 5.5 8 12l5.5 6.5"/>
+                  <path d="M7.5 5.5H17a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 17 18.5H7.5"/>
+                </svg>
+              </button>
+              <span class="userlist-page-indicator">{{ page }} / {{ totalPages }}</span>
+              <button class="userlist-page-btn" :disabled="page >= totalPages" @click="goPage(page + 1)" aria-label="下一页" title="下一页">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m10.5 5.5 5.5 6.5-5.5 6.5"/>
+                  <path d="M16.5 5.5H7a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 7 18.5h9.5"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </section>
       </section>
@@ -161,6 +170,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
+import { renderArkSummary } from '../lib/ark.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -181,8 +191,8 @@ const currentSearch = ref('')
 
 // 消息来源切换：群消息 / 私聊消息。两边分页与搜索参数一致，只是接口不同
 const sourceTabs = [
-  { key: 'group', label: '全部群消息', endpoint: '/users/messages' },
-  { key: 'c2c', label: '全部私聊消息', endpoint: '/users/c2c-messages' },
+  { key: 'group', label: '群消息', endpoint: '/users/messages' },
+  { key: 'c2c', label: '私聊消息', endpoint: '/users/c2c-messages' },
 ]
 const source = ref('group')
 const sourceEndpoint = computed(
@@ -349,6 +359,9 @@ function formatTime(value) {
 }
 
 function renderContent(item) {
+  const ark = renderArkSummary(item.ark)
+  if (ark) return ark
+
   let text = item.content || ''
   text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')

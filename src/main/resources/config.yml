@@ -137,6 +137,16 @@ qq:
   official-username: "null"
   # Debug 群 OpenId
   debug-group-openId: "null"
+  # 超级管理员用户 OpenId，用于官方调试页 {user_openid} 模板
+  super_admin_id: "null"
+
+# ========== Discord 机器人配置参数 ==========
+discord:
+  enabled: false
+  bot-token: ""
+  api-base-url: "https://discord.com/api/v10"
+  # 默认包含 GUILDS / GUILD_MESSAGES / DIRECT_MESSAGES / MESSAGE_CONTENT
+  intents: 37377
 
 # ========== 特殊群专用内容设置区域 ==========
 
@@ -158,3 +168,20 @@ yunland:
   host: "null"
   port: 12345
   connect-key: "null"
+
+# ========== 图源投稿设置区域 ==========
+
+image-source:
+  enabled: false
+  # 投稿上报地址，POST body: {uuid, uploader, time, hash, ...}（不含审核状态）
+  # 远端响应与 Result 同构，按 status 判定：200 成功，400 上传失败
+  upload-url: "https://qq-ugc.yzljc.top/imagesource/upload"
+  # 图片删除地址前缀，后端会 DELETE <delete-url>/<uuid> 并带 Authorization header
+  delete-url: "https://qq-ugc.yzljc.top/imagesource/delete"
+  # 图片浏览地址前缀，WebUI 用 <view-base-url>/<uuid> 展示图片，例如 /imagesource/get/{uuid}
+  # 留空则回退到平台原始 CDN 链接
+  view-base-url: "https://qq-ugc.yzljc.top/imagesource/get"
+  # 共享密钥。投稿上报/删除远端图片时作为 Authorization: Bearer <token> 发送
+  token: "null"
+  # 单个用户同时处于未审核状态的投稿数量上限
+  pending-limit: 3

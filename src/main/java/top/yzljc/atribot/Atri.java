@@ -16,6 +16,12 @@ import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
+import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.PendingNoticeRepository;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
+import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
@@ -36,6 +42,8 @@ import top.yzljc.atribot.platform.napcat.RequestReceiver;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
+import top.yzljc.atribot.platform.discord.DiscordEvents;
+import top.yzljc.atribot.platform.discord.DiscordManager;
 import top.yzljc.atribot.platform.official.OfficialManager;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
@@ -87,6 +95,7 @@ public class Atri {
     private final MinecraftNews minecraftNews;
     @Getter
     private final HypixelAnnouncements hypixelAnnouncements;
+    private final DiscordManager discordManager;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private IMAP imap;
@@ -110,16 +119,16 @@ public class Atri {
         this.minecraftVersionCheck = new MinecraftVersionCheck();
         this.minecraftNews = new MinecraftNews();
         this.hypixelAnnouncements = new HypixelAnnouncements();
+        this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
+                ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
+                : null;
 
         int qqBotPort = config.getListenPort();
 
+        OfficialBot.fetchBotInfo();
+
         server = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
-            cfg.staticFiles.add(staticFiles -> {
-                staticFiles.hostedPath = "/official-webui";
-                staticFiles.directory = "/official-webui";
-                staticFiles.location = Location.CLASSPATH;
-            });
             cfg.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/webui";
                 staticFiles.directory = "/official-webui";
@@ -131,9 +140,6 @@ public class Atri {
             cfg.http.maxRequestSize = 10_000_000;
         }).start(qqBotPort);
 
-        server.before("/official-webui/*", ctx -> {
-            log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
-        });
         server.before("/webui/*", ctx -> {
             log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
         });
@@ -175,6 +181,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
+        EventManager.getInstance().registerEvents(new DiscordEvents());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
@@ -187,6 +194,7 @@ public class Atri {
         UpdatePushCommand updatePushCommand = new UpdatePushCommand();
         EventManager.getInstance().registerEvents(updatePushCommand);
         EventManager.getInstance().registerEvents(new EmailNotify());
+        EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -246,6 +254,8 @@ public class Atri {
         CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
         CommandManager.getCommand("golds").setExecutor(new CoinsCommand());
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
+        CommandManager.getCommand("投稿").setExecutor(new ImageSubmitCommand());
+        CommandManager.getCommand("图源").setExecutor(new ImageSourceStatsCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -271,6 +281,8 @@ public class Atri {
         SignRepository.init();
         FeedbackRepository.init();
         ErrorReportRepository.init();
+        ImageSourceRepository.init();
+        PendingNoticeRepository.init();
 
         RunScheduleTask.runAllTasks();
         this.taskScheduler = new TaskScheduler();
@@ -355,6 +367,9 @@ public class Atri {
             imap.close();
             imap = null;
         }
+        if (discordManager != null) {
+            discordManager.stop();
+        }
         if (taskScheduler != null) {
             taskScheduler.shutdown();
         }
@@ -376,6 +391,14 @@ public class Atri {
             bot.qqBotManagerService.start();
         } catch (Exception e) {
             log.error("QQ Bot 初始化失败: {}", e.getMessage());
+        }
+
+        if (bot.discordManager != null) {
+            try {
+                bot.discordManager.start();
+            } catch (Exception e) {
+                log.error("Discord Bot 初始化失败: {}", e.getMessage(), e);
+            }
         }
 
         new Thread(() -> {

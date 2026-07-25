@@ -1,5 +1,6 @@
 <template>
-  <div class="shell">
+  <!-- legacy-chat：见 DashboardView.vue 的说明，私聊页同样保持原始聊天视觉 -->
+  <div class="shell legacy-chat">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
         <button class="ghost-button" :disabled="loadingUsers" @click="loadUsers">刷新</button>
@@ -171,8 +172,9 @@
                         </div>
                       </template>
                     </div>
-                    <pre v-if="message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                    <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
+                    <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
                   </div>
                   <!-- 时间放在气泡下方，与群聊消息保持一致 -->
                   <div class="msg-time">{{ fmtTime(message.eventTimestamp || message.createdAt) }}</div>
@@ -190,17 +192,17 @@
               <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
               <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType" value="markdown" />Markdown</label>
               <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image" />图片</label>
+              <label :class="{ active: msgType === 'stream' }"><input type="radio" v-model="msgType" value="stream" />流式</label>
             </div>
             <textarea v-model="draft" :disabled="!selectedUserId || sending"
-                      :placeholder="msgType === 'image' ? '图片 URL / Base64 / 直接粘贴图片' : msgType === 'markdown' ? 'Markdown 内容' : '文本消息'"
+                      :placeholder="msgType === 'image' ? '图片消息' : msgType === 'markdown' ? 'Markdown 内容' : msgType === 'stream' ? '每行一个 delta' : '文本消息'"
                       rows="3" @paste="onPaste"></textarea>
             <div class="composer-image-opts" v-if="msgType === 'image'">
-              <label :class="{ active: imageType === 'url' }"><input type="radio" v-model="imageType" value="url" />URL</label>
-              <label :class="{ active: imageType === 'base64' }"><input type="radio" v-model="imageType" value="base64" />Base64</label>
               <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
-              <label @click="$refs.fileInputRef.click()">上传</label>
+              <label @click="$refs.fileInputRef.click()">上传图片</label>
+              <span v-if="pastePreview" class="composer-image-hint">已选择图片，点击预览可清除</span>
             </div>
-            <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="pastePreview = null" title="点击清除" />
+            <img v-if="pastePreview" :src="pastePreview" class="paste-preview" @click="clearSelectedImage" title="点击清除" />
             <button class="primary-button" :disabled="!canSend">{{ sending ? '发送中' : '发送' }}</button>
           </form>
 
@@ -229,7 +231,8 @@
             <dt>用户开放平台ID</dt>
             <dd>{{ selectedUser.userOpenId }}</dd>
           </dl>
-          <div v-if="selectedUser" class="c2c-profile-card">
+          <template v-if="selectedUser">
+          <div class="c2c-profile-card">
             <div class="c2c-profile-head">
               <div class="c2c-profile-avatar">
                 <img
@@ -327,8 +330,43 @@
               <button type="button" class="ghost-button danger" @click="openDeleteConfirm">清除档案</button>
             </div>
           </div>
+          </template>
           <div v-else class="hint">选择用户后显示详情</div>
           <div class="log-box"><strong>请求状态</strong><p>{{ notice }}</p></div>
+          <section v-if="selectedUser" class="stats-section stats-lookup sidebar-stats-section">
+            <header class="stats-section-head">
+              <h3 class="stats-section-title">用户统计</h3>
+            </header>
+            <div v-if="userStatsLoading" class="empty-state stats-state">加载中...</div>
+            <div v-else-if="userStatsError" class="empty-state error stats-state">{{ userStatsError }}</div>
+            <div v-else-if="!userStats" class="empty-state stats-state">暂无统计数据</div>
+            <dl v-else class="stats-detail">
+              <div class="stats-detail-row">
+                <dt>最近用户名</dt>
+                <dd>{{ userStats.lastUsername || '-' }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>私聊接收消息</dt>
+                <dd>{{ formatNumber(userStats.c2cReceivedMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>私聊发送消息</dt>
+                <dd>{{ formatNumber(userStats.c2cSentMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>群聊接收消息</dt>
+                <dd>{{ formatNumber(userStats.groupReceivedMessages) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>首次记录</dt>
+                <dd>{{ formatStatsTime(userStats.firstSeenAt) }}</dd>
+              </div>
+              <div class="stats-detail-row">
+                <dt>最近记录</dt>
+                <dd>{{ formatStatsTime(userStats.lastSeenAt) }}</dd>
+              </div>
+            </dl>
+          </section>
         </aside>
       </section>
     </main>
@@ -370,6 +408,8 @@ import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { renderMarkdown as renderMd } from '../lib/markdown.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import ArkMessageCard from '../components/ArkMessageCard.vue'
+import { hasArkMessage } from '../lib/ark.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -400,7 +440,7 @@ const replyTo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
 const recalledIds = reactive({})
 const msgType = ref('text')
-const imageType = ref('url')
+const imageData = ref(null)
 const pastePreview = ref(null)
 const previewImg = ref(null)
 const pageSize = 80
@@ -412,6 +452,9 @@ const permNodes = ref([])
 const permTargetId = ref('')
 const permSaving = ref(false)
 const permError = ref('')
+const userStats = ref(null)
+const userStatsLoading = ref(false)
+const userStatsError = ref('')
 const deleteConfirmOpen = ref(false)
 const deleteConfirmText = ref('')
 const deleteDeleting = ref(false)
@@ -443,8 +486,9 @@ const persistedMessageCount = computed(() => messages.value.filter(m => !m.syste
 const hasMore = computed(() => persistedMessageCount.value < totalMessages.value)
 const orderedMessages = computed(() => [...messages.value].reverse())
 const canSend = computed(() => {
-  if (!selectedUserId.value || !draft.value.trim() || sending.value) return false
-  return true
+  if (!selectedUserId.value || sending.value) return false
+  if (msgType.value === 'image') return !!imageData.value
+  return !!draft.value.trim()
 })
 
 let eventSource = null
@@ -657,10 +701,16 @@ function returnToUserList() {
   replyTo.value = null
   ctxMenu.visible = false
   permTargetId.value = ''
+  userStats.value = null
+  userStatsError.value = ''
+  userStatsLoading.value = false
 }
 
 async function selectUser(userOpenId) {
-  if (selectedUserId.value === userOpenId) return
+  if (selectedUserId.value === userOpenId) {
+    void loadUserStats()
+    return
+  }
   selectedUserId.value = userOpenId
   const current = users.value.find(u => u.userOpenId === userOpenId)
   if (current) {
@@ -688,6 +738,27 @@ async function selectUser(userOpenId) {
   currentPage.value = 0
   loadPerms()
   await loadLatestMessages()
+  void loadUserStats()
+}
+
+async function loadUserStats() {
+  const userOpenId = selectedUserId.value
+  if (!userOpenId) {
+    userStats.value = null
+    userStatsError.value = ''
+    userStatsLoading.value = false
+    return
+  }
+  userStatsLoading.value = true
+  userStatsError.value = ''
+  try {
+    userStats.value = await api(`/public/official/users/${encodeURIComponent(userOpenId)}`)
+  } catch (e) {
+    userStats.value = null
+    userStatsError.value = e.message
+  } finally {
+    userStatsLoading.value = false
+  }
 }
 
 async function loadPerms() {
@@ -787,6 +858,9 @@ async function confirmDeleteUser() {
       permDraft.blocked = false
       permDraft.ignored = false
       permDraft.c2cPush = true
+      userStats.value = null
+      userStatsError.value = ''
+      userStatsLoading.value = false
     }
     closeDeleteConfirm()
     notice.value = '用户档案数据已删除'
@@ -840,12 +914,18 @@ async function sendMessage() {
   if (!canSend.value) return
   sending.value = true
   try {
-    const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
-    if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
-    if (msgType.value === 'image') { body.imageType = imageType.value; body.imageValue = draft.value.trim() }
-    if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
-    await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
-    draft.value = ''; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
+    if (msgType.value === 'stream') {
+      const body = { userOpenId: selectedUserId.value, content: draft.value }
+      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      await api('/c2c/stream', { method: 'POST', body: JSON.stringify(body) })
+    } else {
+      const body = { userOpenId: selectedUserId.value, msgType: msgType.value, content: draft.value.trim() }
+      if (msgType.value === 'markdown') body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
+      if (msgType.value === 'image' && imageData.value) { body.imageType = 'base64'; body.imageValue = imageData.value }
+      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      await api('/c2c/send', { method: 'POST', body: JSON.stringify(body) })
+    }
+    draft.value = ''; imageData.value = null; pastePreview.value = null; replyTo.value = null; notice.value = '消息已发送'
     await loadLatestMessages()
   } catch (e) { notice.value = e.message }
   finally { sending.value = false }
@@ -857,6 +937,10 @@ function renderContent(message) {
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
   text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
   return text
+}
+
+function hasArk(message) {
+  return hasArkMessage(message?.ark)
 }
 
 function parseAttach(raw) {
@@ -892,7 +976,7 @@ function onPaste(e) {
       e.preventDefault()
       const blob = item.getAsFile()
       const reader = new FileReader()
-      reader.onload = () => { draft.value = reader.result.split(',')[1]; imageType.value = 'base64'; pastePreview.value = reader.result }
+      reader.onload = () => { imageData.value = reader.result.split(',')[1]; pastePreview.value = reader.result }
       reader.readAsDataURL(blob)
       return
     }
@@ -904,13 +988,16 @@ function onFilePicked(e) {
   if (!file || !file.type.startsWith('image/')) return
   const reader = new FileReader()
   reader.onload = () => {
-    const b64 = reader.result.split(',')[1]
-    draft.value = b64
-    imageType.value = 'base64'
+    imageData.value = reader.result.split(',')[1]
     pastePreview.value = reader.result
   }
   reader.readAsDataURL(file)
   e.target.value = ''
+}
+
+function clearSelectedImage() {
+  imageData.value = null
+  pastePreview.value = null
 }
 
 function onContextMenu(e, message) { ctxMenu.visible = true; ctxMenu.x = e.clientX; ctxMenu.y = e.clientY; ctxMenu.message = message }
@@ -949,6 +1036,21 @@ function fmtTime(ts) {
   return `${d.getMonth() + 1}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+function formatStatsTime(value) {
+  if (!value) return '-'
+  const raw = String(value)
+  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return raw
+  const pad = n => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function formatNumber(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '-'
+  return num.toLocaleString('zh-CN')
+}
+
 function avatarText(message) {
   const name = message.username || (isMe(message) ? 'Bot' : '?')
   return name.slice(0, 1).toUpperCase()
@@ -959,5 +1061,5 @@ function avatarTextForUser(user) {
   return value ? value.slice(0, 1).toUpperCase() : '?'
 }
 
-watch(msgType, () => { pastePreview.value = null })
+watch(msgType, () => { pastePreview.value = null; imageData.value = null })
 </script>

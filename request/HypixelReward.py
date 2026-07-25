@@ -4,11 +4,11 @@ import websockets
 import json
 import cloudscraper
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 import traceback
 
 # WORKER_DOMAIN = "hypixel-rewards.yzljc.top"
-WORKER_DOMAIN = "hypixel-rewards.yzljc.top"  # 代理域名，确保与前端一致
+WORKER_DOMAIN = "rewards.hypixel.net"  # 代理域名，确保与前端一致
 session_storage = {}
 
 def get_scraper():
@@ -49,12 +49,17 @@ def fetch_reward_list(url):
     except Exception:
         return {"success": False, "msg": "链接格式错误喵！"}
 
-    proxy_url = url.replace("rewards.hypixel.net", WORKER_DOMAIN).replace("hypixel.net", WORKER_DOMAIN)
+    parsed = urlparse(url)
+
+    if parsed.netloc in ("hypixel.net", "rewards.hypixel.net"):
+      proxy_url = urlunparse(parsed._replace(netloc=WORKER_DOMAIN))
+    else:
+       return {"success": False, "msg": "这不是 Hypixel 的链接喵！"}
     scraper = get_scraper()
     try:
         resp = scraper.get(proxy_url, timeout=15)
     except Exception as e:
-        return {"success": False, "msg": f"代理请求网络错误: {str(e)}"}
+        return {"success": False, "msg": f"代理请求网络错误，请向开发者报告此问题！"}
 
     html = resp.text
     token_match = re.search(r'window\.securityToken\s*=\s*["\']([^"\']+)["\']', html)
@@ -170,7 +175,7 @@ async def process_message(websocket, message):
 
 async def main():
     async with websockets.serve(handler, "0.0.0.0", 8765, ping_interval=20, ping_timeout=20):
-        print("Python Hypixel 服务端启动 (纯净 session_id 通信协议)")
+        print("Python Hypixel 服务端启动 (session_id 通信协议)")
         await asyncio.Future()
 
 if __name__ == "__main__":

@@ -87,9 +87,16 @@ public class User {
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, Markdown md) {
+        return this.sendMessage(groupId, messageId, md, true);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, String messageId, Markdown md, boolean at) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, this.userId, messageId, md);
+                return at
+                        ? GroupChat.replyMessage(groupId, this.userId, messageId, md)
+                        : GroupChat.replyMessage(groupId, messageId, md);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md)");
@@ -107,9 +114,16 @@ public class User {
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard) {
+        return this.sendMessage(groupId, messageId, md, keyboard, true);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard, boolean at) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard);
+                return at
+                        ? GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard)
+                        : GroupChat.replyMessage(groupId, messageId, md, keyboard);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md, Object keyboard)");
@@ -133,6 +147,16 @@ public class User {
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, ImageType type)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, String messageId, String text, String data, ImageType type) {
+        switch (this.platform) {
+            case OFFICIAL_GROUP -> {
+                return GroupChat.replyMessage(groupId, messageId, text, type, data);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String data, ImageType type)");
     }
 
     @SuppressWarnings("UnusedReturnValue")

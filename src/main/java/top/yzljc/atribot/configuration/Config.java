@@ -112,11 +112,24 @@ public class Config {
     @Getter
     private String officialOpenId;
     @Getter
+    @Deprecated(since = "3.1.7") // 直接 /users/@me 拿，硬编码狗都不用
     private String officialUsername;
     @Getter
     private String debugGroupOpenId;
     @Getter
+    private String superAdminId;
+    @Getter
     private boolean newBot;
+
+    // ########## Discord 配置参数 ##########
+    @Getter
+    private boolean discordEnabled;
+    @Getter
+    private String discordBotToken;
+    @Getter
+    private String discordApiBaseUrl;
+    @Getter
+    private int discordIntents;
 
     // Email configuration
     @Getter
@@ -151,6 +164,18 @@ public class Config {
     private int yunlandPort;
     @Getter
     private String yunlandConnectKey;
+    @Getter
+    private boolean imageSourceEnabled;
+    @Getter
+    private String imageSourceUploadUrl;
+    @Getter
+    private String imageSourceDeleteUrl;
+    @Getter
+    private String imageSourceViewBaseUrl;
+    @Getter
+    private String imageSourceToken;
+    @Getter
+    private int imageSourcePendingLimit;
 
     private Config() {
         load();
@@ -245,7 +270,14 @@ public class Config {
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
+            this.superAdminId = yaml.getString("qq.super_admin_id", "null");
             this.newBot = yaml.getBoolean("qq.is-new-bot", false);
+
+            // ########## Discord 配置参数 ##########
+            this.discordEnabled = yaml.getBoolean("discord.enabled", false);
+            this.discordBotToken = yaml.getString("discord.bot-token", "");
+            this.discordApiBaseUrl = yaml.getString("discord.api-base-url", "https://discord.com/api/v10");
+            this.discordIntents = yaml.getInt("discord.intents", (1 << 0) | (1 << 9) | (1 << 12) | (1 << 15));
 
             // ########## 特殊群专用内容设置区域 ##########
             this.manosabaGroupId = yaml.getString("manosaba-group-id", "null");
@@ -260,6 +292,14 @@ public class Config {
             this.yunlandHost = yaml.getString("yunland.host", "null");
             this.yunlandPort = yaml.getInt("yunland.port", 12345);
             this.yunlandConnectKey = yaml.getString("yunland.connect-key", "null");
+
+            // ########## 图源投稿设置区域 ##########
+            this.imageSourceEnabled = yaml.getBoolean("image-source.enabled", false);
+            this.imageSourceUploadUrl = yaml.getString("image-source.upload-url", "null");
+            this.imageSourceDeleteUrl = yaml.getString("image-source.delete-url", "null");
+            this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
+            this.imageSourceToken = yaml.getString("image-source.token", "null");
+            this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);
 
             log.info("配置文件加载成功");
 

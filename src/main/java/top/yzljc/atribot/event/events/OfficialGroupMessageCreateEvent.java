@@ -13,6 +13,7 @@ import top.yzljc.atribot.platform.official.OfficialMessage;
  * @Created_at 2026/05/22
  * @Project AtriBot
  * @Package top.yzljc.qqbot.event.impl
+ * @Description 本事件中所有回复消息的方法均为被动
  */
 @Getter
 public class OfficialGroupMessageCreateEvent extends Event {

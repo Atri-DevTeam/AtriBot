@@ -6,6 +6,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.platform.official.FileType;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.Map;
@@ -39,7 +40,7 @@ public class MusicCommand implements CommandExecutor {
             sender.sendMessage("无效音乐");
             return true;
         }
-        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), 3, url);
+        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), FileType.FILE, url);
         return true;
     }
 }

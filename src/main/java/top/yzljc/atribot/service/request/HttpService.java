@@ -6,12 +6,16 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 public class HttpService {
@@ -240,6 +244,57 @@ public class HttpService {
         }
     }
 
+    public record MultipartFile(String fieldName, String filename, String contentType, byte[] content) {
+    }
+
+    public static String postMultipartForString(String url, Map<String, String> fields, List<MultipartFile> files, String... headers) {
+        try {
+            String boundary = "----AtriMeowBoundary" + UUID.randomUUID();
+            List<byte[]> bodyParts = new ArrayList<>();
+
+            if (fields != null) {
+                for (Map.Entry<String, String> entry : fields.entrySet()) {
+                    bodyParts.add(("--" + boundary + "\r\n"
+                            + "Content-Disposition: form-data; name=\"" + entry.getKey() + "\"\r\n\r\n"
+                            + (entry.getValue() == null ? "" : entry.getValue()) + "\r\n").getBytes(StandardCharsets.UTF_8));
+                }
+            }
+
+            if (files != null) {
+                for (MultipartFile file : files) {
+                    String contentType = file.contentType() == null || file.contentType().isBlank()
+                            ? "application/octet-stream"
+                            : file.contentType();
+                    bodyParts.add(("--" + boundary + "\r\n"
+                            + "Content-Disposition: form-data; name=\"" + file.fieldName() + "\"; filename=\"" + file.filename() + "\"\r\n"
+                            + "Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+                    bodyParts.add(file.content() == null ? new byte[0] : file.content());
+                    bodyParts.add("\r\n".getBytes(StandardCharsets.UTF_8));
+                }
+            }
+
+            bodyParts.add(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+
+            Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .header("User-Agent", DEFAULT_USER_AGENT);
+            applyHeaders(builder, headers);
+            builder.POST(HttpRequest.BodyPublishers.ofByteArrays(bodyParts));
+
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return response.body();
+            }
+            logHttpFailure("POST(multipart)", url, response.statusCode(), response.body());
+            return null;
+        } catch (Exception e) {
+            logRequestError("POST(multipart)", url, e);
+            return null;
+        }
+    }
+
     public static JsonNode putJson(String url, Map<String, Object> bodyMap, String... headers) {
         try {
             String jsonBody = mapper.writeValueAsString(bodyMap);
@@ -291,6 +346,29 @@ public class HttpService {
                     .uri(URI.create(url))
                     .DELETE()
                     .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
+            } else {
+                logHttpFailure("DELETE", url, response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            logRequestError("DELETE", url, e);
+        }
+        return null;
+    }
+
+    public static JsonNode sendDeleteRequest(String url, String... headers) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE();
+            applyHeaders(builder, headers);
+            HttpRequest request = builder.build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 String body = response.body();

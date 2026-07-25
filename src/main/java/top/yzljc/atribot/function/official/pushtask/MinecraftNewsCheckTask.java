@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.official.pushtask;
 
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.platform.Platform;
 
 /**
  * @Author YZ_Ljc_
@@ -17,7 +18,7 @@ public final class MinecraftNewsCheckTask extends PushTask {
     }
 
     @Override
-    public Markdown getDescription(String groupOpenId) {
+    public Markdown getDescription(Platform platform, String platformIdentifyId) {
         return TC.md(
                 """
                         **Minecraft新闻动态**
@@ -35,7 +36,7 @@ public final class MinecraftNewsCheckTask extends PushTask {
                         %s
                         
                         点击下方按钮开启本功能则表示您已阅读并知晓上述内容
-                        """.formatted(getStatus(groupOpenId))
+                        """.formatted(getStatus(platform, platformIdentifyId))
         );
     }
 }

@@ -1,23 +1,32 @@
 package top.yzljc.atribot.webui.impl;
 
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.function.napcat.SizeNtUid;
+import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.webui.Result;
 
 import java.io.InputStream;
+import java.util.Deque;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Slf4j
 public class WebUIRouter {
 
     private static final String INDEX_HTML = "/official-webui/index.html";
 
+    private static final int NTUID_RATE_LIMIT = 20;
+    private static final long NTUID_RATE_WINDOW_MS = 60_000L;
+    private static final Map<String, Deque<Long>> NTUID_REQUESTS = new ConcurrentHashMap<>();
+
     private record MetaDTO(String appId, String botOpenId) {}
 
     public static void register(Javalin server) {
         // 关闭状态下，静态资源/API/SPA fallback 一律不给任何响应体。
-        server.before("/official-webui", WebUIRouter::activeGuard);
-        server.before("/official-webui/*", WebUIRouter::activeGuard);
         server.before("/webui", WebUIRouter::activeGuard);
         server.before("/webui/*", WebUIRouter::activeGuard);
 
@@ -27,39 +36,14 @@ public class WebUIRouter {
                 Config.getInstance().getQqAppId(),
                 Config.getInstance().getOfficialOpenId()
         )));
-        server.get("/webui/meta/name", ctx -> ctx.result(Config.getInstance().getOfficialUsername()));
+        server.get("/webui/meta/name", ctx -> ctx.result(OfficialBot.BOT_NAME));
 
-        // Auth middleware for official webui paths.
-        server.before("/official-webui/api/*", WebUIRouter::auth);
+        // Auth middleware for webui paths.
         server.before("/webui/api/*", WebUIRouter::auth);
 
         registerPublicOfficialRoutes(server, "/webui/api/public/official");
-        // 开发环境走 /official-webui/api 前缀，公开查询接口同样需要挂一份，否则 dev 下 404
-        registerPublicOfficialRoutes(server, "/official-webui/api/public/official");
 
-        // API routes — both paths
-        server.get("/official-webui/api/auth/challenge", WebUIController::createChallenge);
-        server.post("/official-webui/api/auth/verify", WebUIController::login);
-        server.post("/official-webui/api/auth/logout", WebUIController::logout);
-        server.get("/official-webui/api/auth/verify", WebUIController::verifyToken);
-        server.get("/official-webui/api/groups", WebUIController::listGroups);
-        server.get("/official-webui/api/groups/{groupOpenId}/messages", WebUIController::fetchGroupMessages);
-        server.get("/official-webui/api/groups/{groupOpenId}/messages/ref", WebUIController::locateGroupMessageByRefIdx);
-        server.get("/official-webui/api/groups/functions/keys", WebUIController::listGroupFunctionKeys);
-        server.get("/official-webui/api/groups/{groupOpenId}/functions", WebUIController::getGroupFunctions);
-        server.post("/official-webui/api/groups/{groupOpenId}/functions/{functionKey}", WebUIController::setGroupFunction);
-        server.post("/official-webui/api/groups/send", WebUIController::sendGroupMessage);
-        server.get("/official-webui/api/config", WebUIController::getConfig);
-        server.get("/official-webui/api/napcat/groups", WebUIController::listNapcatGroups);
-        server.get("/official-webui/api/napcat/groups/{groupId}/features", WebUIController::getNapcatGroupFeatures);
-        server.post("/official-webui/api/napcat/groups/{groupId}/features/{feature}", WebUIController::setNapcatGroupFeature);
-        server.post("/official-webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
-        server.post("/official-webui/api/napcat/recall", WebUIController::recallNapcatMessages);
-        server.post("/official-webui/api/debug/official/request", WebUIController::debugOfficialApi);
-        server.get("/official-webui/api/errors/list", WebUIController::listErrorReports);
-        server.get("/official-webui/api/errors/stats", WebUIController::errorReportStats);
-        server.get("/official-webui/api/errors/{traceId}", WebUIController::getErrorReport);
-
+        // API routes
         server.get("/webui/api/auth/challenge", WebUIController::createChallenge);
         server.post("/webui/api/auth/verify", WebUIController::login);
         server.post("/webui/api/auth/logout", WebUIController::logout);
@@ -82,6 +66,9 @@ public class WebUIRouter {
         server.post("/webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
         server.post("/webui/api/napcat/recall", WebUIController::recallNapcatMessages);
         server.post("/webui/api/debug/official/request", WebUIController::debugOfficialApi);
+        server.get("/webui/api/errors/list", WebUIController::listErrorReports);
+        server.get("/webui/api/errors/stats", WebUIController::errorReportStats);
+        server.get("/webui/api/errors/{traceId}", WebUIController::getErrorReport);
 
         // C2C 私聊
         server.get("/webui/api/c2c/users", WebUIController::listC2CUsers);
@@ -96,6 +83,7 @@ public class WebUIRouter {
         server.get("/webui/api/c2c/{userOpenId}/messages", WebUIController::fetchC2CMessages);
         server.post("/webui/api/c2c/send", WebUIController::sendC2CMessage);
         server.post("/webui/api/c2c/recall", WebUIController::recallC2CMessage);
+        server.post("/webui/api/c2c/stream", WebUIController::sendC2CStreamMessage);
 
         server.get("/webui/api/events", SseBroadcaster::handle);
 
@@ -104,22 +92,36 @@ public class WebUIRouter {
         server.get("/webui/api/feedback/count", WebUIController::countFeedback);
         server.post("/webui/api/feedback/reply", WebUIController::replyFeedback);
 
+        // 图源管理
+        server.get("/webui/api/gallery/list", WebUIController::listGallery);
+        server.get("/webui/api/gallery/count", WebUIController::countGallery);
+        server.post("/webui/api/gallery/review", WebUIController::reviewGallery);
+        server.post("/webui/api/gallery/review-batch", WebUIController::reviewGalleryBatch);
+        server.post("/webui/api/gallery/delete", WebUIController::deleteGallery);
+
         // 用户列表
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
         server.get("/webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
-        // 开发环境走 /official-webui/api 前缀，同样挂一份，否则用户列表页在 dev 下 404
-        server.get("/official-webui/api/users/messages", WebUIController::listUserMessages);
-        server.get("/official-webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
-
-        // 错误报告（非公开，走 /webui/api/* 的会话鉴权）
-        server.get("/webui/api/errors/list", WebUIController::listErrorReports);
-        server.get("/webui/api/errors/stats", WebUIController::errorReportStats);
-        server.get("/webui/api/errors/{traceId}", WebUIController::getErrorReport);
 
         server.error(404, WebUIRouter::spaFallback);
     }
 
-    private static void activeGuard(io.javalin.http.Context ctx) {
+    private static void ntUidRateLimit(Context ctx) {
+        String ip = ctx.ip();
+        long now = System.currentTimeMillis();
+        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, k -> new ConcurrentLinkedDeque<>());
+        while (!timestamps.isEmpty() && now - timestamps.peekFirst() > NTUID_RATE_WINDOW_MS) {
+            timestamps.pollFirst();
+        }
+        if (timestamps.size() >= NTUID_RATE_LIMIT) {
+            ctx.status(429).json(Result.fail(429, "超出接口频控限制"));
+            ctx.skipRemainingHandlers();
+            return;
+        }
+        timestamps.addLast(now);
+    }
+
+    private static void activeGuard(Context ctx) {
         if (ctx.path().contains("/api/public/")) {
             return;
         }
@@ -153,9 +155,9 @@ public class WebUIRouter {
         }
     }
 
-    private static void spaFallback(io.javalin.http.Context ctx) {
+    private static void spaFallback(Context ctx) {
         String path = ctx.path();
-        if (!path.startsWith("/webui/") && !path.startsWith("/official-webui/")) return;
+        if (!path.startsWith("/webui/")) return;
         if (path.contains("/api/")) return;
         if (!WebUISessionManager.isActive()) {
             ctx.status(503).result("");
@@ -178,5 +180,7 @@ public class WebUIRouter {
         server.get(prefix + "/series", WebUIController::publicOfficialSeries);
         server.get(prefix + "/users/{userOpenId}", WebUIController::publicOfficialUserInfo);
         server.get(prefix + "/groups/{groupOpenId}", WebUIController::publicOfficialGroupInfo);
+        server.before(prefix + "/ntuid", WebUIRouter::ntUidRateLimit);
+        server.post(prefix + "/ntuid", SizeNtUid::ntUidController);
     }
 }

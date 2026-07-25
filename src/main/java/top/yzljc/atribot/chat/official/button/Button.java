@@ -1,7 +1,6 @@
 package top.yzljc.atribot.chat.official.button;
 
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Collections;
 import java.util.List;
@@ -17,17 +16,13 @@ import java.util.List;
 public class Button {
     private final String buttonId;
     private final String displayText;
-    @Setter
     private String visitedDisplayText;
     private final String data;
     private final boolean enter;
-    @Setter
     private boolean reply = false;
     private final ButtonStyle style;
     private final ButtonType actionType;
-    @Setter
     private PermissionType permissionType = PermissionType.ALL;
-    @Setter
     private List<String> allowedOpenIds = Collections.emptyList();
 
     public Button(String buttonId, String displayText, String data, boolean enter, ButtonStyle style, ButtonType actionType) {
@@ -38,5 +33,25 @@ public class Button {
         this.enter = enter;
         this.style = style;
         this.actionType = actionType;
+    }
+
+    public Button setReply(boolean reply) {
+        this.reply = reply;
+        return this;
+    }
+
+    public Button setVisitedDisplayText(String visitedDisplayText) {
+        this.visitedDisplayText = visitedDisplayText;
+        return this;
+    }
+
+    public Button setPermissionType(PermissionType permissionType) {
+        this.permissionType = permissionType;
+        return this;
+    }
+
+    public Button setAllowedOpenIds(List<String> allowedOpenIds) {
+        this.allowedOpenIds = allowedOpenIds;
+        return this;
     }
 }

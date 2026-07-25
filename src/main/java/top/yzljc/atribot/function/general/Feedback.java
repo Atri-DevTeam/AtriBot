@@ -17,6 +17,7 @@ import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.utils.notify.NotificationService;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.sql.Timestamp;
@@ -36,6 +37,7 @@ import java.util.regex.Pattern;
 public class Feedback implements CommandExecutor, Listener {
 
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
+    private static final String SOURCE = "feedback";
     private static final int PAGE_SIZE = 10;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -195,11 +197,13 @@ public class Feedback implements CommandExecutor, Listener {
 
         boolean success = FeedbackRepository.reply(feedback.getId(), replyContent, isHidden);
         if (success) {
+            boolean pushed = dispatchReply(feedback.getId());
             String msg = (isReReply ? "重新回复成功！" : "回复成功！") +
                     "反馈编号: " + feedback.getId().substring(0, 8) + "...";
             if (isHidden) {
                 msg += "\n已标记为隐藏原始内容";
             }
+            msg += pushed ? "\n已主动推送给用户" : "\n用户未开放主动消息，已转入被动队列";
             sender.sendMessage(msg);
             log.info("管理员 {} {}回复了反馈 {}: isHidden={}",
                     sender.getUsername(), isReReply ? "重新" : "", feedback.getId(), isHidden);
@@ -255,6 +259,40 @@ public class Feedback implements CommandExecutor, Listener {
             event.getUser().sendMessage(event.getMessage().getMessageId(), buildReplyMessage(reply, false));
             log.info("已送达反馈回复(Napcat私聊): userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
+    }
+
+    /**
+     * 回复落库后立刻投递给用户：优先主动消息，不可用或失败时进被动队列。
+     *
+     * <p>投递一经交办即 markRead，因此下方的 {@code consumePendingReply} 监听器不会重复送达；
+     * 那些监听器保留下来，只用于排空本机制上线前遗留的未读回复。
+     *
+     * <p>仅官方 Bot 支持主动消息，Napcat 侧仍走原有的被动补发。
+     *
+     * @return true 表示已主动送达
+     */
+    public static boolean dispatchReply(String feedbackId) {
+        try {
+            FeedbackDTO feedback = FeedbackRepository.findById(feedbackId);
+            if (feedback == null || feedback.getReplyContent() == null) {
+                return false;
+            }
+            if (!isOfficialPlatform(feedback.getPlatform())) {
+                return false;
+            }
+
+            boolean pushed = NotificationService.notify(feedback.getPlatform(), feedback.getUserId(),
+                    feedback.getGroupId(), buildReplyMessage(feedback, true), SOURCE, feedback.getId());
+            FeedbackRepository.markRead(feedback.getId());
+            return pushed;
+        } catch (Exception e) {
+            log.error("投递反馈回复失败: id={}", feedbackId, e);
+            return false;
+        }
+    }
+
+    private static boolean isOfficialPlatform(String platform) {
+        return Platform.OFFICIAL_GROUP.name().equals(platform) || Platform.OFFICIAL_C2C.name().equals(platform);
     }
 
     private static FeedbackDTO consumePendingReply(String userId) {

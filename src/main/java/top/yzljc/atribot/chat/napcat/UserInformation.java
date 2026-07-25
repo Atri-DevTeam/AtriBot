@@ -44,7 +44,7 @@ public class UserInformation {
         if (json != null) {
             String role = json.path("data").path("role").asText();
             boolean isAdmin = role.equalsIgnoreCase("owner") || role.equalsIgnoreCase("admin");
-            groupAdminCache.computeIfAbsent(groupId, k -> new HashMap<>()).put(userId, isAdmin);
+            groupAdminCache.computeIfAbsent(groupId, _ -> new HashMap<>()).put(userId, isAdmin);
             return isAdmin;
         }
         return false;
@@ -84,6 +84,19 @@ public class UserInformation {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    public static String getUserNtUid(String userId) {
+        if (userId == null || userId.length() < 5 || userId.length() > 10) {
+            return "-1";
+        }
+        JsonNode json = PostRequest.getSimplePostResult(RequestType.GET_STRANGER_INFO, "user_id", userId);
+        if (json != null) {
+            var d = json.path("data").path("uid").asText(null);
+            if (d.contains("*")) return "-3";
+            return d;
+        }
+        return "-2";
     }
 
     public record BotUinInterval(long min, long max) {

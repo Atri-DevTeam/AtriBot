@@ -2,6 +2,7 @@ package top.yzljc.atribot.test;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 
 import top.yzljc.atribot.chat.official.Markdown;
@@ -16,8 +17,8 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.EmailMessageEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.ai.AiProvider;
 
@@ -34,6 +35,10 @@ import java.util.List;
 public class Test implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission()) {
+            sender.sendMessage("你是谁？");
+            return true;
+        }
 //        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 //        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
 //        String url = ResourcesProperties.A_SILENT_MIRROR_MP3;
@@ -106,19 +111,37 @@ public class Test implements CommandExecutor, Listener {
 //        );
 //        Object keyboard = TC.keyboard(buttons);
 //        sender.sendMessage(md, keyboard);
-        var k = List.of(List.of(
-                new Button("t1", "1", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t2", "2", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t3", "3", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t4", "4", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t5", "5", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t6", "6", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t7", "7", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("t8", "8", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+//        var k = List.of(List.of(
+//                new Button("t1", "1", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t2", "2", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t3", "3", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t4", "4", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t5", "5", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t6", "6", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t7", "7", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+//                new Button("t8", "8", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND)
 //                new Button("t9", "9", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND),
 //                new Button("t10", "10", "call_back_data", true, ButtonStyle.BLUE, ButtonType.COMMAND)
-        ));
-        sender.sendMessage(TC.md("TEST"), TC.keyboard(k));
+//        ));
+//        var d = ImageSourceClient.getRandomImage();
+//        var md = TC.md(
+//                Markdown.at(sender) + " 打卡成功\n\n" +
+//                        ((d == null || d.url() == null) ? "" : Markdown.img(d.url(), d.w(), d.h()) + "\n\n") +
+//                        "> 收集自网络，可联系删除 " + Markdown.enterCommand("/投稿 ", "我要投稿") + "\n" +
+//                        "> 你已累计打卡**" + 20 + "**次！\n" +
+//                        "> 今天已有**" + 11 + "**人参与了打卡！\n" +
+//                        "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + 100 + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + "\n\n"
+//        );
+//
+//        Object buttons = TC.keyboard(List.of(
+//                List.of(new Button("c1", "我也要打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+//        ));
+//        String streamMessageId = C2CChat.replyStreamDeltas(sender.getUserId(), sender.getMessageId(), List.of(
+//                TC.md("正在生成回答..."),
+//                TC.md("\n已完成标题部分"),
+//                TC.md("\n这是最终内容")
+//        ));
+        sender.sendMessage("消息ID: " + sender.getMessageId() + " 场景: " + sender.getPlatform());
         return true;
     }
 
@@ -128,12 +151,35 @@ public class Test implements CommandExecutor, Listener {
 //            GroupChat.refMessage(event.getGroupId(), event.getMessage().getRefIdx(), "你好");
 //        }
 //    }
-
+//
+//    @EventHandler
+//    public void onEmailReceived(EmailMessageEvent event) {
+//        log.info("收到邮件");
+//        log.info("发件人: {}", event.getAuthors().toString());
+//        log.info("主题: {}", event.getSubject());
+//        log.info("内容: {}", event.getContentSummary());
+//    }
+//    @EventHandler
+//    public void onGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
+//        if (event.getUser().isBot()) return;
+//        if (event.getMessage().getContent().trim().contains("/helps")) {
+//            event.sendMessage("指令帮助:\n  /helps - 显示帮助\n  /test - 测试指令\n  /ping - 查看机器人运行状态");
+//        }
+//    }
+//
+//    @EventHandler
+//    public void onMessageC2C(OfficialC2CMessageCreateEvent event) {
+//        if (event.getUser().isBot()) return;
+//        if (event.getMessage().getContent().trim().equals("/helps")) {
+//            event.sendMessage("指令帮助:\n  /helps - 显示帮助\n  /test - 测试指令\n  /ping - 查看机器人运行状态");
+//        }
+//    }
     @EventHandler
-    public void onEmailReceived(EmailMessageEvent event) {
-        log.info("收到邮件");
-        log.info("发件人: {}", event.getAuthors().toString());
-        log.info("主题: {}", event.getSubject());
-        log.info("内容: {}", event.getContentSummary());
+    public void onBotSendFuckingLikeMessage(NapcatGroupMessageEvent event) {
+        if (!event.getGroupId().equals("818804507")) return;
+        if (!event.getUser().getUserId().equals("3993660791")) return;
+        if (event.getMessage().getContent().contains("点") && event.getMessage().getContent().contains("赞")) {
+            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(event::recall, 10000L);
+        }
     }
 }

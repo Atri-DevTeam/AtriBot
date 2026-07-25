@@ -8,10 +8,14 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
+import top.yzljc.atribot.event.impl.AnswerCode;
+import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.platform.Platform;
 
 import java.util.*;
@@ -90,6 +94,96 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         }
 
         return true;
+    }
+
+    @EventHandler
+    public void onButtonCallback(OfficialButtonInteractionEvent event) {
+        String value = event.getButtonValue();
+        if (value == null || !value.startsWith("drop:")) return;
+
+        String colStr = value.substring(5);
+        handleDropCallback(event, colStr);
+    }
+
+    private void handleDropCallback(OfficialButtonInteractionEvent event, String colStr) {
+        String groupOpenId = event.getGroupOpenId();
+        String playerId = event.getUnionOpenId();
+
+        GameState game = activeGames.get(groupOpenId);
+        if (game == null || game.phase != Phase.PLAYING) return;
+
+        if (!playerId.equals(game.playerAOpenId) && !playerId.equals(game.playerBOpenId)) return;
+
+        String currentPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+        if (!playerId.equals(currentPlayerId)) {
+            event.replyMessage(TC.md("还没轮到你落子喵！请等待对手下完！"));
+            event.answer(AnswerCode.SUCCESS);
+            return;
+        }
+
+        int col;
+        try {
+            col = Integer.parseInt(colStr);
+        } catch (NumberFormatException e) {
+            event.answer(AnswerCode.SUCCESS);
+            return;
+        }
+
+        col = col - 1;
+        if (col < 0 || col >= COLS) {
+            event.answer(AnswerCode.SUCCESS);
+            return;
+        }
+
+        int row = findDropRow(game.board, col);
+        if (row == -1) {
+            event.answer(AnswerCode.FAIL);
+            return;
+        }
+
+        event.answer(AnswerCode.SUCCESS);
+
+        game.board[row][col] = game.currentPlayer;
+
+        List<int[]> winningLine = findWinningLine(game.board, row, col, game.currentPlayer);
+        if (winningLine != null) {
+            game.phase = Phase.FINISHED;
+            game.winningLine = winningLine;
+            game.winner = game.currentPlayer;
+
+            String winnerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
+            String winnerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+
+            finishGameCallback(game, groupOpenId,
+                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + " 获胜！连成四子！");
+            return;
+        }
+
+        if (isBoardFull(game.board)) {
+            game.phase = Phase.FINISHED;
+            finishGameCallback(game, groupOpenId, "🤝 平局！棋盘已满，无人连成四子！");
+            return;
+        }
+
+        game.currentPlayer = (game.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
+        String nextPlayerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
+        String nextPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+
+        sendGameBoard(game, groupOpenId, event.getEventId(),
+                "轮到 " + nextPlayerName + " " + Markdown.at(nextPlayerId) + " 落子");
+
+        scheduleMoveTimeout(groupOpenId, game);
+    }
+
+    private void finishGameCallback(GameState game, String groupOpenId, String resultMsg) {
+        activeGames.remove(groupOpenId);
+
+        String markdown = buildSettlementMarkdown(game, resultMsg);
+        markdown += "\n\n" + Markdown.enterCommand("/四子棋", "点击此处再次开始");
+
+        String messageId = GroupChat.sendMessage(groupOpenId, TC.md(markdown));
+        recallOldMessage(game);
+        game.lastMessageId = messageId;
     }
 
     private void sendWelcomeScreen(String sessionId, CommandSender sender) {
@@ -241,7 +335,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String firstPlayerName = "⚫ 玩家A";
         String firstPlayerId = game.playerAOpenId;
 
-        sendGameBoard(game, sessionId, sender,
+        sendGameBoard(game, sessionId, sender.getMessageId(),
                 "游戏开始！由 " + firstPlayerName + " " + Markdown.at(firstPlayerId) + " 先手落子");
 
         scheduleMoveTimeout(sessionId, game);
@@ -324,23 +418,46 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String nextPlayerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
         String nextPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
 
-        sendGameBoard(game, sessionId, sender,
+        sendGameBoard(game, sessionId, sender.getMessageId(),
                 "轮到 " + nextPlayerName + " " + Markdown.at(nextPlayerId) + " 落子");
 
         scheduleMoveTimeout(sessionId, game);
     }
 
-    private void sendGameBoard(GameState game, String sessionId, CommandSender sender, String statusMsg) {
+    private void sendGameBoard(GameState game, String sessionId, String cmdMsgId, String statusMsg) {
+        String md = buildBoardMarkdown(game, statusMsg);
+        String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+        Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
+        String messageId = GroupChat.sendMessage(game.groupOpenId, TC.md(md), keyboard);
+        recallOldMessage(game);
+        game.lastMessageId = messageId;
+        game.lastCmdMsgId = cmdMsgId;
+    }
+
+    private Object buildColumnKeyboard(String currentPlayerOpenId, int[][] board) {
+        Set<Integer> fullCols = getFullColumns(board);
+        List<List<Button>> layout = new ArrayList<>();
+        List<Button> row = new ArrayList<>();
+        for (int i = 1; i <= COLS; i++) {
+            ButtonStyle style = fullCols.contains(i - 1) ? ButtonStyle.GRAY : ButtonStyle.BLUE;
+            row.add(new Button("col_" + i, String.valueOf(i), "drop:" + i,
+                    true, style, ButtonType.CALLBACK)
+                    .setPermissionType(PermissionType.SPECIFIC_USER)
+                    .setAllowedOpenIds(List.of(currentPlayerOpenId)));
+        }
+        layout.add(row);
+        return TC.keyboard(layout);
+    }
+
+    private String buildBoardMarkdown(GameState game, String statusMsg) {
         StringBuilder md = new StringBuilder();
 
-        // Header — show elapsed time
         long elapsed = (System.currentTimeMillis() - game.startTime) / 1000;
         md.append("**四子棋** | 用时: ").append(elapsed).append(" 秒\n\n");
         if (statusMsg != null && !statusMsg.isEmpty()) {
             md.append("\n\n> ").append(statusMsg).append("\n\n");
         }
 
-        // Board (row 5 = top, row 0 = bottom)
         for (int r = ROWS - 1; r >= 0; r--) {
             for (int c = 0; c < COLS; c++) {
                 if (game.winningLine != null && isWinningCell(game.winningLine, r, c)) {
@@ -349,7 +466,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
                     switch (game.board[r][c]) {
                         case PLAYER_A -> md.append(BLACK);
                         case PLAYER_B -> md.append(WHITE);
-                        default -> md.append(Markdown.enterCommand("/四子棋 drop " + (c + 1), EMPTY));
+                        default -> md.append(EMPTY);
                     }
                 }
                 if (c < COLS - 1) md.append(" ");
@@ -357,13 +474,10 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             md.append("\n");
         }
 
-        md.append("\n\n>⚫ ").append(Markdown.at(game.playerAOpenId)).append("\n>")
-                .append("⚪ ").append(Markdown.at(game.playerBOpenId));
+        md.append("\n\n>棋子 ⚫ ").append(Markdown.at(game.playerAOpenId)).append("\n>")
+                .append("棋子 ⚪ ").append(Markdown.at(game.playerBOpenId));
 
-        String messageId = sender.sendMessage(TC.md(md.toString()));
-        recallOldMessage(game);
-        game.lastMessageId = messageId;
-        game.lastCmdMsgId = sender.getMessageId();
+        return md.toString();
     }
 
     private void finishGame(GameState game, String sessionId, CommandSender sender, String resultMsg) {
@@ -402,8 +516,8 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             md.append("\n");
         }
 
-        md.append("\n\n>⚫ ").append(Markdown.at(game.playerAOpenId)).append("\n>")
-                .append("⚪ ").append(Markdown.at(game.playerBOpenId));
+        md.append("\n\n>棋子 ⚫ ").append(Markdown.at(game.playerAOpenId)).append("\n>")
+                .append("棋子 ⚪ ").append(Markdown.at(game.playerBOpenId));
 
         return md.toString();
     }
@@ -431,6 +545,14 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             if (board[ROWS - 1][c] == EMPTY_CELL) return false;
         }
         return true;
+    }
+
+    private Set<Integer> getFullColumns(int[][] board) {
+        Set<Integer> full = new HashSet<>();
+        for (int c = 0; c < COLS; c++) {
+            if (board[ROWS - 1][c] != EMPTY_CELL) full.add(c);
+        }
+        return full;
     }
 
     /**
@@ -539,7 +661,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             if (current != game) return;
             if (current.phase != Phase.PLAYING) return;
 
-            // Game exceeded 5 minutes — auto tie
+            // Game exceeded 15 minutes — auto tie
             current.phase = Phase.FINISHED;
             String playerAId = current.playerAOpenId;
             String playerBId = current.playerBOpenId;
@@ -561,7 +683,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             } catch (Exception e) {
                 log.warn("发送对局超时结算面板失败: ", e);
             }
-            log.info("四子棋游戏在群 {} 因超过5分钟对局时长而自动平局", sessionId);
+            log.info("四子棋游戏在群 {} 因超过15分钟对局时长而自动平局", sessionId);
         }, GAME_TIMEOUT_MS);
     }
 

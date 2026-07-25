@@ -11,6 +11,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.official.pushtask.*;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.UnsupportedPlatform;
 
 import java.util.List;
 
@@ -35,16 +36,26 @@ public class PushTaskCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         String groupOpenId = sender.getGroupId();
+        var platform = sender.getPlatform();
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) {
-            if (sender.getPlatform() == Platform.OFFICIAL_C2C) sender.sendMessage(TC.md("> 推送任务只在群聊中有效，单聊场景尚未制作!"));
+        if (platform != Platform.OFFICIAL_GROUP && platform != Platform.OFFICIAL_C2C) {
+            sender.sendMessage("当前平台暂不支持推送任务调度！");
             return true;
         }
 
         if (args.length < 1) {
             StringBuilder markdown = new StringBuilder("**推送任务列表**\n\n");
             for (PushTask task : tasks) {
-                markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(groupOpenId, task), getFunctionDescriptionText(task)));
+                if (platform.equals(Platform.OFFICIAL_GROUP)) {
+                    if (task.isGroupEnable()) {
+                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, groupOpenId, task), getFunctionDescriptionText(task)));
+                    }
+                }
+                if (platform.equals(Platform.OFFICIAL_C2C)) {
+                    if (task.isC2cEnable()) {
+                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, sender.getUserId(), task), getFunctionDescriptionText(task)));
+                    }
+                }
             }
             markdown.append("> 点击名称可以查看详细描述\n> 点击按钮可以快速开关功能");
 
@@ -70,23 +81,31 @@ public class PushTaskCommand implements CommandExecutor {
 
             switch (cmd) {
                 case "详情" -> {
-                    sender.sendMessage(task.getDescription(groupOpenId), buttons(functionId));
+                    sender.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : sender.getUserId()), buttons(functionId));
                     return true;
                 }
                 case "开启" -> {
-                    if (!sender.isPlatformAdmin()) {
+                    if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.isPlatformAdmin()) {
                         sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
                     }
-                    task.enable(groupOpenId, sender.getUserId(), sender.getMessageId());
+                    if (platform.equals(Platform.OFFICIAL_GROUP)) {
+                        task.enable(platform, groupOpenId, sender.getUserId(), sender.getMessageId());
+                    } else {
+                        task.enable(platform, sender.getUserId(), sender.getUserId(), sender.getMessageId());
+                    }
                     return true;
                 }
                 case "关闭" -> {
-                    if (!sender.isPlatformAdmin()) {
+                    if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.isPlatformAdmin()) {
                         sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
                     }
-                    task.disable(groupOpenId, sender.getUserId(), sender.getMessageId());
+                    if (platform.equals(Platform.OFFICIAL_GROUP)) {
+                        task.disable(platform, groupOpenId, sender.getUserId(), sender.getMessageId());
+                    } else {
+                        task.disable(platform, sender.getUserId(), sender.getUserId(), sender.getMessageId());
+                    }
                     return true;
                 }
             }
@@ -95,11 +114,23 @@ public class PushTaskCommand implements CommandExecutor {
         return true;
     }
 
-    private static String getFunctionStatusIcon(String groupOpenId, PushTask task) {
-        if (task.isGroupEnabled(groupOpenId)) {
-            return Markdown.enterCommand("/推送任务 关闭 " + task.getFunctionId(), "\uD83D\uDFE2已启用");
+    private static String getFunctionStatusIcon(Platform platform, String platformIdentifyId, PushTask task) {
+        var on = Markdown.enterCommand("/推送任务 关闭 " + task.getFunctionId(), "\uD83D\uDFE2已启用");
+        var off = Markdown.enterCommand("/推送任务 开启 " + task.getFunctionId(), "⚪未开启");
+        if (platform.equals(Platform.OFFICIAL_GROUP)) {
+            if (task.isGroupEnabled(platformIdentifyId)) {
+                return on;
+            } else {
+                return off;
+            }
+        } else if (platform.equals(Platform.OFFICIAL_C2C)) {
+            if (task.isUserEnabled(platformIdentifyId)) {
+                return on;
+            } else {
+                return off;
+            }
         } else {
-            return Markdown.enterCommand("/推送任务 开启 " + task.getFunctionId(), "⚪未开启");
+            throw new UnsupportedPlatform(platform, "不支持的获取功能状态的平台");
         }
     }
 

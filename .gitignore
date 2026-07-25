@@ -41,6 +41,12 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### AI ###
+/.mimocode/
+/.claude/
+
+### Bot Generated Contents ###
 /config.yml
 /data.json
 /webui/dist/
@@ -51,3 +57,4 @@ bin/
 /news_history.json
 /data/
 /errorlogs/
+/sign_data/

@@ -111,6 +111,21 @@ commands:
       - 反馈
       - 举报
       - 建议
+  投稿:
+    description: 投稿图片到图源
+    usage: /投稿 [图片]
+    aliases:
+      - submit
+      - 图源投稿
+      - 上传图片
+  图源:
+    description: 查询图源投稿数据情况
+    usage: /图源 [list]
+    aliases:
+      - gallery
+      - 图源统计
+      - 投稿统计
+      - imgs
   perm:
     description: 权限管理
     aliases:

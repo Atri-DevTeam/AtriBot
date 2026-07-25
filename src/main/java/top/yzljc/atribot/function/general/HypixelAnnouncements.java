@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,30 +62,19 @@ import java.util.regex.Pattern;
 public final class HypixelAnnouncements implements CommandExecutor, ScheduledTask {
 
     private static final String HYPIXEL_ANNOUNCEMENT_URL = "https://hypixel.net/forums/news-and-announcements.4/index.rss";
-
     private static final String HYPIXEL_SKYBLOCK_PATCH_NOTES_URL = "https://hypixel.net/forums/skyblock-patch-notes.158/index.rss";
-
     private record FeedConfig(String url, String label) {}
-
     private static final List<FeedConfig> FEEDS = List.of(
             new FeedConfig(HYPIXEL_ANNOUNCEMENT_URL, "Hypixel"),
             new FeedConfig(HYPIXEL_SKYBLOCK_PATCH_NOTES_URL, "Hypixel Skyblock")
     );
-
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
     private static final String HISTORY_FILE = Properties.HYPIXEL_ANNOUNCEMENTS;
-
     private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-
     private static final DateTimeFormatter PUBLISH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
     private static final int INTRO_MAX_LENGTH = 100;
-
     private static final int MAX_PUSH_PER_RUN = 3;
-
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
-
     private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
 
     @Override
@@ -138,8 +129,13 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
                     "链接: " + a.link() + "\n" +
                     (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
 
-            for (String gid : OfficialGroups.enabledGroups("hyp_news")) {
+            var glist = OfficialGroups.enabledGroups("hyp_news");
+            var ulist = OfficialUsers.enabledUsers("hyp_news");
+            for (String gid : glist) {
                 GroupChat.sendMessage(gid, md);
+            }
+            for (String uid : ulist) {
+                C2CChat.sendMessage(uid, md);
             }
 
             for (String gid : GroupInformation.fetchAllGroupIds()) {

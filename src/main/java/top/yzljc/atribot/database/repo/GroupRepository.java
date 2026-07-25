@@ -1,6 +1,5 @@
 package top.yzljc.atribot.database.repo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
@@ -9,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * group_whitelist 和 function_list 表的纯数据库访问层。
- * 缓存和业务逻辑保留在 GroupList 中。
+ * official_groups 和 group_function_list 表的纯数据库访问层。
+ * 缓存和业务逻辑保留在 OfficialGroups 中。
  *
  * @Author YZ_Ljc_
  * @ClassName GroupRepository
@@ -21,12 +20,13 @@ import java.util.List;
 @Slf4j
 public class GroupRepository {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String GROUP_TABLE = "official_groups";
+    private static final String GROUP_FUNCTION_TABLE = "group_function_list";
 
     // ==================== Table init ====================
 
     public static void initTables() {
-        String sqlGroup = "CREATE TABLE IF NOT EXISTS `group_whitelist` (" +
+        String sqlGroup = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
                 "  `group_openId` VARCHAR(256) NOT NULL," +
                 "  `op_member_openId` VARCHAR(256) NULL," +
                 "  `timestamp` BIGINT NOT NULL," +
@@ -37,7 +37,7 @@ public class GroupRepository {
                 "  PRIMARY KEY (`group_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        String sqlFunc = "CREATE TABLE IF NOT EXISTS `function_list` (" +
+        String sqlFunc = "CREATE TABLE IF NOT EXISTS `" + GROUP_FUNCTION_TABLE + "` (" +
                 "  `group_openId` VARCHAR(256) NOT NULL," +
                 "  `functions` JSON NOT NULL," +
                 "  PRIMARY KEY (`group_openId`)" +
@@ -53,6 +53,10 @@ public class GroupRepository {
         } catch (Exception e) {
             log.error("初始化群相关数据库表失败", e);
         }
+
+        migrateGroupTable("group_whitelist");
+        migrateGroupTable("group-whiteist");
+        migrateFunctionTable("function_list");
     }
 
     // ==================== CRUD ====================
@@ -62,7 +66,7 @@ public class GroupRepository {
      */
     public static List<GroupRow> loadAllGroups() {
         List<GroupRow> rows = new ArrayList<>();
-        String sql = "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id FROM group_whitelist";
+        String sql = "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id FROM `" + GROUP_TABLE + "`";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql);
@@ -89,7 +93,7 @@ public class GroupRepository {
      * 注册群（INSERT IGNORE，仅写入基本信息）
      */
     public static boolean insertGroup(String groupOpenId, String opMemberOpenId, long timestamp) {
-        String sql = "INSERT IGNORE INTO group_whitelist (group_openId, op_member_openId, timestamp, is_whitelist) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist) VALUES (?, ?, ?, ?)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -109,7 +113,7 @@ public class GroupRepository {
      * 删除群数据
      */
     public static boolean deleteGroup(String groupOpenId) {
-        String sql = "DELETE FROM group_whitelist WHERE group_openId = ?";
+        String sql = "DELETE FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -126,7 +130,7 @@ public class GroupRepository {
      * 设置白名单状态
      */
     public static boolean upsertWhitelist(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist) {
-        String sql = "INSERT INTO group_whitelist (group_openId, op_member_openId, timestamp, is_whitelist) " +
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist) " +
                 "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = VALUES(timestamp), is_whitelist = VALUES(is_whitelist)";
 
         try (var con = DatabaseManager.getConnection();
@@ -147,7 +151,7 @@ public class GroupRepository {
      * 设置真实群号
      */
     public static boolean upsertRealGroupId(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, Long realGroupId) {
-        String sql = "INSERT INTO group_whitelist (group_openId, op_member_openId, timestamp, is_whitelist, real_group_id) " +
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, real_group_id) " +
                 "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE real_group_id = VALUES(real_group_id)";
 
         try (var con = DatabaseManager.getConnection();
@@ -170,7 +174,7 @@ public class GroupRepository {
      * 设置主动推送状态
      */
     public static boolean upsertAllowedFullMessage(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean allowedActive) {
-        String sql = "INSERT INTO group_whitelist (group_openId, op_member_openId, timestamp, is_whitelist, is_allowed_active) " +
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, is_allowed_active) " +
                 "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE is_allowed_active = VALUES(is_allowed_active)";
 
         try (var con = DatabaseManager.getConnection();
@@ -192,7 +196,7 @@ public class GroupRepository {
      * 设置黑名单状态
      */
     public static boolean upsertGroupBlacklisted(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean isBlacklisted) {
-        String sql = "INSERT INTO group_whitelist (group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted) " +
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted) " +
                 "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE is_blacklisted = VALUES(is_blacklisted)";
 
         try (var con = DatabaseManager.getConnection();
@@ -210,13 +214,13 @@ public class GroupRepository {
         }
     }
 
-    // ==================== function_list CRUD ====================
+    // ==================== group_function_list CRUD ====================
 
     /**
-     * 读取群的 function_list JSON 字符串，不存在返回 null
+     * 读取群的 group_function_list JSON 字符串，不存在返回 null
      */
     public static String getFunctionConfigJson(String groupOpenId) {
-        String sql = "SELECT functions FROM function_list WHERE group_openId = ?";
+        String sql = "SELECT functions FROM `" + GROUP_FUNCTION_TABLE + "` WHERE group_openId = ?";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -232,10 +236,10 @@ public class GroupRepository {
     }
 
     /**
-     * 保存群的 function_list JSON 字符串
+     * 保存群的 group_function_list JSON 字符串
      */
     public static boolean saveFunctionConfigJson(String groupOpenId, String json) {
-        String sql = "INSERT INTO function_list (group_openId, functions) VALUES (?, ?) " +
+        String sql = "INSERT INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) VALUES (?, ?) " +
                 "ON DUPLICATE KEY UPDATE functions = VALUES(functions)";
 
         try (var con = DatabaseManager.getConnection();
@@ -255,7 +259,7 @@ public class GroupRepository {
      */
     public static List<String> queryEnabledGroups(String functionKey) {
         List<String> groups = new ArrayList<>();
-        String sql = "SELECT group_openId FROM function_list WHERE JSON_EXTRACT(functions, ?) = true";
+        String sql = "SELECT group_openId FROM `" + GROUP_FUNCTION_TABLE + "` WHERE JSON_EXTRACT(functions, ?) = true";
         String jsonPath = "$." + functionKey + ".enabled";
 
         try (var con = DatabaseManager.getConnection();
@@ -269,6 +273,52 @@ public class GroupRepository {
             log.error("查询功能 {} 的启用群列表失败: {}", functionKey, e.getMessage());
         }
         return groups;
+    }
+
+    private static void migrateGroupTable(String legacyTable) {
+        if (!tableExists(legacyTable)) {
+            return;
+        }
+
+        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` " +
+                "(group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id) " +
+                "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id " +
+                "FROM `" + legacyTable + "`";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            int count = ps.executeUpdate();
+            log.info("已从旧表 {} 迁移 {} 条群数据到 {}", legacyTable, count, GROUP_TABLE);
+        } catch (Exception e) {
+            log.warn("从旧群表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_TABLE, e.getMessage());
+        }
+    }
+
+    private static void migrateFunctionTable(String legacyTable) {
+        if (!tableExists(legacyTable)) {
+            return;
+        }
+
+        String sql = "INSERT IGNORE INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) " +
+                "SELECT group_openId, functions FROM `" + legacyTable + "`";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            int count = ps.executeUpdate();
+            log.info("已从旧表 {} 迁移 {} 条群功能配置到 {}", legacyTable, count, GROUP_FUNCTION_TABLE);
+        } catch (Exception e) {
+            log.warn("从旧群功能表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_FUNCTION_TABLE, e.getMessage());
+        }
+    }
+
+    private static boolean tableExists(String tableName) {
+        try (var con = DatabaseManager.getConnection();
+             var rs = con.getMetaData().getTables(null, null, tableName, null)) {
+            return rs.next();
+        } catch (Exception e) {
+            log.warn("检查数据表 {} 是否存在失败: {}", tableName, e.getMessage());
+            return false;
+        }
     }
 
     public record GroupRow(String groupOpenId, String opMemberOpenId, long timestamp,

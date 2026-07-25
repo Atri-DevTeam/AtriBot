@@ -1,8 +1,13 @@
 package top.yzljc.atribot.auth.official;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.C2CRepository;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -16,6 +21,9 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class OfficialUsers {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
 
@@ -208,6 +216,111 @@ public class OfficialUsers {
         return false;
     }
 
+    /**
+     * 获取私聊用户的功能配置 JSON（直接从数据库读取，不使用缓存）。
+     */
+    private static ObjectNode getFunctionConfig(String userOpenId) {
+        String jsonStr = C2CRepository.getFunctionConfigJson(userOpenId);
+        if (jsonStr != null && !jsonStr.isBlank()) {
+            try {
+                return (ObjectNode) objectMapper.readTree(jsonStr);
+            } catch (Exception e) {
+                log.error("解析私聊用户 {} 的功能配置 JSON 失败: {}", userOpenId, e.getMessage());
+            }
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    /**
+     * 保存私聊用户的功能配置 JSON 到数据库。
+     */
+    private static boolean saveFunctionConfig(String userOpenId, ObjectNode config) {
+        try {
+            String jsonStr = objectMapper.writeValueAsString(config);
+            return C2CRepository.saveFunctionConfigJson(userOpenId, jsonStr);
+        } catch (Exception e) {
+            log.error("保存私聊用户 {} 的功能配置失败: {}", userOpenId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 查询某个功能在指定私聊用户是否开启。
+     */
+    public static boolean isFunctionEnabled(String userOpenId, String functionKey) {
+        ObjectNode config = getFunctionConfig(userOpenId);
+
+        if (!config.has(functionKey)) {
+            return false;
+        }
+
+        JsonNode funcNode = config.get(functionKey);
+        if (funcNode == null || !funcNode.isObject()) {
+            return false;
+        }
+
+        JsonNode enabledNode = funcNode.get("enabled");
+        if (enabledNode == null || !enabledNode.isBoolean()) {
+            return false;
+        }
+
+        return enabledNode.asBoolean();
+    }
+
+    /**
+     * 设置某个功能在指定私聊用户的启用状态。
+     */
+    public static boolean setFunctionEnabled(String userOpenId, String functionKey, boolean enabled, String operator) {
+        ObjectNode config = getFunctionConfig(userOpenId);
+
+        ObjectNode funcNode;
+        if (config.has(functionKey) && config.get(functionKey).isObject()) {
+            funcNode = (ObjectNode) config.get(functionKey);
+        } else {
+            funcNode = objectMapper.createObjectNode();
+        }
+
+        funcNode.put("enabled", enabled);
+        funcNode.put("operator", operator);
+        funcNode.put("time", LocalDateTime.now().format(dtf));
+
+        config.set(functionKey, funcNode);
+
+        return saveFunctionConfig(userOpenId, config);
+    }
+
+    /**
+     * 获取开启了某功能的所有私聊用户列表。
+     */
+    public static List<String> enabledUsers(String functionKey) {
+        return C2CRepository.queryEnabledUsers(functionKey);
+    }
+
+    /**
+     * 获取私聊用户的所有功能配置 JSON。
+     */
+    public static ObjectNode getRawFunctionConfig(String userOpenId) {
+        return getFunctionConfig(userOpenId);
+    }
+
+    public static FunctionInfo getFunctionInfo(String userOpenId, String functionKey) {
+        ObjectNode config = getFunctionConfig(userOpenId);
+
+        if (!config.has(functionKey)) {
+            return new FunctionInfo(false, null, null);
+        }
+
+        JsonNode funcNode = config.get(functionKey);
+        if (funcNode == null || !funcNode.isObject()) {
+            return new FunctionInfo(false, null, null);
+        }
+
+        boolean enabled = funcNode.has("enabled") && funcNode.get("enabled").asBoolean();
+        String operator = funcNode.has("operator") ? funcNode.get("operator").asText() : null;
+        String time = funcNode.has("time") ? funcNode.get("time").asText() : null;
+        return new FunctionInfo(enabled, operator, time);
+    }
+
     private static Set<String> parsePermissions(String permissionsString) {
         if (permissionsString == null || permissionsString.isBlank()) {
             return Set.of();
@@ -220,5 +333,8 @@ public class OfficialUsers {
 
     public record UserData(String userOpenId, PermissionRole role, Set<String> permissions,
                            boolean isBlocked, boolean isIgnored, boolean c2cPush) {
+    }
+
+    public record FunctionInfo(boolean enabled, String operator, String time) {
     }
 }

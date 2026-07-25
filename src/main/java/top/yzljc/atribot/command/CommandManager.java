@@ -143,7 +143,8 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_C2C_MESSAGE);
+                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_C2C_MESSAGE,
+                event.getMessage().getAttachments());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -167,7 +168,8 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_AT_MESSAGE);
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_AT_MESSAGE,
+                event.getMessage().getAttachments());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -197,7 +199,8 @@ public class CommandManager implements Listener {
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
         CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_MESSAGE);
+                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_MESSAGE,
+                event.getMessage().getAttachments());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
