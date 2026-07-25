@@ -20,7 +20,7 @@ final class ActiveMessageRateLimiter {
     private final Map<String, Deque<Long>> groupActiveTimestamps = new ConcurrentHashMap<>();
 
     void checkPerGroupActiveRate(String groupOpenId) {
-        Deque<Long> timestamps = groupActiveTimestamps.computeIfAbsent(groupOpenId, _ -> new ConcurrentLinkedDeque<>());
+        Deque<Long> timestamps = groupActiveTimestamps.computeIfAbsent(groupOpenId, ignored -> new ConcurrentLinkedDeque<>());
         long now = System.currentTimeMillis();
         long cutoff = now - PER_GROUP_WINDOW_MS;
         while (true) {
