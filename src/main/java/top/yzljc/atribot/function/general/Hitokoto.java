@@ -7,7 +7,6 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -34,7 +33,7 @@ public class Hitokoto implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of());
+        var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API, Map.of());
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             if (!d.isError()) {
                 sender.sendMessage(d.url(), MessageUtils.ImageType.URL);

@@ -13,7 +13,6 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.official.OfficialBot;
@@ -33,8 +32,6 @@ import java.util.Map;
  */
 @Slf4j
 public class HelpCommand implements CommandExecutor {
-
-    private static final String secret = Config.getInstance().getAtribotKeySecret();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -73,9 +70,8 @@ public class HelpCommand implements CommandExecutor {
 
             if (args.length > 0 && args[0].equals("-m")) {
                 ThreadManager.execute(() -> {
-                    String apiUrl = ResourcesProperties.HELP_API + "?key=" + secret;
                     try {
-                        var data = PreImageGenerate.dump(apiUrl, Map.of());
+                        var data = PreImageGenerate.dump(ResourcesProperties.HELP_API, Map.of());
                         if (data.isError()) {
                             String errMsg = data.errorMessage();
                             log.warn("获取帮助信息失败: {}", errMsg);

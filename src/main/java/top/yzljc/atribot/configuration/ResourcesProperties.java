@@ -136,4 +136,19 @@ public final class ResourcesProperties {
 
     // @ClassName EarthOnline
     public static final String EARTH_ONLINE_API = UGC_API + "/v2/atrimeow/earth-online";
+
+    // @ClassName LootService
+    public static final String LOOTS_API = UGC_API + "/v2/atrimeow/loots";
+
+    // @ClassName LootService
+    public static final String LOOTS_DRAW_CARD_API = UGC_API + "/v2/atrimeow/loots/draw-card";
+
+    // @ClassName LootService
+    public static final String LOOTS_OVERVIEW_CARD_API = UGC_API + "/v2/atrimeow/loots/overview-card";
+
+    // @ClassName LootAdminClient
+    public static final String LOOTS_ADMIN_ITEMS_API = UGC_API + "/v2/atrimeow/loots/admin/items";
+
+    // @ClassName LootAdminClient
+    public static final String LOOTS_ITEM_IMAGE_API = UGC_API + "/v2/atrimeow/loots/image";
 }

@@ -17,7 +17,6 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
@@ -35,8 +34,6 @@ import java.util.Map;
 
 @Slf4j
 public class PlayerProfile implements Listener, CommandExecutor {
-
-    private static final String secret = Config.getInstance().getAtribotKeySecret();
 
     private static final Object keyboard = TC.keyboard(List.of(
             List.of(new Button("c1", "绑定账号", "/verify ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -101,7 +98,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         if (key == null) return false;
 
         String messageId = sender.sendMessage("正在获取玩家数据喵，请稍等片刻！");
-        var d = PreImageGenerate.dump(ResourcesProperties.PLAYER_CARD_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of("player", key, "whitelist", isWhitelisted));
+        var d = PreImageGenerate.dump(ResourcesProperties.PLAYER_CARD_API, Map.of("player", key, "whitelist", isWhitelisted));
         sender.recall(messageId);
 
         if (d.url() == null) {

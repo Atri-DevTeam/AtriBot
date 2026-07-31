@@ -27,7 +27,6 @@ public class Calendar implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Calendar.class);
     private static final AtomicBoolean calendarPushInProgress = new AtomicBoolean(false);
-    private static final String secret = Config.getInstance().getAtribotKeySecret();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -43,8 +42,7 @@ public class Calendar implements CommandExecutor {
 
     public static void sendToSingleGroup(String targetGroupId) {
         try {
-            String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
-            var data = PreImageGenerate.dump(apiUrl, Map.of("system", false));
+            var data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
             if (!data.isError() && data.url() != null) {
                 GroupMessage.chatMessage(targetGroupId, data.url(), MessageUtils.ImageType.URL);
             } else {
@@ -66,8 +64,7 @@ public class Calendar implements CommandExecutor {
             }
 
             try {
-                String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
-                var data = PreImageGenerate.dump(apiUrl, Map.of("system", true));
+                var data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", true));
                 if (data.isError() || data.url() == null) {
                     String errMsg = data.errorMessage();
                     log.warn("日历推送失败: {}", errMsg);

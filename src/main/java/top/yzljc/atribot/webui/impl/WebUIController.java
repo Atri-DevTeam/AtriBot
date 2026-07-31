@@ -1,7 +1,10 @@
 package top.yzljc.atribot.webui.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
 import lombok.Data;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
@@ -14,6 +17,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.ImageReviewStatus;
@@ -22,7 +26,9 @@ import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
+import top.yzljc.atribot.function.official.loot.LootAdminClient;
 import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.function.general.Feedback;
@@ -36,6 +42,8 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -1671,5 +1679,188 @@ public class WebUIController {
     @Data
     public static class DeleteGalleryDTO {
         private String id;
+    }
+
+    // ==================== 抽卡系统管理 ====================
+
+    public static void listLootItems(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        JsonNode resp = LootAdminClient.listItems(page, pageSize);
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "抽卡目录服务暂不可用"));
+            return;
+        }
+        JsonNode data = resp.path("data");
+        if (data instanceof ObjectNode objectNode) {
+            objectNode.put("imageBaseUrl", ResourcesProperties.LOOTS_ITEM_IMAGE_API);
+        }
+        ctx.json(Result.success(data));
+    }
+
+    public static void createLootItem(Context ctx) {
+        String displayName = ctx.formParam("displayName");
+        String description = ctx.formParam("description");
+        UploadedFile file = ctx.uploadedFile("image");
+        if (isBlank(displayName) || file == null) {
+            ctx.json(Result.fail(400, "displayName 与 image 不能为空"));
+            return;
+        }
+
+        byte[] bytes;
+        try (InputStream is = file.content()) {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            ctx.json(Result.fail(400, "读取上传图片失败"));
+            return;
+        }
+
+        JsonNode resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "创建物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void updateLootItem(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        UpdateLootItemDTO dto = ctx.bodyAsClass(UpdateLootItemDTO.class);
+        JsonNode resp = LootAdminClient.updateItem(itemId, dto.getDisplayName(), dto.getDescription());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "更新物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void replaceLootItemImage(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        UploadedFile file = ctx.uploadedFile("image");
+        if (file == null) {
+            ctx.json(Result.fail(400, "image 不能为空"));
+            return;
+        }
+
+        byte[] bytes;
+        try (InputStream is = file.content()) {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            ctx.json(Result.fail(400, "读取上传图片失败"));
+            return;
+        }
+
+        JsonNode resp = LootAdminClient.replaceItemImage(itemId, bytes, file.filename(), file.contentType());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "更换物品卡图片失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void deleteLootItem(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        JsonNode resp = LootAdminClient.deleteItem(itemId);
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "删除物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void listCoinLeaderboard(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        List<LootRepository.CoinLeaderboardEntry> entries = LootRepository.getCoinLeaderboard(page, pageSize);
+        int total = LootRepository.countUsers();
+        ctx.json(Result.success(new CoinLeaderboardResult(entries, total, page, pageSize)));
+    }
+
+    public static void adjustUserCoins(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        AdjustCoinsDTO dto = ctx.bodyAsClass(AdjustCoinsDTO.class);
+        if (isBlank(dto.getOp()) || dto.getAmount() == null) {
+            ctx.json(Result.fail(400, "op 与 amount 不能为空"));
+            return;
+        }
+
+        boolean success = switch (dto.getOp()) {
+            case "set" -> LootRepository.setCoins(userId, dto.getAmount());
+            case "add" -> LootRepository.addCoins(userId, dto.getAmount());
+            case "remove" -> LootRepository.removeCoins(userId, dto.getAmount());
+            default -> false;
+        };
+
+        ctx.json(success ? Result.success(LootRepository.getCoins(userId)) : Result.fail(400, "操作失败，请检查 op 参数或余额"));
+    }
+
+    public static void listLootUsers(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        String search = ctx.queryParam("search");
+
+        List<LootRepository.UserLootsSummary> summaries = LootRepository.listUsers(search, page, pageSize);
+        int total = LootRepository.countUsersMatching(search);
+
+        List<LootUserListItemDTO> items = summaries.stream()
+                .map(s -> new LootUserListItemDTO(s.userId(), s.coins(), s.loots().size()))
+                .toList();
+        ctx.json(Result.success(new LootUserListResult(items, total, page, pageSize)));
+    }
+
+    public static void getUserLootsDetail(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        LootRepository.UserLootsSummary summary = LootRepository.getUserSummary(userId);
+        ctx.json(Result.success(new UserLootsDetailDTO(summary.userId(), summary.coins(), summary.loots())));
+    }
+
+    public static void grantUserLoot(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        GrantLootDTO dto = ctx.bodyAsClass(GrantLootDTO.class);
+        if (isBlank(dto.getItemId()) || isBlank(dto.getDisplayName())) {
+            ctx.json(Result.fail(400, "itemId 与 displayName 不能为空"));
+            return;
+        }
+        String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
+        LootRepository.LootRecord record = LootRepository.appendLoot(userId, dto.getItemId(), dto.getDisplayName(), way);
+        ctx.json(record != null ? Result.success(record) : Result.fail(500, "赠送物品失败"));
+    }
+
+    public static void revokeUserLoot(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        String itemId = ctx.pathParam("itemId");
+        boolean success = LootRepository.adminRemoveLoot(userId, itemId);
+        ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
+    }
+
+    public record CoinLeaderboardResult(List<LootRepository.CoinLeaderboardEntry> items, int total, int page, int pageSize) {
+    }
+
+    public record LootUserListItemDTO(String userId, int coins, int cardCount) {
+    }
+
+    public record LootUserListResult(List<LootUserListItemDTO> items, int total, int page, int pageSize) {
+    }
+
+    public record UserLootsDetailDTO(String userId, int coins, List<LootRepository.LootRecord> loots) {
+    }
+
+    @Data
+    public static class UpdateLootItemDTO {
+        private String displayName;
+        private String description;
+    }
+
+    @Data
+    public static class AdjustCoinsDTO {
+        private String op;
+        private Integer amount;
+    }
+
+    @Data
+    public static class GrantLootDTO {
+        private String itemId;
+        private String displayName;
+        private String way;
     }
 }

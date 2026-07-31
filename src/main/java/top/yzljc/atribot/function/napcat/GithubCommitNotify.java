@@ -162,8 +162,9 @@ public class GithubCommitNotify implements CommandExecutor {
             Map<String, Object> payload = parseJson(json);
             String repoNameForFilter = getSimpleRepoName(json);
 
-            String apiUrl = ResourcesProperties.COMMIT_DISPLAY_API + "?key=" + Config.getInstance().getAtribotKeySecret();
-            JsonNode resp = HttpService.postJson(apiUrl, payload);
+            String apiUrl = ResourcesProperties.COMMIT_DISPLAY_API;
+            JsonNode resp = HttpService.postJson(apiUrl, payload,
+                    "Authorization", "Bearer " + Config.getInstance().getAtribotKeySecret());
             if (resp == null || resp.path("status").asInt() != 200) {
                 log.error("CommitDisplay API 调用失败, url={}", apiUrl);
                 return;

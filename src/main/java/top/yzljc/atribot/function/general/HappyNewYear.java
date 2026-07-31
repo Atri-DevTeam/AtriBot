@@ -10,7 +10,6 @@ import top.yzljc.atribot.command.CommandSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -23,8 +22,7 @@ public class HappyNewYear implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String apiUrl = ResourcesProperties.HAPPY_NEW_YEAR_API + "?key=" + Config.getInstance().getAtribotKeySecret();
-        var data = PreImageGenerate.dump(apiUrl, Map.of());
+        var data = PreImageGenerate.dump(ResourcesProperties.HAPPY_NEW_YEAR_API, Map.of());
 
         if (data.isError()) {
             String errMsg = data.errorMessage();

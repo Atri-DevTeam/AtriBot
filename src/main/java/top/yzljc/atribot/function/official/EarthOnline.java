@@ -4,7 +4,6 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
@@ -23,8 +22,7 @@ public class EarthOnline implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender.getPlatform().equals(Platform.OFFICIAL_C2C) || sender.getPlatform().equals(Platform.OFFICIAL_GROUP)) {
-            String url = ResourcesProperties.EARTH_ONLINE_API + "?key=" + Config.getInstance().getAtribotKeySecret();
-            var d = PreImageGenerate.dump(url, Map.of());
+            var d = PreImageGenerate.dump(ResourcesProperties.EARTH_ONLINE_API, Map.of());
             if (!d.isError()) {
                 sender.sendMessage("欢迎来到地球ONLINE!", d.url(), ImageType.URL);
             } else {

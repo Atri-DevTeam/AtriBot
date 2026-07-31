@@ -5,7 +5,6 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
@@ -34,7 +33,7 @@ public class HypixelStatus implements CommandExecutor {
         String msgId = sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
 
         try {
-            var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API + "?key=" + Config.getInstance().getAtribotKeySecret(), Map.of());
+            var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, Map.of());
             if (data.isError()) {
                 sender.sendMessage(data.errorMessage());
                 return true;

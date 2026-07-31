@@ -23,6 +23,12 @@ import java.util.Map;
  */
 public class PreImageGenerate {
 
+    private static final String AUTH_HEADER = "Authorization";
+
+    private static String bearer() {
+        return "Bearer " + Config.getInstance().getAtribotKeySecret();
+    }
+
     private static volatile ImageHashCache hashCache;
 
     private static ImageHashCache getHashCache() {
@@ -68,8 +74,8 @@ public class PreImageGenerate {
 
     public static ImageDTO dump(String url) {
         JsonNode resp = HttpService.postJson(
-                ResourcesProperties.DUMP + "?key=" + Config.getInstance().getAtribotKeySecret(),
-                Map.of("url", url));
+                ResourcesProperties.DUMP,
+                Map.of("url", url), AUTH_HEADER, bearer());
 
         if (resp != null && resp.path("status").asInt() == 200) {
             String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
@@ -82,7 +88,7 @@ public class PreImageGenerate {
 
     public static ImageDTO dump(Map<String, ?> body) {
         JsonNode resp = HttpService.postJson(
-                ResourcesProperties.DUMP + "?key=" + Config.getInstance().getAtribotKeySecret(), body);
+                ResourcesProperties.DUMP, body, AUTH_HEADER, bearer());
 
         if (resp != null && resp.path("status").asInt() == 200) {
             String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
@@ -94,7 +100,7 @@ public class PreImageGenerate {
     }
 
     public static ImageDTO dump(String url, Map<String, ?> body) {
-        JsonNode resp = HttpService.postJson(url, body);
+        JsonNode resp = HttpService.postJson(url, body, AUTH_HEADER, bearer());
 
         if (resp == null || resp.path("status").asInt() != 200) {
             var err = ErrorReport.report(PreImageGenerate.class.getName(), new ServerNoResponseException());

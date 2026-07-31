@@ -10,7 +10,6 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
@@ -105,7 +104,7 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
             }
         }
 
-        var r = PreImageGenerate.dump(ResourcesProperties.SKB_VERSION_IMG_API + "?key=" + Config.getInstance().getAtribotKeySecret(), request);
+        var r = PreImageGenerate.dump(ResourcesProperties.SKB_VERSION_IMG_API, request);
         if (sender != null) {
             if (r.url() == null || r.isError()) {
                 sender.sendMessage(r.errorMessage());

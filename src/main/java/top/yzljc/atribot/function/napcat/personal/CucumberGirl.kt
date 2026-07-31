@@ -4,7 +4,6 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils
 import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
-import top.yzljc.atribot.configuration.Config
 import top.yzljc.atribot.configuration.LoadIllegalWords
 import top.yzljc.atribot.configuration.ResourcesProperties
 import top.yzljc.atribot.function.general.impl.PreImageGenerate
@@ -47,7 +46,7 @@ object CucumberGirl : CommandExecutor {
         }
         val req = mapOf("text" to text)
         val data = PreImageGenerate.dump(
-            ResourcesProperties.GIRL_TEXT_IMG + "?key=" + Config.getInstance().atribotKeySecret,
+            ResourcesProperties.GIRL_TEXT_IMG,
             req
         )
         if (data == null) {

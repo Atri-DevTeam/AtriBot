@@ -36,4 +36,6 @@ public class Properties {
     public static final String SKYBLOCK_CACHE = "data/skyblock-cache.json";
 
     public static final String CHAT_PINNED = "data/chat-pinned.json";
+
+    public static final String COINS_MIGRATION_FLAG = "data/loots-coins-migration-done.flag";
 }

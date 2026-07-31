@@ -111,6 +111,19 @@ public class WebUIRouter {
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
         server.get("/webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
 
+        // 抽卡系统管理
+        server.get("/webui/api/loot/items", WebUIController::listLootItems);
+        server.post("/webui/api/loot/items", WebUIController::createLootItem);
+        server.put("/webui/api/loot/items/{itemId}", WebUIController::updateLootItem);
+        server.post("/webui/api/loot/items/{itemId}/image", WebUIController::replaceLootItemImage);
+        server.delete("/webui/api/loot/items/{itemId}", WebUIController::deleteLootItem);
+        server.get("/webui/api/loot/coins/leaderboard", WebUIController::listCoinLeaderboard);
+        server.post("/webui/api/loot/coins/{userId}", WebUIController::adjustUserCoins);
+        server.get("/webui/api/loot/users", WebUIController::listLootUsers);
+        server.get("/webui/api/loot/users/{userId}", WebUIController::getUserLootsDetail);
+        server.post("/webui/api/loot/users/{userId}/grant", WebUIController::grantUserLoot);
+        server.delete("/webui/api/loot/users/{userId}/loots/{itemId}", WebUIController::revokeUserLoot);
+
         server.error(404, WebUIRouter::spaFallback);
     }
 

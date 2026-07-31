@@ -7,7 +7,6 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
@@ -51,7 +50,7 @@ public final class BanTracker {
             }
         }
 
-        String url = ResourcesProperties.BAN_TRACKER + "?key=" + Config.getInstance().getAtribotKeySecret() + "&" + System.currentTimeMillis();
+        String url = ResourcesProperties.BAN_TRACKER + "?" + System.currentTimeMillis();
         Map<String, String> req = Map.of(
                 "window", type
         );

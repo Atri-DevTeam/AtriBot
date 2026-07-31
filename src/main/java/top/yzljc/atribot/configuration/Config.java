@@ -179,6 +179,10 @@ public class Config {
     @Getter
     private int imageSourcePendingLimit;
 
+    // ########## 抽卡(Loots)设置区域 ##########
+    @Getter
+    private String lootsAdminToken;
+
     private Config() {
         load();
     }
@@ -303,6 +307,9 @@ public class Config {
             this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
             this.imageSourceToken = yaml.getString("image-source.token", "null");
             this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);
+
+            // ########## 抽卡(Loots)设置区域 ##########
+            this.lootsAdminToken = yaml.getString("loots.admin-token", "null");
 
             log.info("配置文件加载成功");
 
