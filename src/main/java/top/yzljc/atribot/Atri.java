@@ -30,6 +30,7 @@ import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.function.general.*;
+import top.yzljc.atribot.function.general.impl.DeliveryFailureReporter;
 import top.yzljc.atribot.function.napcat.*;
 import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
@@ -194,6 +195,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
+        EventManager.getInstance().registerEvents(new DeliveryFailureReporter());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
         RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
         EventManager.getInstance().registerEvents(rockPaperScissorsGame);

@@ -16,6 +16,18 @@ debug-mode: false
 listen-port: 1234
 # API
 api-url: null
+
+# ========== 图片下发调度 ==========
+# 生图端会在返回 uuid 的同时给一个 way 字段（api / oss），告诉本端这一张该从哪个根节点取。
+# 正常情况下永远是 api（走生图端自己的带宽，不产生 OSS 下行费用）；
+# 只有生图端被限速或带宽打满时才会给 oss，把这段峰值流量甩到 OSS 上。
+delivery:
+  # way=oss 时使用的根节点。必须与生图端 aliyun-oss 的 public-base-url + object-prefix + 通道名对齐，
+  # 例如生图端 public-base-url=https://cdn.example.com、object-prefix=atrimeow，这里就填
+  #   https://cdn.example.com/atrimeow/dump
+  # 留空则忽略 way 一律走 api —— 图片在生图端本机也留了一份，只是少了这层卸载，不会失效。
+  oss-dump-base-url: "null"
+
 # MySQL 数据库配置
 mysql:
   host: "localhost"
@@ -182,6 +194,9 @@ image-source:
   # 图片浏览地址前缀，WebUI 用 <view-base-url>/<uuid> 展示图片，例如 /imagesource/get/{uuid}
   # 留空则回退到平台原始 CDN 链接
   view-base-url: "https://qq-ugc.yzljc.top/imagesource/get"
+  # 下发路线查询前缀。发图给 QQ 之前 GET <deliver-url>/<uuid>，远端回 {way, url}：
+  # way=oss 时它已经把这张镜像到 OSS 并给出公网地址，直接用；留空则一律走 view-base-url
+  deliver-url: "https://qq-ugc.yzljc.top/imagesource/deliver"
   # 共享密钥。投稿上报/删除远端图片时作为 Authorization: Bearer <token> 发送
   token: "null"
   # 单个用户同时处于未审核状态的投稿数量上限

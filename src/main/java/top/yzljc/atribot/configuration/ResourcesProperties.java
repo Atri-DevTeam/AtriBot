@@ -17,6 +17,12 @@ public final class ResourcesProperties {
 
     public static final String DUMP = API + "/v2/atrimeow/image-dump";
 
+    // @ClassName DeliveryFailureReporter —— 生图端与 UGC 端各有一份独立的调度状态，
+    // 上报要两边都打；两个地址相同时会自动去重
+    public static final String[] DELIVERY_REPORT = API.equals(UGC_API)
+            ? new String[]{API + "/v2/atrimeow/delivery/report"}
+            : new String[]{API + "/v2/atrimeow/delivery/report", UGC_API + "/v2/atrimeow/delivery/report"};
+
     // @ClassName RconHandler
     public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";
 
