@@ -38,7 +38,7 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
-    api("ch.qos.logback:logback-classic:1.6.0")
+    api("ch.qos.logback:logback-classic:1.6.1")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
 
