@@ -96,6 +96,8 @@ public class Config {
     private String verifyHost;
     @Getter
     private String verifyKey;
+    @Getter
+    private String US_API;
     private java.util.Properties emailProperties;
 
     // ########## 官方机器人配置参数 ##########
@@ -177,6 +179,10 @@ public class Config {
     @Getter
     private int imageSourcePendingLimit;
 
+    // ########## 抽卡(Loots)设置区域 ##########
+    @Getter
+    private String lootsAdminToken;
+
     private Config() {
         load();
     }
@@ -249,6 +255,7 @@ public class Config {
             this.wakeupImgLink = yaml.getString("function.wakeup-image-link", "null");
             this.keywordsHitokoto = yaml.getStringList("function.keywords-hitokoto").toArray(new String[0]);
             this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
+            this.US_API = yaml.getString("function.us-api", "null");
             // -------- Email 配置区域 ---------
             this.emailEnabled = yaml.getBoolean("email.enabled", false);
             this.emailUsername = yaml.getString("email.username", "");
@@ -300,6 +307,9 @@ public class Config {
             this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
             this.imageSourceToken = yaml.getString("image-source.token", "null");
             this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);
+
+            // ########## 抽卡(Loots)设置区域 ##########
+            this.lootsAdminToken = yaml.getString("loots.admin-token", "null");
 
             log.info("配置文件加载成功");
 

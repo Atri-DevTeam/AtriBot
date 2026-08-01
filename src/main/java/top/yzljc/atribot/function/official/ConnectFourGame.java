@@ -98,6 +98,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
     @EventHandler
     public void onButtonCallback(OfficialButtonInteractionEvent event) {
+        if (event.shouldIgnore()) return;
         String value = event.getButtonValue();
         if (value == null || !value.startsWith("drop:")) return;
 

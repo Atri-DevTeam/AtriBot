@@ -1,6 +1,7 @@
 package top.yzljc.atribot.event.events;
 
 import lombok.Getter;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.event.Event;
@@ -45,5 +46,10 @@ public class OfficialGroupMessageCreateEvent extends Event {
 
     public String sendMessage(Markdown markdown, Object buttons) {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, buttons);
+    }
+
+    public boolean shouldIgnore() {
+        if (OfficialGroups.isGroupBlacklisted(this.groupId))  return true;
+        return this.user.isBlocked();
     }
 }

@@ -40,7 +40,7 @@ public class MusicCommand implements CommandExecutor {
             sender.sendMessage("无效音乐");
             return true;
         }
-        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), FileType.FILE, url);
+        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), FileType.AUDIO, url);
         return true;
     }
 }

@@ -108,6 +108,21 @@ public final class AsyncC2CChat {
     }
 
     /**
+     * 异步引用回复单聊纯文本消息
+     *
+     * <p>与被动回复（replyMessage）不同，这里发的是带 message_reference 的主动消息，
+     * 客户端会把被引用的那条渲染成可点的引用块。
+     *
+     * @param openId  用户 openId
+     * @param refIdx  被引用消息的索引 ID
+     * @param content 引用回复的文本内容
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> refMessage(String openId, String refIdx, String content) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().textRef(content, refIdx));
+    }
+
+    /**
      * 异步回复单聊 Markdown 消息
      *
      * @param openId   用户 openId
@@ -256,6 +271,9 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> streamDeltas(String openId, List<Markdown> markdownDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return CompletableFuture.completedFuture(null);
+        }
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, null,
@@ -273,6 +291,10 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyStreamDeltas(String openId, String msgId, List<Markdown> markdownDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return service().sendPrivateMessageAsync(openId,
+                    service().getBodyFactory().replyText(msgId, ChatService.emergencyPausedMessage()));
+        }
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, msgId, null,
@@ -290,6 +312,10 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventStreamDeltas(String openId, String eventId, List<Markdown> markdownDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return service().sendPrivateMessageAsync(openId,
+                    service().getBodyFactory().eventText(eventId, ChatService.emergencyPausedMessage()));
+        }
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, eventId,
@@ -306,6 +332,9 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> streamTextDeltas(String openId, List<String> textDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return CompletableFuture.completedFuture(null);
+        }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, null,
                 PrivateStreamMessage.CONTENT_TYPE_TEXT,
@@ -322,6 +351,10 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyTextStreamDeltas(String openId, String msgId, List<String> textDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return service().sendPrivateMessageAsync(openId,
+                    service().getBodyFactory().replyText(msgId, ChatService.emergencyPausedMessage()));
+        }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, msgId, null,
                 PrivateStreamMessage.CONTENT_TYPE_TEXT,
@@ -338,6 +371,10 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventTextStreamDeltas(String openId, String eventId, List<String> textDeltas) {
+        if (ChatService.isEmergencyPaused()) {
+            return service().sendPrivateMessageAsync(openId,
+                    service().getBodyFactory().eventText(eventId, ChatService.emergencyPausedMessage()));
+        }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, eventId,
                 PrivateStreamMessage.CONTENT_TYPE_TEXT,

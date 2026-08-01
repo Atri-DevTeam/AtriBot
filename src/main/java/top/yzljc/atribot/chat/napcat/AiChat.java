@@ -153,12 +153,6 @@ public final class AiChat {
             lastAccess = Instant.now();
 
             StringBuilder prompt = new StringBuilder();
-            prompt.append("（亚托莉的回应准则：")
-                    .append("看着主人刚说完的这句话来回应；")
-                    .append("主人换新话题就跟着转，不纠结之前聊的内容；")
-                    .append("绝不复读主人的话，那太不自然了；")
-                    .append("不聊自己的身份背景，好好陪主人聊天就好。）")
-                    .append('\n');
             if (!turns.isEmpty()) {
                 prompt.append("\n最近对话：\n");
                 appendRecentTurns(prompt);

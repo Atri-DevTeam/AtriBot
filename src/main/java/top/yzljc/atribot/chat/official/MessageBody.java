@@ -26,6 +26,12 @@ public class MessageBody {
     private Object markdown;
     
     private Object keyboard;
+
+    /**
+     * 仅私聊可用，手机端可以完整显示，电脑端有的能显示一条，有的什么也不显示
+     */
+    @JsonProperty("prompt_keyboard")
+    private Object promptKeyboard;
     
     private Object ark;
     

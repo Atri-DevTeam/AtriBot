@@ -23,11 +23,17 @@ public class Properties {
 
     public static final String HYPIXEL_ANNOUNCEMENTS = "hypixel_announcements.json";
 
+    public static final String HYPIXEL_ALPHA_FORUMS = "hypixel_alpha_forums.json";
+
     public static final String MINECRAFT_NEWS = "news_history.json";
 
     public static final String MOJIRA_CACHE = "data/mojira-cache.json";
 
     public static final String DI_ZHEN_DATA = "data/di-zhen-data.json";
 
-    public static final String HASH_DATA = "data/img_hashes.json";
+    public static final String SKYBLOCK_CACHE = "data/skyblock-cache.json";
+
+    public static final String CHAT_PINNED = "data/chat-pinned.json";
+
+    public static final String COINS_MIGRATION_FLAG = "data/loots-coins-migration-done.flag";
 }

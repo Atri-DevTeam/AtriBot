@@ -7,7 +7,6 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
@@ -28,7 +27,7 @@ import java.util.Set;
  */
 public final class BanTracker {
 
-    private static final Set<String> VALID_TYPES = Set.of("30min", "1h", "3h", "24h");
+    private static final Set<String> VALID_TYPES = Set.of("30min", "1h", "3h", "24h", "7d", "30d");
 
     public static boolean handle(CommandSender sender, Command command, String label, String[] args) {
 
@@ -51,7 +50,7 @@ public final class BanTracker {
             }
         }
 
-        String url = ResourcesProperties.BAN_TRACKER + "?key=" + Config.getInstance().getAtribotKeySecret() + "&" + System.currentTimeMillis();
+        String url = ResourcesProperties.BAN_TRACKER + "?" + System.currentTimeMillis();
         Map<String, String> req = Map.of(
                 "window", type
         );
@@ -76,6 +75,10 @@ public final class BanTracker {
                                 new Button("c2", "1小时", "/bantracker 1h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "3小时", "/bantracker 3h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c3", "24小时", "/bantracker 24h", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                        ),
+                        List.of(
+                                new Button("c5", "7天", "/bantracker 7d", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c6", "30天", "/bantracker 30d", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                         )
                 )
         );

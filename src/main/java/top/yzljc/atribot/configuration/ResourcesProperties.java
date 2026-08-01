@@ -13,7 +13,9 @@ public final class ResourcesProperties {
 
     private static final String UGC_API = Config.getInstance().getUgcApiUrl();
 
-    public static final String DUMP = UGC_API + "/v2/atrimeow/image-dump";
+    private static final String US_API = Config.getInstance().getUS_API();
+
+    public static final String DUMP = API + "/v2/atrimeow/image-dump";
 
     // @ClassName RconHandler
     public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";
@@ -99,8 +101,8 @@ public final class ResourcesProperties {
     // @ClassName PingCommand
     public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
 
-    // @ClassName PlayerProfile
-    public static final String PLAYER_GAMESTATS_UUID_API = "https://www.yzljc.top/data/api/v2/player/gamestats/uuid/{uuid}";
+    // @ClassName SkyblockResourceChecker
+    public static final String SKB_VERSION_CHECK = "https://api.hypixel.net/v2/resources/packs";
 
     // @ClassName PlayerProfile
     public static final String PLAYER_WEB_QUERY = "https://www.yzljc.top/mc/query/";
@@ -122,4 +124,31 @@ public final class ResourcesProperties {
 
     // @ClassName AnanGirlEmoji
     public static final String ANAN_TEXT_IMG = UGC_API + "/v2/atrimeow/anan-emoji-text";
+
+    // @ClassName PackVersion
+    public static final String PACK_VERSION_API = US_API + "/mcmeta/versions/data.json";
+
+    // @ClassName SkyblockResourceChecker
+    public static final String SKB_VERSION_IMG_API = UGC_API + "/v2/atrimeow/skyblock-resource-pack";
+
+    // @ClassName Hitokoto
+    public static final String HITOKOTO_API = UGC_API + "/v2/atrimeow/hitokoto";
+
+    // @ClassName EarthOnline
+    public static final String EARTH_ONLINE_API = UGC_API + "/v2/atrimeow/earth-online";
+
+    // @ClassName LootService
+    public static final String LOOTS_API = UGC_API + "/v2/atrimeow/loots";
+
+    // @ClassName LootService
+    public static final String LOOTS_DRAW_CARD_API = UGC_API + "/v2/atrimeow/loots/draw-card";
+
+    // @ClassName LootService
+    public static final String LOOTS_OVERVIEW_CARD_API = UGC_API + "/v2/atrimeow/loots/overview-card";
+
+    // @ClassName LootAdminClient
+    public static final String LOOTS_ADMIN_ITEMS_API = UGC_API + "/v2/atrimeow/loots/admin/items";
+
+    // @ClassName LootAdminClient
+    public static final String LOOTS_ITEM_IMAGE_API = UGC_API + "/v2/atrimeow/loots/image";
 }

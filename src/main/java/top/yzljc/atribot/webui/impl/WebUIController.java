@@ -1,7 +1,10 @@
 package top.yzljc.atribot.webui.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
 import lombok.Data;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
@@ -14,13 +17,18 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
+import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
+import top.yzljc.atribot.function.official.loot.LootAdminClient;
 import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.function.general.Feedback;
@@ -34,6 +42,8 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -70,11 +80,47 @@ public class WebUIController {
         ctx.json(Result.success(groups));
     }
 
+    /** 「聊天」页会话列表：群聊 + 私聊合并，各带最后一条消息预览 */
+    public static void listChatConversations(Context ctx) {
+        int limit = parseInt(ctx.queryParam("limit"), 300);
+        ctx.json(Result.success(ChatContentRecord.fetchConversations(limit)));
+    }
+
+    /**
+     * 置顶是 WebUI 自己的展示偏好，跟消息记录无关，所以单独走一组接口，
+     * 不往 ConversationRecord 里塞字段。返回的是会话 key 列表（group:xxx / c2c:xxx）。
+     */
+    public static void listChatPinned(Context ctx) {
+        ctx.json(Result.success(ChatPinnedStore.list()));
+    }
+
+    public static void setChatPinned(Context ctx) {
+        ChatPinnedDTO dto = ctx.bodyAsClass(ChatPinnedDTO.class);
+        if (isBlank(dto.getKey())) {
+            ctx.json(Result.fail(400, "key 不能为空"));
+            return;
+        }
+        ChatPinnedStore.setPinned(dto.getKey(), dto.isPinned());
+        ctx.json(Result.success(ChatPinnedStore.list()));
+    }
+
+    @Data
+    public static class ChatPinnedDTO {
+        private String key;
+        private boolean pinned;
+    }
+
     public static void fetchGroupMessages(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         ctx.json(Result.success(ChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
+    }
+
+    /** 群成员列表（实为「在本群发过言的人」，官方 API 不提供真实名册） */
+    public static void listGroupMembers(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        ctx.json(Result.success(ChatContentRecord.fetchGroupMembers(groupOpenId)));
     }
 
     public static void locateGroupMessageByRefIdx(Context ctx) {
@@ -729,6 +775,28 @@ public class WebUIController {
         ctx.json(Result.success(ChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize)));
     }
 
+    /** 私聊引用来源定位，与 {@link #locateGroupMessageByRefIdx} 同构 */
+    public static void locateC2CMessageByRefIdx(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        String msgIdx = firstNonBlank(ctx.queryParam("msgIdx"), ctx.queryParam("refIdx"));
+        String refAuthor = ctx.queryParam("refAuthor");
+        String refContent = ctx.queryParam("refContent");
+        String refAttachments = ctx.queryParam("refAttachments");
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
+        long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
+        if (isBlank(msgIdx) && isBlank(refContent) && isBlank(refAttachments)) {
+            ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
+            return;
+        }
+        var result = ChatContentRecord.locateC2CMessageByReference(
+                userOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
+        if (result == null) {
+            ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
+            return;
+        }
+        ctx.json(Result.success(result));
+    }
+
     public static void sendC2CMessage(Context ctx) {
         SendC2CMessageDTO dto = ctx.bodyAsClass(SendC2CMessageDTO.class);
         if (isBlank(dto.getUserOpenId())) {
@@ -737,9 +805,18 @@ public class WebUIController {
         }
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
+        String refId = dto.getRefMessageId();
         String messageId;
         try {
-            if (replyId != null && !replyId.isBlank()) {
+            if (refId != null && !refId.isBlank()) {
+                // 引用回复：发送带 message_reference 的主动消息，与群聊同逻辑
+                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                messageId = C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent());
+                if (messageId != null) {
+                    ChatContentRecord.patchC2CRefDisplayData(messageId,
+                            dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
+                }
+            } else if (replyId != null && !replyId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
                         ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
@@ -839,6 +916,10 @@ public class WebUIController {
         private String imageType;
         private String imageValue;
         private String replyMessageId;
+        private String refMessageId;
+        private String refAuthor;
+        private String refContent;
+        private String refAttachments;
     }
 
     @Data
@@ -1013,6 +1094,107 @@ public class WebUIController {
     public record ErrorListResult(List<ErrorItemDTO> items, int total, int page, int pageSize) {}
 
     public record ErrorStatsDTO(int total, int last24h, int last7d, Map<String, Integer> topExceptionTypes) {}
+
+    // ═══════════════ 发送日志 ═══════════════
+
+    public static void listOfficialSendLogs(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        if (pageSize > 200) {
+            pageSize = 200;
+        }
+        String type = normalizeSendLogType(ctx.queryParam("type"));
+        String keyword = ctx.queryParam("keyword");
+
+        int total = OfficialSendLogRepository.count(type, keyword);
+        List<SendLogItemDTO> items = OfficialSendLogRepository.findPaginated(page, pageSize, type, keyword)
+                .stream()
+                .map(WebUIController::toSendLogItem)
+                .toList();
+        ctx.json(Result.success(new SendLogListResult(items, total, page, pageSize)));
+    }
+
+    public static void getOfficialSendLog(Context ctx) {
+        long id = parseLong(ctx.pathParam("id"), -1L);
+        if (id <= 0) {
+            ctx.json(Result.fail(400, "日志 id 无效"));
+            return;
+        }
+        OfficialSendLogDTO log = OfficialSendLogRepository.findById(id);
+        if (log == null) {
+            ctx.json(Result.fail(404, "未找到该发送日志"));
+            return;
+        }
+        ctx.json(Result.success(toSendLogDetail(log)));
+    }
+
+    public static void officialSendLogStats(Context ctx) {
+        var stats = OfficialSendLogRepository.stats();
+        ctx.json(Result.success(new SendLogStatsDTO(stats.all(), stats.send(), stats.response(), stats.error())));
+    }
+
+    private static String normalizeSendLogType(String raw) {
+        if (isBlank(raw) || "ALL".equalsIgnoreCase(raw)) {
+            return null;
+        }
+        String type = raw.trim().toUpperCase();
+        return switch (type) {
+            case OfficialSendLogRepository.TYPE_SEND,
+                 OfficialSendLogRepository.TYPE_RESPONSE,
+                 OfficialSendLogRepository.TYPE_ERROR -> type;
+            default -> null;
+        };
+    }
+
+    private static SendLogItemDTO toSendLogItem(OfficialSendLogDTO log) {
+        return new SendLogItemDTO(
+                log.getId(),
+                log.getTraceId(),
+                log.getEntryType(),
+                log.getScene(),
+                log.getMethod(),
+                log.getUrl(),
+                log.getRequestJson(),
+                log.getResponseStatus(),
+                log.getResponseBody(),
+                log.getErrorCode(),
+                log.getErrorReason(),
+                log.getErrorMessage(),
+                formatFeedbackTime(log.getCreateTime())
+        );
+    }
+
+    private static SendLogDetailDTO toSendLogDetail(OfficialSendLogDTO log) {
+        return new SendLogDetailDTO(
+                log.getId(),
+                log.getTraceId(),
+                log.getEntryType(),
+                log.getScene(),
+                log.getMethod(),
+                log.getUrl(),
+                log.getRequestJson(),
+                log.getResponseStatus(),
+                log.getResponseBody(),
+                log.getErrorCode(),
+                log.getErrorReason(),
+                log.getErrorMessage(),
+                formatFeedbackTime(log.getCreateTime())
+        );
+    }
+
+    public record SendLogItemDTO(long id, String traceId, String entryType, String scene, String method, String url,
+                                 String requestJson, Integer responseStatus, String responseBody,
+                                 Integer errorCode, String errorReason, String errorMessage,
+                                 String createTime) {}
+
+    public record SendLogDetailDTO(long id, String traceId, String entryType, String scene, String method, String url,
+                                   String requestJson, Integer responseStatus, String responseBody,
+                                   Integer errorCode, String errorReason, String errorMessage,
+                                   String createTime) {}
+
+    public record SendLogListResult(List<SendLogItemDTO> items, int total, int page, int pageSize) {}
+
+    public record SendLogStatsDTO(int all, int send, int response, int error) {}
 
     // ═══════════════ 用户列表 ═══════════════
 
@@ -1497,5 +1679,188 @@ public class WebUIController {
     @Data
     public static class DeleteGalleryDTO {
         private String id;
+    }
+
+    // ==================== 抽卡系统管理 ====================
+
+    public static void listLootItems(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        JsonNode resp = LootAdminClient.listItems(page, pageSize);
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "抽卡目录服务暂不可用"));
+            return;
+        }
+        JsonNode data = resp.path("data");
+        if (data instanceof ObjectNode objectNode) {
+            objectNode.put("imageBaseUrl", ResourcesProperties.LOOTS_ITEM_IMAGE_API);
+        }
+        ctx.json(Result.success(data));
+    }
+
+    public static void createLootItem(Context ctx) {
+        String displayName = ctx.formParam("displayName");
+        String description = ctx.formParam("description");
+        UploadedFile file = ctx.uploadedFile("image");
+        if (isBlank(displayName) || file == null) {
+            ctx.json(Result.fail(400, "displayName 与 image 不能为空"));
+            return;
+        }
+
+        byte[] bytes;
+        try (InputStream is = file.content()) {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            ctx.json(Result.fail(400, "读取上传图片失败"));
+            return;
+        }
+
+        JsonNode resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "创建物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void updateLootItem(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        UpdateLootItemDTO dto = ctx.bodyAsClass(UpdateLootItemDTO.class);
+        JsonNode resp = LootAdminClient.updateItem(itemId, dto.getDisplayName(), dto.getDescription());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "更新物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void replaceLootItemImage(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        UploadedFile file = ctx.uploadedFile("image");
+        if (file == null) {
+            ctx.json(Result.fail(400, "image 不能为空"));
+            return;
+        }
+
+        byte[] bytes;
+        try (InputStream is = file.content()) {
+            bytes = is.readAllBytes();
+        } catch (IOException e) {
+            ctx.json(Result.fail(400, "读取上传图片失败"));
+            return;
+        }
+
+        JsonNode resp = LootAdminClient.replaceItemImage(itemId, bytes, file.filename(), file.contentType());
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "更换物品卡图片失败"));
+            return;
+        }
+        ctx.json(Result.success(resp.path("data")));
+    }
+
+    public static void deleteLootItem(Context ctx) {
+        String itemId = ctx.pathParam("itemId");
+        JsonNode resp = LootAdminClient.deleteItem(itemId);
+        if (resp == null || resp.path("status").asInt() != 200) {
+            ctx.json(Result.fail(502, "删除物品卡失败"));
+            return;
+        }
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void listCoinLeaderboard(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        List<LootRepository.CoinLeaderboardEntry> entries = LootRepository.getCoinLeaderboard(page, pageSize);
+        int total = LootRepository.countUsers();
+        ctx.json(Result.success(new CoinLeaderboardResult(entries, total, page, pageSize)));
+    }
+
+    public static void adjustUserCoins(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        AdjustCoinsDTO dto = ctx.bodyAsClass(AdjustCoinsDTO.class);
+        if (isBlank(dto.getOp()) || dto.getAmount() == null) {
+            ctx.json(Result.fail(400, "op 与 amount 不能为空"));
+            return;
+        }
+
+        boolean success = switch (dto.getOp()) {
+            case "set" -> LootRepository.setCoins(userId, dto.getAmount());
+            case "add" -> LootRepository.addCoins(userId, dto.getAmount());
+            case "remove" -> LootRepository.removeCoins(userId, dto.getAmount());
+            default -> false;
+        };
+
+        ctx.json(success ? Result.success(LootRepository.getCoins(userId)) : Result.fail(400, "操作失败，请检查 op 参数或余额"));
+    }
+
+    public static void listLootUsers(Context ctx) {
+        int page = parseInt(ctx.queryParam("page"), 1);
+        int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
+        String search = ctx.queryParam("search");
+
+        List<LootRepository.UserLootsSummary> summaries = LootRepository.listUsers(search, page, pageSize);
+        int total = LootRepository.countUsersMatching(search);
+
+        List<LootUserListItemDTO> items = summaries.stream()
+                .map(s -> new LootUserListItemDTO(s.userId(), s.coins(), s.loots().size()))
+                .toList();
+        ctx.json(Result.success(new LootUserListResult(items, total, page, pageSize)));
+    }
+
+    public static void getUserLootsDetail(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        LootRepository.UserLootsSummary summary = LootRepository.getUserSummary(userId);
+        ctx.json(Result.success(new UserLootsDetailDTO(summary.userId(), summary.coins(), summary.loots())));
+    }
+
+    public static void grantUserLoot(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        GrantLootDTO dto = ctx.bodyAsClass(GrantLootDTO.class);
+        if (isBlank(dto.getItemId()) || isBlank(dto.getDisplayName())) {
+            ctx.json(Result.fail(400, "itemId 与 displayName 不能为空"));
+            return;
+        }
+        String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
+        LootRepository.LootRecord record = LootRepository.appendLoot(userId, dto.getItemId(), dto.getDisplayName(), way);
+        ctx.json(record != null ? Result.success(record) : Result.fail(500, "赠送物品失败"));
+    }
+
+    public static void revokeUserLoot(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        String itemId = ctx.pathParam("itemId");
+        boolean success = LootRepository.adminRemoveLoot(userId, itemId);
+        ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
+    }
+
+    public record CoinLeaderboardResult(List<LootRepository.CoinLeaderboardEntry> items, int total, int page, int pageSize) {
+    }
+
+    public record LootUserListItemDTO(String userId, int coins, int cardCount) {
+    }
+
+    public record LootUserListResult(List<LootUserListItemDTO> items, int total, int page, int pageSize) {
+    }
+
+    public record UserLootsDetailDTO(String userId, int coins, List<LootRepository.LootRecord> loots) {
+    }
+
+    @Data
+    public static class UpdateLootItemDTO {
+        private String displayName;
+        private String description;
+    }
+
+    @Data
+    public static class AdjustCoinsDTO {
+        private String op;
+        private Integer amount;
+    }
+
+    @Data
+    public static class GrantLootDTO {
+        private String itemId;
+        private String displayName;
+        private String way;
     }
 }

@@ -32,7 +32,7 @@ public class TokenManager {
     }
 
     private void refreshToken() {
-        String tokenUrl = "https://bots.qq.com/app/getAppAccessToken";
+        String tokenUrl = "https://api.bot.qq.com/app/getAppAccessToken";
 
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("appId", appId);

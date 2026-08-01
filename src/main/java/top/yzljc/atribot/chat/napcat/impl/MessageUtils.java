@@ -10,8 +10,8 @@ import java.util.*;
 
 @Slf4j
 public class MessageUtils {
-    private static final String FAKE_UIN = "3889798968";
-    private static final String FAKE_NAME = "亚托莉喵";
+    private static final String FAKE_UIN = "970717559";
+    private static final String FAKE_NAME = "高性能全自动家庭闯祸机";
     private static final MessageSegment AT_GAP = new MessageSegment("text", Map.of("text", " "));
 
     public static String groupMessage(String groupId, Collection<MessageSegment> data) {
@@ -255,6 +255,18 @@ public class MessageUtils {
         data.put("uin", uin);
         data.put("name", name);
         data.put("content", List.of(new MessageSegment("image", Map.of("file", url))));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createVideoNodeSegment(String url) {
+        return createVideoNodeSegment(url, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createVideoNodeSegment(String url, String uin, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uin);
+        data.put("name", name);
+        data.put("content", List.of(new MessageSegment("video", Map.of("file", url))));
         return new MessageSegment("node", data);
     }
 

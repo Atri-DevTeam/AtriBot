@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.official.Markdown;
@@ -8,10 +9,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.official.BanTracker;
-import top.yzljc.atribot.function.official.minecraft.DiceImpl;
-import top.yzljc.atribot.function.official.minecraft.MinecraftCapes;
-import top.yzljc.atribot.function.official.minecraft.MinecraftVersionCheck;
-import top.yzljc.atribot.function.official.minecraft.PackMcmetaGenerator;
+import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.Platform;
 
 /**
@@ -29,7 +27,8 @@ public class MinecraftCommand implements CommandExecutor {
                     "2. " + Markdown.enterCommand("/mc ver", "/mc ver") + " - 查看当前最新的MC版本\n\n" +
                     "3. " + Markdown.enterCommand("/bantracker", "/bantracker") + " - Hypixel BanTracker查询\n\n" +
                     "4. " + Markdown.enterCommand("/mc capes", "/mc capes") + " - Minecraft全部Capes使用情况\n\n" +
-                    "5. " + Markdown.enterCommand("/mc pack ", "/mc pack [版本]") + " - 生成MC资源包版本信息"
+                    "5. " + Markdown.enterCommand("/mc pack ", "/mc pack [版本]") + " - 生成MC资源包版本信息\n\n" +
+                    "6. " + Markdown.enterCommand("/mc sr", "/mc sr") + " - Hypixel Skyblock资源包版本信息"
     );
 
     @Override
@@ -56,7 +55,7 @@ public class MinecraftCommand implements CommandExecutor {
 
         switch (subCommand) {
             case "version", "ver" -> {
-                MinecraftVersionCheck.onCommand(sender);
+                MinecraftVersionChecker.onCommand(sender);
                 return true;
             }
             case "capes", "cape" -> {
@@ -65,6 +64,9 @@ public class MinecraftCommand implements CommandExecutor {
             case "pack" -> {
                 PackMcmetaGenerator.handle(sender, args);
                 return true;
+            }
+            case "sr", "skb", "skbresource" -> {
+                return Atri.getInstance().getSkyblockResourcePackChecker().onCommand(sender, command, label, args);
             }
         }
 

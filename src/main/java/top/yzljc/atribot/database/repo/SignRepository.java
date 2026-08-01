@@ -118,30 +118,30 @@ public class SignRepository {
                 throw e;
             }
 
-            // 更新总表（累计次数、累计硬币）
-            String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `total_coins`, `last_check_in_date`) " +
-                    "VALUES (?, 1, ?, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?, `total_coins` = `total_coins` + ?";
+            // 更新总表累计打卡次数（金粒余额的权威数据源已迁移至 user_loots，见下方 LootRepository.addCoins）
+            String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`) " +
+                    "VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?";
             try (var ps = con.prepareStatement(upsertTotal)) {
                 ps.setString(1, userOpenId);
-                ps.setInt(2, coins);
+                ps.setDate(2, Date.valueOf(today));
                 ps.setDate(3, Date.valueOf(today));
-                ps.setDate(4, Date.valueOf(today));
-                ps.setInt(5, coins);
                 ps.executeUpdate();
             }
 
-            // 获取累计打卡次数和累计硬币
+            // 获取累计打卡次数
             int totalCount;
-            int totalCoins;
-            String totalSql = "SELECT `total_count`, `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
+            String totalSql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
             try (var ps = con.prepareStatement(totalSql)) {
                 ps.setString(1, userOpenId);
                 try (var rs = ps.executeQuery()) {
                     rs.next();
                     totalCount = rs.getInt("total_count");
-                    totalCoins = rs.getInt("total_coins");
                 }
             }
+
+            // 金粒改为写入 user_loots（抽卡系统的权威数据源），不再累加 check_in_total.total_coins
+            LootRepository.addCoins(userOpenId, coins);
+            int totalCoins = LootRepository.getCoins(userOpenId);
 
             return new CheckInResult(rank, totalCount, coins, totalCoins);
 
@@ -201,77 +201,6 @@ public class SignRepository {
             log.error("查询累计打卡次数失败", e);
         }
         return 0;
-    }
-
-    /**
-     * 获取用户累计硬币
-     */
-    public static int getTotalCoins(String userOpenId) {
-        String sql = "SELECT `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userOpenId);
-            try (var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("total_coins");
-                }
-            }
-        } catch (Exception e) {
-            log.error("查询累计硬币失败", e);
-        }
-        return 0;
-    }
-
-    /**
-     * 给用户加硬币（不存在则自动创建记录）
-     */
-    public static boolean addCoins(String userOpenId, int amount) {
-        if (amount <= 0) return false;
-        String sql = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `total_coins`, `last_check_in_date`) " +
-                "VALUES (?, 0, ?, ?) ON DUPLICATE KEY UPDATE `total_coins` = `total_coins` + ?";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userOpenId);
-            ps.setInt(2, amount);
-            ps.setDate(3, Date.valueOf(LocalDate.now()));
-            ps.setInt(4, amount);
-            ps.executeUpdate();
-            return true;
-        } catch (Exception e) {
-            log.error("加硬币失败，userOpenId: {}, amount: {}", userOpenId, amount, e);
-            return false;
-        }
-    }
-
-    /**
-     * 给用户扣硬币（余额不足返回 false）
-     */
-    public static boolean removeCoins(String userOpenId, int amount) {
-        if (amount <= 0) return false;
-        try (var con = DatabaseManager.getConnection()) {
-            // 先查余额
-            int balance;
-            String querySql = "SELECT `total_coins` FROM `check_in_total` WHERE `user_open_id` = ?";
-            try (var ps = con.prepareStatement(querySql)) {
-                ps.setString(1, userOpenId);
-                try (var rs = ps.executeQuery()) {
-                    if (!rs.next()) return false;       // 没有记录
-                    balance = rs.getInt("total_coins");
-                }
-            }
-            if (balance < amount) return false;          // 余额不足
-
-            String updateSql = "UPDATE `check_in_total` SET `total_coins` = `total_coins` - ? WHERE `user_open_id` = ?";
-            try (var ps = con.prepareStatement(updateSql)) {
-                ps.setInt(1, amount);
-                ps.setString(2, userOpenId);
-                ps.executeUpdate();
-            }
-            return true;
-        } catch (Exception e) {
-            log.error("扣硬币失败，userOpenId: {}, amount: {}", userOpenId, amount, e);
-            return false;
-        }
     }
 
     /**

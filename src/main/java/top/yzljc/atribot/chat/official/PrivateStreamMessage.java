@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.event.EventManager;
-import top.yzljc.atribot.event.events.OfficialC2CPushFailEvent;
+import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -92,6 +93,14 @@ final class PrivateStreamMessage {
     private String sendBatch(String openId, String msgId, String eventId,
                              String contentType, String inputMode, List<String> contents,
                              Boolean isWakeup) {
+        if (ChatService.isEmergencyPaused()) {
+            if (isBlank(msgId) && isBlank(eventId)) {
+                log.warn("单聊主动流式消息已被应急暂停拦截, openId: {}", openId);
+                return null;
+            }
+            Map<String, Object> pausedRequest = streamPausedFallbackRequest(eventId, msgId, isWakeup);
+            return doSend(openId, pausedRequest);
+        }
         if (isBlank(msgId) && isBlank(eventId)) {
             log.error("单聊流式消息发送失败：msg_id/event_id 不能同时为空, openId: {}", openId);
             return null;
@@ -154,27 +163,72 @@ final class PrivateStreamMessage {
         return lastMessageId;
     }
 
+    private Map<String, Object> streamPausedFallbackRequest(String eventId, String msgId, Boolean isWakeup) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("content_type", CONTENT_TYPE_TEXT);
+        request.put("content_raw", ChatService.emergencyPausedMessage());
+        request.put("input_mode", INPUT_MODE_REPLACE);
+        request.put("input_state", STREAM_STATE_END);
+        request.put("index", 0);
+        if (eventId != null) request.put("event_id", eventId);
+        if (msgId != null) {
+            request.put("msg_id", msgId);
+            request.put("msg_seq", msgSeqProvider.apply(msgId));
+        }
+        if (isWakeup != null) request.put("is_wakeup", isWakeup);
+        return request;
+    }
+
     private String doSend(String openId, Map<String, Object> request) {
         String url = privateStreamMessageUrl(openId);
+        if (ChatService.isEmergencyPaused() && !isPausedFallbackRequest(request)) {
+            String msgId = stringValue(request.get("msg_id"));
+            String eventId = stringValue(request.get("event_id"));
+            if (isBlank(msgId) && isBlank(eventId)) {
+                log.warn("单聊主动流式消息已被应急暂停拦截, openId: {}", openId);
+                return null;
+            }
+            request = streamPausedFallbackRequest(eventId, msgId, booleanValue(request.get("is_wakeup")));
+        }
+        String json;
         try {
-            String json = objectMapper.writeValueAsString(request);
-            var res = HttpService.postJsonDetailed(url, json,
-                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+            json = objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            OfficialSendLogRepository.recordError(null, "单聊流式", "POST", url, null,
+                    null, null, "流式消息序列化失败: " + e.getMessage());
+            log.error("单聊流式消息序列化失败: ", e);
+            return null;
+        }
+
+        String traceId = OfficialSendLogRepository.recordSend("单聊流式", "POST", url, json);
+        var res = HttpService.postJsonDetailed(url, json,
+                "Authorization", "QQBot " + tokenManager.getAccessToken());
+        try {
             if (res.status() >= 200 && res.status() < 300 && res.body() != null && !res.body().isBlank()) {
                 JsonNode response = objectMapper.readTree(res.body());
                 String messageId = extractMessageId(response);
+                String messageIdx = response.path("ext_info").path("ref_idx").asText(null);
+                String timestamp = response.path("timestamp").asText(null);
                 if (messageId != null) {
-                    ChatContentRecord.recordSentC2CMessage(openId, bodyFactory.streamRequestToMessageBody(request), messageId);
+                    OfficialSendLogRepository.recordResponse(traceId, "单聊流式", "POST", url, json,
+                            res.status(), res.body());
+                    ChatContentRecord.recordSentC2CMessage(openId, bodyFactory.streamRequestToMessageBody(request), messageId, messageIdx, timestamp);
                     return messageId;
                 }
+                OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
+                        res.status(), res.body(), "返回无 id");
                 log.error("单聊流式消息发送失败, 返回无 id: {}", res.body());
             } else {
+                OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
+                        res.status(), res.body(), "HTTP 状态异常或响应为空");
                 log.error("单聊流式消息发送失败, status: {}, body: {}", res.status(), res.body());
                 callFailEvent(url, res.body());
             }
             return null;
         } catch (JsonProcessingException e) {
-            log.error("单聊流式消息序列化/响应解析失败: ", e);
+            OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
+                    res.status(), res.body(), "响应解析失败: " + e.getMessage());
+            log.error("单聊流式消息响应解析失败: ", e);
             return null;
         }
     }
@@ -194,6 +248,12 @@ final class PrivateStreamMessage {
         if (msgSeq != null) request.put("msg_seq", msgSeq);
         if (isWakeup != null) request.put("is_wakeup", isWakeup);
         return request;
+    }
+
+    private boolean isPausedFallbackRequest(Map<String, Object> request) {
+        return request != null
+                && ChatService.emergencyPausedMessage().equals(stringValue(request.get("content_raw")))
+                && CONTENT_TYPE_TEXT.equals(stringValue(request.get("content_type")));
     }
 
     private boolean hasStreamReplyTarget(Map<String, Object> request) {
@@ -236,7 +296,7 @@ final class PrivateStreamMessage {
             if (snapshot == null) {
                 continue;
             }
-            if (cleaned.isEmpty() || !snapshot.equals(cleaned.get(cleaned.size() - 1))) {
+            if (cleaned.isEmpty() || !snapshot.equals(cleaned.getLast())) {
                 cleaned.add(snapshot);
             }
         }
@@ -257,7 +317,7 @@ final class PrivateStreamMessage {
             String msg = err.path("message").asText(null);
             String userId = extractUrlPart(url, "/users/", "/stream_messages");
             if (userId != null) {
-                EventManager.getInstance().callEvent(new OfficialC2CPushFailEvent(userId, code, msg));
+                EventManager.getInstance().callEvent(new OfficialC2CSendFailEvent(userId, code, msg));
             }
         } catch (Exception ignored) {
         }
@@ -278,6 +338,16 @@ final class PrivateStreamMessage {
 
     private String stringValue(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private Boolean booleanValue(Object value) {
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        if (value instanceof String s && !s.isBlank()) {
+            return Boolean.parseBoolean(s);
+        }
+        return null;
     }
 
     private boolean isBlank(String value) {

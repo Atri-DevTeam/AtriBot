@@ -77,6 +77,7 @@ atribot-key-secret: "null"
 
 # Hypixel 奖励 WebSocket 地址
 function:
+  us-api: "null"
   hypixel-reward-ws: "ws://localhost:1111"
   # SA 签到密钥
   sa-sign-key: "null"
@@ -185,3 +186,8 @@ image-source:
   token: "null"
   # 单个用户同时处于未审核状态的投稿数量上限
   pending-limit: 3
+
+loots:
+  # 抽卡目录管理密钥。调用 UGC 端 /atrimeow/loots/admin/** 时作为 Authorization: Bearer <token> 发送
+  # 需与 atrimeow-ugc 部署配置中的 atri.loots.admin-token 保持一致
+  admin-token: "null"

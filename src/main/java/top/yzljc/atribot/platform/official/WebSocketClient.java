@@ -126,8 +126,14 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             int INTENT_DIRECT_MESSAGE = 1 << 12;
             int MESSAGE_AUDIT = 1 << 27;
             int INTENT_GROUP_MEMBER = 1 << 24;
+            int PUBLIC_GUILD_MESSAGES = 1 << 30;
+            int GUILDS = 1 << 0;
+            int GUILD_MEMBERS = 1 << 1;
+            int GUILD_MESSAGE_REACTIONS = 1 << 10;
+            int AUDIO_ACTION = 1 << 29;
 
-            int intents = INTENT_GROUP_AND_C2C | INTENT_INTERACTION | INTENT_DIRECT_MESSAGE | MESSAGE_AUDIT | INTENT_GROUP_MEMBER;
+            int intents = INTENT_GROUP_AND_C2C | INTENT_INTERACTION | INTENT_DIRECT_MESSAGE | MESSAGE_AUDIT | INTENT_GROUP_MEMBER | PUBLIC_GUILD_MESSAGES
+                    | GUILDS | GUILD_MEMBERS | GUILD_MESSAGE_REACTIONS | AUDIO_ACTION;
             d.put("intents", intents);
 
             d.putArray("shard").add(0).add(1);
@@ -236,6 +242,10 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
         if ("MESSAGE_AUDIT_REJECT".equals(eventType)) {
             BotEvents.handleMessageAuditRejectEvent(eventData);
+        }
+
+        if ("AT_MESSAGE_CREATE".equals(eventType)) {
+            log.debug("事件类型: {}\n事件数据: {}", eventType, eventData);
         }
 
         if (DebugCommand.isOfficialDebugEnabled.get()) {

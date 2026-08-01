@@ -8,7 +8,6 @@ import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -25,11 +24,9 @@ import java.util.Map;
 @Slf4j
 public class SponsorCommand implements CommandExecutor {
 
-    private static final String secret = Config.getInstance().getAtribotKeySecret();
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String apiUrl = ResourcesProperties.SPONSORS_API + "?key=" + secret;
+        String apiUrl = ResourcesProperties.SPONSORS_API;
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             var data = PreImageGenerate.dump(apiUrl, Map.of());

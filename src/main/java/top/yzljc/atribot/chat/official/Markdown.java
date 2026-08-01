@@ -43,7 +43,7 @@ public class Markdown {
 
     public static String at(CommandSender sender) {
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return "";
-        return "<qqbot-at-user id=\"" + sender.getUserId() + "\" />";
+        return "<@" + sender.getUserId() + ">";
     }
 
     public static String link(String url, String display) {

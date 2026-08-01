@@ -36,7 +36,7 @@ import java.util.Set;
  * @Package top.yzljc.atribot.functions.official.minecraft
  */
 @Slf4j
-public final class MinecraftVersionCheck implements ScheduledTask {
+public final class MinecraftVersionChecker implements ScheduledTask {
 
     private static final String VERSION_API = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 

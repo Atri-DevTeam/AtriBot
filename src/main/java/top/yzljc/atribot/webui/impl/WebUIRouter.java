@@ -48,9 +48,13 @@ public class WebUIRouter {
         server.post("/webui/api/auth/verify", WebUIController::login);
         server.post("/webui/api/auth/logout", WebUIController::logout);
         server.get("/webui/api/auth/verify", WebUIController::verifyToken);
+        server.get("/webui/api/chat/conversations", WebUIController::listChatConversations);
+        server.get("/webui/api/chat/pinned", WebUIController::listChatPinned);
+        server.post("/webui/api/chat/pinned", WebUIController::setChatPinned);
         server.get("/webui/api/groups", WebUIController::listGroups);
         server.get("/webui/api/groups/{groupOpenId}/messages", WebUIController::fetchGroupMessages);
         server.get("/webui/api/groups/{groupOpenId}/messages/ref", WebUIController::locateGroupMessageByRefIdx);
+        server.get("/webui/api/groups/{groupOpenId}/members", WebUIController::listGroupMembers);
         server.get("/webui/api/groups/functions/keys", WebUIController::listGroupFunctionKeys);
         server.get("/webui/api/groups/{groupOpenId}/functions", WebUIController::getGroupFunctions);
         server.post("/webui/api/groups/{groupOpenId}/whitelist", WebUIController::setGroupWhitelist);
@@ -69,6 +73,9 @@ public class WebUIRouter {
         server.get("/webui/api/errors/list", WebUIController::listErrorReports);
         server.get("/webui/api/errors/stats", WebUIController::errorReportStats);
         server.get("/webui/api/errors/{traceId}", WebUIController::getErrorReport);
+        server.get("/webui/api/send-logs/list", WebUIController::listOfficialSendLogs);
+        server.get("/webui/api/send-logs/stats", WebUIController::officialSendLogStats);
+        server.get("/webui/api/send-logs/{id}", WebUIController::getOfficialSendLog);
 
         // C2C 私聊
         server.get("/webui/api/c2c/users", WebUIController::listC2CUsers);
@@ -81,6 +88,7 @@ public class WebUIRouter {
         server.post("/webui/api/c2c/{userOpenId}/push", WebUIController::setC2CUserPush);
         server.delete("/webui/api/c2c/{userOpenId}", WebUIController::deleteC2CUser);
         server.get("/webui/api/c2c/{userOpenId}/messages", WebUIController::fetchC2CMessages);
+        server.get("/webui/api/c2c/{userOpenId}/messages/ref", WebUIController::locateC2CMessageByRefIdx);
         server.post("/webui/api/c2c/send", WebUIController::sendC2CMessage);
         server.post("/webui/api/c2c/recall", WebUIController::recallC2CMessage);
         server.post("/webui/api/c2c/stream", WebUIController::sendC2CStreamMessage);
@@ -102,6 +110,19 @@ public class WebUIRouter {
         // 用户列表
         server.get("/webui/api/users/messages", WebUIController::listUserMessages);
         server.get("/webui/api/users/c2c-messages", WebUIController::listUserC2CMessages);
+
+        // 抽卡系统管理
+        server.get("/webui/api/loot/items", WebUIController::listLootItems);
+        server.post("/webui/api/loot/items", WebUIController::createLootItem);
+        server.put("/webui/api/loot/items/{itemId}", WebUIController::updateLootItem);
+        server.post("/webui/api/loot/items/{itemId}/image", WebUIController::replaceLootItemImage);
+        server.delete("/webui/api/loot/items/{itemId}", WebUIController::deleteLootItem);
+        server.get("/webui/api/loot/coins/leaderboard", WebUIController::listCoinLeaderboard);
+        server.post("/webui/api/loot/coins/{userId}", WebUIController::adjustUserCoins);
+        server.get("/webui/api/loot/users", WebUIController::listLootUsers);
+        server.get("/webui/api/loot/users/{userId}", WebUIController::getUserLootsDetail);
+        server.post("/webui/api/loot/users/{userId}/grant", WebUIController::grantUserLoot);
+        server.delete("/webui/api/loot/users/{userId}/loots/{itemId}", WebUIController::revokeUserLoot);
 
         server.error(404, WebUIRouter::spaFallback);
     }

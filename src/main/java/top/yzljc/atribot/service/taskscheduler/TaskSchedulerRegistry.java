@@ -12,7 +12,9 @@ public final class TaskSchedulerRegistry {
             Atri.getInstance().getReboot(),
             Atri.getInstance().getMinecraftVersionCheck(),
             Atri.getInstance().getMinecraftNews(),
-            Atri.getInstance().getHypixelAnnouncements()
+            Atri.getInstance().getHypixelAnnouncements(),
+            Atri.getInstance().getSkyblockResourcePackChecker(),
+            Atri.getInstance().getHypixelAlphaForums()
     );
 
     private TaskSchedulerRegistry() {

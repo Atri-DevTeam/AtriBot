@@ -13,7 +13,7 @@ import top.yzljc.atribot.event.Event;
  */
 @Getter
 @AllArgsConstructor
-public class OfficialC2CPushFailEvent extends Event {
+public class OfficialC2CSendFailEvent extends Event {
     private final String userId;
     private final int errorCode;
     private final String errorMessage;

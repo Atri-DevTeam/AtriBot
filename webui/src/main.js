@@ -12,6 +12,9 @@ import './styles/napcat.css'
 import './styles/debug.css'
 import './styles/stats.css'
 import './styles/errors.css'
+import './styles/send-logs.css'
 import './styles/polish.css'
+import './styles/chat.css'
+import './styles/loots.css'
 
 createApp(App).use(router).mount('#app')

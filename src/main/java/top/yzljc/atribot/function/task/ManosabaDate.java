@@ -25,8 +25,7 @@ public class ManosabaDate implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
         if (sender.getGroupId().equals(GROUP_ID)) {
-            String apiUrl = ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret();
-            var data = PreImageGenerate.dump(apiUrl, Map.of());
+            var data = PreImageGenerate.dump(ResourcesProperties.MANOSABA_DATE_IMG, Map.of());
             if (data.isError() || data.url() == null) {
                 String errMsg = data.errorMessage();
                 sender.sendMessage("开发天数图片获取失败: " + errMsg);
@@ -41,8 +40,7 @@ public class ManosabaDate implements CommandExecutor {
 
     @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
     public static void sendAndNotifyToGroup() {
-        String apiUrl = ResourcesProperties.MANOSABA_DATE_IMG + "?key=" + Config.getInstance().getAtribotKeySecret();
-        var data = PreImageGenerate.dump(apiUrl, Map.of());
+        var data = PreImageGenerate.dump(ResourcesProperties.MANOSABA_DATE_IMG, Map.of());
         if (data.isError() || data.url() == null) {
             String errMsg = data.errorMessage();
             log.error("ManosabaDate 定时任务失败: {}", errMsg);

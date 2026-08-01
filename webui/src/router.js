@@ -20,6 +20,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'chat',
+      component: () => import('./views/ChatView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/groups',
       name: 'dashboard',
       component: () => import('./views/DashboardView.vue'),
       meta: { requiresAuth: true }
@@ -49,6 +55,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/loot',
+      name: 'loot',
+      component: () => import('./views/LootView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/stats',
       name: 'stats',
       component: () => import('./views/StatsView.vue'),
@@ -58,6 +70,12 @@ const router = createRouter({
       path: '/errors',
       name: 'errors',
       component: () => import('./views/ErrorsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/send-logs',
+      name: 'sendLogs',
+      component: () => import('./views/SendLogsView.vue'),
       meta: { requiresAuth: true }
     },
     {

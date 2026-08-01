@@ -45,9 +45,12 @@ public class HypixelReward implements CommandExecutor, Listener {
     private static final String WS_URL = Config.getInstance().getHypixelRewardWebSocketUrl();
     private static HypixelClient client;
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final Pattern URL_PATTERN = Pattern.compile("https?://(rewards\\.)?hypixel\\.net/claim-reward/[a-zA-Z0-9]+");
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:rewards\\.)?hypixel\\.net/claim-reward/([a-zA-Z0-9]+)");
+    private static final long SESSION_TIMEOUT_MILLIS = 60000;
     // Key: UUID (sessionId) -> Value: 对应的会话
     private static final ConcurrentHashMap<String, RewardSession> activeSessions = new ConcurrentHashMap<>();
+    // Key: Hypixel 领奖 ID -> Value: 占用该 ID 的 sessionId
+    private static final ConcurrentHashMap<String, String> activeRewardIds = new ConcurrentHashMap<>();
 
     private static RewardSession getSessionByUserId(String userId) {
         if (userId == null || userId.isEmpty()) return null;
@@ -55,6 +58,46 @@ public class HypixelReward implements CommandExecutor, Listener {
             if (userId.equals(session.userId)) return session;
         }
         return null;
+    }
+
+    private static RewardSession getSessionByRewardId(String rewardId) {
+        if (rewardId == null || rewardId.isEmpty()) return null;
+        String sessionId = activeRewardIds.get(rewardId);
+        if (sessionId == null) return null;
+
+        RewardSession session = activeSessions.get(sessionId);
+        if (session == null) {
+            activeRewardIds.remove(rewardId, sessionId);
+        }
+        return session;
+    }
+
+    private static RewardSession createSession(String userId, String groupId, String messageId, Platform platform, String rewardId) {
+        while (true) {
+            String sessionId = UUID.randomUUID().toString();
+            RewardSession session = new RewardSession(sessionId, userId, groupId, messageId, platform, rewardId);
+            activeSessions.put(sessionId, session);
+
+            String existingSessionId = activeRewardIds.putIfAbsent(rewardId, sessionId);
+            if (existingSessionId == null) return session;
+
+            activeSessions.remove(sessionId, session);
+            if (activeSessions.containsKey(existingSessionId)) return null;
+            activeRewardIds.remove(rewardId, existingSessionId);
+        }
+    }
+
+    private static String getRewardIdLockedMessage(RewardSession session) {
+        long remainingMillis = Math.max(0, SESSION_TIMEOUT_MILLIS - (System.currentTimeMillis() - session.timestamp));
+        long remainingSeconds = Math.max(1, (remainingMillis + 999) / 1000);
+        return "⚠️ 这个领奖ID已经被其他用户使用中，请等待 " + remainingSeconds + " 秒后再试喵！";
+    }
+
+    private static void removeSession(String sessionId) {
+        RewardSession session = activeSessions.remove(sessionId);
+        if (session != null) {
+            activeRewardIds.remove(session.claimId, sessionId);
+        }
     }
 
     @Override
@@ -73,6 +116,7 @@ public class HypixelReward implements CommandExecutor, Listener {
 
         if (matcher.find()) {
             String url = matcher.group();
+            String rewardId = matcher.group(1);
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
@@ -95,17 +139,26 @@ public class HypixelReward implements CommandExecutor, Listener {
                 return true;
             }
 
-            String sessionId = UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(sessionId, userId, groupId, messageId, platform);
-            activeSessions.put(sessionId, session);
+            RewardSession rewardIdSession = getSessionByRewardId(rewardId);
+            if (rewardIdSession != null && !userId.equals(rewardIdSession.userId)) {
+                sender.sendMessage(getRewardIdLockedMessage(rewardIdSession));
+                return true;
+            }
+
+            RewardSession session = createSession(userId, groupId, messageId, platform, rewardId);
+            if (session == null) {
+                rewardIdSession = getSessionByRewardId(rewardId);
+                sender.sendMessage(rewardIdSession == null ? "⚠️ 这个领奖ID正在被使用，请稍后再试喵！" : getRewardIdLockedMessage(rewardIdSession));
+                return true;
+            }
 
             ObjectNode request = mapper.createObjectNode();
             request.put("action", "fetch");
             request.put("url", url);
-            request.put("session_id", sessionId);
+            request.put("session_id", session.sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", userId, session.platform, sessionId);
+            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", userId, session.platform, session.sessionId);
 
         } else {
             sender.sendMessage("⚠️ 链接格式错误或未检测到链接喵！");
@@ -153,11 +206,13 @@ public class HypixelReward implements CommandExecutor, Listener {
 
     @EventHandler
     public void onOfficialGroupMessageCreate(OfficialGroupMessageCreateEvent event) {
+        if (event.shouldIgnore()) return;
         String content = event.getMessage().getContent();
         if (content.contains("/cl ")) return;
         Matcher findLink = URL_PATTERN.matcher(content.trim());
         if (findLink.find()) {
             String url = findLink.group();
+            String rewardId = findLink.group(1);
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
@@ -176,29 +231,40 @@ public class HypixelReward implements CommandExecutor, Listener {
                 return;
             }
 
-            String sessionId = UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(
-                    sessionId, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.OFFICIAL_GROUP
+            RewardSession rewardIdSession = getSessionByRewardId(rewardId);
+            if (rewardIdSession != null && !event.getUser().getUserId().equals(rewardIdSession.userId)) {
+                event.sendMessage(getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
+
+            RewardSession session = createSession(
+                    event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.OFFICIAL_GROUP, rewardId
             );
-            activeSessions.put(sessionId, session);
+            if (session == null) {
+                rewardIdSession = getSessionByRewardId(rewardId);
+                event.sendMessage(rewardIdSession == null ? "⚠️ 这个领奖ID正在被使用，请稍后再试喵！" : getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
 
             ObjectNode request = mapper.createObjectNode();
             request.put("action", "fetch");
             request.put("url", url);
-            request.put("session_id", sessionId);
+            request.put("session_id", session.sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), Platform.OFFICIAL_GROUP, sessionId);
+            log.info("用户 {} (Platform:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), Platform.OFFICIAL_GROUP, session.sessionId);
         }
     }
 
     @EventHandler
     public void onOfficialC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
+        if (event.shouldIgnore()) return;
         String content = event.getMessage().getContent();
         if (content.contains("/cl ")) return;
         Matcher findLink = URL_PATTERN.matcher(content.trim());
         if (findLink.find()) {
             String url = findLink.group();
+            String rewardId = findLink.group(1);
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
@@ -216,19 +282,28 @@ public class HypixelReward implements CommandExecutor, Listener {
                 return;
             }
 
-            String sessionId = UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(
-                    sessionId, event.getUser().getUserId(), "null", event.getMessage().getMessageId(), Platform.OFFICIAL_C2C
+            RewardSession rewardIdSession = getSessionByRewardId(rewardId);
+            if (rewardIdSession != null && !event.getUser().getUserId().equals(rewardIdSession.userId)) {
+                event.sendMessage(getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
+
+            RewardSession session = createSession(
+                    event.getUser().getUserId(), "null", event.getMessage().getMessageId(), Platform.OFFICIAL_C2C, rewardId
             );
-            activeSessions.put(sessionId, session);
+            if (session == null) {
+                rewardIdSession = getSessionByRewardId(rewardId);
+                event.sendMessage(rewardIdSession == null ? "⚠️ 这个领奖ID正在被使用，请稍后再试喵！" : getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
 
             ObjectNode request = mapper.createObjectNode();
             request.put("action", "fetch");
             request.put("url", url);
-            request.put("session_id", sessionId);
+            request.put("session_id", session.sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), "2", sessionId);
+            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), "2", session.sessionId);
         }
     }
 
@@ -240,6 +315,7 @@ public class HypixelReward implements CommandExecutor, Listener {
         Matcher findLink = URL_PATTERN.matcher(content.trim());
         if (findLink.find()) {
             String url = findLink.group();
+            String rewardId = findLink.group(1);
 
             if (client == null || !client.isOpen()) {
                 event.sendMessage("请求失败，请向开发者报告此问题！");
@@ -252,19 +328,28 @@ public class HypixelReward implements CommandExecutor, Listener {
                 return;
             }
 
-            String sessionId = UUID.randomUUID().toString();
-            RewardSession session = new RewardSession(
-                    sessionId, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.NAPCAT_GROUP
+            RewardSession rewardIdSession = getSessionByRewardId(rewardId);
+            if (rewardIdSession != null && !event.getUser().getUserId().equals(rewardIdSession.userId)) {
+                event.sendMessage(getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
+
+            RewardSession session = createSession(
+                    event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId(), Platform.NAPCAT_GROUP, rewardId
             );
-            activeSessions.put(sessionId, session);
+            if (session == null) {
+                rewardIdSession = getSessionByRewardId(rewardId);
+                event.sendMessage(rewardIdSession == null ? "⚠️ 这个领奖ID正在被使用，请稍后再试喵！" : getRewardIdLockedMessage(rewardIdSession));
+                return;
+            }
 
             ObjectNode request = mapper.createObjectNode();
             request.put("action", "fetch");
             request.put("url", url);
-            request.put("session_id", sessionId);
+            request.put("session_id", session.sessionId);
 
             client.send(request.toString());
-            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), "2", sessionId);
+            log.info("用户 {} (Type:{}) 触发领奖，分配 SessionID: {}", event.getUser().getUsername(), "2", session.sessionId);
         }
     }
 
@@ -275,17 +360,19 @@ public class HypixelReward implements CommandExecutor, Listener {
         String messageId;
         Platform platform;
 
+        String claimId;
         String securityToken;
         String rewardId;
         String originalUrl;
         long timestamp;
 
-        public RewardSession(String sessionId, String userId, String groupId, String messageId, Platform platform) {
+        public RewardSession(String sessionId, String userId, String groupId, String messageId, Platform platform, String claimId) {
             this.sessionId = sessionId;
             this.userId = userId;
             this.groupId = groupId;
             this.messageId = messageId;
             this.platform = platform;
+            this.claimId = claimId;
             this.timestamp = System.currentTimeMillis();
         }
 
@@ -347,7 +434,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                 long now = System.currentTimeMillis();
                 activeSessions.entrySet().removeIf(entry -> {
                     RewardSession session = entry.getValue();
-                    if (now - session.timestamp > 60000) {
+                    if (now - session.timestamp > SESSION_TIMEOUT_MILLIS) {
                         switch (session.platform) {
                             case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, "⚠️ 领奖操作超时，请重新获取!");
                             case OFFICIAL_GROUP ->
@@ -355,6 +442,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                             case OFFICIAL_C2C ->
                                     C2CChat.replyMessage(session.userId, session.messageId, "⚠️ 领奖操作超时，请重新获取!");
                         }
+                        activeRewardIds.remove(session.claimId, entry.getKey());
                         return true;
                     }
                     return false;
@@ -371,6 +459,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             client.close();
         }
         activeSessions.clear();
+        activeRewardIds.clear();
     }
 
     private static synchronized void connect() {
@@ -500,7 +589,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                             }
                         }
                     }
-                    activeSessions.remove(sessionId);
+                    removeSession(sessionId);
 
                 } else if ("error".equals(type)) {
                     String text = "执行操作时出现错误: " + response.path("msg").asText();
@@ -509,7 +598,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, session.messageId, text);
                         case OFFICIAL_C2C -> C2CChat.replyMessage(session.userId, session.messageId, text);
                     }
-                    activeSessions.remove(sessionId);
+                    removeSession(sessionId);
                 }
             } catch (Exception e) {
                 log.error("处理 Python 消息失败: {}", e.getMessage(), e);
@@ -519,11 +608,13 @@ public class HypixelReward implements CommandExecutor, Listener {
         @Override
         public void onClose(int code, String reason, boolean remote) {
             activeSessions.clear();
+            activeRewardIds.clear();
         }
 
         @Override
         public void onError(Exception ex) {
             activeSessions.clear();
+            activeRewardIds.clear();
         }
     }
 }

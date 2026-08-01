@@ -11,7 +11,6 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.general.impl.ImageDTO;
 import top.yzljc.atribot.function.general.impl.PreImageGenerate;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -30,8 +29,6 @@ import java.util.Map;
 @Slf4j
 public class Calendar implements CommandExecutor {
 
-    private static final String secret = Config.getInstance().getAtribotKeySecret();
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -40,8 +37,7 @@ public class Calendar implements CommandExecutor {
             return true;
         }
 
-        String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
-        ImageDTO data = PreImageGenerate.dump(apiUrl, Map.of("system", false));
+        ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
 
         if (data.isError()) {
             String errMsg = data.errorMessage();
@@ -57,10 +53,8 @@ public class Calendar implements CommandExecutor {
     }
 
     public static void sendCalendar() {
-        String apiUrl = ResourcesProperties.CALENDAR_API + "?key=" + secret;
-
         ThreadManager.execute(() -> {
-            ImageDTO data = PreImageGenerate.dump(apiUrl, Map.of("system", true));
+            ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", true));
 
             if (data == null || data.isError()) {
                 String errMsg = data != null ? data.errorMessage() : "API 无响应";

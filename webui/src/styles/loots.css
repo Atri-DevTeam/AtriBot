@@ -1,0 +1,120 @@
+.loot-upload-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.loot-upload-form input[type='text'],
+.loot-upload-form input:not([type]),
+.loot-upload-form input[type='file'] {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  background: var(--color-surface-alt);
+}
+
+.loot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.loot-card {
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.loot-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--color-surface-sunken);
+}
+
+.loot-card-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loot-inline-input {
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  background: transparent;
+}
+
+.loot-inline-input:focus {
+  border-color: var(--color-border-input);
+  background: var(--color-surface-alt);
+}
+
+.loot-inline-textarea {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  resize: vertical;
+  background: transparent;
+}
+
+.loot-inline-textarea:focus {
+  border-color: var(--color-border-input);
+  background: var(--color-surface-alt);
+}
+
+.loot-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.loot-card-meta {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  word-break: break-all;
+}
+
+.loot-file-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ghost-button.small {
+  padding: 3px 10px;
+  font-size: 12px;
+  height: auto;
+}
+
+.loot-leaderboard-row {
+  align-items: center;
+}
+
+.loot-rank {
+  width: 40px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.loot-coins {
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-left: auto;
+  margin-right: 12px;
+}

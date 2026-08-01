@@ -219,3 +219,17 @@ commands:
     description: 检查 Mojira 漏洞追踪器
   test-mcnews:
     description: 测试获取 MC 新闻
+  check-hyp-alpha:
+    description: 检查 Hypixel Alpha 测试服最新公告
+  pause:
+    description: 紧急暂停
+  地球online:
+    description: 地球在线
+    usage: /地球online
+    aliases:
+      - 地球在线
+      - earthonline
+      - eo
+      - earth
+      - online
+      - 地球

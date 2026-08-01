@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.official.FileType;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -38,6 +39,10 @@ final class OfficialMediaUploader {
 
     MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
                                   String msgId, String eventId, String content) {
+        MessageBody paused = pausedMediaFallback(logLabel, msgId, eventId);
+        if (paused != null || ChatService.isEmergencyPaused()) {
+            return paused;
+        }
         String fileInfo = uploadImageFile(uploadUrl, type, value, logLabel);
         if (fileInfo == null) {
             return bodyFactory.text(UPLOAD_LIMIT_MESSAGE);
@@ -48,11 +53,29 @@ final class OfficialMediaUploader {
     }
 
     MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, String msgId) {
+        MessageBody paused = pausedMediaFallback(logLabel, msgId, null);
+        if (paused != null || ChatService.isEmergencyPaused()) {
+            return paused;
+        }
         String fileInfo = uploadFile(uploadUrl, fileType, value, logLabel);
         if (fileInfo == null) {
             return bodyFactory.text(UPLOAD_LIMIT_MESSAGE);
         }
         return bodyFactory.media(fileInfo, msgId);
+    }
+
+    private MessageBody pausedMediaFallback(String logLabel, String msgId, String eventId) {
+        if (!ChatService.isEmergencyPaused()) {
+            return null;
+        }
+        if (ChatService.isBlank(msgId) && ChatService.isBlank(eventId)) {
+            log.warn("{}媒体主动消息已被应急暂停拦截", logLabel);
+            return null;
+        }
+        if (!ChatService.isBlank(msgId)) {
+            return bodyFactory.replyText(msgId, ChatService.emergencyPausedMessage());
+        }
+        return bodyFactory.eventText(eventId, ChatService.emergencyPausedMessage());
     }
 
     private String uploadImageFile(String uploadUrl, ImageType type, String value, String logLabel) {
@@ -72,23 +95,34 @@ final class OfficialMediaUploader {
     }
 
     private String uploadAndGetFileInfo(String uploadUrl, Map<String, Object> uploadData, String logLabel) {
+        String uploadJson = null;
+        String traceId = null;
         try {
-            String uploadJson = objectMapper.writeValueAsString(uploadData);
+            uploadJson = objectMapper.writeValueAsString(uploadData);
+            traceId = OfficialSendLogRepository.recordSend(logLabel + "上传", "POST", uploadUrl, uploadJson);
             String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
                     "Authorization", "QQBot " + tokenManager.getAccessToken());
 
             if (uploadRes == null || uploadRes.isBlank()) {
+                OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
+                        null, uploadRes, "服务器返回为空");
                 log.error("{}上传失败，服务器返回为空", logLabel);
                 return null;
             }
 
             JsonNode resNode = objectMapper.readTree(uploadRes);
             if (!resNode.has("file_info")) {
+                OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
+                        null, uploadRes, "未返回 file_info");
                 log.error("{}上传失败，未返回 file_info: {}", logLabel, uploadRes);
                 return null;
             }
+            OfficialSendLogRepository.recordResponse(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
+                    null, uploadRes);
             return resNode.get("file_info").asText();
         } catch (Exception e) {
+            OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
+                    null, null, "上传异常: " + e.getMessage());
             log.error("{}上传异常", logLabel, e);
             return null;
         }

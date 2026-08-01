@@ -18,12 +18,21 @@ public class Button {
     private final String displayText;
     private String visitedDisplayText;
     private final String data;
-    private final boolean enter;
+    private boolean enter = true;
     private boolean reply = false;
     private final ButtonStyle style;
     private final ButtonType actionType;
     private PermissionType permissionType = PermissionType.ALL;
     private List<String> allowedOpenIds = Collections.emptyList();
+
+    public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
+        this.buttonId = buttonId;
+        this.displayText = displayText;
+        this.visitedDisplayText = displayText;
+        this.data = data;
+        this.style = style;
+        this.actionType = actionType;
+    }
 
     public Button(String buttonId, String displayText, String data, boolean enter, ButtonStyle style, ButtonType actionType) {
         this.buttonId = buttonId;
@@ -52,6 +61,11 @@ public class Button {
 
     public Button setAllowedOpenIds(List<String> allowedOpenIds) {
         this.allowedOpenIds = allowedOpenIds;
+        return this;
+    }
+
+    public Button setEnter(boolean enter) {
+        this.enter = enter;
         return this;
     }
 }

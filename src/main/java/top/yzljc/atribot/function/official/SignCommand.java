@@ -67,6 +67,7 @@ public class SignCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
+        if (event.shouldIgnore()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(2, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId());
         }
@@ -75,6 +76,7 @@ public class SignCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onC2CChat(OfficialC2CMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
+        if (event.shouldIgnore()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(1, event.getUser().getUserId(), null, event.getMessage().getMessageId());
         }
@@ -83,6 +85,7 @@ public class SignCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onGroupAt(OfficialGroupAtMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
+        if (event.shouldIgnore()) return;
         if (isMatch(event.getMessage().getContent())) {
             handleCheckIn(2, event.getUser().getUserId(), event.getGroupId(), event.getMessage().getMessageId());
         }

@@ -12,18 +12,18 @@ final class MessageBodyFactory {
 
     private final Function<String, Integer> msgSeqProvider;
 
-    MessageBodyFactory(Function<String, Integer> msgSeqProvider) {
+    public MessageBodyFactory(Function<String, Integer> msgSeqProvider) {
         this.msgSeqProvider = msgSeqProvider;
     }
 
-    MessageBody text(String text) {
+    public MessageBody text(String text) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .content(text)
                 .build();
     }
 
-    MessageBody textRef(String text, String refIdx) {
+    public MessageBody textRef(String text, String refIdx) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .content(text)
@@ -31,20 +31,24 @@ final class MessageBodyFactory {
                 .build();
     }
 
-    MessageBody markdown(Markdown markdown) {
+    public MessageBody markdown(Markdown markdown) {
         return markdown(markdown.getText(), null, null, null);
     }
 
-    MessageBody markdown(Markdown markdown, Object keyboard) {
+    public MessageBody markdown(Markdown markdown, Object keyboard) {
         return markdown(markdown.getText(), keyboard, null, null);
     }
 
-    MessageBody markdown(String markdownContent, Object keyboard, String msgId, String eventId) {
+    public MessageBody markdown(String markdownContent, Object keyboard, String msgId, String eventId) {
         MessageBody.MessageBodyBuilder builder = MessageBody.builder()
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .markdown(buildMarkdown(markdownContent));
         if (keyboard != null) {
-            builder.keyboard(keyboard);
+            if (hasField(keyboard, "keyboard")) {
+                builder.promptKeyboard(keyboard);
+            } else {
+                builder.keyboard(keyboard);
+            }
         }
         if (msgId != null) {
             builder.msgId(msgId).msgSeq(msgSeqProvider.apply(msgId));
@@ -55,7 +59,7 @@ final class MessageBodyFactory {
         return builder.build();
     }
 
-    MessageBody replyText(String msgId, String text) {
+    public MessageBody replyText(String msgId, String text) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .msgId(msgId)
@@ -64,7 +68,7 @@ final class MessageBodyFactory {
                 .build();
     }
 
-    MessageBody eventText(String eventId, String text) {
+    public MessageBody eventText(String eventId, String text) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())
                 .eventId(eventId)
@@ -72,15 +76,15 @@ final class MessageBodyFactory {
                 .build();
     }
 
-    MessageBody media(String fileInfo, String msgId) {
+    public MessageBody media(String fileInfo, String msgId) {
         return media(fileInfo, msgId, null);
     }
 
-    MessageBody media(String fileInfo, String msgId, String eventId) {
+    public MessageBody media(String fileInfo, String msgId, String eventId) {
         return media(fileInfo, msgId, eventId, null);
     }
 
-    MessageBody media(String fileInfo, String msgId, String eventId, String content) {
+    public MessageBody media(String fileInfo, String msgId, String eventId, String content) {
         Map<String, Object> mediaObj = new HashMap<>();
         mediaObj.put("file_info", fileInfo);
 
@@ -99,17 +103,17 @@ final class MessageBodyFactory {
         return builder.build();
     }
 
-    String atMarkdown(String userOpenId, Markdown markdown) {
+    public String atMarkdown(String userOpenId, Markdown markdown) {
         return Markdown.at(userOpenId) + "\n" + markdown.getText();
     }
 
-    Map<String, Object> buildMarkdown(String markdownContent) {
+    public Map<String, Object> buildMarkdown(String markdownContent) {
         Map<String, Object> markdownObj = new HashMap<>();
         markdownObj.put("content", markdownContent);
         return markdownObj;
     }
 
-    MessageBody streamRequestToMessageBody(Map<String, Object> request) {
+    public MessageBody streamRequestToMessageBody(Map<String, Object> request) {
         String msgId = stringValue(request.get("msg_id"));
         String eventId = stringValue(request.get("event_id"));
         Integer msgSeq = integerValue(request.get("msg_seq"));
@@ -164,5 +168,12 @@ final class MessageBodyFactory {
             return Boolean.parseBoolean(s);
         }
         return null;
+    }
+
+    private static boolean hasField(Object obj, String fieldName) {
+        if (obj instanceof Map<?, ?> map) {
+            return map.containsKey(fieldName);
+        }
+        return false;
     }
 }

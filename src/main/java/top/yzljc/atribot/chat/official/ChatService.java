@@ -9,9 +9,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.event.EventManager;
-import top.yzljc.atribot.event.events.OfficialActiveMessageFailEvent;
-import top.yzljc.atribot.event.events.OfficialC2CPushFailEvent;
+import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
+import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.official.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -36,6 +37,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class ChatService {
 
+    private static final String EMERGENCY_PAUSED_MESSAGE = "机器人出现问题已被开发者暂停响应，请稍后重试！";
+    private static volatile boolean emergencyPaused = false;
+
     private final String apiBaseUrl;
     private final TokenManager tokenManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -55,6 +59,18 @@ public class ChatService {
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
         this.privateStreamHelper = new PrivateStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory, this::getNextMsgSeq);
+    }
+
+    public static boolean isEmergencyPaused() {
+        return emergencyPaused;
+    }
+
+    public static void setEmergencyPaused(boolean paused) {
+        emergencyPaused = paused;
+    }
+
+    static String emergencyPausedMessage() {
+        return EMERGENCY_PAUSED_MESSAGE;
     }
 
     /** 获取单聊消息 API URL */
@@ -96,12 +112,20 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendPrivateMessageAsync(String openId, MessageBody request) {
-        return sendMessageAsync(privateMessageUrl(openId), request, "单聊")
-                .thenApply(messageId -> {
-                    if (messageId != null) {
-                        ChatContentRecord.recordSentC2CMessage(openId, request, messageId);
+        MessageBody effectiveRequest = emergencyPauseRequestOrNull(request, "单聊");
+        if (effectiveRequest == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return sendMessageAsync(privateMessageUrl(openId), effectiveRequest, "单聊")
+                .thenApply(response -> {
+                    if (response != null) {
+                        ChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
                     }
-                    return messageId;
+                    if (response != null) {
+                        return response.id() ;
+                    } else {
+                        return null;
+                    }
                 });
     }
 
@@ -124,18 +148,26 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGroupMessageAsync(String groupOpenId, MessageBody request) {
-        if (request.getMsgId() == null && request.getEventId() == null) {
+        MessageBody effectiveRequest = emergencyPauseRequestOrNull(request, "群聊");
+        if (effectiveRequest == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null) {
             activeRateLimiter.checkPerGroupActiveRate(groupOpenId);
         }
-        return sendMessageAsync(groupMessageUrl(groupOpenId), request, "群聊")
-                .thenApply(messageId -> {
-                    if (messageId != null) {
-                        ChatContentRecord.recordSentGroupMessage(groupOpenId, request, messageId);
-                        if (request.getMsgId() == null && !OfficialGroups.isAllowedActiveMessages(groupOpenId)) {
+        return sendMessageAsync(groupMessageUrl(groupOpenId), effectiveRequest, "群聊")
+                .thenApply(response -> {
+                    if (response != null) {
+                        ChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                        if (effectiveRequest.getMsgId() == null && !OfficialGroups.isAllowedActiveMessages(groupOpenId)) {
                             OfficialGroups.setAllowedActiveMessage(groupOpenId, true);
                         }
                     }
-                    return messageId;
+                    if (response != null) {
+                        return response.id() ;
+                    } else {
+                        return null;
+                    }
                 });
     }
 
@@ -152,6 +184,28 @@ public class ChatService {
         } catch (Exception e) {
             log.error("撤回单聊消息失败, unionOpenId: {}, messageId: {}", userOpenId, messageId, e);
         }
+    }
+
+    private MessageBody emergencyPauseRequestOrNull(MessageBody request, String logType) {
+        if (!emergencyPaused) {
+            return request;
+        }
+        if (request == null || isActiveRequest(request)) {
+            log.warn("{}主动消息已被应急暂停拦截", logType);
+            return null;
+        }
+        if (request.getMsgId() != null && !request.getMsgId().isBlank()) {
+            return bodyFactory.replyText(request.getMsgId(), EMERGENCY_PAUSED_MESSAGE);
+        }
+        return bodyFactory.eventText(request.getEventId(), EMERGENCY_PAUSED_MESSAGE);
+    }
+
+    private static boolean isActiveRequest(MessageBody request) {
+        return isBlank(request.getMsgId()) && isBlank(request.getEventId());
+    }
+
+    static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /**
@@ -201,7 +255,7 @@ public class ChatService {
         }
     }
 
-    private CompletableFuture<String> sendMessageAsync(String url, MessageBody request, String logType) {
+    private CompletableFuture<ChatResponse> sendMessageAsync(String url, MessageBody request, String logType) {
         return ThreadManager.supplyAsync(() -> doSendMessage(url, request, logType))
                 .exceptionally(e -> {
                     log.error("{}消息异步发送任务失败, url: {}", logType, url, e);
@@ -222,23 +276,44 @@ public class ChatService {
         }
     }
 
-    private String doSendMessage(String url, MessageBody request, String logType) {
-        if (request.getMsgId() == null && request.getEventId() == null) {
+    private ChatResponse doSendMessage(String url, MessageBody request, String logType) {
+        if (request.getMsgId() == null && request.getEventId() == null && logType.equals("群聊")) {
             activeRateLimiter.waitForActiveRateLimit();
         }
 
+        String json;
         try {
-            String json = objectMapper.writeValueAsString(request);
-            var res = HttpService.postJsonDetailed(url, json,
-                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+            json = objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            OfficialSendLogRepository.recordError(null, logType, "POST", url, null,
+                    null, null, "消息序列化失败: " + e.getMessage());
+            log.error("{}消息序列化失败: ", logType, e);
+            return null;
+        }
+
+        String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
+        var res = HttpService.postJsonDetailed(url, json,
+                "Authorization", "QQBot " + tokenManager.getAccessToken());
+        try {
             if (res.status() >= 200 && res.status() < 300 && res.body() != null && !res.body().isBlank()) {
                 JsonNode result = objectMapper.readTree(res.body());
                 JsonNode idNode = result.get("id");
+                String timestamp = result.path("timestamp").asText(null);
+                String refIdx = result.path("ext_info").path("ref_idx").asText(null);
+                String id;
+
                 if (idNode != null && !idNode.asText().isBlank()) {
-                    return idNode.asText();
+                    id = idNode.asText();
+                    OfficialSendLogRepository.recordResponse(traceId, logType, "POST", url, json,
+                            res.status(), res.body());
+                    return new ChatResponse(id, timestamp, refIdx);
                 }
+                OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                        res.status(), res.body(), "返回无 id");
                 log.error("{}消息发送失败, 返回无 id: {}", logType, result);
             } else {
+                OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                        res.status(), res.body(), "HTTP 状态异常或响应为空");
                 log.error("{}消息发送失败, status: {}, body: {}", logType, res.status(), res.body());
                 if (res.body() != null) {
                     try {
@@ -247,11 +322,11 @@ public class ChatService {
                         String msg = err.path("message").asText(null);
                         if (logType.equals("群聊") && url.contains("/groups/")) {
                             String gid = url.substring(url.indexOf("/groups/") + 8, url.indexOf("/messages"));
-                            EventManager.getInstance().callEvent(new OfficialActiveMessageFailEvent(gid, code, msg));
+                            EventManager.getInstance().callEvent(new OfficialGroupSendFailEvent(gid, code, msg));
                         }
                         if (logType.equals("单聊") && url.contains("users")) {
                             String userId = url.substring(url.indexOf("/users/") + 7, url.indexOf("/messages"));
-                            EventManager.getInstance().callEvent(new OfficialC2CPushFailEvent(userId, code, msg));
+                            EventManager.getInstance().callEvent(new OfficialC2CSendFailEvent(userId, code, msg));
                         }
                     } catch (Exception ignored) {
                     }
@@ -259,8 +334,12 @@ public class ChatService {
             }
             return null;
         } catch (JsonProcessingException e) {
-            log.error("{}消息序列化失败: ", logType, e);
+            OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                    res.status(), res.body(), "响应解析失败: " + e.getMessage());
+            log.error("{}消息响应解析失败: ", logType, e);
             return null;
         }
     }
+
+    private record ChatResponse(String id, String timestamp, String refIdx) {}
 }

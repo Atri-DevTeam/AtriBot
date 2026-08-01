@@ -6,7 +6,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.database.repo.SignRepository;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.platform.Platform;
 
 /**
@@ -20,7 +20,7 @@ public class CoinsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
-        var total = SignRepository.getTotalCoins(sender.getUserId());
+        var total = LootRepository.getCoins(sender.getUserId());
         Markdown md = TC.md(Markdown.img(ResourcesProperties.SKB_BANK_LOGO_IMG, 20, 20) + " 当前金粒余额为: " + total);
         sender.sendMessage(md);
         return true;
