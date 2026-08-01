@@ -31,8 +31,6 @@ public class Properties {
 
     public static final String DI_ZHEN_DATA = "data/di-zhen-data.json";
 
-    public static final String HASH_DATA = "data/img_hashes.json";
-
     public static final String SKYBLOCK_CACHE = "data/skyblock-cache.json";
 
     public static final String CHAT_PINNED = "data/chat-pinned.json";
