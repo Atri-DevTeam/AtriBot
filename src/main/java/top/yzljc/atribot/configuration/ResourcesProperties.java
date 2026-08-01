@@ -15,7 +15,7 @@ public final class ResourcesProperties {
 
     private static final String US_API = Config.getInstance().getUS_API();
 
-    public static final String DUMP = UGC_API + "/v2/atrimeow/image-dump";
+    public static final String DUMP = API + "/v2/atrimeow/image-dump";
 
     // @ClassName RconHandler
     public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";

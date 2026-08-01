@@ -10,6 +10,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -18,6 +19,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.function.general.impl.LootService;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.ai.AiProvider;
@@ -141,7 +143,17 @@ public class Test implements CommandExecutor, Listener {
 //                TC.md("\n已完成标题部分"),
 //                TC.md("\n这是最终内容")
 //        ));
-        sender.sendMessage("消息ID: " + sender.getMessageId() + " 场景: " + sender.getPlatform());
+//        sender.sendMessage("消息ID: " + sender.getMessageId() + " 场景: " + sender.getPlatform());
+        if (args.length > 0 && args[0].equals("-g")) {
+            var t = LootService.drawFree(sender.getUserId());
+            sender.sendMessage(t.imageUrl(), ImageType.URL);
+            System.out.println("已为用户 " + sender.getUserId() + " 生成免费抽奖卡片");
+            return true;
+        }
+
+        String url = LootService.renderOverviewCard(sender.getUserId());
+        System.out.println(url);
+        sender.sendMessage(url, ImageType.URL);
         return true;
     }
 
