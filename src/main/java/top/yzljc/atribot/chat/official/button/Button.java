@@ -1,6 +1,9 @@
 package top.yzljc.atribot.chat.official.button;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
+import top.yzljc.atribot.platform.Identifier;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,6 +27,7 @@ public class Button {
     private final ButtonType actionType;
     private PermissionType permissionType = PermissionType.ALL;
     private List<String> allowedOpenIds = Collections.emptyList();
+    private Modal modal;
 
     public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
         this.buttonId = buttonId;
@@ -32,6 +36,7 @@ public class Button {
         this.data = data;
         this.style = style;
         this.actionType = actionType;
+        this.modal = new Modal(Identifier.UNDEFINED);
     }
 
     public Button(String buttonId, String displayText, String data, boolean enter, ButtonStyle style, ButtonType actionType) {
@@ -42,6 +47,7 @@ public class Button {
         this.enter = enter;
         this.style = style;
         this.actionType = actionType;
+        this.modal = new Modal(Identifier.UNDEFINED);
     }
 
     public Button setReply(boolean reply) {
@@ -67,5 +73,31 @@ public class Button {
     public Button setEnter(boolean enter) {
         this.enter = enter;
         return this;
+    }
+
+    public Button setModal(String content) {
+        this.modal.content = content;
+        return this;
+    }
+
+    public Button setModal(String content, String confirmText, String cancelText) {
+        if (confirmText.length() > 4 || cancelText.length() > 4) {
+            throw new IllegalArgumentException("键盘按钮的Modal参数中，确认和取消按钮的字数不能超过4个");
+        }
+        this.modal.content = content;
+        this.modal.confirmText = confirmText;
+        this.modal.cancelText = cancelText;
+        return this;
+    }
+
+    @Getter
+    public static class Modal {
+        private String content;
+        private String confirmText;
+        private String cancelText;
+
+        public Modal(String content) {
+            this.content = content;
+        }
     }
 }

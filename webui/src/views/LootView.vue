@@ -21,7 +21,7 @@
       </header>
 
       <section class="content userlist-layout">
-        <section class="chat-panel userlist-panel">
+        <section class="chat-panel userlist-panel loot-panel">
           <div class="chat-head">
             <div class="userlist-source-tabs" role="tablist">
               <button v-for="t in tabs" :key="t.key"
@@ -157,7 +157,7 @@
           <p>金粒余额：{{ userDetail?.coins ?? 0 }}</p>
           <h4 style="margin:10px 0 4px">持有物品卡</h4>
           <div v-for="loot in userDetail?.loots || []" :key="loot.itemId" class="func-row">
-            <span class="func-name">{{ loot.displayName }}（{{ loot.way }}）</span>
+            <span class="func-name">{{ loot.displayName }}<span v-if="loot.count > 1"> ×{{ loot.count }}</span>（{{ loot.way }}）</span>
             <button class="perm-del" @click="revokeLoot(loot)">×</button>
           </div>
           <p v-if="!userDetail?.loots?.length" style="color:var(--color-text-subtle)">暂无持有物品卡</p>

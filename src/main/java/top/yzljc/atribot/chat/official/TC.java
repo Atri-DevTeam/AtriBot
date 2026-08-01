@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.platform.Identifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,6 +48,16 @@ public class TC {
                     permission.put("specify_user_ids", btn.getAllowedOpenIds());
                 }
                 action.put("permission", permission);
+
+                if (!btn.getModal().getContent().equals(Identifier.UNDEFINED)) {
+                    Map<String, Object> modal = new HashMap<>();
+                    modal.put("content", btn.getModal().getContent());
+                    var confirm = btn.getModal().getConfirmText();
+                    var cancel = btn.getModal().getCancelText();
+                    if (confirm != null) modal.put("confirm_text", confirm);
+                    if (cancel != null) modal.put("cancel_text", cancel);
+                    action.put("modal", modal);
+                }
 
                 Map<String, Object> renderData = new HashMap<>();
                 renderData.put("label", btn.getDisplayText());

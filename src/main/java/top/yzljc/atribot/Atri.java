@@ -14,7 +14,6 @@ import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.database.repo.CoinsMigrationUtil;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
@@ -23,6 +22,7 @@ import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
 import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
@@ -30,7 +30,6 @@ import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.function.general.*;
-import top.yzljc.atribot.function.general.impl.DeliveryFailureReporter;
 import top.yzljc.atribot.function.napcat.*;
 import top.yzljc.atribot.function.napcat.GithubCommitNotify;
 import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
@@ -195,7 +194,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
-        EventManager.getInstance().registerEvents(new DeliveryFailureReporter());
         EventManager.getInstance().registerEvents(new ConnectFourGame());
         RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
         EventManager.getInstance().registerEvents(rockPaperScissorsGame);
@@ -268,6 +266,7 @@ public class Atri {
         CommandManager.getCommand("图源").setExecutor(new ImageSourceStatsCommand());
         CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
+        CommandManager.getCommand("loot").setExecutor(new LootsCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -292,7 +291,6 @@ public class Atri {
         TufeElecRepository.init();
         SignRepository.init();
         LootRepository.init();
-        CoinsMigrationUtil.migrateIfNeeded();
         FeedbackRepository.init();
         ErrorReportRepository.init();
         OfficialSendLogRepository.init();

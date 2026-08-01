@@ -1,17 +1,21 @@
+.loot-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
 .loot-upload-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 12px 18px;
+  padding: 8px 12px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
 .loot-upload-input {
-  flex: 1 1 180px;
+  flex: 1 1 160px;
   min-width: 0;
-  height: 36px;
+  height: 32px;
   padding: 0 10px;
   border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
@@ -21,14 +25,19 @@
 
 /* 文件选择框不锁死高度：原生按钮被 36px 压住会在 Chrome / Safari 里裁掉一截 */
 .loot-upload-file {
-  flex: 0 1 auto;
+  flex: 0 1 220px;
+  min-width: 170px;
   max-width: 100%;
-  min-height: 36px;
-  padding: 6px 8px;
+  min-height: 32px;
+  padding: 4px 8px;
   border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
   font-size: 13px;
   background: var(--color-surface-alt);
+}
+
+.loot-upload-form .primary-button {
+  flex: 0 0 auto;
 }
 
 /* 提示条：只占一行，不接管整个内容区 */
@@ -84,8 +93,9 @@
 
 .loot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 184px));
+  justify-content: start;
+  gap: 12px;
 }
 
 .loot-card {
@@ -99,8 +109,10 @@
 
 .loot-thumb {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  height: 118px;
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: border-box;
   background: var(--color-surface-sunken);
 }
 
@@ -114,10 +126,10 @@
 }
 
 .loot-card-body {
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .loot-inline-input {
@@ -141,6 +153,7 @@
   border-radius: var(--radius-sm);
   padding: 4px;
   resize: vertical;
+  min-height: 48px;
   background: transparent;
 }
 
@@ -151,7 +164,7 @@
 
 .loot-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -168,9 +181,37 @@
 }
 
 .ghost-button.small {
-  padding: 3px 10px;
+  min-height: 26px;
+  padding: 2px 8px;
   font-size: 12px;
   height: auto;
+}
+
+@media (max-width: 640px) {
+  .loot-upload-form {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .loot-upload-input {
+    flex-basis: 100%;
+    height: 32px;
+  }
+
+  .loot-upload-file {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .loot-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .loot-thumb {
+    height: 96px;
+    padding: 5px;
+  }
 }
 
 .loot-leaderboard-row {

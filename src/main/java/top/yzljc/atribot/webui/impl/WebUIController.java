@@ -1803,7 +1803,7 @@ public class WebUIController {
         int total = LootRepository.countUsersMatching(search);
 
         List<LootUserListItemDTO> items = summaries.stream()
-                .map(s -> new LootUserListItemDTO(s.userId(), s.coins(), s.loots().size()))
+                .map(s -> new LootUserListItemDTO(s.userId(), s.coins(), s.totalLootCount()))
                 .toList();
         ctx.json(Result.success(new LootUserListResult(items, total, page, pageSize)));
     }
