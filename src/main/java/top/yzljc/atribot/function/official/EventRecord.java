@@ -95,7 +95,7 @@ public class EventRecord implements Listener {
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
         String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
-            if (OfficialUsers.isC2CPushEnabled(userId)) { // c2cNotifiedUsers.add(userId)
+            if (OfficialUsers.isC2CPushEnabled(userId)) {
                 if (event.getMessage().getContent().equals("查看开发者留言")) {
                     List<Markdown> devLeaveMessage = List.of(
                             TC.md("你好喵~\n\n"),
@@ -109,7 +109,7 @@ public class EventRecord implements Listener {
                     event.sendStreamMarkdownMessageD(devLeaveMessage);
                     return;
                 }
-                if (true) {
+                if (c2cNotifiedUsers.add(userId)) {
                     //                    List<Markdown> greeting = List.of(
 //                            TC.md("你好喵~\n\n"),
 //                                    TC.md(OfficialBot.BOT_NAME + "为兼顾安全问题，暂时无法主动与你聊天。"),

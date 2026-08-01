@@ -2,29 +2,15 @@ package top.yzljc.atribot.test;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
-import top.yzljc.atribot.function.general.impl.LootService;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.service.ai.AiProvider;
-
-import java.util.List;
+import top.yzljc.atribot.function.official.loot.LootService;
 
 /**
  * @Author YZ_Ljc_
@@ -144,16 +130,16 @@ public class Test implements CommandExecutor, Listener {
 //                TC.md("\n这是最终内容")
 //        ));
 //        sender.sendMessage("消息ID: " + sender.getMessageId() + " 场景: " + sender.getPlatform());
-        if (args.length > 0 && args[0].equals("-g")) {
-            var t = LootService.drawFree(sender.getUserId());
-            sender.sendMessage(t.imageUrl(), ImageType.URL);
-            System.out.println("已为用户 " + sender.getUserId() + " 生成免费抽奖卡片");
-            return true;
-        }
-
-        String url = LootService.renderOverviewCard(sender.getUserId());
-        System.out.println(url);
-        sender.sendMessage(url, ImageType.URL);
+//        if (args.length > 0 && args[0].equals("-g")) {
+//            var t = LootService.drawFree(sender.getUserId());
+//            sender.sendMessage(t.imageUrl(), ImageType.URL);
+//            System.out.println("已为用户 " + sender.getUserId() + " 生成免费抽奖卡片");
+//            return true;
+//        }
+//
+//        String url = LootService.renderOverviewCard(sender.getUserId());
+//        System.out.println(url);
+//        sender.sendMessage(url, ImageType.URL);
         return true;
     }
 
