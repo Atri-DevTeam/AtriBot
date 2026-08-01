@@ -944,7 +944,7 @@ WebUI 使用 Sa-Token Sign 进行 API 签名鉴权，登录 Token 在 `config.ym
 
 ## 公开 API
 
-项目提供无需登录鉴权的公开查询接口，用于外部系统集成。详见 [`scripts/public_official_api.md`](scripts/public_official_api.md)。
+项目提供无需登录鉴权的公开查询接口，用于外部系统集成。详见 [`scripts/public_official_api.md`](data/public_official_api.md)。
 
 基础路径：`/webui/api/public/official`
 

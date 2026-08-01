@@ -4,6 +4,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.ErrorReport;
 import top.yzljc.atribot.utils.ServerNoResponseException;
@@ -45,7 +46,7 @@ public class PreImageGenerate {
                 Map.of("url", url), AUTH_HEADER, bearer());
 
         if (resp != null && resp.path("status").asInt() == 200) {
-            String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
+            String urlTmp = ImageDelivery.resolve(resp.path("data"));
             int width = resp.path("data").path("width").asInt();
             int height = resp.path("data").path("height").asInt();
             return new ImageDTO(urlTmp, width, height);
@@ -58,7 +59,7 @@ public class PreImageGenerate {
                 ResourcesProperties.DUMP, body, AUTH_HEADER, bearer());
 
         if (resp != null && resp.path("status").asInt() == 200) {
-            String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
+            String urlTmp = ImageDelivery.resolve(resp.path("data"));
             int width = resp.path("data").path("width").asInt();
             int height = resp.path("data").path("height").asInt();
             return new ImageDTO(urlTmp, width, height);
@@ -74,7 +75,7 @@ public class PreImageGenerate {
             return new ImageDTO(null, 0, 0, "访问远程数据失败，如持续发生请向开发者报告此问题，traceId: " + err, err);
         }
 
-        String urlTmp = ResourcesProperties.DUMP + "/" + resp.path("data").path("uuid").asText();
+        String urlTmp = ImageDelivery.resolve(resp.path("data"));
         int width = resp.path("data").path("width").asInt();
         int height = resp.path("data").path("height").asInt();
 

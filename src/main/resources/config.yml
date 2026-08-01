@@ -16,6 +16,10 @@ debug-mode: false
 listen-port: 1234
 # API
 api-url: null
+
+delivery:
+  oss-dump-base-url: "null"
+
 # MySQL 数据库配置
 mysql:
   host: "localhost"
@@ -176,18 +180,18 @@ image-source:
   enabled: false
   # 投稿上报地址，POST body: {uuid, uploader, time, hash, ...}（不含审核状态）
   # 远端响应与 Result 同构，按 status 判定：200 成功，400 上传失败
-  upload-url: "https://qq-ugc.yzljc.top/imagesource/upload"
+  upload-url: "null"
   # 图片删除地址前缀，后端会 DELETE <delete-url>/<uuid> 并带 Authorization header
-  delete-url: "https://qq-ugc.yzljc.top/imagesource/delete"
+  delete-url: "null"
   # 图片浏览地址前缀，WebUI 用 <view-base-url>/<uuid> 展示图片，例如 /imagesource/get/{uuid}
-  # 留空则回退到平台原始 CDN 链接
-  view-base-url: "https://qq-ugc.yzljc.top/imagesource/get"
-  # 共享密钥。投稿上报/删除远端图片时作为 Authorization: Bearer <token> 发送
+  view-base-url: "null"
+  # 下发路线查询前缀。发图给 QQ 之前 GET <deliver-url>/<uuid>，远端回 {way, url}
+  deliver-url: "null"
+  # 共享密钥
   token: "null"
   # 单个用户同时处于未审核状态的投稿数量上限
   pending-limit: 3
 
 loots:
-  # 抽卡目录管理密钥。调用 UGC 端 /atrimeow/loots/admin/** 时作为 Authorization: Bearer <token> 发送
   # 需与 atrimeow-ugc 部署配置中的 atri.loots.admin-token 保持一致
   admin-token: "null"

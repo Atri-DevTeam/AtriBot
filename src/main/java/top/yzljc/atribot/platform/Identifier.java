@@ -9,7 +9,7 @@ package top.yzljc.atribot.platform;
  */
 public class Identifier {
 
-    public static final String SCENE_NOT_GROUP = "scene_not_group";
+    public static final String UNDEFINED = "undefined";
 
     public static final String ONLY_OFFICIAL = "该指令仅可在官方机器人端使用！";
 

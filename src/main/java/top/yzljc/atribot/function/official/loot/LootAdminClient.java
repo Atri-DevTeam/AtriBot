@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AtriBot -> atrimeow-ugc 抽卡目录管理接口客户端，使用独立的 loots.admin-token 鉴权，
- * 与 {@link top.yzljc.atribot.function.official.imagesource.ImageSourceClient} 的写法保持一致。
- *
  * @Author YZ_Ljc_
  * @ClassName LootAdminClient
  * @Created_at 2026/07/31

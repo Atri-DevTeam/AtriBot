@@ -53,6 +53,8 @@ public class Config {
     private String apiUrl;
     @Getter
     private String ugcApiUrl;
+    @Getter
+    private String ossDumpBaseUrl;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -175,6 +177,8 @@ public class Config {
     @Getter
     private String imageSourceViewBaseUrl;
     @Getter
+    private String imageSourceDeliverUrl;
+    @Getter
     private String imageSourceToken;
     @Getter
     private int imageSourcePendingLimit;
@@ -231,6 +235,7 @@ public class Config {
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
+            this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
@@ -305,6 +310,7 @@ public class Config {
             this.imageSourceUploadUrl = yaml.getString("image-source.upload-url", "null");
             this.imageSourceDeleteUrl = yaml.getString("image-source.delete-url", "null");
             this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
+            this.imageSourceDeliverUrl = yaml.getString("image-source.deliver-url", "null");
             this.imageSourceToken = yaml.getString("image-source.token", "null");
             this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);
 

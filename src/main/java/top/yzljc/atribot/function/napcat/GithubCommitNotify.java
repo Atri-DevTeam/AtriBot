@@ -15,6 +15,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.Platform;
@@ -170,8 +171,11 @@ public class GithubCommitNotify implements CommandExecutor {
                 return;
             }
 
-            String uuid = resp.path("data").path("uuid").asText();
-            String imageUrl = ResourcesProperties.DUMP + "/" + uuid;
+            String imageUrl = ImageDelivery.resolve(resp.path("data"));
+            if (imageUrl == null) {
+                log.error("CommitDisplay 响应里没有 uuid, url={}", apiUrl);
+                return;
+            }
 
             Collection<String> destinationGroups = new ArrayList<>();
             if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase()))

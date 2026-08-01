@@ -178,13 +178,44 @@ public class ImageSourceClient {
         }
         int width = dto.getProcessedWidth() > 0 ? dto.getProcessedWidth() : dto.getWidth();
         int height = dto.getProcessedHeight() > 0 ? dto.getProcessedHeight() : dto.getHeight();
-        return new ImageDAO(viewUrl(dto), width, height);
+        return new ImageDAO(deliveryUrl(dto), width, height);
     }
 
     public static ImageDAO getRandomImage() {
         return randomImage();
     }
 
+    /**
+     * 要发给 QQ 的投稿地址。
+     *
+     * <p>投稿不像生图那样"POST 完顺手拿到 way"——它的 uuid 是从本地库里翻出来的，
+     * 上传时那次判断早就过期了。所以发之前先问一次远端这一刻该走哪条路：
+     * 响应只有几十字节，不吃带宽；远端选了 OSS 会先把这张镜像上去再返回地址，
+     * 保证拿到手的链接一定拉得到。问不到就退回本机地址，只是少了这层卸载，不会失效。
+     */
+    public static String deliveryUrl(ImageSourceDTO dto) {
+        Config config = Config.getInstance();
+        String deliverUrl = config.getImageSourceDeliverUrl();
+        if (isBlank(deliverUrl) || isBlank(dto.getImageUuid())) {
+            return viewUrl(dto);
+        }
+
+        try {
+            JsonNode resp = HttpService.sendGetRequest(joinPath(deliverUrl, dto.getImageUuid()), authHeaders(config));
+            if (resp != null && resp.path("status").asInt() == 200) {
+                JsonNode data = resp.path("data");
+                String url = data.path("url").asText(null);
+                if ("oss".equalsIgnoreCase(data.path("way").asText(null)) && !isBlank(url)) {
+                    return url;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询图源下发路线失败，按本机地址发送: uuid={}", dto.getImageUuid(), e);
+        }
+        return viewUrl(dto);
+    }
+
+    /** 本机图源地址。WebUI 列表用它，不走调度也不该为每张缩略图多打一次请求 */
     public static String viewUrl(ImageSourceDTO dto) {
         String base = Config.getInstance().getImageSourceViewBaseUrl();
         if (!isBlank(base) && !isBlank(dto.getImageUuid())) {
