@@ -106,10 +106,13 @@ public class CommandSender extends User {
         return null;
     }
 
+    /**
+     * QQ官机频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}，频道私信中，{@code grouId}字段请传入所在频道的{@code guildId}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text) {
         switch (platform) {
-            case OFFICIAL_GROUP, NAPCAT_GROUP -> {
+            case OFFICIAL_GROUP, NAPCAT_GROUP, OFFICIAL_GUILD_CHANNEL, OFFICIAL_GUILD_DM -> {
                 return super.sendMessage(this.groupId, this.messageId, text);
             }
             case OFFICIAL_C2C -> {
@@ -151,8 +154,11 @@ public class CommandSender extends User {
             case OFFICIAL_GROUP -> {
                 return super.sendMessage(this.groupId, this.messageId, markdown, at);
             }
+            case OFFICIAL_C2C -> {
+                return super.sendMessage(this.messageId, markdown);
+            }
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown, boolean at)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -161,14 +167,23 @@ public class CommandSender extends User {
             case OFFICIAL_GROUP -> {
                 return super.sendMessage(this.groupId, this.messageId, markdown, buttons, at);
             }
+            case OFFICIAL_C2C -> {
+                return super.sendMessage(this.messageId, markdown, buttons);
+            }
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown, Object buttons)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(Markdown markdown, Object buttons, boolean at)");
     }
 
+    /**
+     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
+     *
+     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
+     * 且 {@param type} 只能为 {@link ImageType#URL}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String data, ImageType type) {
         switch (platform) {
-            case OFFICIAL_GROUP -> {
+            case OFFICIAL_GROUP, OFFICIAL_GUILD_CHANNEL, OFFICIAL_GUILD_DM -> {
                 return super.sendMessage(this.groupId, this.messageId, data, type);
             }
             case OFFICIAL_C2C -> {
@@ -178,10 +193,16 @@ public class CommandSender extends User {
         throw new UnsupportedPlatform(this.platform, "sendMessage(String data, ImageType type)");
     }
 
+    /**
+     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
+     *
+     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
+     * 且 {@param type} 只能为 {@link ImageType#URL}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text, String data, ImageType type) {
         switch (platform) {
-            case OFFICIAL_GROUP -> {
+            case OFFICIAL_GROUP, OFFICIAL_GUILD_CHANNEL, OFFICIAL_GUILD_DM -> {
                 return super.sendMessage(this.groupId, this.messageId, text, data, type);
             }
             case OFFICIAL_C2C -> {

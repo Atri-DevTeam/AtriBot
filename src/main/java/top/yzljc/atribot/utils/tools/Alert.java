@@ -13,6 +13,7 @@ import top.yzljc.atribot.configuration.Config;
 public class Alert {
 
     public static void notify(String message) {
+        if (!Config.getInstance().isNapcatEnabled()) return;
         GroupMessage.chatMessage("3199590352", Config.getInstance().getNapcatDebugGroupUin(), message, true);
     }
 }

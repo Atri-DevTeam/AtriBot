@@ -33,9 +33,6 @@ commands:
   rollback:
     description: 批量撤回消息
     usage: /rollback [-n 数量] [-u QQ号]
-  motd:
-    description: 查询MC服务器状态
-    usage: /motd <服务器ip地址(端口号可选)>
   mojang:
     description: 查询Mojang服务器状态
   cl:
@@ -233,6 +230,19 @@ commands:
       - earth
       - online
       - 地球
-  loot:
+  随机物品:
     description: 抽取Minecraft物品卡
-    usage: /loot [bag]
+    usage: /随机物品 [bag]
+    aliases:
+      - 随机物品
+      - 随机物品卡
+      - mcitem
+      - mcitemcard
+      - loot
+  recovergolds:
+    description: 补发金粒
+    usage: /recovergolds
+    aliases:
+      - recovermcbind
+      - recoverjoin
+      - recoverbefriend

@@ -70,6 +70,9 @@ public class WebUIRouter {
         server.post("/webui/api/napcat/messages", WebUIController::fetchNapcatMessages);
         server.post("/webui/api/napcat/recall", WebUIController::recallNapcatMessages);
         server.post("/webui/api/debug/official/request", WebUIController::debugOfficialApi);
+        server.get("/webui/api/function-settings", WebUIController::listFunctionSettings);
+        server.post("/webui/api/function-settings/{functionId}", WebUIController::saveFunctionSetting);
+        server.delete("/webui/api/function-settings/{functionId}", WebUIController::deleteFunctionSetting);
         server.get("/webui/api/errors/list", WebUIController::listErrorReports);
         server.get("/webui/api/errors/stats", WebUIController::errorReportStats);
         server.get("/webui/api/errors/{traceId}", WebUIController::getErrorReport);

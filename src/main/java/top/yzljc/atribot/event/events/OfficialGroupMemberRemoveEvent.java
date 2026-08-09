@@ -21,7 +21,7 @@ public class OfficialGroupMemberRemoveEvent extends Event {
     private final String memberOpenId;
     private final String timestamp;
 
-    public PermissionRole getUserPermissionRole() {
+    public PermissionRole getUserBotRole() {
         return OfficialUsers.getRole(this.memberOpenId);
     }
 }

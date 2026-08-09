@@ -1755,6 +1755,11 @@
   background: #f3f4f6;
 }
 
+.badge.purple {
+  color: #6b21a8;
+  background: #f3e8ff;
+}
+
 .func-box .checkbox-label + .checkbox-label,
 .perm-modal .checkbox-label + .checkbox-label,
 .modal-body .checkbox-label + .checkbox-label {

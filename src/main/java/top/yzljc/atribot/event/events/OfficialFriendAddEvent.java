@@ -16,4 +16,6 @@ import top.yzljc.atribot.event.Event;
 public class OfficialFriendAddEvent extends Event {
     private final String userOpenId;
     private final String timestamp;
+    private final int scene;
+    private final String sceneParam;
 }

@@ -2,7 +2,7 @@ package top.yzljc.atribot.database.repo;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.database.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 
 import java.sql.Timestamp;
@@ -327,6 +327,26 @@ public class ImageSourceRepository {
             log.error("统计近期投稿数量失败", e);
         }
         return 0;
+    }
+
+    /**
+     * 找出所有未审核（PENDING）与已拒绝（DENIED）且带远端 uuid 的投稿，
+     * 用于一次性迁移归位到 pending/ 与 reject/ 目录。
+     */
+    public static List<ImageSourceDTO> findUnreviewedWithUuid() {
+        String sql = "SELECT * FROM `image_source` WHERE `review_status` IN ('PENDING', 'DENIED') " +
+                "AND `image_uuid` IS NOT NULL AND `image_uuid` <> '' ORDER BY `create_time` ASC";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            try (var rs = ps.executeQuery()) {
+                List<ImageSourceDTO> list = new ArrayList<>();
+                while (rs.next()) list.add(rowToDTO(rs));
+                return list;
+            }
+        } catch (Exception e) {
+            log.error("查询未审核/已拒绝图源失败", e);
+            return List.of();
+        }
     }
 
     public static int countByStatus(String status) {

@@ -11,11 +11,13 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.utils.tools.RandomGolds;
 
 import java.util.List;
 import java.util.Map;
@@ -149,13 +151,13 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
 
         event.answer(AnswerCode.SUCCESS);
 
-        // 双方都选了 → 揭晓结果
+        // 双方都选了 → 结果
         if (game.playerAChoice != null && game.playerBChoice != null) {
             game.phase = Phase.FINISHED;
             activeGames.remove(sessionId);
             sendResult(game, event);
         } else {
-            // 第一个人选了 → 不透露选了啥，只发 @谁选了
+            // 第一个人选了 → 只发 @谁选了
             sendWaitingForOther(game, event);
         }
     }
@@ -198,19 +200,27 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
 
         int winner = determineWinner(choiceA, choiceB);
 
-        // VS 对决行
-        String vsLine = Markdown.at(game.playerAOpenId) + "  " + emojiA
-                + "  **VS**  " + emojiB + "  " + Markdown.at(game.playerBOpenId);
-
         // 结果行
         String resultLine;
+        int playerAGolds = 0;
+        int playerBGolds = 0;
         if (winner == 0) {
             resultLine = "🤝 平局！";
+            playerAGolds = LootRepository.addCoins(game.playerAOpenId, RandomGolds.get(3, 10));
+            playerBGolds = LootRepository.addCoins(game.playerBOpenId, playerAGolds);
         } else if (winner == 1) {
             resultLine = "🎉 " + Markdown.at(game.playerAOpenId) + " 获胜！";
+            playerAGolds = LootRepository.addCoins(game.playerAOpenId, RandomGolds.get(7, 15));
+            playerBGolds = LootRepository.addCoins(game.playerBOpenId, RandomGolds.get(1, 6));
         } else {
             resultLine = "🎉 " + Markdown.at(game.playerBOpenId) + " 获胜！";
+            playerAGolds = LootRepository.addCoins(game.playerAOpenId, RandomGolds.get(1, 6));
+            playerBGolds = LootRepository.addCoins(game.playerBOpenId, RandomGolds.get(7, 15));
         }
+
+        // VS 对决行
+        String vsLine = Markdown.at(game.playerAOpenId) + "(+" + playerAGolds + "金粒)  " + emojiA
+                + "  **VS**  " + emojiB + "(+" + playerBGolds + "金粒)  " + Markdown.at(game.playerBOpenId);
 
         String markdown = "**石头剪刀布 - 结算**\n\n"
                 + vsLine + "\n\n"
@@ -221,10 +231,6 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         recallOldMessage(game);
         game.lastMessageId = messageId;
     }
-
-    // ================================================================
-    // Game logic
-    // ================================================================
 
     /**
      * @return 0 = tie, 1 = playerA wins, 2 = playerB wins

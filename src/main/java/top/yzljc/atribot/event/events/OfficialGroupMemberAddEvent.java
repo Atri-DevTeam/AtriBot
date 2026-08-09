@@ -45,7 +45,7 @@ public class OfficialGroupMemberAddEvent extends Event {
         return GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown, buttons);
     }
 
-    public PermissionRole getUserPermissionRole() {
+    public PermissionRole getUserBotRole() {
         return OfficialUsers.getRole(this.memberOpenId);
     }
 }

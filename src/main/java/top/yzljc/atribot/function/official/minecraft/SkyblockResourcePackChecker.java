@@ -12,7 +12,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -120,7 +120,7 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
 
             var groups = OfficialGroups.enabledGroups("skyblock_resource_pack");
             var users = OfficialUsers.enabledUsers("skyblock_resource_pack");
-            var lastUpdatedTime = "上一次的更新时间为 " + FormatTools.formatTimestampMilli(tmpLastTime);
+            var lastUpdatedTime = "Skyblock资源包已在近期更新，上一次的更新时间为 " + FormatTools.formatTimestampMilli(tmpLastTime);
             for (var gid : groups) {
                 GroupChat.sendMessage(gid, lastUpdatedTime, ImageType.URL, r.url());
             }

@@ -20,10 +20,11 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.function.general.impl.ArticleScraper;
-import top.yzljc.atribot.function.general.impl.AtriNewsSummarizer;
-import top.yzljc.atribot.function.general.impl.ImageDTO;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ArticleScraper;
+import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -250,6 +251,11 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             articleText = article.description;
         } else {
             log.info(">>> [成功] 网页正文提取完毕，长度: {}", articleText.length());
+        }
+
+        if (PushTaskGlobalSettings.isDisabledForGroup("mc_news") && PushTaskGlobalSettings.isDisabledForC2C("mc_news")) {
+            log.warn("当前推送已被禁用，相关流程已中止");
+            return;
         }
 
         log.info(">>> 2. 开始请求 AI 进行总结...");

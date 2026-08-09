@@ -11,6 +11,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.platform.Platform;
 
@@ -28,6 +29,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     private static final int COLS = 6;
     private static final int DEFAULT_MINES = 6;
     private static final int MAX_MINES = 29;
+    private static final int MAX_REWARD = 30;
+    private static final int MIN_REWARD = 15;
+    private static final int LOW_OPS_THRESHOLD = 5;
+    private static final int LOW_OPS_CAP = 12;
     private static final String[] NUM_EMOJIS = {"⬜", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"};
 
     @Override
@@ -142,6 +147,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             return;
         }
 
+        game.operations.merge(sender.getUserId(), 1, Integer::sum);
         game.revealed[r][c] = true;
 
         if (game.board[r][c] == -1) {
@@ -167,6 +173,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             return;
         }
 
+        game.operations.merge(sender.getUserId(), 1, Integer::sum);
         game.flagged[r][c] = !game.flagged[r][c];
         sendOrUpdateGameBoard(game, sessionId, sender, game.flagged[r][c] ? "成功插旗 🚩" : "已拔除旗帜 🔲");
     }
@@ -213,13 +220,16 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         activeGames.remove(sessionId);
         long timeTaken = (System.currentTimeMillis() - game.startTime) / 1000;
 
+        Map<String, Integer> rewards = grantRewards(game);
+
         StringBuilder participantsMarkdown = new StringBuilder();
         if (sender.getPlatform() == Platform.OFFICIAL_GROUP) {
             for (String uid : game.participants) {
-                participantsMarkdown.append(String.format("<qqbot-at-user id=\"%s\" /> ", uid));
+                participantsMarkdown.append(String.format("<qqbot-at-user id=\"%s\" />(+%d金粒) ", uid, rewards.getOrDefault(uid, 0)));
             }
         } else {
-            participantsMarkdown.append("你");
+            String uid = game.participants.iterator().next();
+            participantsMarkdown.append("你(+").append(rewards.getOrDefault(uid, 0)).append("金粒) ");
         }
 
         String markdown = String.format("""
@@ -236,6 +246,46 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 buildInlineCmd("/扫雷", "再来一局"));
 
         sendKeyboardMessage(game, sender, markdown);
+    }
+
+    /**
+     * 结算金粒奖励：按各参与者操作次数（参与度）降序发放
+     * 操作最多的得 30，依次递减，最少的得 15；相同操作数者获得相同奖励
+     * 操作数不超过 5 步的参与者，奖励上限为 12，防止秒踩雷刷金粒
+     */
+    private Map<String, Integer> grantRewards(GameState game) {
+        List<Integer> distinctCounts = game.operations.values().stream()
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+
+        Map<String, Integer> rewards = new HashMap<>();
+        if (distinctCounts.size() <= 1) {
+            // 全员操作数相同（或仅一人参与）：都拿最高奖励
+            for (String uid : game.participants) {
+                rewards.put(uid, MAX_REWARD);
+            }
+        } else {
+            int lastIdx = distinctCounts.size() - 1;
+            for (String uid : game.participants) {
+                int ops = game.operations.getOrDefault(uid, 0);
+                int idx = distinctCounts.indexOf(ops);
+                int reward = MAX_REWARD - (MAX_REWARD - MIN_REWARD) * idx / lastIdx;
+                rewards.put(uid, reward);
+            }
+        }
+
+        // 低参与度保护：操作数不超过 5 步的参与者，奖励封顶 12，防止秒踩雷刷金粒
+        for (String uid : game.participants) {
+            if (game.operations.getOrDefault(uid, 0) <= LOW_OPS_THRESHOLD) {
+                rewards.put(uid, Math.min(rewards.getOrDefault(uid, 0), LOW_OPS_CAP));
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : rewards.entrySet()) {
+            LootRepository.addCoins(entry.getKey(), entry.getValue());
+        }
+        return rewards;
     }
 
     private void sendOrUpdateGameBoard(GameState game, String sessionId, CommandSender sender, String actionMsg) {
@@ -367,6 +417,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         boolean isWin = false;
 
         Set<String> participants = ConcurrentHashMap.newKeySet();
+        Map<String, Integer> operations = new ConcurrentHashMap<>();
 
         public GameState(int minesCount) {
             this.minesCount = minesCount;

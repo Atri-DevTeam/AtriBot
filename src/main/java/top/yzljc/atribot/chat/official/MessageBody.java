@@ -52,6 +52,10 @@ public class MessageBody {
     @JsonProperty("is_wakeup")
     private Boolean isWakeup;
 
+    /** 仅频道可用 */
+    @JsonProperty("image")
+    private String image;
+
     @JsonIgnore
     private String recordAttachments;
 }

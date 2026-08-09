@@ -38,6 +38,9 @@ public final class ResourcesProperties {
     // @ClassName EventRecord
     public static final String WELCOME_IMG = "https://res.yzljc.top/images/welcome-img-w.png";
 
+    // @ClassName EventRecord
+    public static final String WELCOME_DEV_IMG = "https://res.yzljc.top/images/welcome-dev-img.png";
+
     // @ClassName MinecraftNetwork
     public static final String CONSOLE_LOGO_IMG = "https://res.yzljc.top/images/console-logo.png";
 
@@ -52,6 +55,9 @@ public final class ResourcesProperties {
 
     // @ClassName DiceImpl
     public static final String DICE_RENDER_RESULT_7_IMG = "https://res.yzljc.top/images/dice_render_result_7.png";
+
+    // @ClassName FullMessageEnableCommand
+    public static final String FULL_MESSAGE_ENABLE_GUIDE = "https://res.yzljc.top/images/enable_full_message_guide.png";
 
     // @ClassName MinecraftNews
     public static final String MC_NEWS_API = UGC_API + "/v2/atrimeow/mcnews";

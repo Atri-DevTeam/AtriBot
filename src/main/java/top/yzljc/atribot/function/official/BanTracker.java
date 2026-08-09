@@ -8,8 +8,8 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.general.impl.ImageDTO;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 

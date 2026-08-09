@@ -34,6 +34,11 @@ public class WebUICommand implements CommandExecutor, Listener {
             return true;
         }
 
+        if (!sender.hasPermission()) {
+            sender.sendMessage("你是谁？");
+            return true;
+        }
+
         Object keyboard = TC.keyboard(
                 List.of(
                         List.of(new Button("start", "启用", "webui_session", true, ButtonStyle.BLUE, ButtonType.CALLBACK),
@@ -53,7 +58,10 @@ public class WebUICommand implements CommandExecutor, Listener {
         if (!"webui_session".equals(event.getButtonValue())) return;
 
         AnswerCode code = AnswerCode.SUCCESS;
-        if (!OfficialUsers.isAdmin(event.getUnionOpenId())) code = AnswerCode.NO_PERMISSION;
+        if (!OfficialUsers.isAdmin(event.getUnionOpenId())) {
+            event.answer(AnswerCode.NO_PERMISSION);
+            return;
+        }
 
         try {
             if (event.getButtonId().equals("start")) {

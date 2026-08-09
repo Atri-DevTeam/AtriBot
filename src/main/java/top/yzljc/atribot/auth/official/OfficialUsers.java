@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.C2CRepository;
+import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -293,6 +294,9 @@ public class OfficialUsers {
      * 获取开启了某功能的所有私聊用户列表。
      */
     public static List<String> enabledUsers(String functionKey) {
+        if (PushTaskGlobalSettings.isDisabledForC2C(functionKey)) {
+            return List.of();
+        }
         return C2CRepository.queryEnabledUsers(functionKey);
     }
 

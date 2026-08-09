@@ -1,9 +1,0 @@
-package top.yzljc.atribot.event
-
-enum class EventType {
-    NAPCAT_GROUP_MESSAGE,
-    OFFICIAL_GROUP_MESSAGE,
-    OFFICIAL_GROUP_AT_MESSAGE,
-    OFFICIAL_C2C_MESSAGE,
-    DISCORD_SLASH_COMMAND;
-}

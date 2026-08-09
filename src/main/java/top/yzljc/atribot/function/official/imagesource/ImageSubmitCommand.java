@@ -6,7 +6,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.database.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.platform.Platform;
@@ -40,13 +40,13 @@ public class ImageSubmitCommand implements CommandExecutor {
 
         List<String> imageUrls = sender.getImageUrls();
         if (imageUrls.isEmpty()) {
-            sender.sendMessage("请在发送 /投稿 时一并附上图片哦！\n用法：/投稿 [图片]");
+            sender.sendMessage("请在发送 /投稿 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/投稿 [图片]");
             return true;
         }
 
         String uploaderId = sender.getUserId();
         int pendingLimit = Config.getInstance().getImageSourcePendingLimit();
-        if (ImageSourceRepository.countPendingByUploader(uploaderId) >= pendingLimit) {
+        if (ImageSourceRepository.countPendingByUploader(uploaderId) >= pendingLimit && !sender.hasPermission()) {
             sender.sendMessage("你还有 " + pendingLimit + " 张投稿正在等待审核，先等等这批过审再来吧~");
             return true;
         }

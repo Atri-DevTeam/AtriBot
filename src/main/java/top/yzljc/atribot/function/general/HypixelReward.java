@@ -24,8 +24,8 @@ import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
-import top.yzljc.atribot.function.general.impl.ImageDTO;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 

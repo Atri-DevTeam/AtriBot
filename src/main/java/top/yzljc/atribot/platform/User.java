@@ -5,9 +5,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.configuration.Config;
 
@@ -72,6 +70,7 @@ public class User {
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String text)");
     }
 
+    /** QQ官机频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}，频道私信中，{@code grouId}字段请传入所在频道的{@code guildId} */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String text) {
         switch (this.platform) {
@@ -80,6 +79,12 @@ public class User {
             }
             case NAPCAT_GROUP -> {
                 return GroupMessage.replyMessage(this.userId, groupId, messageId, false, text);
+            }
+            case OFFICIAL_GUILD_CHANNEL -> {
+                return GuildChannelChat.replyMessage(groupId, messageId, text);
+            }
+            case OFFICIAL_GUILD_DM -> {
+                return GuildDirectChat.replyMessage(groupId, messageId, text);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text)");
@@ -139,21 +144,45 @@ public class User {
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
     }
 
+    /**
+     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
+     *
+     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
+     * 且 {@param type} 只能为 {@link ImageType#URL}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String data, ImageType type) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
                 return GroupChat.replyMessage(groupId, messageId, type, data);
             }
+            case OFFICIAL_GUILD_CHANNEL -> {
+                return GuildChannelChat.replyImageMessage(groupId, messageId, data, ImageType.URL);
+            }
+            case OFFICIAL_GUILD_DM -> {
+                return GuildDirectChat.replyImageMessage(groupId, messageId, data, ImageType.URL);
+            }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, ImageType type)");
     }
 
+    /**
+     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
+     *
+     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
+     * 且 {@param type} 只能为 {@link ImageType#URL}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String text, String data, ImageType type) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
                 return GroupChat.replyMessage(groupId, messageId, text, type, data);
+            }
+            case OFFICIAL_GUILD_CHANNEL -> {
+                return GuildChannelChat.replyImageMessage(groupId, messageId, data, text, ImageType.URL);
+            }
+            case OFFICIAL_GUILD_DM -> {
+                return GuildDirectChat.replyImageMessage(groupId, messageId, data, text, ImageType.URL);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String data, ImageType type)");

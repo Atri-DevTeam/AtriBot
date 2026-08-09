@@ -131,9 +131,10 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             int GUILD_MEMBERS = 1 << 1;
             int GUILD_MESSAGE_REACTIONS = 1 << 10;
             int AUDIO_ACTION = 1 << 29;
+            int UNKNOWN_BUT_I_CAN_USE = 1 << 18 | 1 << 19 | 1 << 21 | 1 << 22;
 
             int intents = INTENT_GROUP_AND_C2C | INTENT_INTERACTION | INTENT_DIRECT_MESSAGE | MESSAGE_AUDIT | INTENT_GROUP_MEMBER | PUBLIC_GUILD_MESSAGES
-                    | GUILDS | GUILD_MEMBERS | GUILD_MESSAGE_REACTIONS | AUDIO_ACTION;
+                    | GUILDS | GUILD_MEMBERS | GUILD_MESSAGE_REACTIONS | AUDIO_ACTION | UNKNOWN_BUT_I_CAN_USE;
             d.put("intents", intents);
 
             d.putArray("shard").add(0).add(1);
@@ -194,58 +195,59 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     }
 
     private void handleEvent(String eventType, String eventId, JsonNode eventData) {
-        if ("READY".equals(eventType)) {
-            sessionId = eventData.get("session_id").asText();
-            log.info("鉴权成功！获取到 session_id: {}", sessionId);
-            return;
-        }
-
-        if ("GROUP_AT_MESSAGE_CREATE".equals(eventType)) {
-            BotEvents.handleGroupAtChatEvent(eventData);
-        }
-
-        if ("C2C_MESSAGE_CREATE".equals(eventType)) {
-            BotEvents.handleC2CChatEvent(eventData);
-        }
-
-        if ("GROUP_MESSAGE_CREATE".equals(eventType)) {
-            BotEvents.handleGroupChatEvent(eventData);
-        }
-
-        if ("GROUP_ADD_ROBOT".equals(eventType)) {
-            BotEvents.handleGroupJoinEvent(eventData);
-        }
-
-        if ("GROUP_DEL_ROBOT".equals(eventType)) {
-            BotEvents.handleGroupDelEvent(eventData);
-        }
-
-        if ("FRIEND_ADD".equals(eventType)) {
-            BotEvents.handleFriendAddEvent(eventData);
-        }
-
-        if ("FRIEND_DEL".equals(eventType)) {
-            BotEvents.handleFriendRemoveEvent(eventData);
-        }
-
-        if ("INTERACTION_CREATE".equals(eventType)) {
-            BotEvents.handleInteractionEvent(eventId, eventData);
-        }
-
-        if ("GROUP_MEMBER_ADD".equals(eventType)) {
-            BotEvents.handleGroupMemberAddEvent(eventId, eventData);
-        }
-
-        if ("GROUP_MEMBER_REMOVE".equals(eventType)) {
-            BotEvents.handleGroupMemberRemoveEvent(eventId, eventData);
-        }
-
-        if ("MESSAGE_AUDIT_REJECT".equals(eventType)) {
-            BotEvents.handleMessageAuditRejectEvent(eventData);
-        }
-
-        if ("AT_MESSAGE_CREATE".equals(eventType)) {
-            log.debug("事件类型: {}\n事件数据: {}", eventType, eventData);
+        switch (eventType) {
+            case "READY":
+                sessionId = eventData.get("session_id").asText();
+                log.info("鉴权成功！获取到 session_id: {}", sessionId);
+                return;
+            case "RESUMED":
+                log.info("会话恢复成功！");
+                break;
+            case "GROUP_AT_MESSAGE_CREATE":
+                BotEvents.handleGroupAtChatEvent(eventData);
+                break;
+            case "C2C_MESSAGE_CREATE":
+                BotEvents.handleC2CChatEvent(eventData);
+                break;
+            case "GROUP_MESSAGE_CREATE":
+                BotEvents.handleGroupChatEvent(eventData);
+                break;
+            case "GROUP_ADD_ROBOT":
+                BotEvents.handleGroupJoinEvent(eventData);
+                break;
+            case "GROUP_DEL_ROBOT":
+                BotEvents.handleGroupDelEvent(eventData);
+                break;
+            case "FRIEND_ADD":
+                BotEvents.handleFriendAddEvent(eventData);
+                break;
+            case "FRIEND_DEL":
+                BotEvents.handleFriendRemoveEvent(eventData);
+                break;
+            case "INTERACTION_CREATE":
+                BotEvents.handleInteractionEvent(eventId, eventData);
+                break;
+            case "GROUP_MEMBER_ADD":
+                BotEvents.handleGroupMemberAddEvent(eventId, eventData);
+                break;
+            case "GROUP_MEMBER_REMOVE":
+                BotEvents.handleGroupMemberRemoveEvent(eventId, eventData);
+                break;
+            case "MESSAGE_AUDIT_REJECT":
+                BotEvents.handleMessageAuditRejectEvent(eventData);
+                break;
+            case "AT_MESSAGE_CREATE":
+                BotEvents.handleGuildChannelAtMessageCreateEvent(eventData);
+                break;
+            case "GROUP_JOIN_REQUEST":
+                BotEvents.handleGroupJoinRequestEvent(eventId, eventData);
+                break;
+            case "DIRECT_MESSAGE_CREATE":
+                BotEvents.handleGuildDirectMessageCreateEvent(eventData);
+                break;
+            default:
+                log.info("[!] 收到新的事件类型: {}\n {}", eventType, eventData);
+                break;
         }
 
         if (DebugCommand.isOfficialDebugEnabled.get()) {
@@ -256,7 +258,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "事件类型: " + eventType + "\n事件数据: " + eventData);
         }
 
-        if (Config.getInstance().isDebugMode()) {
+        if (Config.getInstance().getEnv().equals("dev")) {
             log.debug("{}\n{}", eventType, eventData);
         }
     }

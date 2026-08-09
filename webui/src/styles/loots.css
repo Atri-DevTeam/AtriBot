@@ -40,6 +40,25 @@
   flex: 0 0 auto;
 }
 
+/* 「特殊卡」勾选：与上传表单同排，不换行 */
+.loot-special-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 用户详情里特殊卡的紫色徽标 */
+.badge.loot-special-tag {
+  margin-right: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
 /* 提示条：只占一行，不接管整个内容区 */
 .loot-banner {
   display: flex;

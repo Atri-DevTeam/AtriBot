@@ -4,15 +4,22 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.ButtonStyle;
+import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.official.OfficialBot;
+
+import java.util.List;
 
 /**
  * @Author YZ_Ljc_
@@ -40,33 +47,30 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
             sender.sendMessage(md);
             return true;
         }
-//        String groupRealId = args[0];
-//
-//        try {
-//            Long.parseLong(groupRealId);
-//        } catch (NumberFormatException e) {
-//            sender.sendMessage("请输入正确的群号");
-//            return true;
-//        }
-//
-//        Markdown md = TC.md(
-//                "**全量消息权限申请**\n\n" +
-//                        "> 请群主按下方操作开启权限，需要QQ版本为9.2.90及以上，IOS未知\n\n" +
-//                        Markdown.img(ResourcesProperties.FULL_MESSAGE_GUIDE_IMG, 600, 552) + "\n\n" +
-//                        "> 群主批准后，机器人可主动发送消息，指令不再需要@，并获取群内全部消息，以提供更加便捷的服务，授权完成后，请点击第二个按钮完成验证\n\n"
-//        );
-//        String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
-//        Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);
-//        Button verifyButton = new Button("c2", "点我验证", "full_message_enable_verify", true, ButtonStyle.BLUE, ButtonType.CALLBACK);
-//        linkButton.setPermissionType(PermissionType.ADMIN);
-//        Object keyboard = TC.keyboard(
-//                List.of(
-//                        List.of(linkButton),
-//                        List.of(verifyButton)
-//                )
-//        );
-//        sender.sendMessage(md, keyboard);
-//        OfficialGroups.setRealGroupId(sender.getGroupId(), Long.parseLong(groupRealId));
+        String groupRealId = args[0];
+
+        try {
+            Long.parseLong(groupRealId);
+        } catch (NumberFormatException e) {
+            sender.sendMessage("请输入正确的群号");
+            return true;
+        }
+
+        Markdown md = TC.md(
+                "**编辑消息权限**\n\n" +
+                        "> 请群主大大按下方操作开启权限，需要手机QQ版本为9.2.90及以上，IOS未知\n\n" +
+                        Markdown.img(ResourcesProperties.FULL_MESSAGE_ENABLE_GUIDE, 540, 479)
+        );
+        String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
+        Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);
+        linkButton.setPermissionType(PermissionType.ADMIN);
+        Object keyboard = TC.keyboard(
+                List.of(
+                        List.of(linkButton)
+                )
+        );
+        sender.sendMessage(md, keyboard);
+        OfficialGroups.setRealGroupId(sender.getGroupId(), Long.parseLong(groupRealId));
         return true;
     }
 //

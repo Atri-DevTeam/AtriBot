@@ -209,8 +209,9 @@ email:
 ```yaml
 image-source:
   enabled: false
-  upload-url: "https://qq-ugc.yzljc.top/imagesource/upload"
-  delete-url: "https://qq-ugc.yzljc.top/imagesource/delete"
+  # 图源远端 API 根地址（AtriData 的 /imagesource 前缀），upload/status/delete/deliver 都由它派生
+  api-url: "https://qq-ugc.yzljc.top/imagesource"
+  # 图片浏览地址前缀（需浏览器可达），WebUI 用 <view-base-url>/<uuid> 展示图片
   view-base-url: "https://qq-ugc.yzljc.top/imagesource/get"
   token: "null"
   pending-limit: 3    # 单用户同时未审核投稿上限

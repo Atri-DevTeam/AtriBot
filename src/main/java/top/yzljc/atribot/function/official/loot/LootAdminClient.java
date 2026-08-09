@@ -30,10 +30,12 @@ public class LootAdminClient {
         return HttpService.sendGetRequest(url, authHeaders());
     }
 
-    public static JsonNode createItem(String displayName, String description, byte[] imageBytes, String filename, String contentType) {
+    public static JsonNode createItem(String displayName, String description, byte[] imageBytes, String filename, String contentType,
+                                      boolean special) {
         Map<String, String> fields = new LinkedHashMap<>();
         fields.put("displayName", displayName);
         fields.put("description", description == null ? "" : description);
+        fields.put("special", String.valueOf(special));
         List<HttpService.MultipartFile> files = List.of(new HttpService.MultipartFile("image", filename, contentType, imageBytes));
 
         String raw = HttpService.postMultipartForString(ResourcesProperties.LOOTS_ADMIN_ITEMS_API, fields, files, authHeaders());

@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
@@ -25,6 +26,7 @@ import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
 import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.test.RecoverLostGolds;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
@@ -202,6 +204,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(updatePushCommand);
         EventManager.getInstance().registerEvents(new EmailNotify());
         EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
+        EventManager.getInstance().registerEvents(new BasicReply());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -260,13 +263,14 @@ public class Atri {
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
         CommandManager.getCommand("update").setExecutor(updatePushCommand);
         CommandManager.getCommand("spc").setExecutor(new YunLandSpecialCommand());
-        CommandManager.getCommand("golds").setExecutor(new CoinsCommand());
+        CommandManager.getCommand("golds").setExecutor(new GoldsCommand());
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatus());
         CommandManager.getCommand("投稿").setExecutor(new ImageSubmitCommand());
         CommandManager.getCommand("图源").setExecutor(new ImageSourceStatsCommand());
         CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
-        CommandManager.getCommand("loot").setExecutor(new LootsCommand());
+        CommandManager.getCommand("随机物品").setExecutor(new LootsCommand());
+        CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -291,6 +295,7 @@ public class Atri {
         TufeElecRepository.init();
         SignRepository.init();
         LootRepository.init();
+        CoinGainLogRepository.init();
         FeedbackRepository.init();
         ErrorReportRepository.init();
         OfficialSendLogRepository.init();

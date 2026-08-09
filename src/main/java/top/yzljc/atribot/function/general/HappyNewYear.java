@@ -10,7 +10,7 @@ import top.yzljc.atribot.command.CommandSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 

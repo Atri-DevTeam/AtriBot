@@ -6,7 +6,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.media.ImageType;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
@@ -32,23 +32,23 @@ public class MojangStatus implements CommandExecutor, SlashCommandExecutor {
         String messageId = sender.sendMessage("正在检查 Mojang 服务状态，请稍候...");
 
         var data = PreImageGenerate.dump(ResourcesProperties.MOJANG_STATUS_API, Map.of());
-        if (data.isError()) {
-            String errMsg = data.errorMessage();
-            sender.sendMessage("检查 Mojang 服务状态失败: " + errMsg);
-            if (messageId != null && !messageId.isBlank()) {
+
+        try {
+            if (data.isError()) {
+                String errMsg = data.errorMessage();
+                sender.sendMessage("检查 Mojang 服务状态失败: " + errMsg);
+                return true;
+            }
+        } finally {
+            if (messageId != null && !messageId.isBlank() && sender.getPlatform() != Platform.OFFICIAL_GUILD_CHANNEL && sender.getPlatform() != Platform.OFFICIAL_GUILD_DM) {
                 sender.recall(messageId);
             }
-            return true;
-        }
-
-        if (messageId != null && !messageId.isBlank()) {
-            sender.recall(messageId);
         }
 
         if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
             sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
             return true;
-        } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
+        } else if (sender.getPlatform().isOfficialQQPlatform()) {
             sender.sendMessage(data.url(), ImageType.URL);
             return true;
         }

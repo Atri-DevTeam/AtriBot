@@ -3,6 +3,7 @@ package top.yzljc.atribot.test;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 
+import top.yzljc.atribot.chat.official.GuildChannelChat;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -10,6 +11,7 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
 import top.yzljc.atribot.function.official.loot.LootService;
 
 /**
@@ -140,6 +142,8 @@ public class Test implements CommandExecutor, Listener {
 //        String url = LootService.renderOverviewCard(sender.getUserId());
 //        System.out.println(url);
 //        sender.sendMessage(url, ImageType.URL);
+//        sender.sendMessage("https://thirdqq.qlogo.cn/g?b=oidb&k=9ibwZcgtYsVOkxNVvIbaeSg&kti=adPQXgwBHsE&s=0&t=1775489118", ImageType.URL);
+//        ImageSourceClient.migrateUnreviewedToDirs();
         return true;
     }
 
@@ -179,5 +183,16 @@ public class Test implements CommandExecutor, Listener {
         if (event.getMessage().getContent().contains("点") && event.getMessage().getContent().contains("赞")) {
             Atri.getInstance().getScheduler().runTaskLaterAsynchronously(event::recall, 10000L);
         }
+    }
+//
+//    @EventHandler
+//    public void onGuildMessage(OfficialGuildAtMessageCreateEvent event) {
+//        GuildChannelChat.replyMessage(event.getChannelId(), event.getMessage().getMessageId(), event.getMessage().getContent());
+//    }
+
+    @EventHandler
+    public void onGroupJoinRequest(OfficialGroupJoinRequestEvent event) {
+        log.info("问题: {}", event.getVerifyQuestion());
+        log.info("答案: {}", event.getVerifyAnswer());
     }
 }

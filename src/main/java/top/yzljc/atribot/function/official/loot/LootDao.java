@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.official.loot;
 
-import top.yzljc.atribot.function.general.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.ImageDTO;
 
 /**
  * @Author YZ_Ljc_

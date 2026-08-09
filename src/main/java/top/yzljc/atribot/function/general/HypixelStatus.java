@@ -6,7 +6,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -32,8 +32,8 @@ public class HypixelStatus implements CommandExecutor {
 
         String msgId = sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
 
+        var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, Map.of());
         try {
-            var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, Map.of());
             if (data.isError()) {
                 sender.sendMessage(data.errorMessage());
                 return true;
@@ -42,17 +42,20 @@ public class HypixelStatus implements CommandExecutor {
                 sender.sendMessage(Identifier.HANDLER_ERROR);
                 return true;
             }
-
-            if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
-                sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
-            } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-                sender.sendMessage(data.url(), ImageType.URL);
-            } else {
-                sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
-            }
         } finally {
-            sender.recall(msgId);
+            if (sender.getPlatform().equals(Platform.OFFICIAL_C2C) || sender.getPlatform().equals(Platform.OFFICIAL_GROUP)) {
+                sender.recall(msgId);
+            }
         }
+
+        if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
+            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
+        } else if (sender.getPlatform().isOfficialQQPlatform()) {
+            sender.sendMessage(data.url(), ImageType.URL);
+        } else {
+            sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
+        }
+
         return true;
     }
 }

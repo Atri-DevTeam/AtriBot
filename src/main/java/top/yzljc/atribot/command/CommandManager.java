@@ -8,10 +8,7 @@ import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
@@ -207,6 +204,54 @@ public class CommandManager implements Listener {
 
         if (!executed && event.isAtBot() && commandContent.startsWith(COMMAND_PREFIX)) {
              senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGuildAtMessageCreate(OfficialGuildAtMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
+        String userInput = event.getMessage().getContent().trim();
+        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
+        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+        User channelUser = event.getUser();
+        String msgId = event.getMessage().getMessageId();
+        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
+
+        CommandSender senderUser = new CommandSender(channelUser.getPlatform(), channelUser.isBot(), channelUser.getUserId(), channelUser.getUsername(),
+                event.getChannelId(), msgId, channelUser.getData(), event.getMessage().getMentionedUsers(), channelUser.getRole(), EventType.OFFICIAL_GUILD_CHANNEL,
+                null);
+
+        boolean executed = commandMap.dispatch(senderUser, commandContent);
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGuildDirectMessageCreate(OfficialGuildDirectMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
+        String userInput = event.getMessage().getContent().trim();
+        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
+        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+        User channelUser = event.getUser();
+        String msgId = event.getMessage().getMessageId();
+        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
+
+        CommandSender senderUser = new CommandSender(channelUser.getPlatform(), channelUser.isBot(), channelUser.getUserId(), channelUser.getUsername(),
+                event.getGuildId(), msgId, channelUser.getData(), event.getMessage().getMentionedUsers(), channelUser.getRole(), EventType.OFFICIAL_GUILD_DM,
+                null);
+
+        boolean executed = commandMap.dispatch(senderUser, commandContent);
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }
 }

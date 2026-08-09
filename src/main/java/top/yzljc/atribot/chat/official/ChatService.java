@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.event.EventManager;
@@ -30,14 +31,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Package top.yzljc.atribot.chat.official
  * @Description
  * 聊天服务底层管道
- * 只负责 HTTP 发送、频控、消息序列号、媒体上传、流式助手等基础设施
- * 业务逻辑由 C2CChat / AsyncC2CChat 和 GroupChat / AsyncGroupChat 承载
  */
 @Slf4j
 @Getter
 public class ChatService {
 
-    private static final String EMERGENCY_PAUSED_MESSAGE = "机器人出现问题已被开发者暂停响应，请稍后重试！";
+    private static final String EMERGENCY_PAUSED_MESSAGE = "机器人因暂时重启维护或出现问题已被开发者暂停响应，请稍后重试！";
+    @Getter
+    @Setter
     private static volatile boolean emergencyPaused = false;
 
     private final String apiBaseUrl;
@@ -59,14 +60,6 @@ public class ChatService {
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
         this.privateStreamHelper = new PrivateStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory, this::getNextMsgSeq);
-    }
-
-    public static boolean isEmergencyPaused() {
-        return emergencyPaused;
-    }
-
-    public static void setEmergencyPaused(boolean paused) {
-        emergencyPaused = paused;
     }
 
     static String emergencyPausedMessage() {
@@ -91,6 +84,16 @@ public class ChatService {
     /** 获取群聊文件上传 API URL */
     public String groupFileUrl(String groupOpenId) {
         return apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
+    }
+
+    /** 频道文字子频道消息 API URL */
+    public String guildChannelMessageUrl(String channelId) {
+        return apiBaseUrl + "/channels/" + channelId + "/messages";
+    }
+
+    /** 频道私聊消息 API URL */
+    public String guildDirectMessageUrl(String guildId) {
+        return apiBaseUrl + "/dms/" + guildId + "/messages";
     }
 
     /**
@@ -141,7 +144,7 @@ public class ChatService {
     }
 
     /**
-     * 异步发送群聊消息，成功后自动记录到 ChatContentRecord，并处理主动消息频控与白名单
+     * 异步发送群聊消息，成功后记录到 ChatContentRecord，并处理主动消息频控与白名单
      *
      * @param groupOpenId 群 openId
      * @param request     消息体
@@ -165,6 +168,50 @@ public class ChatService {
                     }
                     if (response != null) {
                         return response.id() ;
+                    } else {
+                        return null;
+                    }
+                });
+    }
+
+    /**
+     * 异步发送文字子频道消息
+     *
+     * @param channelId   频道 ID
+     * @param request     消息体
+     * @return 消息 ID 的 Future
+     */
+    public CompletableFuture<String> sendGuildChannelMessageAsync(String channelId, MessageBody request) {
+        MessageBody pendingRequest = emergencyPauseRequestOrNull(request, "文字子频道");
+        if (pendingRequest == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return sendMessageAsync(guildChannelMessageUrl(channelId), pendingRequest, "文字子频道")
+                .thenApply(response -> {
+                    if (response != null) {
+                        return response.id();
+                    } else {
+                        return null;
+                    }
+                });
+    }
+
+    /**
+     * 异步发送频道私信消息
+     *
+     * @param guildId   频道 ID
+     * @param request     消息体
+     * @return 消息 ID 的 Future
+     */
+    public CompletableFuture<String> sendGuildDirectMessageAsync(String guildId, MessageBody request) {
+        MessageBody pendingRequest = emergencyPauseRequestOrNull(request, "频道私信");
+        if (pendingRequest == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return sendMessageAsync(guildDirectMessageUrl(guildId), pendingRequest, "频道私信")
+                .thenApply(response -> {
+                    if (response != null) {
+                        return response.id();
                     } else {
                         return null;
                     }
@@ -224,7 +271,7 @@ public class ChatService {
     }
 
     /**
-     * 获取群成员信息
+     * 获取群成员信息（暂不可用）
      *
      * @param userOpenId  用户 openId
      * @param groupOpenId 群 openId

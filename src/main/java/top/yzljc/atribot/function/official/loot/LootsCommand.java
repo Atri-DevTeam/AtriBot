@@ -22,7 +22,7 @@ import java.util.List;
  * @Package top.yzljc.atribot.function.official.loot
  */
 public class LootsCommand implements CommandExecutor {
-    private static final int PAID_DRAW_COST = 69;
+    private static final int PAID_DRAW_COST = 33;
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -60,8 +60,8 @@ public class LootsCommand implements CommandExecutor {
         Object keyboards = TC.keyboard(
                 List.of(
                         List.of(
-                                new Button("c1", "再抽一次", "/loot", ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c2", "查看收集进度", "/loot bag", ButtonStyle.BLUE, ButtonType.COMMAND)
+                                new Button("c1", "再抽一次", "/随机物品", ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c2", "查看收集进度", "/随机物品 bag", ButtonStyle.BLUE, ButtonType.COMMAND)
                         )
                 )
         );

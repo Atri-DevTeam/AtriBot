@@ -8,8 +8,8 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.function.general.impl.ImageDTO;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.io.File;
@@ -19,8 +19,10 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @Author YZ_Ljc_
@@ -38,11 +40,14 @@ public class LootService {
     private static final ZoneId BEIJING_ZONE = ZoneId.of("Asia/Shanghai");
     private static final LocalTime FREE_DRAW_LOCK_START = LocalTime.of(23, 50);
     private static final File FREE_DRAW_RECORD_FILE = new File(Properties.LOOT_FREE_DRAW_RECORD);
+    private static final int OWNED_ITEM_WEIGHT = 40;
+    private static final int UNOWNED_ITEM_WEIGHT = 60;
 
     private static volatile List<LootCatalogItem> catalogCache = List.of();
     private static volatile long catalogFetchedAt = 0;
 
-    public record LootCatalogItem(String itemId, String displayName, String resourceWay, String hash, long createTimestamp) {
+    public record LootCatalogItem(String itemId, String displayName, String resourceWay, String hash, long createTimestamp,
+                                  boolean special) {
     }
 
     public record DrawResult(boolean success, String message, String itemId, String displayName,
@@ -73,7 +78,8 @@ public class LootService {
                         node.path("display_name").asText(),
                         node.path("resource_way").asText(),
                         node.hasNonNull("hash") ? node.path("hash").asText() : null,
-                        node.path("create_timestamp").asLong(0)
+                        node.path("create_timestamp").asLong(0),
+                        node.path("special").asBoolean(false)
                 ));
             }
             Collections.shuffle(parsed, RANDOM);
@@ -100,7 +106,7 @@ public class LootService {
             return LootDao.fail("消耗数量必须大于 0 - 开发错误，请联系开发者处理");
         }
         if (!LootRepository.removeCoins(userId, cost)) {
-            return LootDao.fail("金粒不足，先去打卡获得更多金粒吧！");
+            return LootDao.fail("金粒不足，先去获得更多金粒再来尝试吧！");
         }
         return performDraw(userId, "抽奖-消耗金粒", true, false, cost);
     }
@@ -229,14 +235,32 @@ public class LootService {
             return LootDao.fail("卡池暂不可用 - 开发错误，请联系开发者处理");
         }
 
-        LootCatalogItem picked = catalog.get(RANDOM.nextInt(catalog.size()));
-        boolean duplicated = LootRepository.getLoots(userId).stream()
-                .anyMatch(loot -> loot.itemId().equals(picked.itemId()));
+        // special 卡仅作为特殊奖励发放，任何用户都抽不到
+        List<LootCatalogItem> drawable = catalog.stream().filter(item -> !item.special()).toList();
+        if (drawable.isEmpty()) {
+            return LootDao.fail("卡池暂不可用 - 开发错误，请联系开发者处理");
+        }
+
+        Set<String> drawableItemIds = new HashSet<>();
+        for (LootCatalogItem item : drawable) {
+            drawableItemIds.add(item.itemId());
+        }
+
+        List<LootRepository.LootRecord> ownedLoots = LootRepository.getLoots(userId);
+        Set<String> ownedItemIds = new HashSet<>();
+        for (LootRepository.LootRecord loot : ownedLoots) {
+            if (drawableItemIds.contains(loot.itemId())) {
+                ownedItemIds.add(loot.itemId());
+            }
+        }
+
+        LootCatalogItem picked = pickByOwnedWeight(drawable, ownedItemIds);
+        boolean duplicated = ownedItemIds.contains(picked.itemId());
         LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way);
 
         int refundCoins = 0;
         if (duplicated && refundDuplicated) {
-            refundCoins = RANDOM.nextInt(21) + 30;
+            refundCoins = RANDOM.nextInt(16) + 5;
             LootRepository.addCoins(userId, refundCoins);
         }
 
@@ -246,6 +270,23 @@ public class LootService {
         }
 
         return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins);
+    }
+
+    private static LootCatalogItem pickByOwnedWeight(List<LootCatalogItem> drawable, Set<String> ownedItemIds) {
+        int totalWeight = 0;
+        for (LootCatalogItem item : drawable) {
+            totalWeight += ownedItemIds.contains(item.itemId()) ? OWNED_ITEM_WEIGHT : UNOWNED_ITEM_WEIGHT;
+        }
+
+        int roll = RANDOM.nextInt(totalWeight);
+        int cursor = 0;
+        for (LootCatalogItem item : drawable) {
+            cursor += ownedItemIds.contains(item.itemId()) ? OWNED_ITEM_WEIGHT : UNOWNED_ITEM_WEIGHT;
+            if (roll < cursor) {
+                return item;
+            }
+        }
+        return drawable.get(RANDOM.nextInt(drawable.size()));
     }
 
     /**
@@ -258,10 +299,12 @@ public class LootService {
                         "item_id", r.itemId(),
                         "display_name", r.displayName(),
                         "receive_timestamp", r.receiveTimestamp(),
-                        "count", r.count()))
+                        "count", r.count(),
+                        "special", r.special()))
                 .toList();
 
-        ImageDTO dto = PreImageGenerate.dump(ResourcesProperties.LOOTS_OVERVIEW_CARD_API, Map.of("items", items));
+        ImageDTO dto = PreImageGenerate.dump(ResourcesProperties.LOOTS_OVERVIEW_CARD_API,
+                Map.of("items", items, "user_id", userId));
         if (dto.isError() || dto.url() == null) {
             return LootDao.fail("渲染总览图失败 - 开发错误，请联系开发者处理");
         }

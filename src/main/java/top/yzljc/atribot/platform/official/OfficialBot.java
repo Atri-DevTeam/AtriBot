@@ -16,7 +16,7 @@ import top.yzljc.atribot.utils.tools.Alert;
 @Slf4j
 public final class OfficialBot {
 
-    // 注意，这个B玩意是union_id不是user_openid，可能为null
+    /** 注意，这个B玩意是union_id不是user_openid，可能为null */
     public static String BOT_UNIONID;
 
     public static String BOT_AVATAR_URL;

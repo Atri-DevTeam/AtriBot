@@ -1,6 +1,5 @@
 package top.yzljc.atribot.test;
 
-import org.jetbrains.annotations.TestOnly;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,17 +13,17 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.MinecraftNews;
-import top.yzljc.atribot.function.general.impl.ArticleScraper;
-import top.yzljc.atribot.function.general.impl.AtriNewsSummarizer;
-import top.yzljc.atribot.function.general.impl.ImageDTO;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ArticleScraper;
+import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.net.URI;
 import java.util.*;
 
-/* 测试类 */
+/** 测试类 */
 public class MinecraftNewsDebug implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNewsDebug.class);

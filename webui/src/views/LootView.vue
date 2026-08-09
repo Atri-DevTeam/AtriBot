@@ -39,9 +39,19 @@
           <form v-if="tab === 'items'" class="loot-upload-form" @submit.prevent="createItem">
             <input v-model="createForm.displayName" class="loot-upload-input" placeholder="物品名称" required />
             <input v-model="createForm.description" class="loot-upload-input" placeholder="介绍文案（用于单抽结果卡）" />
+            <label class="loot-special-check">
+              <input v-model="createForm.special" type="checkbox" />
+              特殊卡（不出现在抽卡池，仅可赠送）
+            </label>
             <input ref="createFileInput" class="loot-upload-file" type="file" accept="image/*" @change="onCreateFileChange" required />
             <button class="primary-button" type="submit" :disabled="creating">{{ creating ? '上传中...' : '新增物品卡' }}</button>
           </form>
+
+          <div v-else-if="tab === 'leaderboard'" class="userlist-search-bar">
+            <input v-model="leaderboardSearchText" class="userlist-search-input" placeholder="搜索用户ID..." @keyup.enter="doLeaderboardSearch" />
+            <button class="primary-button" :disabled="loading" @click="doLeaderboardSearch">搜索</button>
+            <button v-if="leaderboardSearchText" class="ghost-button" @click="clearLeaderboardSearch">清除</button>
+          </div>
 
           <div v-else-if="tab === 'ownership'" class="userlist-search-bar">
             <input v-model="searchText" class="userlist-search-input" placeholder="搜索用户ID..." @keyup.enter="doSearch" />
@@ -157,7 +167,10 @@
           <p>金粒余额：{{ userDetail?.coins ?? 0 }}</p>
           <h4 style="margin:10px 0 4px">持有物品卡</h4>
           <div v-for="loot in userDetail?.loots || []" :key="loot.itemId" class="func-row">
-            <span class="func-name">{{ loot.displayName }}<span v-if="loot.count > 1"> ×{{ loot.count }}</span>（{{ loot.way }}）</span>
+            <span class="func-name">
+              <span v-if="loot.special" class="badge purple loot-special-tag">特殊</span>
+              {{ loot.displayName }}<span v-if="loot.count > 1"> ×{{ loot.count }}</span>（{{ loot.way }}）
+            </span>
             <button class="perm-del" @click="revokeLoot(loot)">×</button>
           </div>
           <p v-if="!userDetail?.loots?.length" style="color:var(--color-text-subtle)">暂无持有物品卡</p>
@@ -171,6 +184,10 @@
               <option v-for="it in catalogItems" :key="it.itemId" :value="it.itemId">{{ it.displayName }}</option>
             </select>
             <input v-model="grantForm.way" placeholder="获取途径（默认：管理员赠与）" />
+            <label class="checkbox-label">
+              <input v-model="grantForm.special" type="checkbox" />
+              特殊奖励（不计入总收集进度）
+            </label>
             <button class="primary-button" :disabled="!grantForm.itemId">赠送</button>
           </form>
         </div>
@@ -292,7 +309,7 @@ const itemsPage = ref(1)
 const itemsPageSize = 20
 const itemsTotalPages = computed(() => Math.max(1, Math.ceil(itemsTotal.value / itemsPageSize)))
 const imageBaseUrl = ref('')
-const createForm = ref({ displayName: '', description: '' })
+const createForm = ref({ displayName: '', description: '', special: false })
 const createFile = ref(null)
 const createFileInput = ref(null)
 const creating = ref(false)
@@ -345,9 +362,10 @@ async function createItem() {
     const fd = new FormData()
     fd.append('displayName', createForm.value.displayName)
     fd.append('description', createForm.value.description || '')
+    fd.append('special', createForm.value.special ? 'true' : 'false')
     fd.append('image', createFile.value)
     await apiUpload('/loot/items', fd)
-    createForm.value = { displayName: '', description: '' }
+    createForm.value = { displayName: '', description: '', special: false }
     resetCreateFile()
     catalogLoaded.value = false
     await fetchItems()
@@ -441,12 +459,16 @@ const leaderboardTotal = ref(0)
 const leaderboardPage = ref(1)
 const leaderboardPageSize = 20
 const leaderboardTotalPages = computed(() => Math.max(1, Math.ceil(leaderboardTotal.value / leaderboardPageSize)))
+const leaderboardSearchText = ref('')
+const leaderboardCurrentSearch = ref('')
 
 async function fetchLeaderboard() {
   loading.value = true
   error.value = ''
   try {
-    const data = await api(`/loot/coins/leaderboard?page=${leaderboardPage.value}&pageSize=${leaderboardPageSize}`)
+    const params = new URLSearchParams({ page: leaderboardPage.value, pageSize: leaderboardPageSize })
+    if (leaderboardCurrentSearch.value) params.set('search', leaderboardCurrentSearch.value)
+    const data = await api(`/loot/coins/leaderboard?${params}`)
     leaderboard.value = data.items || []
     leaderboardTotal.value = data.total || 0
   } catch (e) {
@@ -459,6 +481,19 @@ async function fetchLeaderboard() {
 function gotoLeaderboardPage(p) {
   if (p < 1 || p > leaderboardTotalPages.value) return
   leaderboardPage.value = p
+  fetchLeaderboard()
+}
+
+function doLeaderboardSearch() {
+  leaderboardCurrentSearch.value = leaderboardSearchText.value.trim()
+  leaderboardPage.value = 1
+  fetchLeaderboard()
+}
+
+function clearLeaderboardSearch() {
+  leaderboardSearchText.value = ''
+  leaderboardCurrentSearch.value = ''
+  leaderboardPage.value = 1
   fetchLeaderboard()
 }
 
@@ -558,13 +593,13 @@ function clearSearch() {
 
 const showUserModal = ref(false)
 const userDetail = ref(null)
-const grantForm = ref({ itemId: '', way: '' })
+const grantForm = ref({ itemId: '', way: '', special: false })
 
 async function openUserDetail(userId) {
   error.value = ''
   try {
     userDetail.value = await api(`/loot/users/${encodeURIComponent(userId)}`)
-    grantForm.value = { itemId: '', way: '' }
+    grantForm.value = { itemId: '', way: '', special: false }
     showUserModal.value = true
     fetchCatalog()
   } catch (e) {
@@ -582,11 +617,12 @@ async function grantLoot() {
       body: JSON.stringify({
         itemId: grantForm.value.itemId,
         displayName: picked?.displayName || '',
-        way: grantForm.value.way || '管理员赠与'
+        way: grantForm.value.way || '管理员赠与',
+        special: grantForm.value.special
       })
     })
     userDetail.value = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}`)
-    grantForm.value = { itemId: '', way: '' }
+    grantForm.value = { itemId: '', way: '', special: false }
     flash('已赠送')
   } catch (e) {
     error.value = e.message

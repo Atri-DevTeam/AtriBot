@@ -12,10 +12,12 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.database.repo.CoinGainLogRepository;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.socket.BindResponse;
@@ -82,6 +84,11 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
 
                     Object keyboard = TC.keyboard(layout);
                     sender.sendMessage(TC.md(markdown), keyboard);
+
+                    if (CoinGainLogRepository.countCoinGains(sender.getUserId(), "mc_bind") < 1) {
+                        LootRepository.addCoins(sender.getUserId(), 100, "mc_bind");
+                        log.info("用户 {} 绑定了 Minecraft 账号 {}，+ 200 金粒", sender.getUserId(), uuid);
+                    }
                 }
                 break;
 

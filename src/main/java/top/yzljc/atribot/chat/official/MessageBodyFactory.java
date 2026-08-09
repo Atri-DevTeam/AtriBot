@@ -140,6 +140,14 @@ final class MessageBodyFactory {
                 .build();
     }
 
+    public MessageBody guildImage(String imageUrl, String msgId, String text) {
+        return MessageBody.builder()
+                .image(imageUrl)
+                .msgId(msgId)
+                .content(text)
+                .build();
+    }
+
     private String stringValue(Object value) {
         return value == null ? null : String.valueOf(value);
     }

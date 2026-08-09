@@ -93,6 +93,15 @@ public class WhoAmI implements CommandExecutor {
 
                 return true;
             }
+
+            case OFFICIAL_GUILD_CHANNEL -> {
+                String text = "用户ID: " + sender.getUserId() + "\n"
+                        + "频道ID: " + sender.getGroupId() + "\n"
+                        + "消息ID: " + sender.getMessageId() + "\n"
+                        + "注意，本条指令专为获取相关鉴权数据使用，无实际意义";
+                sender.sendMessage(text);
+                return true;
+            }
         }
 
         return true;

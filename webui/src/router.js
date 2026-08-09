@@ -67,6 +67,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/function-settings',
+      name: 'functionSettings',
+      component: () => import('./views/FunctionSettingsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/errors',
       name: 'errors',
       component: () => import('./views/ErrorsView.vue'),

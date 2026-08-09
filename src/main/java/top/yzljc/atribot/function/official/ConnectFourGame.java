@@ -12,11 +12,13 @@ import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.utils.tools.RandomGolds;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -152,17 +154,23 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             game.winningLine = winningLine;
             game.winner = game.currentPlayer;
 
+            grantRewards(game);
+
             String winnerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
             String winnerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+            int winnerGolds = game.currentPlayer == PLAYER_A ? game.playerAGolds : game.playerBGolds;
 
-            finishGameCallback(game, groupOpenId,
-                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + " 获胜！连成四子！");
+            finishGameCallback(game, event,
+                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！连成四子！");
             return;
         }
 
         if (isBoardFull(game.board)) {
             game.phase = Phase.FINISHED;
-            finishGameCallback(game, groupOpenId, "🤝 平局！棋盘已满，无人连成四子！");
+            grantRewards(game);
+            finishGameCallback(game, event,
+                    "🤝 平局！" + Markdown.at(game.playerAOpenId) + "(+" + game.playerAGolds + "金粒) 与 "
+                            + Markdown.at(game.playerBOpenId) + "(+" + game.playerBGolds + "金粒) 棋盘已满，无人连成四子！");
             return;
         }
 
@@ -170,19 +178,19 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String nextPlayerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
         String nextPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
 
-        sendGameBoard(game, groupOpenId, event.getEventId(),
+        replyGameBoard(game, event,
                 "轮到 " + nextPlayerName + " " + Markdown.at(nextPlayerId) + " 落子");
 
         scheduleMoveTimeout(groupOpenId, game);
     }
 
-    private void finishGameCallback(GameState game, String groupOpenId, String resultMsg) {
-        activeGames.remove(groupOpenId);
+    private void finishGameCallback(GameState game, OfficialButtonInteractionEvent event, String resultMsg) {
+        activeGames.remove(event.getGroupOpenId());
 
         String markdown = buildSettlementMarkdown(game, resultMsg);
         markdown += "\n\n" + Markdown.enterCommand("/四子棋", "点击此处再次开始");
 
-        String messageId = GroupChat.sendMessage(groupOpenId, TC.md(markdown));
+        String messageId = event.replyMessage(TC.md(markdown));
         recallOldMessage(game);
         game.lastMessageId = messageId;
     }
@@ -399,18 +407,24 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             game.winningLine = winningLine;
             game.winner = game.currentPlayer;
 
+            grantRewards(game);
+
             String winnerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
             String winnerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+            int winnerGolds = game.currentPlayer == PLAYER_A ? game.playerAGolds : game.playerBGolds;
 
             finishGame(game, sessionId, sender,
-                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + " 获胜！连成四子！");
+                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！连成四子！");
             return;
         }
 
         // Check tie
         if (isBoardFull(game.board)) {
             game.phase = Phase.FINISHED;
-            finishGame(game, sessionId, sender, "🤝 平局！棋盘已满，无人连成四子！");
+            grantRewards(game);
+            finishGame(game, sessionId, sender,
+                    "🤝 平局！" + Markdown.at(game.playerAOpenId) + "(+" + game.playerAGolds + "金粒) 与 "
+                            + Markdown.at(game.playerBOpenId) + "(+" + game.playerBGolds + "金粒) 棋盘已满，无人连成四子！");
             return;
         }
 
@@ -429,10 +443,19 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String md = buildBoardMarkdown(game, statusMsg);
         String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
         Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
-        String messageId = GroupChat.sendMessage(game.groupOpenId, TC.md(md), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, cmdMsgId, TC.md(md), keyboard);
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = cmdMsgId;
+    }
+
+    private void replyGameBoard(GameState game, OfficialButtonInteractionEvent event, String statusMsg) {
+        String md = buildBoardMarkdown(game, statusMsg);
+        String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
+        Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
+        String messageId = event.replyMessage(TC.md(md), keyboard);
+        recallOldMessage(game);
+        game.lastMessageId = messageId;
     }
 
     private Object buildColumnKeyboard(String currentPlayerOpenId, int[][] board) {
@@ -490,6 +513,29 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String messageId = sender.sendMessage(TC.md(markdown));
         recallOldMessage(game);
         game.lastMessageId = messageId;
+    }
+
+    /**
+     * 结算金粒奖励（每局只发放一次）：
+     * 胜者 45~60 抽，败者 30~45 抽；平局时双方获得相同的 30~50 抽
+     */
+    private void grantRewards(GameState game) {
+        if (game.rewardsGranted) return;
+        game.rewardsGranted = true;
+
+        if (game.winner == PLAYER_A) {
+            game.playerAGolds = RandomGolds.get(31, 45);
+            game.playerBGolds = RandomGolds.get(20, 30);
+        } else if (game.winner == PLAYER_B) {
+            game.playerAGolds = RandomGolds.get(20, 30);
+            game.playerBGolds = RandomGolds.get(31, 45);
+        } else {
+            game.playerAGolds = RandomGolds.get(25, 35);
+            game.playerBGolds = game.playerAGolds;
+        }
+
+        LootRepository.addCoins(game.playerAOpenId, game.playerAGolds);
+        LootRepository.addCoins(game.playerBOpenId, game.playerBGolds);
     }
 
     private String buildSettlementMarkdown(GameState game, String resultMsg) {
@@ -629,16 +675,20 @@ public class ConnectFourGame implements Listener, CommandExecutor {
             current.phase = Phase.FINISHED;
             current.winner = (current.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
 
+            grantRewards(current);
+
             String loserId = current.currentPlayer == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
             String winnerId = current.winner == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
             String loserName = current.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
             String winnerName = current.winner == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
+            int loserGolds = current.winner == PLAYER_A ? current.playerBGolds : current.playerAGolds;
+            int winnerGolds = current.winner == PLAYER_A ? current.playerAGolds : current.playerBGolds;
 
             activeGames.remove(sessionId);
 
             try {
-                String resultMsg = "⏰ " + Markdown.at(loserId) + " (" + loserName
-                        + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + " 获胜！";
+                String resultMsg = "⏰ " + Markdown.at(loserId) + "(+" + loserGolds + "金粒) (" + loserName
+                        + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！";
                 String markdown = buildSettlementMarkdown(current, resultMsg);
 
                 List<List<Button>> layout = new ArrayList<>();
@@ -664,14 +714,17 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
             // Game exceeded 15 minutes — auto tie
             current.phase = Phase.FINISHED;
+            grantRewards(current);
+
             String playerAId = current.playerAOpenId;
             String playerBId = current.playerBOpenId;
             activeGames.remove(sessionId);
 
             try {
                 String resultMsg = "⏰ 对局已超过 15 分钟，"
-                        + Markdown.at(playerAId) + " " + Markdown.at(playerBId)
-                        + " 自动判为平局！";
+                        + Markdown.at(playerAId) + "(+" + current.playerAGolds + "金粒) "
+                        + Markdown.at(playerBId) + "(+" + current.playerBGolds + "金粒) "
+                        + "自动判为平局！";
                 String markdown = buildSettlementMarkdown(current, resultMsg);
 
                 List<List<Button>> layout = new ArrayList<>();
@@ -714,6 +767,10 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
         int winner;
         List<int[]> winningLine;
+
+        int playerAGolds;
+        int playerBGolds;
+        boolean rewardsGranted;
 
         String lastMessageId;
         String lastCmdMsgId;

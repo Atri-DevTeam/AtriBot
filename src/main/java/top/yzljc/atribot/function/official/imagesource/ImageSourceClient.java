@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.net.URI;
@@ -15,6 +16,7 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -72,11 +74,12 @@ public class ImageSourceClient {
      */
     public static UploadResult upload(ImageSourceDTO dto) {
         Config config = Config.getInstance();
-        String url = config.getImageSourceUploadUrl();
-        if (!config.isImageSourceEnabled() || isBlank(url)) {
+        String base = config.getImageSourceApiUrl();
+        if (!config.isImageSourceEnabled() || isBlank(base)) {
             log.info("图源远端未启用，跳过上报: id={}", dto.getId());
             return UploadResult.success();
         }
+        String url = joinPath(base, "upload");
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("uuid", dto.getImageUuid());
@@ -135,13 +138,14 @@ public class ImageSourceClient {
 
     public static RemoteResult delete(ImageSourceDTO dto) {
         Config config = Config.getInstance();
-        String url = config.getImageSourceDeleteUrl();
-        if (!config.isImageSourceEnabled() || isBlank(url) || isBlank(dto.getImageUuid())) {
+        String base = config.getImageSourceApiUrl();
+        if (!config.isImageSourceEnabled() || isBlank(base) || isBlank(dto.getImageUuid())) {
             return RemoteResult.success();
         }
 
         try {
-            JsonNode response = HttpService.sendDeleteRequest(joinPath(url, dto.getImageUuid()), authHeaders(config));
+            JsonNode response = HttpService.sendDeleteRequest(
+                    joinPath(joinPath(base, "delete"), dto.getImageUuid()), authHeaders(config));
             if (response == null) {
                 log.warn("远端图源删除无响应: id={}, uuid={}", dto.getId(), dto.getImageUuid());
                 return RemoteResult.fail("远端无响应");
@@ -161,6 +165,44 @@ public class ImageSourceClient {
         }
     }
 
+    /**
+     * 审核状态变更：POST {@code <api-url>/status/<uuid>}，body {@code {"status": ...}}。
+     *
+     * <p>远端据此把图片移动到对应目录：PENDING -> pending/，REVIEWED -> 主目录，
+     * DENIED -> reject/。审核通过/拒绝/撤销统一走这里，主目录只保留过审图，
+     * {@code /public/acg} 随机取图自然只命中已通过审核的图。
+     */
+    public static RemoteResult setStatus(ImageSourceDTO dto, ImageReviewStatus status) {
+        Config config = Config.getInstance();
+        String base = config.getImageSourceApiUrl();
+        if (!config.isImageSourceEnabled() || isBlank(base) || isBlank(dto.getImageUuid())) {
+            return RemoteResult.success();
+        }
+
+        try {
+            JsonNode response = HttpService.postJson(joinPath(joinPath(base, "status"), dto.getImageUuid()),
+                    Map.of("status", status.name()), authHeaders(config));
+            if (response == null) {
+                log.warn("远端图源审核状态变更无响应: id={}, uuid={}, status={}",
+                        dto.getId(), dto.getImageUuid(), status);
+                return RemoteResult.fail("远端无响应");
+            }
+            int code = response.path("status").asInt(-1);
+            if (code == 200) {
+                log.info("远端图源审核状态已变更: id={}, uuid={}, status={}",
+                        dto.getId(), dto.getImageUuid(), status);
+                return RemoteResult.success();
+            }
+            String message = response.path("message").asText("");
+            log.warn("远端图源审核状态变更失败: id={}, uuid={}, status={}, code={}, message={}",
+                    dto.getId(), dto.getImageUuid(), status, code, message);
+            return RemoteResult.fail(isBlank(message) ? "远端审核状态变更失败" : message);
+        } catch (Exception e) {
+            log.warn("远端图源审核状态变更异常: id={}, uuid={}", dto.getId(), dto.getImageUuid(), e);
+            return RemoteResult.fail("远端连接失败");
+        }
+    }
+
     public record RemoteResult(boolean ok, String message) {
         public static RemoteResult success() {
             return new RemoteResult(true, "");
@@ -170,6 +212,34 @@ public class ImageSourceClient {
             return new RemoteResult(false, message);
         }
     }
+
+//    /**
+//     * 调试用迁移函数
+//     */
+//    public static void migrateUnreviewedToDirs() {
+//        List<ImageSourceDTO> unreviewed = ImageSourceRepository.findUnreviewedWithUuid();
+//        if (unreviewed.isEmpty()) {
+//            log.info("没有未审核/已拒绝的投稿需要迁移");
+//            return;
+//        }
+//
+//        log.info("开始迁移未审核/已拒绝图源: 共 {} 张", unreviewed.size());
+//        int ok = 0;
+//        int failed = 0;
+//        for (ImageSourceDTO dto : unreviewed) {
+//            ImageReviewStatus status = ImageReviewStatus.of(dto.getReviewStatus());
+//            RemoteResult result = setStatus(dto, status);
+//            if (result.ok()) {
+//                ok++;
+//                log.info("迁移成功: id={}, uuid={}, status={}", dto.getId(), dto.getImageUuid(), status);
+//            } else {
+//                failed++;
+//                log.warn("迁移失败: id={}, uuid={}, status={}, reason={}",
+//                        dto.getId(), dto.getImageUuid(), status, result.message());
+//            }
+//        }
+//        log.info("未审核/已拒绝图源迁移完成: 共 {} 张，成功 {} 张，失败 {} 张", unreviewed.size(), ok, failed);
+//    }
 
     public static ImageDAO randomImage() {
         ImageSourceDTO dto = ImageSourceRepository.findRandomReviewed();
@@ -186,22 +256,18 @@ public class ImageSourceClient {
     }
 
     /**
-     * 要发给 QQ 的投稿地址。
-     *
-     * <p>投稿不像生图那样"POST 完顺手拿到 way"——它的 uuid 是从本地库里翻出来的，
-     * 上传时那次判断早就过期了。所以发之前先问一次远端这一刻该走哪条路：
-     * 响应只有几十字节，不吃带宽；远端选了 OSS 会先把这张镜像上去再返回地址，
-     * 保证拿到手的链接一定拉得到。问不到就退回本机地址，只是少了这层卸载，不会失效。
+     * 远端请求地址标识
      */
     public static String deliveryUrl(ImageSourceDTO dto) {
         Config config = Config.getInstance();
-        String deliverUrl = config.getImageSourceDeliverUrl();
-        if (isBlank(deliverUrl) || isBlank(dto.getImageUuid())) {
+        String base = config.getImageSourceApiUrl();
+        if (isBlank(base) || isBlank(dto.getImageUuid())) {
             return viewUrl(dto);
         }
 
         try {
-            JsonNode resp = HttpService.sendGetRequest(joinPath(deliverUrl, dto.getImageUuid()), authHeaders(config));
+            JsonNode resp = HttpService.sendGetRequest(
+                    joinPath(joinPath(base, "deliver"), dto.getImageUuid()), authHeaders(config));
             if (resp != null && resp.path("status").asInt() == 200) {
                 JsonNode data = resp.path("data");
                 String url = data.path("url").asText(null);

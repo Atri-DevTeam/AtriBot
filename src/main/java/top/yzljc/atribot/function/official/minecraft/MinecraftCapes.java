@@ -3,7 +3,7 @@ package top.yzljc.atribot.function.official.minecraft;
 import top.yzljc.atribot.chat.official.media.ImageType;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.general.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
 
 import java.util.Map;

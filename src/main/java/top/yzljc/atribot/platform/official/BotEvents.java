@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.event.impl.GroupJoinRequestSource;
 import top.yzljc.atribot.event.impl.InteractionType;
+import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
@@ -170,8 +172,10 @@ public class BotEvents {
                 userOpenId = eventData.path("openid").asText(null);
             }
             String timestamp = eventData.get("timestamp").asText();
+            int scene = eventData.path("scene").asInt(-1);
+            String sceneParam = eventData.path("scene_param").asText(null);
 
-            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp);
+            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp, scene, sceneParam);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的好友添加事件时发生错误：", e);
@@ -281,6 +285,95 @@ public class BotEvents {
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的群成员删除事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGroupJoinRequestEvent(String eventId, JsonNode eventData) {
+        try {
+            String groupOpenId = eventData.path("group_openid").asText(null);
+            String memberOpenId = eventData.path("member_openid").asText(null);
+            String joinRequestId = eventData.path("join_request_id").asText(null);
+            String username = eventData.path("username").asText(null);
+            String applyAt = eventData.path("apply_at").asText(null);
+            var applySource = GroupJoinRequestSource.from(eventData.path("apply_source").asText(null));
+            String verifyMethod = eventData.path("verify_info").path("method").asText(null);
+            String verifyMessage = eventData.path("verify_info").path("verify_message").asText(null);
+            String invitedBy = eventData.path("invited_by").asText(null);
+
+            OfficialGroupJoinRequestEvent event = new OfficialGroupJoinRequestEvent(
+                    eventId,
+                    groupOpenId,
+                    memberOpenId,
+                    username,
+                    joinRequestId,
+                    applyAt,
+                    applySource,
+                    verifyMethod,
+                    verifyMessage
+            );
+
+            if (applySource != null && applySource.equals(GroupJoinRequestSource.INVITED) && invitedBy != null) {
+                event.setInvitedBy(invitedBy);
+            }
+
+            EventManager.getInstance().callEvent(event);
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的群加群请求事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGuildChannelAtMessageCreateEvent(JsonNode eventData) {
+        try {
+            String channelId = eventData.path("channel_id").asText(null);
+            String guildId = eventData.path("guild_id").asText(null);
+            String messageId = eventData.path("id").asText(null);
+            String username = eventData.path("author").path("username").asText(null);
+            boolean isBot = eventData.path("author").path("bot").asBoolean(false);
+            String channelUserId = eventData.path("author").path("id").asText(null);
+            String content = eventData.path("content").asText(null);
+            String time = eventData.path("timestamp").asText(null);
+            List<User> mentions = new ArrayList<>();
+            var mentionsNode = eventData.path("mentions");
+            for (var d : mentionsNode) {
+                var userIsBot = d.path("bot").asBoolean(false);
+                var userUsername = d.path("username").asText(null);
+                var userChannelId = d.path("id").asText(null);
+
+                mentions.add(new User(Platform.OFFICIAL_GUILD_CHANNEL, userIsBot, userChannelId, userUsername, PlatformRole.MEMBER, mapper.createObjectNode()));
+            }
+
+            var message = new Message(Platform.OFFICIAL_GUILD_CHANNEL, messageId, content, time, mentions);
+            var user = new User(Platform.OFFICIAL_GUILD_CHANNEL, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
+            OfficialGuildAtMessageCreateEvent event = new OfficialGuildAtMessageCreateEvent(user, guildId, channelId, message);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的文字子频道At消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleGuildDirectMessageCreateEvent(JsonNode eventData) {
+        try {
+
+            boolean isDirectMessage = eventData.path("direct_message").asBoolean(false);
+            if (!isDirectMessage) return;
+
+            String guildId = eventData.path("guild_id").asText(null);
+            String channelId = eventData.path("channel_id").asText(null);
+            String messageId = eventData.path("id").asText(null);
+            String username = eventData.path("author").path("username").asText(null);
+            boolean isBot = eventData.path("author").path("bot").asBoolean(false);
+            String channelUserId = eventData.path("author").path("id").asText(null);
+            String content = eventData.path("content").asText(null);
+            String time = eventData.path("timestamp").asText(null);
+
+            var message = new Message(Platform.OFFICIAL_GUILD_DM, messageId, content, time, List.of());
+            var user = new User(Platform.OFFICIAL_GUILD_DM, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
+            OfficialGuildDirectMessageCreateEvent event = new OfficialGuildDirectMessageCreateEvent(user, guildId, channelId, message);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的文字子频道私信消息事件时发生错误：", e);
         }
     }
 

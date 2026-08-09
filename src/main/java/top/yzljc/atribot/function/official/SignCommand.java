@@ -137,7 +137,7 @@ public class SignCommand implements CommandExecutor, Listener {
 
             Object buttons = TC.keyboard(List.of(
                     List.of(new Button("c1", "我也要打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                            new Button("c2", "抽MC物品", "/loot", true, ButtonStyle.BLUE, ButtonType.COMMAND)))
+                            new Button("c2", "抽MC物品", "/随机物品", true, ButtonStyle.BLUE, ButtonType.COMMAND)))
             );
 
             if (label == 1) {

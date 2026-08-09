@@ -178,15 +178,14 @@ yunland:
 
 image-source:
   enabled: false
-  # 投稿上报地址，POST body: {uuid, uploader, time, hash, ...}（不含审核状态）
-  # 远端响应与 Result 同构，按 status 判定：200 成功，400 上传失败
-  upload-url: "null"
-  # 图片删除地址前缀，后端会 DELETE <delete-url>/<uuid> 并带 Authorization header
-  delete-url: "null"
-  # 图片浏览地址前缀，WebUI 用 <view-base-url>/<uuid> 展示图片，例如 /imagesource/get/{uuid}
+  # 图源远端 API 根地址（AtriData 的 /imagesource 前缀）。所有远端操作都由它派生：
+  #   POST   <api-url>/upload           上报投稿
+  #   POST   <api-url>/status/<uuid>    审核状态变更，body: {"status": "PENDING|REVIEWED|DENIED"}
+  #   DELETE <api-url>/delete/<uuid>    删除投稿
+  #   GET    <api-url>/deliver/<uuid>   下发路线查询
+  api-url: "null"
+  # 图片浏览地址前缀，WebUI 用它直连展示图片：<view-base-url>/<uuid>（需浏览器可达）
   view-base-url: "null"
-  # 下发路线查询前缀。发图给 QQ 之前 GET <deliver-url>/<uuid>，远端回 {way, url}
-  deliver-url: "null"
   # 共享密钥
   token: "null"
   # 单个用户同时处于未审核状态的投稿数量上限

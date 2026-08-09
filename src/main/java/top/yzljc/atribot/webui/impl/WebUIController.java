@@ -20,7 +20,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
-import top.yzljc.atribot.database.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.ErrorReportRepository;
@@ -35,6 +35,9 @@ import top.yzljc.atribot.function.general.Feedback;
 import top.yzljc.atribot.function.napcat.GroupContentRecord;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
+import top.yzljc.atribot.function.official.pushtask.PushTask;
+import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings.DisableScope;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.official.OfficialBot;
 import top.yzljc.atribot.service.request.HttpService;
@@ -334,6 +337,123 @@ public class WebUIController {
 
     public record ConfigDTO(String appId, String botOpenId, String botName, String apiBaseUrl,
                             String debugGroupId, String superAdminId) {
+    }
+
+    // ═══════════════ 功能设置 ═══════════════
+
+    public static void listFunctionSettings(Context ctx) {
+        List<FunctionSettingDTO> items = new ArrayList<>();
+        for (PushTask task : PushTaskCommand.getTasks()) {
+            var rule = PushTaskGlobalSettings.getRule(task.getFunctionId());
+            DisableScope scope = rule == null ? defaultScope(task) : rule.scope();
+            String functionName = rule != null && !isBlank(rule.functionName()) ? rule.functionName() : task.getDisplayName();
+            items.add(new FunctionSettingDTO(
+                    task.getFunctionId(),
+                    functionName,
+                    task.isGroupEnable(),
+                    task.isC2cEnable(),
+                    scope.name(),
+                    rule != null ? rule.startTime() : null,
+                    rule != null ? rule.endTime() : null,
+                    rule != null && rule.enabled(),
+                    PushTaskGlobalSettings.isActiveNow(rule)
+            ));
+        }
+        ctx.json(Result.success(items));
+    }
+
+    public static void saveFunctionSetting(Context ctx) {
+        String functionId = ctx.pathParam("functionId");
+        PushTask task = findPushTask(functionId);
+        if (task == null) {
+            ctx.json(Result.fail(404, "未找到对应的推送任务"));
+            return;
+        }
+
+        FunctionSettingUpdateDTO dto = ctx.bodyAsClass(FunctionSettingUpdateDTO.class);
+        DisableScope scope = parseDisableScope(dto == null ? null : dto.getScope(), defaultScope(task));
+        if (scope == DisableScope.GROUP && !task.isGroupEnable()) {
+            ctx.json(Result.fail(400, "该功能不支持群聊场景"));
+            return;
+        }
+        if (scope == DisableScope.C2C && !task.isC2cEnable()) {
+            ctx.json(Result.fail(400, "该功能不支持私聊场景"));
+            return;
+        }
+        if (scope == DisableScope.BOTH && (!task.isGroupEnable() || !task.isC2cEnable())) {
+            ctx.json(Result.fail(400, "该功能不支持同时禁用群聊和私聊"));
+            return;
+        }
+
+        var rule = PushTaskGlobalSettings.saveRule(new PushTaskGlobalSettings.DisableRule(
+                task.getFunctionId(),
+                !isBlank(dto == null ? null : dto.getFunctionName()) ? dto.getFunctionName() : task.getDisplayName(),
+                scope,
+                dto == null ? null : dto.getStartTime(),
+                dto == null ? null : dto.getEndTime(),
+                dto == null || dto.isEnabled()
+        ));
+        ctx.json(Result.success(new FunctionSettingDTO(
+                task.getFunctionId(),
+                rule.functionName(),
+                task.isGroupEnable(),
+                task.isC2cEnable(),
+                rule.scope().name(),
+                rule.startTime(),
+                rule.endTime(),
+                rule.enabled(),
+                PushTaskGlobalSettings.isActiveNow(rule)
+        )));
+    }
+
+    public static void deleteFunctionSetting(Context ctx) {
+        String functionId = ctx.pathParam("functionId");
+        PushTaskGlobalSettings.removeRule(functionId);
+        ctx.json(Result.success("ok"));
+    }
+
+    private static PushTask findPushTask(String functionId) {
+        if (isBlank(functionId)) {
+            return null;
+        }
+        for (PushTask task : PushTaskCommand.getTasks()) {
+            if (task.getFunctionId().equals(functionId)) {
+                return task;
+            }
+        }
+        return null;
+    }
+
+    private static DisableScope defaultScope(PushTask task) {
+        if (task.isGroupEnable() && task.isC2cEnable()) {
+            return DisableScope.BOTH;
+        }
+        return task.isGroupEnable() ? DisableScope.GROUP : DisableScope.C2C;
+    }
+
+    private static DisableScope parseDisableScope(String value, DisableScope fallback) {
+        if (isBlank(value)) {
+            return fallback;
+        }
+        try {
+            return DisableScope.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return fallback;
+        }
+    }
+
+    public record FunctionSettingDTO(String functionId, String functionName, boolean groupEnable,
+                                     boolean c2cEnable, String scope, String startTime, String endTime,
+                                     boolean enabled, boolean activeNow) {
+    }
+
+    @Data
+    public static class FunctionSettingUpdateDTO {
+        private String functionName;
+        private String scope;
+        private String startTime;
+        private String endTime;
+        private boolean enabled = true;
     }
 
     private static int parseInt(String value, int defaultValue) {
@@ -1715,7 +1835,8 @@ public class WebUIController {
             return;
         }
 
-        JsonNode resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType());
+        boolean special = "true".equalsIgnoreCase(ctx.formParam("special"));
+        JsonNode resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType(), special);
         if (resp == null || resp.path("status").asInt() != 200) {
             ctx.json(Result.fail(502, "创建物品卡失败"));
             return;
@@ -1771,8 +1892,9 @@ public class WebUIController {
     public static void listCoinLeaderboard(Context ctx) {
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
-        List<LootRepository.CoinLeaderboardEntry> entries = LootRepository.getCoinLeaderboard(page, pageSize);
-        int total = LootRepository.countUsers();
+        String search = ctx.queryParam("search");
+        List<LootRepository.CoinLeaderboardEntry> entries = LootRepository.getCoinLeaderboard(search, page, pageSize);
+        int total = LootRepository.countUsersMatching(search);
         ctx.json(Result.success(new CoinLeaderboardResult(entries, total, page, pageSize)));
     }
 
@@ -1786,7 +1908,7 @@ public class WebUIController {
 
         boolean success = switch (dto.getOp()) {
             case "set" -> LootRepository.setCoins(userId, dto.getAmount());
-            case "add" -> LootRepository.addCoins(userId, dto.getAmount());
+            case "add" -> LootRepository.addCoins(userId, dto.getAmount()) > 0;
             case "remove" -> LootRepository.removeCoins(userId, dto.getAmount());
             default -> false;
         };
@@ -1822,7 +1944,8 @@ public class WebUIController {
             return;
         }
         String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
-        LootRepository.LootRecord record = LootRepository.appendLoot(userId, dto.getItemId(), dto.getDisplayName(), way);
+        LootRepository.LootRecord record = LootRepository.appendLoot(userId, dto.getItemId(), dto.getDisplayName(), way,
+                Boolean.TRUE.equals(dto.getSpecial()));
         ctx.json(record != null ? Result.success(record) : Result.fail(500, "赠送物品失败"));
     }
 
@@ -1862,5 +1985,6 @@ public class WebUIController {
         private String itemId;
         private String displayName;
         private String way;
+        private Boolean special;
     }
 }

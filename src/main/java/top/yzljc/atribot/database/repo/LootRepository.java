@@ -141,8 +141,20 @@ public class LootRepository {
         return 0;
     }
 
-    public static boolean addCoins(String userId, int amount) {
-        if (amount <= 0) return false;
+    /**
+     * 此函数用于记录特殊途径的获取，通过本函数的给予将计入日志数据
+     * @return 增加的金粒数量，失败返回 -1
+     */
+    public static int addCoins(String userId, int amount, String way) {
+        CoinGainLogRepository.recordCoinGain(userId, way, amount);
+        return addCoins(userId, amount);
+    }
+
+    /**
+     * @return 增加的金粒数量，失败返回 -1
+     */
+    public static int addCoins(String userId, int amount) {
+        if (amount <= 0) return -1;
         String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', ?) " +
                 "ON DUPLICATE KEY UPDATE `coins` = `coins` + ?";
         try (var con = DatabaseManager.getConnection();
@@ -151,10 +163,10 @@ public class LootRepository {
             ps.setInt(2, amount);
             ps.setInt(3, amount);
             ps.executeUpdate();
-            return true;
+            return amount;
         } catch (Exception e) {
             log.error("增加金粒失败: userId={}, amount={}", userId, amount, e);
-            return false;
+            return -1;
         }
     }
 
@@ -224,11 +236,15 @@ public class LootRepository {
     }
 
     public static LootRecord appendLoot(String userId, String itemId, String displayName, String way) {
+        return appendLoot(userId, itemId, displayName, way, false);
+    }
+
+    public static LootRecord appendLoot(String userId, String itemId, String displayName, String way, boolean special) {
         String safeItemId = itemId == null || itemId.isBlank() ? UUID.randomUUID().toString() : itemId;
         String safeDisplayName = displayName == null ? "" : displayName;
         String safeWay = way == null || way.isBlank() ? "未知" : way;
         long now = Instant.now().getEpochSecond();
-        LootRecord record = new LootRecord(safeItemId, safeDisplayName, now, safeWay, 1);
+        LootRecord record = new LootRecord(safeItemId, safeDisplayName, now, safeWay, 1, special);
 
         try (var con = DatabaseManager.getConnection()) {
             List<LootRecord> current;
@@ -244,7 +260,8 @@ public class LootRepository {
                 LootRecord existing = current.get(i);
                 if (existing.itemId().equals(safeItemId)) {
                     long firstReceiveTimestamp = existing.receiveTimestamp() > 0 ? existing.receiveTimestamp() : now;
-                    record = new LootRecord(safeItemId, safeDisplayName, firstReceiveTimestamp, existing.way(), existing.count() + 1);
+                    record = new LootRecord(safeItemId, safeDisplayName, firstReceiveTimestamp, existing.way(), existing.count() + 1,
+                            existing.special() || special);
                     current.set(i, record);
                     found = true;
                     break;
@@ -302,7 +319,8 @@ public class LootRepository {
                 LootRecord existing = current.get(i);
                 if (existing.itemId().equals(itemId)) {
                     if (existing.count() > 1) {
-                        current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(), existing.way(), existing.count() - 1));
+                        current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(), existing.way(), existing.count() - 1,
+                                existing.special()));
                     } else {
                         current.remove(i);
                         removeWholeItem = true;
@@ -337,17 +355,24 @@ public class LootRepository {
 
     // ==================== 管理端查询 ====================
 
-    public static List<CoinLeaderboardEntry> getCoinLeaderboard(int page, int pageSize) {
+    public static List<CoinLeaderboardEntry> getCoinLeaderboard(String search, int page, int pageSize) {
         int safePage = Math.max(1, page);
         int safePageSize = Math.max(1, Math.min(100, pageSize));
         int offset = (safePage - 1) * safePageSize;
+        boolean hasSearch = search != null && !search.isBlank();
 
         List<CoinLeaderboardEntry> result = new ArrayList<>();
-        String sql = "SELECT `user_id`, `coins` FROM `user_loots` ORDER BY `coins` DESC LIMIT ? OFFSET ?";
+        String sql = "SELECT `user_id`, `coins` FROM `user_loots`"
+                + (hasSearch ? " WHERE `user_id` LIKE ?" : "")
+                + " ORDER BY `coins` DESC LIMIT ? OFFSET ?";
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
-            ps.setInt(1, safePageSize);
-            ps.setInt(2, offset);
+            int idx = 1;
+            if (hasSearch) {
+                ps.setString(idx++, "%" + search + "%");
+            }
+            ps.setInt(idx++, safePageSize);
+            ps.setInt(idx, offset);
             try (var rs = ps.executeQuery()) {
                 int rank = offset + 1;
                 while (rs.next()) {
@@ -359,20 +384,6 @@ public class LootRepository {
             log.error("查询金粒排行榜失败", e);
         }
         return result;
-    }
-
-    public static int countUsers() {
-        String sql = "SELECT COUNT(*) FROM `user_loots`";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql);
-             var rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-        } catch (Exception e) {
-            log.error("查询抽卡用户总数失败", e);
-        }
-        return 0;
     }
 
     /**
@@ -465,12 +476,14 @@ public class LootRepository {
                 long receiveTimestamp = node.hasNonNull("receive_timestamp") ? node.get("receive_timestamp").asLong() : 0L;
                 String way = node.hasNonNull("way") ? node.get("way").asText() : "未知";
                 int count = node.hasNonNull("count") ? Math.max(1, node.get("count").asInt(1)) : 1;
+                boolean special = node.hasNonNull("special") && node.get("special").asBoolean();
                 LootRecord existing = merged.get(itemId);
                 if (existing == null) {
-                    merged.put(itemId, new LootRecord(itemId, displayName, receiveTimestamp, way, count));
+                    merged.put(itemId, new LootRecord(itemId, displayName, receiveTimestamp, way, count, special));
                 } else {
                     long firstReceiveTimestamp = existing.receiveTimestamp() > 0 ? existing.receiveTimestamp() : receiveTimestamp;
-                    merged.put(itemId, new LootRecord(itemId, displayName, firstReceiveTimestamp, existing.way(), existing.count() + count));
+                    merged.put(itemId, new LootRecord(itemId, displayName, firstReceiveTimestamp, existing.way(), existing.count() + count,
+                            existing.special() || special));
                 }
             }
         } catch (Exception e) {
@@ -488,11 +501,13 @@ public class LootRepository {
             node.put("receive_timestamp", record.receiveTimestamp());
             node.put("way", record.way());
             node.put("count", record.count());
+            node.put("special", record.special());
         }
         return array.toString();
     }
 
-    public record LootRecord(String itemId, String displayName, long receiveTimestamp, String way, int count) {
+    public record LootRecord(String itemId, String displayName, long receiveTimestamp, String way, int count,
+                             boolean special) {
         public LootRecord {
             count = Math.max(1, count);
         }

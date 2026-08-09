@@ -41,6 +41,7 @@ dependencies {
     api("ch.qos.logback:logback-classic:1.6.1")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
+    api("org.jline:jline:4.3.1")
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")

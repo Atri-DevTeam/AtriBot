@@ -35,7 +35,7 @@ public class Properties {
 
     public static final String CHAT_PINNED = "data/chat-pinned.json";
 
-    public static final String COINS_MIGRATION_FLAG = "data/loots-coins-migration-done.flag";
+    public static final String FUNCTION_SETTINGS = "data/function-settings.json";
 
     public static final String LOOT_FREE_DRAW_RECORD = "data/loot-free-draws.json";
 }

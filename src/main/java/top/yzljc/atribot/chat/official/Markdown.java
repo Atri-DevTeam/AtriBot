@@ -38,7 +38,7 @@ public class Markdown {
     }
 
     public static String at(String userOpenId) {
-        return "<qqbot-at-user id=\"" + userOpenId + "\" />";
+        return "<@" + userOpenId + ">";
     }
 
     public static String at(CommandSender sender) {

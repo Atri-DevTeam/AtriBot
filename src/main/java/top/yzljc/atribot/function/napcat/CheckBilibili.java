@@ -29,6 +29,7 @@ public class CheckBilibili implements Listener {
 
     private static final Logger log = LoggerFactory.getLogger(CheckBilibili.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
+    private static final long MAX_VIDEO_DURATION_SECONDS = 600L;
 
     private static final String SESSDATA = Config.getInstance().getBilibiliCookie();
 
@@ -112,14 +113,23 @@ public class CheckBilibili implements Listener {
                 JsonNode stat = data.path("stat");
 
                 String title = data.path("title").asText();
-                String picUrl = data.path("pic").asText();
+                String picUrl = normalizeHttps(data.path("pic").asText());
                 String desc = data.path("desc").asText();
                 if (desc == null || desc.isEmpty()) desc = "（该视频暂无简介）";
 
+                long cid = data.path("cid").asLong();
+                long duration = data.path("duration").asLong();
+                if (duration > MAX_VIDEO_DURATION_SECONDS) {
+                    List<MessageSegment> nodes = new ArrayList<>();
+                    nodes.add(createTextNode("超出最大视频时长限制"));
+                    sendForwardMessage(groupId, nodes, title);
+                    return;
+                }
+
                 long mid = data.path("owner").path("mid").asLong();
                 String upStats = fetchUploaderStats(mid);
+                String videoUrl = fetchLowestQualityVideoUrl(bvid, cid);
 
-                long duration = data.path("duration").asLong();
                 String time = FormatTools.formatTimestamp(data.path("pubdate").asText());
                 String link = "https://www.bilibili.com/video/" + bvid;
 
@@ -134,9 +144,16 @@ public class CheckBilibili implements Listener {
                         "原始链接：" + link;
 
                 List<MessageSegment> nodes = new ArrayList<>();
-                nodes.add(createImageNode(picUrl));
+                if (picUrl != null && !picUrl.isBlank()) {
+                    nodes.add(createImageNode(picUrl));
+                }
                 nodes.add(createTextNode(sb));
                 nodes.add(createTextNode("视频简介：\n" + desc));
+                if (videoUrl != null && !videoUrl.isBlank()) {
+                    nodes.add(createVideoNode(videoUrl));
+                } else {
+                    nodes.add(createTextNode("原视频：获取失败"));
+                }
                 nodes.add(createTextNode(upStats));
 
                 sendForwardMessage(groupId, nodes, title);
@@ -211,6 +228,21 @@ public class CheckBilibili implements Listener {
         return GroupMessage.createImageNode(url);
     }
 
+    private static MessageSegment createVideoNode(String url) {
+        return GroupMessage.createVideoNode(url);
+    }
+
+    private static String normalizeHttps(String url) {
+        if (url == null || url.isBlank()) {
+            return url;
+        }
+        String trimmed = url.trim();
+        if (trimmed.startsWith("http://")) {
+            return "https://" + trimmed.substring("http://".length());
+        }
+        return trimmed;
+    }
+
     private static void sendForwardMessage(String groupId, List<MessageSegment> nodes, String title) {
         try {
             GroupMessage.forwardMessage(groupId, nodes, "B站视频解析结果", "查看哔哩哔哩视频信息", title);
@@ -218,6 +250,63 @@ public class CheckBilibili implements Listener {
         } catch (Exception e) {
             log.error("Failed to send forward message", e);
         }
+    }
+
+    private static String fetchLowestQualityVideoUrl(String bvid, long cid) {
+        try {
+            String playUrl = "https://api.bilibili.com/x/player/playurl?bvid=" + bvid +
+                    "&cid=" + cid +
+                    "&qn=16&fnval=16&fnver=0&fourk=0&platform=html5";
+            JsonNode root = sendBilibiliRequest(playUrl);
+
+            if (root == null || root.path("code").asInt() != 0) {
+                return null;
+            }
+
+            JsonNode data = root.path("data");
+            JsonNode durl = data.path("durl");
+            if (durl.isArray() && !durl.isEmpty()) {
+                String url = durl.get(0).path("url").asText();
+                if (url != null && !url.isEmpty()) {
+                    return url;
+                }
+            }
+
+            JsonNode dashVideo = data.path("dash").path("video");
+            if (dashVideo.isArray() && !dashVideo.isEmpty()) {
+                String url = selectDashVideoUrl(dashVideo);
+                if (url != null && !url.isEmpty()) {
+                    return url;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[Bili PlayUrl] Failed to get video url: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private static String selectDashVideoUrl(JsonNode dashVideo) {
+        JsonNode fallback = null;
+        for (JsonNode video : dashVideo) {
+            if (fallback == null) {
+                fallback = video;
+            }
+            String codecs = video.path("codecs").asText("");
+            if (codecs.startsWith("avc1")) {
+                return firstText(video, "baseUrl", "base_url");
+            }
+        }
+        return fallback == null ? null : firstText(fallback, "baseUrl", "base_url");
+    }
+
+    private static String firstText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            String value = node.path(field).asText(null);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private static JsonNode sendBilibiliRequest(String urlStr) {
