@@ -5,11 +5,11 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
-import top.yzljc.atribot.platform.Platform;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -31,14 +31,14 @@ public class ImageSourceStatsCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
-        boolean admin = sender.hasPermission();
+        boolean admin = qq.hasPermission();
         if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
             if (!admin) return true;
-            return handlePendingList(sender);
+            return handlePendingList(qq);
         }
 
         int pending = ImageSourceRepository.countByStatus(ImageReviewStatus.PENDING.name());
@@ -46,7 +46,7 @@ public class ImageSourceStatsCommand implements CommandExecutor {
         int denied = ImageSourceRepository.countByStatus(ImageReviewStatus.DENIED.name());
         int total = ImageSourceRepository.countByStatus(null);
 
-        String userId = sender.getUserId();
+        String userId = qq.getUserId();
         int myTotal = ImageSourceRepository.countByUploader(userId, null);
         int myPending = ImageSourceRepository.countByUploader(userId, ImageReviewStatus.PENDING.name());
         int myReviewed = ImageSourceRepository.countByUploader(userId, ImageReviewStatus.REVIEWED.name());
@@ -77,11 +77,11 @@ public class ImageSourceStatsCommand implements CommandExecutor {
         sb.append("━━━━━━━━━━━━━━\n");
         sb.append("投稿方式: /投稿 并附带图片");
 
-        sender.sendMessage(TC.md(sb.toString()));
+        qq.sendMessage(TC.md(sb.toString()));
         return true;
     }
 
-    private boolean handlePendingList(CommandSender sender) {
+    private boolean handlePendingList(QQCommandSender sender) {
         List<ImageSourceDTO> list = ImageSourceRepository.findPaginated(
                 ImageReviewStatus.PENDING.name(), 1, PREVIEW_SIZE);
         if (list.isEmpty()) {

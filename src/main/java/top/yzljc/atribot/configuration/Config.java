@@ -101,6 +101,8 @@ public class Config {
     @Getter
     private String US_API;
     private java.util.Properties emailProperties;
+    @Getter
+    private String verifyStrategyId;
 
     // ########## 官方机器人配置参数 ##########
     @Getter
@@ -122,8 +124,6 @@ public class Config {
     private String debugGroupOpenId;
     @Getter
     private String superAdminId;
-    @Getter
-    private boolean newBot;
 
     // ########## Discord 配置参数 ##########
     @Getter
@@ -257,6 +257,8 @@ public class Config {
             this.keywordsHitokoto = yaml.getStringList("function.keywords-hitokoto").toArray(new String[0]);
             this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
             this.US_API = yaml.getString("function.us-api", "null");
+            this.verifyStrategyId = yaml.getString("ua.verify.strategy-id", "default");
+
             // -------- Email 配置区域 ---------
             this.emailEnabled = yaml.getBoolean("email.enabled", false);
             this.emailUsername = yaml.getString("email.username", "");
@@ -279,7 +281,6 @@ public class Config {
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
             this.superAdminId = yaml.getString("qq.super_admin_id", "null");
-            this.newBot = yaml.getBoolean("qq.is-new-bot", false);
 
             // ########## Discord 配置参数 ##########
             this.discordEnabled = yaml.getBoolean("discord.enabled", false);

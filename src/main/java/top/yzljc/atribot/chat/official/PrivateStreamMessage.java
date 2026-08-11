@@ -8,7 +8,7 @@ import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
-import top.yzljc.atribot.platform.official.TokenManager;
+import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 

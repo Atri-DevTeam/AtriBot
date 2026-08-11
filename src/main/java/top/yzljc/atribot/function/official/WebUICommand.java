@@ -6,15 +6,12 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.webui.impl.WebUISessionManager;
+import top.yzljc.atribot.webui.WebUISessionManager;
 
 import java.util.List;
 
@@ -30,12 +27,22 @@ public class WebUICommand implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
+            if (sender instanceof ConsoleCommandSender console) {
+                boolean status = WebUISessionManager.isActive();
+                if (status) {
+                    WebUISessionManager.stop();
+                    console.sendMessage("[!] 网页控制面板已禁用，所有连接已断开！");
+                } else {
+                    WebUISessionManager.start();
+                    console.sendMessage("[!] 网页控制面板已启用，请在使用后及时关闭！");
+                }
+            }
             return true;
         }
 
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你是谁？");
+        if (!qq.hasPermission()) {
+            qq.sendMessage("你是谁？");
             return true;
         }
 
@@ -48,7 +55,7 @@ public class WebUICommand implements CommandExecutor, Listener {
 
         Markdown md = TC.md("**启用WebUI**\n\n> 请在使用后自行关闭\n> 当前状态: " + (WebUISessionManager.isActive() ? "已启用" : "未启用"));
 
-        sender.sendMessage(md, keyboard);
+        qq.sendMessage(md, keyboard);
 
         return true;
     }

@@ -3,10 +3,10 @@ package top.yzljc.atribot.chat.official;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
-import top.yzljc.atribot.platform.official.FileType;
-import top.yzljc.atribot.platform.official.TokenManager;
+import top.yzljc.atribot.platform.qq.FileType;
+import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.util.Base64;

@@ -4,6 +4,8 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.ConsoleCommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 
 import java.util.Map;
 
@@ -12,18 +14,32 @@ public class GroupConfigInfo implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        getGroupStatusDescription(sender.getGroupId());
+        if (sender instanceof NapcatCommandSender nc) {
+            getGroupStatusDescription(nc.getGroupId());
+            return true;
+        }
+        if (sender instanceof ConsoleCommandSender) {
+            if (args.length < 1) {
+                sender.sendMessage("用法: /groupinfo <群号>");
+                return true;
+            }
+            sender.sendMessage(buildDescription(args[0]));
+            return true;
+        }
         return true;
     }
 
     public static void getGroupStatusDescription(String groupId) {
+        GroupMessage.chatMessage(groupId, buildDescription(groupId));
+    }
+
+    public static String buildDescription(String groupId) {
         StringBuilder sb = new StringBuilder();
         sb.append("=== 群 ").append(groupId).append(" 功能配置 ===\n");
 
         if (registeredFeatures.isEmpty()) {
             sb.append("（暂无注册功能）");
-            GroupMessage.chatMessage(groupId, sb.toString().trim());
-            return;
+            return sb.toString().trim();
         }
 
         for (String featureName : registeredFeatures.keySet()) {
@@ -32,6 +48,6 @@ public class GroupConfigInfo implements CommandExecutor {
                     .append(featureName)
                     .append("\n");
         }
-        GroupMessage.chatMessage(groupId, sb.toString().trim());
+        return sb.toString().trim();
     }
 }

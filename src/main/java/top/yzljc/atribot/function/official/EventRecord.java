@@ -1,7 +1,8 @@
 package top.yzljc.atribot.function.official;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.auth.official.PermissionRole;
+import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,14 +23,11 @@ import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.tools.Alert;
-import top.yzljc.atribot.utils.tools.RandomGolds;
-import top.yzljc.atribot.webui.impl.SseBroadcaster;
+import top.yzljc.atribot.webui.SseBroadcaster;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @Author YZ_Ljc_
@@ -41,10 +39,11 @@ import java.util.Set;
 @Slf4j
 public class EventRecord implements Listener {
 
-    private static final Set<String> c2cNotifiedUsers = new HashSet<>();
-
     @EventHandler
     public void onMemberJoin(OfficialGroupMemberAddEvent event) {
+        // 成员入群后刷新一次所在群资料（成员数等）
+        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
+        log.info("[!] 成员入群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
         Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
             if (event.getGroupOpenId().equals("8B4709F81FE02E5E64AC31B2F910793A")) {
                 if (CoinGainLogRepository.countCoinGains(event.getMemberOpenId(), "join_my_group") < 1) {
@@ -61,13 +60,13 @@ public class EventRecord implements Listener {
         String welStr = "欢迎新人喵~";
         int width = 1238;
         int height = 564;
-        if (OfficialUsers.getRole(event.getMemberOpenId()) == PermissionRole.OWNER) {
-            welStr = "欢迎" + OfficialBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
+        if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.OWNER) {
+            welStr = "欢迎" + QQBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
             url = ResourcesProperties.WELCOME_DEV_IMG;
             width = 850;
             height = 479;
-        } else if (OfficialUsers.getRole(event.getMemberOpenId()) == PermissionRole.ADMIN) {
-            welStr = "欢迎" + OfficialBot.BOT_NAME + "管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
+        } else if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.ADMIN) {
+            welStr = "欢迎" + QQBot.BOT_NAME + "管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
         }
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " " + welStr + "\n\n" +
@@ -85,6 +84,12 @@ public class EventRecord implements Listener {
     }
 
     @EventHandler
+    public void onMemberRemove(OfficialGroupMemberRemoveEvent event) {
+        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
+        log.info("[!] 成员退群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
+    }
+
+    @EventHandler
     public void onGroupJoin(OfficialGroupJoinEvent event) {
         boolean result = OfficialGroups.registerGroup(event.getGroupOpenId(), event.getOpMemberOpenId(), event.getTimestamp());
         if (!result) {
@@ -93,11 +98,25 @@ public class EventRecord implements Listener {
         } else {
             log.info("Registered group: {}", event.getGroupOpenId());
             Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵添加到群聊" + event.getGroupOpenId() + "中");
+            Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
         }
         if (CoinGainLogRepository.countCoinGains(event.getOpMemberOpenId(), "group_invite") < 5) {
             LootRepository.addCoins(event.getOpMemberOpenId(), 200, "group_invite");
             log.info("Added 200 coins to user {} for inviting bot to group {} ({}/5)", event.getOpMemberOpenId(), event.getGroupOpenId(), CoinGainLogRepository.countCoinGains(event.getOpMemberOpenId(), "group_invite"));
         }
+    }
+
+    private static void fetchAndSaveGroupProfile(String groupOpenId) {
+        var profile = QQBot.fetchGroupProfile(groupOpenId);
+        if (profile == null) {
+            log.warn("新加群后获取群资料失败: {}", groupOpenId);
+            return;
+        }
+        if (!OfficialGroups.saveGroupProfile(profile)) {
+            log.warn("新加群后保存群资料失败: {}", groupOpenId);
+            return;
+        }
+        log.info("[!] 已加载新进群的相关资料，群ID: {}, 群名称: {}", profile.groupId(), profile.groupName());
     }
 
     @EventHandler
@@ -230,71 +249,73 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onRunCommand(UserRunCommandEvent event) {
-        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialGroups.isGroupBlacklisted(event.getSender().getGroupId())) {
+        if (!(event.getSender() instanceof QQCommandSender qq)) return;
+
+        if (qq.getPlatform() == Platform.OFFICIAL_GROUP && OfficialGroups.isGroupBlacklisted(qq.getGroupId())) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                 Object key = TC.keyboard(List.of(
                         List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
-                event.getSender().sendMessage(TC.md("> 该群聊因违反指令使用规则已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
-                log.warn("Command from blacklisted group {}: {} {}", event.getSender().getGroupId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                qq.sendMessage(TC.md("> 该群聊因违反指令使用规则已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
+                log.warn("Command from blacklisted group {}: {} {}", qq.getGroupId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
             }
         }
 
-        if (event.getSender().getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.isBlocked(event.getSender().getUserId())) {
-            if (!OfficialUsers.isIgnored(event.getSender().getUserId())) {
+        if (qq.getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.isBlocked(qq.getUserId())) {
+            if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                     Object key = TC.keyboard(List.of(
                             List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                     ));
-                    event.getSender().sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
-                    log.warn("Command from blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                    qq.sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
+                    log.warn("Command from blacklisted user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                     event.setCancelled(true);
                     return;
                 }
             } else {
-                log.warn("Command from ignored user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                log.warn("Command from ignored user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
             }
         }
 
-        if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.isBlocked(event.getSender().getUserId())) {
-            if (!OfficialUsers.isIgnored(event.getSender().getUserId())) {
+        if (qq.getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.isBlocked(qq.getUserId())) {
+            if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                     Object key = TC.keyboard(List.of(
                             List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                     ));
-                    event.getSender().sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
-                    log.warn("Command from group-blacklisted user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                    qq.sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
+                    log.warn("Command from group-blacklisted user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                     event.setCancelled(true);
                     return;
                 }
             } else {
-                log.warn("Command from group-ignored user {}: {} {}", event.getSender().getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
+                log.warn("Command from group-ignored user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
             }
         }
 
-        if ((event.getSender().getPlatform() == Platform.OFFICIAL_C2C || event.getSender().getPlatform() == Platform.OFFICIAL_GROUP) && Config.getInstance().isNapcatEnabled()) {
-            if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP && event.getSender().getUserId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
+        if ((qq.getPlatform() == Platform.OFFICIAL_C2C || qq.getPlatform() == Platform.OFFICIAL_GROUP) && Config.getInstance().isNapcatEnabled()) {
+            if (qq.getPlatform() == Platform.OFFICIAL_GROUP && qq.getUserId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
                 return;
 
             String info;
-            if (event.getSender().getPlatform() == Platform.OFFICIAL_GROUP) {
+            if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
                 info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (群: %s)".formatted(
-                        event.getSender().getUsername(),
-                        event.getSender().getUserId(),
+                        qq.getUsername(),
+                        qq.getUserId(),
                         event.getCommandHeader(),
                         String.join(" ", event.getArgs()),
-                        event.getSender().getGroupId()
+                        qq.getGroupId()
                 );
             } else {
                 info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (私聊)".formatted(
-                        event.getSender().getUsername(),
-                        event.getSender().getUserId(),
+                        qq.getUsername(),
+                        qq.getUserId(),
                         event.getCommandHeader(),
                         String.join(" ", event.getArgs())
                 );

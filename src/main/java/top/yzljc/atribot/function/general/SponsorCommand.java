@@ -4,12 +4,13 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.Map;
@@ -28,27 +29,29 @@ public class SponsorCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String apiUrl = ResourcesProperties.SPONSORS_API;
 
-        if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
+        if (sender instanceof NapcatCommandSender nc) {
             var data = PreImageGenerate.dump(apiUrl, Map.of());
             if (data.isError()) {
                 String errMsg = data.errorMessage();
-                sender.sendMessage("数据获取失败: " + errMsg);
+                nc.sendMessage("数据获取失败: " + errMsg);
                 return true;
             }
-            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
+            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
             return true;
         }
 
-        ThreadManager.execute(() -> {
-            var data = PreImageGenerate.dump(apiUrl, Map.of());
-            if (data.isError()) {
-                String errMsg = data.errorMessage();
-                sender.sendMessage("数据获取失败: " + errMsg);
-                log.warn("赞助信息图片生成失败: {}", errMsg);
-                return;
-            }
-            sender.sendMessage(data.url(), ImageType.URL);
-        });
+        if (sender instanceof QQCommandSender qq) {
+            ThreadManager.execute(() -> {
+                var data = PreImageGenerate.dump(apiUrl, Map.of());
+                if (data.isError()) {
+                    String errMsg = data.errorMessage();
+                    qq.sendMessage("数据获取失败: " + errMsg);
+                    log.warn("赞助信息图片生成失败: {}", errMsg);
+                    return;
+                }
+                qq.sendMessage(data.url(), ImageType.URL);
+            });
+        }
 
         return true;
     }

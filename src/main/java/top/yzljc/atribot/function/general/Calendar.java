@@ -10,6 +10,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -48,7 +49,9 @@ public class Calendar implements CommandExecutor {
         }
 
         String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
-        sender.sendMessage(TC.md(today));
+        if (sender instanceof QQCommandSender qq) {
+            qq.sendMessage(TC.md(today));
+        }
         return true;
     }
 

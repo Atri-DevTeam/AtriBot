@@ -7,9 +7,9 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,9 +23,9 @@ public class RollbackMessages implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage(Identifier.NO_PERMISSION);
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage(Identifier.NO_PERMISSION);
             return true;
         }
 
@@ -40,7 +40,7 @@ public class RollbackMessages implements CommandExecutor {
                     limit = Integer.parseInt(args[i + 1]);
                     i++;
                 } catch (NumberFormatException ignored) {
-                    sender.sendMessage("参数错误：-n 后面必须是数字");
+                    nc.sendMessage("参数错误：-n 后面必须是数字");
                     return true;
                 }
             } else if ("-u".equalsIgnoreCase(arg) && i + 1 < args.length) {
@@ -48,18 +48,18 @@ public class RollbackMessages implements CommandExecutor {
                     targetUserId = Long.parseLong(args[i + 1]);
                     i++;
                 } catch (NumberFormatException ignored) {
-                    sender.sendMessage("参数错误：-u 后面必须是QQ号");
+                    nc.sendMessage("参数错误：-u 后面必须是QQ号");
                     return true;
                 }
             }
         }
 
-        int count = performRollback(sender.getGroupId(), targetUserId, limit);
+        int count = performRollback(nc.getGroupId(), targetUserId, limit);
 
         if (count > 0) {
-            sender.sendMessage("已尝试撤回 " + count + " 条消息");
+            nc.sendMessage("已尝试撤回 " + count + " 条消息");
         } else {
-            sender.sendMessage("未找到可撤回的消息");
+            nc.sendMessage("未找到可撤回的消息");
         }
 
         return true;

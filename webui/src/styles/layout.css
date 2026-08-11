@@ -429,6 +429,219 @@
   background: #fef2f2;
 }
 
+/* 禁言设置弹窗：仿权限设置的大 modal，Teleport 到 body 顶层 */
+.mute-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(13, 15, 19, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.mute-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 201;
+  width: 320px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.mute-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0 16px;
+  border-bottom: 1px solid #f3f4f6;
+  border-radius: 7px 7px 0 0;
+}
+
+.mute-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mute-modal-close {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mute-modal-close:hover {
+  color: #374151;
+}
+
+.mute-modal-body {
+  padding: 14px 16px;
+}
+
+.mute-modal-target {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 禁言时长四段选择：天/时/分/秒 各一个可滚动下拉，菜单限高不撑破屏幕 */
+.mute-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.mute-picker-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 触发器：数字+单位同一行，基线对齐，整体居中，chevron 贴右独立定位 */
+.mute-picker-trigger {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.mute-picker-field.open .mute-picker-trigger {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.mute-picker-value {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #374151;
+}
+
+.mute-picker-unit {
+  margin-left: 2px;
+  font-size: 10px;
+  line-height: 1.25;
+  color: #9ca3af;
+}
+
+/* 真实 6×6 盒子的双 border V 字形，绕中心转，不再位移重影 */
+.mute-picker-chevron {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -4px;
+  border-right: 1.5px solid #9ca3af;
+  border-bottom: 1.5px solid #9ca3af;
+  transform: rotate(45deg);
+}
+
+.mute-picker-field.open .mute-picker-chevron {
+  border-color: #3b82f6;
+  transform: rotate(225deg);
+}
+
+.mute-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 210;
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 4px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  overscroll-behavior: contain;
+}
+
+.mute-picker-option {
+  display: block;
+  width: 100%;
+  padding: 5px 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.mute-picker-option:hover {
+  background: #f3f4f6;
+}
+
+.mute-picker-option.selected {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.mute-modal-summary {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mute-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f3f4f6;
+  border-radius: 0 0 7px 7px;
+}
+
+.mute-modal-btn {
+  padding: 7px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.mute-modal-btn--primary {
+  color: #ffffff;
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* 禁言状态查询：定时/周期规则明细分组 */
+.nt-mute-sub {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.nt-mute-sub-title {
+  padding: 0 12px 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.nt-row-value.off {
+  color: #9ca3af;
+}
+
 .topbar {
   display: flex;
   align-items: center;

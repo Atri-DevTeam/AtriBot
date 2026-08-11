@@ -41,7 +41,7 @@
             <input v-model="createForm.description" class="loot-upload-input" placeholder="介绍文案（用于单抽结果卡）" />
             <label class="loot-special-check">
               <input v-model="createForm.special" type="checkbox" />
-              特殊卡（不出现在抽卡池，仅可赠送）
+              特殊类型卡
             </label>
             <input ref="createFileInput" class="loot-upload-file" type="file" accept="image/*" @change="onCreateFileChange" required />
             <button class="primary-button" type="submit" :disabled="creating">{{ creating ? '上传中...' : '新增物品卡' }}</button>

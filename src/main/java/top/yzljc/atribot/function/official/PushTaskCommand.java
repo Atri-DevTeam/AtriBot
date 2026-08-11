@@ -9,8 +9,10 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.function.official.pushtask.*;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
 
 import java.util.List;
@@ -37,11 +39,13 @@ public class PushTaskCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        String groupOpenId = sender.getGroupId();
-        var platform = sender.getPlatform();
+        if (!(sender instanceof QQCommandSender qq)) return true;
+
+        String groupOpenId = qq.getGroupId();
+        var platform = qq.getPlatform();
 
         if (platform != Platform.OFFICIAL_GROUP && platform != Platform.OFFICIAL_C2C) {
-            sender.sendMessage("当前平台暂不支持推送任务调度！");
+            qq.sendMessage("当前平台暂不支持推送任务调度！");
             return true;
         }
 
@@ -55,7 +59,7 @@ public class PushTaskCommand implements CommandExecutor {
                 }
                 if (platform.equals(Platform.OFFICIAL_C2C)) {
                     if (task.isC2cEnable()) {
-                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, sender.getUserId(), task), getFunctionDescriptionText(task)));
+                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, qq.getUserId(), task), getFunctionDescriptionText(task)));
                     }
                 }
             }
@@ -67,7 +71,7 @@ public class PushTaskCommand implements CommandExecutor {
                     )
             );
 
-            sender.sendMessage(TC.md(markdown.toString()), feedbackButton);
+            qq.sendMessage(TC.md(markdown.toString()), feedbackButton);
             return true;
         }
 
@@ -77,42 +81,42 @@ public class PushTaskCommand implements CommandExecutor {
             var task = get(functionId);
 
             if (task == null) {
-                sender.sendMessage("未找到对应的推送任务！");
+                qq.sendMessage("未找到对应的推送任务！");
                 return true;
             }
 
             switch (cmd) {
                 case "详情" -> {
-                    sender.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : sender.getUserId()), buttons(functionId));
+                    qq.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : qq.getUserId()), buttons(functionId));
                     return true;
                 }
                 case "开启" -> {
-                    if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.isPlatformAdmin()) {
-                        sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                    if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
+                        qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
                     }
                     if (platform.equals(Platform.OFFICIAL_GROUP)) {
-                        task.enable(platform, groupOpenId, sender.getUserId(), sender.getMessageId());
+                        task.enable(platform, groupOpenId, qq.getUserId(), qq.getMessage().getMessageId());
                     } else {
-                        task.enable(platform, sender.getUserId(), sender.getUserId(), sender.getMessageId());
+                        task.enable(platform, qq.getUserId(), qq.getUserId(), qq.getMessage().getMessageId());
                     }
                     return true;
                 }
                 case "关闭" -> {
-                    if (sender.getPlatform().equals(Platform.OFFICIAL_GROUP) && !sender.isPlatformAdmin()) {
-                        sender.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                    if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
+                        qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
                     }
                     if (platform.equals(Platform.OFFICIAL_GROUP)) {
-                        task.disable(platform, groupOpenId, sender.getUserId(), sender.getMessageId());
+                        task.disable(platform, groupOpenId, qq.getUserId(), qq.getMessage().getMessageId());
                     } else {
-                        task.disable(platform, sender.getUserId(), sender.getUserId(), sender.getMessageId());
+                        task.disable(platform, qq.getUserId(), qq.getUserId(), qq.getMessage().getMessageId());
                     }
                     return true;
                 }
             }
         }
-        sender.sendMessage("未知的操作指令！");
+        qq.sendMessage("未知的操作指令！");
         return true;
     }
 

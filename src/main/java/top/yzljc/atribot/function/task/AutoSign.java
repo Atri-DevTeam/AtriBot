@@ -6,9 +6,9 @@ import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.Schedule;
@@ -22,14 +22,14 @@ public class AutoSign implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "auto_sign")) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "auto_sign")) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage("你没有权限执行此命令");
             return true;
         }
         processAutoSign();
-        sender.sendMessage("已开始全局自动打卡");
+        nc.sendMessage("已开始全局自动打卡");
         return true;
     }
 

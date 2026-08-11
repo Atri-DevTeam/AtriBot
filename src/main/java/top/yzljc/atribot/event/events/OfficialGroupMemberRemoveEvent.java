@@ -3,7 +3,7 @@ package top.yzljc.atribot.event.events;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.auth.official.PermissionRole;
+import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.event.Event;
 
 /**
@@ -21,7 +21,7 @@ public class OfficialGroupMemberRemoveEvent extends Event {
     private final String memberOpenId;
     private final String timestamp;
 
-    public PermissionRole getUserBotRole() {
+    public UnifiedRole getUserBotRole() {
         return OfficialUsers.getRole(this.memberOpenId);
     }
 }

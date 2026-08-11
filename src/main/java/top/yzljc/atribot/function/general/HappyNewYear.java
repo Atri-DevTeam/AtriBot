@@ -3,15 +3,16 @@ package top.yzljc.atribot.function.general;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.util.Map;
@@ -31,11 +32,11 @@ public class HappyNewYear implements CommandExecutor {
             return true;
         }
 
-        if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage(data.url(), ImageType.URL);
-        } else if (sender.getPlatform() == Platform.NAPCAT_GROUP) {
-            if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "new_year")) return true;
-            sender.sendMessage(data.url(), MessageUtils.ImageType.URL);
+        if (sender instanceof QQCommandSender qq) {
+            qq.sendMessage(data.url(), ImageType.URL);
+        } else if (sender instanceof NapcatCommandSender nc) {
+            if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "new_year")) return true;
+            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
         }
 
         return true;

@@ -5,10 +5,8 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.SlashCommandArguments;
-import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.command.DiscordSlashCommandSender;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 
@@ -24,7 +22,7 @@ import java.util.Arrays;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.general
  */
-public class PingCommand implements CommandExecutor, SlashCommandExecutor {
+public class PingCommand implements CommandExecutor {
 
     private static final OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
@@ -39,19 +37,13 @@ public class PingCommand implements CommandExecutor, SlashCommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform().equals(Platform.OFFICIAL_C2C)) {
+        if (sender instanceof QQCommandSender qq && qq.getPlatform() == Platform.OFFICIAL_C2C) {
             var t = Arrays.stream(buildStatus().split("\n", -1))
                     .map(line -> TC.md(line + "\n\n"))
                     .toList();
-            sender.sendStreamMarkdownMessage(t);
+            qq.sendStreamMarkdownMessage(t);
             return true;
         }
-        sender.sendMessage(buildStatus());
-        return true;
-    }
-
-    @Override
-    public boolean onSlashCommand(DiscordSlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
         sender.sendMessage(buildStatus());
         return true;
     }

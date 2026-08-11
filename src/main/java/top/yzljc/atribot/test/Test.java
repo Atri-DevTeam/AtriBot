@@ -3,16 +3,14 @@ package top.yzljc.atribot.test;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 
-import top.yzljc.atribot.chat.official.GuildChannelChat;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
-import top.yzljc.atribot.function.official.loot.LootService;
 
 /**
  * @Author YZ_Ljc_
@@ -144,6 +142,15 @@ public class Test implements CommandExecutor, Listener {
 //        sender.sendMessage(url, ImageType.URL);
 //        sender.sendMessage("https://thirdqq.qlogo.cn/g?b=oidb&k=9ibwZcgtYsVOkxNVvIbaeSg&kti=adPQXgwBHsE&s=0&t=1775489118", ImageType.URL);
 //        ImageSourceClient.migrateUnreviewedToDirs();
+//        if (sender instanceof QQCommandSender user) {
+//            user.sendMessage(TC.md("\\dfrac{a+b}{2}\\geq\\sqrt{ab}\\quad(a\\gt0,b\\gt0)\n" +
+//                    "\n" +
+//                    "\\begin{align*}\n" +
+//                    "\\sin(\\alpha\\pm\\beta)&=\\sin\\alpha\\sin\\beta\\pm\\cos\\alpha\\cos\\beta\\\\\n" +
+//                    "\\cos(\\alpha\\pm\\beta)&=\\cos\\alpha\\cos\\beta\\mp\\sin\\alpha\\sin\\beta\\\\\n" +
+//                    "\\tan(\\alpha\\pm\\beta)&=\\dfrac{\\tan\\alpha\\pm\\tan\\beta}{1\\mp\\tan\\alpha\\tan\\beta}\n" +
+//                    "\\end{align*}"));
+//        }
         return true;
     }
 
@@ -176,23 +183,23 @@ public class Test implements CommandExecutor, Listener {
 //            event.sendMessage("指令帮助:\n  /helps - 显示帮助\n  /test - 测试指令\n  /ping - 查看机器人运行状态");
 //        }
 //    }
-    @EventHandler
-    public void onBotSendFuckingLikeMessage(NapcatGroupMessageEvent event) {
-        if (!event.getGroupId().equals("818804507")) return;
-        if (!event.getUser().getUserId().equals("3993660791")) return;
-        if (event.getMessage().getContent().contains("点") && event.getMessage().getContent().contains("赞")) {
-            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(event::recall, 10000L);
-        }
-    }
+//    @EventHandler
+//    public void onBotSendFuckingLikeMessage(NapcatGroupMessageEvent event) {
+//        if (!event.getGroupId().equals("818804507")) return;
+//        if (!event.getUser().getUserId().equals("3993660791")) return;
+//        if (event.getMessage().getContent().contains("点") && event.getMessage().getContent().contains("赞")) {
+//            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(event::recall, 10000L);
+//        }
+//    }
 //
 //    @EventHandler
 //    public void onGuildMessage(OfficialGuildAtMessageCreateEvent event) {
 //        GuildChannelChat.replyMessage(event.getChannelId(), event.getMessage().getMessageId(), event.getMessage().getContent());
 //    }
-
-    @EventHandler
-    public void onGroupJoinRequest(OfficialGroupJoinRequestEvent event) {
-        log.info("问题: {}", event.getVerifyQuestion());
-        log.info("答案: {}", event.getVerifyAnswer());
-    }
+//
+//    @EventHandler
+//    public void onGroupJoinRequest(OfficialGroupJoinRequestEvent event) {
+//        log.info("问题: {}", event.getVerifyQuestion());
+//        log.info("答案: {}", event.getVerifyAnswer());
+//    }
 }

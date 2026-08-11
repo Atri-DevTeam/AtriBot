@@ -1,8 +1,9 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.media.ImageType;
-import top.yzljc.atribot.platform.official.FileType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.platform.qq.FileType;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -48,27 +49,12 @@ public final class GroupChat {
      * 发送群聊图片主动消息
      *
      * @param groupOpenId 群 openId
-     * @param type        图片类型（URL / BASE64）
-     * @param value       图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String groupOpenId, ImageType type, String value) {
-        return await(AsyncGroupChat.sendMessage(groupOpenId, type, value));
-    }
-
-    /**
-     * 发送群聊图文主动消息
-     *
-     * @param groupOpenId 群 openId
-     * @param text        文本内容
-     * @param type        图片类型（URL / BASE64）
-     * @param value       图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String groupOpenId, String text, ImageType type, String value) {
-        return await(AsyncGroupChat.sendMessage(groupOpenId, text, type, value));
+    public static String sendMessage(String groupOpenId, ImageComponent image) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, image));
     }
 
     /**
@@ -158,28 +144,12 @@ public final class GroupChat {
      *
      * @param groupOpenId 群 openId
      * @param msgId       被回复的消息 ID
-     * @param type        图片类型
-     * @param value       图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, ImageType type, String value) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, type, value));
-    }
-
-    /**
-     * 回复群聊图文消息
-     *
-     * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
-     * @param text        文本内容
-     * @param type        图片类型
-     * @param value       图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, String text, ImageType type, String value) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, text, type, value));
+    public static String replyMessage(String groupOpenId, String msgId, ImageComponent image) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, image));
     }
 
     /**
@@ -270,28 +240,12 @@ public final class GroupChat {
      *
      * @param groupOpenId 群 openId
      * @param eventId     事件 ID
-     * @param type        图片类型
-     * @param value       图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, ImageType type, String value) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, type, value));
-    }
-
-    /**
-     * 回复群聊事件（图文）
-     *
-     * @param groupOpenId 群 openId
-     * @param eventId     事件 ID
-     * @param text        文本内容
-     * @param type        图片类型
-     * @param value       图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, String text, ImageType type, String value) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, text, type, value));
+    public static String replyEventMessage(String groupOpenId, String eventId, ImageComponent image) {
+        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, image));
     }
 
     /**
@@ -313,8 +267,8 @@ public final class GroupChat {
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
      */
-    public static void recallMessage(String groupOpenId, String messageId) {
-        Atri.getInstance().getChatService().recallGroupMessage(groupOpenId, messageId);
+    public static boolean recallMessage(String groupOpenId, String messageId) {
+        return Atri.getInstance().getChatService().recallGroupMessage(groupOpenId, messageId);
     }
 
     private static String await(CompletableFuture<String> future) {

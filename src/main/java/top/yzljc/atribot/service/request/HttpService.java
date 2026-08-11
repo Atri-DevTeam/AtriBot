@@ -200,6 +200,9 @@ public class HttpService {
     public record PostResult(int status, String body) {
     }
 
+    public record GetResult(int status, String body) {
+    }
+
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
         try {
             Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
@@ -215,6 +218,62 @@ public class HttpService {
         } catch (Exception e) {
             logRequestError("POST(detailed)", url, e);
             return new PostResult(0, e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
+    /** PATCH 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    public static PostResult patchJsonDetailed(String url, String jsonBody, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json");
+            applyHeaders(builder, headers);
+            builder.method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody));
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logHttpFailure("PATCH(detailed)", url, response.statusCode(), response.body());
+            }
+            return new PostResult(response.statusCode(), response.body());
+        } catch (Exception e) {
+            logRequestError("PATCH(detailed)", url, e);
+            return new PostResult(0, e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
+    /** PUT 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    public static PostResult putJsonDetailed(String url, String jsonBody, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json");
+            applyHeaders(builder, headers);
+            builder.method("PUT", HttpRequest.BodyPublishers.ofString(jsonBody));
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logHttpFailure("PUT(detailed)", url, response.statusCode(), response.body());
+            }
+            return new PostResult(response.statusCode(), response.body());
+        } catch (Exception e) {
+            logRequestError("PUT(detailed)", url, e);
+            return new PostResult(0, e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
+    public static GetResult sendGetRequestDetailed(String url, String... headers) {
+        try {
+            Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET();
+            applyHeaders(builder, headers);
+            HttpRequest request = builder.build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logHttpFailure("GET(detailed)", url, response.statusCode(), response.body());
+            }
+            return new GetResult(response.statusCode(), response.body());
+        } catch (Exception e) {
+            logRequestError("GET(detailed)", url, e);
+            return new GetResult(0, null);
         }
     }
 
@@ -385,6 +444,25 @@ public class HttpService {
         return null;
     }
 
+    /** DELETE 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    public static GetResult deleteRequestDetailed(String url, String... headers) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .DELETE();
+            applyHeaders(builder, headers);
+            HttpRequest request = builder.build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logHttpFailure("DELETE(detailed)", url, response.statusCode(), response.body());
+            }
+            return new GetResult(response.statusCode(), response.body());
+        } catch (Exception e) {
+            logRequestError("DELETE(detailed)", url, e);
+            return new GetResult(0, e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
     public static String deleteRequestStr(String url, String... headers) {
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -397,10 +475,11 @@ public class HttpService {
                 return response.body();
             } else {
                 logHttpFailure("DELETE(string)", url, response.statusCode(), response.body());
+                return "error";
             }
         } catch (Exception e) {
             logRequestError("DELETE(string)", url, e);
         }
-        return null;
+        return "error";
     }
 }

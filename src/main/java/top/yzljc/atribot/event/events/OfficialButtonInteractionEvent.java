@@ -9,7 +9,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Cancellable;
 import top.yzljc.atribot.event.impl.AnswerCode;

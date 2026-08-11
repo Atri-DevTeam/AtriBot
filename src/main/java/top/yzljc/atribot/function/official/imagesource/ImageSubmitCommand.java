@@ -5,15 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,39 +30,39 @@ public class ImageSubmitCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
         if (!Config.getInstance().isImageSourceEnabled()) {
-            sender.sendMessage("图源投稿功能暂未开放，敬请期待~");
+            qq.sendMessage("图源投稿功能暂未开放，敬请期待~");
             return true;
         }
 
-        List<String> imageUrls = sender.getImageUrls();
+        List<String> imageUrls = getImageUrls(qq.getMessage().getAttachments());
         if (imageUrls.isEmpty()) {
-            sender.sendMessage("请在发送 /投稿 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/投稿 [图片]");
+            qq.sendMessage("请在发送 /投稿 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/投稿 [图片]");
             return true;
         }
 
-        String uploaderId = sender.getUserId();
+        String uploaderId = qq.getUserId();
         int pendingLimit = Config.getInstance().getImageSourcePendingLimit();
-        if (ImageSourceRepository.countPendingByUploader(uploaderId) >= pendingLimit && !sender.hasPermission()) {
-            sender.sendMessage("你还有 " + pendingLimit + " 张投稿正在等待审核，先等等这批过审再来吧~");
+        if (ImageSourceRepository.countPendingByUploader(uploaderId) >= pendingLimit && !qq.hasPermission()) {
+            qq.sendMessage("你还有 " + pendingLimit + " 张投稿正在等待审核，先等等这批过审再来吧~");
             return true;
         }
 
         String imageUrl = imageUrls.getFirst();
-        JsonNode attachment = sender.getFirstImageAttachment();
+        JsonNode attachment = getFirstImageAttachment(qq.getMessage().getAttachments());
 
-        ImageSourceDTO dto = buildDTO(sender, imageUrl, attachment);
+        ImageSourceDTO dto = buildDTO(qq, imageUrl, attachment);
 
         var t = imageUrls.size();
-        ThreadManager.execute(() -> process(sender, dto, t));
+        ThreadManager.execute(() -> process(qq, dto, t));
         return true;
     }
 
-    private void process(CommandSender sender, ImageSourceDTO dto, int size) {
+    private void process(QQCommandSender sender, ImageSourceDTO dto, int size) {
         try {
             String hash = ImageSourceClient.fetchAndHash(dto.getSourceUrl());
             if (hash == null) {
@@ -117,7 +118,7 @@ public class ImageSubmitCommand implements CommandExecutor {
         }
     }
 
-    private ImageSourceDTO buildDTO(CommandSender sender, String imageUrl, JsonNode attachment) {
+    private ImageSourceDTO buildDTO(QQCommandSender sender, String imageUrl, JsonNode attachment) {
         ImageSourceDTO dto = new ImageSourceDTO();
         dto.setImageUuid(UUID.randomUUID().toString());
         dto.setPlatform(sender.getPlatform().name());
@@ -135,6 +136,45 @@ public class ImageSubmitCommand implements CommandExecutor {
             dto.setFileSize(attachment.path("size").asLong(0L));
         }
         return dto;
+    }
+
+    /**
+     * 从消息附件的原始 {@code attachments} 字段中筛出图片直链（命令内联解析）。
+     *
+     * <p>官方 Bot 的图片附件形如
+     * {@code {"content_type":"image/png","filename":"...","url":"multimedia.nt.qq.com.cn/download?...","width":765,"height":160,"size":27783}}，
+     * 其中 {@code url} 不带协议头且带有会过期的 rkey，这里统一补全为 https 链接。
+     *
+     * @return 按附件顺序排列的图片直链，无图片时返回空列表
+     */
+    private static List<String> getImageUrls(JsonNode attachments) {
+        if (attachments == null || !attachments.isArray()) {
+            return List.of();
+        }
+        List<String> urls = new ArrayList<>();
+        for (JsonNode attachment : attachments) {
+            String contentType = attachment.path("content_type").asText("");
+            if (!contentType.startsWith("image/")) continue;
+            String url = attachment.path("url").asText(null);
+            if (url == null || url.isBlank()) continue;
+            urls.add(url.startsWith("http") ? url : "https://" + url);
+        }
+        return urls;
+    }
+
+    /**
+     * 取第一张图片附件的原始节点，便于读取 filename / size / 宽高等元信息。
+     */
+    private static JsonNode getFirstImageAttachment(JsonNode attachments) {
+        if (attachments == null || !attachments.isArray()) {
+            return null;
+        }
+        for (JsonNode attachment : attachments) {
+            if (attachment.path("content_type").asText("").startsWith("image/")) {
+                return attachment;
+            }
+        }
+        return null;
     }
 
     private static String shortId(String id) {

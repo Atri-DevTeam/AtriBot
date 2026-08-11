@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
@@ -38,40 +39,40 @@ public class PlayerProfile implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
         boolean isWhiteListed = false;
-        if (sender.getPlatform() == Platform.OFFICIAL_GROUP) {
-            if (OfficialGroups.isWhitelist(sender.getGroupId())) isWhiteListed = true;
+        if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
+            if (OfficialGroups.isWhitelist(qq.getGroupId())) isWhiteListed = true;
         }
 
         if (args.length < 1) {
-            MinecraftUserData data = MinecraftBind.getDataByOpenId(sender.getUserId());
+            MinecraftUserData data = MinecraftBind.getDataByOpenId(qq.getUserId());
             if (data.memberOpenId().equals("-1")) {
                 Markdown md = TC.md("您尚未绑定玩家身份，请先加入社区服务器使用`/verify`获取绑定码！");
-                sender.sendMessage(md, keyboard);
+                qq.sendMessage(md, keyboard);
                 return true;
             }
 
             String uuid = data.uuid();
-            return getMarkdownText(uuid, sender, getKeyBoard(uuid), isWhiteListed);
+            return getMarkdownText(uuid, qq, getKeyBoard(uuid), isWhiteListed);
         }
 
         String key = args[0];
 
         if (key.equalsIgnoreCase("am") || key.equalsIgnoreCase("achievements")) {
             String playerKey = args.length > 1 ? args[1] : null;
-            return getAchievements(playerKey, sender, getKeyBoard(playerKey), isWhiteListed);
+            return getAchievements(playerKey, qq, getKeyBoard(playerKey), isWhiteListed);
         }
 
         if (key.equalsIgnoreCase("friends")) {
             String playerKey = args.length > 1 ? args[1] : null;
-            return getFriends(playerKey, sender, getKeyBoard(playerKey), isWhiteListed);
+            return getFriends(playerKey, qq, getKeyBoard(playerKey), isWhiteListed);
         }
 
-        return getMarkdownText(key, sender, getKeyBoard(key), isWhiteListed);
+        return getMarkdownText(key, qq, getKeyBoard(key), isWhiteListed);
     }
 
     private Object getKeyBoard(String key) {
@@ -90,7 +91,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         return TC.keyboard(layout);
     }
 
-    private static boolean getMarkdownText(String key, CommandSender sender, Object keyboard, boolean isWhitelisted) {
+    private static boolean getMarkdownText(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
 
         if (key == null) return false;
 
@@ -109,7 +110,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         return true;
     }
 
-    public static boolean getAchievements(String key, CommandSender sender, Object keyboard, boolean isWhitelisted) {
+    public static boolean getAchievements(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
 
         if (key == null) return false;
 
@@ -159,7 +160,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         }
     }
 
-    public static boolean getFriends(String key, CommandSender sender, Object keyboard, boolean isWhitelisted) {
+    public static boolean getFriends(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
 
         if (key == null) return false;
 

@@ -5,8 +5,8 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
@@ -19,10 +19,10 @@ public class Broadcast implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "broadcast")) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "broadcast")) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage("你没有权限执行此命令");
             return true;
         }
         if (args.length < 1) {

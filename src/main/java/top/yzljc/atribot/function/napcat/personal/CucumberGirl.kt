@@ -4,10 +4,10 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils
 import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
+import top.yzljc.atribot.command.NapcatCommandSender
 import top.yzljc.atribot.configuration.LoadIllegalWords
 import top.yzljc.atribot.configuration.ResourcesProperties
 import top.yzljc.atribot.function.impl.PreImageGenerate
-import top.yzljc.atribot.platform.Platform
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
 
 /**
@@ -25,23 +25,23 @@ object CucumberGirl : CommandExecutor {
         label: String?,
         args: Array<out String?>?
     ): Boolean {
-        if (sender?.platform != Platform.NAPCAT_GROUP) return true
-        if (!GroupConfigManager.isFeatureEnabled(sender.groupId, "private_func")) {
-            if (!sender.hasPermission()) {
+        val nc = sender as? NapcatCommandSender ?: return true
+        if (!GroupConfigManager.isFeatureEnabled(nc.groupId, "private_func")) {
+            if (!nc.hasPermission()) {
                 return true
             }
         }
         if (args.isNullOrEmpty()) {
-            sender.sendMessage("无效文字内容，请输入文字参数！")
+            nc.sendMessage("无效文字内容，请输入文字参数！")
             return true
         }
         val text = args.filterNotNull().joinToString(" ")
         if (text.isBlank()) {
-            sender.sendMessage("无效文字内容，请输入文字参数！")
+            nc.sendMessage("无效文字内容，请输入文字参数！")
             return true
         }
         if (LoadIllegalWords.containsSensitiveWord(text)) {
-            sender.sendMessage("文字内容包含敏感内容，无法生图！")
+            nc.sendMessage("文字内容包含敏感内容，无法生图！")
             return true
         }
         val req = mapOf("text" to text)
@@ -50,15 +50,15 @@ object CucumberGirl : CommandExecutor {
             req
         )
         if (data == null) {
-            sender.sendMessage("图片生成失败，请稍后重试")
+            nc.sendMessage("图片生成失败，请稍后重试")
             return true
         }
         if (data.isError) {
-            sender.sendMessage(data.errorMessage)
+            nc.sendMessage(data.errorMessage)
             return true
         }
         data.url?.let {
-            sender.sendMessage(it, MessageUtils.ImageType.URL)
+            nc.sendMessage(it, MessageUtils.ImageType.URL)
         }
         return true
     }

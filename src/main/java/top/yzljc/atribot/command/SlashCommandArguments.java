@@ -1,18 +1,18 @@
 package top.yzljc.atribot.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class SlashCommandArguments {
+    @Getter
     private final JsonNode options;
+    @Getter
     private final JsonNode resolved;
+    @Getter
     private final JsonNode raw;
+    @Getter
     private final List<Option> optionList;
     private final Map<String, Option> optionMap;
     private final String[] flatArgs;
@@ -34,22 +34,6 @@ public class SlashCommandArguments {
         this.optionList = Collections.unmodifiableList(parsed);
         this.optionMap = Collections.unmodifiableMap(byName);
         this.flatArgs = flat.toArray(new String[0]);
-    }
-
-    public JsonNode getOptions() {
-        return options;
-    }
-
-    public JsonNode getResolved() {
-        return resolved;
-    }
-
-    public JsonNode getRaw() {
-        return raw;
-    }
-
-    public List<Option> getOptionList() {
-        return optionList;
     }
 
     public Option getOption(String name) {

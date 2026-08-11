@@ -1,7 +1,8 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -25,7 +26,7 @@ public final class AsyncGuildDirectChat {
      * @param text        消息内容
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyDirectTextMessage(String guildId, String msgId, String text) {
+    public static CompletableFuture<String> replyMessage(String guildId, String msgId, String text) {
         return service().sendGuildDirectMessageAsync(guildId, service().getBodyFactory().replyText(msgId, text));
     }
 
@@ -34,25 +35,10 @@ public final class AsyncGuildDirectChat {
      *
      * @param guildId  子频道 ID
      * @param msgId   回复的消息 ID
-     * @param imageUrl 图片 URL
-     * @param type 图片类型，此处占位，只能为 {@code ImageType.URL}
+     * @param image       图片组件
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyDirectImageMessage(String guildId, String msgId, String imageUrl, ImageType type) {
-        return replyDirectImageMessage(guildId, msgId, imageUrl, null, type);
-    }
-
-    /**
-     * 异步发送频道私信图片被动消息（有文字）
-     *
-     * @param guildId  子频道 ID
-     * @param msgId   回复的消息 ID
-     * @param imageUrl 图片 URL
-     * @param text   消息内容
-     * @param type 图片类型，此处占位，只能为 {@code ImageType.URL}
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static CompletableFuture<String> replyDirectImageMessage(String guildId, String msgId, String imageUrl, String text, ImageType type) {
-        return service().sendGuildDirectMessageAsync(guildId, service().getBodyFactory().guildImage(imageUrl, msgId, text));
+    public static CompletableFuture<String> replyMessage(String guildId, String msgId, ImageComponent image) {
+        return service().sendGuildDirectMessageAsync(guildId, service().getBodyFactory().guildImage(image.getData(), msgId, image.getText()));
     }
 }

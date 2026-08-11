@@ -10,9 +10,9 @@ import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.napcat.impl.MojiraIssueSummarizer;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -58,11 +58,11 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!sender.hasPermission()) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!nc.hasPermission()) return true;
         this.run();
-        sender.sendMessage("已触发 Mojira 手动检查!");
-        log.info("[Mojira] 用户 {} 在群 {} 触发了手动检查", sender.getUserId(), sender.getGroupId());
+        nc.sendMessage("已触发 Mojira 手动检查!");
+        log.info("[Mojira] 用户 {} 在群 {} 触发了手动检查", nc.getUserId(), nc.getGroupId());
         return true;
     }
 

@@ -10,6 +10,7 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.MinecraftNews;
@@ -17,7 +18,6 @@ import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.net.URI;
@@ -30,9 +30,9 @@ public class MinecraftNewsDebug implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("无权限");
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage("无权限");
             return true;
         }
 
@@ -40,7 +40,7 @@ public class MinecraftNewsDebug implements CommandExecutor {
         for (int i = 0; i < args.length; i++) {
             if (!"-url".equalsIgnoreCase(args[i])) continue;
             if (i + 1 >= args.length || args[i + 1].isBlank()) {
-                sender.sendMessage("用法: /" + label + " -url <文章链接>");
+                nc.sendMessage("用法: /" + label + " -url <文章链接>");
                 return true;
             }
             specifiedUrl = args[i + 1].trim();
@@ -48,13 +48,13 @@ public class MinecraftNewsDebug implements CommandExecutor {
         }
 
         if (specifiedUrl != null && !isHttpUrl(specifiedUrl)) {
-            sender.sendMessage("-url 仅支持 http:// 或 https:// 链接");
+            nc.sendMessage("-url 仅支持 http:// 或 https:// 链接");
             return true;
         }
 
         String targetUrl = specifiedUrl;
         ThreadManager.execute(() -> runDebug(targetUrl));
-        sender.sendMessage(targetUrl == null
+        nc.sendMessage(targetUrl == null
                 ? "[DEBUG] MinecraftNews 链路测试已启动，结果仅发送到 debug 群..."
                 : "[DEBUG] MinecraftNews 指定链接测试已启动，结果仅发送到 debug 群...");
         return true;

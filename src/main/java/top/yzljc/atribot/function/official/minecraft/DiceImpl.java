@@ -7,7 +7,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,7 +32,7 @@ public class DiceImpl {
             0.0015  // 7点
     };
 
-    public static void handle(CommandSender sender, String[] args) {
+    public static void handle(QQCommandSender sender, String[] args) {
         long count = 1;
         if (args.length >= 2) {
             try {
@@ -51,7 +51,7 @@ public class DiceImpl {
         }
     }
 
-    public static void rollSingle(CommandSender sender) {
+    public static void rollSingle(QQCommandSender sender) {
         String url = ResourcesProperties.DICE_RENDER_RESULT_IMG_T;
 
         int rolledNumber = getRolledNumber();
@@ -95,7 +95,7 @@ public class DiceImpl {
         sender.sendMessage(TC.md(markdown), button);
     }
 
-    public static void rollMultiple(CommandSender sender, long times) {
+    public static void rollMultiple(QQCommandSender sender, long times) {
 
         long[] calculatedPulls = simulateMultinomial(times, PROBABILITIES);
 

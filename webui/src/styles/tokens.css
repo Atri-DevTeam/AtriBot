@@ -63,6 +63,10 @@
     --color-warning-strong: #7d4900;
     --color-info: #1f5fa8;
     --color-info-soft: #eaf1fa;
+    --color-violet: #6b5bd2;
+    --color-violet-soft: #f0edfb;
+    --color-rose: #c0497c;
+    --color-rose-soft: #fbeaf1;
 
     /* ── 圆角：刻意克制 ── */
     --radius-sm: 3px;

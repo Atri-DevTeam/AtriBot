@@ -3,8 +3,8 @@ package top.yzljc.atribot.function.task;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.function.napcat.classtable.ProcessClassTable;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
@@ -18,8 +18,8 @@ public class TufeClassAlert implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "tufe_class_alert")) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "tufe_class_alert")) return true;
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
 
@@ -33,18 +33,18 @@ public class TufeClassAlert implements CommandExecutor {
             int startSession = (dayOffset == 0) ? Math.max(1, startSessionToday) : 1;
 
             for (int session = startSession; session <= MAX_SESSION; session++) {
-                int result = ProcessClassTable.getClassTableJson(session, sender.getGroupId(), date);
+                int result = ProcessClassTable.getClassTableJson(session, nc.getGroupId(), date);
                 if (result == ProcessClassTable.RESULT_FOUND) {
                     return true;
                 }
                 if (result == ProcessClassTable.RESULT_REQUEST_FAILED) {
-                    sender.sendMessage("课表接口暂时不可用，请稍后再试。");
+                    nc.sendMessage("课表接口暂时不可用，请稍后再试。");
                     return true;
                 }
             }
         }
 
-        sender.sendMessage("近期未查询到课程安排。");
+        nc.sendMessage("近期未查询到课程安排。");
         return true;
     }
 

@@ -5,7 +5,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.platform.qq.QQBot;
 
 /**
  * @Author YZ_Ljc_
@@ -25,10 +25,10 @@ public class AdminPauseCommand implements CommandExecutor {
 
         if (ChatService.isEmergencyPaused()) {
             ChatService.setEmergencyPaused(false);
-            sender.sendMessage(OfficialBot.BOT_NAME + "已解除暂停状态，机器人恢复正常运行！");
+            sender.sendMessage(QQBot.BOT_NAME + "已解除暂停状态，机器人恢复正常运行！");
         } else {
             ChatService.setEmergencyPaused(true);
-            sender.sendMessage(OfficialBot.BOT_NAME + "已被暂停使用，维护状态启用！");
+            sender.sendMessage(QQBot.BOT_NAME + "已被暂停使用，维护状态启用！");
         }
         return true;
     }

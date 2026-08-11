@@ -16,6 +16,8 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -104,10 +106,21 @@ public class HypixelReward implements CommandExecutor, Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) return false;
 
-        String groupId = sender.getGroupId();
+        String groupId;
         String userId = sender.getUserId();
-        String messageId = sender.getMessageId();
-        Platform platform = sender.getPlatform();
+        String messageId;
+        Platform platform;
+        if (sender instanceof NapcatCommandSender nc) {
+            groupId = nc.getGroupId();
+            messageId = nc.getMessage().getMessageId();
+            platform = nc.getPlatform();
+        } else if (sender instanceof QQCommandSender qq) {
+            groupId = qq.getGroupId();
+            messageId = qq.getMessage().getMessageId();
+            platform = qq.getPlatform();
+        } else {
+            return true;
+        }
 
         if (platform == Platform.NAPCAT_GROUP && !GroupConfigManager.isFeatureEnabled(groupId, "get_hypixel_reward")) return true;
 
@@ -124,10 +137,10 @@ public class HypixelReward implements CommandExecutor, Listener {
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
 
-                if (platform == Platform.NAPCAT_GROUP) {
-                    sender.sendMessage(groupId, messageId, errorText);
+                if (sender instanceof QQCommandSender qq) {
+                    qq.sendMessage(TC.md(errorText), keyboard);
                 } else {
-                    sender.sendMessage(TC.md(errorText), keyboard);
+                    sender.sendMessage(errorText);
                 }
                 return true;
             }
@@ -517,7 +530,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(r.asText()).append("\n");
                         }
-                        if (!OfficialGroups.isAllowedActiveMessages(session.groupId)) {
+                        if (!OfficialGroups.allowProactiveMsg(session.groupId)) {
                             sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息")).append(" 授权后可省去`/cl`前缀，直接解析链接");
                         }
                         GroupChat.replyMessage(session.groupId, session.userId,

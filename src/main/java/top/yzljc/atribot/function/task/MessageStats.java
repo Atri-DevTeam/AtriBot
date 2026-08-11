@@ -7,11 +7,11 @@ import top.yzljc.atribot.chat.napcat.UserInformation;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.function.napcat.GroupContentRecord;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 
@@ -54,29 +54,29 @@ public class MessageStats implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
         String replyMsg;
         if (args == null || args.length == 0) {
             LocalDate targetDate = LocalDate.now();
-            replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
-            getMessageContent(sender.getGroupId(), replyMsg);
+            replyMsg = buildGroupStatsMsg(nc.getGroupId(), targetDate, false, null);
+            getMessageContent(nc.getGroupId(), replyMsg);
             return true;
         }
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("y")) {
                 LocalDate targetDate = LocalDate.now().minusDays(1);
-                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, null);
-                getMessageContent(sender.getGroupId(), replyMsg);
+                replyMsg = buildGroupStatsMsg(nc.getGroupId(), targetDate, false, null);
+                getMessageContent(nc.getGroupId(), replyMsg);
             } else if (args[0].equalsIgnoreCase("overall")) {
                 LocalDate targetDate = LocalDate.now();
-                replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, true, null);
-                getMessageContent(sender.getGroupId(), replyMsg);
+                replyMsg = buildGroupStatsMsg(nc.getGroupId(), targetDate, true, null);
+                getMessageContent(nc.getGroupId(), replyMsg);
             } else if (args[0].contains("[CQ:at,qq=")) {
                 Long qqAt = extractAtUser(args[0]);
                 if (qqAt != null) {
                     LocalDate targetDate = LocalDate.now();
-                    replyMsg = buildGroupStatsMsg(sender.getGroupId(), targetDate, false, qqAt);
-                    getMessageContent(sender.getGroupId(), replyMsg);
+                    replyMsg = buildGroupStatsMsg(nc.getGroupId(), targetDate, false, qqAt);
+                    getMessageContent(nc.getGroupId(), replyMsg);
                 }
             } else {
                 return false;
@@ -84,8 +84,8 @@ public class MessageStats implements CommandExecutor {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("overall") && args[1].contains("[CQ:at,qq=")) {
             Long qqAt = extractAtUser(args[1]);
             if (qqAt != null) {
-                replyMsg = buildGroupStatsMsg(sender.getGroupId(), LocalDate.now(), true, qqAt);
-                getMessageContent(sender.getGroupId(), replyMsg);
+                replyMsg = buildGroupStatsMsg(nc.getGroupId(), LocalDate.now(), true, qqAt);
+                getMessageContent(nc.getGroupId(), replyMsg);
             }
         }
         return true;

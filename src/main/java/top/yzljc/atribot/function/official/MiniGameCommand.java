@@ -5,7 +5,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.command.QQCommandSender;
 
 /**
  * @Author YZ_Ljc_
@@ -17,7 +17,7 @@ import top.yzljc.atribot.platform.Platform;
 public class MiniGameCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
@@ -26,7 +26,7 @@ public class MiniGameCommand implements CommandExecutor {
                 "- " + Markdown.enterCommand("/四子棋", "/四子棋") + " - 四子棋小游戏\n" +
                 "- " + Markdown.enterCommand("/rsp", "/石头剪刀布") + " - 石头剪刀布小游戏\n" +
                 "> 点击指令开始游玩，更多内容正在开发制作中！");
-        sender.sendMessage(md);
+        qq.sendMessage(md);
         return true;
     }
 }

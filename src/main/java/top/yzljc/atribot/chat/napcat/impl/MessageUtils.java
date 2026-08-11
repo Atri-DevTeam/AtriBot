@@ -333,8 +333,9 @@ public class MessageUtils {
         log.info("已{}群请求，flag: {}", approve ? "批准" : "拒绝", flag);
     }
 
-    public static void recallMessage(String messageId) {
+    public static boolean recallMessage(String messageId) {
         PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
+        return true;
     }
 
 

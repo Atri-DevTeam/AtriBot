@@ -16,9 +16,9 @@ import top.yzljc.atribot.event.impl.RecallType;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.utils.FormatTools;
 
+import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Author YZ_Ljc_
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class NotifyRecalled implements Listener {
 
     private final Cache<String, Message> privateMessageCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(2, TimeUnit.MINUTES)
+            .expireAfterWrite(Duration.ofMinutes(2))
             .build();
 
     @EventHandler

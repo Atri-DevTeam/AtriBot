@@ -1,12 +1,12 @@
 package top.yzljc.atribot.function.official;
 
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 
 import java.util.Map;
 
@@ -21,12 +21,12 @@ public class EarthOnline implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform().equals(Platform.OFFICIAL_C2C) || sender.getPlatform().equals(Platform.OFFICIAL_GROUP)) {
+        if (sender instanceof QQCommandSender qq) {
             var d = PreImageGenerate.dump(ResourcesProperties.EARTH_ONLINE_API, Map.of());
             if (!d.isError()) {
-                sender.sendMessage("欢迎来到地球ONLINE!", d.url(), ImageType.URL);
+                qq.sendMessage("欢迎来到地球ONLINE!", d.url(), ImageType.URL);
             } else {
-                sender.sendMessage(d.errorMessage());
+                qq.sendMessage(d.errorMessage());
             }
         }
 

@@ -7,9 +7,9 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -44,7 +44,7 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
         loadCache();
     }
 
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(QQCommandSender sender, Command command, String label, String[] args) {
         check(sender);
         return true;
     }
@@ -59,7 +59,7 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
         check(null);
     }
 
-    public void check(CommandSender sender) {
+    public void check(QQCommandSender sender) {
         var d = HttpService.sendGetRequest(ResourcesProperties.SKB_VERSION_CHECK);
         if (d == null || d.isEmpty() || d.path("packs").isMissingNode()) {
             log.error("获取Hypixel Skyblock资源包信息失败");

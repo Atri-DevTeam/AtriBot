@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- 控制台输出 -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>
-                [%d{HH:mm:ss}] [%cyan(%c{0})/%highlight(%level)] %msg%n
-            </pattern>
-        </encoder>
+    <!-- 控制台输出 JLine printAbove -->
+    <appender name="CONSOLE" class="top.yzljc.atribot.service.runtime.JLineConsoleAppender">
+        <pattern>[%d{HH:mm:ss}] [%cyan(%c{0})/%highlight(%level)] %msg%n</pattern>
     </appender>
 
     <!-- 文件输出 -->

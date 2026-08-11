@@ -8,6 +8,8 @@ import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.bundled.CorsPluginConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.auth.UACommand;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.FriendList;
@@ -21,12 +23,13 @@ import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
+import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
 import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
 import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
-import top.yzljc.atribot.platform.official.OfficialBot;
-import top.yzljc.atribot.test.RecoverLostGolds;
+import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atribot.test.*;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
@@ -45,29 +48,27 @@ import top.yzljc.atribot.platform.napcat.RequestReceiver;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
-import top.yzljc.atribot.platform.discord.DiscordEvents;
 import top.yzljc.atribot.platform.discord.DiscordManager;
-import top.yzljc.atribot.platform.official.OfficialManager;
-import top.yzljc.atribot.platform.official.TokenManager;
+import top.yzljc.atribot.platform.qq.OfficialManager;
+import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.email.IMAP;
+import top.yzljc.atribot.service.runtime.ConsoleManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.RunScheduleTask;
 import top.yzljc.atribot.service.taskscheduler.TaskScheduler;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedulerRegistry;
-import top.yzljc.atribot.test.MinecraftNewsDebug;
-import top.yzljc.atribot.test.Test;
-import top.yzljc.atribot.test.YunLandSpecialCommand;
-import top.yzljc.atribot.utils.debug.DebugCommand;
+import top.yzljc.atribot.function.general.DebugCommand;
 import top.yzljc.atribot.utils.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
-import top.yzljc.atribot.webui.impl.WebUIRouter;
-import top.yzljc.atribot.webui.impl.WebUISessionManager;
+import top.yzljc.atribot.webui.WebUIRouter;
+import top.yzljc.atribot.webui.WebUISessionManager;
 
-import java.util.Scanner;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -109,6 +110,8 @@ public class Atri {
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean disabled = new AtomicBoolean(false);
+    /** 记录已访问过 webui api 的 IP */
+    private final Set<String> seenWebuiApiIps = ConcurrentHashMap.newKeySet();
 
     public Atri() {
         if (instance != null) {
@@ -134,7 +137,7 @@ public class Atri {
 
         int qqBotPort = config.getListenPort();
 
-        OfficialBot.fetchBotInfo();
+        QQBot.fetchBotInfo();
 
         server = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
@@ -149,8 +152,11 @@ public class Atri {
             cfg.http.maxRequestSize = 10_000_000;
         }).start(qqBotPort);
 
-        server.before("/webui/*", ctx -> {
-            log.info("{} {} from {}", ctx.method(), ctx.fullUrl(), ctx.ip());
+        server.before("/webui/api/*", ctx -> {
+            String ip = ctx.ip();
+            if (seenWebuiApiIps.add(ip)) {
+                log.info("[!] 检测到新 IP 访问 WebUI API: {} {} from {}", ctx.method(), ctx.fullUrl(), ip);
+            }
         });
 
         server.post("/", ctx -> {
@@ -190,13 +196,11 @@ public class Atri {
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new EventRecord());
-        EventManager.getInstance().registerEvents(new DiscordEvents());
         EventManager.getInstance().registerEvents(new ChatContentRecord());
         EventManager.getInstance().registerEvents(new Feedback());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
-        EventManager.getInstance().registerEvents(new ConnectFourGame());
         RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
         EventManager.getInstance().registerEvents(rockPaperScissorsGame);
         EventManager.getInstance().registerEvents(new SignCommand());
@@ -205,6 +209,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new EmailNotify());
         EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
         EventManager.getInstance().registerEvents(new BasicReply());
+        EventManager.getInstance().registerEvents(new UACommand());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -271,9 +276,12 @@ public class Atri {
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
         CommandManager.getCommand("随机物品").setExecutor(new LootsCommand());
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
+        CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
+        CommandManager.getCommand("ua").setExecutor(new UACommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
+        CommandManager.getCommand("test-markdown").setExecutor(new MarkdownDisplayTest());
 
         this.scheduler = new Scheduler();
         try {
@@ -299,8 +307,10 @@ public class Atri {
         FeedbackRepository.init();
         ErrorReportRepository.init();
         OfficialSendLogRepository.init();
+        EventLogRepository.init();
         ImageSourceRepository.init();
         PendingNoticeRepository.init();
+        UnifiedAuthentication.init();
         PackVersion.init();
 
         RunScheduleTask.runAllTasks();
@@ -421,18 +431,6 @@ public class Atri {
             }
         }
 
-        new Thread(() -> {
-            Scanner scanner = new Scanner(System.in);
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                if ("stop".equalsIgnoreCase(line.trim())) {
-                    BotRuntimeData.save();
-                    System.out.println("正在关闭 AtriBot...");
-                    bot.onDisable();
-                    System.exit(0);
-                    break;
-                }
-            }
-        }, "Console-Listener").start();
+        ConsoleManager.start();
     }
 }

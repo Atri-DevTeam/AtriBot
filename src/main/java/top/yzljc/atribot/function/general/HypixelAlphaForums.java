@@ -23,10 +23,10 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
@@ -82,11 +82,11 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
         boolean result = feedAnnouncements();
         if (!result) {
-            sender.sendMessage("暂无新的 Hypixel Alpha公告");
+            qq.sendMessage("暂无新的 Hypixel Alpha公告");
             return true;
         }
 
@@ -215,7 +215,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                 }
 
                 if (!isOfficialCreator(announcement.creator())) {
-                    log.info("Ignored Hypixel Alpha forum thread from non-official creator: {}", announcement.creator());
+//                    log.info("Ignored Hypixel Alpha forum thread from non-official creator: {}", announcement.creator());
                     continue;
                 }
 

@@ -3,10 +3,12 @@ package top.yzljc.atribot.command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import top.yzljc.atribot.command.impl.DiscordSenderImpl;
+import top.yzljc.atribot.command.impl.NapcatSenderImpl;
+import top.yzljc.atribot.command.impl.QQSenderImpl;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.User;
@@ -15,6 +17,13 @@ import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import java.io.InputStream;
 import java.util.*;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName CommandManager
+ * @Created_at 2026/08/09
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.command
+ */
 public class CommandManager implements Listener {
     private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
     private static final String COMMAND_FILE = Properties.ATRIBOT;
@@ -106,11 +115,9 @@ public class CommandManager implements Listener {
             return;
         }
 
-        String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.NAPCAT_GROUP_MESSAGE);
+        NapcatCommandSender senderUser = new NapcatSenderImpl(eventUser, event.getGroupId(), event.getMessage());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -136,12 +143,9 @@ public class CommandManager implements Listener {
         }
 
         User eventUser = event.getUser();
-        String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                null, msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_C2C_MESSAGE,
-                event.getMessage().getAttachments());
+        QQCommandSender senderUser = new QQSenderImpl(eventUser, null, event.getMessage());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -161,12 +165,9 @@ public class CommandManager implements Listener {
         }
 
         User eventUser = event.getUser();
-        String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_AT_MESSAGE,
-                event.getMessage().getAttachments());
+        QQCommandSender senderUser = new QQSenderImpl(eventUser, event.getGroupId(), event.getMessage());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
@@ -192,66 +193,44 @@ public class CommandManager implements Listener {
         if (userInput.trim().isEmpty()) return;
 
         User eventUser = event.getUser();
-        String msgId = event.getMessage().getMessageId();
         String commandContent = userInput.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(eventUser.getPlatform(), eventUser.isBot(), eventUser.getUserId(), eventUser.getUsername(),
-                event.getGroupId(), msgId, eventUser.getData(), event.getMessage().getMentionedUsers(), eventUser.getRole(), EventType.OFFICIAL_GROUP_MESSAGE,
-                event.getMessage().getAttachments());
+        QQCommandSender senderUser = new QQSenderImpl(eventUser, event.getGroupId(), event.getMessage());
 
         boolean executed = commandMap.dispatch(senderUser, commandContent);
         BotRuntimeData.callCommandExecuted();
 
         if (!executed && event.isAtBot() && commandContent.startsWith(COMMAND_PREFIX)) {
-             senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
-        }
-    }
-
-    @EventHandler
-    public void onOfficialGuildAtMessageCreate(OfficialGuildAtMessageCreateEvent event) {
-        if (event.getUser().isBot()) return;
-        String userInput = event.getMessage().getContent().trim();
-        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
-        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
-            return;
-        }
-        User channelUser = event.getUser();
-        String msgId = event.getMessage().getMessageId();
-        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
-
-        CommandSender senderUser = new CommandSender(channelUser.getPlatform(), channelUser.isBot(), channelUser.getUserId(), channelUser.getUsername(),
-                event.getChannelId(), msgId, channelUser.getData(), event.getMessage().getMentionedUsers(), channelUser.getRole(), EventType.OFFICIAL_GUILD_CHANNEL,
-                null);
-
-        boolean executed = commandMap.dispatch(senderUser, commandContent);
-        BotRuntimeData.callCommandExecuted();
-
-        if (!executed) {
             senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }
 
     @EventHandler
-    public void onOfficialGuildDirectMessageCreate(OfficialGuildDirectMessageCreateEvent event) {
-        if (event.getUser().isBot()) return;
-        String userInput = event.getMessage().getContent().trim();
-        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
-        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
+    public void onDiscordSlashCommand(DiscordSlashCommandEvent event) {
+        log.info("[Discord] slash command: guild={}, channel={}, user={}, /{}",
+                event.getGuildId(),
+                event.getChannelId(),
+                event.getUser().getUsername(),
+                event.getCommandName());
+
+        CommandFeature command = getCommand(event.getCommandName());
+        if (command == null || command.getExecutor() == null) {
+            log.warn("Discord slash command /{} is not registered in CommandManager", event.getCommandName());
             return;
         }
-        User channelUser = event.getUser();
-        String msgId = event.getMessage().getMessageId();
-        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
 
-        CommandSender senderUser = new CommandSender(channelUser.getPlatform(), channelUser.isBot(), channelUser.getUserId(), channelUser.getUsername(),
-                event.getGuildId(), msgId, channelUser.getData(), event.getMessage().getMentionedUsers(), channelUser.getRole(), EventType.OFFICIAL_GUILD_DM,
-                null);
-
-        boolean executed = commandMap.dispatch(senderUser, commandContent);
-        BotRuntimeData.callCommandExecuted();
-
-        if (!executed) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        if (!(command.getExecutor() instanceof SlashCommandExecutor slashExecutor)) {
+            log.warn("Discord slash command /{} has no SlashCommandExecutor", event.getCommandName());
+            return;
         }
+
+        DiscordCommandSender sender = new DiscordSenderImpl(
+                event.getUser(),
+                event.getApplicationId(),
+                event.getInteractionId(),
+                event.getToken()
+        );
+        slashExecutor.onSlashCommand(sender, command, event.getCommandName(),
+                new SlashCommandArguments(event.getOptions(), event.getResolved(), event.getRaw()));
     }
 }

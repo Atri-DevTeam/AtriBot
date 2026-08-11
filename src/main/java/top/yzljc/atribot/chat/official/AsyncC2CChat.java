@@ -1,7 +1,8 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.List;
@@ -64,32 +65,13 @@ public final class AsyncC2CChat {
      * 异步发送单聊图片主动消息
      *
      * @param openId 用户 openId
-     * @param type   图片类型（URL / BASE64）
-     * @param value  图片内容（URL 或 base64 字符串）
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String openId, ImageType type, String value) {
+    public static CompletableFuture<String> sendMessage(String openId, ImageComponent image) {
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊主动", null))
-                .thenCompose(request -> request == null
-                        ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
-    }
-
-    /**
-     * 异步发送单聊图文主动消息
-     *
-     * @param openId 用户 openId
-     * @param text   文本内容
-     * @param type   图片类型（URL / BASE64）
-     * @param value  图片内容（URL 或 base64 字符串）
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    public static CompletableFuture<String> sendMessage(String openId, String text, ImageType type, String value) {
-        return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊主动", null, null, text))
+                                service().privateFileUrl(openId), image.getType(), image.getData(), "单聊主动", null, null, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
                         : service().sendPrivateMessageAsync(openId, request));
@@ -154,33 +136,13 @@ public final class AsyncC2CChat {
      *
      * @param openId 用户 openId
      * @param msgId  被回复的消息 ID
-     * @param type   图片类型
-     * @param value  图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String openId, String msgId, ImageType type, String value) {
+    public static CompletableFuture<String> replyMessage(String openId, String msgId, ImageComponent image) {
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊", msgId))
-                .thenCompose(request -> request == null
-                        ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
-    }
-
-    /**
-     * 异步回复单聊图文消息
-     *
-     * @param openId 用户 openId
-     * @param msgId  被回复的消息 ID
-     * @param text   文本内容
-     * @param type   图片类型
-     * @param value  图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    public static CompletableFuture<String> replyMessage(String openId, String msgId, String text, ImageType type, String value) {
-        return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊", msgId, null, text))
+                                service().privateFileUrl(openId), image.getType(), image.getData(), "单聊", msgId, null, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
                         : service().sendPrivateMessageAsync(openId, request));
@@ -231,33 +193,13 @@ public final class AsyncC2CChat {
      *
      * @param openId  用户 openId
      * @param eventId 事件 ID
-     * @param type    图片类型
-     * @param value   图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
-    public static CompletableFuture<String> replyEventMessage(String openId, String eventId, ImageType type, String value) {
+    public static CompletableFuture<String> replyEventMessage(String openId, String eventId, ImageComponent image) {
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊事件", null, eventId))
-                .thenCompose(request -> request == null
-                        ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
-    }
-
-    /**
-     * 异步回复单聊事件（图文）
-     *
-     * @param openId  用户 openId
-     * @param eventId 事件 ID
-     * @param text    文本内容
-     * @param type    图片类型
-     * @param value   图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    public static CompletableFuture<String> replyEventMessage(String openId, String eventId, String text, ImageType type, String value) {
-        return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().privateFileUrl(openId), type, value, "单聊事件", null, eventId, text))
+                                service().privateFileUrl(openId), image.getType(), image.getData(), "单聊事件", null, eventId, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
                         : service().sendPrivateMessageAsync(openId, request));

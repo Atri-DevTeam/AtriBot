@@ -8,9 +8,9 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.*;
-import top.yzljc.atribot.platform.Platform;
 
 /**
  * @Author YZ_Ljc_
@@ -34,43 +34,43 @@ public class MinecraftCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
 
         if (label.equals("bt") || label.equals("bantracker")) {
-            return BanTracker.handle(sender, command, label, args);
+            return BanTracker.handle(qq, command, label, args);
         }
 
         if (args.length < 1) {
-            sender.sendMessage(ValidCommands);
+            qq.sendMessage(ValidCommands);
             return true;
         }
 
         String subCommand = args[0].toLowerCase();
 
         if (subCommand.equalsIgnoreCase("dice")) {
-            DiceImpl.handle(sender, args);
+            DiceImpl.handle(qq, args);
             return true;
         }
 
         switch (subCommand) {
             case "version", "ver" -> {
-                MinecraftVersionChecker.onCommand(sender);
+                MinecraftVersionChecker.onCommand(qq);
                 return true;
             }
             case "capes", "cape" -> {
-                return MinecraftCapes.handleCapesCommand(sender);
+                return MinecraftCapes.handleCapesCommand(qq);
             }
             case "pack" -> {
-                PackMcmetaGenerator.handle(sender, args);
+                PackMcmetaGenerator.handle(qq, args);
                 return true;
             }
             case "sr", "skb", "skbresource" -> {
-                return Atri.getInstance().getSkyblockResourcePackChecker().onCommand(sender, command, label, args);
+                return Atri.getInstance().getSkyblockResourcePackChecker().onCommand(qq, command, label, args);
             }
         }
 
-        sender.sendMessage(ValidCommands);
+        qq.sendMessage(ValidCommands);
         return true;
     }
 }

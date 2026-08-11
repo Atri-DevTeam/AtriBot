@@ -5,12 +5,12 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.platform.Platform;
 
 import java.util.List;
 
@@ -27,23 +27,23 @@ public class LootsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_C2C && sender.getPlatform() != Platform.OFFICIAL_GROUP) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
         if (args.length > 0 && args[0].equals("bag")) {
-            var d = LootService.renderOverviewCard(sender.getUserId());
+            var d = LootService.renderOverviewCard(qq.getUserId());
             if (!d.success()) {
-                sender.sendMessage(d.message());
+                qq.sendMessage(d.message());
                 return true;
             }
-            sender.sendMessage(d.image().url(), ImageType.URL);
+            qq.sendMessage(d.image().url(), ImageType.URL);
             return true;
         }
 
-        var d = LootService.drawDailyFreeOrPaid(sender.getUserId(), PAID_DRAW_COST);
+        var d = LootService.drawDailyFreeOrPaid(qq.getUserId(), PAID_DRAW_COST);
         if (!d.success()) {
-            sender.sendMessage(d.message());
+            qq.sendMessage(d.message());
             return true;
         }
 
@@ -66,7 +66,7 @@ public class LootsCommand implements CommandExecutor {
                 )
         );
 
-        sender.sendMessage(md, keyboards);
+        qq.sendMessage(md, keyboards);
         return true;
     }
 }

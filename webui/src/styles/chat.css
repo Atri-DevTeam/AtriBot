@@ -1,13 +1,3 @@
-/*
- * chat.css —— 「聊天」页（QQ NT 风格三栏布局）+ 导航栏折叠模式
- *
- * 该文件只新增两类样式，不覆盖任何既有页面的视觉：
- *   1. html.nav-collapsed 下的侧边栏收窄（仅桌面端生效）；
- *   2. .chatnt-* 前缀的聊天页自有样式。
- */
-
-/* ═══════════════════ 导航栏折叠 ═══════════════════ */
-
 .nav-collapse-btn {
   display: flex;
   align-items: center;
@@ -32,7 +22,6 @@
 
 .nav-collapse-btn svg { display: block; flex-shrink: 0; }
 
-/* 手机端侧边栏是抽屉，不提供收窄 */
 @media (max-width: 768px) {
   .nav-collapse-btn { display: none; }
 }
@@ -65,7 +54,6 @@
     justify-content: center;
     gap: 0;
     padding: 10px 0;
-    /* 文本节点无法单独隐藏，用 font-size:0 收掉文字，图标不受影响 */
     font-size: 0;
   }
 
@@ -94,6 +82,7 @@
   min-width: 0;
   min-height: 0;
   background: #f2f3f5;
+  --chat-list-width: 296px;
 }
 
 /* ── 左：会话列表 ── */
@@ -202,6 +191,14 @@
   text-align: center;
   color: #9aa3b2;
   font-size: 13px;
+}
+
+.chatnt-items .load-tip {
+  flex-shrink: 0;
+  padding: 12px 0 6px;
+  text-align: center;
+  color: #9aa3b2;
+  font-size: 12px;
 }
 
 .cnv {
@@ -648,6 +645,32 @@
   color: #9aa3b2;
 }
 
+.chatnt-info-label-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nt-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 7px;
+  background: #f2f3f5;
+  color: #4d5968;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.nt-mini-btn:hover { color: #0099ff; background: #e8eaee; }
+.nt-mini-btn:disabled { cursor: default; opacity: 0.62; }
+.nt-mini-btn svg { display: block; }
+.nt-mini-btn svg.spin { animation: chatnt-spin 0.8s linear infinite; }
+
 /* 设置项成组，白底圆角卡，行间发丝线——NT 设置页的基本形态 */
 .nt-card {
   border-radius: 10px;
@@ -810,6 +833,90 @@
 }
 
 .nt-add .nt-input { flex: 1; }
+
+.chatnt-clear-section {
+  padding-bottom: 12px;
+}
+
+.chatnt-clear-card {
+  padding: 10px;
+}
+
+.chatnt-clear-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #eceef1;
+}
+
+.chatnt-clear-modes button {
+  min-width: 0;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #6b7686;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chatnt-clear-modes button.active {
+  color: #0099ff;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(16, 20, 28, 0.08);
+}
+
+.chatnt-clear-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #6b7686;
+  font-size: 12px;
+}
+
+.chatnt-clear-field .nt-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.chatnt-clear-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.chatnt-clear-range .chatnt-clear-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.chatnt-clear-submit {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 2px;
+  border: none;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: #d94a4a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chatnt-clear-submit:hover:not(:disabled) { background: #ffe2e2; }
+.chatnt-clear-submit:disabled { cursor: default; opacity: 0.58; }
+
+.chatnt-clear-hint {
+  margin-top: 8px;
+  color: #9aa3b2;
+  font-size: 11px;
+  line-height: 1.4;
+}
 
 .nt-btn {
   flex-shrink: 0;
@@ -1358,6 +1465,204 @@
   box-shadow: 0 1px 4px rgba(16, 20, 28, 0.15);
 }
 
+/* 禁言设置：覆盖 layout.css 的旧弹框，改成四段时长选择 */
+.mute-modal-backdrop {
+  background: rgba(16, 20, 28, 0.36);
+  backdrop-filter: blur(1px);
+}
+
+.mute-modal {
+  width: min(360px, calc(100vw - 24px));
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(16, 20, 28, 0.18);
+  overflow: visible;
+}
+
+.mute-modal-head {
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #eceef1;
+  background: #fbfcfd;
+}
+
+.mute-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.mute-modal-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  color: #8f98a6;
+  font-size: 20px;
+}
+
+.mute-modal-close:hover {
+  color: #1f2329;
+  background: #eceef1;
+}
+
+.mute-modal-body {
+  position: relative;
+  z-index: 2;
+  padding: 14px 16px;
+}
+
+.mute-modal-target {
+  margin-bottom: 14px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid #eceef1;
+  color: #6b7686;
+  font-size: 13px;
+}
+
+.mute-picker {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mute-picker-field {
+  position: relative;
+  min-width: 0;
+}
+
+.mute-picker-field.open { z-index: 3; }
+
+.mute-picker-field:focus-within .mute-picker-trigger,
+.mute-picker-field.open .mute-picker-trigger {
+  border-color: #0099ff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.12);
+}
+
+.mute-picker-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 4px;
+  height: 35px;
+  padding: 0 5px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #f7f8fa;
+  color: #1f2329;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.mute-picker-value {
+  min-width: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.mute-picker-unit {
+  flex-shrink: 0;
+  color: #4d5968;
+  font-size: 11px;
+}
+
+.mute-picker-chevron {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+  border-right: 1.5px solid #8f98a6;
+  border-bottom: 1.5px solid #8f98a6;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.mute-picker-field.open .mute-picker-chevron {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.mute-picker-menu {
+  z-index: 10;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: 188px;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(16, 20, 28, 0.16);
+}
+
+.mute-picker-option {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #4d5968;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.mute-picker-option:hover { background: #f2f3f5; color: #1f2329; }
+.mute-picker-option.selected { background: #e6f4ff; color: #0099ff; font-weight: 600; }
+
+.mute-modal-summary {
+  margin-top: 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f2f3f5;
+  color: #6b7686;
+  font-size: 12px;
+}
+
+.mute-modal-foot {
+  position: relative;
+  z-index: 1;
+  padding: 10px 14px;
+  border-top: 1px solid #eceef1;
+  background: #fbfcfd;
+}
+
+.mute-modal-btn {
+  min-width: 76px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border-color: #d5dbe3;
+  color: #4d5968;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mute-modal-btn:hover {
+  background: #f2f3f5;
+}
+
+.mute-modal-btn--primary {
+  border-color: #0099ff;
+  background: #0099ff;
+  color: #ffffff;
+}
+
+.mute-modal-btn--primary:hover {
+  background: #0086e6;
+}
+
 /* ═══════════════════ 手机端 ═══════════════════ */
 
 @media (max-width: 768px) {
@@ -1386,6 +1691,10 @@
   .chatnt-composer textarea { padding: 8px 12px; }
   .chatnt-composer-foot { padding: 0 12px 10px; }
   .qm-main { max-width: 82%; }
+
+  .mute-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   /* 32 位 ID 在窄屏挤不下，默认收起，点头像才展开成独立一行 */
   .qm-avatar { cursor: pointer; }

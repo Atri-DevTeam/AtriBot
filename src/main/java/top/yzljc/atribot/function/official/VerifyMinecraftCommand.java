@@ -12,6 +12,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
@@ -19,7 +20,6 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.socket.BindResponse;
 
 import java.util.*;
@@ -43,11 +43,11 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_C2C && sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
         if (args.length != 1) {
             Markdown md = TC.md("参数错误！请提供社区服务器内生成的验证码，用法: /verify <验证码>");
-            sender.sendMessage(md, keyboard);
+            qq.sendMessage(md, keyboard);
             return true;
         }
 
@@ -58,11 +58,11 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
             possibleQQNum = pendingPossibleQQNum.remove(code);
         }
 
-        var result = MinecraftBind.bindAccount(sender.getUserId(), possibleQQNum, code, sender.getGroupId());
-        return handleBindResponse(sender, label, result);
+        var result = MinecraftBind.bindAccount(qq.getUserId(), possibleQQNum, code, qq.getGroupId());
+        return handleBindResponse(qq, label, result);
     }
 
-    private static boolean handleBindResponse(CommandSender sender, String label, BindResponse result) {
+    private static boolean handleBindResponse(QQCommandSender sender, String label, BindResponse result) {
         int statusCode = result.code();
         String uuid = result.uuid();
 

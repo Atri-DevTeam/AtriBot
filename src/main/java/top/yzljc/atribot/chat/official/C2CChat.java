@@ -1,7 +1,8 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -61,27 +62,12 @@ public final class C2CChat {
      * 发送单聊图片主动消息
      *
      * @param openId 用户 openId
-     * @param type   图片类型（URL / BASE64）
-     * @param value  图片内容
+     * @param image  图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String openId, ImageType type, String value) {
-        return await(AsyncC2CChat.sendMessage(openId, type, value));
-    }
-
-    /**
-     * 发送单聊图文主动消息
-     *
-     * @param openId 用户 openId
-     * @param text   文本内容
-     * @param type   图片类型（URL / BASE64）
-     * @param value  图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String openId, String text, ImageType type, String value) {
-        return await(AsyncC2CChat.sendMessage(openId, text, type, value));
+    public static String sendMessage(String openId, ImageComponent image) {
+        return await(AsyncC2CChat.sendMessage(openId, image));
     }
 
     /**
@@ -142,28 +128,12 @@ public final class C2CChat {
      *
      * @param openId 用户 openId
      * @param msgId  被回复的消息 ID
-     * @param type   图片类型
-     * @param value  图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String openId, String msgId, ImageType type, String value) {
-        return await(AsyncC2CChat.replyMessage(openId, msgId, type, value));
-    }
-
-    /**
-     * 回复单聊图文消息
-     *
-     * @param openId 用户 openId
-     * @param msgId  被回复的消息 ID
-     * @param text   文本内容
-     * @param type   图片类型
-     * @param value  图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String openId, String msgId, String text, ImageType type, String value) {
-        return await(AsyncC2CChat.replyMessage(openId, msgId, text, type, value));
+    public static String replyMessage(String openId, String msgId, ImageComponent image) {
+        return await(AsyncC2CChat.replyMessage(openId, msgId, image));
     }
 
     /**
@@ -211,28 +181,12 @@ public final class C2CChat {
      *
      * @param openId  用户 openId
      * @param eventId 事件 ID
-     * @param type    图片类型
-     * @param value   图片内容
+     * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String openId, String eventId, ImageType type, String value) {
-        return await(AsyncC2CChat.replyEventMessage(openId, eventId, type, value));
-    }
-
-    /**
-     * 回复单聊事件（图文）
-     *
-     * @param openId  用户 openId
-     * @param eventId 事件 ID
-     * @param text    文本内容
-     * @param type    图片类型
-     * @param value   图片内容
-     * @return 消息 ID，上传或发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String openId, String eventId, String text, ImageType type, String value) {
-        return await(AsyncC2CChat.replyEventMessage(openId, eventId, text, type, value));
+    public static String replyEventMessage(String openId, String eventId, ImageComponent image) {
+        return await(AsyncC2CChat.replyEventMessage(openId, eventId, image));
     }
 
     /**
@@ -317,8 +271,8 @@ public final class C2CChat {
      * @param openId    用户 openId
      * @param messageId 消息 ID
      */
-    public static void recallMessage(String openId, String messageId) {
-        Atri.getInstance().getChatService().recallPrivateMessage(openId, messageId);
+    public static boolean recallMessage(String openId, String messageId) {
+        return Atri.getInstance().getChatService().recallPrivateMessage(openId, messageId);
     }
 
     private static String await(CompletableFuture<String> future) {

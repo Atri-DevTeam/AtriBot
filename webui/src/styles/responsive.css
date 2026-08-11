@@ -244,6 +244,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
+  /* 面板头标题：右侧操作区（pill+按钮）不让步，标题改成截断而不是竖排换行 */
+  .chat-head > strong {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .chat-head .group-picker-trigger {
     min-width: 0;
     flex: 1;

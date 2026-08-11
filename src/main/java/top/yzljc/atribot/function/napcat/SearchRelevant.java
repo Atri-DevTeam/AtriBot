@@ -8,7 +8,7 @@ import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.sql.Connection;
@@ -43,7 +43,7 @@ public class SearchRelevant implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
         if (args.length == 0) {
             return false;
         }
@@ -52,14 +52,14 @@ public class SearchRelevant implements CommandExecutor {
 
         Matcher matcher = QUOTE_PATTERN.matcher(fullArgs);
         if (!matcher.find()) {
-            sender.sendMessage("搜索格式错误。关键词必须使用双引号包裹，例如：/search \"关键词\"");
+            nc.sendMessage("搜索格式错误。关键词必须使用双引号包裹，例如：/search \"关键词\"");
             return true;
         }
 
         String keyword = matcher.group(1);
 
         if (LoadIllegalWords.containsSensitiveWord(keyword) || isSqlKeywords(keyword)) {
-            sender.sendMessage("搜索关键词不符合检索规则，拒绝执行!");
+            nc.sendMessage("搜索关键词不符合检索规则，拒绝执行!");
             return true;
         }
 
@@ -90,7 +90,7 @@ public class SearchRelevant implements CommandExecutor {
             }
         }
 
-        searchInDatabase(sender.getGroupId(), keyword, targetUserId, mode);
+        searchInDatabase(nc.getGroupId(), keyword, targetUserId, mode);
 
         return true;
     }

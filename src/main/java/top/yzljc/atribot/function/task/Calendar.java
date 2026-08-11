@@ -10,9 +10,9 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.timer.Schedule;
@@ -30,12 +30,12 @@ public class Calendar implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "calendar")) return true;
-        if (Config.getInstance().isDebugMode() && sender.hasPermission()) {
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "calendar")) return true;
+        if (Config.getInstance().isDebugMode() && nc.hasPermission()) {
             sendToAllGroups();
         } else {
-            sendToSingleGroup(sender.getGroupId());
+            sendToSingleGroup(nc.getGroupId());
         }
         return true;
     }
@@ -54,7 +54,7 @@ public class Calendar implements CommandExecutor {
         }
     }
 
-    @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
+    @Schedule(time = "00:06:00", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
         top.yzljc.atribot.function.general.Calendar.sendCalendar();
         ThreadManager.execute(() -> {

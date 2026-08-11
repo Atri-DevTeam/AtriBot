@@ -17,7 +17,7 @@ import java.sql.Timestamp;
  *
  * <p>投递策略：
  * <ol>
- *   <li>先查主动消息权限（群 {@code is_allowed_active} / 私聊 {@code c2c_push}），
+ *   <li>先查主动消息权限（群 {@code allow_proactive_msg} / 私聊 {@code c2c_push}），
  *       未开放则<b>直接入队</b>，不做无谓的 API 调用；</li>
  *   <li>有权限则尝试主动推送，成功即结束；</li>
  *   <li>主动推送返回 null（含无权限、限频、markdown 未报备等一切失败）则兜底入队。</li>
@@ -84,7 +84,7 @@ public class NotificationService {
             return false;
         }
 
-        if (!OfficialGroups.isAllowedActiveMessages(groupOpenId)) {
+        if (!OfficialGroups.allowProactiveMsg(groupOpenId)) {
             log.info("群未开放主动消息，通知转入被动队列: group={}, source={}", groupOpenId, source);
             enqueue(TARGET_GROUP, groupOpenId, mentionUserId, markdown, source, sourceId, "group_active_disabled");
             return false;

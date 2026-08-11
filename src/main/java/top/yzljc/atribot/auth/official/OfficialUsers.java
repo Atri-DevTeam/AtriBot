@@ -35,7 +35,7 @@ public class OfficialUsers {
         // 加载缓存
         List<C2CRepository.PermissionRow> rows = C2CRepository.loadAll();
         for (C2CRepository.PermissionRow row : rows) {
-            PermissionRole role = PermissionRole.fromString(row.role());
+            UnifiedRole role = UnifiedRole.fromString(row.role());
             Set<String> permissions = parsePermissions(row.permissions());
             cache.put(row.userOpenId(), new UserData(row.userOpenId(), role, permissions,
                     row.isBlocked(), row.isIgnored(), row.c2cPush()));
@@ -47,7 +47,7 @@ public class OfficialUsers {
      * 获取权限数据（缓存中没有则返回默认值，不写库）
      */
     public static UserData getData(String userOpenId) {
-        return cache.getOrDefault(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, false, true));
+        return cache.getOrDefault(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, false, true));
     }
 
     /**
@@ -68,10 +68,8 @@ public class OfficialUsers {
      * 注册 C2C 用户到缓存和数据库（默认 USER 角色，空权限）
      */
     public static void registerUser(String userOpenId) {
-        setPermissionGroup(userOpenId, PermissionRole.USER, Set.of());
+        setPermissionGroup(userOpenId, UnifiedRole.USER, Set.of());
     }
-
-    // ═══════════════ is_blocked / is_ignored 查询（仅缓存，默认 false） ═══════════════
 
     /**
      * 查询 is_blocked，仅读缓存，没有就返回 false
@@ -90,7 +88,7 @@ public class OfficialUsers {
     }
 
     /**
-     * 设置 is_blocked。如果用户不在缓存中则自动补全并写入数据库。
+     * 设置 is_blocked。如果用户不在缓存中则自动补全并写入数据库
      */
     public static void setBlocked(String userOpenId, boolean blocked) {
         if (C2CRepository.setBlocked(userOpenId, blocked)) {
@@ -98,13 +96,13 @@ public class OfficialUsers {
             if (existing != null) {
                 cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), blocked, existing.isIgnored(), existing.c2cPush()));
             } else {
-                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), blocked, false, true));
+                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), blocked, false, true));
             }
         }
     }
 
     /**
-     * 设置 is_ignored。如果用户不在缓存中则自动补全并写入数据库。
+     * 设置 is_ignored。如果用户不在缓存中则自动补全并写入数据库
      */
     public static void setIgnored(String userOpenId, boolean ignored) {
         if (C2CRepository.setIgnored(userOpenId, ignored)) {
@@ -112,20 +110,20 @@ public class OfficialUsers {
             if (existing != null) {
                 cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), existing.isBlocked(), ignored, existing.c2cPush()));
             } else {
-                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, ignored, true));
+                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, ignored, true));
             }
         }
     }
 
     /**
-     * 查询私聊主动消息授权状态，默认开启。
+     * 查询私聊主动消息授权状态，默认开启
      */
     public static boolean isC2CPushEnabled(String userOpenId) {
         return getData(userOpenId).c2cPush();
     }
 
     /**
-     * 设置私聊主动消息授权状态。如果用户不在缓存中则自动补全并写入数据库。
+     * 设置私聊主动消息授权状态。如果用户不在缓存中则自动补全并写入数据库
      */
     public static void setC2CPush(String userOpenId, boolean c2cPush) {
         if (C2CRepository.setC2CPush(userOpenId, c2cPush)) {
@@ -134,7 +132,7 @@ public class OfficialUsers {
                 cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(),
                         existing.isBlocked(), existing.isIgnored(), c2cPush));
             } else {
-                cache.put(userOpenId, new UserData(userOpenId, PermissionRole.USER, Set.of(), false, false, c2cPush));
+                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, false, c2cPush));
             }
         }
     }
@@ -144,32 +142,31 @@ public class OfficialUsers {
      */
     public static boolean hasPermission(String userOpenId, String permission) {
         UserData data = getData(userOpenId);
-        return data.permissions().contains("*")
-                || data.permissions().contains(permission);
+        return data.permissions().contains("*") || data.permissions().contains(permission);
     }
 
     /**
      * 是否拥有角色
      */
-    public static boolean hasRole(String userOpenId, PermissionRole role) {
+    public static boolean hasRole(String userOpenId, UnifiedRole role) {
         return getData(userOpenId).role() == role;
     }
 
     public static boolean isAdmin(String userOpenId) {
-        return getData(userOpenId).role() == PermissionRole.ADMIN || getData(userOpenId).role == PermissionRole.OWNER;
+        return getData(userOpenId).role() == UnifiedRole.ADMIN || getData(userOpenId).role == UnifiedRole.OWNER;
     }
 
     /**
      * 获取角色
      */
-    public static PermissionRole getRole(String userOpenId) {
+    public static UnifiedRole getRole(String userOpenId) {
         return getData(userOpenId).role();
     }
 
     /**
      * 设置权限组
      */
-    public static boolean setPermissionGroup(String userOpenId, PermissionRole role, Set<String> permissions) {
+    public static boolean setPermissionGroup(String userOpenId, UnifiedRole role, Set<String> permissions) {
         String permissionsString = String.join(",", permissions);
 
         UserData existing = cache.get(userOpenId);
@@ -210,6 +207,10 @@ public class OfficialUsers {
      * 删除整个用户数据
      */
     public static boolean removeUser(String userOpenId) {
+        if (isIgnored(userOpenId) || isBlocked(userOpenId)) {
+            log.warn("用户 {} 已被拉黑，保留相关数据不再清除", userOpenId);
+            return false;
+        }
         if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
             return true;
@@ -233,7 +234,7 @@ public class OfficialUsers {
     }
 
     /**
-     * 保存私聊用户的功能配置 JSON 到数据库。
+     * 保存私聊用户的功能配置 JSON 到数据库
      */
     private static boolean saveFunctionConfig(String userOpenId, ObjectNode config) {
         try {
@@ -246,7 +247,7 @@ public class OfficialUsers {
     }
 
     /**
-     * 查询某个功能在指定私聊用户是否开启。
+     * 查询某个功能在指定私聊用户是否开启
      */
     public static boolean isFunctionEnabled(String userOpenId, String functionKey) {
         ObjectNode config = getFunctionConfig(userOpenId);
@@ -291,20 +292,13 @@ public class OfficialUsers {
     }
 
     /**
-     * 获取开启了某功能的所有私聊用户列表。
+     * 获取开启了某功能的所有私聊用户列表
      */
     public static List<String> enabledUsers(String functionKey) {
         if (PushTaskGlobalSettings.isDisabledForC2C(functionKey)) {
             return List.of();
         }
         return C2CRepository.queryEnabledUsers(functionKey);
-    }
-
-    /**
-     * 获取私聊用户的所有功能配置 JSON。
-     */
-    public static ObjectNode getRawFunctionConfig(String userOpenId) {
-        return getFunctionConfig(userOpenId);
     }
 
     public static FunctionInfo getFunctionInfo(String userOpenId, String functionKey) {
@@ -335,7 +329,7 @@ public class OfficialUsers {
                 .collect(Collectors.toSet());
     }
 
-    public record UserData(String userOpenId, PermissionRole role, Set<String> permissions,
+    public record UserData(String userOpenId, UnifiedRole role, Set<String> permissions,
                            boolean isBlocked, boolean isIgnored, boolean c2cPush) {
     }
 

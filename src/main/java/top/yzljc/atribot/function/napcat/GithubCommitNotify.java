@@ -14,11 +14,11 @@ import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -68,22 +68,22 @@ public class GithubCommitNotify implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "github_info")) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "github_info")) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage("你没有权限执行此命令");
             return true;
         }
         if (args.length == 1) {
             switch (args[0].toLowerCase()) {
                 case "on" -> {
                     pushEnabled = true;
-                    sender.sendMessage("Github推送已开启");
+                    nc.sendMessage("Github推送已开启");
                     return true;
                 }
                 case "off" -> {
                     pushEnabled = false;
-                    sender.sendMessage("Github推送已关闭");
+                    nc.sendMessage("Github推送已关闭");
                     return true;
                 }
             }
@@ -95,7 +95,7 @@ public class GithubCommitNotify implements CommandExecutor {
                 repoConfig.put(targetRepo.toLowerCase(), targetGroupIds);
                 saveConfig();
             }
-            sender.sendMessage("配置成功！仓库 [" + targetRepo + "] 将仅推送到群: " + targetGroupIds);
+            nc.sendMessage("配置成功！仓库 [" + targetRepo + "] 将仅推送到群: " + targetGroupIds);
             return true;
         }
         return false;

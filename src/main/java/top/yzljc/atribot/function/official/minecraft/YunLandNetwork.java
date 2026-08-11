@@ -3,7 +3,7 @@ package top.yzljc.atribot.function.official.minecraft;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 
 import java.util.List;
@@ -22,22 +22,22 @@ public final class YunLandNetwork extends MinecraftNetwork {
     }
 
     @Override
-    public List<String> extraCommand(CommandSender sender, String[] args) {
+    public List<String> extraCommand(QQCommandSender sender, String[] args) {
         return List.of();
     }
 
     @Override
-    public String modifyCommand(CommandSender sender, String[] args) {
+    public String modifyCommand(QQCommandSender sender, String[] args) {
         return commandsJoin(args);
     }
 
     @Override
-    public boolean hasPermission(CommandSender sender, String commandContent) {
+    public boolean hasPermission(QQCommandSender sender, String commandContent) {
         return sender.hasPermission("rcon.yunland");
     }
 
     @Override
-    public List<List<Button>> getButtons(CommandSender sender, String server, String[] args) {
+    public List<List<Button>> getButtons(QQCommandSender sender, String server, String[] args) {
         String commandContent = commandsJoin(args);
         return List.of(
                 List.of(new Button("s1", "重新执行", "/rc " + server + " " + commandContent, true, ButtonStyle.BLUE, ButtonType.COMMAND)),

@@ -1,0 +1,335 @@
+.eventlogs-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 事件类型 tab 不收缩，类型多了自动横向滚动而不是被挤成竖排 */
+.eventlogs-tabs .sendlogs-tab {
+  flex: 0 0 auto;
+}
+
+.eventlogs-thead {
+  height: 30px;
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-surface-alt);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-text-muted);
+}
+
+.sendlogs-grid.eventlogs-thead,
+.sendlogs-grid.eventlogs-row {
+  display: grid;
+  grid-template-columns: 260px 340px 36px minmax(0, 1fr) 92px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+}
+
+/* 收窄 类型 与 事件ID 之间的空隙，其他列间距不变 */
+.sendlogs-grid.eventlogs-thead > span:nth-child(1),
+.sendlogs-grid.eventlogs-row > span:nth-child(1) {
+  margin-right: -10px;
+}
+
+/* 时间列数据居右，表头对齐 */
+.sendlogs-grid.eventlogs-thead > span:nth-child(5) {
+  text-align: right;
+}
+
+.eventlogs-row {
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-hairline);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.eventlogs-row:last-child {
+  border-bottom: none;
+}
+
+.eventlogs-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.eventlogs-eid,
+.eventlogs-seq,
+.eventlogs-raw {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.eventlogs-eid,
+.eventlogs-seq {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+.eventlogs-raw {
+  color: var(--color-text-subtle);
+}
+
+/* 详细页原始 JSON 全量展示，去掉内部滚动，随页面滚动 */
+.eventlogs-detail .errors-stack {
+  max-height: none;
+  overflow: visible;
+}
+
+/* ═══════ 清除记录面板 ═══════ */
+
+.eventlogs-clear {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.eventlogs-clear-head {
+  margin-bottom: var(--space-4);
+}
+
+.eventlogs-clear-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.eventlogs-clear-desc {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.eventlogs-clear-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.eventlogs-clear-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.eventlogs-clear-input {
+  height: 34px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+}
+
+.eventlogs-clear-input:focus {
+  outline: none;
+  border-color: var(--color-accent-border);
+}
+
+.eventlogs-clear-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.eventlogs-clear-actions .ghost-button.danger {
+  color: var(--color-danger-strong);
+  border-color: var(--color-danger-soft);
+}
+
+.eventlogs-clear-actions .ghost-button.danger:hover {
+  background: var(--color-danger-soft);
+}
+
+.eventlogs-clear-message {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-accent-text);
+}
+
+/* 跳转指定页 */
+.eventlogs-jump {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.eventlogs-jump-input {
+  width: 72px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.eventlogs-jump-input:focus {
+  outline: none;
+  border-color: var(--color-accent-border);
+}
+
+@media (max-width: 760px) {
+  /* 桌面端用于收窄类型↔事件ID间距的负 margin，移动端会顶到时间列，去掉 */
+  .sendlogs-grid.eventlogs-thead > span:nth-child(1),
+  .sendlogs-grid.eventlogs-row > span:nth-child(1) {
+    margin-right: 0;
+  }
+
+  /* 手机端：表头和数据行用同一套两列网格，保证对齐，只留 类型 + 时间。
+     时间用固定像素，因为表头与数据行是各自独立的 grid，
+     若时间列是 auto，内容长短不同会导致 fr 列分到的剩余空间不一致，列就会左右错位 */
+  .sendlogs-grid.eventlogs-thead,
+  .sendlogs-grid.eventlogs-row {
+    grid-template-columns: minmax(0, 1fr) 84px;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .eventlogs-row {
+    min-height: 0;
+  }
+
+  /* 手机端不展示 事件ID、seq 与原始内容摘要（表头与数据行一致） */
+  .sendlogs-grid.eventlogs-thead > span:nth-child(2),
+  .sendlogs-grid.eventlogs-row > span:nth-child(2),
+  .sendlogs-grid.eventlogs-thead > span:nth-child(3),
+  .sendlogs-grid.eventlogs-row > span:nth-child(3),
+  .sendlogs-grid.eventlogs-thead > span:nth-child(4),
+  .sendlogs-grid.eventlogs-row > span:nth-child(4) {
+    display: none;
+  }
+
+  /* 手机端类型徽章截断，占满剩余宽度 */
+  .eventlogs-row > span:nth-child(1) .eventlogs-type {
+    max-width: 100%;
+  }
+
+  /* 统计条：hero 独占一行，指标换成两列网格不再硬挤 */
+  .errors-summary {
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .errors-hero {
+    width: 100%;
+  }
+
+  .errors-metrics {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-3);
+    column-gap: var(--space-2);
+  }
+
+  .errors-metric {
+    padding: 0;
+    border-left: none;
+  }
+
+  .errors-metric:first-child {
+    padding-left: 0;
+  }
+
+  /* 搜索条：输入框占满，按钮整行 */
+  .errors-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .errors-search-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .errors-search-btn {
+    width: 100%;
+  }
+
+  /* 详情头部：类型徽章和标题可换行，时间不下沉 */
+  .errors-detail {
+    padding: var(--space-3);
+  }
+
+  .errors-detail-head {
+    gap: var(--space-2);
+  }
+
+  .errors-detail-message {
+    min-width: 0;
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .errors-detail-time {
+    margin-left: auto;
+  }
+
+  /* 详情字段：保持 标签+值 同行，不要上下强制换行 */
+  .errors-field {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: baseline;
+  }
+
+  /* 清除记录面板：字段竖排，按钮占满整行 */
+  .eventlogs-clear {
+    padding: var(--space-4);
+  }
+
+  .eventlogs-clear-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .eventlogs-clear-actions {
+    flex-direction: column;
+  }
+
+  .eventlogs-clear-actions .ghost-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* 分页：跳转输入整行 */
+  .errors-pagination {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  .eventlogs-jump {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .eventlogs-jump-input {
+    flex: 0 0 auto;
+  }
+}

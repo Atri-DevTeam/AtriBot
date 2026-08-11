@@ -6,8 +6,8 @@ import com.github.stuxuhai.jpinyin.PinyinHelper
 import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
+import top.yzljc.atribot.command.NapcatCommandSender
 import top.yzljc.atribot.configuration.LoadIllegalWords
-import top.yzljc.atribot.platform.Platform
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
 
 /**
@@ -24,26 +24,26 @@ object PinYin : CommandExecutor {
         label: String?,
         args: Array<out String?>?
     ): Boolean {
-        if (sender?.platform != Platform.NAPCAT_GROUP) return true
-        if (!GroupConfigManager.isFeatureEnabled(sender.groupId, "private_func")) {
-            if (!sender.hasPermission()) {
+        val nc = sender as? NapcatCommandSender ?: return true
+        if (!GroupConfigManager.isFeatureEnabled(nc.groupId, "private_func")) {
+            if (!nc.hasPermission()) {
                 return true
             }
         }
         val rawText = args?.joinToString(" ") ?: return true
         if (rawText.contains("$")) {
-            sender.sendMessage("在转换为拼音时出现问题: 含有无效字符")
+            nc.sendMessage("在转换为拼音时出现问题: 含有无效字符")
             return true
         }
 
         if (LoadIllegalWords.containsSensitiveWord(rawText)) {
-            sender.sendMessage("在转换为拼音时出现问题: 含有违规内容")
+            nc.sendMessage("在转换为拼音时出现问题: 含有违规内容")
             return true
         }
 
         when (val pinyin = getPinYin(rawText)) {
-            "" -> sender.sendMessage("在转换为拼音时出现问题: 无效内容")
-            else -> sender.sendMessage(pinyin)
+            "" -> nc.sendMessage("在转换为拼音时出现问题: 无效内容")
+            else -> nc.sendMessage(pinyin)
         }
 
         return true

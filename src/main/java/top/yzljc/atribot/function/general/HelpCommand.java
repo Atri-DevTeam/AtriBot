@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.general;
 
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -10,12 +11,8 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.GetProjectInfo;
 
@@ -36,9 +33,21 @@ public class HelpCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() == Platform.OFFICIAL_GROUP || sender.getPlatform() == Platform.OFFICIAL_C2C) {
+        if (sender instanceof ConsoleCommandSender console) {
+            console.sendMessage("""
+                    ======== 亚托莉喵控制台指令帮助 ========
+                    /help 获取控制台帮助信息
+                    /stop 停止控制台运行
+                    /reboot 重启控制台
+                    /webui 启用或关闭网页控制面板
+                    /groupinfo <群号> 查询napcat端群组相关信息
+                    """.trim());
+            return true;
+        }
 
-            Markdown md = TC.md("✨ **" + OfficialBot.BOT_NAME + "帮助菜单**\n\n" +
+        if (sender instanceof QQCommandSender qq) {
+
+            Markdown md = TC.md("✨ **" + QQBot.BOT_NAME + "帮助菜单**\n\n" +
                     "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
                     Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 16, 16) + Markdown.enterCommand("/mc",  "MC功能  ") + " | " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡") + "\n\n" +
                     Markdown.enterCommand("/games", "\uD83C\uDF40小游戏   ") + " | " + Markdown.enterCommand("/hitokoto", "\uD83D\uDCAB随机一言") + "\n\n" +
@@ -51,7 +60,7 @@ public class HelpCommand implements CommandExecutor {
 
             List<List<Button>> buttons = List.of(
                     List.of(
-                            new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + OfficialBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
+                            new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
                             new Button("s2", "详细帮助", "/help -m", false, ButtonStyle.BLUE, ButtonType.COMMAND)
                     ),
                     List.of(
@@ -75,29 +84,26 @@ public class HelpCommand implements CommandExecutor {
                         if (data.isError()) {
                             String errMsg = data.errorMessage();
                             log.warn("获取帮助信息失败: {}", errMsg);
-                            sender.sendMessage("获取帮助信息失败: " + errMsg);
+                            qq.sendMessage("获取帮助信息失败: " + errMsg);
                             return;
                         }
 
                         String help = "![today #2240px #1280px](" + data.url() + ")";
-
-
                         Object keyboard = TC.keyboard(buttons);
 
-                        sender.sendMessage(TC.md(help), keyboard);
-
+                        qq.sendMessage(TC.md(help), keyboard);
                     } catch (Exception e) {
                         log.error("获取帮助信息 API 失败: ", e);
                     }
                 });
                 return true;
             }
-            sender.sendMessage(md, TC.keyboard(buttons));
+            qq.sendMessage(md, TC.keyboard(buttons));
             return true;
         }
 
-        if (sender.getPlatform() == Platform.NAPCAT_GROUP || sender.getPlatform() == Platform.NAPCAT_PRIVATE) {
-            GroupMessage.forwardMessage(sender.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+        if (sender instanceof NapcatCommandSender nc) {
+            GroupMessage.forwardMessage(nc.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
                     "项目开发说明", "指令帮助", "功能介绍");
             return true;
         }

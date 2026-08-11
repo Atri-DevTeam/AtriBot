@@ -1,0 +1,352 @@
+
+/* ══════════ 群与用户 · 名单页（群列表 / 用户列表 双 Tab）══════════ */
+
+/* ── 名单页表头：可换行（Tab / 筛选按钮 + 数量徽标）── */
+.dir-chat-head {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* ── 名单页面板：头部 / 搜索条 / 内容三行，内容区吃满剩余高度。
+   搜索条必须放进面板内（与 LootView 同构），否则面板 height:100% 加上外部搜索条
+   会让 .content 总高超出一屏，触发外层滚动。── */
+.dir-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+/* ── 头部右侧：筛选按钮 + 数量徽标同行（PC/手机一致）── */
+.dir-head-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dir-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-text-strong);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.dir-filter-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dir-filter-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dir-filter-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+/* ── 筛选二级菜单（Teleport 到 body，fixed 定位）── */
+.dir-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1190;
+  background: transparent;
+}
+
+.dir-filter-panel {
+  position: fixed;
+  z-index: 1200;
+  min-width: 230px;
+  max-width: calc(100vw - 16px);
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dir-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dir-filter-field-label {
+  flex: 0 0 56px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.dir-filter-field .dir-filter-select {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+/* ── 名单筛选下拉（群分类筛选 / 用户身份筛选共用）── */
+.dir-filter-select {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  color: var(--color-text-strong);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ── 状态小标签 ── */
+.dir-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dir-chip {
+  padding: 1px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.dir-chip-green {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.dir-chip-red {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.dir-chip-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.dir-chip-gray {
+  background: var(--color-border);
+  color: #475569;
+}
+
+/* ── 身份小徽标（群成员角色 / C2C 用户身份共用）── */
+.dir-role-chip {
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+
+.dir-role-chip.owner {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.dir-role-chip.admin {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* ── 小头像（群：HSL 色块；用户：圆形 + qlogo 兜底首字）── */
+.dir-avatar-sm {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dir-avatar-sm.circle {
+  border-radius: 50%;
+}
+
+.dir-avatar-sm img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── 行内小操作按钮 ── */
+.dir-mini-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.dir-mini-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dir-mini-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── 响应式名单卡片（自适应一行多条）── */
+.dir-content {
+  padding: 12px !important;
+}
+
+.dir-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.dir-tile {
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dir-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dir-tile-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dir-tile-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dir-tile-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dir-tile-mono {
+  font-family: monospace;
+  color: #64748b;
+}
+
+.dir-tile-type {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .dir-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dir-content {
+    padding: 8px !important;
+  }
+
+  /* 手机端表头：Tab 收窄，与「筛选」按钮、数量徽标同挤一行 */
+  .dir-chat-head {
+    gap: 8px;
+  }
+
+  .dir-chat-head .userlist-source-tabs {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .dir-chat-head .userlist-source-tab {
+    flex: 0 1 auto;
+    padding: 4px 7px;
+  }
+
+  .dir-head-right {
+    flex-shrink: 0;
+  }
+
+  .dir-head-right .status-pill {
+    font-size: 11px;
+    padding: 2px 7px;
+    gap: 4px;
+  }
+
+  .dir-filter-btn {
+    padding: 0 9px;
+  }
+
+  .dir-filter-panel {
+    min-width: 0;
+  }
+}

@@ -29,11 +29,19 @@ public class GroupRepository {
         String sqlGroup = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
                 "  `group_openId` VARCHAR(256) NOT NULL," +
                 "  `op_member_openId` VARCHAR(256) NULL," +
-                "  `timestamp` BIGINT NOT NULL," +
+                "  `joined_at` VARCHAR(64) NULL," +
                 "  `is_whitelist` BOOLEAN NOT NULL," +
                 "  `is_blacklisted` BOOLEAN NOT NULL DEFAULT FALSE," +
-                "  `is_allowed_active` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `allow_proactive_msg` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `real_group_id` BIGINT NULL," +
+                "  `member_openid` VARCHAR(256) NULL," +
+                "  `recv_msg_setting` VARCHAR(64) NULL," +
+                "  `member_role` VARCHAR(32) NULL," +
+                "  `group_name` VARCHAR(256) NULL," +
+                "  `group_finger_memo` VARCHAR(512) NULL," +
+                "  `group_class_text` VARCHAR(256) NULL," +
+                "  `group_tags` JSON NULL," +
+                "  `group_member_num` INT NOT NULL DEFAULT 0," +
                 "  PRIMARY KEY (`group_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -54,6 +62,7 @@ public class GroupRepository {
             log.error("初始化群相关数据库表失败", e);
         }
 
+        migrateCurrentGroupSchema();
         migrateGroupTable("group_whitelist");
         migrateGroupTable("group-whiteist");
         migrateFunctionTable("function_list");
@@ -66,7 +75,9 @@ public class GroupRepository {
      */
     public static List<GroupRow> loadAllGroups() {
         List<GroupRow> rows = new ArrayList<>();
-        String sql = "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id FROM `" + GROUP_TABLE + "`";
+        String sql = "SELECT group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted, " +
+                "allow_proactive_msg, real_group_id, member_openid, recv_msg_setting, member_role, " +
+                "group_name, group_finger_memo, group_class_text, group_tags, group_member_num FROM `" + GROUP_TABLE + "`";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql);
@@ -76,11 +87,19 @@ public class GroupRepository {
                 rows.add(new GroupRow(
                         rs.getString("group_openId"),
                         rs.getString("op_member_openId"),
-                        rs.getLong("timestamp"),
+                        rs.getString("joined_at"),
                         rs.getBoolean("is_whitelist"),
                         rs.getBoolean("is_blacklisted"),
-                        rs.getBoolean("is_allowed_active"),
-                        (Long) rs.getObject("real_group_id")
+                        rs.getBoolean("allow_proactive_msg"),
+                        (Long) rs.getObject("real_group_id"),
+                        rs.getString("member_openid"),
+                        rs.getString("recv_msg_setting"),
+                        rs.getString("member_role"),
+                        rs.getString("group_name"),
+                        rs.getString("group_finger_memo"),
+                        rs.getString("group_class_text"),
+                        rs.getString("group_tags"),
+                        rs.getInt("group_member_num")
                 ));
             }
         } catch (Exception e) {
@@ -92,14 +111,14 @@ public class GroupRepository {
     /**
      * 注册群（INSERT IGNORE，仅写入基本信息）
      */
-    public static boolean insertGroup(String groupOpenId, String opMemberOpenId, long timestamp) {
-        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist) VALUES (?, ?, ?, ?)";
+    public static boolean insertGroup(String groupOpenId, String opMemberOpenId, String joinedAt) {
+        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, joined_at, is_whitelist) VALUES (?, ?, ?, ?)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, opMemberOpenId);
-            ps.setLong(3, timestamp);
+            ps.setString(3, joinedAt);
             ps.setBoolean(4, false);
             ps.executeUpdate();
             return true;
@@ -129,15 +148,15 @@ public class GroupRepository {
     /**
      * 设置白名单状态
      */
-    public static boolean upsertWhitelist(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist) {
-        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist) " +
-                "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE timestamp = VALUES(timestamp), is_whitelist = VALUES(is_whitelist)";
+    public static boolean upsertWhitelist(String groupOpenId, String opMemberOpenId, String joinedAt, boolean isWhitelist) {
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, joined_at, is_whitelist) " +
+                "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE is_whitelist = VALUES(is_whitelist)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, opMemberOpenId);
-            ps.setLong(3, timestamp);
+            ps.setString(3, joinedAt);
             ps.setBoolean(4, isWhitelist);
             ps.executeUpdate();
             return true;
@@ -150,15 +169,15 @@ public class GroupRepository {
     /**
      * 设置真实群号
      */
-    public static boolean upsertRealGroupId(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, Long realGroupId) {
-        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, real_group_id) " +
+    public static boolean upsertRealGroupId(String groupOpenId, String opMemberOpenId, String joinedAt, boolean isWhitelist, Long realGroupId) {
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, joined_at, is_whitelist, real_group_id) " +
                 "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE real_group_id = VALUES(real_group_id)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, opMemberOpenId);
-            ps.setLong(3, timestamp);
+            ps.setString(3, joinedAt);
             ps.setBoolean(4, isWhitelist);
             if (realGroupId == null) ps.setNull(5, Types.BIGINT);
             else ps.setLong(5, realGroupId);
@@ -173,17 +192,17 @@ public class GroupRepository {
     /**
      * 设置主动推送状态
      */
-    public static boolean upsertAllowedFullMessage(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean allowedActive) {
-        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, is_allowed_active) " +
-                "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE is_allowed_active = VALUES(is_allowed_active)";
+    public static boolean upsertAllowProactiveMsg(String groupOpenId, String opMemberOpenId, String joinedAt, boolean isWhitelist, boolean allowProactiveMsg) {
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, joined_at, is_whitelist, allow_proactive_msg) " +
+                "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE allow_proactive_msg = VALUES(allow_proactive_msg)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, opMemberOpenId);
-            ps.setLong(3, timestamp);
+            ps.setString(3, joinedAt);
             ps.setBoolean(4, isWhitelist);
-            ps.setBoolean(5, allowedActive);
+            ps.setBoolean(5, allowProactiveMsg);
             ps.executeUpdate();
             return true;
         } catch (Exception e) {
@@ -195,21 +214,72 @@ public class GroupRepository {
     /**
      * 设置黑名单状态
      */
-    public static boolean upsertGroupBlacklisted(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean isBlacklisted) {
-        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted) " +
+    public static boolean upsertGroupBlacklisted(String groupOpenId, String opMemberOpenId, String joinedAt, boolean isWhitelist, boolean isBlacklisted) {
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted) " +
                 "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE is_blacklisted = VALUES(is_blacklisted)";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, opMemberOpenId);
-            ps.setLong(3, timestamp);
+            ps.setString(3, joinedAt);
             ps.setBoolean(4, isWhitelist);
             ps.setBoolean(5, isBlacklisted);
             ps.executeUpdate();
             return true;
         } catch (Exception e) {
             log.error("设置群黑名单失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 写入官方 /bot_state 与 /info 组合出来的群资料。
+     */
+    public static boolean upsertGroupProfile(String groupOpenId, String opMemberOpenId, String joinedAt,
+                                             boolean isWhitelist, boolean isBlacklisted, boolean allowProactiveMsg,
+                                             Long realGroupId, String memberOpenid, String recvMsgSetting,
+                                             String memberRole, String groupName, String groupFingerMemo,
+                                             String groupClassText, String groupTagsJson, int groupMemberNum) {
+        String sql = "INSERT INTO `" + GROUP_TABLE + "` (" +
+                "group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted, allow_proactive_msg, " +
+                "real_group_id, member_openid, recv_msg_setting, member_role, group_name, group_finger_memo, " +
+                "group_class_text, group_tags, group_member_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "op_member_openId = COALESCE(VALUES(op_member_openId), op_member_openId), " +
+                "joined_at = VALUES(joined_at), " +
+                "allow_proactive_msg = VALUES(allow_proactive_msg), " +
+                "member_openid = VALUES(member_openid), " +
+                "recv_msg_setting = VALUES(recv_msg_setting), " +
+                "member_role = VALUES(member_role), " +
+                "group_name = VALUES(group_name), " +
+                "group_finger_memo = VALUES(group_finger_memo), " +
+                "group_class_text = VALUES(group_class_text), " +
+                "group_tags = VALUES(group_tags), " +
+                "group_member_num = VALUES(group_member_num)";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            ps.setString(2, opMemberOpenId);
+            ps.setString(3, joinedAt);
+            ps.setBoolean(4, isWhitelist);
+            ps.setBoolean(5, isBlacklisted);
+            ps.setBoolean(6, allowProactiveMsg);
+            if (realGroupId == null) ps.setNull(7, Types.BIGINT);
+            else ps.setLong(7, realGroupId);
+            ps.setString(8, memberOpenid);
+            ps.setString(9, recvMsgSetting);
+            ps.setString(10, memberRole);
+            ps.setString(11, groupName);
+            ps.setString(12, groupFingerMemo);
+            ps.setString(13, groupClassText);
+            ps.setString(14, groupTagsJson == null || groupTagsJson.isBlank() ? "[]" : groupTagsJson);
+            ps.setInt(15, groupMemberNum);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("保存群资料失败: {}", e.getMessage());
             return false;
         }
     }
@@ -280,9 +350,11 @@ public class GroupRepository {
             return;
         }
 
+        String joinedAtColumn = columnExists(legacyTable, "joined_at") ? "joined_at" : "CAST(`timestamp` AS CHAR)";
+        String allowProactiveColumn = columnExists(legacyTable, "allow_proactive_msg") ? "allow_proactive_msg" : "is_allowed_active";
         String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` " +
-                "(group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id) " +
-                "SELECT group_openId, op_member_openId, timestamp, is_whitelist, is_blacklisted, is_allowed_active, real_group_id " +
+                "(group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted, allow_proactive_msg, real_group_id) " +
+                "SELECT group_openId, op_member_openId, " + joinedAtColumn + ", is_whitelist, is_blacklisted, " + allowProactiveColumn + ", real_group_id " +
                 "FROM `" + legacyTable + "`";
 
         try (var con = DatabaseManager.getConnection();
@@ -311,6 +383,42 @@ public class GroupRepository {
         }
     }
 
+    private static void migrateCurrentGroupSchema() {
+        renameColumnIfNeeded(GROUP_TABLE, "timestamp", "joined_at", "VARCHAR(64) NULL");
+        ensureColumn(GROUP_TABLE, "joined_at", "VARCHAR(64) NULL AFTER `op_member_openId`");
+        renameColumnIfNeeded(GROUP_TABLE, "is_allowed_active", "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE");
+        ensureColumn(GROUP_TABLE, "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE AFTER `is_blacklisted`");
+        ensureColumn(GROUP_TABLE, "member_openid", "VARCHAR(256) NULL AFTER `real_group_id`");
+        ensureColumn(GROUP_TABLE, "recv_msg_setting", "VARCHAR(64) NULL AFTER `member_openid`");
+        ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `recv_msg_setting`");
+        ensureColumn(GROUP_TABLE, "group_name", "VARCHAR(256) NULL AFTER `member_role`");
+        ensureColumn(GROUP_TABLE, "group_finger_memo", "VARCHAR(512) NULL AFTER `group_name`");
+        ensureColumn(GROUP_TABLE, "group_class_text", "VARCHAR(256) NULL AFTER `group_finger_memo`");
+        ensureColumn(GROUP_TABLE, "group_tags", "JSON NULL AFTER `group_class_text`");
+        ensureColumn(GROUP_TABLE, "group_member_num", "INT NOT NULL DEFAULT 0 AFTER `group_tags`");
+    }
+
+    private static void renameColumnIfNeeded(String tableName, String oldColumn, String newColumn, String definition) {
+        if (!columnExists(tableName, oldColumn)) {
+            return;
+        }
+        if (columnExists(tableName, newColumn)) {
+            String sql = "UPDATE `" + tableName + "` SET `" + newColumn + "` = `" + oldColumn + "` WHERE `" + newColumn + "` IS NULL";
+            executeSchemaUpdate(sql, "回填列 " + tableName + "." + newColumn + " 失败");
+            return;
+        }
+        String sql = "ALTER TABLE `" + tableName + "` CHANGE COLUMN `" + oldColumn + "` `" + newColumn + "` " + definition;
+        executeSchemaUpdate(sql, "重命名列 " + tableName + "." + oldColumn + " 失败");
+    }
+
+    private static void ensureColumn(String tableName, String columnName, String definition) {
+        if (columnExists(tableName, columnName)) {
+            return;
+        }
+        String sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition;
+        executeSchemaUpdate(sql, "添加列 " + tableName + "." + columnName + " 失败");
+    }
+
     private static boolean tableExists(String tableName) {
         try (var con = DatabaseManager.getConnection();
              var rs = con.getMetaData().getTables(null, null, tableName, null)) {
@@ -321,8 +429,30 @@ public class GroupRepository {
         }
     }
 
-    public record GroupRow(String groupOpenId, String opMemberOpenId, long timestamp,
+    private static boolean columnExists(String tableName, String columnName) {
+        try (var con = DatabaseManager.getConnection();
+             var rs = con.getMetaData().getColumns(null, null, tableName, columnName)) {
+            return rs.next();
+        } catch (Exception e) {
+            log.warn("检查列 {}.{} 是否存在失败: {}", tableName, columnName, e.getMessage());
+            return false;
+        }
+    }
+
+    private static void executeSchemaUpdate(String sql, String errorMessage) {
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.executeUpdate();
+        } catch (Exception e) {
+            log.warn("{}: {}", errorMessage, e.getMessage());
+        }
+    }
+
+    public record GroupRow(String groupOpenId, String opMemberOpenId, String joinedAt,
                            boolean isWhitelist, boolean isBlacklisted,
-                           boolean isAllowedActive, Long realGroupId) {
+                           boolean allowProactiveMsg, Long realGroupId,
+                           String memberOpenid, String recvMsgSetting, String memberRole,
+                           String groupName, String groupFingerMemo, String groupClassText,
+                           String groupTagsJson, int groupMemberNum) {
     }
 }

@@ -3,12 +3,14 @@ package top.yzljc.atribot.utils.update;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.util.Arrays;
@@ -22,7 +24,7 @@ import java.util.Arrays;
  */
 public class UpdatePushCommand implements Listener, CommandExecutor {
 
-    private static final String layout = OfficialBot.BOT_NAME + "近期更新日志:\n";
+    private static final String layout = QQBot.BOT_NAME + "近期更新日志:\n";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -95,8 +97,18 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
     @EventHandler
     public void onCommandExecuted(UserRunCommandEvent event) {
         if (event.getCommand() != null && "update".equalsIgnoreCase(event.getCommand().getName())) return;
-        if (event.getSender().getPlatform() != Platform.OFFICIAL_GROUP && event.getSender().getPlatform() != Platform.NAPCAT_GROUP) return;
-        String groupId = event.getSender().getGroupId();
+
+        String groupId;
+        if (event.getSender() instanceof QQCommandSender qq) {
+            if (qq.getPlatform() != Platform.OFFICIAL_GROUP) return;
+            groupId = qq.getGroupId();
+        } else if (event.getSender() instanceof NapcatCommandSender nc) {
+            if (nc.getPlatform() != Platform.NAPCAT_GROUP) return;
+            groupId = nc.getGroupId();
+        } else {
+            return;
+        }
+
         if (groupId != null && UpdateNoticeRecord.shouldNotify(groupId)) {
             String pushContent = layout + "> " + FormatTools.formatTimestampMilli(UpdateNoticeRecord.getCreatedAt()) + "\n\n"
                     + UpdateNoticeRecord.getText() + "\n\n遇到了一些问题？使用/feedback向开发者反馈！";

@@ -8,7 +8,7 @@ import top.yzljc.atribot.chat.napcat.UserInformation;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.webui.Result;
 
 import java.util.Map;
@@ -24,16 +24,16 @@ public class SizeNtUid implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (sender.getMentions().isEmpty()) {
-            sender.sendMessage("请@目标账号！");
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (nc.getMessage().getMentionedUsers().isEmpty()) {
+            nc.sendMessage("请@目标账号！");
             return true;
         }
         String info = "Target Account Info\n" +
-                "Uin: " + sender.getMentions().getFirst().getUserId() + "\n" +
-                "GroupId: " + sender.getGroupId() + "\n" +
-                "Uid: " + sender.getMentions().getFirst().getData().path("ntUid").asText();
-        var msgId = sender.sendMessage(info);
+                "Uin: " + nc.getMessage().getMentionedUsers().getFirst().getUserId() + "\n" +
+                "GroupId: " + nc.getGroupId() + "\n" +
+                "Uid: " + nc.getMessage().getMentionedUsers().getFirst().getData().path("ntUid").asText();
+        var msgId = nc.sendMessage(info);
         Atri.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(msgId), 30 * 1000);
         return true;
     }

@@ -1,6 +1,7 @@
 package top.yzljc.atribot.chat.official;
 
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -22,7 +23,7 @@ public final class GuildDirectChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static String replyMessage(String guildId, String msgId, String text) {
-        return await(AsyncGuildDirectChat.replyDirectTextMessage(guildId, msgId, text));
+        return await(AsyncGuildDirectChat.replyMessage(guildId, msgId, text));
     }
 
     /**
@@ -30,26 +31,11 @@ public final class GuildDirectChat {
      *
      * @param guildId  子频道 ID
      * @param msgId   回复的消息 ID
-     * @param imageUrl 图片 URL
-     * @param type 图片类型，此处占位，只能为 {@code ImageType.URL}
+     * @param image       图片组件
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyImageMessage(String guildId, String msgId, String imageUrl, ImageType type) {
-        return replyImageMessage(guildId, msgId, imageUrl, null, type);
-    }
-
-    /**
-     * 发送频道私信图片被动消息（有文字）
-     *
-     * @param guildId  子频道 ID
-     * @param msgId   回复的消息 ID
-     * @param imageUrl 图片 URL
-     * @param text   消息内容
-     * @param type 图片类型，此处占位，只能为 {@code ImageType.URL}
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static String replyImageMessage(String guildId, String msgId, String imageUrl, String text, ImageType type) {
-        return await(AsyncGuildDirectChat.replyDirectImageMessage(guildId, msgId, imageUrl, text, type));
+    public static String replyImageMessage(String guildId, String msgId, ImageComponent image) {
+        return await(AsyncGuildDirectChat.replyMessage(guildId, msgId, image));
     }
 
     private static String await(CompletableFuture<String> future) {

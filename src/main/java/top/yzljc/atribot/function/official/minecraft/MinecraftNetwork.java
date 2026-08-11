@@ -5,7 +5,7 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public abstract class MinecraftNetwork {
         this.key = key;
     }
 
-    public boolean handleCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean handleCommand(QQCommandSender sender, Command command, String label, String[] args) {
 
         ThreadManager.execute(() -> {
             if (args.length < 2) {
@@ -93,15 +93,15 @@ public abstract class MinecraftNetwork {
         return Arrays.stream(args, 1, args.length).collect(Collectors.joining(" ")).trim();
     }
 
-    protected List<String> extraCommand(CommandSender sender, String[] args) {
+    protected List<String> extraCommand(QQCommandSender sender, String[] args) {
         return List.of();
     }
 
-    protected String modifyCommand(CommandSender sender, String[] args) {
+    protected String modifyCommand(QQCommandSender sender, String[] args) {
         return commandsJoin(args);
     }
 
-    protected abstract List<List<Button>> getButtons(CommandSender sender, String server, String[] args);
+    protected abstract List<List<Button>> getButtons(QQCommandSender sender, String server, String[] args);
 
-    protected abstract boolean hasPermission(CommandSender sender, String commandContent);
+    protected abstract boolean hasPermission(QQCommandSender sender, String commandContent);
 }

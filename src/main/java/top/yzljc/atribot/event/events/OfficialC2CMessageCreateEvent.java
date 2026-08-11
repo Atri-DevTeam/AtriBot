@@ -5,7 +5,7 @@ import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.User;
-import top.yzljc.atribot.platform.official.OfficialMessage;
+import top.yzljc.atribot.platform.qq.QQMessage;
 
 import java.util.List;
 
@@ -20,10 +20,10 @@ import java.util.List;
 @Getter
 public class OfficialC2CMessageCreateEvent extends Event {
     private final User user;
-    private final OfficialMessage message;
+    private final QQMessage message;
     private final String timestamp;
 
-    public OfficialC2CMessageCreateEvent(User user, OfficialMessage message, String timestamp) {
+    public OfficialC2CMessageCreateEvent(User user, QQMessage message, String timestamp) {
         this.user = user;
         this.message = message;
         this.timestamp = timestamp;

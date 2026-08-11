@@ -8,6 +8,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.SignRepository;
@@ -39,28 +40,28 @@ public class SignCommand implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (args.length > 0 && sender.hasPermission()) {
+        if (!(sender instanceof QQCommandSender qq)) return true;
+
+        if (args.length > 0 && qq.hasPermission()) {
             if (args[0].equals("ban")) {
                 banned = true;
-                sender.sendMessage("已禁用打卡功能！");
+                qq.sendMessage("已禁用打卡功能！");
                 return true;
             } else if (args[0].equals("unban")) {
                 banned = false;
-                sender.sendMessage("已启用打卡功能！");
+                qq.sendMessage("已启用打卡功能！");
                 return true;
             }
         }
 
         int flag;
-        if (sender.getPlatform() == Platform.OFFICIAL_C2C) {
+        if (qq.getPlatform() == Platform.OFFICIAL_C2C) {
             flag = 1;
-        } else if (sender.getPlatform() == Platform.OFFICIAL_GROUP) {
-            flag = 2;
         } else {
-            return true;
+            flag = 2;
         }
 
-        handleCheckIn(flag, sender.getUserId(), sender.getGroupId(), sender.getMessageId());
+        handleCheckIn(flag, qq.getUserId(), qq.getGroupId(), qq.getMessage().getMessageId());
         return true;
     }
 

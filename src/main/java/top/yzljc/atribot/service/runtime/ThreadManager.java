@@ -1,7 +1,7 @@
 package top.yzljc.atribot.service.runtime;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -37,8 +37,6 @@ public class ThreadManager {
     private static final ExecutorService VIRTUAL_EXECUTOR = Executors.newThreadPerTaskExecutor(VIRTUAL_THREAD_FACTORY);
     private static final ExecutorService EXECUTOR = new ManagedVirtualExecutorService();
     private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(SCHEDULER_THREAD_FACTORY);
-
-    private ThreadManager() {}
 
     public static ExecutorService getExecutor() {
         return EXECUTOR;
@@ -162,15 +160,12 @@ public class ThreadManager {
         }
 
         @Override
-        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        public boolean awaitTermination(long timeout, @NonNull TimeUnit unit) throws InterruptedException {
             return VIRTUAL_EXECUTOR.awaitTermination(timeout, unit);
         }
 
         @Override
-        public void execute(Runnable command) {
-            if (command == null) {
-                throw new NullPointerException("command");
-            }
+        public void execute(@NonNull Runnable command) {
             if (isShutdown()) {
                 throw new RejectedExecutionException("ThreadManager is shut down");
             }

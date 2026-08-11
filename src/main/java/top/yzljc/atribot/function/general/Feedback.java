@@ -6,7 +6,8 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.event.EventHandler;
@@ -58,9 +59,19 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     private boolean handleSubmitFeedback(CommandSender sender, String[] args) {
-        Platform platform = sender.getPlatform();
+        String platformName;
+        String groupId;
+        if (sender instanceof QQCommandSender qq) {
+            platformName = qq.getPlatform().name();
+            groupId = qq.getGroupId();
+        } else if (sender instanceof NapcatCommandSender nc) {
+            platformName = nc.getPlatform().name();
+            groupId = nc.getGroupId();
+        } else {
+            platformName = null;
+            groupId = null;
+        }
         String userId = sender.getUserId();
-        String groupId = sender.getGroupId();
         String content = String.join(" ", args);
 
         // 检查 CQ 码
@@ -78,7 +89,7 @@ public class Feedback implements CommandExecutor, Listener {
 
         // 构建 DTO
         FeedbackDTO feedback = new FeedbackDTO();
-        feedback.setPlatform(platform.name());
+        feedback.setPlatform(platformName);
         feedback.setUserId(userId);
         feedback.setUsername(sender.getUsername());
         feedback.setGroupId(groupId);
@@ -91,7 +102,7 @@ public class Feedback implements CommandExecutor, Listener {
 
             // 发送通知到调试群
             String alertStr = "收到反馈: " + content + " 来自用户: " + sender.getUsername() +
-                    " (" + platform.name() + ": " + userId + ")" +
+                    " (" + platformName + ": " + userId + ")" +
                     (groupId != null ? " 群聊: " + groupId : "");
             Alert.notify(alertStr);
         } else {
@@ -176,7 +187,11 @@ public class Feedback implements CommandExecutor, Listener {
             sb.append("\n下一页: /feedback list ").append(page + 1);
         }
 
-        sender.sendMessage(TC.md(sb.toString()));
+        if (sender instanceof QQCommandSender qq) {
+            qq.sendMessage(TC.md(sb.toString()));
+        } else {
+            sender.sendMessage(sb.toString());
+        }
         return true;
     }
 

@@ -12,9 +12,10 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
+import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
-import top.yzljc.atribot.platform.official.TokenManager;
+import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -162,8 +163,8 @@ public class ChatService {
                 .thenApply(response -> {
                     if (response != null) {
                         ChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
-                        if (effectiveRequest.getMsgId() == null && !OfficialGroups.isAllowedActiveMessages(groupOpenId)) {
-                            OfficialGroups.setAllowedActiveMessage(groupOpenId, true);
+                        if (effectiveRequest.getMsgId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
+                            OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
                         }
                     }
                     if (response != null) {
@@ -224,12 +225,14 @@ public class ChatService {
      * @param userOpenId 用户 openId
      * @param messageId  消息 ID
      */
-    public void recallPrivateMessage(String userOpenId, String messageId) {
+    public boolean recallPrivateMessage(String userOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/users/" + userOpenId + "/messages/" + messageId;
         try {
-            HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            var t = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            return !t.equals("error");
         } catch (Exception e) {
             log.error("撤回单聊消息失败, unionOpenId: {}, messageId: {}", userOpenId, messageId, e);
+            return false;
         }
     }
 
@@ -261,12 +264,14 @@ public class ChatService {
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
      */
-    public void recallGroupMessage(String groupOpenId, String messageId) {
+    public boolean recallGroupMessage(String groupOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
         try {
-            HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            var t = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            return !t.equals("error");
         } catch (Exception e) {
             log.error("撤回群聊消息失败, groupOpenId: {}, messageId: {}", groupOpenId, messageId, e);
+            return false;
         }
     }
 
@@ -367,13 +372,16 @@ public class ChatService {
                         JsonNode err = objectMapper.readTree(res.body());
                         int code = err.path("err_code").asInt(0);
                         String msg = err.path("message").asText(null);
-                        if (logType.equals("群聊") && url.contains("/groups/")) {
-                            String gid = url.substring(url.indexOf("/groups/") + 8, url.indexOf("/messages"));
-                            EventManager.getInstance().callEvent(new OfficialGroupSendFailEvent(gid, code, msg));
-                        }
-                        if (logType.equals("单聊") && url.contains("users")) {
-                            String userId = url.substring(url.indexOf("/users/") + 7, url.indexOf("/messages"));
-                            EventManager.getInstance().callEvent(new OfficialC2CSendFailEvent(userId, code, msg));
+                        // 仅在主动消息无权限(40034105)时才触发事件，其余失败不报
+                        if (code == ErrorCode.NO_ACTIVE_MESSAGE_PERMISSION.getErrorCode()) {
+                            if (logType.equals("群聊") && url.contains("/groups/")) {
+                                String gid = url.substring(url.indexOf("/groups/") + 8, url.indexOf("/messages"));
+                                EventManager.getInstance().callEvent(new OfficialGroupSendFailEvent(gid, code, msg));
+                            }
+                            if (logType.equals("单聊") && url.contains("users")) {
+                                String userId = url.substring(url.indexOf("/users/") + 7, url.indexOf("/messages"));
+                                EventManager.getInstance().callEvent(new OfficialC2CSendFailEvent(userId, code, msg));
+                            }
                         }
                     } catch (Exception ignored) {
                     }

@@ -6,8 +6,8 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.official.FileType;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.platform.qq.FileType;
 
 import java.util.Map;
 
@@ -28,19 +28,19 @@ public class MusicCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
         if (args.length < 1) {
-            sender.sendMessage("无效参数");
+            qq.sendMessage("无效参数");
             return true;
         }
 
         String name = args[0];
         String url = musicList.get(name);
         if (url == null) {
-            sender.sendMessage("无效音乐");
+            qq.sendMessage("无效音乐");
             return true;
         }
-        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), FileType.AUDIO, url);
+        GroupChat.replyMessage(qq.getGroupId(), qq.getMessage().getMessageId(), FileType.AUDIO, url);
         return true;
     }
 }

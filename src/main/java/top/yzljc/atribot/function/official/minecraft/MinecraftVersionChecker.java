@@ -12,7 +12,7 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
@@ -129,51 +129,32 @@ public final class MinecraftVersionChecker implements ScheduledTask {
         }
     }
 
-    public static void onCommand(CommandSender sender) {
+    public static void onCommand(QQCommandSender sender) {
         Map<String, VersionInfo> versions = checkCurrentVersion();
         VersionInfo release = versions.get("release");
         VersionInfo snapshot = versions.get("snapshot");
 
-        switch (sender.getPlatform()) {
-            case NAPCAT_GROUP -> {
+        String versionInfo = """
+                %s **Minecraft最新版本信息**
 
-                String versionInfo = """
-                        当前Minecraft最新版本信息如下:
-                        正式版: %s, 发布于 %s
-                        快照版: %s, 发布于 %s
-                        """.formatted(
-                        release != null ? release.id() : "未知",
-                        release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
-                        snapshot != null ? snapshot.id() : "未知",
-                        snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知"
-                );
+                正式版: %s
 
-                sender.sendMessage(versionInfo.trim());
-            }
-            case OFFICIAL_GROUP, OFFICIAL_C2C -> {
-                String versionInfo = """
-                        %s **Minecraft最新版本信息**
-                        
-                        正式版: %s
-                        
-                        > 发布于 %s
-                        
-                        快照版: %s
-                        
-                        > 发布于 %s
-                        
-                        > %s
-                        """.formatted(
-                        Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
-                        release != null ? release.id() : "未知",
-                        release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
-                        snapshot != null ? snapshot.id() : "未知",
-                        snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知",
-                        Markdown.enterCommand("/推送任务 开启 mc_news", "订阅更新动态")
-                );
-                sender.sendMessage(TC.md(versionInfo));
-            }
-        }
+                > 发布于 %s
+
+                快照版: %s
+
+                > 发布于 %s
+
+                > %s
+                """.formatted(
+                Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
+                release != null ? release.id() : "未知",
+                release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
+                snapshot != null ? snapshot.id() : "未知",
+                snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知",
+                Markdown.enterCommand("/推送任务 开启 mc_news", "订阅更新动态")
+        );
+        sender.sendMessage(TC.md(versionInfo));
     }
 
     private static void pushUpdateInfo(VersionType type, VersionInfo versionInfo) {

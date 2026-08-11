@@ -18,6 +18,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ArticleScraper;
@@ -26,7 +27,6 @@ import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -65,16 +65,16 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "mc_news")) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
 
-        if (!sender.hasPermission()) {
-            sender.sendMessage(Identifier.NO_PERMISSION);
+        if (!nc.hasPermission()) {
+            nc.sendMessage(Identifier.NO_PERMISSION);
             return true;
         }
 
         ThreadManager.execute(() -> checkNews(true));
-        sender.sendMessage("正在手动检查 Minecraft 最新资讯...");
+        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
         return true;
     }
 

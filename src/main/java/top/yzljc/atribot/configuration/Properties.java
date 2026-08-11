@@ -38,4 +38,8 @@ public class Properties {
     public static final String FUNCTION_SETTINGS = "data/function-settings.json";
 
     public static final String LOOT_FREE_DRAW_RECORD = "data/loot-free-draws.json";
+
+    public static final String JOIN_APPROVAL_STRATEGY_SNAPSHOT = "data/join-approval-strategy-snapshot.json";
+
+    public static final String JOIN_APPROVAL_WHITELIST = "data/join-approval-whitelist.json";
 }

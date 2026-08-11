@@ -6,11 +6,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.platform.PlatformRole;
+import top.yzljc.atribot.platform.qq.GroupProfile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,28 +41,24 @@ public class OfficialGroups {
         List<GroupRepository.GroupRow> rows = GroupRepository.loadAllGroups();
         for (GroupRepository.GroupRow row : rows) {
             cache.put(row.groupOpenId(), new GroupData(
-                    row.groupOpenId(), row.opMemberOpenId(), row.timestamp(),
-                    row.isWhitelist(), row.isBlacklisted(), row.isAllowedActive(), row.realGroupId()));
+                    row.groupOpenId(), row.opMemberOpenId(), row.joinedAt(),
+                    row.isWhitelist(), row.isBlacklisted(), row.allowProactiveMsg(), row.realGroupId(),
+                    row.memberOpenid(), parseScope(row.recvMsgSetting()), parseRole(row.memberRole()),
+                    row.groupName(), row.groupFingerMemo(), row.groupClassText(),
+                    parseGroupTags(row.groupTagsJson()), row.groupMemberNum()));
         }
         log.info("群白名单缓存加载完成，共 {} 条", cache.size());
     }
 
-    public static boolean registerGroup(String groupOpenId, String opMemberOpenId, String timestampStr) {
+    public static boolean registerGroup(String groupOpenId, String opMemberOpenId, String joinedAt) {
 
         if (cache.containsKey(groupOpenId)) {
             return true;
         }
 
-        long timestamp;
-        try {
-            timestamp = Long.parseLong(timestampStr);
-        } catch (Exception e) {
-            log.error("解析时间戳失败: {}", e.getMessage());
-            return false;
-        }
-
-        if (GroupRepository.insertGroup(groupOpenId, opMemberOpenId, timestamp)) {
-            cache.put(groupOpenId, new GroupData(groupOpenId, opMemberOpenId, timestamp, false, false, false, null));
+        if (GroupRepository.insertGroup(groupOpenId, opMemberOpenId, joinedAt)) {
+            cache.put(groupOpenId, new GroupData(groupOpenId, opMemberOpenId, joinedAt, false, false, false,
+                    null, null, null, null, null, null, null, List.of(), 0));
             return true;
         }
         return false;
@@ -80,7 +80,12 @@ public class OfficialGroups {
      * 获取群数据
      */
     public static GroupData getData(String groupOpenId) {
-        return cache.getOrDefault(groupOpenId, new GroupData(groupOpenId, null, -1, false, false, false, null));
+        return cache.getOrDefault(groupOpenId, new GroupData(groupOpenId, null, null, false, false, false,
+                null, null, null, null, null, null, null, List.of(), 0));
+    }
+
+    public static boolean isCached(String groupOpenId) {
+        return groupOpenId != null && cache.containsKey(groupOpenId);
     }
 
     public static List<GroupData> listGroups() {
@@ -99,11 +104,9 @@ public class OfficialGroups {
      */
     public static boolean setWhitelist(String groupOpenId, boolean isWhitelist) {
         GroupData oldData = getData(groupOpenId);
-        long timestamp = System.currentTimeMillis() / 1000;
 
-        if (GroupRepository.upsertWhitelist(groupOpenId, oldData.opMemberOpenId(), timestamp, isWhitelist)) {
-            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), timestamp, isWhitelist,
-                    oldData.isBlacklisted(), oldData.isAllowedActive(), oldData.realGroupId()));
+        if (GroupRepository.upsertWhitelist(groupOpenId, oldData.opMemberOpenId(), oldData.joinedAt(), isWhitelist)) {
+            cache.put(groupOpenId, oldData.withWhitelist(isWhitelist));
             return true;
         }
         return false;
@@ -136,10 +139,9 @@ public class OfficialGroups {
     public static boolean setRealGroupId(String groupOpenId, Long realGroupId) {
         GroupData oldData = getData(groupOpenId);
 
-        if (GroupRepository.upsertRealGroupId(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
+        if (GroupRepository.upsertRealGroupId(groupOpenId, oldData.opMemberOpenId(), oldData.joinedAt(),
                 oldData.isWhitelist(), realGroupId)) {
-            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
-                    oldData.isWhitelist(), oldData.isBlacklisted(), oldData.isAllowedActive(), realGroupId));
+            cache.put(groupOpenId, oldData.withRealGroupId(realGroupId));
             return true;
         }
         return false;
@@ -148,13 +150,12 @@ public class OfficialGroups {
     /**
      * 设置主动推送状态
      */
-    public static boolean setAllowedActiveMessage(String groupOpenId, boolean allowedActive) {
+    public static boolean setAllowProactiveMsg(String groupOpenId, boolean allowProactiveMsg) {
         GroupData oldData = getData(groupOpenId);
 
-        if (GroupRepository.upsertAllowedFullMessage(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
-                oldData.isWhitelist(), allowedActive)) {
-            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), oldData.timestamp(),
-                    oldData.isWhitelist(), oldData.isBlacklisted(), allowedActive, oldData.realGroupId()));
+        if (GroupRepository.upsertAllowProactiveMsg(groupOpenId, oldData.opMemberOpenId(), oldData.joinedAt(),
+                oldData.isWhitelist(), allowProactiveMsg)) {
+            cache.put(groupOpenId, oldData.withAllowProactiveMsg(allowProactiveMsg));
             return true;
         }
         return false;
@@ -163,8 +164,8 @@ public class OfficialGroups {
     /**
      * 是否允许主动推送（已缓存，启动时加载）
      */
-    public static boolean isAllowedActiveMessages(String groupOpenId) {
-        return getData(groupOpenId).isAllowedActive();
+    public static boolean allowProactiveMsg(String groupOpenId) {
+        return getData(groupOpenId).allowProactiveMsg();
     }
 
     /**
@@ -180,12 +181,62 @@ public class OfficialGroups {
      */
     public static boolean setGroupBlacklisted(String groupOpenId, boolean isBlacklisted) {
         GroupData oldData = getData(groupOpenId);
-        long timestamp = System.currentTimeMillis() / 1000;
 
-        if (GroupRepository.upsertGroupBlacklisted(groupOpenId, oldData.opMemberOpenId(), timestamp,
+        if (GroupRepository.upsertGroupBlacklisted(groupOpenId, oldData.opMemberOpenId(), oldData.joinedAt(),
                 oldData.isWhitelist(), isBlacklisted)) {
-            cache.put(groupOpenId, new GroupData(groupOpenId, oldData.opMemberOpenId(), timestamp,
-                    oldData.isWhitelist(), isBlacklisted, oldData.isAllowedActive(), oldData.realGroupId()));
+            cache.put(groupOpenId, oldData.withBlacklisted(isBlacklisted));
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean saveGroupProfile(GroupProfile profile) {
+        if (profile == null || profile.groupId() == null || profile.groupId().isBlank()) {
+            return false;
+        }
+
+        GroupData oldData = getData(profile.groupId());
+        List<String> groupTags = profile.groupTags() == null ? List.of() : List.copyOf(profile.groupTags());
+        String groupTagsJson;
+        try {
+            groupTagsJson = objectMapper.writeValueAsString(groupTags);
+        } catch (Exception e) {
+            log.error("序列化群 {} 标签失败: {}", profile.groupId(), e.getMessage());
+            return false;
+        }
+
+        if (GroupRepository.upsertGroupProfile(
+                profile.groupId(),
+                oldData.opMemberOpenId(),
+                profile.joinTime(),
+                oldData.isWhitelist(),
+                oldData.isBlacklisted(),
+                profile.allowProactiveMsg(),
+                oldData.realGroupId(),
+                profile.memberOpenId(),
+                profile.receiveMsgSetting() == null ? null : profile.receiveMsgSetting().getJsonValue(),
+                profile.memberRole() == null ? null : profile.memberRole().name().toLowerCase(Locale.ROOT),
+                profile.groupName(),
+                profile.groupFingerMemo(),
+                profile.groupClassText(),
+                groupTagsJson,
+                profile.groupMemberNum())) {
+            cache.put(profile.groupId(), new GroupData(
+                    profile.groupId(),
+                    oldData.opMemberOpenId(),
+                    profile.joinTime(),
+                    oldData.isWhitelist(),
+                    oldData.isBlacklisted(),
+                    profile.allowProactiveMsg(),
+                    oldData.realGroupId(),
+                    profile.memberOpenId(),
+                    profile.receiveMsgSetting(),
+                    profile.memberRole(),
+                    profile.groupName(),
+                    profile.groupFingerMemo(),
+                    profile.groupClassText(),
+                    groupTags,
+                    profile.groupMemberNum()));
             return true;
         }
         return false;
@@ -299,7 +350,75 @@ public class OfficialGroups {
         return new FunctionInfo(enabled, operator, time);
     }
 
-    public record GroupData(String groupOpenId, String opMemberOpenId, long timestamp, boolean isWhitelist, boolean isBlacklisted, boolean isAllowedActive, Long realGroupId) {
+    private static GroupProfile.Scope parseScope(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return GroupProfile.Scope.from(value);
+    }
+
+    private static PlatformRole parseRole(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return PlatformRole.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return PlatformRole.getPlatformRole(value);
+        }
+    }
+
+    private static List<String> parseGroupTags(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            if (!node.isArray()) {
+                return List.of();
+            }
+            List<String> tags = new ArrayList<>();
+            for (JsonNode tagNode : node) {
+                if (tagNode != null && !tagNode.isNull()) {
+                    tags.add(tagNode.asText());
+                }
+            }
+            return Collections.unmodifiableList(tags);
+        } catch (Exception e) {
+            log.warn("解析群标签失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public record GroupData(String groupOpenId, String opMemberOpenId, String joinedAt,
+                            boolean isWhitelist, boolean isBlacklisted, boolean allowProactiveMsg,
+                            Long realGroupId, String memberOpenid, GroupProfile.Scope recvMsgSetting,
+                            PlatformRole memberRole, String groupName, String groupFingerMemo,
+                            String groupClassText, List<String> groupTags, int groupMemberNum) {
+
+        public GroupData withWhitelist(boolean whitelist) {
+            return new GroupData(groupOpenId, opMemberOpenId, joinedAt, whitelist, isBlacklisted, allowProactiveMsg,
+                    realGroupId, memberOpenid, recvMsgSetting, memberRole, groupName, groupFingerMemo,
+                    groupClassText, groupTags, groupMemberNum);
+        }
+
+        public GroupData withBlacklisted(boolean blacklisted) {
+            return new GroupData(groupOpenId, opMemberOpenId, joinedAt, isWhitelist, blacklisted, allowProactiveMsg,
+                    realGroupId, memberOpenid, recvMsgSetting, memberRole, groupName, groupFingerMemo,
+                    groupClassText, groupTags, groupMemberNum);
+        }
+
+        public GroupData withAllowProactiveMsg(boolean proactiveMsg) {
+            return new GroupData(groupOpenId, opMemberOpenId, joinedAt, isWhitelist, isBlacklisted, proactiveMsg,
+                    realGroupId, memberOpenid, recvMsgSetting, memberRole, groupName, groupFingerMemo,
+                    groupClassText, groupTags, groupMemberNum);
+        }
+
+        public GroupData withRealGroupId(Long groupId) {
+            return new GroupData(groupOpenId, opMemberOpenId, joinedAt, isWhitelist, isBlacklisted, allowProactiveMsg,
+                    groupId, memberOpenid, recvMsgSetting, memberRole, groupName, groupFingerMemo,
+                    groupClassText, groupTags, groupMemberNum);
+        }
     }
 
     public record FunctionInfo(boolean enabled, String operator, String time) {

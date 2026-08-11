@@ -6,7 +6,7 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.*;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.configuration.Config;
 
 /**
@@ -199,6 +199,16 @@ public class User {
     }
 
     @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String messageId, String text, String data, ImageType type, boolean enableText) {
+        switch (this.platform) {
+            case OFFICIAL_C2C -> {
+                return C2CChat.replyMessage(this.userId, messageId, text, type, data);
+            }
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String data, ImageType type)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String text, String data, MessageUtils.ImageType type) {
         switch (this.platform) {
             case NAPCAT_GROUP -> {
@@ -219,30 +229,26 @@ public class User {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public void recall(String groupId, String messageId) {
+    public boolean recall(String groupId, String messageId) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                GroupChat.recallMessage(groupId, messageId);
-                return;
+                return GroupChat.recallMessage(groupId, messageId);
             }
             case NAPCAT_GROUP -> {
-                GroupMessage.recallMessage(messageId);
-                return;
+                return GroupMessage.recallMessage(messageId);
             }
         }
         throw new UnsupportedPlatform(this.platform, "recall(String groupId, String messageId)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public void recall(String messageId) {
+    public boolean recall(String messageId) {
         switch (this.platform) {
             case OFFICIAL_C2C -> {
-                C2CChat.recallMessage(this.userId, messageId);
-                return;
+                return C2CChat.recallMessage(this.userId, messageId);
             }
             case NAPCAT_PRIVATE -> {
-                PrivateMessage.recallMessage(messageId);
-                return;
+                return PrivateMessage.recallMessage(messageId);
             }
         }
         throw new UnsupportedPlatform(this.platform, "recall(String messageId)");

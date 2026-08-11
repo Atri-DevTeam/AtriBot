@@ -11,6 +11,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.platform.Platform;
@@ -29,24 +30,23 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     private static final int COLS = 6;
     private static final int DEFAULT_MINES = 6;
     private static final int MAX_MINES = 29;
-    private static final int MAX_REWARD = 30;
-    private static final int MIN_REWARD = 15;
-    private static final int LOW_OPS_THRESHOLD = 5;
-    private static final int LOW_OPS_CAP = 12;
+    private static final int MIN_POOL = 5;
+    private static final int MID_POOL = 45;
+    private static final int MAX_POOL = 80;
     private static final String[] NUM_EMOJIS = {"⬜", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"};
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) {
             return true;
         }
 
-        String sessionId = sender.getPlatform() == Platform.OFFICIAL_C2C ? sender.getUserId() : sender.getGroupId();
+        String sessionId = qq.getPlatform() == Platform.OFFICIAL_C2C ? qq.getUserId() : qq.getGroupId();
 
         // 1. 发送欢迎与规则界面
         if (args.length == 0) {
-            sendWelcomeScreen(sessionId, sender);
+            sendWelcomeScreen(sessionId, qq);
             return true;
         }
 
@@ -62,18 +62,18 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 }
             }
             mines = Math.max(1, Math.min(mines, MAX_MINES));
-            handleStartGame(sessionId, sender, mines);
+            handleStartGame(sessionId, qq, mines);
             return true;
         }
 
         // --- 游戏内操作拦截 ---
         GameState game = activeGames.get(sessionId);
         if (game == null) {
-            sender.sendMessage("当前没有正在进行的扫雷游戏喵，请发送 /扫雷 开始新游戏！");
+            qq.sendMessage("当前没有正在进行的扫雷游戏喵，请发送 /扫雷 开始新游戏！");
             return true;
         }
 
-        game.participants.add(sender.getUserId());
+        game.participants.add(qq.getUserId());
 
         if (args.length < 2) return true;
 
@@ -85,20 +85,20 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
         synchronized (game) {
             if (game.isGameOver) {
-                sender.sendMessage("本局游戏已经结束了喵！请重新发送 /扫雷 开始新游戏！");
+                qq.sendMessage("本局游戏已经结束了喵！请重新发送 /扫雷 开始新游戏！");
                 return true;
             }
 
             if (action.equals("l")) {
-                handleDig(game, row, col, sessionId, sender);
+                handleDig(game, row, col, sessionId, qq);
             } else if (action.equals("q")) {
-                handleFlag(game, row, col, sessionId, sender);
+                handleFlag(game, row, col, sessionId, qq);
             }
         }
         return true;
     }
 
-    private void sendWelcomeScreen(String sessionId, CommandSender sender) {
+    private void sendWelcomeScreen(String sessionId, QQCommandSender sender) {
         if (activeGames.containsKey(sessionId)) {
             sender.sendMessage("当前环境已经有一个正在进行的扫雷游戏了喵！请通关或等它结束后再开！");
             return;
@@ -125,17 +125,16 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         sender.sendMessage(TC.md(markdown), keyboard);
     }
 
-    private void handleStartGame(String sessionId, CommandSender sender, int minesCount) {
+    private void handleStartGame(String sessionId, QQCommandSender sender, int minesCount) {
         if (activeGames.containsKey(sessionId)) return;
 
         GameState newGame = new GameState(minesCount);
-        newGame.participants.add(sender.getUserId());
         activeGames.put(sessionId, newGame);
 
         sendOrUpdateGameBoard(newGame, sessionId, sender, "游戏已开始！");
     }
 
-    private void handleDig(GameState game, int r, int c, String sessionId, CommandSender sender) {
+    private void handleDig(GameState game, int r, int c, String sessionId, QQCommandSender sender) {
         // --- 非法操作提示：已插旗不允许挖开 ---
         if (game.flagged[r][c]) {
             sendOrUpdateGameBoard(game, sessionId, sender, "⚠️ 此处已插旗，无法挖开！请先拔旗。");
@@ -166,7 +165,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
     }
 
-    private void handleFlag(GameState game, int r, int c, String sessionId, CommandSender sender) {
+    private void handleFlag(GameState game, int r, int c, String sessionId, QQCommandSender sender) {
         // --- 非法操作提示：已经挖开了的格子不能插旗 ---
         if (game.revealed[r][c]) {
             sendOrUpdateGameBoard(game, sessionId, sender, "⚠️ 已经挖开的区域不能插旗喵！");
@@ -194,7 +193,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
     }
 
-    private void checkWinCondition(GameState game, String sessionId, CommandSender sender) {
+    private void checkWinCondition(GameState game, String sessionId, QQCommandSender sender) {
         int unrevealedCount = 0;
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
@@ -216,7 +215,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
     }
 
-    private void finishGame(GameState game, String sessionId, CommandSender sender, String resultMsg) {
+    private void finishGame(GameState game, String sessionId, QQCommandSender sender, String resultMsg) {
         activeGames.remove(sessionId);
         long timeTaken = (System.currentTimeMillis() - game.startTime) / 1000;
 
@@ -249,36 +248,49 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     }
 
     /**
-     * 结算金粒奖励：按各参与者操作次数（参与度）降序发放
-     * 操作最多的得 30，依次递减，最少的得 15；相同操作数者获得相同奖励
-     * 操作数不超过 5 步的参与者，奖励上限为 12，防止秒踩雷刷金粒
+     * 结算金粒奖励：按难度奖池 + 参与度占比瓜分
+     * 奖池分段映射：1~6 雷 5→45（陡），6~29 雷 45→80（缓）
+     * 个人奖励 = 奖池 × 个人操作数 / 全员总操作数
+     * 操作数为 0 的（含只开局的发起者）不发；操作 ≥1 保底 1 金粒；四舍五入尾差归操作最多者
      */
     private Map<String, Integer> grantRewards(GameState game) {
-        List<Integer> distinctCounts = game.operations.values().stream()
-                .distinct()
-                .sorted(Comparator.reverseOrder())
-                .toList();
-
         Map<String, Integer> rewards = new HashMap<>();
-        if (distinctCounts.size() <= 1) {
-            // 全员操作数相同（或仅一人参与）：都拿最高奖励
-            for (String uid : game.participants) {
-                rewards.put(uid, MAX_REWARD);
-            }
+
+        // 难度奖池分段：1~6 雷线性到 45，6~29 雷线性到 80
+        int pool;
+        if (game.minesCount <= DEFAULT_MINES) {
+            pool = MIN_POOL + (game.minesCount - 1) * (MID_POOL - MIN_POOL) / (DEFAULT_MINES - 1);
         } else {
-            int lastIdx = distinctCounts.size() - 1;
-            for (String uid : game.participants) {
-                int ops = game.operations.getOrDefault(uid, 0);
-                int idx = distinctCounts.indexOf(ops);
-                int reward = MAX_REWARD - (MAX_REWARD - MIN_REWARD) * idx / lastIdx;
-                rewards.put(uid, reward);
-            }
+            pool = MID_POOL + (int) Math.round((game.minesCount - DEFAULT_MINES) * (double) (MAX_POOL - MID_POOL) / (MAX_MINES - DEFAULT_MINES));
         }
 
-        // 低参与度保护：操作数不超过 5 步的参与者，奖励封顶 12，防止秒踩雷刷金粒
+        int totalOps = game.operations.values().stream().mapToInt(Integer::intValue).sum();
+        if (totalOps <= 0) {
+            return rewards;
+        }
+
+        // 按参与度占比瓜分
+        int allocated = 0;
         for (String uid : game.participants) {
-            if (game.operations.getOrDefault(uid, 0) <= LOW_OPS_THRESHOLD) {
-                rewards.put(uid, Math.min(rewards.getOrDefault(uid, 0), LOW_OPS_CAP));
+            int ops = game.operations.getOrDefault(uid, 0);
+            if (ops <= 0) {
+                rewards.put(uid, 0);
+                continue;
+            }
+            int reward = Math.max(1, (int) Math.round((double) pool * ops / totalOps));
+            rewards.put(uid, reward);
+            allocated += reward;
+        }
+
+        // 四舍五入尾差归操作最多者
+        int diff = pool - allocated;
+        if (diff != 0) {
+            String top = game.operations.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse(null);
+            if (top != null) {
+                rewards.put(top, rewards.getOrDefault(top, 0) + diff);
             }
         }
 
@@ -288,7 +300,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         return rewards;
     }
 
-    private void sendOrUpdateGameBoard(GameState game, String sessionId, CommandSender sender, String actionMsg) {
+    private void sendOrUpdateGameBoard(GameState game, String sessionId, QQCommandSender sender, String actionMsg) {
         long timeElapsed = (System.currentTimeMillis() - game.startTime) / 1000;
 
         int flagCount = 0;
@@ -352,7 +364,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
     }
 
-    private void sendKeyboardMessage(GameState game, CommandSender sender, String markdown) {
+    private void sendKeyboardMessage(GameState game, QQCommandSender sender, String markdown) {
 
         List<List<Button>> layout = new ArrayList<>();
 

@@ -3,11 +3,8 @@ package top.yzljc.atribot.function.napcat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
@@ -22,12 +19,18 @@ public class Reboot implements CommandExecutor, ScheduledTask {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
+        if (sender instanceof ConsoleCommandSender console) {
+            console.sendMessage("[!] 正在重启AtriMeow服务端...");
+            processReboot(console.getUserId(), Config.getInstance().getNapcatDebugGroupUin());
             return true;
         }
-        processReboot(sender.getUserId(), sender.getGroupId());
+
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!nc.hasPermission()) {
+            nc.sendMessage("你没有权限执行此命令");
+            return true;
+        }
+        processReboot(nc.getUserId(), nc.getGroupId());
         return true;
     }
 

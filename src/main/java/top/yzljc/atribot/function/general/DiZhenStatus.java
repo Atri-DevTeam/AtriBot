@@ -11,8 +11,8 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -93,13 +93,13 @@ public class DiZhenStatus implements ScheduledTask, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
-        if (!sender.hasPermission()) {
-            sender.sendMessage("你没有权限执行此命令");
+        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (!qq.hasPermission()) {
+            qq.sendMessage("你没有权限执行此命令");
             return true;
         }
         this.run();
-        sender.sendMessage("已手动触发地震数据检查！");
+        qq.sendMessage("已手动触发地震数据检查！");
         return true;
     }
 

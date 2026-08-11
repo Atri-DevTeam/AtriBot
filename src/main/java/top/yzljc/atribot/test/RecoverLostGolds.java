@@ -1,9 +1,9 @@
 package top.yzljc.atribot.test;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
@@ -20,39 +20,40 @@ public class RecoverLostGolds implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
+        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (qq.getPlatform() != Platform.OFFICIAL_GROUP && qq.getPlatform() != Platform.OFFICIAL_C2C) {
             return true;
         }
-        var userId = sender.getUserId();
-        var groupId = sender.getGroupId() == null ? "none" : sender.getGroupId();
+        var userId = qq.getUserId();
+        var groupId = qq.getGroupId() == null ? "none" : qq.getGroupId();
         switch (label) {
             case "recovermcbind" -> {
                 if (CoinGainLogRepository.countCoinGains(userId, "mc_bind") < 1 && !MinecraftBind.getDataByOpenId(userId).memberOpenId().equals("-1")) {
                     LootRepository.addCoins(userId, 200, "mc_bind");
-                    sender.sendMessage("补发mc_bind奖励200金粒成功！");
+                    qq.sendMessage("补发mc_bind奖励200金粒成功！");
                     return true;
                 } else {
-                    sender.sendMessage("不符合补发条件！");
+                    qq.sendMessage("不符合补发条件！");
                     return true;
                 }
             }
             case "recoverjoin" -> {
                 if (CoinGainLogRepository.countCoinGains(userId, "join_my_group") < 1 && groupId.equals("8B4709F81FE02E5E64AC31B2F910793A")) {
                     LootRepository.addCoins(userId, 200, "join_my_group");
-                    sender.sendMessage("补发join_my_group奖励200金粒成功！");
+                    qq.sendMessage("补发join_my_group奖励200金粒成功！");
                     return true;
                 } else {
-                    sender.sendMessage("不符合补发条件！");
+                    qq.sendMessage("不符合补发条件！");
                     return true;
                 }
             }
             case "recoverbefriend" -> {
-                if (CoinGainLogRepository.countCoinGains(userId, "friend_add") < 1 && sender.getPlatform().equals(Platform.OFFICIAL_C2C)) {
+                if (CoinGainLogRepository.countCoinGains(userId, "friend_add") < 1 && qq.getPlatform().equals(Platform.OFFICIAL_C2C)) {
                     LootRepository.addCoins(userId, 100, "friend_add");
-                    sender.sendMessage("补发friend_add奖励100金粒成功！");
+                    qq.sendMessage("补发friend_add奖励100金粒成功！");
                     return true;
                 } else {
-                    sender.sendMessage("不符合补发条件（请尝试私聊发送）！");
+                    qq.sendMessage("不符合补发条件（请尝试私聊发送）！");
                     return true;
                 }
             }

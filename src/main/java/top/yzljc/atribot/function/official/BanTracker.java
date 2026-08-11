@@ -6,12 +6,11 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 
 import java.util.List;
 import java.util.Map;
@@ -29,14 +28,10 @@ public final class BanTracker {
 
     private static final Set<String> VALID_TYPES = Set.of("30min", "1h", "3h", "24h", "7d", "30d");
 
-    public static boolean handle(CommandSender sender, Command command, String label, String[] args) {
+    public static boolean handle(QQCommandSender sender, Command command, String label, String[] args) {
 
         if (!Objects.equals(label, "bt") && !Objects.equals(label, "bantracker")) {
             sender.sendMessage(Identifier.ONLY_OFFICIAL);
-            return true;
-        }
-
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) {
             return true;
         }
 

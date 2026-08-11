@@ -11,13 +11,14 @@ import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.official.OfficialBot;
+import top.yzljc.atribot.platform.qq.QQBot;
 
 import java.util.List;
 
@@ -32,19 +33,19 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
         if (args.length < 1) {
-            var pt = sender.getPlatform().equals(Platform.OFFICIAL_GROUP) ? "群主" : "您";
+            var pt = qq.getPlatform() == Platform.OFFICIAL_GROUP ? "群主" : "您";
             Markdown md = TC.md(
                     "启用全量消息\n\n" +
                             "全量消息包括`主动消息`和`获取全部消息`，" + pt + "完成授权启用主动消息后，"
-                            + OfficialBot.BOT_NAME +
+                            + QQBot.BOT_NAME +
                             "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供部分推送功能；" +
-                            "启用获取全部消息后，无需@" + OfficialBot.BOT_NAME + "即可处理指令（仅群聊）\n\n" +
+                            "启用获取全部消息后，无需@" + QQBot.BOT_NAME + "即可处理指令（仅群聊）\n\n" +
                             Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
             );
-            sender.sendMessage(md);
+            qq.sendMessage(md);
             return true;
         }
         String groupRealId = args[0];
@@ -52,7 +53,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         try {
             Long.parseLong(groupRealId);
         } catch (NumberFormatException e) {
-            sender.sendMessage("请输入正确的群号");
+            qq.sendMessage("请输入正确的群号");
             return true;
         }
 
@@ -69,8 +70,8 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
                         List.of(linkButton)
                 )
         );
-        sender.sendMessage(md, keyboard);
-        OfficialGroups.setRealGroupId(sender.getGroupId(), Long.parseLong(groupRealId));
+        qq.sendMessage(md, keyboard);
+        OfficialGroups.setRealGroupId(qq.getGroupId(), Long.parseLong(groupRealId));
         return true;
     }
 //
@@ -93,8 +94,8 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onFullMessageFail(OfficialGroupSendFailEvent event) {
         String groupOpenId = event.getGroupOpenId();
-        if (OfficialGroups.isAllowedActiveMessages(groupOpenId)  && groupOpenId != null) {
-            OfficialGroups.setAllowedActiveMessage(groupOpenId, false);
+        if (OfficialGroups.allowProactiveMsg(groupOpenId) && groupOpenId != null) {
+            OfficialGroups.setAllowProactiveMsg(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
                     if (!task.isNeedActiveMessage()) continue;

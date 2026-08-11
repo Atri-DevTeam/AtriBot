@@ -119,16 +119,11 @@ public class CheckBilibili implements Listener {
 
                 long cid = data.path("cid").asLong();
                 long duration = data.path("duration").asLong();
-                if (duration > MAX_VIDEO_DURATION_SECONDS) {
-                    List<MessageSegment> nodes = new ArrayList<>();
-                    nodes.add(createTextNode("超出最大视频时长限制"));
-                    sendForwardMessage(groupId, nodes, title);
-                    return;
-                }
+                boolean tooLong = duration > MAX_VIDEO_DURATION_SECONDS;
 
                 long mid = data.path("owner").path("mid").asLong();
                 String upStats = fetchUploaderStats(mid);
-                String videoUrl = fetchLowestQualityVideoUrl(bvid, cid);
+                String videoUrl = tooLong ? null : fetchLowestQualityVideoUrl(bvid, cid);
 
                 String time = FormatTools.formatTimestamp(data.path("pubdate").asText());
                 String link = "https://www.bilibili.com/video/" + bvid;
@@ -149,7 +144,9 @@ public class CheckBilibili implements Listener {
                 }
                 nodes.add(createTextNode(sb));
                 nodes.add(createTextNode("视频简介：\n" + desc));
-                if (videoUrl != null && !videoUrl.isBlank()) {
+                if (tooLong) {
+                    nodes.add(createTextNode("视频时长超出管理员设置的最大时长限制: " + (MAX_VIDEO_DURATION_SECONDS / 60) + " 分钟"));
+                } else if (videoUrl != null && !videoUrl.isBlank()) {
                     nodes.add(createVideoNode(videoUrl));
                 } else {
                     nodes.add(createTextNode("原视频：获取失败"));

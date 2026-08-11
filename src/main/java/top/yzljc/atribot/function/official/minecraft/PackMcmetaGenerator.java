@@ -2,7 +2,7 @@ package top.yzljc.atribot.function.official.minecraft;
 
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 
 public final class PackMcmetaGenerator {
 
@@ -32,7 +32,7 @@ public final class PackMcmetaGenerator {
               }
             }""";
 
-    public static void handle(CommandSender sender, String[] args) {
+    public static void handle(QQCommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage("用法: /mc pack <版本>\n示例: /mc pack 1.21.2");
             return;

@@ -11,6 +11,7 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -49,23 +50,23 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage("单聊模式下暂不支持石头剪刀布喵！请在群聊中使用 /rsp 来开始游戏！");
+        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (qq.getPlatform() == Platform.OFFICIAL_C2C) {
+            qq.sendMessage("单聊模式下暂不支持石头剪刀布喵！请在群聊中使用 /rsp 来开始游戏！");
             return true;
         }
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 
-        String sessionId = sender.getGroupId();
+        String sessionId = qq.getGroupId();
 
         if (activeGames.containsKey(sessionId)) {
-            sender.sendMessage("当前群聊已经有一个正在进行的石头剪刀布游戏了喵！请等它结束后再开！");
+            qq.sendMessage("当前群聊已经有一个正在进行的石头剪刀布游戏了喵！请等它结束后再开！");
             return true;
         }
 
         // 发指令的人就是玩家A
         GameState game = new GameState();
         game.groupOpenId = sessionId;
-        game.playerAOpenId = sender.getUserId();
+        game.playerAOpenId = qq.getUserId();
         game.phase = Phase.CHOOSING;
         activeGames.put(sessionId, game);
 
@@ -77,8 +78,8 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         List<List<Button>> layout = buildChoiceButtons();
         Object keyboard = TC.keyboard(layout);
 
-        String messageId = sender.sendMessage(TC.md(markdown), keyboard, false);
-        game.lastCmdMsgId = sender.getMessageId();
+        String messageId = qq.sendMessage(TC.md(markdown), keyboard, false);
+        game.lastCmdMsgId = qq.getMessage().getMessageId();
         game.lastMessageId = messageId;
 
         scheduleChoiceTimeout(sessionId, game);

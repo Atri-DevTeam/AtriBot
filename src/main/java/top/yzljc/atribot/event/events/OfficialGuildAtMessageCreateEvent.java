@@ -2,7 +2,7 @@ package top.yzljc.atribot.event.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import top.yzljc.atribot.chat.official.media.ImageType;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.User;

@@ -6,11 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -56,8 +56,8 @@ public class AnnoyUser implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-        if (!GroupConfigManager.isFeatureEnabled(sender.getGroupId(), "annoy_user")) return true;
+        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "annoy_user")) return true;
         if (args.length < 1) {
             return false;
         }
@@ -66,33 +66,33 @@ public class AnnoyUser implements CommandExecutor, Listener {
         AnnoyMode mode = AnnoyMode.fromString(modeStr);
 
         if (mode == null) {
-            sender.sendMessage("❌ 模式错误！可用模式: normal, medium, insane, animation。\n再次输入相同模式可关闭。");
+            nc.sendMessage("❌ 模式错误！可用模式: normal, medium, insane, animation。\n再次输入相同模式可关闭。");
             return true;
         }
 
-        String targetId = sender.getUserId();
+        String targetId = nc.getUserId();
 
         if (args.length >= 2) {
-            if (!sender.hasPermission()) {
-                sender.sendMessage("❌ 只有管理员可以指定目标！");
+            if (!nc.hasPermission()) {
+                nc.sendMessage("❌ 只有管理员可以指定目标！");
                 return true;
             }
             targetId = args[1];
         }
 
-        String groupId = sender.getGroupId();
+        String groupId = nc.getGroupId();
         Map<String, AnnoyMode> groupMap = annoyMap.get(groupId);
         boolean isAlreadyInThisMode = (groupMap != null && groupMap.get(targetId) == mode);
 
         if (isAlreadyInThisMode) {
             removeAnnoy(groupId, targetId);
-            sender.sendMessage("✅ 已关闭对 " + targetId + " 的 [" + mode + "] 模式。");
+            nc.sendMessage("✅ 已关闭对 " + targetId + " 的 [" + mode + "] 模式。");
         } else {
             addAnnoy(groupId, targetId, mode);
-            sender.sendMessage("😈 对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)");
+            nc.sendMessage("😈 对 " + targetId + " 开启 [" + mode + "] 模式！\n(再次输入该指令即可关闭)");
         }
 
-        log.info("{} {} {} annoy mode [{}] for user {}", sender.hasPermission() ? "Admin" : "User", sender.getUserId(), isAlreadyInThisMode ? "removed" : "set", mode, targetId);
+        log.info("{} {} {} annoy mode [{}] for user {}", nc.hasPermission() ? "Admin" : "User", nc.getUserId(), isAlreadyInThisMode ? "removed" : "set", mode, targetId);
 
         return true;
     }

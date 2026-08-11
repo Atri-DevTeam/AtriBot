@@ -25,21 +25,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/groups',
-      name: 'dashboard',
-      component: () => import('./views/DashboardView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/c2c',
-      name: 'c2c',
-      component: () => import('./views/C2CView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
       path: '/users',
       name: 'users',
-      component: () => import('./views/UserListView.vue'),
+      component: () => import('./views/UserGroupListView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -73,6 +61,18 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/group-strategy',
+      name: 'groupStrategy',
+      component: () => import('./views/GroupStrategyView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/menu-panel',
+      name: 'menuPanel',
+      component: () => import('./views/MenuPanelView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/errors',
       name: 'errors',
       component: () => import('./views/ErrorsView.vue'),
@@ -82,6 +82,12 @@ const router = createRouter({
       path: '/send-logs',
       name: 'sendLogs',
       component: () => import('./views/SendLogsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/event-logs',
+      name: 'eventLogs',
+      component: () => import('./views/EventLogsView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -101,6 +107,10 @@ const router = createRouter({
       name: 'login',
       component: () => import('./views/LoginView.vue'),
       meta: { guest: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
 })

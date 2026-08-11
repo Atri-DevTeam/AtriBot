@@ -1,13 +1,13 @@
 package top.yzljc.atribot.function.official;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.auth.official.PermissionRole;
+import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,15 +25,15 @@ public class UserMgrCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
-        if (!sender.hasPermission()) {
-            sender.sendMessage(Identifier.NO_PERMISSION);
+        if (!qq.hasPermission()) {
+            qq.sendMessage(Identifier.NO_PERMISSION);
             return true;
         }
 
         if (args.length < 1) {
-            sender.sendMessage("""
+            qq.sendMessage("""
                     用法：
                     /permission setrole <unionOpenId> <role>
                     /permission add <unionOpenId> <permission1,permission2>
@@ -46,19 +46,19 @@ public class UserMgrCommand implements CommandExecutor {
         String action = args[0];
 
         if (args.length >= 2 && args[1].equalsIgnoreCase("me")) {
-            args[1] = sender.getUserId();
+            args[1] = qq.getUserId();
         }
 
         if (action.equalsIgnoreCase("setrole")) {
             if (args.length < 3) {
-                sender.sendMessage("用法：/permission setrole <unionOpenId> <role>");
+                qq.sendMessage("用法：/permission setrole <unionOpenId> <role>");
                 return true;
             }
             String userOpenId = args[1];
-            PermissionRole role = PermissionRole.fromString(args[2]);
+            UnifiedRole role = UnifiedRole.fromString(args[2]);
             OfficialUsers.UserData data = OfficialUsers.getData(userOpenId);
             boolean success = OfficialUsers.setPermissionGroup(userOpenId, role, data.permissions());
-            sender.sendMessage(success ? "权限组设置成功" : "权限组设置失败");
+            qq.sendMessage(success ? "权限组设置成功" : "权限组设置失败");
 
             return true;
         }
@@ -69,7 +69,7 @@ public class UserMgrCommand implements CommandExecutor {
 
         if (action.equalsIgnoreCase("add")) {
             if (args.length < 3) {
-                sender.sendMessage("用法：/permission add <unionOpenId> <permission1,permission2>");
+                qq.sendMessage("用法：/permission add <unionOpenId> <permission1,permission2>");
                 return true;
             }
             String userOpenId = args[1];
@@ -84,13 +84,13 @@ public class UserMgrCommand implements CommandExecutor {
                     success = false;
                 }
             }
-            sender.sendMessage(success ? "权限节点添加成功" : "部分权限节点添加失败");
+            qq.sendMessage(success ? "权限节点添加成功" : "部分权限节点添加失败");
             return true;
         }
 
         if (action.equalsIgnoreCase("remove")) {
             if (args.length < 3) {
-                sender.sendMessage("用法：/permission remove <unionOpenId> <permission1,permission2>");
+                qq.sendMessage("用法：/permission remove <unionOpenId> <permission1,permission2>");
                 return true;
             }
             String userOpenId = args[1];
@@ -105,28 +105,28 @@ public class UserMgrCommand implements CommandExecutor {
                     success = false;
                 }
             }
-            sender.sendMessage(success ? "权限节点删除成功" : "部分权限节点删除失败");
+            qq.sendMessage(success ? "权限节点删除成功" : "部分权限节点删除失败");
             return true;
         }
 
         if (action.equalsIgnoreCase("block")) {
             if (args.length < 2) {
-                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
                 return true;
             }
             if (args.length < 3) {
-                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
                 return true;
             }
             String userid = args[2];
             if (args[1].equalsIgnoreCase("add")) {
                 OfficialUsers.setBlocked(userid, true);
-                sender.sendMessage("已拉黑用户 " + userid);
+                qq.sendMessage("已拉黑用户 " + userid);
             } else if (args[1].equalsIgnoreCase("remove")) {
                 OfficialUsers.setBlocked(userid, false);
-                sender.sendMessage("已解除拉黑用户 " + userid);
+                qq.sendMessage("已解除拉黑用户 " + userid);
             } else {
-                sender.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
             }
             return true;
         }
@@ -134,34 +134,34 @@ public class UserMgrCommand implements CommandExecutor {
         if (action.equalsIgnoreCase("ignore")) {
 
             if (args.length < 2) {
-                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
                 return true;
             }
             if (args.length < 3) {
-                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
                 return true;
             }
             String userid = args[2];
             if (args[1].equalsIgnoreCase("add")) {
                 OfficialUsers.setIgnored(userid, true);
-                sender.sendMessage("已屏蔽用户 " + userid);
+                qq.sendMessage("已屏蔽用户 " + userid);
             } else if (args[1].equalsIgnoreCase("remove")) {
                 OfficialUsers.setIgnored(userid, false);
-                sender.sendMessage("已解除屏蔽用户 " + userid);
+                qq.sendMessage("已解除屏蔽用户 " + userid);
             } else {
-                sender.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
+                qq.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
             }
             return true;
         }
 
         if (action.equalsIgnoreCase("query")) {
             if (args.length < 2) {
-                sender.sendMessage("用法：/permission query <unionOpenId>");
+                qq.sendMessage("用法：/permission query <unionOpenId>");
                 return true;
             }
             String userOpenId = args[1];
             OfficialUsers.UserData data = OfficialUsers.getData(userOpenId);
-            sender.sendMessage(TC.md(
+            qq.sendMessage(TC.md(
                     """
                             ### 权限信息
 

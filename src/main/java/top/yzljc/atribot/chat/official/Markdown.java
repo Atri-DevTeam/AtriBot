@@ -2,8 +2,6 @@ package top.yzljc.atribot.chat.official;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.Platform;
 
 /**
  * @Author YZ_Ljc_
@@ -39,11 +37,6 @@ public class Markdown {
 
     public static String at(String userOpenId) {
         return "<@" + userOpenId + ">";
-    }
-
-    public static String at(CommandSender sender) {
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return "";
-        return "<@" + sender.getUserId() + ">";
     }
 
     public static String link(String url, String display) {

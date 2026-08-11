@@ -71,7 +71,7 @@
               v-model="searchInput"
               class="errors-search-input"
               type="text"
-              placeholder="搜索 trace / 场景 / URL / 请求 JSON / response / 错误信息"
+              placeholder="搜索..."
               @keyup.enter="doSearch"
             />
             <button class="primary-button errors-search-btn" @click="doSearch">查询</button>
@@ -79,7 +79,7 @@
               重置
             </button>
           </div>
-          <p class="errors-search-hint">每次 HTTP 发送会先记录发送条目，再记录回应或错误条目</p>
+          <p class="errors-search-hint">请求上报数据记录</p>
 
           <template v-if="mode === 'detail'">
             <div class="errors-detail-bar">

@@ -131,9 +131,9 @@ public class GroupMessage {
         return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, text, imgData, type);
     }
 
-    public static void recallMessage(String messageId) {
+    public static boolean recallMessage(String messageId) {
         BotRuntimeData.callRecallMessage();
-        MessageUtils.recallMessage(messageId);
+        return MessageUtils.recallMessage(messageId);
     }
 
     @SuppressWarnings("UnusedReturnValue")

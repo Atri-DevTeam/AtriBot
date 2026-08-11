@@ -13,11 +13,11 @@ import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -62,17 +62,17 @@ public class ElectricCheck implements Listener, CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
         ThreadManager.execute(() -> {
 
             if (args.length == 0) {
-                handleDefaultQuery(sender);
+                handleDefaultQuery(qq);
                 return;
             }
 
             if ("help".equalsIgnoreCase(args[0])) {
-                sender.sendMessage(TC.md(HELP_INFO),
+                qq.sendMessage(TC.md(HELP_INFO),
                         TC.keyboard(
                                 List.of(List.of(
                                                 new Button("c1", "绑定", "/elec bind", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -86,23 +86,23 @@ public class ElectricCheck implements Listener, CommandExecutor {
             }
 
             if ("bind".equalsIgnoreCase(args[0])) {
-                handleBind(sender, args);
+                handleBind(qq, args);
                 return;
             }
 
             if ("unbind".equalsIgnoreCase(args[0])) {
-                handleUnbind(sender, args);
+                handleUnbind(qq, args);
                 return;
             }
 
             if ("private-check".equals(args[0])) {
                 String queryResult = handlePrivateModule();
-                sender.sendMessage(TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)),
+                qq.sendMessage(TC.md(info.replace("{placeholder_feedback}\n\n", "").replace("{placeholder_data}", queryResult)),
                         getKeys("903004", "903004", "1", false, false, "/elec 903004 1 0"));
                 return;
             }
 
-            handleManualQuery(sender, args);
+            handleManualQuery(qq, args);
         });
 
         return true;
@@ -211,7 +211,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         return out.toString();
     }
 
-    private void handleDefaultQuery(CommandSender sender) {
+    private void handleDefaultQuery(QQCommandSender sender) {
 
         ElecDTO type0 = TufeElecRepository.getDataByOpenIdAndType(sender.getUserId(), 0);
         ElecDTO type1 = TufeElecRepository.getDataByOpenIdAndType(sender.getUserId(), 1);
@@ -238,7 +238,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         sendQueryResult(sender, target.roomId(), target.schoolRegion(), target.type(), feedback, "/elec");
     }
 
-    private void handleBind(CommandSender sender, String[] args) {
+    private void handleBind(QQCommandSender sender, String[] args) {
 
         if (args.length != 4) {
             sender.sendMessage("用法：/elec bind <宿舍号> <校区> <类型>");
@@ -279,7 +279,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         }
     }
 
-    private void handleUnbind(CommandSender sender, String[] args) {
+    private void handleUnbind(QQCommandSender sender, String[] args) {
 
         if (args.length != 2) {
             sender.sendMessage("用法：/elec unbind <类型>");
@@ -304,7 +304,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         }
     }
 
-    private void handleManualQuery(CommandSender sender, String[] args) {
+    private void handleManualQuery(QQCommandSender sender, String[] args) {
 
         try {
 
@@ -329,7 +329,7 @@ public class ElectricCheck implements Listener, CommandExecutor {
         }
     }
 
-    private void sendQueryResult(CommandSender sender, long roomNum, int schoolRegion, int type, String feedback, String command) {
+    private void sendQueryResult(QQCommandSender sender, long roomNum, int schoolRegion, int type, String feedback, String command) {
 
         CheckData checkData = processCheck(
                 QUERY_URL.replace("{room_num}", String.valueOf(roomNum))

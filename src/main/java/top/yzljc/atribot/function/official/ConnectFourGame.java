@@ -12,11 +12,8 @@ import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.impl.AnswerCode;
-import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.RandomGolds;
 
@@ -24,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class ConnectFourGame implements Listener, CommandExecutor {
+public class ConnectFourGame implements CommandExecutor {
 
     private static final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
 
@@ -58,20 +55,20 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender.getPlatform() == Platform.OFFICIAL_C2C) {
-            sender.sendMessage("单聊模式下暂不支持四子棋喵！请在群聊中使用 /四子棋 来开始游戏！");
+        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (qq.getPlatform() == Platform.OFFICIAL_C2C) {
+            qq.sendMessage("单聊模式下暂不支持四子棋喵！请在群聊中使用 /四子棋 来开始游戏！");
             return true;
         }
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 
-        String sessionId = sender.getGroupId();
+        String sessionId = qq.getGroupId();
 
         // No args → show welcome / rules screen
         if (args.length == 0) {
             if (activeGames.containsKey(sessionId)) {
-                sender.sendMessage("当前群聊已经有一个正在进行的四子棋游戏了喵！请等它结束后再开！");
+                qq.sendMessage("当前群聊已经有一个正在进行的四子棋游戏了喵！请等它结束后再开！");
             } else {
-                sendWelcomeScreen(sessionId, sender);
+                sendWelcomeScreen(sessionId, qq);
             }
             return true;
         }
@@ -80,122 +77,25 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
         // "join" — valid even without an active game reference
         if (action.equals("join")) {
-            handleJoin(sessionId, sender, args);
+            handleJoin(sessionId, qq, args);
             return true;
         }
 
         // All other commands require an active game
         GameState game = activeGames.get(sessionId);
         if (game == null) {
-            sender.sendMessage("当前没有正在进行的四子棋游戏喵！请发送 /四子棋 开始新游戏！");
+            qq.sendMessage("当前没有正在进行的四子棋游戏喵！请发送 /四子棋 开始新游戏！");
             return true;
         }
 
         if (action.equals("drop")) {
-            handleDrop(game, sessionId, sender, args);
+            handleDrop(game, sessionId, qq, args);
         }
 
         return true;
     }
 
-    @EventHandler
-    public void onButtonCallback(OfficialButtonInteractionEvent event) {
-        if (event.shouldIgnore()) return;
-        String value = event.getButtonValue();
-        if (value == null || !value.startsWith("drop:")) return;
-
-        String colStr = value.substring(5);
-        handleDropCallback(event, colStr);
-    }
-
-    private void handleDropCallback(OfficialButtonInteractionEvent event, String colStr) {
-        String groupOpenId = event.getGroupOpenId();
-        String playerId = event.getUnionOpenId();
-
-        GameState game = activeGames.get(groupOpenId);
-        if (game == null || game.phase != Phase.PLAYING) return;
-
-        if (!playerId.equals(game.playerAOpenId) && !playerId.equals(game.playerBOpenId)) return;
-
-        String currentPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
-        if (!playerId.equals(currentPlayerId)) {
-            event.replyMessage(TC.md("还没轮到你落子喵！请等待对手下完！"));
-            event.answer(AnswerCode.SUCCESS);
-            return;
-        }
-
-        int col;
-        try {
-            col = Integer.parseInt(colStr);
-        } catch (NumberFormatException e) {
-            event.answer(AnswerCode.SUCCESS);
-            return;
-        }
-
-        col = col - 1;
-        if (col < 0 || col >= COLS) {
-            event.answer(AnswerCode.SUCCESS);
-            return;
-        }
-
-        int row = findDropRow(game.board, col);
-        if (row == -1) {
-            event.answer(AnswerCode.FAIL);
-            return;
-        }
-
-        event.answer(AnswerCode.SUCCESS);
-
-        game.board[row][col] = game.currentPlayer;
-
-        List<int[]> winningLine = findWinningLine(game.board, row, col, game.currentPlayer);
-        if (winningLine != null) {
-            game.phase = Phase.FINISHED;
-            game.winningLine = winningLine;
-            game.winner = game.currentPlayer;
-
-            grantRewards(game);
-
-            String winnerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
-            String winnerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
-            int winnerGolds = game.currentPlayer == PLAYER_A ? game.playerAGolds : game.playerBGolds;
-
-            finishGameCallback(game, event,
-                    "🎉 " + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！连成四子！");
-            return;
-        }
-
-        if (isBoardFull(game.board)) {
-            game.phase = Phase.FINISHED;
-            grantRewards(game);
-            finishGameCallback(game, event,
-                    "🤝 平局！" + Markdown.at(game.playerAOpenId) + "(+" + game.playerAGolds + "金粒) 与 "
-                            + Markdown.at(game.playerBOpenId) + "(+" + game.playerBGolds + "金粒) 棋盘已满，无人连成四子！");
-            return;
-        }
-
-        game.currentPlayer = (game.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
-        String nextPlayerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
-        String nextPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
-
-        replyGameBoard(game, event,
-                "轮到 " + nextPlayerName + " " + Markdown.at(nextPlayerId) + " 落子");
-
-        scheduleMoveTimeout(groupOpenId, game);
-    }
-
-    private void finishGameCallback(GameState game, OfficialButtonInteractionEvent event, String resultMsg) {
-        activeGames.remove(event.getGroupOpenId());
-
-        String markdown = buildSettlementMarkdown(game, resultMsg);
-        markdown += "\n\n" + Markdown.enterCommand("/四子棋", "点击此处再次开始");
-
-        String messageId = event.replyMessage(TC.md(markdown));
-        recallOldMessage(game);
-        game.lastMessageId = messageId;
-    }
-
-    private void sendWelcomeScreen(String sessionId, CommandSender sender) {
+    private void sendWelcomeScreen(String sessionId, QQCommandSender sender) {
         GameState game = new GameState();
         game.groupOpenId = sessionId;
         activeGames.put(sessionId, game);
@@ -226,12 +126,12 @@ public class ConnectFourGame implements Listener, CommandExecutor {
 
         Object keyboard = TC.keyboard(layout);
         sender.sendMessage(TC.md(markdown), keyboard);
-        game.lastCmdMsgId = sender.getMessageId();
+        game.lastCmdMsgId = sender.getMessage().getMessageId();
 
         scheduleJoinTimeout(sessionId, game);
     }
 
-    private void handleJoin(String sessionId, CommandSender sender, String[] args) {
+    private void handleJoin(String sessionId, QQCommandSender sender, String[] args) {
         GameState game = activeGames.get(sessionId);
         if (game == null) {
             sender.sendMessage("请先发送 /四子棋 创建游戏！");
@@ -288,7 +188,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         }
     }
 
-    private void sendWaitingUpdate(GameState game, String sessionId, CommandSender sender) {
+    private void sendWaitingUpdate(GameState game, String sessionId, QQCommandSender sender) {
         StringBuilder sb = new StringBuilder();
         sb.append("**四子棋 (Connect Four)**\n\n");
         sb.append("**规则:**\n");
@@ -332,10 +232,10 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String messageId = sender.sendMessage(TC.md(sb.toString()), keyboard);
         recallOldMessage(game);
         game.lastMessageId = messageId;
-        game.lastCmdMsgId = sender.getMessageId();
+        game.lastCmdMsgId = sender.getMessage().getMessageId();
     }
 
-    private void startGame(GameState game, String sessionId, CommandSender sender) {
+    private void startGame(GameState game, String sessionId, QQCommandSender sender) {
         game.phase = Phase.PLAYING;
         game.startTime = System.currentTimeMillis();
         game.currentPlayer = PLAYER_A;
@@ -344,14 +244,14 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String firstPlayerName = "⚫ 玩家A";
         String firstPlayerId = game.playerAOpenId;
 
-        sendGameBoard(game, sessionId, sender.getMessageId(),
+        sendGameBoard(game, sessionId, sender.getMessage().getMessageId(),
                 "游戏开始！由 " + firstPlayerName + " " + Markdown.at(firstPlayerId) + " 先手落子");
 
         scheduleMoveTimeout(sessionId, game);
         scheduleGameTimeout(sessionId, game);
     }
 
-    private void handleDrop(GameState game, String sessionId, CommandSender sender, String[] args) {
+    private void handleDrop(GameState game, String sessionId, QQCommandSender sender, String[] args) {
         if (game.phase != Phase.PLAYING) {
             sender.sendMessage("游戏已经结束了喵！请发送 /四子棋 开始新游戏！");
             return;
@@ -433,7 +333,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         String nextPlayerName = game.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
         String nextPlayerId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
 
-        sendGameBoard(game, sessionId, sender.getMessageId(),
+        sendGameBoard(game, sessionId, sender.getMessage().getMessageId(),
                 "轮到 " + nextPlayerName + " " + Markdown.at(nextPlayerId) + " 落子");
 
         scheduleMoveTimeout(sessionId, game);
@@ -449,23 +349,14 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         game.lastCmdMsgId = cmdMsgId;
     }
 
-    private void replyGameBoard(GameState game, OfficialButtonInteractionEvent event, String statusMsg) {
-        String md = buildBoardMarkdown(game, statusMsg);
-        String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
-        Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
-        String messageId = event.replyMessage(TC.md(md), keyboard);
-        recallOldMessage(game);
-        game.lastMessageId = messageId;
-    }
-
     private Object buildColumnKeyboard(String currentPlayerOpenId, int[][] board) {
         Set<Integer> fullCols = getFullColumns(board);
         List<List<Button>> layout = new ArrayList<>();
         List<Button> row = new ArrayList<>();
         for (int i = 1; i <= COLS; i++) {
             ButtonStyle style = fullCols.contains(i - 1) ? ButtonStyle.GRAY : ButtonStyle.BLUE;
-            row.add(new Button("col_" + i, String.valueOf(i), "drop:" + i,
-                    true, style, ButtonType.CALLBACK)
+            row.add(new Button("col_" + i, String.valueOf(i), "/四子棋 drop " + i,
+                    true, style, ButtonType.COMMAND)
                     .setPermissionType(PermissionType.SPECIFIC_USER)
                     .setAllowedOpenIds(List.of(currentPlayerOpenId)));
         }
@@ -504,7 +395,7 @@ public class ConnectFourGame implements Listener, CommandExecutor {
         return md.toString();
     }
 
-    private void finishGame(GameState game, String sessionId, CommandSender sender, String resultMsg) {
+    private void finishGame(GameState game, String sessionId, QQCommandSender sender, String resultMsg) {
         activeGames.remove(sessionId);
 
         String markdown = buildSettlementMarkdown(game, resultMsg);

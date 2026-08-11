@@ -65,9 +65,9 @@ public class PrivateMessage {
         return MessageUtils.replyPrivateMessage(userId, messageId, messageSegments);
     }
 
-    public static void recallMessage(String messageId) {
+    public static boolean recallMessage(String messageId) {
         BotRuntimeData.callRecallMessage();
-        MessageUtils.recallMessage(messageId);
+        return MessageUtils.recallMessage(messageId);
     }
 
     @SuppressWarnings("UnusedReturnValue")

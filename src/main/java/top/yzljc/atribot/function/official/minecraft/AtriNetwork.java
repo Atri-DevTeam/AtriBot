@@ -3,7 +3,7 @@ package top.yzljc.atribot.function.official.minecraft;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ public final class AtriNetwork extends MinecraftNetwork {
     private static final List<String> ALLOWED_COMMANDS = List.of("tps", "list", "unban", "atri reload display", "reboot 30s", "reboot cancel");
 
     @Override
-    public List<String> extraCommand(CommandSender sender, String[] args) {
+    public List<String> extraCommand(QQCommandSender sender, String[] args) {
         if (args.length > 2 && args[1].equals("unban")) {
             return List.of("pardon " + args[2]);
         }
@@ -31,7 +31,7 @@ public final class AtriNetwork extends MinecraftNetwork {
     }
 
     @Override
-    public String modifyCommand(CommandSender sender, String[] args) {
+    public String modifyCommand(QQCommandSender sender, String[] args) {
         String command = commandsJoin(args).trim();
         if (command.equalsIgnoreCase("reboot 30s")) {
             return command + " 远程重启请求，UUID: " + MinecraftBind.getDataByOpenId(sender.getUserId()).uuid();
@@ -40,7 +40,7 @@ public final class AtriNetwork extends MinecraftNetwork {
     }
 
     @Override
-    public boolean hasPermission(CommandSender sender, String commandContent) {
+    public boolean hasPermission(QQCommandSender sender, String commandContent) {
         if (commandContent.contains("unban")) {
             return true;
         }
@@ -52,7 +52,7 @@ public final class AtriNetwork extends MinecraftNetwork {
     }
 
     @Override
-    public List<List<Button>> getButtons(CommandSender sender, String server, String[] args) {
+    public List<List<Button>> getButtons(QQCommandSender sender, String server, String[] args) {
         String commandContent = commandsJoin(args).trim();
         return List.of(
                 List.of(

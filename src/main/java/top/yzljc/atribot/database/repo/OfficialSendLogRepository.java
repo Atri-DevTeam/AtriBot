@@ -24,9 +24,6 @@ public class OfficialSendLogRepository {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private OfficialSendLogRepository() {
-    }
-
     public static void init() {
         String sql = "CREATE TABLE IF NOT EXISTS `official_send_log` (" +
                 "  `id` BIGINT NOT NULL AUTO_INCREMENT," +

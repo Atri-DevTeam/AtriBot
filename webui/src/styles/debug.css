@@ -175,7 +175,8 @@
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: 12px;
-  background: var(--color-surface-muted);
+  /* --color-surface-muted 无定义，回退到 sunken */
+  background: var(--color-surface-muted, var(--color-surface-sunken));
   border-right: 1px solid var(--color-border-input);
   line-height: 28px;
 }

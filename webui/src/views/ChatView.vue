@@ -33,7 +33,7 @@
           </button>
         </div>
 
-        <div class="chatnt-items">
+        <div class="chatnt-items" @scroll="onConvListScroll">
           <button v-for="c in filteredConvs" :key="convKey(c)"
                   class="cnv" :class="{ active: isActive(c), pinned: isPinned(c) }"
                   @click="selectConv(c)">
@@ -72,6 +72,10 @@
           </button>
           <div v-if="loadingConvs && conversations.length === 0" class="empty-state">正在加载会话</div>
           <div v-else-if="filteredConvs.length === 0" class="empty-state">暂无会话</div>
+          <template v-if="!loadingConvs && conversations.length > 0 && !search">
+            <div v-if="loadingMoreConvs" class="load-tip">正在加载更多会话…</div>
+            <div v-else-if="!hasMoreConvs" class="load-tip">— 没有更多会话了 —</div>
+          </template>
         </div>
       </section>
 
@@ -97,7 +101,7 @@
               </svg>
             </button>
             <div class="chatnt-head-info">
-              <div class="chatnt-head-name">{{ activeConv ? convHeaderName(activeConv) : active.openId }}</div>
+              <div class="chatnt-head-name">{{ activeConv ? convHeaderTitle(activeConv) : active.openId }}</div>
               <div class="chatnt-head-sub">{{ active.type === 'group' ? '群聊' : '私聊' }} · {{ active.openId }}</div>
             </div>
             <span class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条</span>
@@ -330,6 +334,31 @@
             <div v-else-if="panel === 'info'" class="chatnt-members-list chatnt-info">
               <template v-if="active.type === 'group'">
                 <div class="chatnt-info-section">
+                  <div class="chatnt-info-label chatnt-info-label-line">
+                    <span>群聊资料</span>
+                    <button class="nt-mini-btn" :disabled="syncingGroupProfile" @click="syncGroupProfile">
+                      <svg :class="{ spin: syncingGroupProfile }" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+                      </svg>
+                      {{ syncingGroupProfile ? '同步中' : '同步' }}
+                    </button>
+                  </div>
+                  <div class="nt-card">
+                    <div class="nt-row"><span class="nt-row-label">群名</span><span class="nt-row-value">{{ groupDisplayName(groupMeta) }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">群 OpenId</span><span class="nt-row-value">{{ groupMeta?.groupOpenId || active.openId }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">成员数</span><span class="nt-row-value">{{ groupMeta?.groupMemberNum ?? '-' }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">加群时间</span><span class="nt-row-value">{{ fmtGroupTime(groupMeta?.joinedAt) }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">Bot 群内 ID</span><span class="nt-row-value">{{ groupMeta?.memberOpenid || '-' }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">Bot 身份</span><span class="nt-row-value">{{ groupRoleLabel(groupMeta?.memberRole) }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">主动消息</span><span class="nt-row-value">{{ groupMeta?.allowProactiveMsg ? '允许' : '未允许' }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">接收消息</span><span class="nt-row-value">{{ recvMsgSettingLabel(groupMeta?.recvMsgSetting) }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">群分类</span><span class="nt-row-value">{{ groupMeta?.groupClassText || '-' }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">群标签</span><span class="nt-row-value">{{ groupTagsText(groupMeta?.groupTags) }}</span></div>
+                    <div class="nt-row"><span class="nt-row-label">群简介</span><span class="nt-row-value">{{ groupMeta?.groupFingerMemo || '-' }}</span></div>
+                  </div>
+                </div>
+
+                <div class="chatnt-info-section">
                   <div class="chatnt-info-label">群聊设置</div>
                   <div class="nt-card">
                     <div class="nt-row">
@@ -345,13 +374,6 @@
                               @click="toggleGroupStatus('blacklist')"><span class="nt-switch-knob" /></button>
                     </div>
                     <div class="nt-row">
-                      <span class="nt-row-label">主动推送</span>
-                      <!-- 只读：这个开关由后台配置决定，WebUI 没有对应接口 -->
-                      <button class="nt-switch" :class="{ on: groupMeta?.allowedActive }" role="switch"
-                              :aria-checked="!!groupMeta?.allowedActive" disabled
-                              title="由后台配置决定，此处只读"><span class="nt-switch-knob" /></button>
-                    </div>
-                    <div class="nt-row">
                       <span class="nt-row-label">真实群号</span>
                       <input class="nt-input" v-model="realGroupInput" placeholder="未设置"
                              @blur="saveRealGroup" @keydown.enter="saveRealGroup" />
@@ -361,6 +383,56 @@
                       <span class="nt-row-value">{{ groupMeta?.opMemberOpenId || '-' }}</span>
                     </div>
                   </div>
+                </div>
+
+                <div class="chatnt-info-section">
+                  <div class="chatnt-info-label chatnt-info-label-line">
+                    <span>群禁言状态</span>
+                    <button class="nt-mini-btn" :disabled="!canQueryMuteState || muteStateLoading" @click="queryMuteState">
+                      <svg :class="{ spin: muteStateLoading }" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+                      </svg>
+                      {{ muteStateLoading ? '查询中' : '查询' }}
+                    </button>
+                  </div>
+                  <!-- 查询群禁言状态要求机器人是群管理员，不是就禁用，连点都不让点 -->
+                  <div v-if="!canQueryMuteState" class="nt-empty">机器人不是群管理员，无法查询</div>
+                  <template v-else>
+                    <div v-if="muteStateError" class="nt-empty">{{ muteStateError }}</div>
+                    <div v-else-if="muteState" class="nt-card">
+                      <div class="nt-row">
+                        <span class="nt-row-label">全员禁言</span>
+                        <span class="nt-row-value">{{ muteModeLabel(muteState.globalRule?.mode) }}</span>
+                      </div>
+                      <!-- schedule 模式下把定时/周期规则明细列出来，别跟始终禁言混成一个标签 -->
+                      <template v-if="muteState.globalRule?.mode === 'schedule'">
+                        <div v-if="(muteState.globalRule.scheduleRules || []).length" class="nt-mute-sub">
+                          <div class="nt-mute-sub-title">定时禁言（{{ muteState.globalRule.scheduleRules.length }}）</div>
+                          <div v-for="r in muteState.globalRule.scheduleRules" :key="r.taskId" class="nt-row">
+                            <span class="nt-row-label nt-row-label-ellipsis">{{ fmtMuteRuleTime(r.startAt) }} ~ {{ fmtMuteRuleTime(r.endAt) }}</span>
+                            <span class="nt-row-value" :class="{ off: !r.enabled }">{{ r.enabled ? '启用' : '停用' }}</span>
+                          </div>
+                        </div>
+                        <div v-if="(muteState.globalRule.recurringRules || []).length" class="nt-mute-sub">
+                          <div class="nt-mute-sub-title">周期禁言（{{ muteState.globalRule.recurringRules.length }}）</div>
+                          <div v-for="r in muteState.globalRule.recurringRules" :key="r.taskId" class="nt-row">
+                            <span class="nt-row-label nt-row-label-ellipsis">{{ fmtRecurring(r) }}</span>
+                            <span class="nt-row-value" :class="{ off: !r.enabled }">{{ r.enabled ? '启用' : '停用' }}</span>
+                          </div>
+                        </div>
+                      </template>
+                      <div class="nt-row">
+                        <span class="nt-row-label">禁言成员</span>
+                        <span class="nt-row-value">{{ (muteState.members || []).length }} 人</span>
+                      </div>
+                      <div v-if="(muteState.members || []).length" class="nt-card nt-mute-members">
+                        <div v-for="m in muteState.members" :key="m.memberOpenId" class="nt-row">
+                          <span class="nt-row-label nt-row-label-ellipsis">{{ m.username || shortId(m.memberOpenId) }}</span>
+                          <span class="nt-row-value">{{ fmtGroupTime(m.muteExpireAt) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
                 </div>
 
                 <div class="chatnt-info-section">
@@ -412,6 +484,34 @@
                   </template>
                 </div>
               </div>
+
+              <div class="chatnt-info-section chatnt-clear-section">
+                <div class="chatnt-info-label">清除聊天记录</div>
+                <div class="nt-card chatnt-clear-card">
+                  <div class="chatnt-clear-modes" role="group" aria-label="清除范围">
+                    <button type="button" :class="{ active: clearForm.mode === 'all' }"
+                            @click="clearForm.mode = 'all'">全部</button>
+                    <button type="button" :class="{ active: clearForm.mode === 'first' }"
+                            @click="clearForm.mode = 'first'">前 N 条</button>
+                    <button type="button" :class="{ active: clearForm.mode === 'range' }"
+                            @click="clearForm.mode = 'range'">日期范围</button>
+                  </div>
+                  <label v-if="clearForm.mode === 'first'" class="chatnt-clear-field">
+                    <span>清除前</span>
+                    <input v-model.number="clearForm.count" class="nt-input" type="number" min="1" max="1000000" step="1" />
+                    <span>条</span>
+                  </label>
+                  <div v-if="clearForm.mode === 'range'" class="chatnt-clear-range">
+                    <label class="chatnt-clear-field"><span>从</span><input v-model="clearForm.start" class="nt-input" type="date" /></label>
+                    <label class="chatnt-clear-field"><span>到</span><input v-model="clearForm.end" class="nt-input" type="date" /></label>
+                  </div>
+                  <button type="button" class="chatnt-clear-submit" :disabled="clearForm.loading"
+                          @click="clearCurrentConversation">
+                    {{ clearForm.loading ? '清除中…' : '清除记录' }}
+                  </button>
+                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}，统计数据不会改变</div>
+                </div>
+              </div>
             </div>
 
             <!-- ═══ 单用户设置 ═══ -->
@@ -430,6 +530,11 @@
               @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
       <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
               @click="openProfile(ctxMenu.message.unionOpenId, ctxMenu.message.username); ctxMenu.visible = false">用户设置</button>
+      <!-- 禁言不做身份预判：机器人没权限时接口会报错，直接把错误甩给用户看 -->
+      <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+              @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言</button>
+      <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+              @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言</button>
       <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
       <!-- 引用回复走 refMessageId，群聊私聊都支持，但要求来源消息有 ref_idx。
            缺 ref_idx 时置灰而不是隐藏，否则看不出是「不支持」还是「这条不行」 -->
@@ -447,6 +552,46 @@
       <img v-if="previewImg" :src="previewImg" referrerpolicy="no-referrer" alt="预览" @click.stop />
       <video v-else :src="previewVideo" controls autoplay playsinline @click.stop></video>
     </div>
+
+    <!-- 禁言设置弹窗：仿权限设置的大 modal，Teleport 到 body 顶层，不依赖父级 v-if -->
+    <Teleport to="body">
+      <div v-if="mutePanel.visible" class="mute-modal-backdrop" @click="mutePanel.visible = false"></div>
+      <div v-if="mutePanel.visible" class="mute-modal" @click.stop>
+        <div class="mute-modal-head">
+          <div class="mute-modal-title">禁言设置</div>
+          <button class="mute-modal-close" aria-label="关闭" @click="mutePanel.visible = false">×</button>
+        </div>
+        <div class="mute-modal-body">
+          <div class="mute-modal-target">对 {{ mutePanel.message?.username || '该成员' }} 执行禁言</div>
+          <div class="mute-picker" aria-label="禁言时长">
+            <div v-for="field in MUTE_DURATION_FIELDS" :key="field.key"
+                 class="mute-picker-field" :class="{ open: mutePickerOpen === field.key }">
+              <button type="button" class="mute-picker-trigger"
+                      :aria-expanded="mutePickerOpen === field.key"
+                      :aria-label="`选择${field.label}`"
+                      @click.stop="toggleMutePicker(field.key)">
+                <span class="mute-picker-value">{{ muteDuration[field.key] }}</span>
+                <span class="mute-picker-unit">{{ field.label }}</span>
+                <span class="mute-picker-chevron" aria-hidden="true"></span>
+              </button>
+              <div v-if="mutePickerOpen === field.key" ref="mutePickerMenuEl" class="mute-picker-menu" role="listbox">
+                <button v-for="value in field.options" :key="field.key + '-' + value" type="button"
+                        class="mute-picker-option" :class="{ selected: muteDuration[field.key] === value }"
+                        role="option" :aria-selected="muteDuration[field.key] === value"
+                        @click.stop="selectMuteValue(field.key, value)">
+                  {{ value }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mute-modal-summary">时长 {{ muteDurationText }}</div>
+        </div>
+        <div class="mute-modal-foot">
+          <button type="button" class="mute-modal-btn" @click="mutePanel.visible = false">取消</button>
+          <button type="button" class="mute-modal-btn mute-modal-btn--primary" @click="confirmMute">确认禁言</button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -472,6 +617,9 @@ const botName = ref('AtriBot')
 const conversations = ref([])
 const pinnedKeys = ref([])
 const loadingConvs = ref(false)
+const CONV_LIST_PAGE_SIZE = 100
+const hasMoreConvs = ref(true)
+const loadingMoreConvs = ref(false)
 const search = ref('')
 const active = ref(null)               // { type: 'group' | 'c2c', openId }
 const mobileChatOpen = ref(false)
@@ -510,11 +658,16 @@ const memberSearch = ref('')
 // ── 会话信息（群）──
 const groupMeta = ref(null)
 const realGroupInput = ref('')
+const syncingGroupProfile = ref(false)
 const funcEntries = ref([])
 const knownFunctionKeys = ref([])
 const newFunctionKey = ref('')
 const convStats = ref(null)
 const convStatsError = ref('')
+const clearForm = reactive({ mode: 'all', count: 100, start: '', end: '', loading: false })
+const muteState = ref(null)
+const muteStateLoading = ref(false)
+const muteStateError = ref('')
 
 // ── 用户档案（私聊对端 / 群成员）──
 const profileTarget = ref('')
@@ -571,6 +724,11 @@ const filteredConvs = computed(() => {
   return [...list].sort((a, b) => (isPinned(b) ? 1 : 0) - (isPinned(a) ? 1 : 0))
 })
 
+// 已加载的「非置顶」会话数：置顶会话由后端单独前置、不计入分页偏移，翻页 offset 只按它算
+const nonPinnedLoadedCount = computed(() =>
+  conversations.value.filter(c => !isPinned(c)).length
+)
+
 const filteredMembers = computed(() => {
   const q = memberSearch.value.trim().toLowerCase()
   if (!q) return members.value
@@ -619,6 +777,7 @@ onMounted(async () => {
   await loadConfig()
   await Promise.all([loadConversations(), loadPinned()])
   connectSse()
+  applyDeepLink()
 })
 
 onBeforeUnmount(() => {
@@ -634,6 +793,7 @@ onBeforeUnmount(() => {
 
 function onDocumentClick(e) {
   if (!e.target.closest('.ctx-menu')) ctxMenu.visible = false
+  if (!e.target.closest('.mute-picker')) mutePickerOpen.value = null
 }
 
 function closePreview() {
@@ -804,11 +964,39 @@ async function loadConfig() {
 // ═══════════════ 会话列表 ═══════════════
 
 async function loadConversations() {
+  if (loadingConvs.value) return
   loadingConvs.value = true
   try {
-    conversations.value = await api('/chat/conversations') || []
+    // 按「当前已加载的非置顶会话数」重取：首屏 100，SSE 刷新时保持已加载深度，
+    // 新消息让某个会话实时跳到顶部、其余整体重排（QQ 式）
+    const depth = Math.min(Math.max(nonPinnedLoadedCount.value, CONV_LIST_PAGE_SIZE), 1000)
+    const data = await api(`/chat/conversations?limit=${depth}&offset=0`) || { items: [], hasMore: true }
+    conversations.value = data.items || []
+    hasMoreConvs.value = data.hasMore !== false
   } catch { /* 静默失败，保留旧列表 */ }
   finally { loadingConvs.value = false }
+}
+
+async function loadMoreConversations() {
+  if (loadingMoreConvs.value || !hasMoreConvs.value || loadingConvs.value || search.value.trim()) return
+  loadingMoreConvs.value = true
+  // offset 只统计非置顶会话：置顶的由后端单独前置，不计入分页偏移
+  const offset = nonPinnedLoadedCount.value
+  try {
+    const data = await api(`/chat/conversations?limit=${CONV_LIST_PAGE_SIZE}&offset=${offset}`) || { items: [], hasMore: false }
+    const existing = new Set(conversations.value.map(c => convKey(c)))
+    const fresh = (data.items || []).filter(c => !existing.has(convKey(c)))
+    conversations.value = [...conversations.value, ...fresh]
+    hasMoreConvs.value = data.hasMore !== false
+  } catch { /* ignore */ }
+  finally { loadingMoreConvs.value = false }
+}
+
+function onConvListScroll(e) {
+  const el = e.currentTarget
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
+    loadMoreConversations()
+  }
 }
 
 function scheduleConvRefresh() {
@@ -855,13 +1043,20 @@ function isActive(c) {
 
 function convName(c) {
   if (c.type === 'c2c') return c.name || shortId(c.openId)
-  return c.realGroupId ? `群 ${c.realGroupId}` : `群 ${shortId(c.openId)}`
+  return c.name || (c.realGroupId ? `群 ${c.realGroupId}` : `群 ${shortId(c.openId)}`)
 }
 
-// 聊天顶部标题：群名 API 暂缺，用真实群号/群 openId 兜底时不做截断，全量展示
+// 聊天顶部标题：群名优先，其次真实群号/群 openId，兜底时不做截断。
 function convHeaderName(c) {
   if (c.type === 'c2c') return c.name || c.openId
-  return c.realGroupId ? `群 ${c.realGroupId}` : `群 ${c.openId}`
+  return c.name || (c.realGroupId ? `群 ${c.realGroupId}` : `群 ${c.openId}`)
+}
+
+function convHeaderTitle(c) {
+  const title = convHeaderName(c)
+  if (c.type !== 'group') return title
+  const count = c.groupMemberNum ?? (groupMeta.value?.groupOpenId === c.openId ? groupMeta.value?.groupMemberNum : null)
+  return Number.isFinite(Number(count)) && Number(count) > 0 ? `${title} (${count})` : title
 }
 
 function shortId(id) {
@@ -958,6 +1153,7 @@ async function selectConv(c) {
   currentPage.value = 0
   cancelReply()
   ctxMenu.visible = false
+  mutePanel.visible = false
   closePanel()
   members.value = []
   memberSearch.value = ''
@@ -965,12 +1161,28 @@ async function selectConv(c) {
   funcEntries.value = []
   convStats.value = null
   convStatsError.value = ''
+  muteState.value = null
+  muteStateError.value = ''
   draft.value = ''
   imageData.value = null
   pastePreview.value = null
   if (msgType.value === 'stream' && c.type !== 'c2c') msgType.value = 'text'
   await loadLatestMessages()
 }
+
+// 深链：/?group=xxx 或 /?user=xxx 直接打开对应会话（群/用户列表页「进入聊天」跳转用）
+// 需要 watch query：/?group=A → /?group=B 不会重挂载组件，只能靠路由变化触发
+function applyDeepLink() {
+  const q = router.currentRoute.value.query
+  const target = q.group
+    ? { type: 'group', openId: String(q.group) }
+    : q.user
+      ? { type: 'c2c', openId: String(q.user) }
+      : null
+  if (target && !isActive(target)) selectConv(target)
+}
+
+watch(() => router.currentRoute.value.query, applyDeepLink)
 
 async function loadLatestMessages() {
   if (!active.value) return
@@ -1050,12 +1262,111 @@ async function loadInfoPanel() {
 
 // ── 群信息 ──
 
+function groupDisplayName(meta) {
+  if (!meta) return activeConv.value?.name || (active.value?.openId ? `群 ${active.value.openId}` : '-')
+  return meta.groupName || activeConv.value?.name || (meta.realGroupId ? `群 ${meta.realGroupId}` : `群 ${meta.groupOpenId || active.value?.openId}`)
+}
+
+function recvMsgSettingLabel(value) {
+  const map = {
+    only_mention: '仅 @',
+    mention_and_context: '@ 与上下文',
+    all: '全部消息'
+  }
+  return map[value] || value || '-'
+}
+
+function groupRoleLabel(value) {
+  const map = { OWNER: '群主', ADMIN: '管理员', MEMBER: '成员' }
+  return map[value] || value || '-'
+}
+
+// 查询群禁言状态要求机器人拥有群管理员身份，群主也算
+const canQueryMuteState = computed(() => {
+  const role = groupMeta.value?.memberRole
+  return role === 'OWNER' || role === 'ADMIN'
+})
+
+function muteModeLabel(mode) {
+  const map = { none: '未开启', always: '始终禁言', schedule: '定时禁言' }
+  return map[mode] || mode || '未开启'
+}
+
+const WEEKDAY_LABELS = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+
+// 定时规则起止时间是 RFC3339，只取 HH:mm
+function fmtMuteRuleTime(value) {
+  if (!value) return '-'
+  const d = parseChatTime(value)
+  if (!d) return value
+  const pad = n => String(n).padStart(2, '0')
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// 周期规则：星期几 + 时段，end_time 小于 start_time 表示跨天到次日
+function fmtRecurring(r) {
+  const weekdays = Array.isArray(r.weekdays) && r.weekdays.length
+    ? r.weekdays.map(w => WEEKDAY_LABELS[w] || w).join(' ')
+    : '每天'
+  const range = `${r.startTime || '-'}~${r.endTime || '-'}${(r.endTime && r.startTime && r.endTime < r.startTime) ? '（次日）' : ''}`
+  return `${weekdays} ${range}`
+}
+
+async function queryMuteState() {
+  if (!active.value || active.value.type !== 'group' || !canQueryMuteState.value) return
+  const groupOpenId = active.value.openId
+  muteStateLoading.value = true
+  muteStateError.value = ''
+  try {
+    const data = await api(`/groups/${encodeURIComponent(groupOpenId)}/mute-state`)
+    // 请求期间切走了会话，结果作废
+    if (!active.value || active.value.type !== 'group' || active.value.openId !== groupOpenId) return
+    muteState.value = data || null
+  } catch (error) {
+    muteState.value = null
+    muteStateError.value = error.message || '查询禁言状态失败'
+  } finally {
+    muteStateLoading.value = false
+  }
+}
+
+function groupTagsText(tags) {
+  if (!Array.isArray(tags) || tags.length === 0) return '-'
+  return tags.filter(Boolean).join('、') || '-'
+}
+
+function fmtGroupTime(value) {
+  if (!value) return '-'
+  const d = parseChatTime(value)
+  if (!d) return value
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 async function loadGroupMeta() {
   try {
     const list = await api('/groups') || []
     groupMeta.value = list.find(g => g.groupOpenId === active.value.openId) || null
     realGroupInput.value = groupMeta.value?.realGroupId || ''
   } catch (error) { showNotice(error.message || '加载群信息失败') }
+}
+
+async function syncGroupProfile() {
+  if (!active.value || active.value.type !== 'group') return
+  const groupOpenId = active.value.openId
+  syncingGroupProfile.value = true
+  try {
+    const data = await api(`/groups/${encodeURIComponent(groupOpenId)}/profile/sync`, { method: 'POST' })
+    if (!active.value || active.value.type !== 'group' || active.value.openId !== groupOpenId) return
+    groupMeta.value = data || null
+    realGroupInput.value = groupMeta.value?.realGroupId || ''
+    await loadConversations()
+    showNotice('群资料已同步')
+  } catch (error) {
+    showNotice(error.message || '同步群资料失败')
+  } finally {
+    syncingGroupProfile.value = false
+  }
 }
 
 async function toggleGroupStatus(kind) {
@@ -1128,6 +1439,49 @@ async function loadConvStats() {
     convStats.value = await api(path)
   } catch (error) {
     convStatsError.value = error.message || '暂无统计数据'
+  }
+}
+
+async function clearCurrentConversation() {
+  if (!active.value || clearForm.loading) return
+  if (clearForm.mode === 'first' && (!Number.isInteger(clearForm.count) || clearForm.count < 1)) {
+    showNotice('请输入有效的清除条数')
+    return
+  }
+  if (clearForm.mode === 'range' && (!clearForm.start || !clearForm.end || clearForm.end < clearForm.start)) {
+    showNotice('请选择有效的日期范围')
+    return
+  }
+
+  const scopeLabel = active.value.type === 'group' ? '当前群聊' : '当前用户'
+  const actionLabel = clearForm.mode === 'all'
+    ? '全部聊天记录'
+    : clearForm.mode === 'first'
+      ? `最早的 ${clearForm.count} 条聊天记录`
+      : `${clearForm.start} 至 ${clearForm.end} 的聊天记录`
+  if (!confirm(`确认清除${scopeLabel}的${actionLabel}吗？统计数据会保留，删除后无法恢复。`)) return
+
+  clearForm.loading = true
+  try {
+    const path = active.value.type === 'group'
+      ? `/groups/${encodeURIComponent(active.value.openId)}/messages`
+      : `/c2c/${encodeURIComponent(active.value.openId)}/messages`
+    const body = {mode: clearForm.mode}
+    if (clearForm.mode === 'first') body.count = clearForm.count
+    if (clearForm.mode === 'range') {
+      body.start = clearForm.start
+      body.end = clearForm.end
+    }
+    const result = await api(path, {method: 'DELETE', body: JSON.stringify(body)})
+    messages.value = []
+    totalMessages.value = 0
+    currentPage.value = 0
+    await Promise.all([loadConversations(), loadConvStats()])
+    showNotice(`已清除 ${result?.deleted || 0} 条记录`)
+  } catch (error) {
+    showNotice(error.message || '清除聊天记录失败')
+  } finally {
+    clearForm.loading = false
   }
 }
 
@@ -1266,110 +1620,21 @@ function getRefTargetMsgIdx(message) {
   return ''
 }
 
-function normalizeRefText(text) {
-  let value = renderFaceTags(text || '')
-  value = value.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
-  value = value.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
-  value = value.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
-  return value.trim()
-}
-
-function sameAttachment(a, b) {
-  if (!a || !b) return false
-  if (a.url && b.url && a.url === b.url) return true
-  if (a.voice_wav_url && b.voice_wav_url && a.voice_wav_url === b.voice_wav_url) return true
-  return !!(a.filename && b.filename && a.filename === b.filename)
-}
-
-function rawAttachments(raw) {
-  try {
-    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
-    return Array.isArray(arr) ? arr : []
-  } catch { return [] }
-}
-
-// 来源可能就在已加载的这一页里，先本地找，省一次往返
-function findLoadedReference(message, refIdx) {
-  if (refIdx) {
-    const byId = messages.value.find(m => m.id !== message.id && m.refIdx === refIdx)
-    if (byId) return byId
-  }
-
-  const ref = msgRef(message)
-  if (!ref) return null
-  const refText = normalizeRefText(ref.content)
-  const refAuthor = (ref.author || '').trim()
-  // 优先取比当前消息更早、且离得最近的那条
-  const candidates = messages.value
-    .filter(m => m.id !== message.id)
-    .sort((a, b) => {
-      const aOlder = a.id < message.id ? 0 : 1
-      const bOlder = b.id < message.id ? 0 : 1
-      if (aOlder !== bOlder) return aOlder - bOlder
-      return Math.abs(message.id - a.id) - Math.abs(message.id - b.id)
-    })
-
-  if (refText) {
-    const exact = candidates.find(m =>
-      (!refAuthor || m.username === refAuthor) && normalizeRefText(m.content) === refText)
-    if (exact) return exact
-    if (refText.length >= 6) {
-      const partial = candidates.find(m => {
-        if (refAuthor && m.username !== refAuthor) return false
-        const content = normalizeRefText(m.content)
-        return !!content && (content.includes(refText) || refText.includes(content))
-      })
-      if (partial) return partial
-    }
-  }
-
-  const refAtts = ref.attachments || []
-  if (refAtts.length) {
-    const byAttachment = candidates.find(m => {
-      if (refAuthor && m.username !== refAuthor) return false
-      const atts = rawAttachments(m.attachments)
-      return refAtts.some(refAtt => atts.some(att => sameAttachment(att, refAtt)))
-    })
-    if (byAttachment) return byAttachment
-  }
-
-  return null
-}
-
-function isReferenceComplete(ref) {
-  return !!(ref?.author && (ref.content || (ref.attachments && ref.attachments.length)))
-}
-
 async function jumpToReference(message) {
   if (!active.value) return
-  const ref = msgRef(message)
-  if (!ref) return
   const msgIdx = getRefTargetMsgIdx(message)
-
-  const loaded = isReferenceComplete(ref) ? findLoadedReference(message, msgIdx) : null
-  if (loaded) {
-    await nextTick()
-    highlightMessage(loaded.id)
+  if (!msgIdx) {
+    showNotice('引用来源消息缺少 ref_idx，无法定位')
     return
   }
-
-  if (!msgIdx && !ref.content && !(ref.attachments && ref.attachments.length)) {
-    showNotice('引用来源消息缺少可定位信息')
-    return
-  }
-
   const targetKey = currentConvKey()
   try {
+    // 定位统一走后端按 refIdx 定位，前端不再做内容/附件匹配（那套容易跳错）
     const params = new URLSearchParams({
+      msgIdx,
       pageSize: String(pageSize),
       excludeId: String(message.id)
     })
-    if (msgIdx) params.set('msgIdx', msgIdx)
-    if (ref.author) params.set('refAuthor', ref.author)
-    if (ref.content) params.set('refContent', ref.content)
-    if (ref.attachments && ref.attachments.length) {
-      params.set('refAttachments', JSON.stringify(ref.attachments))
-    }
     const location = await api(`${messagesBase()}/ref?${params}`)
     const page = location.page || 1
     const data = await api(messagesPath(page))
@@ -1538,6 +1803,108 @@ async function copyText(text) {
 function atUser(message) {
   const tag = `@${message.unionOpenId}`
   draft.value = draft.value ? draft.value + ' ' + tag : tag
+}
+
+// 禁言弹窗：老 QQ 风格四段时长选择，提交时换算为后端需要的总秒数
+const mutePanel = reactive({ visible: false, message: null })
+const mutePickerOpen = ref(null)
+const mutePickerMenuEl = ref(null)
+const muteDuration = reactive({ days: 0, hours: 1, minutes: 0, seconds: 0 })
+const MUTE_DURATION_FIELDS = [
+  { key: 'days', label: '天', options: Array.from({ length: 31 }, (_, i) => i) },
+  { key: 'hours', label: '小时', options: Array.from({ length: 24 }, (_, i) => i) },
+  { key: 'minutes', label: '分钟', options: Array.from({ length: 60 }, (_, i) => i) },
+  { key: 'seconds', label: '秒', options: Array.from({ length: 60 }, (_, i) => i) }
+]
+
+// 官方接口禁言时长上限 30 天
+const MAX_MUTE_SECONDS = 30 * 86400
+
+const muteTotalSeconds = computed(() =>
+  muteDuration.days * 86400 +
+  muteDuration.hours * 3600 +
+  muteDuration.minutes * 60 +
+  muteDuration.seconds
+)
+
+const muteDurationText = computed(() => {
+  const parts = [
+    [muteDuration.days, '天'],
+    [muteDuration.hours, '小时'],
+    [muteDuration.minutes, '分钟'],
+    [muteDuration.seconds, '秒']
+  ].filter(([value]) => value > 0)
+  return parts.length ? parts.map(([value, label]) => `${value} ${label}`).join(' ') : '0 秒'
+})
+
+// 右键禁言：群消息记录的 unionOpenId 存的就是群内 member_openid，可直接传给后端
+function toggleMutePicker(key) {
+  mutePickerOpen.value = mutePickerOpen.value === key ? null : key
+  if (mutePickerOpen.value) {
+    nextTick(() => {
+      const menu = mutePickerMenuEl.value
+      if (!menu) return
+      const selected = menu.querySelector('.mute-picker-option.selected')
+      if (selected) {
+        menu.scrollTop = selected.offsetTop - menu.clientHeight / 2 + selected.offsetHeight / 2
+      }
+    })
+  }
+}
+
+function selectMuteValue(key, value) {
+  muteDuration[key] = value
+  mutePickerOpen.value = null
+}
+function openMutePanel(message) {
+  mutePanel.message = message
+  muteDuration.days = 0
+  muteDuration.hours = 1
+  muteDuration.minutes = 0
+  muteDuration.seconds = 0
+  mutePanel.visible = true
+}
+
+async function confirmMute() {
+  const m = mutePanel.message
+  if (!m || !active.value || active.value.type !== 'group') return
+  const seconds = muteTotalSeconds.value
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    showNotice('禁言时长无效')
+    return
+  }
+  if (seconds > MAX_MUTE_SECONDS) {
+    showNotice('禁言时长不能超过 30 天')
+    return
+  }
+  const target = m.username || '该成员'
+  const durationText = muteDurationText.value
+  // 先关面板，接口结果晚点再弹
+  mutePanel.visible = false
+  try {
+    await api(`/groups/${encodeURIComponent(active.value.openId)}/mute`, {
+      method: 'POST',
+      body: JSON.stringify({ memberOpenId: m.unionOpenId, seconds })
+    })
+    showNotice(`已禁言 ${target} ${durationText}`)
+  } catch (error) {
+    // 没权限等错误原样抛给用户，前端不做身份判断
+    showNotice(error.message || '禁言失败')
+  }
+}
+
+async function unmuteMember(message) {
+  if (!message || !active.value || active.value.type !== 'group') return
+  const target = message.username || '该成员'
+  try {
+    await api(`/groups/${encodeURIComponent(active.value.openId)}/unmute`, {
+      method: 'POST',
+      body: JSON.stringify({ memberOpenId: message.unionOpenId })
+    })
+    showNotice(`已解除 ${target} 的禁言`)
+  } catch (error) {
+    showNotice(error.message || '解除禁言失败')
+  }
 }
 
 async function recallMsg(message) {

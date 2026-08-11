@@ -1,13 +1,11 @@
 package top.yzljc.atribot.function.official;
 
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.command.QQCommandSender;
 
 /**
  * @Author YZ_Ljc_
@@ -21,15 +19,15 @@ public class GroupCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
+        if (!(sender instanceof QQCommandSender qq)) return true;
 
         if (!sender.hasPermission()) {
-            sender.sendMessage("❌ 权限不足！只有管理员可以使用此命令！");
+            qq.sendMessage("❌ 权限不足！只有管理员可以使用此命令！");
             return true;
         }
 
         if (args.length < 1) {
-            sender.sendMessage("""
+            qq.sendMessage("""
                     用法：
                     /ogroup whitelist add <groupOpenId>
                     /ogroup whitelist remove <groupOpenId>
@@ -48,7 +46,7 @@ public class GroupCommand implements CommandExecutor {
 
         if (action.equalsIgnoreCase("whitelist")) {
             if (args.length < 2) {
-                sender.sendMessage("用法：/ogroup whitelist <add|remove> <groupOpenId>");
+                qq.sendMessage("用法：/ogroup whitelist <add|remove> <groupOpenId>");
                 return true;
             }
 
@@ -56,27 +54,27 @@ public class GroupCommand implements CommandExecutor {
 
             if (subAction.equalsIgnoreCase("add")) {
                 if (args.length < 3) {
-                    sender.sendMessage("用法：/ogroup whitelist add <groupOpenId>");
+                    qq.sendMessage("用法：/ogroup whitelist add <groupOpenId>");
                     return true;
                 }
-                String groupOpenId = resolveGroupOpenId(sender, args[2]);
+                String groupOpenId = resolveGroupOpenId(qq, args[2]);
                 boolean success = OfficialGroups.addWhitelist(groupOpenId);
-                sender.sendMessage(success ? "群白名单添加成功" : "群白名单添加失败");
+                qq.sendMessage(success ? "群白名单添加成功" : "群白名单添加失败");
                 return true;
             }
 
             if (subAction.equalsIgnoreCase("remove")) {
                 if (args.length < 3) {
-                    sender.sendMessage("用法：/ogroup whitelist remove <groupOpenId>");
+                    qq.sendMessage("用法：/ogroup whitelist remove <groupOpenId>");
                     return true;
                 }
-                String groupOpenId = resolveGroupOpenId(sender, args[2]);
+                String groupOpenId = resolveGroupOpenId(qq, args[2]);
                 boolean success = OfficialGroups.removeWhitelist(groupOpenId);
-                sender.sendMessage(success ? "群白名单删除成功" : "群白名单删除失败");
+                qq.sendMessage(success ? "群白名单删除成功" : "群白名单删除失败");
                 return true;
             }
 
-            sender.sendMessage("用法：/ogroup whitelist <add|remove> <groupOpenId>");
+            qq.sendMessage("用法：/ogroup whitelist <add|remove> <groupOpenId>");
             return true;
         }
 
@@ -86,7 +84,7 @@ public class GroupCommand implements CommandExecutor {
 
         if (action.equalsIgnoreCase("blacklist")) {
             if (args.length < 2) {
-                sender.sendMessage("用法：/ogroup blacklist <add|remove> <groupOpenId>");
+                qq.sendMessage("用法：/ogroup blacklist <add|remove> <groupOpenId>");
                 return true;
             }
 
@@ -94,27 +92,27 @@ public class GroupCommand implements CommandExecutor {
 
             if (subAction.equalsIgnoreCase("add")) {
                 if (args.length < 3) {
-                    sender.sendMessage("用法：/ogroup blacklist add <groupOpenId>");
+                    qq.sendMessage("用法：/ogroup blacklist add <groupOpenId>");
                     return true;
                 }
-                String groupOpenId = resolveGroupOpenId(sender, args[2]);
+                String groupOpenId = resolveGroupOpenId(qq, args[2]);
                 boolean success = OfficialGroups.setGroupBlacklisted(groupOpenId, true);
-                sender.sendMessage(success ? "群黑名单添加成功" : "群黑名单添加失败");
+                qq.sendMessage(success ? "群黑名单添加成功" : "群黑名单添加失败");
                 return true;
             }
 
             if (subAction.equalsIgnoreCase("remove")) {
                 if (args.length < 3) {
-                    sender.sendMessage("用法：/ogroup blacklist remove <groupOpenId>");
+                    qq.sendMessage("用法：/ogroup blacklist remove <groupOpenId>");
                     return true;
                 }
-                String groupOpenId = resolveGroupOpenId(sender, args[2]);
+                String groupOpenId = resolveGroupOpenId(qq, args[2]);
                 boolean success = OfficialGroups.setGroupBlacklisted(groupOpenId, false);
-                sender.sendMessage(success ? "群黑名单删除成功" : "群黑名单删除失败");
+                qq.sendMessage(success ? "群黑名单删除成功" : "群黑名单删除失败");
                 return true;
             }
 
-            sender.sendMessage("用法：/ogroup blacklist <add|remove> <groupOpenId>");
+            qq.sendMessage("用法：/ogroup blacklist <add|remove> <groupOpenId>");
             return true;
         }
 
@@ -125,15 +123,15 @@ public class GroupCommand implements CommandExecutor {
         if (action.equalsIgnoreCase("query")) {
 
             if (args.length < 2) {
-                sender.sendMessage("用法：/ogroup query <groupOpenId>");
+                qq.sendMessage("用法：/ogroup query <groupOpenId>");
                 return true;
             }
 
-            String groupOpenId = resolveGroupOpenId(sender, args[1]);
+            String groupOpenId = resolveGroupOpenId(qq, args[1]);
 
             OfficialGroups.GroupData data = OfficialGroups.getData(groupOpenId);
 
-            sender.sendMessage(TC.md(
+            qq.sendMessage(TC.md(
                     """
                             ### 群信息
 
@@ -158,7 +156,7 @@ public class GroupCommand implements CommandExecutor {
                             data.isWhitelist() ? "是" : "否",
                             data.isBlacklisted() ? "是" : "否",
                             data.opMemberOpenId(),
-                            FormatTools.formatTimestamp(data.timestamp())
+                            data.joinedAt()
                     )));
 
             return true;
@@ -167,7 +165,7 @@ public class GroupCommand implements CommandExecutor {
         return true;
     }
 
-    private static String resolveGroupOpenId(CommandSender sender, String groupOpenId) {
+    private static String resolveGroupOpenId(QQCommandSender sender, String groupOpenId) {
         if (groupOpenId.equalsIgnoreCase("this")) {
             return sender.getGroupId();
         }

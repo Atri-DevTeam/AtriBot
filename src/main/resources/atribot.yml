@@ -25,6 +25,9 @@ commands:
       - coins
   reboot:
     description: 重启Bot
+    aliases:
+      - restart
+      - stop
   search:
     description: 搜索聊天记录
     usage: '/search "关键词" [-u QQ] [-m p/a]'
@@ -246,3 +249,12 @@ commands:
       - recovermcbind
       - recoverjoin
       - recoverbefriend
+  refresh:
+    description: 刷新全部官方机器人端群资料
+    usage: /refresh
+  test-markdown:
+    description: 测试Markdown渲染
+    usage: /test-markdown
+  ua:
+    description: 统一身份验证
+    usage: /ua
