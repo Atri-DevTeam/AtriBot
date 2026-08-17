@@ -224,7 +224,9 @@
                 </div>
               </div>
               <div class="mp-panel-grid">
-              <article v-for="p in panels" :key="p.panelId" class="mp-panel-card" :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId }" @click="selectPanel(p)">
+              <article v-for="p in panels" :key="p.panelId" class="mp-panel-card"
+                       :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId, 'mp-panel-card--readonly': isLegacyPanel(p) }"
+                       @click="selectPanel(p)">
                 <div class="mp-panel-card-head">
                   <div class="mp-panel-card-title">
                     <span class="mp-panel-title">{{ p.panel?.remark || '未命名面板' }}</span>
@@ -239,6 +241,10 @@
                       {{ scopeLabel(p.scope) }}
                     </span>
                     <span class="mp-badge" :class="p.targetType === 'specific' ? 'mp-badge--specific' : 'mp-badge--all'">{{ p.targetType === 'specific' ? '指定对象' : '全局' }}</span>
+                    <span v-if="isLegacyPanel(p)" class="mp-badge mp-badge--legacy" title="旧版绝版面板，仅支持查看和复制">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                      旧版只读
+                    </span>
                   </div>
                 </div>
                 <div class="mp-panel-card-body">
@@ -254,13 +260,16 @@
                 <div class="mp-panel-card-foot">
                   <span class="gs-id" :title="p.panelId">#{{ p.panelId }}</span>
                   <div class="mp-panel-actions">
-                    <button class="icon-button mp-edit" title="编辑" @click.stop="openEdit(p)">
+                    <button class="icon-button mp-edit" :title="isLegacyPanel(p) ? '旧版面板禁止编辑' : '编辑'"
+                            :disabled="isLegacyPanel(p)" @click.stop="openEdit(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
-                    <button class="icon-button mp-target" title="关联对象" :disabled="p.targetType !== 'specific'" @click.stop="openTarget(p)">
+                    <button class="icon-button mp-target" :title="isLegacyPanel(p) ? '旧版面板禁止修改关联对象' : '关联对象'"
+                            :disabled="p.targetType !== 'specific' || isLegacyPanel(p)" @click.stop="openTarget(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </button>
-                    <button class="icon-button mp-danger" title="删除" @click.stop="removePanel(p)">
+                    <button class="icon-button mp-danger" :title="isLegacyPanel(p) ? '旧版面板禁止删除' : '删除'"
+                            :disabled="isLegacyPanel(p)" @click.stop="removePanel(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                   </div>
@@ -304,6 +313,14 @@
               </select>
             </label>
           </div>
+          <label v-if="panelModal.mode === 'create'" class="gs-form-row">
+            <span class="gs-form-label">复制自面板（可选）</span>
+            <select v-model="panelForm.copySourceId" class="gs-input" @change="copyPanelFromSource">
+              <option value="">不复制，创建空白面板</option>
+              <option v-for="p in panels" :key="p.panelId" :value="p.panelId">{{ panelOptionLabel(p) }}</option>
+            </select>
+            <span class="gs-muted">复制来源的备注和面板元素；生效场景、作用范围和关联对象使用当前设置。</span>
+          </label>
           <div v-if="panelModal.mode === 'create' && createHasAllPanel" class="gs-muted">
             {{ scopeSupportSpecific(panelForm.scope) ? '该场景已存在全局面板，仅可编辑，可新建多个指定对象面板' : '该场景已存在全局面板且仅支持全局，无法新建，请编辑现有面板' }}
           </div>
@@ -444,6 +461,7 @@ const panelModal = ref(null)
 const panelForm = reactive({
   scope: 'c2c',
   targetType: 'all',
+  copySourceId: '',
   userOpenIdsText: '',
   groupOpenIdsText: '',
   remark: '',
@@ -678,6 +696,37 @@ function newPanelDraftItem() {
   return {name: '', desc: '', type: 'command', onlyAdmin: false, link: ''}
 }
 
+function panelToDraftItems(panel) {
+  return (panel?.items || []).map(it => ({
+    name: it.name || '',
+    desc: it.desc || '',
+    type: it.type || 'command',
+    onlyAdmin: !!it.onlyAdmin,
+    link: it.link || ''
+  }))
+}
+
+function isLegacyPanel(panel) {
+  return panel?.panelId?.startsWith('mp_') === true
+}
+
+function panelOptionLabel(panel) {
+  const name = panel.panel?.remark || '未命名面板'
+  return `${name} · ${scopeLabel(panel.scope)} · ${panel.panelId}`
+}
+
+function copyPanelFromSource() {
+  const source = panels.value.find(p => p.panelId === panelForm.copySourceId)
+  if (!source) {
+    panelForm.remark = ''
+    panelForm.items = [newPanelDraftItem()]
+    return
+  }
+  panelForm.remark = source.panel?.remark || ''
+  panelForm.items = panelToDraftItems(source.panel)
+  if (panelForm.items.length === 0) panelForm.items.push(newPanelDraftItem())
+}
+
 function addPanelItem() {
   if (panelForm.items.length >= 20) return
   panelForm.items.push(newPanelDraftItem())
@@ -731,6 +780,7 @@ function selectPanel(p) {
 function openCreate() {
   panelForm.scope = 'c2c'
   panelForm.targetType = 'all'
+  panelForm.copySourceId = ''
   panelForm.userOpenIdsText = ''
   panelForm.groupOpenIdsText = ''
   panelForm.remark = ''
@@ -740,14 +790,9 @@ function openCreate() {
 }
 
 function openEdit(p) {
+  if (isLegacyPanel(p)) return
   panelForm.remark = p.panel?.remark || ''
-  panelForm.items = (p.panel?.items || []).map(it => ({
-    name: it.name || '',
-    desc: it.desc || '',
-    type: it.type || 'command',
-    onlyAdmin: !!it.onlyAdmin,
-    link: it.link || ''
-  }))
+  panelForm.items = panelToDraftItems(p.panel)
   if (panelForm.items.length === 0) panelForm.items.push(newPanelDraftItem())
   panelModal.value = {mode: 'edit', panelId: p.panelId}
 }
@@ -757,6 +802,10 @@ function closePanelModal() {
 }
 
 async function savePanel() {
+  if (panelModal.value.mode === 'edit' && panelModal.value.panelId?.startsWith('mp_')) {
+    alert('旧版绝版面板为只读，禁止修改')
+    return
+  }
   if (panelForm.items.length === 0) {
     alert('请至少配置一个面板元素')
     return
@@ -795,6 +844,7 @@ async function savePanel() {
 }
 
 async function removePanel(p) {
+  if (isLegacyPanel(p)) return
   if (!confirm(`确认删除面板「${p.panel?.remark || p.panelId}」？`)) return
   try {
     await api(`/panels/${p.panelId}`, {method: 'DELETE'})
@@ -805,6 +855,7 @@ async function removePanel(p) {
 }
 
 async function openTarget(p) {
+  if (isLegacyPanel(p)) return
   submitting.value = false
   try {
     const detail = await api(`/panels/${p.panelId}`)

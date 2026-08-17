@@ -157,4 +157,10 @@ public final class ResourcesProperties {
 
     // @ClassName LootAdminClient
     public static final String LOOTS_ITEM_IMAGE_API = UGC_API + "/v2/atrimeow/loots/image";
+
+    // @ClassName MinecraftWhitelistName
+    public static final String PLAYER_PROFILE_API = UGC_API + "/v1/mc/profile/info/{uuid}";
+
+    // @ClassName HypixelTNTWizards
+    public static final String HYPIXEL_TNT_WIZARDS_API = UGC_API + "/v2/atrimeow/hypixel-tnt-wizards";
 }

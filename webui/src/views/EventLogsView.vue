@@ -205,7 +205,7 @@
                 删除指定范围
               </button>
               <button class="ghost-button danger" :disabled="clearing" @click="clearAll">
-                清空全部
+                {{ clearType ? '清空此类型' : '清空全部' }}
               </button>
             </div>
             <p v-if="clearMessage" class="eventlogs-clear-message">{{ clearMessage }}</p>
@@ -301,6 +301,9 @@ async function fetchStats() {
     if (activeType.value !== 'ALL' && !stats.topTypes[activeType.value]) {
       activeType.value = 'ALL'
     }
+    if (clearType.value && !stats.topTypes[clearType.value]) {
+      clearType.value = ''
+    }
   } catch {
     // ignore
   }
@@ -352,6 +355,7 @@ function backToList() {
 }
 
 function selectType(type) {
+  clearType.value = type === 'ALL' ? '' : type
   if (activeType.value === type) return
   activeType.value = type
   mode.value = 'list'
@@ -498,7 +502,6 @@ async function clearRange() {
     clearMessage.value = `已删除 ${data.deleted} 条记录`
     clearStart.value = ''
     clearEnd.value = ''
-    clearType.value = ''
     await fetchStats()
     await fetchList()
   } catch (e) {
@@ -509,12 +512,17 @@ async function clearRange() {
 }
 
 async function clearAll() {
-  if (!confirm('确认清空全部事件记录？此操作不可恢复')) return
+  const type = clearType.value || null
+  const target = type ? `事件类型「${type}」的全部记录` : '全部事件记录'
+  if (!confirm(`确认清空${target}？此操作不可恢复`)) return
   clearing.value = true
   clearMessage.value = ''
   try {
-    const data = await api('/event-logs/clear', {method: 'POST', body: '{}'})
-    clearMessage.value = `已清空全部记录，共删除 ${data.deleted} 条`
+    const data = await api('/event-logs/clear', {
+      method: 'POST',
+      body: JSON.stringify({type})
+    })
+    clearMessage.value = `已清空${target}，共删除 ${data.deleted} 条`
     await fetchStats()
     await fetchList()
   } catch (e) {

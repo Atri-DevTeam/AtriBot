@@ -9,7 +9,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Cancellable;
 import top.yzljc.atribot.event.impl.AnswerCode;
@@ -129,11 +129,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String replyMessage(ImageType type, String value) {
+    public String replyMessage(ImageComponent image) {
         if (this.chatType == 1) {
-            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, type, value);
+            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, image);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, type, value);
+            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, image);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }

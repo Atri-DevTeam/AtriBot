@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
+import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.tools.Alert;
@@ -43,16 +44,20 @@ public final class QQBot {
      * 判定群已作废的 err_code（取自接口错误响应体中的 err_code 字段）：
      * 11255    - invalid request，群 openid 已失效
      * 40011026 - 机器人非群成员，群已解散或将机器人移出
+     * 40011028 - 请求的资源不存在，用户或群已注销
      */
-    private static final Set<String> DEFUNCT_GROUP_ERR_CODES = Set.of("11255", "40011026");
+    private static final Set<String> DEFUNCT_GROUP_ERR_CODES = Set.of(
+            "11255",
+            "40011026",
+            String.valueOf(ErrorCode.REQUESTED_RESOURCE_NOT_FOUND.getErrorCode()));
 
     private static final String BOT_GROUP_STATE_URL = Config.getInstance().getQqApiBaseUrl() + "/v2/groups/{group_openid}/bot_state";
 
     private static final String GROUP_INFO_URL = Config.getInstance().getQqApiBaseUrl() + "/v2/groups/{group_openid}/info";
 
-    private static final EndpointRateLimiter BOT_GROUP_STATE_LIMITER = new EndpointRateLimiter("群聊 /bot_state", 60);
+    private static final EndpointRateLimiter BOT_GROUP_STATE_LIMITER = new EndpointRateLimiter("群聊 /bot_state", 30);
 
-    private static final EndpointRateLimiter GROUP_INFO_LIMITER = new EndpointRateLimiter("群聊 /info", 60);
+    private static final EndpointRateLimiter GROUP_INFO_LIMITER = new EndpointRateLimiter("群聊 /info", 30);
 
     public static void fetchBotInfo() {
         var url = Config.getInstance().getQqApiBaseUrl() + "/users/@me";

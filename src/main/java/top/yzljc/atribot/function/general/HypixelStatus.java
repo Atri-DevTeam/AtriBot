@@ -1,12 +1,7 @@
 package top.yzljc.atribot.function.general;
 
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.ImageType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
@@ -44,17 +39,18 @@ public class HypixelStatus implements CommandExecutor {
                 return true;
             }
         } finally {
-            if (sender instanceof QQCommandSender qq) {
+            if (sender instanceof NapcatCommandSender nc) {
+                nc.recall(msgId);
+            } else if (sender instanceof QQCommandSender qq) {
                 qq.recall(msgId);
             }
         }
 
-        if (sender instanceof NapcatCommandSender nc) {
-            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
-        } else if (sender instanceof QQCommandSender qq) {
-            qq.sendMessage(data.url(), ImageType.URL);
-        } else {
-            sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
+        switch (sender) {
+            case NapcatCommandSender nc -> nc.sendMessage(ImageComponent.imageOf(data.url()));
+            case QQCommandSender qq -> qq.sendMessage(ImageComponent.imageOf(data.url()));
+            case QQGuildCommandSender guildUser -> guildUser.sendMessage(ImageComponent.imageOf(data.url()));
+            default -> sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);
         }
 
         return true;

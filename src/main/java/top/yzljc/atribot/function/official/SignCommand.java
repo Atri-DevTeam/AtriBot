@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.official;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
@@ -9,6 +10,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.SignRepository;
@@ -40,19 +42,26 @@ public class SignCommand implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (!(sender instanceof QQCommandSender) && !(sender instanceof QQGuildCommandSender)) return true;
 
-        if (args.length > 0 && qq.hasPermission()) {
+        if (args.length > 0 && sender.hasPermission()) {
             if (args[0].equals("ban")) {
                 banned = true;
-                qq.sendMessage("已禁用打卡功能！");
+                sender.sendMessage("已禁用打卡功能！");
                 return true;
             } else if (args[0].equals("unban")) {
                 banned = false;
-                qq.sendMessage("已启用打卡功能！");
+                sender.sendMessage("已启用打卡功能！");
                 return true;
             }
         }
+
+        if (sender instanceof QQGuildCommandSender guildSender) {
+            handleGuildCheckIn(guildSender, guildSender.getUserOpenId());
+            return true;
+        }
+
+        QQCommandSender qq = (QQCommandSender) sender;
 
         int flag;
         if (qq.getPlatform() == Platform.OFFICIAL_C2C) {
@@ -63,6 +72,47 @@ public class SignCommand implements CommandExecutor, Listener {
 
         handleCheckIn(flag, qq.getUserId(), qq.getGroupId(), qq.getMessage().getMessageId());
         return true;
+    }
+
+    private static void handleGuildCheckIn(QQGuildCommandSender sender, String userOpenId) {
+        ThreadManager.execute(() -> {
+            if (userOpenId == null || userOpenId.isBlank()) {
+                sender.sendMessage("无法获取频道用户标识，暂时无法打卡");
+                return;
+            }
+
+            if (banned) {
+                sender.sendMessage("由于内容调整，开发者暂时禁用了打卡！");
+                return;
+            }
+
+            if (SignRepository.isInSettlementWindow()) {
+                sender.sendMessage("打卡结算中，暂时无法打卡哦！");
+                return;
+            }
+
+            if (SignRepository.hasCheckedInToday(userOpenId)) {
+                sender.sendMessage("你今天已经打过卡了哦！");
+                return;
+            }
+
+            SignRepository.CheckInResult result = SignRepository.checkIn(userOpenId);
+            if (result == null) {
+                sender.sendMessage("打卡失败，请稍后重试");
+                return;
+            }
+
+            String text = "打卡成功\n" +
+                    "你已累计打卡 " + result.totalCount() + " 次！\n" +
+                    "今天已有 " + result.rank() + " 人参与了打卡！\n" +
+                    "+ " + result.coins() + " 金粒";
+            var image = ImageSourceClient.getRandomImage();
+            if (image == null || image.url() == null || image.url().isBlank()) {
+                sender.sendMessage(text);
+                return;
+            }
+            sender.sendMessage(ImageComponent.imageOf(image.url()).setText(text));
+        });
     }
 
     @EventHandler

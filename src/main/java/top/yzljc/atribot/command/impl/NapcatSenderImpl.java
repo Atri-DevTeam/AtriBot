@@ -1,8 +1,8 @@
 package top.yzljc.atribot.command.impl;
 
 import lombok.AllArgsConstructor;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
@@ -77,17 +77,16 @@ public class NapcatSenderImpl implements NapcatCommandSender {
         }
     }
 
-    public String sendMessage(String image, MessageUtils.ImageType type) {
-        return sendMessage(null, image, type);
-    }
-
-    public String sendMessage(String text, String image, MessageUtils.ImageType type) {
+    public String sendMessage(ImageComponent image) {
         switch (this.user.getPlatform()) {
             case NAPCAT_GROUP -> {
-                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, image, type);
+                return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
+            }
+            case NAPCAT_PRIVATE -> {
+                return this.user.sendMessage(this.message.getMessageId(), image);
             }
         }
-        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage with image is not supported for this platform.");
+        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image)");
     }
 
     public boolean recall() {

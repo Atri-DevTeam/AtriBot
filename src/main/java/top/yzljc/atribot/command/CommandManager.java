@@ -5,10 +5,12 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import top.yzljc.atribot.command.impl.DiscordSenderImpl;
 import top.yzljc.atribot.command.impl.NapcatSenderImpl;
+import top.yzljc.atribot.command.impl.QQGuildSenderImpl;
 import top.yzljc.atribot.command.impl.QQSenderImpl;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.User;
@@ -201,6 +203,47 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed && event.isAtBot() && commandContent.startsWith(COMMAND_PREFIX)) {
+            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        }
+    }
+    @EventHandler
+    public void onOfficialGuildAtMessageCreate(OfficialGuildAtMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
+        String userInput = event.getMessage().getContent().trim();
+        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
+        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+        User channelUser = event.getUser();
+        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
+
+        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUserOpenId());
+
+        boolean executed = commandMap.dispatch(senderUser, commandContent);
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
+            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+        }
+    }
+
+    @EventHandler
+    public void onOfficialGuildDirectMessageCreate(OfficialGuildDirectMessageCreateEvent event) {
+        if (event.getUser().isBot()) return;
+        String userInput = event.getMessage().getContent().trim();
+        String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
+        if (!revPrefixContent.startsWith(COMMAND_PREFIX)) {
+            return;
+        }
+        User channelUser = event.getUser();
+        String commandContent = revPrefixContent.substring(COMMAND_PREFIX.length());
+
+        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUserOpenId());
+
+        boolean executed = commandMap.dispatch(senderUser, commandContent);
+        BotRuntimeData.callCommandExecuted();
+
+        if (!executed) {
             senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
         }
     }

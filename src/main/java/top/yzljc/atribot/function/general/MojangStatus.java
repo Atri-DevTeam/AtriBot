@@ -1,14 +1,9 @@
 package top.yzljc.atribot.function.general;
 
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
@@ -31,14 +26,14 @@ public class MojangStatus implements CommandExecutor {
             }
         }
 
-        String messageId = sender.sendMessage("正在检查 Mojang 服务状态，请稍候...");
+        String messageId = sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
 
         var data = PreImageGenerate.dump(ResourcesProperties.MOJANG_STATUS_API, Map.of());
 
         try {
             if (data.isError()) {
                 String errMsg = data.errorMessage();
-                sender.sendMessage("检查 Mojang 服务状态失败: " + errMsg);
+                sender.sendMessage("在查询Minecraft验证服务器服务状态时出现错误: " + errMsg);
                 return true;
             }
         } finally {
@@ -51,12 +46,12 @@ public class MojangStatus implements CommandExecutor {
             }
         }
 
-        if (sender instanceof NapcatCommandSender nc) {
-            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
-            return true;
-        } else if (sender instanceof QQCommandSender qq) {
-            qq.sendMessage(data.url(), ImageType.URL);
-            return true;
+        switch (sender) {
+            case NapcatCommandSender nc -> nc.sendMessage(ImageComponent.imageOf(data.url()));
+            case QQCommandSender qq -> qq.sendMessage(ImageComponent.imageOf(data.url()));
+            case QQGuildCommandSender guildUser -> guildUser.sendMessage(ImageComponent.imageOf(data.url()));
+            default -> {
+            }
         }
         return true;
     }

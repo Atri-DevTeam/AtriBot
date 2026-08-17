@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.official.minecraft;
 
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -33,7 +33,7 @@ public final class MinecraftCapes {
             return true;
         }
 
-        sender.sendMessage(data.url(), ImageType.URL);
+        sender.sendMessage(ImageComponent.imageOf(data.url()));
         return true;
     }
 }

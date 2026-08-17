@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.official;
 
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -24,7 +24,7 @@ public class EarthOnline implements CommandExecutor {
         if (sender instanceof QQCommandSender qq) {
             var d = PreImageGenerate.dump(ResourcesProperties.EARTH_ONLINE_API, Map.of());
             if (!d.isError()) {
-                qq.sendMessage("欢迎来到地球ONLINE!", d.url(), ImageType.URL);
+                qq.sendMessage(ImageComponent.imageOf(d.url()).setText("欢迎来到地球ONLINE!"));
             } else {
                 qq.sendMessage(d.errorMessage());
             }

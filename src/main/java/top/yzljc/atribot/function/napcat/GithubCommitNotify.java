@@ -8,9 +8,9 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -183,7 +183,7 @@ public class GithubCommitNotify implements CommandExecutor {
             else for (String groupId : TARGET_GROUPS)
                 if (GroupConfigManager.isFeatureEnabled(groupId, "github_info")) destinationGroups.add(groupId);
             for (String gid : destinationGroups) {
-                GroupMessage.chatMessage(gid, imageUrl, MessageUtils.ImageType.URL);
+                GroupMessage.chatMessage(gid, ImageComponent.imageOf(imageUrl));
             }
         }
 

@@ -1,14 +1,9 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.ImageType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.chat.ImageComponent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +28,12 @@ public class HappyNewYear implements CommandExecutor {
         }
 
         if (sender instanceof QQCommandSender qq) {
-            qq.sendMessage(data.url(), ImageType.URL);
+            qq.sendMessage(ImageComponent.imageOf(data.url()));
         } else if (sender instanceof NapcatCommandSender nc) {
             if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "new_year")) return true;
-            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
+            nc.sendMessage(ImageComponent.imageOf(data.url()));
+        } else if (sender instanceof QQGuildCommandSender guild) {
+            guild.sendMessage(ImageComponent.imageOf(data.url()));
         }
 
         return true;

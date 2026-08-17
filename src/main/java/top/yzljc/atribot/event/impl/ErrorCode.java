@@ -26,6 +26,7 @@ public enum ErrorCode {
     INVALID_USER_OPENID(306009, "用户openid无效"),
     GET_BOT_INFO_FAILED(340067, "获取机器人信息失败"),
     INVALID_MESSAGE_TYPE(340069, "消息类型无效"),
+    REQUESTED_RESOURCE_NOT_FOUND(40011028, "请求的资源不存在(用户/群已注销)"),
     MEDIA_TRANSFER_FAILED(40034004, "富媒体信息转存失败"),
     REPLY_MSG_ID_EXPIRED(40034005, "回复消息msg_id已过期"),
     MESSAGE_CONTENT_VIOLATION(40034006, "消息内容违规"),

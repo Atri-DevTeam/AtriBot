@@ -1,14 +1,9 @@
 package top.yzljc.atribot.function.general;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.ImageType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -16,6 +11,7 @@ import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.function.impl.FetchHitokoto;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.platform.Identifier;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -37,20 +33,29 @@ public class Hitokoto implements CommandExecutor, Listener {
         var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API, Map.of());
         if (sender instanceof NapcatCommandSender nc) {
             if (!d.isError()) {
-                nc.sendMessage(d.url(), MessageUtils.ImageType.URL);
+                nc.sendMessage(ImageComponent.imageOf(d.url()));
             } else {
-                nc.sendMessage(FetchHitokoto.get().replace(">", ""));
+                nc.sendMessage(Identifier.HANDLER_ERROR);
             }
             return true;
         }
 
         if (sender instanceof QQCommandSender qq) {
             if (!d.isError()) {
-                qq.sendMessage(d.url(), ImageType.URL);
+                qq.sendMessage(ImageComponent.imageOf(d.url()));
             } else {
-                qq.sendMessage(TC.md(FetchHitokoto.get()));
+                qq.sendMessage(Identifier.HANDLER_ERROR);
             }
         }
+
+        if (sender instanceof QQGuildCommandSender guildUser) {
+            if (!d.isError()) {
+                guildUser.sendMessage(ImageComponent.imageOf(d.url()));
+            } else {
+                guildUser.sendMessage(Identifier.HANDLER_ERROR);
+            }
+        }
+
         return true;
     }
 

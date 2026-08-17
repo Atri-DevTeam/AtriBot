@@ -3,7 +3,7 @@ package top.yzljc.atribot.event.events;
 import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.QQMessage;
@@ -40,8 +40,8 @@ public class OfficialGroupMessageCreateEvent extends Event {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown);
     }
 
-    public String sendMessage(String data, ImageType type) {
-        return this.user.sendMessage(this.groupId, this.message.getMessageId(), data, type);
+    public String sendMessage(ImageComponent image) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
     }
 
     public String sendMessage(Markdown markdown, Object buttons) {

@@ -2,7 +2,9 @@ package top.yzljc.atribot.function.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atribot.chat.official.button.ButtonSize;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +80,7 @@ public class EventRecord implements Listener {
                         List.of(new Button("c1", "打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "帮助", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c3", "提建议", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
-                )
+                ), ButtonSize.SMALL
         );
         event.sendMessage(md, buttons);
     }
@@ -249,6 +251,26 @@ public class EventRecord implements Listener {
 
     @EventHandler
     public void onRunCommand(UserRunCommandEvent event) {
+        if (event.getSender() instanceof QQGuildCommandSender guildSender) {
+            if (!Config.getInstance().isNapcatEnabled()) {
+                return;
+            }
+
+            String scene = guildSender.getPlatform() == Platform.OFFICIAL_GUILD_CHANNEL
+                    ? "频道: %s, 子频道: %s".formatted(guildSender.getGuildId(), guildSender.getChannelId())
+                    : "频道私信: %s".formatted(guildSender.getGuildId());
+            String info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (%s)".formatted(
+                    guildSender.getUsername(),
+                    guildSender.getUserId(),
+                    event.getCommandHeader(),
+                    String.join(" ", event.getArgs()),
+                    scene
+            );
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), info);
+            log.info(info);
+            return;
+        }
+
         if (!(event.getSender() instanceof QQCommandSender qq)) return;
 
         if (qq.getPlatform() == Platform.OFFICIAL_GROUP && OfficialGroups.isGroupBlacklisted(qq.getGroupId())) {

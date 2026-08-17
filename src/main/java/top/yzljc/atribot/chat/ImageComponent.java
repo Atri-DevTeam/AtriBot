@@ -1,6 +1,5 @@
 package top.yzljc.atribot.chat;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -26,6 +25,14 @@ public class ImageComponent {
     public ImageComponent(String data, ImageType type) {
         this.data = data;
         this.type = type;
+    }
+
+    public static ImageComponent imageOf(String url) {
+        return new ImageComponent(url);
+    }
+
+    public static ImageComponent imageOf(String data, ImageType type) {
+        return new ImageComponent(data, type);
     }
 
     public ImageComponent setData(String data) {

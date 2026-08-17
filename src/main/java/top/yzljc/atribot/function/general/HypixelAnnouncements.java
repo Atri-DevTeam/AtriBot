@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.general;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,15 +16,11 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -33,6 +30,8 @@ import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +62,10 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
 
     private static final String HYPIXEL_ANNOUNCEMENT_URL = "https://hypixel.net/forums/news-and-announcements.4/index.rss";
     private static final String HYPIXEL_SKYBLOCK_PATCH_NOTES_URL = "https://hypixel.net/forums/skyblock-patch-notes.158/index.rss";
-    private record FeedConfig(String url, String label) {}
+
+    private record FeedConfig(String url, String label) {
+    }
+
     private static final List<FeedConfig> FEEDS = List.of(
             new FeedConfig(HYPIXEL_ANNOUNCEMENT_URL, "Hypixel"),
             new FeedConfig(HYPIXEL_SKYBLOCK_PATCH_NOTES_URL, "Hypixel Skyblock")
@@ -79,11 +81,11 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (!(sender instanceof QQCommandSender) && !((sender instanceof ConsoleCommandSender))) return true;
 
         boolean result = feedAnnouncements();
         if (!result) {
-            qq.sendMessage("暂无新的 Hypixel 公告");
+            sender.sendMessage("暂无新的 Hypixel 公告");
             return true;
         }
 
@@ -142,11 +144,22 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
             for (String gid : gids) {
                 if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_news")) continue;
                 if (banner != null) {
-                    GroupMessage.chatMessage(gid, text, banner.url(), MessageUtils.ImageType.URL);
+                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
                 } else {
                     GroupMessage.chatMessage(gid, text);
                 }
             }
+
+            Markdown forumsMarkdown = TC.md(
+                    "**" + headerText + "**\n\n" +
+                            "作者: " + a.author() + "\n\n" +
+                            "时间: " + a.publishTime() + "\n\n" +
+                            "位置: " + Markdown.link(a.link(), "查看原帖") + "\n\n" +
+                            (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
+                            ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
+            );
+
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_NEWS.getChannelId(), a.title(), forumsMarkdown);
 //            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), text.trim());
 //            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), md);
         }
@@ -344,7 +357,8 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
         }
 
         try {
-            List<String> guidList = objectMapper.readValue(file, new TypeReference<>() {});
+            List<String> guidList = objectMapper.readValue(file, new TypeReference<>() {
+            });
 
             return new HashSet<>(guidList);
 

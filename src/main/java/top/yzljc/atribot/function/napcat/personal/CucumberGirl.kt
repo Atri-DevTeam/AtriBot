@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.napcat.personal
 
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils
+import top.yzljc.atribot.chat.ImageComponent
 import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
@@ -58,7 +58,7 @@ object CucumberGirl : CommandExecutor {
             return true
         }
         data.url?.let {
-            nc.sendMessage(it, MessageUtils.ImageType.URL)
+            nc.sendMessage(ImageComponent.imageOf(it))
         }
         return true
     }

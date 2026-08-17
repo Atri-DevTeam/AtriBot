@@ -343,6 +343,7 @@ public class BotEvents {
             String username = eventData.path("author").path("username").asText(null);
             boolean isBot = eventData.path("author").path("bot").asBoolean(false);
             String channelUserId = eventData.path("author").path("id").asText(null);
+            String unionOpenId = eventData.path("author").path("union_openid").asText(null);
             String content = eventData.path("content").asText(null);
             String time = eventData.path("timestamp").asText(null);
             List<User> mentions = new ArrayList<>();
@@ -357,7 +358,7 @@ public class BotEvents {
 
             var message = new Message(Platform.OFFICIAL_GUILD_CHANNEL, messageId, content, time, mentions);
             var user = new User(Platform.OFFICIAL_GUILD_CHANNEL, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            OfficialGuildAtMessageCreateEvent event = new OfficialGuildAtMessageCreateEvent(user, guildId, channelId, message);
+            OfficialGuildAtMessageCreateEvent event = new OfficialGuildAtMessageCreateEvent(user, unionOpenId, guildId, channelId, message);
             EventManager.getInstance().callEvent(event);
 
         } catch (Exception e) {
@@ -377,12 +378,13 @@ public class BotEvents {
             String username = eventData.path("author").path("username").asText(null);
             boolean isBot = eventData.path("author").path("bot").asBoolean(false);
             String channelUserId = eventData.path("author").path("id").asText(null);
+            String unionOpenId = eventData.path("author").path("union_openid").asText(null);
             String content = eventData.path("content").asText(null);
             String time = eventData.path("timestamp").asText(null);
 
             var message = new Message(Platform.OFFICIAL_GUILD_DM, messageId, content, time, List.of());
             var user = new User(Platform.OFFICIAL_GUILD_DM, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            OfficialGuildDirectMessageCreateEvent event = new OfficialGuildDirectMessageCreateEvent(user, guildId, channelId, message);
+            OfficialGuildDirectMessageCreateEvent event = new OfficialGuildDirectMessageCreateEvent(user, unionOpenId, guildId, channelId, message);
             EventManager.getInstance().callEvent(event);
 
         } catch (Exception e) {

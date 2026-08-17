@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.general;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,9 +12,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.auth.official.OfficialGroups;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -36,6 +37,8 @@ import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.tools.Alert;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -276,14 +279,14 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             log.warn(">>> [失败] 新闻图片生成失败: {}", errMsg);
             return;
         }
-        pushNews(data, article.dateDisplay);
+        pushNews(data, article.dateDisplay, article.title);
     }
 
-    private static void pushNews(ImageDTO data, String t) {
+    private static void pushNews(ImageDTO data, String t, String title) {
         String url = data.url();
 
         try {
-            String messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), url, MessageUtils.ImageType.URL);
+            String messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), ImageComponent.imageOf(url));
             for (var gid : TARGET_GROUPS) {
                 if (Objects.equals(gid, Config.getInstance().getNapcatDebugGroupUin())) continue;
                 if (!GroupConfigManager.isFeatureEnabled(gid, "mc_news")) continue;
@@ -301,6 +304,13 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             for (String uid : userLists) {
                 C2CChat.sendMessage(uid, TC.md(markdown));
             }
+
+            Markdown forumsMarkdown = TC.md(
+                    "Minecraft官网发布了新的文章，点击图片查看详细！\n\n"
+                            + "![MC #" + data.width() + "px #" + data.height() + "px](" + url + ")"
+            );
+
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[动态] " + title, forumsMarkdown);
 
         } catch (Exception e) {
             log.warn("推送新闻图片失败: {}", e.getMessage());

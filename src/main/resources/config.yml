@@ -145,6 +145,16 @@ qq:
   # 超级管理员用户 OpenId，用于官方调试页 {user_openid} 模板
   super_admin_id: "null"
 
+# ========== 腾讯频道 CLI（第二账号）配置参数 ==========
+tencent-channel:
+  # CLI 按调用启动，用完即退出，不会常驻后台
+  enabled: false
+  # Linux 建议填写原生二进制绝对路径；Windows 可填写 .exe 或 .cmd 路径
+  cli-path: ""
+  # 也可通过 TENCENT_CHANNEL_LOGIN_TOKEN 环境变量覆盖，token 不会进入命令行
+  login-token: ""
+  timeout-seconds: 90
+
 # ========== Discord 机器人配置参数 ==========
 discord:
   enabled: false

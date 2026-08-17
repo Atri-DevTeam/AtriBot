@@ -47,6 +47,14 @@ public final class ChatStatsSnapshotRepo {
         persistAll();
     }
 
+    /** 在批量删除消息前，将当前完整统计快照强制落库。 */
+    public static synchronized void archiveCurrentSnapshot() {
+        ensureInitialized();
+        if (!persistAll()) {
+            throw new IllegalStateException("统计快照归档失败，已中止聊天记录清理");
+        }
+    }
+
     private static boolean loadFromDatabase() {
         Snapshot loaded = new Snapshot();
         boolean found = false;
@@ -362,7 +370,7 @@ public final class ChatStatsSnapshotRepo {
         }
     }
 
-    private static void persistAll() {
+    private static boolean persistAll() {
         ensureTable();
         String sql = "INSERT INTO `" + SNAPSHOT_TABLE + "` " +
                 "(scope_key, scope_type, scope_id, stat_date, n1, n2, n3, n4, n5, json_a, json_b, json_c, json_d, first_seen_at, last_seen_at, last_username) " +
@@ -388,8 +396,10 @@ public final class ChatStatsSnapshotRepo {
             }
             stmt.executeBatch();
             conn.commit();
+            return true;
         } catch (SQLException e) {
             log.error("保存聊天统计数据库快照失败: {}", e.getMessage(), e);
+            return false;
         }
     }
 

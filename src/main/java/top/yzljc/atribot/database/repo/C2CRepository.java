@@ -7,9 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * official_users 表的纯数据库访问层。
- * 缓存和业务逻辑保留在 OfficialUsers 中。
- *
  * @Author YZ_Ljc_
  * @ClassName C2CRepository
  * @Created_at 2026/06/15
@@ -21,8 +18,6 @@ public class C2CRepository {
 
     private static final String USER_TABLE = "official_users";
     private static final String C2C_FUNCTION_TABLE = "c2c_function_list";
-
-    // ==================== Table init ====================
 
     public static void initTable() {
         String userSql = "CREATE TABLE IF NOT EXISTS `" + USER_TABLE + "` (" +
@@ -51,59 +46,7 @@ public class C2CRepository {
         } catch (Exception e) {
             log.error("初始化 official_users/c2c_function_list 表失败: {}", e.getMessage());
         }
-
-        ensureC2CPushColumn();
-
-        // 从旧表迁移数据（如果存在）
-        migrateFromLegacyTable();
     }
-
-    private static void ensureC2CPushColumn() {
-        String checkSql = "SHOW COLUMNS FROM `" + USER_TABLE + "` LIKE 'c2c_push'";
-        String alterSql = "ALTER TABLE `" + USER_TABLE + "` ADD COLUMN `c2c_push` BOOLEAN NOT NULL DEFAULT TRUE AFTER `is_ignored`";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(checkSql);
-             var rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return;
-            }
-        } catch (Exception e) {
-            log.warn("检查 official_users.c2c_push 列失败: {}", e.getMessage());
-            return;
-        }
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(alterSql)) {
-            ps.execute();
-            log.info("已为 official_users 补充 c2c_push 列");
-        } catch (Exception e) {
-            log.error("补充 official_users.c2c_push 列失败: {}", e.getMessage());
-        }
-    }
-
-    private static void migrateFromLegacyTable() {
-        try (var con = DatabaseManager.getConnection()) {
-            // 检查旧表是否存在
-            var meta = con.getMetaData();
-            var rs = meta.getTables(null, null, "permission_group", null);
-            if (!rs.next()) return;
-            rs.close();
-
-            // 旧表存在，迁移数据
-            log.info("检测到旧表 permission_group，开始迁移到 official_users...");
-            String migrateSql = "INSERT IGNORE INTO `" + USER_TABLE + "` (user_openId, role, permissions) " +
-                    "SELECT user_openId, role, permissions FROM permission_group";
-            try (var ps = con.prepareStatement(migrateSql)) {
-                int count = ps.executeUpdate();
-                log.info("迁移完成，共迁移 {} 条数据", count);
-            }
-        } catch (Exception e) {
-            log.warn("旧表迁移检查/执行失败: {}", e.getMessage());
-        }
-    }
-
-    // ==================== CRUD ====================
 
     /**
      * 加载所有数据（用于启动时填充缓存）

@@ -248,15 +248,29 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     }
 
     /**
-     * 结算金粒奖励：按难度奖池 + 参与度占比瓜分
-     * 奖池分段映射：1~6 雷 5→45（陡），6~29 雷 45→80（缓）
-     * 个人奖励 = 奖池 × 个人操作数 / 全员总操作数
-     * 操作数为 0 的（含只开局的发起者）不发；操作 ≥1 保底 1 金粒；四舍五入尾差归操作最多者
+     * 结算金粒奖励
+     * 胜利：按难度奖池 + 参与度占比瓜分，奖池分段映射 1~6 雷 5→45（陡）、6~29 雷 45→80（缓），上限 80
+     * 失败：不碰奖池，只发参与安慰奖，每操作 1 步 1 金粒、封顶 5，防止秒点秒死刷金粒
+     * 操作数为 0 的不发；胜利时操作 ≥1 保底 1 金粒；四舍五入尾差归操作最多者
      */
     private Map<String, Integer> grantRewards(GameState game) {
         Map<String, Integer> rewards = new HashMap<>();
 
-        // 难度奖池分段：1~6 雷线性到 45，6~29 雷线性到 80
+        // 失败：固定参与安慰奖，与奖池无关
+        if (!game.isWin) {
+            for (String uid : game.participants) {
+                int ops = game.operations.getOrDefault(uid, 0);
+                if (ops > 0) {
+                    rewards.put(uid, Math.min(ops, 5));
+                }
+            }
+            for (Map.Entry<String, Integer> entry : rewards.entrySet()) {
+                LootRepository.addCoins(entry.getKey(), entry.getValue());
+            }
+            return rewards;
+        }
+
+        // 胜利：难度奖池分段 1~6 雷线性到 45，6~29 雷线性到 80
         int pool;
         if (game.minesCount <= DEFAULT_MINES) {
             pool = MIN_POOL + (game.minesCount - 1) * (MID_POOL - MIN_POOL) / (DEFAULT_MINES - 1);

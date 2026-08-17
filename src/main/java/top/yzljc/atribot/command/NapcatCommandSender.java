@@ -1,6 +1,6 @@
 package top.yzljc.atribot.command;
 
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.napcat.NapcatMessage;
@@ -24,9 +24,7 @@ public interface NapcatCommandSender extends CommandSender {
 
     NapcatMessage getMessage();
 
-    String sendMessage(String image, MessageUtils.ImageType type);
-
-    String sendMessage(String text, String image, MessageUtils.ImageType type);
+    String sendMessage(ImageComponent image);
 
     boolean recall();
 

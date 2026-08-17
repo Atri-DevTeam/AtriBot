@@ -1,10 +1,10 @@
 package top.yzljc.atribot.command.impl;
 
 import lombok.AllArgsConstructor;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
@@ -129,20 +129,17 @@ public class QQSenderImpl implements QQCommandSender {
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at)");
     }
 
-    public String sendMessage(String image, ImageType type) {
-        return sendMessage(null, image, type);
-    }
-
-    public String sendMessage(String text, String image, ImageType type) {
+    @Override
+    public String sendMessage(ImageComponent image) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
-                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, image, type);
+                return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
             }
             case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), text, image, type, true);
+                return this.user.sendMessage(this.message.getMessageId(), image);
             }
         }
-        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(String text, String image, ImageType type)");
+        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image)");
     }
 
     public String sendStreamTextMessage(List<String> textDeltas) {

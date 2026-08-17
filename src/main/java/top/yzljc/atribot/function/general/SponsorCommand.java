@@ -3,13 +3,13 @@ package top.yzljc.atribot.function.general;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -36,7 +36,7 @@ public class SponsorCommand implements CommandExecutor {
                 nc.sendMessage("数据获取失败: " + errMsg);
                 return true;
             }
-            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
+            nc.sendMessage(ImageComponent.imageOf(data.url()));
             return true;
         }
 
@@ -49,7 +49,20 @@ public class SponsorCommand implements CommandExecutor {
                     log.warn("赞助信息图片生成失败: {}", errMsg);
                     return;
                 }
-                qq.sendMessage(data.url(), ImageType.URL);
+                qq.sendMessage(ImageComponent.imageOf(data.url()));
+            });
+        }
+
+        if (sender instanceof QQGuildCommandSender guildSender) {
+            ThreadManager.execute(() -> {
+                var data = PreImageGenerate.dump(apiUrl, Map.of());
+                if (data.isError()) {
+                    String errMsg = data.errorMessage();
+                    guildSender.sendMessage("数据获取失败: " + errMsg);
+                    log.warn("赞助信息图片生成失败: {}", errMsg);
+                    return;
+                }
+                guildSender.sendMessage(ImageComponent.imageOf(data.url()));
             });
         }
 

@@ -2,7 +2,7 @@ package top.yzljc.atribot.event.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.User;
@@ -18,6 +18,7 @@ import top.yzljc.atribot.platform.User;
 @AllArgsConstructor
 public class OfficialGuildAtMessageCreateEvent extends Event {
     private final User user;
+    private final String userOpenId;
     private final String guildId;
     private final String channelId;
     private final Message message;
@@ -26,7 +27,7 @@ public class OfficialGuildAtMessageCreateEvent extends Event {
         return user.sendMessage(this.channelId, this.message.getMessageId(), content);
     }
 
-    public String replyMessage(String text, String imageUrl) {
-        return user.sendMessage(this.channelId, this.message.getMessageId(), text, imageUrl, ImageType.URL);
+    public String replyMessage(ImageComponent image) {
+        return user.sendMessage(this.channelId, this.message.getMessageId(), image);
     }
 }

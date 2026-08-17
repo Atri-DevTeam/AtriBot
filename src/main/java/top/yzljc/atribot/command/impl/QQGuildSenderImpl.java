@@ -1,10 +1,13 @@
 package top.yzljc.atribot.command.impl;
 
 import lombok.AllArgsConstructor;
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
-import top.yzljc.atribot.platform.qq.QQMessage;
+import top.yzljc.atribot.platform.User;
 
 /**
  * @Author YZ_Ljc_
@@ -16,69 +19,82 @@ import top.yzljc.atribot.platform.qq.QQMessage;
 @AllArgsConstructor
 public class QQGuildSenderImpl implements QQGuildCommandSender {
 
-    private final Platform platform;
-    private final QQMessage message;
+    private final User user;
+    private final Message message;
     private final String guildId;
     private final String channelId;
-    private final String channelUserId;
+    private final String userOpenId;
 
     @Override
     public Platform getPlatform() {
-        return null;
+        return this.user.getPlatform();
     }
 
     @Override
     public boolean isBot() {
-        return false;
+        return this.user.isBot();
     }
 
     @Override
     public String getGuildId() {
-        return "";
+        return this.guildId;
     }
 
     @Override
     public String getChannelId() {
-        return "";
+        return this.channelId;
     }
 
     @Override
-    public String getChannelUserId() {
-        return "";
+    public String getUserOpenId() {
+        return this.userOpenId;
     }
 
     @Override
     public PlatformRole getRole() {
-        return null;
+        return this.user.getRole();
     }
 
     @Override
-    public QQMessage getMessage() {
-        return null;
+    public Message getMessage() {
+        return this.message;
     }
 
     @Override
     public String getUserId() {
-        return "";
+        return this.user.getUserId();
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return this.user.getUsername();
     }
 
     @Override
     public boolean hasPermission() {
-        return false;
+        return OfficialUsers.isAdmin(this.userOpenId);
     }
 
     @Override
     public boolean hasPermission(String permission) {
-        return false;
+        return OfficialUsers.hasPermission(this.userOpenId, permission);
     }
 
     @Override
     public String sendMessage(String text) {
-        return "";
+        if (this.user.getPlatform() == Platform.OFFICIAL_GUILD_CHANNEL) {
+            return this.user.sendMessage(this.channelId, this.message.getMessageId(), text);
+        } else {
+            return this.user.sendMessage(this.guildId, this.message.getMessageId(), text);
+        }
+    }
+
+    @Override
+    public String sendMessage(ImageComponent image) {
+        if (this.user.getPlatform() == Platform.OFFICIAL_GUILD_CHANNEL) {
+            return this.user.sendMessage(this.channelId, this.message.getMessageId(), image);
+        } else {
+            return this.user.sendMessage(this.guildId, this.message.getMessageId(), image);
+        }
     }
 }

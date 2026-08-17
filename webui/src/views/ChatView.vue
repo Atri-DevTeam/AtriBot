@@ -510,6 +510,30 @@
                     {{ clearForm.loading ? '清除中…' : '清除记录' }}
                   </button>
                   <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}，统计数据不会改变</div>
+
+                  <div class="chatnt-clear-divider"></div>
+                  <div class="chatnt-cleanup-title">已退出群记录</div>
+                  <button type="button" class="chatnt-clear-submit chatnt-scan-submit"
+                          :disabled="orphanCleanup.running" @click="startOrphanedGroupCleanup">
+                    {{ orphanCleanup.running ? orphanCleanup.phase : '扫描并清理' }}
+                  </button>
+                  <div v-if="orphanCleanup.state !== 'idle'" class="chatnt-cleanup-progress">
+                    <div class="chatnt-cleanup-progress-head">
+                      <span>{{ orphanCleanup.phase }}</span>
+                      <span>{{ orphanCleanupProgress }}%</span>
+                    </div>
+                    <progress :value="orphanCleanupProgress" max="100"></progress>
+                    <div class="chatnt-cleanup-stats">
+                      <template v-if="orphanCleanup.state === 'scanning'">
+                        已扫描 {{ orphanCleanup.scannedGroups }} / {{ orphanCleanup.totalGroups }} 个群
+                      </template>
+                      <template v-else>
+                        发现 {{ orphanCleanup.orphanedGroups }} 个无效群，已删除 {{ orphanCleanup.deletedRecords }} 条记录
+                      </template>
+                    </div>
+                    <div v-if="orphanCleanup.error" class="chatnt-cleanup-error">{{ orphanCleanup.error }}</div>
+                  </div>
+                  <div class="chatnt-clear-hint">按当前机器人群列表扫描，统计快照会在删除前归档</div>
                 </div>
               </div>
             </div>
@@ -665,6 +689,12 @@ const newFunctionKey = ref('')
 const convStats = ref(null)
 const convStatsError = ref('')
 const clearForm = reactive({ mode: 'all', count: 100, start: '', end: '', loading: false })
+const orphanCleanup = reactive({
+  state: 'idle', phase: '等待开始', running: false, progress: 0,
+  totalGroups: 0, scannedGroups: 0, orphanedGroups: 0,
+  orphanedRecords: 0, processedGroups: 0, deletedRecords: 0,
+  deletedGroupIds: [], error: null, startedAt: null, finishedAt: null
+})
 const muteState = ref(null)
 const muteStateLoading = ref(false)
 const muteStateError = ref('')
@@ -707,6 +737,8 @@ const composerRef = ref(null)
 
 let eventSource = null
 let convRefreshTimer = null
+let orphanCleanupTimer = null
+let orphanCleanupObservedRunning = false
 
 const activeConv = computed(() =>
   active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
@@ -750,6 +782,7 @@ const memberSections = computed(() => {
 
 const orderedMessages = computed(() => [...messages.value].reverse())
 const hasMore = computed(() => messages.value.length < totalMessages.value)
+const orphanCleanupProgress = computed(() => Math.max(0, Math.min(100, Number(orphanCleanup.progress) || 0)))
 
 const canSend = computed(() => {
   if (!active.value || sending.value) return false
@@ -776,6 +809,7 @@ onMounted(async () => {
   loadLayout()
   await loadConfig()
   await Promise.all([loadConversations(), loadPinned()])
+  loadOrphanedGroupCleanupStatus()
   connectSse()
   applyDeepLink()
 })
@@ -785,6 +819,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', clampListWidth)
   if (eventSource) eventSource.close()
   if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  if (orphanCleanupTimer) clearTimeout(orphanCleanupTimer)
   if (highlightTimer) clearTimeout(highlightTimer)
   if (noticeTimer) clearTimeout(noticeTimer)
   stopComposerResize()
@@ -1482,6 +1517,64 @@ async function clearCurrentConversation() {
     showNotice(error.message || '清除聊天记录失败')
   } finally {
     clearForm.loading = false
+  }
+}
+
+function applyOrphanCleanupStatus(data) {
+  if (!data) return
+  Object.assign(orphanCleanup, data)
+  orphanCleanup.deletedGroupIds = Array.isArray(data.deletedGroupIds) ? data.deletedGroupIds : []
+}
+
+function scheduleOrphanCleanupPoll() {
+  if (orphanCleanupTimer) clearTimeout(orphanCleanupTimer)
+  orphanCleanupTimer = setTimeout(loadOrphanedGroupCleanupStatus, 700)
+}
+
+async function loadOrphanedGroupCleanupStatus() {
+  const wasObservedRunning = orphanCleanupObservedRunning
+  try {
+    const data = await api('/chat/cleanup/orphaned-groups')
+    applyOrphanCleanupStatus(data)
+    if (orphanCleanup.running) {
+      orphanCleanupObservedRunning = true
+      scheduleOrphanCleanupPoll()
+      return
+    }
+    orphanCleanupTimer = null
+    if (wasObservedRunning) {
+      orphanCleanupObservedRunning = false
+      await loadConversations()
+      if (orphanCleanup.state === 'completed') {
+        if (active.value?.type === 'group' && orphanCleanup.deletedGroupIds.includes(active.value.openId)) {
+          active.value = null
+          messages.value = []
+          totalMessages.value = 0
+          currentPage.value = 0
+          mobileChatOpen.value = false
+          closePanel()
+        }
+        showNotice(`扫描完成，清理 ${orphanCleanup.orphanedGroups} 个群、${orphanCleanup.deletedRecords} 条记录`)
+      } else if (orphanCleanup.error) {
+        showNotice(orphanCleanup.error)
+      }
+    }
+  } catch (error) {
+    orphanCleanupTimer = null
+    if (orphanCleanupObservedRunning) scheduleOrphanCleanupPoll()
+  }
+}
+
+async function startOrphanedGroupCleanup() {
+  if (orphanCleanup.running) return
+  if (!confirm('确认扫描全部群聊记录，并清理机器人已退出群的记录吗？统计数据会先归档，聊天记录删除后无法恢复。')) return
+  try {
+    const data = await api('/chat/cleanup/orphaned-groups', { method: 'POST' })
+    applyOrphanCleanupStatus(data)
+    orphanCleanupObservedRunning = orphanCleanup.running
+    if (orphanCleanup.running) scheduleOrphanCleanupPoll()
+  } catch (error) {
+    showNotice(error.message || '无法启动清理任务')
   }
 }
 

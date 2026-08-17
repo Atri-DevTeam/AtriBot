@@ -1,8 +1,9 @@
 package top.yzljc.atribot.command;
 
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
-import top.yzljc.atribot.platform.qq.QQMessage;
 
 /**
  * @Author YZ_Ljc_
@@ -21,9 +22,11 @@ public interface QQGuildCommandSender extends CommandSender {
 
     String getChannelId();
 
-    String getChannelUserId();
+    String getUserOpenId();
 
     PlatformRole getRole();
 
-    QQMessage getMessage();
+    Message getMessage();
+
+    String sendMessage(ImageComponent image);
 }

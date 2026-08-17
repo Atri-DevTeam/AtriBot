@@ -1,6 +1,7 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.ButtonSize;
 import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.platform.Identifier;
 
@@ -26,6 +27,10 @@ public class TC {
     }
 
     public static Object keyboard(List<List<Button>> layout) {
+        return keyboard(layout, ButtonSize.UNDEFINED);
+    }
+
+    public static Object keyboard(List<List<Button>> layout, ButtonSize size) {
         List<Map<String, Object>> rows = new ArrayList<>();
 
         for (List<Button> rowBtns : layout) {
@@ -77,6 +82,11 @@ public class TC {
         }
         Map<String, Object> keyboard = new HashMap<>();
         Map<String, Object> content = new HashMap<>();
+        if (size != ButtonSize.UNDEFINED) {
+            Map<String, Object> btnSize = new HashMap<>();
+            btnSize.put("font_size", size.getSize());
+            content.put("style", btnSize);
+        }
         content.put("rows", rows);
         keyboard.put("content", content);
         return keyboard;

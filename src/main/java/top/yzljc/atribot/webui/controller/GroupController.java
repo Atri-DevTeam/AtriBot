@@ -8,12 +8,14 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.function.official.PushTaskCommand;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.ChatPinnedRepo;
+import top.yzljc.atribot.webui.repo.OrphanedGroupRecordCleanup;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -119,6 +121,14 @@ public class GroupController {
         } catch (IllegalStateException e) {
             ctx.json(Result.fail(500, e.getMessage()));
         }
+    }
+
+    public static void startOrphanedGroupRecordCleanup(Context ctx) {
+        ctx.json(Result.success(OrphanedGroupRecordCleanup.start()));
+    }
+
+    public static void getOrphanedGroupRecordCleanupStatus(Context ctx) {
+        ctx.json(Result.success(OrphanedGroupRecordCleanup.getStatus()));
     }
 
     /** 群成员列表（实为「在本群发过言的人」，官方 API 不提供真实名册） */
@@ -227,9 +237,9 @@ public class GroupController {
                         ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
-                    messageId = isBlank(dto.getContent())
-                            ? GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), type, dto.getImageValue())
-                            : GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent(), type, dto.getImageValue());
+                    ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                    if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
                     messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
@@ -245,9 +255,9 @@ public class GroupController {
                             ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
-                        yield isBlank(dto.getContent())
-                                ? GroupChat.sendMessage(dto.getGroupOpenId(), type, dto.getImageValue())
-                                : GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent(), type, dto.getImageValue());
+                        ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                        if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                        yield GroupChat.sendMessage(dto.getGroupOpenId(), image);
                     }
                     default -> {
                         if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); yield null; }

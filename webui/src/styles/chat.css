@@ -918,6 +918,66 @@
   line-height: 1.4;
 }
 
+.chatnt-clear-divider {
+  height: 1px;
+  margin: 12px 0 10px;
+  background: #eceef1;
+}
+
+.chatnt-cleanup-title {
+  margin-bottom: 7px;
+  color: #4a5160;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chatnt-scan-submit {
+  background: #f1f6fa;
+  color: #3e6d8c;
+}
+
+.chatnt-scan-submit:hover:not(:disabled) {
+  background: #e5f0f7;
+}
+
+.chatnt-cleanup-progress {
+  margin-top: 9px;
+}
+
+.chatnt-cleanup-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  color: #697687;
+  font-size: 11px;
+}
+
+.chatnt-cleanup-progress progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border: none;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #e5e9ee;
+  accent-color: #4c91bf;
+}
+
+.chatnt-cleanup-progress progress::-webkit-progress-bar { background: #e5e9ee; }
+.chatnt-cleanup-progress progress::-webkit-progress-value { background: #4c91bf; }
+.chatnt-cleanup-progress progress::-moz-progress-bar { background: #4c91bf; }
+
+.chatnt-cleanup-stats,
+.chatnt-cleanup-error {
+  margin-top: 6px;
+  color: #8a95a4;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.chatnt-cleanup-error { color: #c64949; }
+
 .nt-btn {
   flex-shrink: 0;
   padding: 0 14px;

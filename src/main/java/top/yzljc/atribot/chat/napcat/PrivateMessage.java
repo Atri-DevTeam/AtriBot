@@ -1,5 +1,6 @@
 package top.yzljc.atribot.chat.napcat;
 
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
@@ -23,8 +24,8 @@ import java.util.LinkedList;
  * <p>常用场景：</p>
  * <ul>
  *   <li>发送纯文本：{@link #chatMessage(String, String)}</li>
- *   <li>发送图片：{@link #chatMessage(String, String, MessageUtils.ImageType)}</li>
- *   <li>回复某条私聊：{@link #replyMessage(String, String, String)} / {@link #replyMessage(String, String, Collection)}</li>
+ *   <li>发送图片：{@link #chatMessage(String, ImageComponent)}</li>
+ *   <li>回复某条私聊：{@link #replyMessage(String, String, String)} / {@link #replyMessage(String, String, ImageComponent)}</li>
  *   <li>发送合并转发：{@link #forwardMessage(String, Collection, String, String, String...)}</li>
  * </ul>
  *
@@ -48,15 +49,21 @@ public class PrivateMessage {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String chatMessage(String userId, String imgData, MessageUtils.ImageType type) {
+    public static String chatMessage(String userId, ImageComponent image) {
         BotRuntimeData.callPrivateMessageSend();
-        return MessageUtils.privateMessage(userId, imgData, type);
+        return MessageUtils.privateMessage(userId, image);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String userId, String messageId, String text) {
         BotRuntimeData.callPrivateMessageSend();
         return MessageUtils.replyPrivateMessage(userId, messageId, text);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String userId, String messageId, ImageComponent image) {
+        BotRuntimeData.callPrivateMessageSend();
+        return MessageUtils.replyPrivateMessage(userId, messageId, image);
     }
 
     @SuppressWarnings("UnusedReturnValue")

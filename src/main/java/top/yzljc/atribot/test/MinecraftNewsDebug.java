@@ -5,12 +5,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.general.MinecraftNews;
@@ -19,6 +18,8 @@ import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.net.URI;
 import java.util.*;
@@ -30,6 +31,13 @@ public class MinecraftNewsDebug implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (sender instanceof ConsoleCommandSender console) {
+            sender.sendMessage("[!] 调用启用！");
+            ThreadManager.execute(() -> runDebug(null));
+            return true;
+        }
+
         if (!(sender instanceof NapcatCommandSender nc)) return true;
         if (!nc.hasPermission()) {
             nc.sendMessage("无权限");
@@ -132,8 +140,15 @@ public class MinecraftNewsDebug implements CommandExecutor {
                 return;
             }
 
-            // ── 4. 仅推送到 debug 群 ──
-            GroupMessage.chatMessage(debugGroup, data.url(), MessageUtils.ImageType.URL);
+//            log.warn(data.url());
+            GroupMessage.chatMessage(debugGroup, ImageComponent.imageOf(data.url()));
+
+            Markdown forumsMarkdown = TC.md(
+                    "Minecraft官网发布了新的文章，点击图片查看详细！\n\n"
+                            + "![MC #" + data.width() + "px #" + data.height() + "px](" + data.url() + ")"
+            );
+
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[动态] " + article.title, forumsMarkdown);
             GroupMessage.chatMessage(debugGroup,
                     "[DEBUG] 链路测试完成\n"
                             + "标题: " + article.title + "\n"

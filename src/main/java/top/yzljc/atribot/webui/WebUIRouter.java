@@ -51,6 +51,8 @@ public class WebUIRouter {
         server.get("/webui/api/chat/conversations", GroupController::listChatConversations);
         server.get("/webui/api/chat/pinned", GroupController::listChatPinned);
         server.post("/webui/api/chat/pinned", GroupController::setChatPinned);
+        server.post("/webui/api/chat/cleanup/orphaned-groups", GroupController::startOrphanedGroupRecordCleanup);
+        server.get("/webui/api/chat/cleanup/orphaned-groups", GroupController::getOrphanedGroupRecordCleanupStatus);
         server.get("/webui/api/groups", GroupController::listGroups);
         server.get("/webui/api/groups/{groupOpenId}/messages", GroupController::fetchGroupMessages);
         server.delete("/webui/api/groups/{groupOpenId}/messages", GroupController::clearGroupMessages);
@@ -147,6 +149,12 @@ public class WebUIRouter {
         server.post("/webui/api/gallery/review-batch", ContentController::reviewGalleryBatch);
         server.post("/webui/api/gallery/delete", ContentController::deleteGallery);
 
+        // Minecraft 玩家名审核
+        server.get("/webui/api/minecraft/name-whitelist", MinecraftWhitelistController::list);
+        server.post("/webui/api/minecraft/name-whitelist", MinecraftWhitelistController::submit);
+        server.post("/webui/api/minecraft/name-whitelist/{username}/approve", MinecraftWhitelistController::approve);
+        server.delete("/webui/api/minecraft/name-whitelist/{username}", MinecraftWhitelistController::remove);
+
         // 抽卡系统管理
         server.get("/webui/api/loot/items", ContentController::listLootItems);
         server.post("/webui/api/loot/items", ContentController::createLootItem);
@@ -183,7 +191,9 @@ public class WebUIRouter {
             return;
         }
         if (!WebUISessionManager.isActive()) {
-            log.warn("WebUI 未开启，拦截请求: {}", ctx.path());
+            if (!ctx.path().contains("event")) {
+                log.warn("WebUI 未开启，拦截请求: {}", ctx.path());
+            }
             ctx.status(503).result("");
             ctx.skipRemainingHandlers();
         }

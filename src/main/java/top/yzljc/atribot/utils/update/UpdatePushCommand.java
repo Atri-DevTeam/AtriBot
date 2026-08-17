@@ -1,5 +1,7 @@
 package top.yzljc.atribot.utils.update;
 
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -12,6 +14,8 @@ import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.util.Arrays;
 
@@ -74,6 +78,9 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
         }
 
         UpdateNoticeRecord.setText(text);
+
+        ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.BOT_UPDATE.getChannelId(), "[更新日志] 亚托莉喵机器人更新", TC.md(text.replace("\n", "\n\n")));
+
         sender.sendMessage("更新推送已设置，将在群内下一次触发命令时自动通知；旧通知记录已覆盖。");
         return true;
     }

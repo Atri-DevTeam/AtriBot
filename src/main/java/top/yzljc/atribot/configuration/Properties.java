@@ -42,4 +42,6 @@ public class Properties {
     public static final String JOIN_APPROVAL_STRATEGY_SNAPSHOT = "data/join-approval-strategy-snapshot.json";
 
     public static final String JOIN_APPROVAL_WHITELIST = "data/join-approval-whitelist.json";
+
+    public static final String MINECRAFT_NAME_WHITELIST = "data/whitelist_name.json";
 }

@@ -33,6 +33,7 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -528,7 +529,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         GroupMessage.replyMessage(session.userId, session.groupId, session.messageId, false, sb.toString());
                     } else if (session.platform == Platform.OFFICIAL_GROUP) {
                         for (JsonNode r : response.path("rewards")) {
-                            sb.append("> ").append(r.asText()).append("\n");
+                            sb.append("> ").append(getColoredItem(r.asText())).append("\n");
                         }
                         if (!OfficialGroups.allowProactiveMsg(session.groupId)) {
                             sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息")).append(" 授权后可省去`/cl`前缀，直接解析链接");
@@ -546,7 +547,7 @@ public class HypixelReward implements CommandExecutor, Listener {
                         );
                     } else if (session.platform == Platform.OFFICIAL_C2C) {
                         for (JsonNode r : response.path("rewards")) {
-                            sb.append("> ").append(r.asText()).append("\n");
+                            sb.append("> ").append(getColoredItem(r.asText())).append("\n");
                         }
                         C2CChat.replyMessage(session.userId, session.messageId,
                                 TC.md(sb.toString()),
@@ -630,4 +631,74 @@ public class HypixelReward implements CommandExecutor, Listener {
             activeRewardIds.clear();
         }
     }
+
+    private static final Pattern REWARD_LINE_PATTERN = Pattern.compile("^(\\[\\d+])\\s+([A-Za-z]+):\\s*(.*)$");
+    private static final Pattern REWARD_KEY_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*");
+
+    private static String getColoredItem(String rawContent) {
+        Matcher lineMatcher = REWARD_LINE_PATTERN.matcher(rawContent);
+        if (!lineMatcher.matches()) return rawContent;
+
+        String rarity = lineMatcher.group(2).toUpperCase(Locale.ROOT);
+        String color = rarityColors.get(rarity);
+        if (color == null) return rawContent;
+
+        String coloredRarity = "$\\textcolor{" + color + "}{\\text{" + rarityNames.get(rarity) + "}}$";
+        return lineMatcher.group(1) + " " + coloredRarity + ": " + replaceItemKeys(lineMatcher.group(3));
+    }
+
+    private static String replaceItemKeys(String content) {
+        Matcher keyMatcher = REWARD_KEY_PATTERN.matcher(content);
+        StringBuilder translated = new StringBuilder();
+        while (keyMatcher.find()) {
+            String key = keyMatcher.group();
+            String replacement = itemNamespace.get(key);
+            if (replacement == null) replacement = itemNamespace.get(key.toLowerCase(Locale.ROOT));
+            if (replacement == null) replacement = itemNamespace.get(key.toUpperCase(Locale.ROOT));
+            keyMatcher.appendReplacement(translated, Matcher.quoteReplacement(replacement == null ? key : replacement));
+        }
+        keyMatcher.appendTail(translated);
+        return translated.toString();
+    }
+
+    private static final Map<String, String> rarityColors = Map.of(
+            "COMMON", "#9D9D9D",
+            "RARE", "#0070DD",
+            "EPIC", "#A335EE",
+            "LEGENDARY", "#FF8000"
+    );
+
+    private static final Map<String, String> rarityNames = Map.of(
+            "COMMON", "普通",
+            "RARE", "稀有",
+            "EPIC", "史诗",
+            "LEGENDARY", "传说"
+    );
+
+    private static final Map<String, String> itemNamespace = Map.ofEntries(
+            Map.entry("dust", "神秘之尘"),
+            Map.entry("souls", "空岛战争灵魂"),
+            Map.entry("tokens", "代币"),
+            Map.entry("WALLS3", "超级战墙"),
+            Map.entry("coins", "硬币"),
+            Map.entry("UHC", "极限生存冠军"),
+            Map.entry("experience", "大厅经验"),
+            Map.entry("QUAKECRAFT", "未来射击"),
+            Map.entry("SUPER_SMASH", "星碎英雄"),
+            Map.entry("WALLS", "经典战墙"),
+            Map.entry("BATTLEGROUND", "天坑乱斗"),
+            Map.entry("PAINTBALL", "彩蛋射击"),
+            Map.entry("BUILD_BATTLE", "建筑大师"),
+            Map.entry("BEDWARS", "起床战争"),
+            Map.entry("ARCADE", "街机游戏"),
+            Map.entry("ARENA", "竞技场乱斗"),
+            Map.entry("DUELS", "决斗游戏"),
+            Map.entry("MCGO", "警匪大战"),
+            Map.entry("LEGACY", "经典游戏"),
+            Map.entry("VAMPIREZ", "吸血鬼大战"),
+            Map.entry("TNTGAMES", "TNT游戏"),
+            Map.entry("MURDER_MYSTERY", "密室杀手"),
+            Map.entry("adsense_token", "每日奖励代币"),
+            Map.entry("SURVIVAL_GAMES", "闪电饥饿游戏")
+    );
 }

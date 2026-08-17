@@ -31,6 +31,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/minecraft-name-review',
+      name: 'minecraftNameReview',
+      component: () => import('./views/MinecraftReviewView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/feedback',
       name: 'feedback',
       component: () => import('./views/FeedbackView.vue'),

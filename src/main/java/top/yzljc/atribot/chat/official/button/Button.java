@@ -1,8 +1,6 @@
 package top.yzljc.atribot.chat.official.button;
 
-import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 import top.yzljc.atribot.platform.Identifier;
 
 import java.util.Collections;

@@ -2,7 +2,6 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.platform.qq.FileType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 

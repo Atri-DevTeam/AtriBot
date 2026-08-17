@@ -125,6 +125,16 @@ public class Config {
     @Getter
     private String superAdminId;
 
+    // ########## 腾讯频道 CLI（第二账号）配置参数 ##########
+    @Getter
+    private boolean tencentChannelEnabled;
+    @Getter
+    private String tencentChannelCliPath;
+    @Getter
+    private String tencentChannelLoginToken;
+    @Getter
+    private int tencentChannelTimeoutSeconds;
+
     // ########## Discord 配置参数 ##########
     @Getter
     private boolean discordEnabled;
@@ -281,6 +291,16 @@ public class Config {
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
             this.superAdminId = yaml.getString("qq.super_admin_id", "null");
+
+            // ########## 腾讯频道 CLI（第二账号）配置参数 ##########
+            this.tencentChannelEnabled = yaml.getBoolean("tencent-channel.enabled", false);
+            this.tencentChannelCliPath = yaml.getString("tencent-channel.cli-path", "tencent-channel-cli");
+            String channelTokenFromEnv = System.getenv("TENCENT_CHANNEL_LOGIN_TOKEN");
+            this.tencentChannelLoginToken = channelTokenFromEnv != null && !channelTokenFromEnv.isBlank()
+                    ? channelTokenFromEnv
+                    : yaml.getString("tencent-channel.login-token", "");
+            this.tencentChannelTimeoutSeconds = Math.max(1,
+                    yaml.getInt("tencent-channel.timeout-seconds", 90));
 
             // ########## Discord 配置参数 ##########
             this.discordEnabled = yaml.getBoolean("discord.enabled", false);

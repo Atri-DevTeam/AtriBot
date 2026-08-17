@@ -1,8 +1,8 @@
 package top.yzljc.atribot.function.napcat;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -28,7 +28,7 @@ public class AutoPokeBack implements Listener {
         }
         if (Objects.equals(event.getTargetId(), event.getSelfId())) {
             event.pokeBack();
-            GroupMessage.chatMessage(event.getGroupId(), Config.getInstance().getWakeupImgLink(), MessageUtils.ImageType.URL);
+            GroupMessage.chatMessage(event.getGroupId(), ImageComponent.imageOf(Config.getInstance().getWakeupImgLink()));
             log.info("收到来自 {} 的戳一戳，已自动回戳", event.getUserId());
         }
     }

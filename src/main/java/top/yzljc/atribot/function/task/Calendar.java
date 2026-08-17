@@ -4,9 +4,9 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -44,7 +44,7 @@ public class Calendar implements CommandExecutor {
         try {
             var data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
             if (!data.isError() && data.url() != null) {
-                GroupMessage.chatMessage(targetGroupId, data.url(), MessageUtils.ImageType.URL);
+                GroupMessage.chatMessage(targetGroupId, ImageComponent.imageOf(data.url()));
             } else {
                 String errMsg = data.errorMessage();
                 log.error("日历推送失败: {}", errMsg);
@@ -54,7 +54,7 @@ public class Calendar implements CommandExecutor {
         }
     }
 
-    @Schedule(time = "00:06:00", type = ScheduleType.DAILY)
+    @Schedule(time = "06:00:00", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
         top.yzljc.atribot.function.general.Calendar.sendCalendar();
         ThreadManager.execute(() -> {
@@ -74,7 +74,7 @@ public class Calendar implements CommandExecutor {
                 }
 
                 String debugGroupUin = Config.getInstance().getNapcatDebugGroupUin();
-                String messageId = GroupMessage.chatMessage(debugGroupUin, data.url(), MessageUtils.ImageType.URL);
+                String messageId = GroupMessage.chatMessage(debugGroupUin, ImageComponent.imageOf(data.url()));
                 if (messageId != null) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", debugGroupUin, messageId);
                 } else {

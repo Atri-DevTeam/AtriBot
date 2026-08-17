@@ -2,11 +2,10 @@ package top.yzljc.atribot.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.PrivateMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.*;
-import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.configuration.Config;
 
 /**
@@ -144,88 +143,37 @@ public class User {
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
     }
 
-    /**
-     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
-     *
-     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
-     * 且 {@param type} 只能为 {@link ImageType#URL}
-     */
+    /** QQ 官方频道中，{@code groupId} 为文字子频道 ID；频道私信中为频道 ID。 */
     @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, String data, ImageType type) {
+    public String sendMessage(String groupId, String messageId, ImageComponent image) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, messageId, type, data);
+                return GroupChat.replyMessage(groupId, messageId, image);
+            }
+            case NAPCAT_GROUP -> {
+                return GroupMessage.replyMessage(groupId, messageId, image);
             }
             case OFFICIAL_GUILD_CHANNEL -> {
-                return GuildChannelChat.replyImageMessage(groupId, messageId, data, ImageType.URL);
+                return GuildChannelChat.replyImageMessage(groupId, messageId, image);
             }
             case OFFICIAL_GUILD_DM -> {
-                return GuildDirectChat.replyImageMessage(groupId, messageId, data, ImageType.URL);
+                return GuildDirectChat.replyImageMessage(groupId, messageId, image);
             }
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, ImageType type)");
-    }
-
-    /**
-     * QQ官机频道 - 文字子频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}<br>
-     *
-     * QQ官机频道 - 频道私信中，{@code groupId}字段请传入所在频道的{@code guildId}
-     * 且 {@param type} 只能为 {@link ImageType#URL}
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, String text, String data, ImageType type) {
-        switch (this.platform) {
-            case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, messageId, text, type, data);
-            }
-            case OFFICIAL_GUILD_CHANNEL -> {
-                return GuildChannelChat.replyImageMessage(groupId, messageId, data, text, ImageType.URL);
-            }
-            case OFFICIAL_GUILD_DM -> {
-                return GuildDirectChat.replyImageMessage(groupId, messageId, data, text, ImageType.URL);
-            }
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String data, ImageType type)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, ImageComponent image)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String messageId, String data, ImageType type) {
+    public String sendMessage(String messageId, ImageComponent image) {
         switch (this.platform) {
             case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, type, data);
+                return C2CChat.replyMessage(this.userId, messageId, image);
+            }
+            case NAPCAT_PRIVATE -> {
+                return PrivateMessage.replyMessage(this.userId, messageId, image);
             }
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String data, ImageType type)");
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String messageId, String text, String data, ImageType type, boolean enableText) {
-        switch (this.platform) {
-            case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, text, type, data);
-            }
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String data, ImageType type)");
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, String text, String data, MessageUtils.ImageType type) {
-        switch (this.platform) {
-            case NAPCAT_GROUP -> {
-                return GroupMessage.replyMessage(groupId, messageId, text, data, type);
-            }
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String data, MessageUtils.ImageType type)");
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, String data, MessageUtils.ImageType type) {
-        switch (this.platform) {
-            case NAPCAT_GROUP -> {
-                return GroupMessage.replyMessage(groupId, messageId, data, type);
-            }
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String data, MessageUtils.ImageType type)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, ImageComponent image)");
     }
 
     @SuppressWarnings("UnusedReturnValue")

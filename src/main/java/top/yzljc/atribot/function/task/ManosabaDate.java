@@ -2,8 +2,8 @@ package top.yzljc.atribot.function.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -31,7 +31,7 @@ public class ManosabaDate implements CommandExecutor {
                 nc.sendMessage("开发天数图片获取失败: " + errMsg);
                 return true;
             }
-            nc.sendMessage(data.url(), MessageUtils.ImageType.URL);
+            nc.sendMessage(ImageComponent.imageOf(data.url()));
         } else {
             nc.sendMessage("此指令无法在该群聊调用！");
         }
@@ -46,6 +46,6 @@ public class ManosabaDate implements CommandExecutor {
             log.error("ManosabaDate 定时任务失败: {}", errMsg);
             return;
         }
-        GroupMessage.chatMessage(Config.getInstance().getManosabaGroupId(), data.url(), MessageUtils.ImageType.URL);
+        GroupMessage.chatMessage(Config.getInstance().getManosabaGroupId(), ImageComponent.imageOf(data.url()));
     }
 }

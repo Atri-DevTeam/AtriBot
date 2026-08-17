@@ -8,6 +8,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.event.EventHandler;
@@ -17,6 +18,8 @@ import top.yzljc.atribot.event.events.NapcatPrivateMessageEvent;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.event.events.OfficialGuildAtMessageCreateEvent;
+import top.yzljc.atribot.event.events.OfficialGuildDirectMessageCreateEvent;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.notify.NotificationService;
 import top.yzljc.atribot.utils.tools.Alert;
@@ -64,6 +67,9 @@ public class Feedback implements CommandExecutor, Listener {
         if (sender instanceof QQCommandSender qq) {
             platformName = qq.getPlatform().name();
             groupId = qq.getGroupId();
+        } else if (sender instanceof QQGuildCommandSender guildSender) {
+            platformName = guildSender.getPlatform().name();
+            groupId = guildSender.getGuildId();
         } else if (sender instanceof NapcatCommandSender nc) {
             platformName = nc.getPlatform().name();
             groupId = nc.getGroupId();
@@ -257,6 +263,26 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     @EventHandler
+    public void onGuildChannelChat(OfficialGuildAtMessageCreateEvent event) {
+        String channelUserId = event.getUser().getUserId();
+        FeedbackDTO reply = consumePendingReply(channelUserId);
+        if (reply != null) {
+            event.replyMessage(buildReplyMessage(reply, false));
+            log.info("已送达反馈回复(频道): userId={}, feedbackId={}", channelUserId, reply.getId());
+        }
+    }
+
+    @EventHandler
+    public void onGuildDirectChat(OfficialGuildDirectMessageCreateEvent event) {
+        String channelUserId = event.getUser().getUserId();
+        FeedbackDTO reply = consumePendingReply(channelUserId);
+        if (reply != null) {
+            event.replyMessage(buildReplyMessage(reply, false));
+            log.info("已送达反馈回复(频道私信): userId={}, feedbackId={}", channelUserId, reply.getId());
+        }
+    }
+
+    @EventHandler
     public void onNapcatGroupMessage(NapcatGroupMessageEvent event) {
         if (event.getUser().isBot()) return;
         FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
@@ -328,7 +354,7 @@ public class Feedback implements CommandExecutor, Listener {
 
     private static String buildReplyMessage(FeedbackDTO feedback, boolean markdown) {
         String title = markdown ? "**你的反馈已被受理**" : "你的反馈已被受理";
-        String sep = markdown ? "\n---\n" : "\n————————————\n";
+        String sep = markdown ? "---\n" : "————————————\n";
 
         StringBuilder sb = new StringBuilder();
         sb.append(title).append("\n");

@@ -2,15 +2,12 @@ package top.yzljc.atribot.function.general;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -52,6 +49,9 @@ public class Calendar implements CommandExecutor {
         if (sender instanceof QQCommandSender qq) {
             qq.sendMessage(TC.md(today));
         }
+        if (sender instanceof QQGuildCommandSender guildSender) {
+            guildSender.sendMessage(data.url());
+        }
         return true;
     }
 
@@ -66,7 +66,7 @@ public class Calendar implements CommandExecutor {
                 return;
             }
 
-            String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n> 夜已深，世界安静了。早点休息，好梦。";
+            String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n> 晨曦已至，世界睁开了眼睛。愿你今日如朝露般清澈，如朝阳般明媚。";
 
             var groupLists = OfficialGroups.enabledGroups("daily_calendar");
             var userLists = OfficialUsers.enabledUsers("daily_calendar");

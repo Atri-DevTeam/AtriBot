@@ -15,8 +15,8 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
@@ -33,6 +33,8 @@ import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -145,11 +147,22 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             for (String gid : gids) {
                 if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_alpha_news")) continue;
                 if (banner != null) {
-                    GroupMessage.chatMessage(gid, text, banner.url(), MessageUtils.ImageType.URL);
+                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
                 } else {
                     GroupMessage.chatMessage(gid, text);
                 }
             }
+
+            Markdown forumsMarkdown = TC.md(
+                    "**" + headerText + "**\n\n" +
+                            "作者: " + a.author() + "\n\n" +
+                            "时间: " + a.publishTime() + "\n\n" +
+                            "位置: " + Markdown.link(a.link(), "查看原帖") + "\n\n" +
+                            (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
+                            ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
+            );
+
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), a.title(), forumsMarkdown);
 //            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), text.trim());
 //            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), md);
         }

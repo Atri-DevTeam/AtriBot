@@ -5,7 +5,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -37,7 +37,7 @@ public class LootsCommand implements CommandExecutor {
                 qq.sendMessage(d.message());
                 return true;
             }
-            qq.sendMessage(d.image().url(), ImageType.URL);
+            qq.sendMessage(ImageComponent.imageOf(d.image().url()));
             return true;
         }
 

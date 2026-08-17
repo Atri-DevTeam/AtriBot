@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
@@ -20,6 +21,8 @@ import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -157,6 +160,28 @@ public final class MinecraftVersionChecker implements ScheduledTask {
         sender.sendMessage(TC.md(versionInfo));
     }
 
+    public static void onCommand(QQGuildCommandSender sender) {
+        Map<String, VersionInfo> versions = checkCurrentVersion();
+        VersionInfo release = versions.get("release");
+        VersionInfo snapshot = versions.get("snapshot");
+
+        String versionInfo = """
+                Minecraft 最新版本信息
+
+                正式版: %s
+                发布于: %s
+
+                快照版: %s
+                发布于: %s
+                """.formatted(
+                release != null ? release.id() : "未知",
+                release != null ? FormatTools.formatIsoTime(release.releaseTime()).trim() : "未知",
+                snapshot != null ? snapshot.id() : "未知",
+                snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()).trim() : "未知"
+        );
+        sender.sendMessage(versionInfo.trim());
+    }
+
     private static void pushUpdateInfo(VersionType type, VersionInfo versionInfo) {
 
         Set<String> groups = GroupInformation.fetchAllGroupIds();
@@ -189,6 +214,8 @@ public final class MinecraftVersionChecker implements ScheduledTask {
                 .forEach(group -> GroupMessage.chatMessage(group, textInfo));
 
         officialGroups.forEach(group -> GroupChat.sendMessage(group, TC.md(markdownInfo)));
+
+        ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[版本更新] Minecraft发布了新的版本", TC.md(markdownInfo));
 
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
     }

@@ -66,7 +66,9 @@ import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.webui.WebUIRouter;
 import top.yzljc.atribot.webui.WebUISessionManager;
+import top.yzljc.sakuraba_ema.ChannelCliClient;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -104,6 +106,8 @@ public class Atri {
     @Getter
     private final SkyblockResourcePackChecker skyblockResourcePackChecker;
     private final DiscordManager discordManager;
+    @Getter
+    private final ChannelCliClient tencentChannelCliClient;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private IMAP imap;
@@ -131,6 +135,13 @@ public class Atri {
         this.hypixelAnnouncements = new HypixelAnnouncements();
         this.hypixelAlphaForums = new HypixelAlphaForums();
         this.skyblockResourcePackChecker = new SkyblockResourcePackChecker();
+        this.tencentChannelCliClient = new ChannelCliClient(
+                config.isTencentChannelEnabled(),
+                config.getTencentChannelCliPath(),
+                config.getTencentChannelLoginToken(),
+                Duration.ofSeconds(config.getTencentChannelTimeoutSeconds()),
+                objectMapper
+        );
         this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
                 ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
                 : null;
@@ -278,6 +289,8 @@ public class Atri {
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
+        CommandManager.getCommand("加白").setExecutor(new MinecraftWhitelist());
+        CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -409,6 +422,7 @@ public class Atri {
         if (scheduler != null) {
             scheduler.shutdown();
         }
+        tencentChannelCliClient.close();
         ThreadManager.shutdown();
         System.out.println("==== AtriBot Disabled ====");
     }

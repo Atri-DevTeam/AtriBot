@@ -102,6 +102,25 @@ public class HelpCommand implements CommandExecutor {
             return true;
         }
 
+        if (sender instanceof QQGuildCommandSender guildSender) {
+            guildSender.sendMessage("======== " + QQBot.BOT_NAME + "频道指令帮助 ========\n" + """
+                    /help 查看频道指令帮助
+                    /mojang 查询 Mojang 服务状态
+                    /hypstatus 查询 Hypixel 服务状态
+                    /hitokoto 获取随机一言
+                    /mcv 查询 Minecraft 最新版本
+                    /skbpack 查询 SkyBlock 资源包信息
+                    /打卡 每日打卡签到
+                    /today 查看今日日历
+                    /newyear 查看新年倒计时
+                    /whoami 查看当前账号及场景信息
+                    /feedback <内容> 提交反馈或建议
+                    /贡献名单 查看项目贡献名单
+                    /bantracker [时间范围] 查询 Hypixel 封禁统计
+                    """.trim());
+            return true;
+        }
+
         if (sender instanceof NapcatCommandSender nc) {
             GroupMessage.forwardMessage(nc.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
                     "项目开发说明", "指令帮助", "功能介绍");

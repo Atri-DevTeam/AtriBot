@@ -7,9 +7,13 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.ImageType;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
+import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -19,9 +23,12 @@ import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -49,6 +56,11 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
         return true;
     }
 
+    public boolean onCommand(QQGuildCommandSender sender, Command command, String label, String[] args) {
+        check(sender);
+        return true;
+    }
+
     @Override
     public TaskSchedule schedule() {
         return new DefaultTaskSchedule().setMode(ScheduleMode.hourly);
@@ -59,7 +71,7 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
         check(null);
     }
 
-    public void check(QQCommandSender sender) {
+    private void check(CommandSender sender) {
         var d = HttpService.sendGetRequest(ResourcesProperties.SKB_VERSION_CHECK);
         if (d == null || d.isEmpty() || d.path("packs").isMissingNode()) {
             log.error("获取Hypixel Skyblock资源包信息失败");
@@ -111,7 +123,12 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
                 return;
             }
             var lastUpdatedTime = "上一次的更新时间为 " + FormatTools.formatTimestampMilli(lastUpdateTime);
-            sender.sendMessage(lastUpdatedTime, r.url(), ImageType.URL);
+            ImageComponent image = ImageComponent.imageOf(r.url()).setText(lastUpdatedTime);
+            if (sender instanceof QQCommandSender qqSender) {
+                qqSender.sendMessage(image);
+            } else if (sender instanceof QQGuildCommandSender guildSender) {
+                guildSender.sendMessage(image);
+            }
         } else {
             if (r.url() == null || r.isError()) {
                 log.error("Skyblock 资源包信息生成图片失败: {}", r.errorMessage());
@@ -122,11 +139,15 @@ public final class SkyblockResourcePackChecker implements ScheduledTask {
             var users = OfficialUsers.enabledUsers("skyblock_resource_pack");
             var lastUpdatedTime = "Skyblock资源包已在近期更新，上一次的更新时间为 " + FormatTools.formatTimestampMilli(tmpLastTime);
             for (var gid : groups) {
-                GroupChat.sendMessage(gid, lastUpdatedTime, ImageType.URL, r.url());
+                GroupChat.sendMessage(gid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
             }
             for (var uid : users) {
-                C2CChat.sendMessage(uid, lastUpdatedTime, ImageType.URL, r.url());
+                C2CChat.sendMessage(uid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
             }
+            Markdown md = TC.md(
+                    lastUpdatedTime + "\n\n" + Markdown.img(r.url(), r.width(), r.height())
+            );
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), "[资源包更新] Skyblock资源包已更新", md);
         }
     }
 

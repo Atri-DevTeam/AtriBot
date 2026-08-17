@@ -1,7 +1,7 @@
 package top.yzljc.atribot.command;
 
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.qq.QQMessage;
@@ -35,9 +35,7 @@ public interface QQCommandSender extends CommandSender {
 
     String sendMessage(Markdown markdown, Object buttons, boolean at);
 
-    String sendMessage(String image, ImageType type);
-
-    String sendMessage(String text, String image, ImageType type);
+    String sendMessage(ImageComponent image);
 
     String sendStreamTextMessage(List<String> textDeltas);
 

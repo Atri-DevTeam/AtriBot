@@ -1,5 +1,6 @@
 package top.yzljc.atribot.chat.napcat;
 
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.napcat.impl.MessageUtils;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
@@ -22,8 +23,8 @@ import java.util.*;
  * <p>常用场景：</p>
  * <ul>
  *   <li>发送纯文本：{@link #chatMessage(String, String)}</li>
- *   <li>发送图片：{@link #chatMessage(String, String, MessageUtils.ImageType)}</li>
- *   <li>发送文本+图片：{@link #chatMessage(String, String, String, MessageUtils.ImageType)}</li>
+ *   <li>发送图片：{@link #chatMessage(String, ImageComponent)}</li>
+ *   <li>发送文本+图片：通过 {@link ImageComponent#setText(String)} 设置文本</li>
  *   <li>回复某条消息：{@link #replyMessage(String, String, String)} / {@link #replyMessage(String, String, Collection)}</li>
  *   <li>转发单条消息：{@link #forwardTo(String, String)}</li>
  *   <li>发送合并转发：{@link #forwardMessage(String, Collection, String, String, String...)}</li>
@@ -66,21 +67,15 @@ public class GroupMessage {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String chatMessage(String groupId, String imgData, MessageUtils.ImageType type) {
+    public static String chatMessage(String groupId, ImageComponent image) {
         BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.sendSingleImageGroupMessage(groupId, imgData, type);
+        return MessageUtils.sendSingleImageGroupMessage(groupId, image);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String chatMessage(String groupId, String text, String imgData, MessageUtils.ImageType type) {
+    public static String chatMessage(String userId, String groupId, ImageComponent image, boolean whetherAt) {
         BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.groupTextImageMessage(groupId, text, imgData, type);
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public static String chatMessage(String userId, String groupId, String imgData, MessageUtils.ImageType type, boolean whetherAt) {
-        BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.chatMessage(userId, groupId, imgData, type, whetherAt);
+        return MessageUtils.chatMessage(userId, groupId, image, whetherAt);
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -108,27 +103,15 @@ public class GroupMessage {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupId, String messageId, String imgData, MessageUtils.ImageType type) {
+    public static String replyMessage(String groupId, String messageId, ImageComponent image) {
         BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.replyMessage("0", groupId, messageId, false, imgData, type);
+        return MessageUtils.replyMessage("0", groupId, messageId, false, image);
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupId, String messageId, String text, String imgData, MessageUtils.ImageType type) {
+    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, ImageComponent image) {
         BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.replyMessage("0", groupId, messageId, false, text, imgData, type);
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String imgData, MessageUtils.ImageType type) {
-        BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, imgData, type);
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String text, String imgData, MessageUtils.ImageType type) {
-        BotRuntimeData.callGroupMessageSend(groupId);
-        return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, text, imgData, type);
+        return MessageUtils.replyMessage(userId, groupId, messageId, whetherAt, image);
     }
 
     public static boolean recallMessage(String messageId) {

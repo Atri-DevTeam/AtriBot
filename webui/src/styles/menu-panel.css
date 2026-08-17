@@ -374,6 +374,12 @@
   color: var(--color-rose);
 }
 
+.mp-badge--legacy {
+  border-color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+}
+
 .mp-panel-card-body {
   flex: 1;
   min-height: 28px;
@@ -623,6 +629,10 @@
 .mp-panel-card--selected {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.mp-panel-card--readonly {
+  background: var(--color-surface-alt);
 }
 
 .config-preview-phone {

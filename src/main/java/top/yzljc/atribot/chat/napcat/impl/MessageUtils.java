@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.napcat.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.utils.tools.RM;
@@ -57,9 +58,9 @@ public class MessageUtils {
         return privateMessage(userId, List.of(textSegment(text)));
     }
 
-    public static String privateMessage(String userId, String imgData, ImageType type) {
-        if (imgData == null || imgData.isBlank() || type == null) return null;
-        return privateMessage(userId, List.of(imageSegment(imgData, type)));
+    public static String privateMessage(String userId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return privateMessage(userId, imageSegments(image));
     }
 
     public static String replyPrivateMessage(String userId, String messageId, String text) {
@@ -68,6 +69,11 @@ public class MessageUtils {
                 messageId,
                 List.of(textSegment(text))
         );
+    }
+
+    public static String replyPrivateMessage(String userId, String messageId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return replyPrivateMessage(userId, messageId, imageSegments(image));
     }
 
     public static String replyPrivateMessage(String userId, String messageId, Collection<MessageSegment> messageSegments) {
@@ -91,22 +97,10 @@ public class MessageUtils {
         return groupMessage(groupId, buildWithAtPrefix(userId, data));
     }
 
-    public static String chatMessage(String userId, String groupId, String imgData, ImageType type, boolean whetherAt) {
-        if (!whetherAt) return sendSingleImageGroupMessage(groupId, imgData, type);
-        if (imgData == null || imgData.isBlank() || type == null) return null;
-        return groupMessage(groupId, buildWithAtPrefix(userId, List.of(imageSegment(imgData, type))));
-    }
-
-    public static String groupTextImageMessage(String groupId, String text, String imgData, ImageType type) {
-        if ((text == null || text.isBlank()) && (imgData == null || imgData.isBlank())) return null;
-        List<MessageSegment> segments = new ArrayList<>();
-        if (text != null && !text.isBlank()) {
-            segments.add(textSegment(text));
-        }
-        if (imgData != null && !imgData.isBlank() && type != null) {
-            segments.add(imageSegment(imgData, type));
-        }
-        return groupMessage(groupId, segments);
+    public static String chatMessage(String userId, String groupId, ImageComponent image, boolean whetherAt) {
+        if (!whetherAt) return sendSingleImageGroupMessage(groupId, image);
+        if (!isValidImage(image)) return null;
+        return groupMessage(groupId, buildWithAtPrefix(userId, imageSegments(image)));
     }
 
     public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String text) {
@@ -128,19 +122,9 @@ public class MessageUtils {
         return groupMessage(groupId, replayContent);
     }
 
-    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String imgData, ImageType type) {
-        if (imgData == null || imgData.isBlank() || type == null) return null;
-        return replyMessage(userId, groupId, messageId, whetherAt, List.of(imageSegment(imgData, type)));
-    }
-
-    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String text, String imgData, ImageType type) {
-        if (imgData == null || imgData.isBlank() || type == null) return null;
-        List<MessageSegment> segments = new ArrayList<>();
-        if (text != null && !text.isBlank()) {
-            segments.add(textSegment(text));
-        }
-        segments.add(imageSegment(imgData, type));
-        return replyMessage(userId, groupId, messageId, whetherAt, segments);
+    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return replyMessage(userId, groupId, messageId, whetherAt, imageSegments(image));
     }
 
     public static String sendPrivateForwardMessage(String userId, Collection<MessageSegment> nodes, String title, String summary, String... textVars) {
@@ -196,9 +180,9 @@ public class MessageUtils {
         return messageId;
     }
 
-    public static String sendSingleImageGroupMessage(String groupId, String imageData, ImageType type) {
-        if (imageData == null || imageData.isBlank() || type == null) return null;
-        return groupMessage(groupId, List.of(imageSegment(imageData, type)));
+    public static String sendSingleImageGroupMessage(String groupId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return groupMessage(groupId, imageSegments(image));
     }
 
     public static void atUser(String userId, String groupId, String text) {
@@ -286,14 +270,27 @@ public class MessageUtils {
         return new MessageSegment("reply", Map.of("id", messageId));
     }
 
-    private static MessageSegment imageSegment(String imageData, ImageType type) {
-        String value = imageData.trim();
-        Map<String, Object> imageDataMap = switch (type) {
+    private static boolean isValidImage(ImageComponent image) {
+        return image != null && image.getType() != null
+                && image.getData() != null && !image.getData().isBlank();
+    }
+
+    private static MessageSegment imageSegment(ImageComponent image) {
+        String value = image.getData().trim();
+        Map<String, Object> imageDataMap = switch (image.getType()) {
             case URL -> Map.of("url", value);
-            case FILE -> Map.of("file", value.startsWith("file://") ? value : "file://" + value);
             case BASE64 -> Map.of("file", value.startsWith("base64://") ? value : "base64://" + value);
         };
         return new MessageSegment("image", imageDataMap);
+    }
+
+    private static List<MessageSegment> imageSegments(ImageComponent image) {
+        List<MessageSegment> segments = new ArrayList<>();
+        if (image.getText() != null && !image.getText().isBlank()) {
+            segments.add(textSegment(image.getText()));
+        }
+        segments.add(imageSegment(image));
+        return segments;
     }
 
     private static List<MessageSegment> buildWithAtPrefix(String userId, Collection<MessageSegment> content) {
@@ -349,9 +346,5 @@ public class MessageUtils {
         } catch (Exception e) {
             log.warn("Emoji API fail: {}", e.getMessage());
         }
-    }
-
-    public enum ImageType {
-        URL, BASE64, FILE
     }
 }

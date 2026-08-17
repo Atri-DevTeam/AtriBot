@@ -7,6 +7,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.official.ChatContentRecord;
 import top.yzljc.atribot.webui.Result;
@@ -227,9 +228,9 @@ public class C2CController {
                         ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
-                    messageId = isBlank(dto.getContent())
-                            ? C2CChat.replyMessage(dto.getUserOpenId(), replyId, type, dto.getImageValue())
-                            : C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent(), type, dto.getImageValue());
+                    ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                    if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                    messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
                     messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
@@ -245,9 +246,9 @@ public class C2CController {
                             ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
-                        yield isBlank(dto.getContent())
-                                ? C2CChat.sendMessage(dto.getUserOpenId(), type, dto.getImageValue())
-                                : C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent(), type, dto.getImageValue());
+                        ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                        if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                        yield C2CChat.sendMessage(dto.getUserOpenId(), image);
                     }
                     default -> {
                         if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }

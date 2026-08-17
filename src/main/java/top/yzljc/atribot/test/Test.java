@@ -1,16 +1,24 @@
 package top.yzljc.atribot.test;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.Atri;
 
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.ButtonSize;
+import top.yzljc.atribot.chat.official.button.ButtonStyle;
+import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.event.EventHandler;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.*;
+import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.guild.ChannelInformation;
+
+import java.util.List;
 
 /**
  * @Author YZ_Ljc_
@@ -27,6 +35,33 @@ public class Test implements CommandExecutor, Listener {
             sender.sendMessage("你是谁？");
             return true;
         }
+//        if (args.length > 0) {
+//            switch (args[0].toLowerCase()) {
+//                case "-l" -> {
+//                    sendChannelQueryResult(sender, ChannelInformation.getJoinedGuilds());
+//                    return true;
+//                }
+//                case "-i" -> {
+//                    if (args.length < 2) {
+//                        sender.sendMessage("用法: /test -i <guildId>");
+//                        return true;
+//                    }
+//                    sendChannelQueryResult(sender, ChannelInformation.getGuildInfo(args[1]));
+//                    return true;
+//                }
+//                case "-p" -> {
+//                    if (args.length < 2) {
+//                        sender.sendMessage("用法: /test -p <guildId>");
+//                        return true;
+//                    }
+//                    sendChannelQueryResult(sender, ChannelInformation.getChannelList(args[1]));
+//                    return true;
+//                }
+//                default -> {
+//                    // Keep the existing /test behavior for other arguments.
+//                }
+//            }
+//        }
 //        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 //        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
 //        String url = ResourcesProperties.A_SILENT_MIRROR_MP3;
@@ -34,8 +69,10 @@ public class Test implements CommandExecutor, Listener {
 //        String url = ResourcesProperties.WELCOME_IMG;
 //        Markdown md = TC.md(
 //                "欢迎新人喵~\n\n" +
-//                        Markdown.img(url, 1238 ,564)
+//                        Markdown.img(url, 1238 ,564) + "\n\n" + Markdown.link("https://hypixel.net/threads/add-an-achievement-or-something-for-clearing-the-cobwebs-in-the-haunted-biome.6129847", "查看原帖")
 //        );
+//        ChannelPosts.sendMessage("82565391648687862", "739210805", "Minecraft News!", md);
+//        ChannelPosts.sendMessage("82565391648687862", "739210805", ImageComponent.imageOf("https://api.yzljc.top/v2/atrimeow/image-dump/d5411a16-bfdd-3e5d-93da-5fb43b923ef2"));
 //        Object buttons = TC.keyboard(
 //                List.of(
 //                        List.of(new Button("c1", "打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -132,15 +169,15 @@ public class Test implements CommandExecutor, Listener {
 //        sender.sendMessage("消息ID: " + sender.getMessageId() + " 场景: " + sender.getPlatform());
 //        if (args.length > 0 && args[0].equals("-g")) {
 //            var t = LootService.drawFree(sender.getUserId());
-//            sender.sendMessage(t.imageUrl(), ImageType.URL);
+//            sender.sendMessage(ImageComponent.imageOf(t.imageUrl()));
 //            System.out.println("已为用户 " + sender.getUserId() + " 生成免费抽奖卡片");
 //            return true;
 //        }
 //
 //        String url = LootService.renderOverviewCard(sender.getUserId());
 //        System.out.println(url);
-//        sender.sendMessage(url, ImageType.URL);
-//        sender.sendMessage("https://thirdqq.qlogo.cn/g?b=oidb&k=9ibwZcgtYsVOkxNVvIbaeSg&kti=adPQXgwBHsE&s=0&t=1775489118", ImageType.URL);
+//        sender.sendMessage(ImageComponent.imageOf(url));
+//        sender.sendMessage(ImageComponent.imageOf("https://thirdqq.qlogo.cn/g?b=oidb&k=9ibwZcgtYsVOkxNVvIbaeSg&kti=adPQXgwBHsE&s=0&t=1775489118"));
 //        ImageSourceClient.migrateUnreviewedToDirs();
 //        if (sender instanceof QQCommandSender user) {
 //            user.sendMessage(TC.md("\\dfrac{a+b}{2}\\geq\\sqrt{ab}\\quad(a\\gt0,b\\gt0)\n" +
@@ -151,7 +188,29 @@ public class Test implements CommandExecutor, Listener {
 //                    "\\tan(\\alpha\\pm\\beta)&=\\dfrac{\\tan\\alpha\\pm\\tan\\beta}{1\\mp\\tan\\alpha\\tan\\beta}\n" +
 //                    "\\end{align*}"));
 //        }
+
+        var user = (QQCommandSender) sender;
+        Markdown md = TC.md("1");
+        Object btn1 = TC.keyboard(List.of(
+                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
+                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+        ), ButtonSize.SMALL);
+        Object btn2 = TC.keyboard(List.of(
+                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
+                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+        ));
+        user.sendMessage(md, btn1);
+        user.sendMessage(md, btn2);
+
         return true;
+    }
+
+    private static void sendChannelQueryResult(CommandSender sender, ChannelCliResult result) {
+        if (result.success()) {
+            sender.sendMessage(result.getData().toPrettyString());
+            return;
+        }
+        sender.sendMessage("查询失败: " + result.getError().toString());
     }
 
 //    @EventHandler
