@@ -174,7 +174,7 @@ public class WebUIRouter {
     private static void ntUidRateLimit(Context ctx) {
         String ip = ctx.ip();
         long now = System.currentTimeMillis();
-        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, k -> new ConcurrentLinkedDeque<>());
+        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, _ -> new ConcurrentLinkedDeque<>());
         while (!timestamps.isEmpty() && now - timestamps.peekFirst() > NTUID_RATE_WINDOW_MS) {
             timestamps.pollFirst();
         }

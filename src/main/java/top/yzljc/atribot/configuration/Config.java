@@ -71,6 +71,8 @@ public class Config {
     private List<String> napcatMessageSpyGroups;
     @Getter
     private List<String> napcatRecallIgnoredUsers;
+    @Getter
+    private String authToken;
 
     // ########## 功能设置区域 ##########
     private String atribotKeySecret;
@@ -251,6 +253,7 @@ public class Config {
             this.napcatAdminUins = yaml.getStringList("napcat.admin-uins");
             this.napcatMessageSpyGroups = yaml.getStringList("napcat.message-spy-groups");
             this.napcatRecallIgnoredUsers = yaml.getStringList("napcat.recall-ignore-user");
+            this.authToken = yaml.getString("napcat.token", "");
 
             // ########## 功能设置区域 ##########
             this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");

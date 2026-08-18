@@ -1,6 +1,5 @@
 package top.yzljc.atribot.utils.update;
 
-import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;

@@ -41,7 +41,9 @@ import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.CardLike;
 import top.yzljc.atribot.function.napcat.personal.*;
 import top.yzljc.atribot.function.official.*;
-import top.yzljc.atribot.function.official.tufe.ElectricCheck;
+import top.yzljc.atribot.function.official.tufe.TufeCheckHelp;
+import top.yzljc.atribot.function.official.tufe.TufeElectricBind;
+import top.yzljc.atribot.function.official.tufe.TufeElectricQuery;
 import top.yzljc.atribot.function.task.*;
 import top.yzljc.atribot.function.task.Calendar;
 import top.yzljc.atribot.platform.napcat.RequestReceiver;
@@ -201,7 +203,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AnnoyUser());
         EventManager.getInstance().registerEvents(new HypixelReward());
         EventManager.getInstance().registerEvents(new GroupContentRecord());
-        EventManager.getInstance().registerEvents(new ElectricCheck());
         EventManager.getInstance().registerEvents(new AtriChat());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
@@ -268,7 +269,10 @@ public class Atri {
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
         CommandManager.getCommand("rsp").setExecutor(rockPaperScissorsGame);
 
-        CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
+        CommandManager.getCommand("查询帮助").setExecutor(new TufeCheckHelp());
+        CommandManager.getCommand("绑定").setExecutor(new TufeElectricBind());
+        CommandManager.getCommand("宿舍电表").setExecutor(new TufeElectricQuery(0, "宿舍电表", "宿舍电表"));
+        CommandManager.getCommand("空调电表").setExecutor(new TufeElectricQuery(1, "空调电表", "空调电表"));
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);

@@ -117,7 +117,7 @@ public class C2CController {
             dto = new UpdateC2CUserProfileDTO();
         }
         if (isBlank(userOpenId)) {
-            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
             return;
         }
 
@@ -206,7 +206,7 @@ public class C2CController {
     public static void sendC2CMessage(Context ctx) {
         SendC2CMessageDTO dto = ctx.bodyAsClass(SendC2CMessageDTO.class);
         if (isBlank(dto.getUserOpenId())) {
-            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
             return;
         }
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
@@ -216,7 +216,7 @@ public class C2CController {
         try {
             if (refId != null && !refId.isBlank()) {
                 // 引用回复：发送带 message_reference 的主动消息，与群聊同逻辑
-                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
                 messageId = C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent());
                 if (messageId != null) {
                     ChatContentRecord.patchC2CRefDisplayData(messageId,
@@ -225,25 +225,25 @@ public class C2CController {
             } else if (replyId != null && !replyId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
                     messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, image);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
                     messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
-                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
                         yield C2CChat.sendMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                            ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                            ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                         ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -251,17 +251,17 @@ public class C2CController {
                         yield C2CChat.sendMessage(dto.getUserOpenId(), image);
                     }
                     default -> {
-                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
                         yield C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent());
                     }
                 };
             }
         } catch (Exception e) {
-            ctx.json(Result.fail(500, "发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "发送失败: " + e.getMessage()));
             return;
         }
         if (messageId == null) {
-            ctx.json(Result.fail(500, "发送失败：未返回消息ID"));
+            ctx.status(502).json(Result.fail(502, "发送失败：官方接口未返回消息ID"));
             return;
         }
         ctx.json(Result.success(new GroupController.SendGroupMessageResponse(messageId)));
@@ -270,11 +270,11 @@ public class C2CController {
     public static void sendC2CStreamMessage(Context ctx) {
         SendC2CStreamDTO dto = ctx.bodyAsClass(SendC2CStreamDTO.class);
         if (isBlank(dto.getUserOpenId())) {
-            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
             return;
         }
         if (isBlank(dto.getContent())) {
-            ctx.json(Result.fail(400, "内容不能为空"));
+            ctx.status(400).json(Result.fail(400, "内容不能为空"));
             return;
         }
         List<Markdown> deltas = java.util.Arrays.stream(dto.getContent().split("\n"))
@@ -282,7 +282,7 @@ public class C2CController {
                 .map(Markdown::new)
                 .toList();
         if (deltas.isEmpty()) {
-            ctx.json(Result.fail(400, "内容不能为空"));
+            ctx.status(400).json(Result.fail(400, "内容不能为空"));
             return;
         }
         String messageId;
@@ -294,11 +294,11 @@ public class C2CController {
                 messageId = C2CChat.streamDeltas(dto.getUserOpenId(), deltas);
             }
         } catch (Exception e) {
-            ctx.json(Result.fail(500, "发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "发送失败: " + e.getMessage()));
             return;
         }
         if (messageId == null) {
-            ctx.json(Result.fail(500, "发送失败：未返回消息ID"));
+            ctx.status(502).json(Result.fail(502, "发送失败：官方接口未返回消息ID"));
             return;
         }
         ctx.json(Result.success(new GroupController.SendGroupMessageResponse(messageId)));

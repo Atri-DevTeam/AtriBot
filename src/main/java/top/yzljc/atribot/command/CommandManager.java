@@ -10,7 +10,6 @@ import top.yzljc.atribot.command.impl.QQSenderImpl;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.User;

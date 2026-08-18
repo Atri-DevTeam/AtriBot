@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.official.minecraft;
 
-import top.yzljc.atribot.command.QQCommandSender;
-
 import java.util.UUID;
 
 /**

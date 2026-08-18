@@ -64,25 +64,20 @@
 }
 
 .name-review-search {
-  display: flex;
-  align-items: center;
+  position: relative;
+  display: block;
   width: min(330px, 42vw);
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.name-review-search:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: var(--focus-ring);
 }
 
 .name-review-search svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 10px;
   width: 16px;
   height: 16px;
-  flex: 0 0 auto;
+  pointer-events: none;
+  transform: translateY(-50%);
   fill: none;
   stroke: var(--color-text-muted);
   stroke-width: 2;
@@ -90,13 +85,19 @@
 
 .name-review-search input {
   width: 100%;
-  height: 100%;
-  padding: 0 0 0 8px;
-  border: 0;
-  outline: 0;
-  background: transparent;
+  height: 34px;
+  padding: 0 10px 0 34px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+}
+
+.name-review-search input:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
 }
 
 .name-review-add {
@@ -153,15 +154,15 @@
 
 .name-review-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
 }
 
 .name-review-card {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 15px;
-  padding: 14px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -170,8 +171,8 @@
 .name-review-avatar,
 .name-review-avatar img,
 .name-review-avatar-fallback {
-  width: 104px;
-  height: 104px;
+  width: 76px;
+  height: 76px;
 }
 
 .name-review-avatar {
@@ -191,7 +192,7 @@
   display: grid;
   place-items: center;
   color: var(--color-text-muted);
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
 }
 
@@ -214,7 +215,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono);
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
 }
 
 .name-review-status {
@@ -236,14 +237,14 @@
 
 .name-review-info dl {
   display: grid;
-  gap: 5px;
-  margin: 12px 0 0;
+  gap: 3px;
+  margin: 8px 0 0;
 }
 
 .name-review-info dl div {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px;
 }
 
 .name-review-info dt,
@@ -272,7 +273,7 @@
   display: flex;
   justify-content: flex-end;
   align-self: end;
-  gap: 7px;
+  gap: 6px;
 }
 
 .name-review-actions .danger-button {
@@ -338,14 +339,14 @@
   }
 
   .name-review-card {
-    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .name-review-avatar,
   .name-review-avatar img,
   .name-review-avatar-fallback {
-    width: 82px;
-    height: 82px;
+    width: 68px;
+    height: 68px;
   }
 
   .name-review-avatar {

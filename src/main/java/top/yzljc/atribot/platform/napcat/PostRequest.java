@@ -16,6 +16,7 @@ import java.util.Map;
 @Slf4j
 public class PostRequest {
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static final String auth_token = Config.getInstance().getAuthToken();
 
     /**
      * 获取 API 返回结果 (多参)
@@ -75,6 +76,7 @@ public class PostRequest {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(postUrl))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + auth_token)
                     .POST(HttpRequest.BodyPublishers.ofString(json));
             if (timeout != null) {
                 requestBuilder.timeout(timeout);

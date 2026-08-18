@@ -318,6 +318,12 @@
                       </span>
                       <span class="mbr-sub">{{ m.messageCount }} 条 · {{ fmtMemberTime(m.lastActiveAt) }}</span>
                     </button>
+                    <button class="mbr-mention" title="@ 该成员" aria-label="@ 该成员" @click.stop="atMember(m)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="8"/>
+                        <path d="M16 16v-4a4 4 0 1 0-4 4c2.2 0 4-1.8 4-4v-1.5c0-1.4 1-2.5 2.2-2.5 1.2 0 1.8 1 1.8 2.2V12a6 6 0 1 1-2-4.5"/>
+                      </svg>
+                    </button>
                     <button class="mbr-cog" title="用户设置" aria-label="用户设置"
                             @click.stop="openProfile(m.unionOpenId, m.username)">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -509,7 +515,7 @@
                           @click="clearCurrentConversation">
                     {{ clearForm.loading ? '清除中…' : '清除记录' }}
                   </button>
-                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}，统计数据不会改变</div>
+                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>
 
                   <div class="chatnt-clear-divider"></div>
                   <div class="chatnt-cleanup-title">已退出群记录</div>
@@ -533,7 +539,7 @@
                     </div>
                     <div v-if="orphanCleanup.error" class="chatnt-cleanup-error">{{ orphanCleanup.error }}</div>
                   </div>
-                  <div class="chatnt-clear-hint">按当前机器人群列表扫描，统计快照会在删除前归档</div>
+                  <div class="chatnt-clear-hint">清除所有已退群记录并归档</div>
                 </div>
               </div>
             </div>
@@ -967,11 +973,11 @@ async function api(path, options) {
     logout()
     throw new Error('WebUI 已关闭')
   }
+  const text = await res.text()
   let payload
   try {
-    payload = await res.json()
+    payload = JSON.parse(text)
   } catch {
-    const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)
   }
   if (res.status === 401) { logout(); throw new Error('未授权') }
@@ -1819,8 +1825,9 @@ async function sendMessage() {
     cancelReply()
     await loadLatestMessages()
     scheduleConvRefresh()
-  } catch { /* ignore：发送失败保留草稿 */ }
-  finally {
+  } catch (error) {
+    showNotice(error.message || '发送消息失败')
+  } finally {
     sending.value = false
     // 发送期间 textarea 是 disabled 的，浏览器会把焦点甩回 body。
     // 等这一帧把 disabled 撤掉之后再收回焦点，否则连着按 Enter 发消息要重新点输入框。
