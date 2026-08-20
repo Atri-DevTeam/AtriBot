@@ -116,6 +116,10 @@ public class Config {
     @Getter
     private String qqApiBaseUrl;
     @Getter
+    private String qqConnectionMode;
+    @Getter
+    private String qqWebhookPath;
+    @Getter
     private String officialWebuiToken;
     @Getter
     private String officialOpenId;
@@ -289,6 +293,24 @@ public class Config {
             this.qqAppId = yaml.getString("qq.app-id", "");
             this.qqClientSecret = yaml.getString("qq.client-secret", "");
             this.qqApiBaseUrl = yaml.getString("qq.api-base-url", "https://sandbox.api.sgroup.qq.com");
+            String configuredQqConnectionMode = yaml.getString("qq.connection-mode", "ws");
+            this.qqConnectionMode = configuredQqConnectionMode == null
+                    ? "ws"
+                    : configuredQqConnectionMode.trim().toLowerCase();
+            if (this.qqConnectionMode.equals("wh")) {
+                this.qqConnectionMode = "webhook";
+            }
+            if (!this.qqConnectionMode.equals("webhook") && !this.qqConnectionMode.equals("ws")) {
+                log.warn("未知的 qq.connection-mode: {}，回退为 ws", this.qqConnectionMode);
+                this.qqConnectionMode = "ws";
+            }
+            String configuredQqWebhookPath = yaml.getString("qq.webhook-path", "/qq/webhook");
+            this.qqWebhookPath = configuredQqWebhookPath == null
+                    ? "/qq/webhook"
+                    : configuredQqWebhookPath.trim();
+            if (this.qqWebhookPath.isEmpty() || !this.qqWebhookPath.startsWith("/") || this.qqWebhookPath.equals("/")) {
+                this.qqWebhookPath = "/qq/webhook";
+            }
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");

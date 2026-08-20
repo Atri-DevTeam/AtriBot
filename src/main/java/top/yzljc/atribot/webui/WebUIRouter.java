@@ -166,6 +166,10 @@ public class WebUIRouter {
         server.get("/webui/api/loot/users", ContentController::listLootUsers);
         server.get("/webui/api/loot/users/{userId}", ContentController::getUserLootsDetail);
         server.post("/webui/api/loot/users/{userId}/grant", ContentController::grantUserLoot);
+        server.post("/webui/api/loot/users/{userId}/grant-batch", ContentController::grantUserLootBatch);
+        server.post("/webui/api/loot/users/{userId}/loots/revoke-batch", ContentController::revokeUserLootBatch);
+        server.post("/webui/api/loot/users/{userId}/loots/set-special", ContentController::setUserLootsSpecial);
+        server.post("/webui/api/loot/users/{userId}/loots/{itemId}/revoke-all", ContentController::revokeUserLootAll);
         server.delete("/webui/api/loot/users/{userId}/loots/{itemId}", ContentController::revokeUserLoot);
 
         server.error(404, WebUIRouter::spaFallback);

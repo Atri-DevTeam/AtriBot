@@ -3,6 +3,7 @@ package top.yzljc.atribot.event.events;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.event.Event;
+import top.yzljc.atribot.event.impl.FriendAddScene;
 
 /**
  * @Author YZ_Ljc_
@@ -16,6 +17,7 @@ import top.yzljc.atribot.event.Event;
 public class OfficialFriendAddEvent extends Event {
     private final String userOpenId;
     private final String timestamp;
-    private final int scene;
+    private final FriendAddScene scene;
     private final String sceneParam;
+    private final String shortCode;
 }

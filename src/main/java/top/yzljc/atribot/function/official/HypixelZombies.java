@@ -9,19 +9,18 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftWhitelist;
-import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 
 import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName HypixelTNTWizardsStats
- * @Created_at 2026/08/15
+ * @ClassName HypixelZombies
+ * @Created_at 2026/08/19
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official
  */
-public class HypixelTNTWizardsStats implements CommandExecutor {
+public class HypixelZombies implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -42,7 +41,7 @@ public class HypixelTNTWizardsStats implements CommandExecutor {
 
             String msgId = user.sendMessage("正在查询相关数据，请稍等片刻...");
 
-            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player, "is_allowed_name", isAllowedName));
+            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_ZOMBIES_API, Map.of("player", player, "is_allowed_name", isAllowedName));
             user.recall(msgId);
 
             if (!d.isError()) {

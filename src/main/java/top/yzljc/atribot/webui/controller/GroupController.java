@@ -6,6 +6,7 @@ import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
 import top.yzljc.atribot.chat.ImageComponent;
@@ -265,8 +266,11 @@ public class GroupController {
                     }
                 };
             }
+        } catch (QQMessageSendException e) {
+            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "消息发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "消息发送失败"));
             return;
         }
 

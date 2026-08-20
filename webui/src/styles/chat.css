@@ -1200,8 +1200,8 @@
   background: rgba(255, 255, 255, 0.18);
 }
 .qm.mine .qm-bubble .md-body blockquote {
-  color: rgba(255, 255, 255, 0.85);
-  border-left-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  border-left-color: rgba(203, 213, 225, 0.6);
 }
 
 /* 引用块 */

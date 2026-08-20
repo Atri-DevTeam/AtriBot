@@ -1,5 +1,4 @@
 <template>
-  <!-- legacy-chat：与群聊/私聊页一样，把 polish.css 的新版外观层排除掉，本页样式全部走 chat.css -->
   <div class="shell legacy-chat">
     <AppSidebar ref="sidebarRef" v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
@@ -218,7 +217,8 @@
                     </div>
                     <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
                     <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body"
+                         v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
                   </template>
                 </div>
                 <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
@@ -1125,7 +1125,7 @@ function convPreview(c) {
     else if (atts.some(a => a.type === 'file')) body = '[文件]'
   }
   if (!body) body = stripPreviewTags(c.lastContent) || ' '
-  if (c.lastSenderIsBot) return `${botName.value}: ${body}`
+  if (c.isMe) return `${botName.value}: ${body}`
   if (c.type === 'group') {
     // 群消息 username 为空时不拿群自身 openId 顶替发送者名字，避免误导
     const sender = c.lastSenderName || 'Unknown'
@@ -2099,6 +2099,17 @@ function renderContent(message) {
 
 function hasArk(message) {
   return hasArkMessage(message?.ark)
+}
+
+// Markdown 里的图片由 v-html 动态生成，不能在 img 上绑定 Vue 的 @error。
+// 在父容器捕获加载错误后替换节点，避免失效图片仍按声明尺寸撑开消息气泡。
+function replaceBrokenMarkdownImage(event) {
+  const image = event.target
+  if (!(image instanceof HTMLImageElement) || !image.closest('.md-body')) return
+  const fallback = document.createElement('span')
+  fallback.className = 'md-image-fallback'
+  fallback.textContent = '[不支持加载的图片]'
+  image.replaceWith(fallback)
 }
 
 function msgRef(message) {

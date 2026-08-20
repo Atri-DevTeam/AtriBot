@@ -14,16 +14,26 @@ public class OfficialManager {
 
     private final String apiBaseUrl;
     private final TokenManager tokenManager;
+    private final boolean webhookMode;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private WebSocketClient webSocketClient;
 
     public OfficialManager(String apiBaseUrl, TokenManager tokenManager) {
+        this(apiBaseUrl, tokenManager, "ws");
+    }
+
+    public OfficialManager(String apiBaseUrl, TokenManager tokenManager, String connectionMode) {
         this.apiBaseUrl = apiBaseUrl;
         this.tokenManager = tokenManager;
+        this.webhookMode = "webhook".equalsIgnoreCase(connectionMode);
     }
 
     public void start() throws Exception {
+        if (webhookMode) {
+            log.info("[!] 当前官机接入模式为Webhook，等待开放平台下发事件...");
+            return;
+        }
         log.info("正在初始化 QQ Bot...");
 
         String accessToken = tokenManager.getAccessToken();

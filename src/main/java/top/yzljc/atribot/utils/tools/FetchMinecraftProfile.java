@@ -36,5 +36,17 @@ public final class FetchMinecraftProfile {
         return null;
     }
 
+    public static String getUsernameByUuid(String uuid) {
+        if (uuid.length() <= 16) return uuid;
+        var d = HttpService.sendGetRequest(ResourcesProperties.PLAYER_PROFILE_API.replace("{uuid}", uuid));
+        if (d != null) {
+            var name = d.path("data").path("inGameName").asText(null);
+            if (name != null) {
+                return name;
+            }
+        }
+        return uuid;
+    }
+
     public record Profile(UUID uuid, String username) { }
 }

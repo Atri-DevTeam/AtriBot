@@ -134,6 +134,10 @@ qq:
   client-secret: ""
   # API 基础地址：沙箱环境用 https://sandbox.api.sgroup.qq.com，正式环境用 https://api.sgroup.qq.com
   api-base-url: "https://sandbox.api.sgroup.qq.com"
+  # 连接方式：ws（默认，Gateway WebSocket）或 webhook（HTTP 回调）
+  connection-mode: "ws"
+  # Webhook 回调路径；需要通过 HTTPS 暴露给 QQ 开放平台
+  webhook-path: "/qq/webhook"
   # 官方机器人 WebUI 登录 Token（请改成足够长的随机字符串）
   official-webui-token: "null"
   # 官方机器人 OpenId

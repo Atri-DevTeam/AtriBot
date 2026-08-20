@@ -52,6 +52,7 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
 import top.yzljc.atribot.platform.discord.DiscordManager;
 import top.yzljc.atribot.platform.qq.OfficialManager;
+import top.yzljc.atribot.platform.qq.QQWebhookHandler;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
@@ -112,6 +113,7 @@ public class Atri {
     private final ChannelCliClient tencentChannelCliClient;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
+    private final QQWebhookHandler qqWebhookHandler;
     private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
@@ -127,7 +129,8 @@ public class Atri {
         Config config = Config.getInstance();
         this.aiService = new AiService(config.getAiPropertiesMap(), objectMapper);
         this.tokenManager = new TokenManager(config.getQqAppId(), config.getQqClientSecret());
-        this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager);
+        this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager, config.getQqConnectionMode());
+        this.qqWebhookHandler = new QQWebhookHandler(config.getQqAppId(), config.getQqClientSecret());
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
         this.checkMojira = new MojiraStatus();
         this.cardLike = new CardLike();
@@ -177,6 +180,11 @@ public class Atri {
             String result = RequestReceiver.handle(body);
             ctx.result(result).contentType("application/json");
         });
+
+        if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
+            server.post(config.getQqWebhookPath(), qqWebhookHandler::handle);
+            log.info("QQ Webhook 回调已启用: POST {}", config.getQqWebhookPath());
+        }
 
         WebUIRouter.register(server);
 
@@ -295,6 +303,7 @@ public class Atri {
         CommandManager.getCommand("ua").setExecutor(new UACommand());
         CommandManager.getCommand("加白").setExecutor(new MinecraftWhitelist());
         CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
+        CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());

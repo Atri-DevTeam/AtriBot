@@ -281,6 +281,9 @@ public final class C2CChat {
             Thread.currentThread().interrupt();
             return null;
         } catch (ExecutionException e) {
+            if (e.getCause() instanceof QQMessageSendException officialError) {
+                throw officialError;
+            }
             return null;
         }
     }

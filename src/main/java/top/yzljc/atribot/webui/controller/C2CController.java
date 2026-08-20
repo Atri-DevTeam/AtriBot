@@ -6,6 +6,7 @@ import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
@@ -256,8 +257,11 @@ public class C2CController {
                     }
                 };
             }
+        } catch (QQMessageSendException e) {
+            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "发送失败"));
             return;
         }
         if (messageId == null) {
@@ -293,8 +297,11 @@ public class C2CController {
             } else {
                 messageId = C2CChat.streamDeltas(dto.getUserOpenId(), deltas);
             }
+        } catch (QQMessageSendException e) {
+            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "发送失败"));
             return;
         }
         if (messageId == null) {

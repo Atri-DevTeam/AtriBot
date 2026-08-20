@@ -32,6 +32,7 @@ public class ImageSourceClient {
     /** 单张投稿允许读取的最大字节数，超过直接判失败，避免撑爆内存 */
     private static final long MAX_BYTES = 20L * 1024 * 1024;
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
+    private static volatile String cnbImageBaseUrl;
 
     public static String fetchAndHash(String url) {
         try {
@@ -261,22 +262,41 @@ public class ImageSourceClient {
     public static String deliveryUrl(ImageSourceDTO dto) {
         Config config = Config.getInstance();
         String base = config.getImageSourceApiUrl();
-        if (isBlank(base) || isBlank(dto.getImageUuid())) {
+        String uuid = dto.getImageUuid();
+        if (isBlank(uuid)) {
+            return viewUrl(dto);
+        }
+
+        String cnbBaseUrl = cnbImageBaseUrl;
+        if (!isBlank(cnbBaseUrl)) {
+            return cnbBaseUrl + uuid;
+        }
+        if (isBlank(base)) {
             return viewUrl(dto);
         }
 
         try {
             JsonNode resp = HttpService.sendGetRequest(
-                    joinPath(joinPath(base, "deliver"), dto.getImageUuid()), authHeaders(config));
+                    joinPath(joinPath(base, "deliver"), uuid), authHeaders(config));
             if (resp != null && resp.path("status").asInt() == 200) {
                 JsonNode data = resp.path("data");
                 String url = data.path("url").asText(null);
-                if ("oss".equalsIgnoreCase(data.path("way").asText(null)) && !isBlank(url)) {
+                String way = data.path("way").asText(null);
+                if ("cnb".equalsIgnoreCase(way)) {
+                    String baseUrl = data.path("base_url").asText(null);
+                    if (!isBlank(baseUrl)) {
+                        cnbImageBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+                    }
+                    if (!isBlank(url)) {
+                        return url;
+                    }
+                }
+                if ("oss".equalsIgnoreCase(way) && !isBlank(url)) {
                     return url;
                 }
             }
         } catch (Exception e) {
-            log.warn("查询图源下发路线失败，按本机地址发送: uuid={}", dto.getImageUuid(), e);
+            log.warn("查询图源下发路线失败，按本机地址发送: uuid={}", uuid, e);
         }
         return viewUrl(dto);
     }

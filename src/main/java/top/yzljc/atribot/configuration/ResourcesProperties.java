@@ -163,4 +163,7 @@ public final class ResourcesProperties {
 
     // @ClassName HypixelTNTWizards
     public static final String HYPIXEL_TNT_WIZARDS_API = UGC_API + "/v2/atrimeow/hypixel-tnt-wizards";
+
+    // @ClassName HypixelZombies
+    public static final String HYPIXEL_ZOMBIES_API = UGC_API + "/v2/atrimeow/hypixel-zombies";
 }

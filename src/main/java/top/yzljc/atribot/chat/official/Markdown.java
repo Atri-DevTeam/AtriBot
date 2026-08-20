@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import top.yzljc.atribot.chat.official.media.HexColor;
 
 /**
  * @Author YZ_Ljc_
@@ -50,5 +51,9 @@ public class Markdown {
      */
     public static String atAll() {
         return "<qqbot-at-everyone />";
+    }
+
+    public static String colored(HexColor color, String content) {
+        return "$\\textcolor{" + color.value() + "}{\\text{" + content + "}}$";
     }
 }

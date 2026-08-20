@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.management.JoinRequestApproval;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.event.impl.FriendAddScene;
 import top.yzljc.atribot.event.impl.RequestSource;
 import top.yzljc.atribot.event.impl.InteractionType;
 import top.yzljc.atribot.event.impl.VerifyMethod;
@@ -141,13 +142,13 @@ public class BotEvents {
         }
     }
 
-    public static void handleGroupJoinEvent(JsonNode eventData) {
+    public static void handleGroupJoinEvent(String eventId, JsonNode eventData) {
         try {
             String groupOpenId = eventData.get("group_openid").asText();
             String timestamp = eventData.get("timestamp").asText();
             String opMemberGroupId = eventData.path("op_member_openid").asText();
 
-            OfficialGroupJoinEvent event = new OfficialGroupJoinEvent(groupOpenId, opMemberGroupId, timestamp);
+            OfficialGroupAddRobotEvent event = new OfficialGroupAddRobotEvent(eventId, groupOpenId, opMemberGroupId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的加群事件时发生错误：", e);
@@ -160,7 +161,7 @@ public class BotEvents {
             String timestamp = eventData.get("timestamp").asText();
             String opMemberGroupId = eventData.get("op_member_openid").asText();
 
-            OfficialGroupDelEvent event = new OfficialGroupDelEvent(groupOpenId, opMemberGroupId, timestamp);
+            OfficialGroupDelRobotEvent event = new OfficialGroupDelRobotEvent(groupOpenId, opMemberGroupId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的退群事件时发生错误：", e);
@@ -169,15 +170,14 @@ public class BotEvents {
 
     public static void handleFriendAddEvent(JsonNode eventData) {
         try {
-            String userOpenId = eventData.path("author").get("union_openid").asText();
-            if (userOpenId.isEmpty()) {
-                userOpenId = eventData.path("openid").asText(null);
-            }
+            String userOpenId = eventData.path("openid").asText(null);
             String timestamp = eventData.get("timestamp").asText();
             int scene = eventData.path("scene").asInt(-1);
             String sceneParam = eventData.path("scene_param").asText(null);
+            String shortCode = eventData.path("short_code").asText(null);
+            FriendAddScene sceneEnum = FriendAddScene.fromCode(scene);
 
-            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp, scene, sceneParam);
+            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp, sceneEnum, sceneParam, shortCode);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的好友添加事件时发生错误：", e);

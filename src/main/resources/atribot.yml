@@ -271,6 +271,15 @@ commands:
       - wd
       - wi
       - wz
+  zombies:
+    description: Hypixel僵尸末日数据查询
+    usage: /zombies
+    aliases:
+      - zombie
+      - zs
+      - hypixelzombies
+      - hypixel-zombies
+      - hypzombies
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

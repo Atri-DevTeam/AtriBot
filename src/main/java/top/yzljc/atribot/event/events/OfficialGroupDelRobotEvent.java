@@ -13,7 +13,7 @@ import top.yzljc.atribot.event.Event;
  */
 @Getter
 @AllArgsConstructor
-public class OfficialGroupDelEvent extends Event {
+public class OfficialGroupDelRobotEvent extends Event {
     private final String groupOpenId;
     private final String opMemberOpenId;
     private final String timestamp;

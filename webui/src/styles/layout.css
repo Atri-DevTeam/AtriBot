@@ -1046,6 +1046,10 @@
   margin: 4px 0;
 }
 
+.md-image-fallback {
+  display: inline;
+}
+
 .media-placeholder {
   display: inline-flex;
   align-items: center;
