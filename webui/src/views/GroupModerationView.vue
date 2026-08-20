@@ -88,9 +88,12 @@
                 <input type="checkbox" v-model="settings.aiRecall.enabled"/> 启用 AI 聊天审核
               </label>
               <label class="gs-form-row">
-                <span class="gs-form-label">AI 审核提示词</span>
+                <span class="gs-form-label gm-prompt-label">
+                  AI 审核提示词
+                  <button type="button" class="ghost-button gm-default-btn" @click="settings.aiRecall.systemPrompt = DEFAULT_AI_RECALL_PROMPT">填入默认提示词</button>
+                </span>
                 <textarea v-model="settings.aiRecall.systemPrompt" class="gs-textarea" rows="8"
-                          placeholder="描述审核标准，例如：判断消息是否包含广告、引流、辱骂等违规内容"/>
+                          :placeholder="DEFAULT_AI_RECALL_PROMPT"/>
               </label>
               <div class="gm-action-block">
                 <div class="gs-form-label">命中后处理</div>
@@ -129,11 +132,20 @@
 
               <template v-if="settings.joinReview.mode === 'AI' || settings.joinReview.mode === 'ALL'">
                 <label class="gs-form-row">
-                  <span class="gs-form-label">AI 审核提示词（关键词未命中时才会调用）</span>
+                  <span class="gs-form-label gm-prompt-label">
+                    AI 审核提示词（关键词未命中时才会调用）
+                    <button type="button" class="ghost-button gm-default-btn" @click="settings.joinReview.aiSystemPrompt = DEFAULT_JOIN_REVIEW_PROMPT">填入默认提示词</button>
+                  </span>
                   <textarea v-model="settings.joinReview.aiSystemPrompt" class="gs-textarea" rows="6"
-                            placeholder="描述入群审核标准，AI 将结合验证消息/问答判断是否通过"/>
+                            :placeholder="DEFAULT_JOIN_REVIEW_PROMPT"/>
                 </label>
               </template>
+
+              <label class="gs-form-row">
+                <span class="gs-form-label">拒绝理由（自动拒绝时回传给申请人，可留空）</span>
+                <input v-model="settings.joinReview.rejectReason" class="gs-input" type="text"
+                       placeholder="例如：抱歉，暂不符合入群条件"/>
+              </label>
 
               <label class="checkbox-label">
                 <input type="checkbox" v-model="settings.joinReview.notifyDebugGroup"/> 通知到 Debug 群
@@ -192,6 +204,25 @@ const logs = ref([])
 const logsLoading = ref(false)
 const logsPage = ref(0)
 
+const DEFAULT_AI_RECALL_PROMPT = `你是一个QQ群聊消息审核助手，负责判断群成员发送的消息是否违反群规。
+需要判定为违规的情形包括但不限于：
+- 包含广告、引流、加群/加好友邀请等推广内容
+- 包含辱骂、人身攻击、歧视性言论
+- 包含色情、低俗或其他不适宜内容
+- 包含政治敏感内容
+- 恶意刷屏、复读、无意义大量重复字符
+如果消息内容正常，不属于以上任何一种情况，请判定为不违规。
+请只根据消息文本本身判断，不要过度联想或臆测发送者意图，宁可放过也不要错杀正常发言。`
+
+const DEFAULT_JOIN_REVIEW_PROMPT = `你是一个QQ群入群审核助手，负责根据申请人填写的验证消息或问答内容，判断是否应当同意其加入本群。
+需要判定为拒绝的情形包括但不限于：
+- 验证内容包含广告、引流、推广等营销信息
+- 验证内容为空、无意义乱码，或明显是批量注册的机器人号特征
+- 验证内容与群主题严重不符
+- 验证内容包含辱骂、色情、政治敏感等违规信息
+如果验证内容正常、态度诚恳，符合入群要求，请判定为通过。
+请只根据申请人提供的验证内容判断，不要臆测，信息不足时倾向于判定为通过，交由管理员人工复核。`
+
 function emptySettings() {
   return {
     keywordRecall: {enabled: false, rules: [], action: emptyAction()},
@@ -200,6 +231,7 @@ function emptySettings() {
       mode: 'DISABLED',
       keywordRule: {matchMode: 'CONTAINS', keywords: [], onHit: 'REJECT'},
       aiSystemPrompt: '',
+      rejectReason: '',
       notifyDebugGroup: false
     }
   }

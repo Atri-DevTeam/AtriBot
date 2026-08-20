@@ -63,6 +63,19 @@
   max-width: 260px;
 }
 
+.gm-prompt-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gm-default-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .gm-join-keyword-row {
   display: flex;
   gap: 8px;

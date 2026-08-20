@@ -69,7 +69,9 @@ public final class GroupJoinReviewListener implements Listener {
 
     private void apply(OfficialGroupJoinRequestEvent event, JoinReviewDecision decision,
                         JoinReviewConfig config, String detail) {
-        boolean success = decision == JoinReviewDecision.APPROVE ? event.approve() : event.deny();
+        boolean success = decision == JoinReviewDecision.APPROVE
+                ? event.approve()
+                : event.deny(config.getRejectReason());
         ModerationLogRepository.log(event.getGroupOpenId(), "JOIN_REVIEW", decision.name().toLowerCase(),
                 event.getMemberOpenId(), detail + (success ? "" : "（接口调用失败）"));
 
