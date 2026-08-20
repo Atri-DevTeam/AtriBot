@@ -109,6 +109,11 @@ public class WebUIRouter {
         server.post("/webui/api/groups/{groupOpenId}/join-requests/{memberOpenId}/approve", JoinApprovalController::approveJoinRequest);
         server.post("/webui/api/groups/{groupOpenId}/join-requests/{memberOpenId}/decline", JoinApprovalController::declineJoinRequest);
 
+        // 群管系统：违规词/AI 审核撤回 + 入群审核
+        server.get("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::getSettings);
+        server.put("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::saveSettings);
+        server.get("/webui/api/group-moderation/{groupOpenId}/logs", GroupModerationController::listLogs);
+
         // C2C 私聊
         server.get("/webui/api/c2c/users", C2CController::listC2CUsers);
         server.get("/webui/api/c2c/{userOpenId}/permissions", C2CController::getC2CUserPermissions);

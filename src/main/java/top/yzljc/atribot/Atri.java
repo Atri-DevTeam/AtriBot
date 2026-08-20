@@ -14,6 +14,8 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.moderation.GroupJoinReviewListener;
+import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
@@ -21,6 +23,7 @@ import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.database.repo.EventLogRepository;
@@ -230,6 +233,8 @@ public class Atri {
         EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
         EventManager.getInstance().registerEvents(new BasicReply());
         EventManager.getInstance().registerEvents(new UACommand());
+        EventManager.getInstance().registerEvents(new GroupModerationListener());
+        EventManager.getInstance().registerEvents(new GroupJoinReviewListener());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -334,6 +339,7 @@ public class Atri {
         ErrorReportRepository.init();
         OfficialSendLogRepository.init();
         EventLogRepository.init();
+        ModerationLogRepository.init();
         ImageSourceRepository.init();
         PendingNoticeRepository.init();
         UnifiedAuthentication.init();
