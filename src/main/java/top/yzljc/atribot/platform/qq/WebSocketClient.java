@@ -206,13 +206,25 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     private void handleEvent(String eventType, String eventId, JsonNode eventData, JsonNode rawPayload) {
         recordRawEvent(eventType, eventId, rawPayload);
+        if ("READY".equals(eventType)) {
+            sessionId = eventData.get("session_id").asText();
+            log.info("鉴权成功！获取到 session_id: {}", sessionId);
+            return;
+        }
+        if ("RESUMED".equals(eventType)) {
+            log.info("会话恢复成功！");
+        }
+        dispatchEvent(eventType, eventId, eventData);
+    }
+
+    /**
+     * Dispatches an event payload shared by WebSocket and Webhook transports.
+     */
+    public static void dispatchEvent(String eventType, String eventId, JsonNode eventData) {
         switch (eventType) {
             case "READY":
-                sessionId = eventData.get("session_id").asText();
-                log.info("鉴权成功！获取到 session_id: {}", sessionId);
                 return;
             case "RESUMED":
-                log.info("会话恢复成功！");
                 break;
             case "GROUP_AT_MESSAGE_CREATE":
                 BotEvents.handleGroupAtChatEvent(eventData);
@@ -224,7 +236,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 BotEvents.handleGroupChatEvent(eventData);
                 break;
             case "GROUP_ADD_ROBOT":
-                BotEvents.handleGroupJoinEvent(eventData);
+                BotEvents.handleGroupJoinEvent(eventId, eventData);
                 break;
             case "GROUP_DEL_ROBOT":
                 BotEvents.handleGroupDelEvent(eventData);
@@ -262,7 +274,9 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         }
 
         if (DebugCommand.isQQDebugEnabled.get()) {
-            if ("GROUP_MESSAGE_CREATE".equals(eventType) && eventData.path("author").path("union_openid").asText(null).equalsIgnoreCase("68FA9563EC62B0F43E9BE5B3023B860F")) {
+            if ("GROUP_MESSAGE_CREATE".equals(eventType)
+                    && eventData.path("author").path("union_openid").asText("")
+                    .equalsIgnoreCase("68FA9563EC62B0F43E9BE5B3023B860F")) {
                 return;
             }
             log.debug(eventData.toString());

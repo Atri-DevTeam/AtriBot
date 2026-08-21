@@ -686,7 +686,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             Map.entry("QUAKECRAFT", "未来射击"),
             Map.entry("SUPER_SMASH", "星碎英雄"),
             Map.entry("WALLS", "经典战墙"),
-            Map.entry("BATTLEGROUND", "天坑乱斗"),
+            Map.entry("BATTLEGROUND", "战争领主"),
             Map.entry("PAINTBALL", "彩蛋射击"),
             Map.entry("BUILD_BATTLE", "建筑大师"),
             Map.entry("BEDWARS", "起床战争"),

@@ -10,6 +10,7 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftWhitelist;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class HypixelTNTWizardsStats implements CommandExecutor {
             } else {
                 player = args[0];
             }
-            isAllowedName = MinecraftWhitelist.isNameWhitelisted(getUsernameByUuid(player));
+            isAllowedName = MinecraftWhitelist.isNameWhitelisted(FetchMinecraftProfile.getUsernameByUuid(player));
 
             String msgId = user.sendMessage("正在查询相关数据，请稍等片刻...");
 
@@ -56,17 +57,5 @@ public class HypixelTNTWizardsStats implements CommandExecutor {
         }
 
         return true;
-    }
-
-    private static String getUsernameByUuid(String uuid) {
-        if (uuid.length() <= 16) return uuid;
-        var d = HttpService.sendGetRequest(ResourcesProperties.PLAYER_PROFILE_API.replace("{uuid}", uuid));
-        if (d != null) {
-            var name = d.path("data").path("inGameName").asText(null);
-            if (name != null) {
-                return name;
-            }
-        }
-        return uuid;
     }
 }

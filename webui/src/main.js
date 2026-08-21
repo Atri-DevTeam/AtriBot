@@ -22,5 +22,6 @@ import './styles/event-logs.css'
 import './styles/polish.css'
 import './styles/chat.css'
 import './styles/loots.css'
+import './styles/group-moderation.css'
 
 createApp(App).use(router).mount('#app')

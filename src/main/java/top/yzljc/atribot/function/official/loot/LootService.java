@@ -13,6 +13,7 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.io.File;
+import java.net.URI;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -256,7 +257,7 @@ public class LootService {
 
         LootCatalogItem picked = pickByOwnedWeight(drawable, ownedItemIds);
         boolean duplicated = ownedItemIds.contains(picked.itemId());
-        LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way);
+        LootRepository.LootRecord record = LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way, picked.special());
 
         int refundCoins = 0;
         if (duplicated && refundDuplicated) {
@@ -264,12 +265,15 @@ public class LootService {
             LootRepository.addCoins(userId, refundCoins);
         }
 
-        ImageDTO card = PreImageGenerate.dump(ResourcesProperties.LOOTS_DRAW_CARD_API, Map.of("item_id", picked.itemId()));
+        ImageDTO card = requestDrawCard(picked.itemId());
         if (card.isError() || card.url() == null) {
             return LootDao.fail("渲染抽卡图失败 - 开发错误，请联系开发者处理");
         }
 
-        return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins);
+        int currentCount = record != null ? record.count() : 0;
+        boolean currentSpecial = record != null && record.special();
+        return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins,
+                picked.itemId(), currentCount, currentSpecial);
     }
 
     private static LootCatalogItem pickByOwnedWeight(List<LootCatalogItem> drawable, Set<String> ownedItemIds) {
@@ -287,6 +291,29 @@ public class LootService {
             }
         }
         return drawable.get(RANDOM.nextInt(drawable.size()));
+    }
+
+    private static ImageDTO requestDrawCard(String itemId) {
+        JsonNode response = HttpService.postJson(ResourcesProperties.LOOTS_DRAW_CARD_API,
+                Map.of("item_id", itemId), "Authorization", "Bearer " + Config.getInstance().getAtribotKeySecret());
+        if (response == null || response.path("status").asInt() != 200) {
+            return new ImageDTO(null, 0, 0, "访问远程数据失败", null);
+        }
+
+        JsonNode data = response.path("data");
+        String url = data.path("url").asText(null);
+        if (url == null || url.isBlank()) {
+            String uuid = data.path("uuid").asText(null);
+            if (uuid == null || uuid.isBlank()) {
+                return new ImageDTO(null, 0, 0, "远程抽卡图响应缺少图片地址", null);
+            }
+            url = ResourcesProperties.LOOTS_DRAW_CARD_API + "/" + uuid;
+        } else if (url.startsWith("/")) {
+            String origin = URI.create(ResourcesProperties.LOOTS_DRAW_CARD_API).resolve("/").toString();
+            url = URI.create(origin).resolve(url).toString();
+        }
+
+        return new ImageDTO(url, data.path("width").asInt(), data.path("height").asInt());
     }
 
     /**

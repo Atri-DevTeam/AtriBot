@@ -109,6 +109,11 @@ public class WebUIRouter {
         server.post("/webui/api/groups/{groupOpenId}/join-requests/{memberOpenId}/approve", JoinApprovalController::approveJoinRequest);
         server.post("/webui/api/groups/{groupOpenId}/join-requests/{memberOpenId}/decline", JoinApprovalController::declineJoinRequest);
 
+        // 群管系统：违规词/AI 审核撤回 + 入群审核
+        server.get("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::getSettings);
+        server.put("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::saveSettings);
+        server.get("/webui/api/group-moderation/{groupOpenId}/logs", GroupModerationController::listLogs);
+
         // C2C 私聊
         server.get("/webui/api/c2c/users", C2CController::listC2CUsers);
         server.get("/webui/api/c2c/{userOpenId}/permissions", C2CController::getC2CUserPermissions);
@@ -166,6 +171,10 @@ public class WebUIRouter {
         server.get("/webui/api/loot/users", ContentController::listLootUsers);
         server.get("/webui/api/loot/users/{userId}", ContentController::getUserLootsDetail);
         server.post("/webui/api/loot/users/{userId}/grant", ContentController::grantUserLoot);
+        server.post("/webui/api/loot/users/{userId}/grant-batch", ContentController::grantUserLootBatch);
+        server.post("/webui/api/loot/users/{userId}/loots/revoke-batch", ContentController::revokeUserLootBatch);
+        server.post("/webui/api/loot/users/{userId}/loots/set-special", ContentController::setUserLootsSpecial);
+        server.post("/webui/api/loot/users/{userId}/loots/{itemId}/revoke-all", ContentController::revokeUserLootAll);
         server.delete("/webui/api/loot/users/{userId}/loots/{itemId}", ContentController::revokeUserLoot);
 
         server.error(404, WebUIRouter::spaFallback);
@@ -174,7 +183,7 @@ public class WebUIRouter {
     private static void ntUidRateLimit(Context ctx) {
         String ip = ctx.ip();
         long now = System.currentTimeMillis();
-        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, k -> new ConcurrentLinkedDeque<>());
+        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, _ -> new ConcurrentLinkedDeque<>());
         while (!timestamps.isEmpty() && now - timestamps.peekFirst() > NTUID_RATE_WINDOW_MS) {
             timestamps.pollFirst();
         }

@@ -93,6 +93,13 @@
         </svg>
         加群策略
       </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/group-moderation' }" title="群管系统" @click="go('/group-moderation')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-4Z"/>
+          <path d="m9.5 12 2 2 4-4"/>
+        </svg>
+        群管系统
+      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/menu-panel' }" title="菜单与面板" @click="go('/menu-panel')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6" />

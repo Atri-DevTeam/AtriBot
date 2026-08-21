@@ -19,7 +19,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
+import top.yzljc.atribot.function.official.pic.ImageSourceClient;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 

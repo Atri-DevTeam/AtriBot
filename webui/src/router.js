@@ -73,6 +73,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/group-moderation',
+      name: 'groupModeration',
+      component: () => import('./views/GroupModerationView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/menu-panel',
       name: 'menuPanel',
       component: () => import('./views/MenuPanelView.vue'),

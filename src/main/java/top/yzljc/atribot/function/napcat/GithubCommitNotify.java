@@ -3,9 +3,8 @@ package top.yzljc.atribot.function.napcat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.ImageComponent;
@@ -25,8 +24,8 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
-import java.net.InetSocketAddress;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -39,31 +38,15 @@ public class GithubCommitNotify implements CommandExecutor {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String CONFIG_FILE_PATH = Properties.GITHUB_REPOSITORY;
     private static final Map<String, List<String>> repoConfig = new HashMap<>();
-    private static HttpServer server;
     private static volatile boolean pushEnabled = true;
 
     static {
         loadConfig();
     }
 
-    public static void start(int port, String secret) {
-        try {
-            stop();
-            server = HttpServer.create(new InetSocketAddress(port), 0);
-            server.createContext("/github-webhook", new WebhookHandler(secret));
-            server.setExecutor(ThreadManager.getExecutor());
-            server.start();
-            log.info("Webhook server started on port {}", port);
-        } catch (IOException e) {
-            log.error("Failed to start webhook server", e);
-        }
-    }
-
-    public static void stop() {
-        if (server != null) {
-            server.stop(0);
-            server = null;
-        }
+    public static void register(Javalin app, String path, String secret) {
+        app.post(path, new WebhookHandler(secret)::handle);
+        log.info("GitHub webhook 已注册: POST {}", path);
     }
 
     @Override
@@ -128,34 +111,29 @@ public class GithubCommitNotify implements CommandExecutor {
         }
     }
 
-    static class WebhookHandler implements HttpHandler {
+    static class WebhookHandler {
         private final String secret;
 
         public WebhookHandler(String secret) {
             this.secret = secret;
         }
 
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(405, -1);
+        public void handle(Context ctx) {
+            if (!"POST".equalsIgnoreCase(ctx.method().toString())) {
+                ctx.status(405);
                 return;
             }
-            InputStream is = exchange.getRequestBody();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            byte[] data = new byte[1024];
-            while ((nRead = is.read(data, 0, data.length)) != -1) buffer.write(data, 0, nRead);
-            byte[] payloadBytes = buffer.toByteArray();
+            byte[] payloadBytes = ctx.bodyAsBytes();
             String payload = new String(payloadBytes, StandardCharsets.UTF_8);
-            String signature = exchange.getRequestHeaders().getFirst("X-Hub-Signature-256");
+            String signature = ctx.header("X-Hub-Signature-256");
             if (secret != null && !secret.isEmpty() && !verifySignature(payloadBytes, signature, secret)) {
-                exchange.sendResponseHeaders(403, -1);
+                ctx.status(403);
                 return;
             }
-            exchange.sendResponseHeaders(200, 0);
-            exchange.close();
-            if ("push".equals(exchange.getRequestHeaders().getFirst("X-GitHub-Event"))) processPushEvent(payload);
+            ctx.status(200);
+            if ("push".equals(ctx.header("X-GitHub-Event"))) {
+                ThreadManager.getExecutor().submit(() -> processPushEvent(payload));
+            }
         }
 
         private void processPushEvent(String json) {

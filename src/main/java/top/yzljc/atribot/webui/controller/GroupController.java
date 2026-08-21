@@ -6,6 +6,7 @@ import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
 import top.yzljc.atribot.chat.ImageComponent;
@@ -213,7 +214,7 @@ public class GroupController {
     public static void sendGroupMessage(Context ctx) {
         SendGroupMessageDTO dto = ctx.bodyAsClass(SendGroupMessageDTO.class);
         if (dto.getGroupOpenId() == null || dto.getGroupOpenId().isBlank()) {
-            ctx.json(Result.fail(400, "groupOpenId 不能为空"));
+            ctx.status(400).json(Result.fail(400, "groupOpenId 不能为空"));
             return;
         }
 
@@ -224,7 +225,7 @@ public class GroupController {
             String refId = dto.getRefMessageId();
             if (refId != null && !refId.isBlank()) {
                 // 引用回复：发送带 message_reference 的主动消息
-                if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
                 messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
                 if (messageId != null) {
                     ChatContentRecord.patchRefDisplayData(messageId,
@@ -234,25 +235,25 @@ public class GroupController {
                 // 被动回复
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
                     messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), image);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
                     messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
-                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "Markdown 内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "Markdown 内容不能为空")); yield null; }
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                            ctx.json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                            ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                         ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -260,17 +261,23 @@ public class GroupController {
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), image);
                     }
                     default -> {
-                        if (isBlank(dto.getContent())) { ctx.json(Result.fail(400, "消息内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); yield null; }
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent());
                     }
                 };
             }
+        } catch (QQMessageSendException e) {
+            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            return;
         } catch (Exception e) {
-            ctx.json(Result.fail(500, "消息发送失败: " + e.getMessage()));
+            ctx.status(500).json(Result.fail(500, "消息发送失败"));
             return;
         }
 
-        if (messageId == null) return; // error already set
+        if (messageId == null) {
+            ctx.status(502).json(Result.fail(502, "消息发送失败：官方接口未返回消息ID"));
+            return;
+        }
         ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
     }
 

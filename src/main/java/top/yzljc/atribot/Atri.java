@@ -14,6 +14,8 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atribot.chat.official.moderation.GroupJoinReviewListener;
+import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
@@ -21,11 +23,12 @@ import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.database.repo.EventLogRepository;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
-import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.function.official.pic.ImageSourceStatsCommand;
+import top.yzljc.atribot.function.official.pic.ImageSubmitCommand;
 import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.qq.QQBot;
@@ -41,7 +44,9 @@ import top.yzljc.atribot.function.napcat.like.AutoLikeCommand;
 import top.yzljc.atribot.function.napcat.like.CardLike;
 import top.yzljc.atribot.function.napcat.personal.*;
 import top.yzljc.atribot.function.official.*;
-import top.yzljc.atribot.function.official.tufe.ElectricCheck;
+import top.yzljc.atribot.function.official.tufe.TufeCheckHelp;
+import top.yzljc.atribot.function.official.tufe.TufeElectricBind;
+import top.yzljc.atribot.function.official.tufe.TufeElectricQuery;
 import top.yzljc.atribot.function.task.*;
 import top.yzljc.atribot.function.task.Calendar;
 import top.yzljc.atribot.platform.napcat.RequestReceiver;
@@ -50,6 +55,7 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
 import top.yzljc.atribot.platform.discord.DiscordManager;
 import top.yzljc.atribot.platform.qq.OfficialManager;
+import top.yzljc.atribot.platform.qq.QQWebhookHandler;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.Scheduler;
@@ -110,6 +116,7 @@ public class Atri {
     private final ChannelCliClient tencentChannelCliClient;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
+    private final QQWebhookHandler qqWebhookHandler;
     private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
@@ -125,7 +132,8 @@ public class Atri {
         Config config = Config.getInstance();
         this.aiService = new AiService(config.getAiPropertiesMap(), objectMapper);
         this.tokenManager = new TokenManager(config.getQqAppId(), config.getQqClientSecret());
-        this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager);
+        this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager, config.getQqConnectionMode());
+        this.qqWebhookHandler = new QQWebhookHandler(config.getQqAppId(), config.getQqClientSecret());
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
         this.checkMojira = new MojiraStatus();
         this.cardLike = new CardLike();
@@ -176,6 +184,11 @@ public class Atri {
             ctx.result(result).contentType("application/json");
         });
 
+        if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
+            server.post(config.getQqWebhookPath(), qqWebhookHandler::handle);
+            log.info("QQ Webhook 回调已启用: POST {}", config.getQqWebhookPath());
+        }
+
         WebUIRouter.register(server);
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
@@ -201,7 +214,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AnnoyUser());
         EventManager.getInstance().registerEvents(new HypixelReward());
         EventManager.getInstance().registerEvents(new GroupContentRecord());
-        EventManager.getInstance().registerEvents(new ElectricCheck());
         EventManager.getInstance().registerEvents(new AtriChat());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
@@ -221,6 +233,8 @@ public class Atri {
         EventManager.getInstance().registerEvents(new PendingNoticeDispatcher());
         EventManager.getInstance().registerEvents(new BasicReply());
         EventManager.getInstance().registerEvents(new UACommand());
+        EventManager.getInstance().registerEvents(new GroupModerationListener());
+        EventManager.getInstance().registerEvents(new GroupJoinReviewListener());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYear());
@@ -268,7 +282,10 @@ public class Atri {
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
         CommandManager.getCommand("rsp").setExecutor(rockPaperScissorsGame);
 
-        CommandManager.getCommand("elec").setExecutor(new ElectricCheck());
+        CommandManager.getCommand("查询帮助").setExecutor(new TufeCheckHelp());
+        CommandManager.getCommand("绑定").setExecutor(new TufeElectricBind());
+        CommandManager.getCommand("宿舍电表").setExecutor(new TufeElectricQuery(0, "宿舍电表", "宿舍电表"));
+        CommandManager.getCommand("空调电表").setExecutor(new TufeElectricQuery(1, "空调电表", "空调电表"));
         CommandManager.getCommand("打卡").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
@@ -291,6 +308,8 @@ public class Atri {
         CommandManager.getCommand("ua").setExecutor(new UACommand());
         CommandManager.getCommand("加白").setExecutor(new MinecraftWhitelist());
         CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
+        CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
+        CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -321,6 +340,7 @@ public class Atri {
         ErrorReportRepository.init();
         OfficialSendLogRepository.init();
         EventLogRepository.init();
+        ModerationLogRepository.init();
         ImageSourceRepository.init();
         PendingNoticeRepository.init();
         UnifiedAuthentication.init();
@@ -330,14 +350,14 @@ public class Atri {
         this.taskScheduler = new TaskScheduler();
         TaskSchedulerRegistry.registerAll(taskScheduler);
 
-        int webhookPort = settings.getGithubWebhookPort();
+        String webhookPath = settings.getGithubWebhookPath();
         String webhookSecret = settings.getGithubWebhookSecret();
 
         if (settings.isNapcatEnabled()) {
             GroupConfigManager.refreshAllConfigs();
             FriendList.updateFriendList();
             SetProjectInfo.setInfo();
-            GithubCommitNotify.start(webhookPort, webhookSecret);
+            GithubCommitNotify.register(server, webhookPath, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
@@ -403,7 +423,6 @@ public class Atri {
         }
         MinecraftRemote.disconnect();
         qqBotManagerService.stop();
-        GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
         if (imap != null) {

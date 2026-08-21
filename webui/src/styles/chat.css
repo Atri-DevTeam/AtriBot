@@ -596,7 +596,7 @@
   color: #9aa3b2;
 }
 
-/* 成员行里的两个动作分开：主体点了是 @，齿轮点了是设置 */
+/* 成员行里的三个动作分开：主体点了是 @，右侧按钮分别用于 @ 和设置 */
 .mbr-body {
   flex: 1;
   min-width: 0;
@@ -607,6 +607,7 @@
   cursor: pointer;
 }
 
+.mbr-mention,
 .mbr-cog {
   display: grid;
   place-items: center;
@@ -623,12 +624,25 @@
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
+.mbr:hover .mbr-mention,
 .mbr:hover .mbr-cog { opacity: 1; }
+
+.mbr-mention:hover,
 .mbr-cog:hover { color: #0099ff; background: #e8eaee; }
+
+.mbr-mention:focus-visible,
+.mbr-cog:focus-visible {
+  opacity: 1;
+  outline: 2px solid #0099ff;
+  outline-offset: 1px;
+}
+
+.mbr-mention svg,
 .mbr-cog svg { display: block; }
 
-/* 触屏没有 hover，齿轮常驻 */
+/* 触屏没有 hover，操作按钮常驻 */
 @media (hover: none) {
+  .mbr-mention,
   .mbr-cog { opacity: 1; }
 }
 
@@ -1186,8 +1200,8 @@
   background: rgba(255, 255, 255, 0.18);
 }
 .qm.mine .qm-bubble .md-body blockquote {
-  color: rgba(255, 255, 255, 0.85);
-  border-left-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  border-left-color: rgba(203, 213, 225, 0.6);
 }
 
 /* 引用块 */
@@ -1223,12 +1237,17 @@
 }
 
 .chatnt-notice {
-  margin: 8px 20px 0;
+  position: absolute;
+  z-index: 3;
+  top: 70px;
+  left: 20px;
+  right: 20px;
   padding: 7px 12px;
   border-radius: 8px;
   background: #fdf3dc;
   color: #8a6414;
   font-size: 12px;
+  box-shadow: 0 2px 8px rgba(138, 100, 20, 0.14);
 }
 
 .qm-ref-content { overflow-wrap: anywhere; }
@@ -1745,7 +1764,7 @@
   .chatnt-msgs { padding: 12px 12px 6px; }
   /* 手机端抽屉铺得更宽，交互仍是点击展开 */
   .chatnt-members { width: 86%; max-width: 340px; }
-  .chatnt-notice { margin: 6px 12px 0; }
+  .chatnt-notice { top: 62px; left: 12px; right: 12px; }
   .chatnt-replybar { margin: 0 12px; }
   .chatnt-tools { padding: 8px 10px 0; }
   .chatnt-composer textarea { padding: 8px 12px; }

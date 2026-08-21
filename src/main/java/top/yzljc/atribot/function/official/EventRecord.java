@@ -30,6 +30,7 @@ import top.yzljc.atribot.utils.tools.Alert;
 import top.yzljc.atribot.webui.SseBroadcaster;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @Author YZ_Ljc_
@@ -40,6 +41,8 @@ import java.util.List;
  */
 @Slf4j
 public class EventRecord implements Listener {
+
+    private static final List<String> c2cNotifiedUsers = new CopyOnWriteArrayList<>();
 
     @EventHandler
     public void onMemberJoin(OfficialGroupMemberAddEvent event) {
@@ -92,7 +95,7 @@ public class EventRecord implements Listener {
     }
 
     @EventHandler
-    public void onGroupJoin(OfficialGroupJoinEvent event) {
+    public void onGroupJoin(OfficialGroupAddRobotEvent event) {
         boolean result = OfficialGroups.registerGroup(event.getGroupOpenId(), event.getOpMemberOpenId(), event.getTimestamp());
         if (!result) {
             log.error("Failed to register group: {}", event.getGroupOpenId());
@@ -122,7 +125,7 @@ public class EventRecord implements Listener {
     }
 
     @EventHandler
-    public void onGroupDel(OfficialGroupDelEvent event) {
+    public void onGroupDel(OfficialGroupDelRobotEvent event) {
         boolean result = OfficialGroups.removeGroup(event.getGroupOpenId());
         if (!result) {
             log.error("Failed to remove group: {}", event.getGroupOpenId());
@@ -133,51 +136,17 @@ public class EventRecord implements Listener {
         }
     }
 
-//    @EventHandler
-//    public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
-//        String userId = event.getUser().getUserId();
-//        if (!event.getMessage().isCommand()) {
-//            if (OfficialUsers.isC2CPushEnabled(userId)) {
-//                if (event.getMessage().getContent().equals("查看开发者留言")) {
-//                    List<Markdown> devLeaveMessage = List.of(
-//                            TC.md("你好喵~\n\n"),
-//                            TC.md("> 我是" + OfficialBot.BOT_NAME + "制作者YZ_Ljc_\n\n"),
-//                            TC.md("首先，感谢您支持并使用本机器人的内容，为机器人的开发提供数据支撑。本机器人的主要内容为Minecraft游戏相关的内容，" +
-//                                    "同时也提供了一些娱乐功能 " + Markdown.enterCommand("/games") + "，因此在通用性上比较差。\n\n"),
-//                            TC.md("由于缺乏制作灵感，本机器人的大部分功能看起来并不实用，也恳请您的理解，如果您有相关功能制作建议和功能需求，欢迎通过 " +
-//                                    Markdown.enterCommand("/feedback", "反馈") + " 与我联系，我会尽量考虑您的建议。\n\n")
-//                    );
-//
-//                    event.sendStreamMarkdownMessageD(devLeaveMessage);
-//                    return;
-//                }
-//                if (c2cNotifiedUsers.add(userId)) {
-//                    //                    List<Markdown> greeting = List.of(
-////                            TC.md("你好喵~\n\n"),
-////                                    TC.md(OfficialBot.BOT_NAME + "为兼顾安全问题，暂时无法主动与你聊天。"),
-////                                    TC.md("您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~")
-////
-////
-////                    );
-//                    Markdown greeting = TC.md("你好喵~\n\n" +
-//                            OfficialBot.BOT_NAME + "为兼顾安全问题，暂时无法主动与你聊天。" +
-//                            "您可以使用 " + Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback 私聊对话") + "呼叫开发者与您对话喵~");
-//                    Object keyboard = TC.promptKeyboard(
-//                            List.of(
-//                                    List.of(new Button("c1", "查看开发者留言", "", true, ButtonStyle.BLUE, ButtonType.COMMAND))
-//                            )
-//                    );
-//                    event.sendMessage(greeting, keyboard);
-//                }
-//
-//                return;
-//            }
-//            var md = TC.md("你好喵~\n\n由于您未允许" + OfficialBot.BOT_NAME +
-//                    "主动聊天，因此我暂时不能与你聊天，您可以在机器人权限设置中允许我主动发言。同时，您也可以使用 " +
-//                    Markdown.enterCommand("/help") + "查看指令帮助，或通过 " + Markdown.enterCommand("/feedback") + "与开发者取得联系喵~");
-//            event.getUser().sendMessage(event.getMessage().getMessageId(), md);
-//        }
-//    }
+    @EventHandler
+    public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
+        String userId = event.getUser().getUserId();
+        if (!event.getMessage().isCommand()) {
+            if (event.getMessage().getContent().contains("签到") || event.getMessage().getContent().contains("hypixel.net")) return;
+            if (!c2cNotifiedUsers.contains(userId)) {
+                c2cNotifiedUsers.add(userId);
+                event.sendMessage(TC.md("你好喵~\n\n你发送的消息不是指令，亚托莉喵无法理解喵，我们暂且不支持角色扮演等聊天功能，请您理解~\n\n> 您可以发送" + Markdown.enterCommand("/help") + " 来查看可用的指令列表喵~"));
+            }
+        }
+    }
 
     @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
@@ -188,7 +157,7 @@ public class EventRecord implements Listener {
             LootRepository.addCoins(event.getUserOpenId(), 100, "friend_add");
             log.info("Added 100 coins to new friend {} for first friend_add event", event.getUserOpenId());
         }
-        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId());
+        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + ")");
     }
 
     @EventHandler

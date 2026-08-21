@@ -44,4 +44,8 @@ public class Properties {
     public static final String JOIN_APPROVAL_WHITELIST = "data/join-approval-whitelist.json";
 
     public static final String MINECRAFT_NAME_WHITELIST = "data/whitelist_name.json";
+
+    public static final String USERS_LISTED = "data/users-listed.txt";
+
+    public static final String GROUP_MODERATION_CONFIG = "data/group-moderation.json";
 }

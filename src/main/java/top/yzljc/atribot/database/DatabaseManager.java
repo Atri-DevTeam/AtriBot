@@ -32,7 +32,8 @@ public class DatabaseManager {
         String user = settings.getMysqlUsername();
         String password = settings.getMysqlPassword();
 
-        String dbUrl = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC&characterEncoding=utf8";
+        String dbUrl = "jdbc:mysql://" + host + ":" + port + "/" + database
+                + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8";
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(dbUrl);

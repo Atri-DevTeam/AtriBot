@@ -308,11 +308,7 @@ public class ChatService {
     }
 
     private CompletableFuture<ChatResponse> sendMessageAsync(String url, MessageBody request, String logType) {
-        return ThreadManager.supplyAsync(() -> doSendMessage(url, request, logType))
-                .exceptionally(e -> {
-                    log.error("{}消息异步发送任务失败, url: {}", logType, url, e);
-                    return null;
-                });
+        return ThreadManager.supplyAsync(() -> doSendMessage(url, request, logType));
     }
 
     private String awaitSend(CompletableFuture<String> future, String logType) {
@@ -323,7 +319,11 @@ public class ChatService {
             log.error("{}消息发送等待被中断", logType, e);
             return null;
         } catch (ExecutionException e) {
-            log.error("{}消息发送任务失败: {}", logType, e.getCause() != null ? e.getCause() : e);
+            Throwable cause = e.getCause();
+            if (cause instanceof QQMessageSendException officialError) {
+                throw officialError;
+            }
+            log.error("{}消息发送任务失败: {}", logType, cause != null ? cause : e);
             return null;
         }
     }
@@ -363,6 +363,7 @@ public class ChatService {
                 OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
                         res.status(), res.body(), "返回无 id");
                 log.error("{}消息发送失败, 返回无 id: {}", logType, result);
+                throw QQMessageSendException.fromResponse(objectMapper, res.body(), "官方接口未返回消息ID");
             } else {
                 OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
                         res.status(), res.body(), "HTTP 状态异常或响应为空");
@@ -386,8 +387,8 @@ public class ChatService {
                     } catch (Exception ignored) {
                     }
                 }
+                throw QQMessageSendException.fromResponse(objectMapper, res.body(), "消息发送失败");
             }
-            return null;
         } catch (JsonProcessingException e) {
             OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
                     res.status(), res.body(), "响应解析失败: " + e.getMessage());

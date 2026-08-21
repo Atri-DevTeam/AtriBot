@@ -71,7 +71,7 @@ public class BasicReply implements Listener {
     public static final Set<String> TRIGGER_WORDS = Set.of(
             "我喜欢你", "爱你", "爱死你", "l love you", "love you", "hello world",
             "亲亲", "mua", "啵一个", "亲一下", "kiss", "喜欢",
-            "摸摸", "摸头", "抱抱", "揉揉", "蹭蹭", "贴贴", "摸",
+            "摸摸", "摸头", "抱抱", "揉揉", "蹭蹭", "贴贴", "摸", "亚托莉",
             "想你了", "在干嘛", "出来玩", "陪我", "rua", "晚安", "可爱", "聊天"
     );
 

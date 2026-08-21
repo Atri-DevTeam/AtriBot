@@ -4,6 +4,7 @@ import top.yzljc.atribot.chat.official.ChatService;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.qq.QQBot;
 
@@ -22,6 +23,8 @@ public class AdminPauseCommand implements CommandExecutor {
             sender.sendMessage(Identifier.NO_PERMISSION);
             return true;
         }
+
+        if (!(sender instanceof QQCommandSender)) return true;
 
         if (ChatService.isEmergencyPaused()) {
             ChatService.setEmergencyPaused(false);

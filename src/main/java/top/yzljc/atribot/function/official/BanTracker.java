@@ -31,18 +31,21 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class BanTracker {
 
-    private static final Set<String> VALID_TYPES = Set.of("30min", "1h", "3h", "24h", "7d", "30d");
-    private static final long COOLDOWN_MILLIS = 30_000L;
+    private static final long COOLDOWN_MILLIS = 20_000L;
     private static final Map<String, Long> LAST_ACCESS_TIMES = new ConcurrentHashMap<>();
 
     public static boolean handle(QQCommandSender sender, Command command, String label, String[] args) {
-
-        if (!Objects.equals(label, "bt") && !Objects.equals(label, "bantracker")) {
-            sender.sendMessage(Identifier.ONLY_OFFICIAL);
+        if (isCoolingDown(sender)) {
             return true;
         }
 
-        if (isCoolingDown(sender)) {
+        String window = "30min";
+        if (args.length == 1) {
+            window = args[0];
+        }
+
+        if (!isValidType(window)) {
+            sender.sendMessage("参数错误: 查询时长必须为 10 分钟至 3 个月之间的时间段，支持的单位包括分钟 (min/m)、小时 (h)、天 (d)、周 (w) 和月 (mo)");
             return true;
         }
 
@@ -81,16 +84,17 @@ public final class BanTracker {
     }
 
     public static boolean handle(QQGuildCommandSender sender, Command command, String label, String[] args) {
-        if (!Objects.equals(label, "bt") && !Objects.equals(label, "bantracker")) {
-            return true;
-        }
-
-        if (!isValidType(args)) {
-            sender.sendMessage("参数错误: 查询时长必须为 10 分钟至 3 个月之间的时间段，支持的单位包括分钟 (min/m)、小时 (h)、天 (d)、周 (w) 和月 (mo)");
-            return true;
-        }
-
         if (isCoolingDown(sender)) {
+            return true;
+        }
+
+        String window = "30min";
+        if (args.length == 1) {
+            window = args[0];
+        }
+
+        if (!isValidType(window)) {
+            sender.sendMessage("参数错误: 查询时长必须为 10 分钟至 3 个月之间的时间段，支持的单位包括分钟 (min/m)、小时 (h)、天 (d)、周 (w) 和月 (mo)");
             return true;
         }
 
@@ -118,12 +122,9 @@ public final class BanTracker {
         return args[0];
     }
 
-    private static boolean isValidType(String[] args) {
-        if (args.length < 1) {
-            return false;
-        }
+    private static boolean isValidType(String window) {
 
-        String type = args[0].toLowerCase();
+        String type = window.toLowerCase();
 
         if (!type.matches("\\d+(min|m|h|d|w|mo)")) {
             return false;

@@ -131,16 +131,31 @@
             <template v-else>
               <div v-if="loading" class="empty-state">加载中...</div>
               <div v-else-if="ownershipUsers.length === 0" class="empty-state">暂无数据</div>
-              <div v-else class="userlist-list">
-                <article v-for="u in ownershipUsers" :key="u.userId" class="userlist-card loot-clickable-row"
-                         @click="openUserDetail(u.userId)">
-                  <div class="userlist-info">
-                    <div class="userlist-row1"><span class="userlist-id">{{ u.userId }}</span></div>
-                    <div class="userlist-row2">
-                      <span>{{ u.coins }} 金粒</span>
-                      <span>持有 {{ u.cardCount }} 张卡片</span>
+              <div v-else class="loot-owner-grid">
+                <article v-for="u in ownershipUsers" :key="u.userId" class="loot-owner-card"
+                         role="button" tabindex="0" :aria-label="`查看用户 ${u.userId} 的卡片库存`"
+                         @click="openUserDetail(u.userId)"
+                         @keydown.enter.prevent="openUserDetail(u.userId)"
+                         @keydown.space.prevent="openUserDetail(u.userId)">
+                  <div class="loot-owner-card-head">
+                    <img class="loot-owner-avatar" :src="userAvatarUrl(u.userId)" referrerpolicy="no-referrer"
+                         loading="lazy" alt="" @error="$event.target.style.display = 'none'" />
+                    <div class="loot-owner-identity">
+                      <span class="loot-owner-label">用户库存</span>
+                      <strong class="loot-owner-id" :title="u.userId">{{ u.userId }}</strong>
                     </div>
                   </div>
+                  <div class="loot-owner-stats">
+                    <div class="loot-owner-stat">
+                      <span>金粒余额</span>
+                      <strong>{{ u.coins }}</strong>
+                    </div>
+                    <div class="loot-owner-stat">
+                      <span>持有卡片</span>
+                      <strong>{{ u.cardCount }} <small>张</small></strong>
+                    </div>
+                  </div>
+                  <button class="ghost-button small loot-owner-open" type="button" @click.stop="openUserDetail(u.userId)">查看库存</button>
                 </article>
               </div>
               <div class="userlist-bottom-pager" v-if="ownershipTotalPages > 1">
@@ -156,40 +171,134 @@
 
     <!-- 用户详情弹窗 -->
     <div v-if="showUserModal" class="modal-backdrop" @click="showUserModal = false">
-      <div class="modal" @click.stop>
+      <div class="modal loot-owner-modal" @click.stop>
         <div class="modal-head">
-          <h2>{{ userDetail?.userId }}</h2>
-          <button class="icon-button" @click="showUserModal = false">
+          <div class="loot-owner-modal-title">
+            <img class="loot-owner-avatar" :src="userAvatarUrl(userDetail?.userId)" referrerpolicy="no-referrer" alt=""
+                 @error="$event.target.style.display = 'none'" />
+            <div>
+              <span>用户卡片库存</span>
+              <h2>{{ userDetail?.userId }}</h2>
+            </div>
+          </div>
+          <button class="icon-button" aria-label="关闭" @click="showUserModal = false">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        <div class="modal-body">
-          <p>金粒余额：{{ userDetail?.coins ?? 0 }}</p>
-          <h4 style="margin:10px 0 4px">持有物品卡</h4>
-          <div v-for="loot in userDetail?.loots || []" :key="loot.itemId" class="func-row">
-            <span class="func-name">
-              <span v-if="loot.special" class="badge purple loot-special-tag">特殊</span>
-              {{ loot.displayName }}<span v-if="loot.count > 1"> ×{{ loot.count }}</span>（{{ loot.way }}）
-            </span>
-            <button class="perm-del" @click="revokeLoot(loot)">×</button>
-          </div>
-          <p v-if="!userDetail?.loots?.length" style="color:var(--color-text-subtle)">暂无持有物品卡</p>
+        <div class="modal-body loot-owner-modal-body">
+          <section class="loot-owner-overview" aria-label="库存概览">
+            <div>
+              <span>金粒余额</span>
+              <strong>{{ userDetail?.coins ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>持有种类</span>
+              <strong>{{ userDetail?.loots?.length ?? 0 }} <small>种</small></strong>
+            </div>
+            <div>
+              <span>持有总数</span>
+              <strong>{{ userLootCount }} <small>张</small></strong>
+            </div>
+          </section>
 
-          <h4 style="margin:10px 0 4px">赠送物品</h4>
-          <!-- 这里用整份目录，不能只用当前分页的 items：
-               卡池超过一页时，第二页往后的物品会整个从下拉里消失，根本送不出去 -->
-          <form class="perm-add" @submit.prevent="grantLoot">
-            <select v-model="grantForm.itemId">
-              <option value="" disabled>{{ catalogLoading ? '目录加载中...' : '选择物品' }}</option>
-              <option v-for="it in catalogItems" :key="it.itemId" :value="it.itemId">{{ it.displayName }}</option>
-            </select>
-            <input v-model="grantForm.way" placeholder="获取途径（默认：管理员赠与）" />
-            <label class="checkbox-label">
-              <input v-model="grantForm.special" type="checkbox" />
-              特殊奖励（不计入总收集进度）
-            </label>
-            <button class="primary-button" :disabled="!grantForm.itemId">赠送</button>
-          </form>
+          <section class="loot-owner-section">
+            <div class="loot-owner-section-head">
+              <div>
+                <span class="loot-owner-section-kicker">当前库存</span>
+                <h3>持有物品卡</h3>
+              </div>
+              <span class="badge gray">{{ userLootCount }} 张</span>
+            </div>
+            <div v-if="userDetail?.loots?.length" class="loot-owner-selection-bar">
+              <span>已选 {{ selectedLootIds.size }} 种</span>
+              <button class="ghost-button small" type="button" :disabled="lootBatchBusy" @click="toggleAllLoots">
+                {{ allLootsSelected ? '取消全选' : '全选' }}
+              </button>
+              <button class="ghost-button small danger" type="button" :disabled="lootBatchBusy || selectedLootIds.size === 0"
+                      @click="revokeSelectedLoots">
+                {{ lootBatchBusy ? '处理中...' : '批量收回' }}
+              </button>
+              <button class="ghost-button small loot-owner-special-action" type="button" :disabled="lootBatchBusy || selectedLootIds.size === 0"
+                      @click="setSelectedLootsSpecial">
+                {{ lootBatchBusy ? '处理中...' : selectedLootsAllSpecial ? '取消特殊' : '设为特殊' }}
+              </button>
+            </div>
+            <div v-if="userDetail?.loots?.length" class="loot-owner-inventory">
+              <article v-for="loot in userDetail.loots" :key="loot.itemId" class="loot-owner-loot"
+                       :class="{ selected: selectedLootIds.has(loot.itemId) }" @click="toggleLootSelection(loot.itemId)">
+                <label class="loot-owner-check" @click.stop>
+                  <input type="checkbox" :checked="selectedLootIds.has(loot.itemId)" @change="toggleLootSelection(loot.itemId)" />
+                </label>
+                <img v-if="lootThumbUrl(loot.itemId) && !brokenDetailThumbs.has(loot.itemId)"
+                     class="loot-owner-loot-thumb" :src="lootThumbUrl(loot.itemId)" :alt="loot.displayName"
+                     loading="lazy" @error="brokenDetailThumbs.add(loot.itemId)" />
+                <div v-else class="loot-owner-loot-thumb loot-thumb-empty">无图</div>
+                <div class="loot-owner-loot-copy">
+                  <div class="loot-owner-loot-name">
+                    <span v-if="loot.special" class="loot-owner-special-mark" role="img" aria-label="特殊卡" title="特殊卡"></span>
+                    <strong :title="loot.displayName">{{ loot.displayName }}</strong>
+                    <span v-if="loot.count > 1" class="loot-owner-loot-count">×{{ loot.count }}</span>
+                  </div>
+                  <span class="loot-owner-loot-way" :title="loot.way">{{ loot.way || '未记录' }}</span>
+                  <time class="loot-owner-loot-time" :datetime="lootReceiveDateTime(loot)"
+                        :title="formatLootReceiveTime(loot)">{{ formatLootReceiveTime(loot) }}</time>
+                </div>
+                <div class="loot-owner-loot-actions">
+                  <button class="ghost-button small danger" type="button" :disabled="lootBatchBusy"
+                          @click.stop="revokeLoot(loot)">扣除单张</button>
+                  <button class="ghost-button small danger" type="button" :disabled="lootBatchBusy"
+                          @click.stop="revokeAllLoot(loot)">扣除全部</button>
+                </div>
+              </article>
+            </div>
+            <p v-else class="loot-owner-empty">暂无持有物品卡</p>
+          </section>
+
+          <section class="loot-owner-section loot-owner-grant-section">
+            <div class="loot-owner-section-head">
+              <div>
+                <span class="loot-owner-section-kicker">管理员操作</span>
+                <h3>批量赠送物品</h3>
+              </div>
+              <span class="badge gray">已选 {{ selectedGrantItemIds.size }} 张</span>
+            </div>
+            <div class="loot-owner-grant-form">
+              <label>
+                <span>获取途径</span>
+                <input v-model="grantForm.way" placeholder="默认：管理员赠与" />
+              </label>
+              <button class="primary-button" type="button" :disabled="grantBatchBusy || selectedGrantItemIds.size === 0"
+                      @click="grantSelectedLoots">
+                {{ grantBatchBusy ? '赠送中...' : `赠送已选 ${selectedGrantItemIds.size} 张` }}
+              </button>
+              <label class="checkbox-label loot-owner-special-check">
+                <input v-model="grantForm.special" type="checkbox" />
+                作为特殊奖励赠送
+              </label>
+            </div>
+            <div class="loot-owner-catalog-head">
+              <input v-model="catalogSearch" class="loot-owner-catalog-search" placeholder="筛选物品卡..." />
+              <button class="ghost-button small" type="button" :disabled="catalogLoading || !filteredCatalogItems.length"
+                      @click="toggleAllGrantItems">
+                {{ allGrantItemsSelected ? '取消全选结果' : '全选结果' }}
+              </button>
+            </div>
+            <p v-if="catalogLoading" class="loot-owner-empty">目录加载中...</p>
+            <p v-else-if="filteredCatalogItems.length === 0" class="loot-owner-empty">没有匹配的物品卡</p>
+            <div v-else class="loot-owner-catalog-grid">
+              <article v-for="it in filteredCatalogItems" :key="it.itemId" class="loot-owner-catalog-card"
+                       :class="{ selected: selectedGrantItemIds.has(it.itemId) }" @click="toggleGrantSelection(it.itemId)">
+                <label class="loot-owner-check" @click.stop>
+                  <input type="checkbox" :checked="selectedGrantItemIds.has(it.itemId)" @change="toggleGrantSelection(it.itemId)" />
+                </label>
+                <img v-if="catalogThumbUrl(it.itemId) && !brokenCatalogThumbs.has(it.itemId)"
+                     class="loot-owner-catalog-thumb" :src="catalogThumbUrl(it.itemId)" :alt="it.displayName"
+                     loading="lazy" @error="brokenCatalogThumbs.add(it.itemId)" />
+                <div v-else class="loot-owner-catalog-thumb loot-thumb-empty">无图</div>
+                <strong :title="it.displayName">{{ it.displayName }}</strong>
+              </article>
+            </div>
+          </section>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="showUserModal = false">关闭</button>
@@ -440,7 +549,8 @@ async function fetchCatalog() {
     const collected = []
     for (let page = 1; page <= 50; page++) {
       const data = await api(`/loot/items?page=${page}&pageSize=${pageSize}`)
-      const batch = data.items || []
+      if (!imageBaseUrl.value && data.imageBaseUrl) imageBaseUrl.value = data.imageBaseUrl
+      const batch = (data.items || []).map(normalizeCatalogItem).filter(item => item.itemId)
       collected.push(...batch)
       if (batch.length < pageSize || collected.length >= (data.total || 0)) break
     }
@@ -553,8 +663,13 @@ const ownershipTotal = ref(0)
 const ownershipPage = ref(1)
 const ownershipPageSize = 20
 const ownershipTotalPages = computed(() => Math.max(1, Math.ceil(ownershipTotal.value / ownershipPageSize)))
+const userLootCount = computed(() => (userDetail.value?.loots || []).reduce((total, loot) => total + (Number(loot.count) || 1), 0))
 const searchText = ref('')
 const currentSearch = ref('')
+
+function userAvatarUrl(userId) {
+  return `https://thirdqq.qlogo.cn/qqapp/${appId.value}/${userId || ''}/100`
+}
 
 async function fetchOwnership() {
   loading.value = true
@@ -593,13 +708,93 @@ function clearSearch() {
 
 const showUserModal = ref(false)
 const userDetail = ref(null)
-const grantForm = ref({ itemId: '', way: '', special: false })
+const grantForm = ref({ way: '', special: false })
+const selectedLootIds = ref(new Set())
+const selectedGrantItemIds = ref(new Set())
+const lootBatchBusy = ref(false)
+const grantBatchBusy = ref(false)
+const catalogSearch = ref('')
+const brokenDetailThumbs = reactive(new Set())
+const brokenCatalogThumbs = reactive(new Set())
+
+const allLootsSelected = computed(() => {
+  const loots = userDetail.value?.loots || []
+  return loots.length > 0 && loots.every(loot => selectedLootIds.value.has(loot.itemId))
+})
+const selectedLootsAllSpecial = computed(() => {
+  const selected = (userDetail.value?.loots || [])
+    .filter(loot => selectedLootIds.value.has(loot.itemId))
+  return selected.length > 0 && selected.every(loot => loot.special)
+})
+const filteredCatalogItems = computed(() => {
+  const keyword = catalogSearch.value.trim().toLowerCase()
+  if (!keyword) return catalogItems.value
+  return catalogItems.value.filter(item => `${item.displayName} ${item.itemId}`.toLowerCase().includes(keyword))
+})
+const allGrantItemsSelected = computed(() => {
+  const visible = filteredCatalogItems.value
+  return visible.length > 0 && visible.every(item => selectedGrantItemIds.value.has(item.itemId))
+})
+
+function lootReceiveDate(loot) {
+  const timestamp = loot?.receiveTimestamp ?? loot?.receive_timestamp
+  if (!timestamp) return null
+  const numericTimestamp = Number(timestamp)
+  const milliseconds = Number.isFinite(numericTimestamp) && numericTimestamp < 10_000_000_000
+    ? numericTimestamp * 1000
+    : numericTimestamp
+  const date = new Date(milliseconds)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function lootReceiveDateTime(loot) {
+  return lootReceiveDate(loot)?.toISOString()
+}
+
+function formatLootReceiveTime(loot) {
+  const date = lootReceiveDate(loot)
+  if (!date) return '时间未记录'
+  const pad = value => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function normalizeCatalogItem(item) {
+  return {
+    ...item,
+    itemId: item?.itemId || item?.item_id || '',
+    displayName: item?.displayName || item?.display_name || '未命名物品卡'
+  }
+}
+
+function lootThumbUrl(itemId) {
+  const base = userDetail.value?.imageBaseUrl || ''
+  return base ? `${base}/${itemId}` : ''
+}
+
+function catalogThumbUrl(itemId) {
+  const base = userDetail.value?.imageBaseUrl || imageBaseUrl.value
+  return base ? `${base}/${itemId}` : ''
+}
+
+function resetUserSelections() {
+  selectedLootIds.value = new Set()
+  selectedGrantItemIds.value = new Set()
+  catalogSearch.value = ''
+  brokenDetailThumbs.clear()
+  brokenCatalogThumbs.clear()
+}
+
+async function reloadUserDetail() {
+  if (!userDetail.value) return
+  userDetail.value = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}`)
+}
 
 async function openUserDetail(userId) {
   error.value = ''
   try {
     userDetail.value = await api(`/loot/users/${encodeURIComponent(userId)}`)
-    grantForm.value = { itemId: '', way: '', special: false }
+    grantForm.value = { way: '', special: false }
+    resetUserSelections()
     showUserModal.value = true
     fetchCatalog()
   } catch (e) {
@@ -607,39 +802,144 @@ async function openUserDetail(userId) {
   }
 }
 
-async function grantLoot() {
-  if (!grantForm.value.itemId || !userDetail.value) return
-  const picked = catalogItems.value.find(i => i.itemId === grantForm.value.itemId)
+function toggleLootSelection(itemId) {
+  const next = new Set(selectedLootIds.value)
+  if (next.has(itemId)) next.delete(itemId)
+  else next.add(itemId)
+  selectedLootIds.value = next
+}
+
+function toggleAllLoots() {
+  selectedLootIds.value = allLootsSelected.value
+    ? new Set()
+    : new Set((userDetail.value?.loots || []).map(loot => loot.itemId))
+}
+
+function toggleGrantSelection(itemId) {
+  const next = new Set(selectedGrantItemIds.value)
+  if (next.has(itemId)) next.delete(itemId)
+  else next.add(itemId)
+  selectedGrantItemIds.value = next
+}
+
+function toggleAllGrantItems() {
+  const next = new Set(selectedGrantItemIds.value)
+  for (const item of filteredCatalogItems.value) {
+    if (allGrantItemsSelected.value) next.delete(item.itemId)
+    else next.add(item.itemId)
+  }
+  selectedGrantItemIds.value = next
+}
+
+async function grantSelectedLoots() {
+  if (!userDetail.value || selectedGrantItemIds.value.size === 0) return
+  const selected = catalogItems.value.filter(item => selectedGrantItemIds.value.has(item.itemId))
+  if (!selected.length) return
+  grantBatchBusy.value = true
   error.value = ''
   try {
-    await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/grant`, {
+    const result = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/grant-batch`, {
       method: 'POST',
       body: JSON.stringify({
-        itemId: grantForm.value.itemId,
-        displayName: picked?.displayName || '',
+        items: selected.map(item => ({ itemId: item.itemId, displayName: item.displayName })),
         way: grantForm.value.way || '管理员赠与',
         special: grantForm.value.special
       })
     })
-    userDetail.value = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}`)
-    grantForm.value = { itemId: '', way: '', special: false }
-    flash('已赠送')
+    await reloadUserDetail()
+    await fetchOwnership()
+    selectedGrantItemIds.value = new Set()
+    flash(`已赠送 ${result.success}/${result.total} 张`)
   } catch (e) {
     error.value = e.message
+  } finally {
+    grantBatchBusy.value = false
+  }
+}
+
+async function revokeSelectedLoots() {
+  if (!userDetail.value || selectedLootIds.value.size === 0) return
+  const itemIds = [...selectedLootIds.value]
+  if (!confirm(`确定收回选中的 ${itemIds.length} 种物品卡吗？每种只收回 1 张。`)) return
+  lootBatchBusy.value = true
+  error.value = ''
+  try {
+    const result = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/loots/revoke-batch`, {
+      method: 'POST', body: JSON.stringify({ itemIds })
+    })
+    await reloadUserDetail()
+    await fetchOwnership()
+    selectedLootIds.value = new Set()
+    flash(`已收回 ${result.success}/${result.total} 张`)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    lootBatchBusy.value = false
+  }
+}
+
+async function setSelectedLootsSpecial() {
+  if (!userDetail.value || selectedLootIds.value.size === 0) return
+  const itemIds = [...selectedLootIds.value]
+  const special = !selectedLootsAllSpecial.value
+  const action = special ? '设为特殊' : '取消特殊'
+  if (!confirm(`确定将选中的 ${itemIds.length} 种物品卡${action}吗？此操作不会改变数量。`)) return
+  lootBatchBusy.value = true
+  error.value = ''
+  try {
+    const result = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/loots/set-special`, {
+      method: 'POST', body: JSON.stringify({ itemIds, special })
+    })
+    await reloadUserDetail()
+    await fetchOwnership()
+    selectedLootIds.value = new Set()
+    flash(`已${action} ${result.success}/${result.total} 种`)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    lootBatchBusy.value = false
   }
 }
 
 async function revokeLoot(loot) {
   if (!userDetail.value) return
-  if (!confirm(`确定收回「${loot.displayName}」吗？`)) return
+  if (!confirm(`确定扣除「${loot.displayName}」1 张吗？`)) return
+  lootBatchBusy.value = true
   error.value = ''
   try {
     await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/loots/${encodeURIComponent(loot.itemId)}`, { method: 'DELETE' })
-    userDetail.value = await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}`)
+    await reloadUserDetail()
     await fetchOwnership()
-    flash('已收回')
+    const next = new Set(selectedLootIds.value)
+    next.delete(loot.itemId)
+    selectedLootIds.value = next
+    flash('已扣除 1 张')
   } catch (e) {
     error.value = e.message
+  } finally {
+    lootBatchBusy.value = false
+  }
+}
+
+async function revokeAllLoot(loot) {
+  if (!userDetail.value) return
+  if (!confirm(`确定扣除「${loot.displayName}」的全部 ${loot.count} 张吗？此操作会移除该物品的全部副本。`)) return
+  lootBatchBusy.value = true
+  error.value = ''
+  try {
+    await api(`/loot/users/${encodeURIComponent(userDetail.value.userId)}/loots/${encodeURIComponent(loot.itemId)}/revoke-all`, {
+      method: 'POST'
+    })
+    await reloadUserDetail()
+    await fetchOwnership()
+    const next = new Set(selectedLootIds.value)
+    next.delete(loot.itemId)
+    selectedLootIds.value = next
+    flash(`已扣除全部 ${loot.count} 张`)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    lootBatchBusy.value = false
   }
 }
 

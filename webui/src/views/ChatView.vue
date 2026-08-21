@@ -1,5 +1,4 @@
 <template>
-  <!-- legacy-chat：与群聊/私聊页一样，把 polish.css 的新版外观层排除掉，本页样式全部走 chat.css -->
   <div class="shell legacy-chat">
     <AppSidebar ref="sidebarRef" v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
@@ -218,7 +217,8 @@
                     </div>
                     <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
                     <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body" v-html="renderMd(renderContent(message))"></div>
+                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body"
+                         v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
                   </template>
                 </div>
                 <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
@@ -317,6 +317,12 @@
                               :class="'role-' + m.memberRole.toLowerCase()">{{ roleLabel(m.memberRole) }}</span>
                       </span>
                       <span class="mbr-sub">{{ m.messageCount }} 条 · {{ fmtMemberTime(m.lastActiveAt) }}</span>
+                    </button>
+                    <button class="mbr-mention" title="@ 该成员" aria-label="@ 该成员" @click.stop="atMember(m)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="8"/>
+                        <path d="M16 16v-4a4 4 0 1 0-4 4c2.2 0 4-1.8 4-4v-1.5c0-1.4 1-2.5 2.2-2.5 1.2 0 1.8 1 1.8 2.2V12a6 6 0 1 1-2-4.5"/>
+                      </svg>
                     </button>
                     <button class="mbr-cog" title="用户设置" aria-label="用户设置"
                             @click.stop="openProfile(m.unionOpenId, m.username)">
@@ -509,7 +515,7 @@
                           @click="clearCurrentConversation">
                     {{ clearForm.loading ? '清除中…' : '清除记录' }}
                   </button>
-                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}，统计数据不会改变</div>
+                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>
 
                   <div class="chatnt-clear-divider"></div>
                   <div class="chatnt-cleanup-title">已退出群记录</div>
@@ -533,7 +539,7 @@
                     </div>
                     <div v-if="orphanCleanup.error" class="chatnt-cleanup-error">{{ orphanCleanup.error }}</div>
                   </div>
-                  <div class="chatnt-clear-hint">按当前机器人群列表扫描，统计快照会在删除前归档</div>
+                  <div class="chatnt-clear-hint">清除所有已退群记录并归档</div>
                 </div>
               </div>
             </div>
@@ -967,11 +973,11 @@ async function api(path, options) {
     logout()
     throw new Error('WebUI 已关闭')
   }
+  const text = await res.text()
   let payload
   try {
-    payload = await res.json()
+    payload = JSON.parse(text)
   } catch {
-    const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)
   }
   if (res.status === 401) { logout(); throw new Error('未授权') }
@@ -1119,7 +1125,7 @@ function convPreview(c) {
     else if (atts.some(a => a.type === 'file')) body = '[文件]'
   }
   if (!body) body = stripPreviewTags(c.lastContent) || ' '
-  if (c.lastSenderIsBot) return `${botName.value}: ${body}`
+  if (c.isMe) return `${botName.value}: ${body}`
   if (c.type === 'group') {
     // 群消息 username 为空时不拿群自身 openId 顶替发送者名字，避免误导
     const sender = c.lastSenderName || 'Unknown'
@@ -1819,8 +1825,9 @@ async function sendMessage() {
     cancelReply()
     await loadLatestMessages()
     scheduleConvRefresh()
-  } catch { /* ignore：发送失败保留草稿 */ }
-  finally {
+  } catch (error) {
+    showNotice(error.message || '发送消息失败')
+  } finally {
     sending.value = false
     // 发送期间 textarea 是 disabled 的，浏览器会把焦点甩回 body。
     // 等这一帧把 disabled 撤掉之后再收回焦点，否则连着按 Enter 发消息要重新点输入框。
@@ -2092,6 +2099,17 @@ function renderContent(message) {
 
 function hasArk(message) {
   return hasArkMessage(message?.ark)
+}
+
+// Markdown 里的图片由 v-html 动态生成，不能在 img 上绑定 Vue 的 @error。
+// 在父容器捕获加载错误后替换节点，避免失效图片仍按声明尺寸撑开消息气泡。
+function replaceBrokenMarkdownImage(event) {
+  const image = event.target
+  if (!(image instanceof HTMLImageElement) || !image.closest('.md-body')) return
+  const fallback = document.createElement('span')
+  fallback.className = 'md-image-fallback'
+  fallback.textContent = '[不支持加载的图片]'
+  image.replaceWith(fallback)
 }
 
 function msgRef(message) {

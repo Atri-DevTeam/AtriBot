@@ -10,15 +10,17 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.*;
 import top.yzljc.atribot.function.impl.ImageReviewStatus;
-import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
+import top.yzljc.atribot.function.official.pic.ImageReviewService;
+import top.yzljc.atribot.function.official.pic.ImageSourceClient;
 import top.yzljc.atribot.function.official.loot.LootAdminClient;
 import top.yzljc.atribot.webui.Result;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -283,7 +285,9 @@ public class ContentController {
     public static void getUserLootsDetail(Context ctx) {
         String userId = ctx.pathParam("userId");
         LootRepository.UserLootsSummary summary = LootRepository.getUserSummary(userId);
-        ctx.json(Result.success(new UserLootsDetailDTO(summary.userId(), summary.coins(), summary.loots())));
+        ctx.json(Result.success(new UserLootsDetailDTO(
+                summary.userId(), summary.coins(), summary.loots(), ResourcesProperties.LOOTS_ITEM_IMAGE_API
+        )));
     }
 
     public static void grantUserLoot(Context ctx) {
@@ -306,6 +310,67 @@ public class ContentController {
         ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
     }
 
+    public static void revokeUserLootAll(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        String itemId = ctx.pathParam("itemId");
+        boolean success = LootRepository.adminRemoveAllLoot(userId, itemId);
+        ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
+    }
+
+    public static void grantUserLootBatch(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        GrantLootBatchDTO dto = ctx.bodyAsClass(GrantLootBatchDTO.class);
+        List<GrantLootItemDTO> items = dto.getItems();
+        if (items == null || items.isEmpty()) {
+            ctx.json(Result.fail(400, "items 不能为空"));
+            return;
+        }
+        List<LootRepository.LootGrant> grants = items.stream()
+                .filter(item -> item != null && !isBlank(item.getItemId()) && !isBlank(item.getDisplayName()))
+                .map(item -> new LootRepository.LootGrant(item.getItemId(), item.getDisplayName()))
+                .toList();
+        if (grants.isEmpty()) {
+            ctx.json(Result.fail(400, "至少需要一条有效物品卡"));
+            return;
+        }
+        String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
+        int success = LootRepository.appendLootsBatch(userId, grants, way, Boolean.TRUE.equals(dto.getSpecial()));
+        ctx.json(Result.success(new LootBatchResult(success, grants.size())));
+    }
+
+    public static void revokeUserLootBatch(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        ItemIdsDTO dto = ctx.bodyAsClass(ItemIdsDTO.class);
+        Set<String> itemIds = normalizedItemIds(dto.getItemIds());
+        if (itemIds.isEmpty()) {
+            ctx.json(Result.fail(400, "itemIds 不能为空"));
+            return;
+        }
+        int success = LootRepository.adminRemoveLootsBatch(userId, itemIds);
+        ctx.json(Result.success(new LootBatchResult(success, itemIds.size())));
+    }
+
+    public static void setUserLootsSpecial(Context ctx) {
+        String userId = ctx.pathParam("userId");
+        SetLootSpecialDTO dto = ctx.bodyAsClass(SetLootSpecialDTO.class);
+        Set<String> itemIds = normalizedItemIds(dto.getItemIds());
+        if (itemIds.isEmpty() || dto.getSpecial() == null) {
+            ctx.json(Result.fail(400, "itemIds 与 special 不能为空"));
+            return;
+        }
+        int success = LootRepository.setLootsSpecial(userId, itemIds, dto.getSpecial());
+        ctx.json(Result.success(new LootBatchResult(success, itemIds.size())));
+    }
+
+    private static Set<String> normalizedItemIds(List<String> itemIds) {
+        Set<String> result = new LinkedHashSet<>();
+        if (itemIds == null) return result;
+        for (String itemId : itemIds) {
+            if (!isBlank(itemId)) result.add(itemId.trim());
+        }
+        return result;
+    }
+
     public record CoinLeaderboardResult(List<LootRepository.CoinLeaderboardEntry> items, int total, int page, int pageSize) {
     }
 
@@ -315,7 +380,11 @@ public class ContentController {
     public record LootUserListResult(List<LootUserListItemDTO> items, int total, int page, int pageSize) {
     }
 
-    public record UserLootsDetailDTO(String userId, int coins, List<LootRepository.LootRecord> loots) {
+    public record UserLootsDetailDTO(String userId, int coins, List<LootRepository.LootRecord> loots,
+                                     String imageBaseUrl) {
+    }
+
+    public record LootBatchResult(int success, int total) {
     }
 
     @Data
@@ -336,5 +405,29 @@ public class ContentController {
         private String displayName;
         private String way;
         private Boolean special;
+    }
+
+    @Data
+    public static class GrantLootBatchDTO {
+        private List<GrantLootItemDTO> items;
+        private String way;
+        private Boolean special;
+    }
+
+    @Data
+    public static class GrantLootItemDTO {
+        private String itemId;
+        private String displayName;
+    }
+
+    @Data
+    public static class SetLootSpecialDTO {
+        private List<String> itemIds;
+        private Boolean special;
+    }
+
+    @Data
+    public static class ItemIdsDTO {
+        private List<String> itemIds;
     }
 }

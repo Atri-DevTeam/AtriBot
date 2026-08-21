@@ -31,10 +31,10 @@
                 {{ tab.label }} <span>{{ counts[tab.count] }}</span>
               </button>
             </div>
-            <div class="name-review-search">
+            <label class="name-review-search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-              <input v-model="search" type="search" placeholder="搜索玩家名或申请人 ID" />
-            </div>
+              <input v-model="search" type="search" aria-label="搜索玩家名或申请人 ID" placeholder="搜索玩家名或申请人 ID" />
+            </label>
           </div>
 
           <form class="name-review-add" @submit.prevent="submitApplication">

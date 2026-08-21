@@ -57,21 +57,13 @@ final class PrivateStreamMessage {
             log.error("单聊流式消息发送失败：msg_id/event_id 不能同时为空, openId: {}", openId);
             return CompletableFuture.completedFuture(null);
         }
-        return ThreadManager.supplyAsync(() -> doSend(openId, request))
-                .exceptionally(e -> {
-                    log.error("单聊流式消息异步发送任务失败, openId: {}", openId, e);
-                    return null;
-                });
+        return ThreadManager.supplyAsync(() -> doSend(openId, request));
     }
 
     CompletableFuture<String> sendBatchAsync(String openId, String msgId, String eventId,
                                              String contentType, String inputMode, List<String> contents,
                                              Boolean isWakeup) {
-        return ThreadManager.supplyAsync(() -> sendBatch(openId, msgId, eventId, contentType, inputMode, contents, isWakeup))
-                .exceptionally(e -> {
-                    log.error("单聊流式分批发送失败, openId: {}, msgId: {}, eventId: {}", openId, msgId, eventId, e);
-                    return null;
-                });
+        return ThreadManager.supplyAsync(() -> sendBatch(openId, msgId, eventId, contentType, inputMode, contents, isWakeup));
     }
 
     List<String> toSnapshots(List<String> deltas) {
@@ -218,13 +210,14 @@ final class PrivateStreamMessage {
                 OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
                         res.status(), res.body(), "返回无 id");
                 log.error("单聊流式消息发送失败, 返回无 id: {}", res.body());
+                throw QQMessageSendException.fromResponse(objectMapper, res.body(), "官方接口未返回消息ID");
             } else {
                 OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
                         res.status(), res.body(), "HTTP 状态异常或响应为空");
                 log.error("单聊流式消息发送失败, status: {}, body: {}", res.status(), res.body());
                 callFailEvent(url, res.body());
+                throw QQMessageSendException.fromResponse(objectMapper, res.body(), "消息发送失败");
             }
-            return null;
         } catch (JsonProcessingException e) {
             OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,
                     res.status(), res.body(), "响应解析失败: " + e.getMessage());
@@ -362,7 +355,11 @@ final class PrivateStreamMessage {
             log.error("{}消息发送等待被中断", logType, e);
             return null;
         } catch (Exception e) {
-            log.error("{}消息发送任务失败: {}", logType, e.getCause() != null ? e.getCause() : e);
+            Throwable cause = e.getCause();
+            if (cause instanceof QQMessageSendException officialError) {
+                throw officialError;
+            }
+            log.error("{}消息发送任务失败: {}", logType, cause != null ? cause : e);
             return null;
         }
     }

@@ -1,0 +1,146 @@
+/* ============ 群管系统页 ============ */
+
+.gm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 720px;
+}
+
+.gm-rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gm-rule-row {
+  display: grid;
+  grid-template-columns: 110px 100px 1fr 1fr 32px;
+  gap: 8px;
+  align-items: center;
+}
+
+.gm-rule-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.gm-action-block {
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.gm-remind-input {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.gm-mute-seconds {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.gm-mute-seconds .gs-input {
+  width: 100px;
+}
+
+.gm-mode-select {
+  max-width: 260px;
+}
+
+.gm-prompt-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gm-default-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.gm-join-keyword-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gm-join-keyword-row .gs-input {
+  flex: 1 1 200px;
+}
+
+.gm-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gm-log-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.gm-log-action {
+  font-family: var(--font-mono);
+  color: var(--color-text-strong);
+}
+
+.gm-log-target {
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.gm-log-detail {
+  flex: 1 1 200px;
+  min-width: 0;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+/* ═══════ 手机端 ═══════ */
+
+@media (max-width: 640px) {
+  .gm-rule-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "type mode"
+      "keyword keyword"
+      "remark remark"
+      "del del";
+  }
+
+  .gm-rule-row .gm-rule-type { grid-area: type; }
+  .gm-rule-row .gm-rule-mode { grid-area: mode; }
+  .gm-rule-row .gm-rule-keyword { grid-area: keyword; }
+  .gm-rule-row .gm-rule-remark { grid-area: remark; }
+  .gm-rule-row .gm-rule-del { grid-area: del; width: 100%; }
+
+  .gm-log-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

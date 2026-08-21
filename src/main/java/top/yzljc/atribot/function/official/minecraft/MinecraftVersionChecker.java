@@ -190,7 +190,7 @@ public final class MinecraftVersionChecker implements ScheduledTask {
         String verId = type.getDisplayName();
 
         String textInfo = """
-                Minecraft发布了新的%s
+                Minecraft更新了新的%s
                 版本号: %s
                 发布时间: %s
                 """.formatted(
@@ -200,7 +200,7 @@ public final class MinecraftVersionChecker implements ScheduledTask {
         );
 
         String markdownInfo = """
-                **Minecraft发布了新的%s**
+                **Minecraft更新了新的%s**
                 
                 > 版本号: %s
                 > 发布时间: %s

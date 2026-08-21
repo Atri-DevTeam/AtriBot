@@ -7,11 +7,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -353,6 +356,167 @@ public class LootRepository {
         }
     }
 
+    /** 管理端收回指定物品卡的全部持有数量 */
+    public static boolean adminRemoveAllLoot(String userId, String itemId) {
+        if (isBlank(itemId)) return false;
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                List<LootRecord> current = lockLoots(con, userId);
+                if (current == null) {
+                    con.rollback();
+                    return false;
+                }
+                boolean removed = current.removeIf(loot -> loot.itemId().equals(itemId));
+                if (!removed) {
+                    con.rollback();
+                    return false;
+                }
+                updateLoots(con, userId, current);
+                syncLootItemCounts(con, userId, current);
+                con.commit();
+                return true;
+            } catch (Exception e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("全量撤销物品卡失败: userId={}, itemId={}", userId, itemId, e);
+            return false;
+        }
+    }
+
+    /** 批量追加物品卡，所有变更在同一事务中写入库存 JSON 与计数表 */
+    public static int appendLootsBatch(String userId, List<LootGrant> grants, String way, boolean special) {
+        if (grants == null || grants.isEmpty()) return 0;
+        String safeWay = way == null || way.isBlank() ? "未知" : way;
+        long now = Instant.now().getEpochSecond();
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                ensureLootUser(con, userId);
+                List<LootRecord> current = lockLoots(con, userId);
+                Map<String, Integer> indexes = lootIndexes(current);
+                Set<String> changedItemIds = new LinkedHashSet<>();
+                int success = 0;
+                for (LootGrant grant : grants) {
+                    if (grant == null || isBlank(grant.itemId()) || isBlank(grant.displayName())) continue;
+                    String itemId = grant.itemId().trim();
+                    String displayName = grant.displayName().trim();
+                    Integer index = indexes.get(itemId);
+                    if (index == null) {
+                        current.add(new LootRecord(itemId, displayName, now, safeWay, 1, special));
+                        indexes.put(itemId, current.size() - 1);
+                    } else {
+                        LootRecord existing = current.get(index);
+                        current.set(index, new LootRecord(itemId, displayName,
+                                existing.receiveTimestamp() > 0 ? existing.receiveTimestamp() : now,
+                                existing.way(), existing.count() + 1, existing.special() || special));
+                    }
+                    changedItemIds.add(itemId);
+                    success++;
+                }
+                if (success == 0) {
+                    con.rollback();
+                    return 0;
+                }
+                updateLoots(con, userId, current);
+                for (String itemId : changedItemIds) {
+                    upsertLootItemCount(con, userId, current.get(indexes.get(itemId)), now);
+                }
+                con.commit();
+                return success;
+            } catch (Exception e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("批量追加物品卡失败: userId={}", userId, e);
+            return 0;
+        }
+    }
+
+    /** 批量收回物品卡，每种卡最多收回一张 */
+    public static int adminRemoveLootsBatch(String userId, Set<String> itemIds) {
+        if (itemIds == null || itemIds.isEmpty()) return 0;
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                List<LootRecord> current = lockLoots(con, userId);
+                if (current == null) {
+                    con.rollback();
+                    return 0;
+                }
+                int success = 0;
+                for (String itemId : itemIds) {
+                    for (int i = 0; i < current.size(); i++) {
+                        LootRecord existing = current.get(i);
+                        if (!existing.itemId().equals(itemId)) continue;
+                        if (existing.count() > 1) {
+                            current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(),
+                                    existing.way(), existing.count() - 1, existing.special()));
+                        } else {
+                            current.remove(i);
+                        }
+                        success++;
+                        break;
+                    }
+                }
+                if (success == 0) {
+                    con.rollback();
+                    return 0;
+                }
+                updateLoots(con, userId, current);
+                syncLootItemCounts(con, userId, current);
+                con.commit();
+                return success;
+            } catch (Exception e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("批量撤销物品卡失败: userId={}", userId, e);
+            return 0;
+        }
+    }
+
+    /** 更新仍持有物品卡的特殊状态，不改变数量或计数表 */
+    public static int setLootsSpecial(String userId, Set<String> itemIds, boolean special) {
+        if (itemIds == null || itemIds.isEmpty()) return 0;
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                List<LootRecord> current = lockLoots(con, userId);
+                if (current == null) {
+                    con.rollback();
+                    return 0;
+                }
+                int success = 0;
+                for (int i = 0; i < current.size(); i++) {
+                    LootRecord existing = current.get(i);
+                    if (itemIds.contains(existing.itemId()) && existing.special() != special) {
+                        current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(),
+                                existing.way(), existing.count(), special));
+                        success++;
+                    }
+                }
+                if (success == 0) {
+                    con.rollback();
+                    return 0;
+                }
+                updateLoots(con, userId, current);
+                con.commit();
+                return success;
+            } catch (Exception e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("更新特殊物品卡状态失败: userId={}, special={}", userId, special, e);
+            return 0;
+        }
+    }
+
     // ==================== 管理端查询 ====================
 
     public static List<CoinLeaderboardEntry> getCoinLeaderboard(String search, int page, int pageSize) {
@@ -460,6 +624,75 @@ public class LootRepository {
 
     // ==================== 内部工具 ====================
 
+    private static void ensureLootUser(Connection con, String userId) throws Exception {
+        String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', 0) " +
+                "ON DUPLICATE KEY UPDATE `user_id` = VALUES(`user_id`)";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            ps.executeUpdate();
+        }
+    }
+
+    private static List<LootRecord> lockLoots(Connection con, String userId) throws Exception {
+        String sql = "SELECT `loots` FROM `user_loots` WHERE `user_id` = ? FOR UPDATE";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            try (var rs = ps.executeQuery()) {
+                return rs.next() ? parseLoots(rs.getString("loots")) : null;
+            }
+        }
+    }
+
+    private static Map<String, Integer> lootIndexes(List<LootRecord> loots) {
+        Map<String, Integer> indexes = new LinkedHashMap<>();
+        for (int i = 0; i < loots.size(); i++) {
+            indexes.put(loots.get(i).itemId(), i);
+        }
+        return indexes;
+    }
+
+    private static void updateLoots(Connection con, String userId, List<LootRecord> loots) throws Exception {
+        try (var ps = con.prepareStatement("UPDATE `user_loots` SET `loots` = ? WHERE `user_id` = ?")) {
+            ps.setString(1, writeLoots(loots));
+            ps.setString(2, userId);
+            ps.executeUpdate();
+        }
+    }
+
+    private static void upsertLootItemCount(Connection con, String userId, LootRecord loot, long now) throws Exception {
+        String sql = "INSERT INTO `user_loot_items` " +
+                "(`user_id`, `item_id`, `display_name`, `count`, `first_receive_timestamp`, `last_receive_timestamp`, `way`) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE `display_name` = VALUES(`display_name`), `count` = VALUES(`count`), " +
+                "`first_receive_timestamp` = VALUES(`first_receive_timestamp`), " +
+                "`last_receive_timestamp` = VALUES(`last_receive_timestamp`), `way` = VALUES(`way`)";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            ps.setString(2, loot.itemId());
+            ps.setString(3, loot.displayName());
+            ps.setInt(4, loot.count());
+            ps.setLong(5, loot.receiveTimestamp());
+            ps.setLong(6, now);
+            ps.setString(7, loot.way());
+            ps.executeUpdate();
+        }
+    }
+
+    private static void syncLootItemCounts(Connection con, String userId, List<LootRecord> loots) throws Exception {
+        try (var delete = con.prepareStatement("DELETE FROM `user_loot_items` WHERE `user_id` = ?")) {
+            delete.setString(1, userId);
+            delete.executeUpdate();
+        }
+        long now = Instant.now().getEpochSecond();
+        for (LootRecord loot : loots) {
+            upsertLootItemCount(con, userId, loot, now);
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
     private static List<LootRecord> parseLoots(String json) {
         Map<String, LootRecord> merged = new LinkedHashMap<>();
         if (json == null || json.isBlank()) {
@@ -504,6 +737,9 @@ public class LootRepository {
             node.put("special", record.special());
         }
         return array.toString();
+    }
+
+    public record LootGrant(String itemId, String displayName) {
     }
 
     public record LootRecord(String itemId, String displayName, long receiveTimestamp, String way, int count,

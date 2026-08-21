@@ -71,6 +71,8 @@ public class Config {
     private List<String> napcatMessageSpyGroups;
     @Getter
     private List<String> napcatRecallIgnoredUsers;
+    @Getter
+    private String authToken;
 
     // ########## 功能设置区域 ##########
     private String atribotKeySecret;
@@ -79,7 +81,7 @@ public class Config {
     @Getter
     private String saSignSecretKey;
     @Getter
-    private int githubWebhookPort;
+    private String githubWebhookPath;
     @Getter
     private String githubWebhookSecret;
     @Getter
@@ -113,6 +115,10 @@ public class Config {
     private String qqClientSecret;
     @Getter
     private String qqApiBaseUrl;
+    @Getter
+    private String qqConnectionMode;
+    @Getter
+    private String qqWebhookPath;
     @Getter
     private String officialWebuiToken;
     @Getter
@@ -251,12 +257,13 @@ public class Config {
             this.napcatAdminUins = yaml.getStringList("napcat.admin-uins");
             this.napcatMessageSpyGroups = yaml.getStringList("napcat.message-spy-groups");
             this.napcatRecallIgnoredUsers = yaml.getStringList("napcat.recall-ignore-user");
+            this.authToken = yaml.getString("napcat.token", "");
 
             // ########## 功能设置区域 ##########
             this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
             this.hypixelRewardWebSocketUrl = yaml.getString("function.hypixel-reward-ws", "ws://localhost:1111");
             this.saSignSecretKey = yaml.getString("function.sa-sign-key", "null");
-            this.githubWebhookPort = yaml.getInt("function.github-webhook.port", 54321);
+            this.githubWebhookPath = yaml.getString("function.github-webhook.path", "/github-webhook");
             this.githubWebhookSecret = yaml.getString("function.github-webhook.secret", "null");
             this.bilibiliCookie = yaml.getString("function.bilibili-cookie", "null");
             this.verifyEnabled = yaml.getBoolean("verify.enabled", false);
@@ -286,6 +293,24 @@ public class Config {
             this.qqAppId = yaml.getString("qq.app-id", "");
             this.qqClientSecret = yaml.getString("qq.client-secret", "");
             this.qqApiBaseUrl = yaml.getString("qq.api-base-url", "https://sandbox.api.sgroup.qq.com");
+            String configuredQqConnectionMode = yaml.getString("qq.connection-mode", "ws");
+            this.qqConnectionMode = configuredQqConnectionMode == null
+                    ? "ws"
+                    : configuredQqConnectionMode.trim().toLowerCase();
+            if (this.qqConnectionMode.equals("wh")) {
+                this.qqConnectionMode = "webhook";
+            }
+            if (!this.qqConnectionMode.equals("webhook") && !this.qqConnectionMode.equals("ws")) {
+                log.warn("未知的 qq.connection-mode: {}，回退为 ws", this.qqConnectionMode);
+                this.qqConnectionMode = "ws";
+            }
+            String configuredQqWebhookPath = yaml.getString("qq.webhook-path", "/qq/webhook");
+            this.qqWebhookPath = configuredQqWebhookPath == null
+                    ? "/qq/webhook"
+                    : configuredQqWebhookPath.trim();
+            if (this.qqWebhookPath.isEmpty() || !this.qqWebhookPath.startsWith("/") || this.qqWebhookPath.equals("/")) {
+                this.qqWebhookPath = "/qq/webhook";
+            }
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");

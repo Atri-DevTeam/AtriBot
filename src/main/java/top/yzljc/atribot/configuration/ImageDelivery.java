@@ -24,11 +24,16 @@ public final class ImageDelivery {
         if (data == null) {
             return null;
         }
+        String url = data.path("url").asText(null);
+        if (url != null && !url.isBlank()) {
+            return url;
+        }
         String uuid = data.path("uuid").asText(null);
         if (uuid == null || uuid.isBlank()) {
             return null;
         }
-        return resolve(uuid, data.path("way").asText(null));
+        String way = data.path("way").asText(null);
+        return resolve(uuid, way);
     }
 
     public static String resolve(String uuid, String way) {

@@ -76,11 +76,15 @@ public abstract class MinecraftNetwork {
                 }
             }
 
-            String markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n";
-            if (logs != null) {
-                markdownLogs += "```\n" + logs + "\n```\n";
+            String markdownLogs;
+            if (logs == null) {
+                markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n" +
+                        "> 无法获取指令执行结果，可能是服务器未响应或发生错误\n";
+            } else if (sender.hasPermission()) {
+                markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n" +
+                        "```\n" + logs + "\n```\n";
             } else {
-                markdownLogs += "> 无法获取指令执行结果，可能是服务器未响应或发生错误\n";
+                markdownLogs = "指令已送达，但对你隐藏";
             }
 
             sender.sendMessage(TC.md(markdownLogs), TC.keyboard(getButtons(sender, server, args)));

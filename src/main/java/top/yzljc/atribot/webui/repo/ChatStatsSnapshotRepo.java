@@ -81,8 +81,8 @@ public final class ChatStatsSnapshotRepo {
                     loaded.days.put(date, d);
                 } else if (("group".equals(type) || "user".equals(type)) && id != null) {
                     ScopeStats s = "group".equals(type)
-                            ? loaded.groups.computeIfAbsent(id, k -> new ScopeStats())
-                            : loaded.users.computeIfAbsent(id, k -> new ScopeStats());
+                            ? loaded.groups.computeIfAbsent(id, _ -> new ScopeStats())
+                            : loaded.users.computeIfAbsent(id, _ -> new ScopeStats());
                     if (date == null) {
                         s.received = n1; s.sent = n2; s.c2cReceived = n3; s.c2cSent = n4; s.groupReceived = n5;
                         s.activeUsers = readSet(rs.getString("json_a"));
