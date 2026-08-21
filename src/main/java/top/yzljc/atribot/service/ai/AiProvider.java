@@ -14,7 +14,7 @@ public enum AiProvider {
 
     DEFAULT("default"),
     OTHER("other"),
-    OPENCODE("opencode"),;
+    OPENCODE("opencode");
 
     private final String configKey;
 

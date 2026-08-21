@@ -35,43 +35,43 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof QQCommandSender qq)) return true;
 
-        if (args.length < 1) {
-            var pt = qq.getPlatform() == Platform.OFFICIAL_GROUP ? "群主" : "您";
-            Markdown md = TC.md(
-                    "启用全量消息\n\n" +
-                            "全量消息包括`主动消息`和`获取全部消息`，" + pt + "完成授权启用主动消息后，"
-                            + QQBot.BOT_NAME +
-                            "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供部分推送功能；" +
-                            "启用获取全部消息后，无需@" + QQBot.BOT_NAME + "即可处理指令（仅群聊）\n\n" +
-                            Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
-            );
-            qq.sendMessage(md);
-            return true;
-        }
-        String groupRealId = args[0];
-
-        try {
-            Long.parseLong(groupRealId);
-        } catch (NumberFormatException e) {
-            qq.sendMessage("请输入正确的群号");
-            return true;
-        }
-
+//        if (args.length < 1) {
+        var pt = qq.getPlatform() == Platform.OFFICIAL_GROUP ? "群主" : "您";
         Markdown md = TC.md(
-                "**编辑消息权限**\n\n" +
-                        "> 请群主大大按下方操作开启权限，需要手机QQ版本为9.2.90及以上，IOS未知\n\n" +
-                        Markdown.img(ResourcesProperties.FULL_MESSAGE_ENABLE_GUIDE, 540, 479)
+                "启用全量消息\n\n" +
+                        "全量消息包括`主动消息`和`获取全部消息`，" + pt + "完成授权启用主动消息后，"
+                        + QQBot.BOT_NAME +
+                        "可以通过" + Markdown.enterCommand("/推送任务", "主动推送") + "提供部分推送功能；" +
+                        "启用获取全部消息后，无需@" + QQBot.BOT_NAME + "即可处理指令（仅群聊）\n\n" +
+                        Markdown.link("https://docs.qq.com/doc/DUHJQVG9VVE5yQU1S", "查看启用教程")
         );
-        String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
-        Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);
-        linkButton.setPermissionType(PermissionType.ADMIN);
-        Object keyboard = TC.keyboard(
-                List.of(
-                        List.of(linkButton)
-                )
-        );
-        qq.sendMessage(md, keyboard);
-        OfficialGroups.setRealGroupId(qq.getGroupId(), Long.parseLong(groupRealId));
+        qq.sendMessage(md);
+//            return true;
+//        }
+//        String groupRealId = args[0];
+//
+//        try {
+//            Long.parseLong(groupRealId);
+//        } catch (NumberFormatException e) {
+//            qq.sendMessage("请输入正确的群号");
+//            return true;
+//        }
+//
+//        Markdown md = TC.md(
+//                "**编辑消息权限**\n\n" +
+//                        "> 请群主大大按下方操作开启权限，需要手机QQ版本为9.2.90及以上，IOS未知\n\n" +
+//                        Markdown.img(ResourcesProperties.FULL_MESSAGE_ENABLE_GUIDE, 540, 479)
+//        );
+//        String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
+//        Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);
+//        linkButton.setPermissionType(PermissionType.ADMIN);
+//        Object keyboard = TC.keyboard(
+//                List.of(
+//                        List.of(linkButton)
+//                )
+//        );
+//        qq.sendMessage(md, keyboard);
+//        OfficialGroups.setRealGroupId(qq.getGroupId(), Long.parseLong(groupRealId));
         return true;
     }
 //

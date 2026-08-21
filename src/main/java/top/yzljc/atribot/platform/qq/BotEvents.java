@@ -302,7 +302,7 @@ public class BotEvents {
                 verifyMessage = eventData.path("verify_info").path("verify_message").asText(null);
             }
             if (verifyMethod == VerifyMethod.ADMIN_REVIEW_QA) {
-                var reviewQaNode = eventData.path("verify_info").path("admin_review_qa");
+                var reviewQaNode = eventData.path("verify_info").path("review_qa_list");
                 if (reviewQaNode.isArray()) {
                     for (JsonNode qaNode : reviewQaNode) {
                         String question = qaNode.path("question").asText(null);

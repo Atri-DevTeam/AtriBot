@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.official.imagesource;
+package top.yzljc.atribot.function.official.pic;
 
 /**
  * 对外取图用的轻量对象。

@@ -81,7 +81,7 @@ public class Config {
     @Getter
     private String saSignSecretKey;
     @Getter
-    private int githubWebhookPort;
+    private String githubWebhookPath;
     @Getter
     private String githubWebhookSecret;
     @Getter
@@ -263,7 +263,7 @@ public class Config {
             this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
             this.hypixelRewardWebSocketUrl = yaml.getString("function.hypixel-reward-ws", "ws://localhost:1111");
             this.saSignSecretKey = yaml.getString("function.sa-sign-key", "null");
-            this.githubWebhookPort = yaml.getInt("function.github-webhook.port", 54321);
+            this.githubWebhookPath = yaml.getString("function.github-webhook.path", "/github-webhook");
             this.githubWebhookSecret = yaml.getString("function.github-webhook.secret", "null");
             this.bilibiliCookie = yaml.getString("function.bilibili-cookie", "null");
             this.verifyEnabled = yaml.getBoolean("verify.enabled", false);

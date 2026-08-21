@@ -1,8 +1,10 @@
 package top.yzljc.atribot.chat.official.moderation;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.management.Mute;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -67,7 +69,6 @@ public final class GroupModerationListener implements Listener {
         String groupOpenId = event.getGroupId();
 
         if (action.isRecall()) {
-            // TODO: 撤回逻辑后续需改动
             GroupChat.recallMessage(groupOpenId, event.getMessage().getMessageId());
             ModerationLogRepository.log(groupOpenId, category, "recall", memberOpenId, detail);
         }
@@ -77,14 +78,12 @@ public final class GroupModerationListener implements Listener {
         }
 
         if (action.isMute() && action.getMuteSeconds() > 0) {
-            // TODO: 禁言逻辑后续需改动
             Mute.muteMember(groupOpenId, memberOpenId, Duration.ofSeconds(action.getMuteSeconds()));
             ModerationLogRepository.log(groupOpenId, category, "mute", memberOpenId, detail);
         }
 
         if (action.isNotifyDebugGroup()) {
-            // TODO: 通知到Debug群逻辑后续需改动
-            Alert.notify("[群管系统] 群 " + groupOpenId + " 触发 " + category + "：" + detail);
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "[群管] 群 " + groupOpenId + " 触发 " + category + "：" + detail);
         }
     }
 }

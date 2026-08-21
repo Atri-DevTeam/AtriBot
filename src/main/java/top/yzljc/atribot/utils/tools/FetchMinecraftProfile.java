@@ -2,6 +2,7 @@ package top.yzljc.atribot.utils.tools;
 
 import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.util.UUID;
@@ -28,8 +29,9 @@ public final class FetchMinecraftProfile {
         } else {
             if (d != null) {
                 var uuid = d.path("data").path("uuid").asText(null);
+                var name = d.path("data").path("inGameName").asText(null);
                 if (uuid != null) {
-                    return new Profile(UUID.fromString(uuid), var);
+                    return new Profile(UUID.fromString(uuid), name);
                 }
             }
         }
@@ -46,6 +48,14 @@ public final class FetchMinecraftProfile {
             }
         }
         return uuid;
+    }
+
+    public static String getPlayerHead(String uuid) {
+        String url = ResourcesProperties.PLAYER_AVATAR_API.replace("{uuid}", uuid);
+
+        int code = PreImageGenerate.create(url);
+        if (code != 200) return "-1";
+        return url;
     }
 
     public record Profile(UUID uuid, String username) { }

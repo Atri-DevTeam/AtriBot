@@ -21,7 +21,7 @@
           <h2 class="feedback-title">群管系统</h2>
           <div class="feedback-tabs">
             <button :class="{ active: tab === 'keyword' }" @click="tab = 'keyword'">违规词撤回</button>
-            <button :class="{ active: tab === 'ai' }" @click="tab = 'ai'">AI 审核</button>
+            <button :class="{ active: tab === 'ai' }" @click="tab = 'ai'">AI消息审查</button>
             <button :class="{ active: tab === 'join' }" @click="tab = 'join'">入群审核</button>
             <button :class="{ active: tab === 'logs' }" @click="switchToLogs">操作日志</button>
           </div>
@@ -44,7 +44,7 @@
           </div>
 
           <div class="feedback-content">
-            <div v-if="!groupOpenId" class="empty-state">请先选择群（仅显示机器人为管理员/群主的群）</div>
+            <div v-if="!groupOpenId" class="empty-state">请先选择群（机器人身份需为管理员...）</div>
             <div v-else-if="loading" class="empty-state">加载中...</div>
             <div v-else-if="loadError" class="empty-state error">{{ loadError }}</div>
 
@@ -148,7 +148,7 @@
               </label>
 
               <label class="checkbox-label">
-                <input type="checkbox" v-model="settings.joinReview.notifyDebugGroup"/> 通知到 Debug 群
+                <input type="checkbox" v-model="settings.joinReview.notifyDebugGroup"/> 通知到开发组
               </label>
             </div>
 

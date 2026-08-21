@@ -5,6 +5,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.media.HexColor;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -47,15 +48,13 @@ public class LootsCommand implements CommandExecutor {
             return true;
         }
 
-        String duplicatedRefundLine = d.refundCoins() > 0
-                ? "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "由于已获取过该物品，本次获取 " + d.refundCoins() + " 金粒\n"
-                : "";
-        String costLine = d.freeDraw()
-                ? "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "本次抽取物品不消耗金粒   " + Markdown.enterCommand("/golds", "查看剩余金粒")
-                : "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "本次抽取物品消耗" + d.costCoins() + "金粒   " + Markdown.enterCommand("/golds", "查看剩余金粒");
-        Markdown md = TC.md(Markdown.img(d.image().url(), d.image().width(), d.image().height()) + "\n\n" +
-                duplicatedRefundLine +
-                costLine);
+        int netCoins = d.refundCoins() - d.costCoins();
+        String coinChange = String.format("%+d金粒", netCoins);
+        String levelLine = "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16)
+                + "当前物品等级 " + Markdown.colored(pickLevelColor(d.count(), d.special()), "Lv." + d.count())
+                + " (" + coinChange + ")   "
+                + Markdown.enterCommand("/golds", "查看剩余金粒");
+        Markdown md = TC.md(Markdown.img(d.image().url(), d.image().width(), d.image().height()) + "\n\n" + levelLine);
 
         Object keyboards = TC.keyboard(
                 List.of(
@@ -68,5 +67,15 @@ public class LootsCommand implements CommandExecutor {
 
         qq.sendMessage(md, keyboards);
         return true;
+    }
+
+    private static HexColor pickLevelColor(int count, boolean special) {
+        if (special) return new HexColor("#E04A3F");
+        if (count >= 15) return new HexColor("#EF6F8F");
+        if (count >= 10) return new HexColor("#E9A81E");
+        if (count >= 8) return new HexColor("#A855F7");
+        if (count >= 5) return new HexColor("#5BB8DE");
+        if (count >= 3) return new HexColor("#4CB878");
+        return new HexColor("#8E9AA8");
     }
 }

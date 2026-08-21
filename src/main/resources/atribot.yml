@@ -280,6 +280,15 @@ commands:
       - hypixelzombies
       - hypixel-zombies
       - hypzombies
+  time:
+    description: 查询指定国家/地区的当前时间，不带参数默认查询北京时间
+    usage: /time <国家代称/中文名/城市名/时区ID>
+    aliases:
+      - 时区
+      - timezone
+      - tz
+      - 世界时间
+      - 当前时间
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

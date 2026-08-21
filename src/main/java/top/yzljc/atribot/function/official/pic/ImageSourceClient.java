@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.official.imagesource;
+package top.yzljc.atribot.function.official.pic;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,6 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

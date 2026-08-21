@@ -14,6 +14,7 @@ import java.util.Set;
 
 /** 用户 ID 文件记录 */
 @Slf4j
+@Deprecated
 public final class UsersListed {
 
     private static final Path DATA_FILE = Path.of(Properties.USERS_LISTED);

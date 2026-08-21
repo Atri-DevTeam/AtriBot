@@ -8,7 +8,7 @@
     </label>
     <input v-if="modelValue.remind" class="gs-input gm-remind-input" type="text"
            :value="modelValue.remindMessage" @input="patch('remindMessage', $event.target.value)"
-           placeholder="提醒内容，例如：你的消息违规了哦"/>
+           placeholder="撤回提醒，例如：你的消息违规了哦"/>
     <label class="checkbox-label">
       <input type="checkbox" :checked="modelValue.mute" @change="patch('mute', $event.target.checked)"/> 禁言
     </label>
@@ -18,7 +18,7 @@
              @input="patch('muteSeconds', Number($event.target.value) || 0)"/>
     </label>
     <label class="checkbox-label">
-      <input type="checkbox" :checked="modelValue.notifyDebugGroup" @change="patch('notifyDebugGroup', $event.target.checked)"/> 通知到 Debug 群
+      <input type="checkbox" :checked="modelValue.notifyDebugGroup" @change="patch('notifyDebugGroup', $event.target.checked)"/> 通知到开发组
     </label>
   </div>
 </template>

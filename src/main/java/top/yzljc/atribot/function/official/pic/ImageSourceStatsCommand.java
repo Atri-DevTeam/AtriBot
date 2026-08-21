@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.official.imagesource;
+package top.yzljc.atribot.function.official.pic;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.TC;

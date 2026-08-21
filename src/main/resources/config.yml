@@ -87,7 +87,7 @@ function:
   sa-sign-key: "null"
   # GitHub Webhook 配置
   github-webhook:
-    port: 54321
+    path: "/openapi/github-webhook"
     secret: "null"
   # 哔哩哔哩视频查询用的 Cookie
   bilibili-cookie: "null"

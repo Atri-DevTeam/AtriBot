@@ -27,8 +27,8 @@ import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.database.repo.EventLogRepository;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceStatsCommand;
-import top.yzljc.atribot.function.official.imagesource.ImageSubmitCommand;
+import top.yzljc.atribot.function.official.pic.ImageSourceStatsCommand;
+import top.yzljc.atribot.function.official.pic.ImageSubmitCommand;
 import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.platform.qq.QQBot;
@@ -309,6 +309,7 @@ public class Atri {
         CommandManager.getCommand("加白").setExecutor(new MinecraftWhitelist());
         CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
         CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
+        CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -349,14 +350,14 @@ public class Atri {
         this.taskScheduler = new TaskScheduler();
         TaskSchedulerRegistry.registerAll(taskScheduler);
 
-        int webhookPort = settings.getGithubWebhookPort();
+        String webhookPath = settings.getGithubWebhookPath();
         String webhookSecret = settings.getGithubWebhookSecret();
 
         if (settings.isNapcatEnabled()) {
             GroupConfigManager.refreshAllConfigs();
             FriendList.updateFriendList();
             SetProjectInfo.setInfo();
-            GithubCommitNotify.start(webhookPort, webhookSecret);
+            GithubCommitNotify.register(server, webhookPath, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
             GroupConfigManager.registerFeature("mc_news", false);
@@ -422,7 +423,6 @@ public class Atri {
         }
         MinecraftRemote.disconnect();
         qqBotManagerService.stop();
-        GithubCommitNotify.stop();
         HypixelReward.shutdown();
         RunScheduleTask.shutdown();
         if (imap != null) {

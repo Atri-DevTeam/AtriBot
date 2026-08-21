@@ -105,6 +105,10 @@ public class MinecraftCommand implements CommandExecutor {
                     return true;
                 }
                 var var1 = args[1];
+                if (var1.length() > 16 && var1.length() != 32 && var1.length() != 36) {
+                    qq.sendMessage("笨蛋喵，你输入的玩家名或UUID不合法，请检查输入是否正确。");
+                    return true;
+                }
                 var d = FetchMinecraftProfile.find(var1);
                 UUID uuidOffline;
 
@@ -122,14 +126,18 @@ public class MinecraftCommand implements CommandExecutor {
 
                 int colorOnline = 0;
                 String hexColorOnline = null;
+                String onlineHeadPic = null;
                 if (d != null) {
                     colorOnline =  MinecraftLocationBarColor.getPlayerRGBColor(d.uuid());
                     hexColorOnline = String.format("#%06X", colorOnline & 0xFFFFFF);
+                    if (MinecraftWhitelist.isNameWhitelisted(d.username())) {
+                        onlineHeadPic = FetchMinecraftProfile.getPlayerHead(d.uuid().toString());
+                    }
                 }
                 int colorOffline = MinecraftLocationBarColor.getPlayerRGBColor(uuidOffline);
                 String hexColorOffline = String.format("#%06X", colorOffline & 0xFFFFFF);
 
-                Markdown md = TC.md("**查询结果如下**\n\n" +
+                Markdown md = TC.md( (onlineHeadPic != null ? Markdown.img("pic", onlineHeadPic, 16, 16) + d.username() : "") + " **查询结果如下**\n\n" +
                         "离线UUID: `" + uuidOffline + "`\n\n" +
                         "RGB颜色代码: `" + hexColorOffline + "`\n\n" +
                         "> 参考颜色: " + "$\\textcolor{" + hexColorOffline + "}{\\text{" + "▄" + "}}$\n\n" +
@@ -142,7 +150,7 @@ public class MinecraftCommand implements CommandExecutor {
             }
         }
 
-        qq.sendMessage(ValidCommands);
+        qq.sendMessage("笨蛋喵，你输入的子命令不存在，请检查子命令参数是否正确。");
         return true;
     }
 }

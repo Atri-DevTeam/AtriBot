@@ -21,6 +21,7 @@ import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.utils.socket.BindResponse;
+import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -68,7 +69,7 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
 
         switch (statusCode) {
             case 200:
-                String headUrl = getPlayerHead(uuid);
+                String headUrl = FetchMinecraftProfile.getPlayerHead(uuid);
                 if (!headUrl.equals("-1")) {
                     String markdown = "> ✅ 绑定成功！\n> 玩家 UUID: `" + uuid + "`\n" + (OfficialGroups.isWhitelist(sender.getGroupId()) ? "> ![玩家头像 #96px #96px](" + headUrl + ")" : "");
 
@@ -106,14 +107,6 @@ public class VerifyMinecraftCommand implements CommandExecutor, Listener {
                 break;
         }
         return true;
-    }
-
-    private static String getPlayerHead(String uuid) {
-        String url = ResourcesProperties.PLAYER_AVATAR_API.replace("{uuid}", uuid);
-
-        int code = PreImageGenerate.create(url);
-        if (code != 200) return "-1";
-        return url;
     }
 
     @EventHandler

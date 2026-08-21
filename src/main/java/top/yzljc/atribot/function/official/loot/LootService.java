@@ -257,7 +257,7 @@ public class LootService {
 
         LootCatalogItem picked = pickByOwnedWeight(drawable, ownedItemIds);
         boolean duplicated = ownedItemIds.contains(picked.itemId());
-        LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way);
+        LootRepository.LootRecord record = LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way, picked.special());
 
         int refundCoins = 0;
         if (duplicated && refundDuplicated) {
@@ -270,7 +270,10 @@ public class LootService {
             return LootDao.fail("渲染抽卡图失败 - 开发错误，请联系开发者处理");
         }
 
-        return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins);
+        int currentCount = record != null ? record.count() : 0;
+        boolean currentSpecial = record != null && record.special();
+        return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins,
+                picked.itemId(), currentCount, currentSpecial);
     }
 
     private static LootCatalogItem pickByOwnedWeight(List<LootCatalogItem> drawable, Set<String> ownedItemIds) {

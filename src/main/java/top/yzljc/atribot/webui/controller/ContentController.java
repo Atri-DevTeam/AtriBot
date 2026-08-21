@@ -10,8 +10,8 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.*;
 import top.yzljc.atribot.function.impl.ImageReviewStatus;
-import top.yzljc.atribot.function.official.imagesource.ImageReviewService;
-import top.yzljc.atribot.function.official.imagesource.ImageSourceClient;
+import top.yzljc.atribot.function.official.pic.ImageReviewService;
+import top.yzljc.atribot.function.official.pic.ImageSourceClient;
 import top.yzljc.atribot.function.official.loot.LootAdminClient;
 import top.yzljc.atribot.webui.Result;
 
