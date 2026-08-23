@@ -27,7 +27,7 @@ public class MojiraIssueSummarizer {
 
     public static String translate(String key, String summary, String description) {
         if (aiService == null) {
-            log.debug("[Mojira AI] AiService 未初始化，返回原文");
+            log.warn("[Mojira AI] AiService 未初始化，返回原文");
             return description;
         }
 
@@ -49,7 +49,7 @@ public class MojiraIssueSummarizer {
 
         try {
             String result = aiService.askWithSystemPrompt(AiProvider.OTHER, userPrompt, SYSTEM_PROMPT);
-            log.debug("[Mojira AI] {} 翻译完成, 原文长度={}, 译文长度={}", key, description.length(), result != null ? result.length() : 0);
+            log.info("[Mojira AI] {} 翻译完成, 原文长度={}, 译文长度={}", key, description.length(), result != null ? result.length() : 0);
             return result != null ? result : description;
         } catch (Exception e) {
             log.warn("[Mojira AI] {} 翻译失败，使用原文兜底: {}", key, e.getMessage());

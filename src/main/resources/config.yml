@@ -17,6 +17,10 @@ listen-port: 1234
 # API
 api-url: null
 
+# Minecraft 名字与皮肤远端审核（审核密钥同时具备读取权限）
+minecraft-moderation:
+  review-key: ""
+
 delivery:
   oss-dump-base-url: "null"
 
@@ -144,6 +148,8 @@ qq:
   official-openId: "null"
   # 官方机器人用户名
   official-username: "null"
+  # 机器人 QQ 号（UIN，纯数字 10 位），生成「添加到群/消息列表」分享二维码用
+  bot-uin: "null"
   # Debug 群 OpenId
   debug-group-openId: "null"
   # 超级管理员用户 OpenId，用于官方调试页 {user_openid} 模板

@@ -252,11 +252,6 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  /*
-   * groupOpenId / userOpenId 都是 32 位十六进制串，原来的 38ch 按非等宽字体量
-   * 不够宽，PC 端会把 ID 挤到换行。改成按内容撑开、下限保证放得下整条 ID。
-   * 窄屏由 responsive.css 覆盖成 min-width: 100%，手机端表现不变。
-   */
   width: max-content;
   min-width: 400px;
   max-width: min(560px, 92vw);

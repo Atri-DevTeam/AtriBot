@@ -96,10 +96,6 @@ public class PanelController {
             ctx.json(Result.fail(400, "panelId、panel 不能为空"));
             return;
         }
-        if (isLegacyReadOnlyPanel(panelId)) {
-            ctx.json(Result.fail(400, "mp_ 开头的旧版绝版面板为只读，禁止修改"));
-            return;
-        }
         Integer version = Panel.updatePanel(panelId, panel);
         if (version == null) {
             ctx.json(Result.fail(500, "修改指令面板失败"));
@@ -115,8 +111,8 @@ public class PanelController {
             ctx.json(Result.fail(400, "panelId 不能为空"));
             return;
         }
-        if (isLegacyReadOnlyPanel(panelId)) {
-            ctx.json(Result.fail(400, "mp_ 开头的旧版绝版面板为只读，禁止删除"));
+        if (panelId.startsWith("mp_")) {
+            ctx.json(Result.fail(400, "旧版面板不可删除"));
             return;
         }
         if (!Panel.deletePanel(panelId)) {
@@ -135,10 +131,6 @@ public class PanelController {
         List<String> groupOpenIds = stringList(body, "groupOpenIds");
         if (isBlank(panelId) || isBlank(op) || (userOpenIds.isEmpty() && groupOpenIds.isEmpty())) {
             ctx.json(Result.fail(400, "panelId、op、关联对象不能为空"));
-            return;
-        }
-        if (isLegacyReadOnlyPanel(panelId)) {
-            ctx.json(Result.fail(400, "mp_ 开头的旧版绝版面板为只读，禁止修改关联对象"));
             return;
         }
         Panel.TargetOp targetOp = "del".equalsIgnoreCase(op) ? Panel.TargetOp.DEL : Panel.TargetOp.ADD;
@@ -166,9 +158,5 @@ public class PanelController {
             }
         }
         return new Panel.PanelData(items, node.path("remark").asText(null));
-    }
-
-    private static boolean isLegacyReadOnlyPanel(String panelId) {
-        return panelId != null && panelId.startsWith("mp_");
     }
 }

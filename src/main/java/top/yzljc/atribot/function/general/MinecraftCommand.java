@@ -4,6 +4,8 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -13,6 +15,7 @@ import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
+import top.yzljc.atribot.utils.tools.MinecraftProfile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -120,24 +123,21 @@ public class MinecraftCommand implements CommandExecutor {
                         return true;
                     }
                 } else {
-                    uuidOffline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + var1).getBytes(StandardCharsets.UTF_8)
-                    );
+                    uuidOffline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + var1).getBytes(StandardCharsets.UTF_8));
                 }
 
                 int colorOnline = 0;
                 String hexColorOnline = null;
-                String onlineHeadPic = null;
+                MinecraftProfile onlineHeadPic = null;
                 if (d != null) {
                     colorOnline =  MinecraftLocationBarColor.getPlayerRGBColor(d.uuid());
                     hexColorOnline = String.format("#%06X", colorOnline & 0xFFFFFF);
-                    if (MinecraftWhitelist.isNameWhitelisted(d.username())) {
-                        onlineHeadPic = FetchMinecraftProfile.getPlayerHead(d.uuid().toString());
-                    }
+                    onlineHeadPic = FetchMinecraftProfile.getPlayerProfile(d.uuid().toString());
                 }
                 int colorOffline = MinecraftLocationBarColor.getPlayerRGBColor(uuidOffline);
                 String hexColorOffline = String.format("#%06X", colorOffline & 0xFFFFFF);
 
-                Markdown md = TC.md( (onlineHeadPic != null ? Markdown.img("pic", onlineHeadPic, 16, 16) + d.username() : "") + " **查询结果如下**\n\n" +
+                Markdown md = TC.md( ((onlineHeadPic != null && onlineHeadPic.avatarUrl() != null && onlineHeadPic.username() != null) ? Markdown.img("pic", onlineHeadPic.avatarUrl(), 16, 16) + onlineHeadPic.username() : "") + " **查询结果如下**\n\n" +
                         "离线UUID: `" + uuidOffline + "`\n\n" +
                         "RGB颜色代码: `" + hexColorOffline + "`\n\n" +
                         "> 参考颜色: " + "$\\textcolor{" + hexColorOffline + "}{\\text{" + "▄" + "}}$\n\n" +

@@ -71,6 +71,15 @@ public class WebUIRouter {
         server.post("/webui/api/groups/send", GroupController::sendGroupMessage);
         server.post("/webui/api/groups/recall", GroupController::recallMessage);
         server.get("/webui/api/config", AuthController::getConfig);
+        // 机器人设置：bot 资料 + config.yml 白名单项
+        server.get("/webui/api/bot/profile", BotSettingsController::getProfile);
+        server.get("/webui/api/bot/settings", BotSettingsController::getSettings);
+        server.put("/webui/api/bot/settings", BotSettingsController::updateSettings);
+        server.get("/webui/api/command-settings", CommandSettingsController::list);
+        server.put("/webui/api/command-settings/{commandName}/global", CommandSettingsController::setGlobal);
+        server.delete("/webui/api/command-settings/{commandName}/global", CommandSettingsController::clearGlobal);
+        server.put("/webui/api/command-settings/{commandName}/groups", CommandSettingsController::setGroup);
+        server.delete("/webui/api/command-settings/{commandName}/groups/{groupId}", CommandSettingsController::clearGroup);
         server.get("/webui/api/napcat/groups", NapcatController::listNapcatGroups);
         server.get("/webui/api/napcat/groups/{groupId}/features", NapcatController::getNapcatGroupFeatures);
         server.post("/webui/api/napcat/groups/{groupId}/features/{feature}", NapcatController::setNapcatGroupFeature);
@@ -112,6 +121,7 @@ public class WebUIRouter {
         // 群管系统：违规词/AI 审核撤回 + 入群审核
         server.get("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::getSettings);
         server.put("/webui/api/group-moderation/{groupOpenId}", GroupModerationController::saveSettings);
+        server.get("/webui/api/group-moderation/{groupOpenId}/logs/stats", GroupModerationController::logStats);
         server.get("/webui/api/group-moderation/{groupOpenId}/logs", GroupModerationController::listLogs);
 
         // C2C 私聊
@@ -155,10 +165,12 @@ public class WebUIRouter {
         server.post("/webui/api/gallery/delete", ContentController::deleteGallery);
 
         // Minecraft 玩家名审核
-        server.get("/webui/api/minecraft/name-whitelist", MinecraftWhitelistController::list);
-        server.post("/webui/api/minecraft/name-whitelist", MinecraftWhitelistController::submit);
-        server.post("/webui/api/minecraft/name-whitelist/{username}/approve", MinecraftWhitelistController::approve);
-        server.delete("/webui/api/minecraft/name-whitelist/{username}", MinecraftWhitelistController::remove);
+        server.post("/webui/api/minecraft-moderation/players", MinecraftWhitelistController::submitPlayer);
+        server.get("/webui/api/minecraft-moderation/names", MinecraftWhitelistController::listNames);
+        server.get("/webui/api/minecraft-moderation/skins", MinecraftWhitelistController::listSkins);
+        server.put("/webui/api/minecraft-moderation/names/{id}", MinecraftWhitelistController::reviewName);
+        server.put("/webui/api/minecraft-moderation/skins/{id}", MinecraftWhitelistController::reviewSkin);
+        server.get("/webui/api/minecraft-moderation/skins/{skinId}/preview/{type}", MinecraftWhitelistController::skinPreview);
 
         // 抽卡系统管理
         server.get("/webui/api/loot/items", ContentController::listLootItems);

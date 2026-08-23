@@ -16,5 +16,8 @@ import java.util.List;
 public class KeywordModerationConfig {
     private boolean enabled = false;
     private List<ViolationRule> rules = new ArrayList<>();
+    /**
+     * 兜底动作：仅当命中的规则未配置规则级 action（旧数据）时使用
+     */
     private ModerationAction action = new ModerationAction();
 }

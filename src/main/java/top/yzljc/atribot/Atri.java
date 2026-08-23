@@ -274,6 +274,7 @@ public class Atri {
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
+        CommandManager.getCommand("roulette").setExecutor(new LuckyRouletteGame());
         CommandManager.getCommand("hitokoto").setExecutor(new Hitokoto());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
         CommandManager.getCommand("webui").setExecutor(new WebUICommand());
@@ -306,7 +307,6 @@ public class Atri {
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
-        CommandManager.getCommand("加白").setExecutor(new MinecraftWhitelist());
         CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
         CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());

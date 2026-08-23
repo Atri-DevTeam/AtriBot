@@ -57,7 +57,7 @@
           <template v-else>
             <div class="stats-metrics">
               <article class="stats-metric stats-metric--hero">
-                <div class="stats-metric-label">活跃用户 DAU</div>
+                <div class="stats-metric-label">活跃用户数量</div>
                 <div class="stats-metric-value">{{ formatNumber(overview.dau) }}</div>
                 <div class="stats-metric-sub">范围内去重活跃用户</div>
               </article>

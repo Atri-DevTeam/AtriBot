@@ -67,6 +67,18 @@ public class CommandMap {
             return false;
         }
 
+        String groupId = null;
+        if (sender instanceof QQCommandSender qqSender && qqSender.getGroupId() != null) {
+            groupId = qqSender.getGroupId();
+        }
+        if (groupId != null) {
+            var disabled = CommandDisableService.resolve(target.getName(), groupId);
+            if (disabled.isPresent()) {
+                sender.sendMessage(disabled.get().reason());
+                return true;
+            }
+        }
+
         try {
             UserRunCommandEvent event = new UserRunCommandEvent(sender, target, commandLabel, commandLabel, args, false);
             EventManager.getInstance().callEvent(event);

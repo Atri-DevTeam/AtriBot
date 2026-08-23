@@ -1,14 +1,3 @@
-/*
- * 外壳重设计层 —— 最后加载，覆盖 layout.css 的结构性观感
- *
- * 目标是解决三个结构问题：
- *   1. 盒子套盒子：页面 → 面板 → 灰内层 → 卡片，四层描边堆叠；这里拍平到一层；
- *   2. 空间浪费：顶栏、侧栏、行高全部压缩；
- *   3. 字号无层级：统一使用 tokens 里的字阶，并真正拉开字重。
- *
- * 取值全部来自 tokens.css。
- */
-
 /* ══════════ 基底 ══════════ */
 
 html, body, #app {
@@ -26,12 +15,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/*
- * 上面那条 body 规则改了全站的字体族、字号（16px → 13px）、行高和正文色，
- * 而 base.css 里 `button, textarea, input { font: inherit }` 会把它一路带进
- * 聊天页的输入控件。这里把聊天页的排版基线还原成 base.css 原来的取值，
- * 数值直接照抄原版，不走 tokens——tokens 是新视觉层的，不该反向影响旧页面。
- */
 .legacy-chat {
     color: #1f2937;
     font-family: Inter, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
@@ -65,7 +48,11 @@ body {
     background-clip: content-box;
 }
 
-/* ══════════ 侧边栏：260 → 216，压缩品牌区，弱化装饰 ══════════ */
+.sidebar {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+}
 
 .sidebar,
 .sidebar-spacer {
@@ -150,16 +137,6 @@ body {
     border-top: 1px solid var(--color-sidebar-border);
 }
 
-/* ══════════ 工作区：顶栏不再是一条白色横幅 ══════════
- *
- * 以下所有规则都用 :where(.shell:not(.legacy-chat)) 前缀把聊天页排除在外。
- * 原因：本文件没有任何 @media，而它在 main.js 里最后加载，所以在同等特异性下
- * 会盖掉 responsive.css 里整套手机端聊天布局（面板去边框、去圆角、铺 #eef1f5
- * 灰底、safe-area 内边距、触控尺寸）。聊天页的视觉一律交回 layout.css /
- * responsive.css 原版负责。
- * :where() 本身不贡献特异性，所以加前缀后各条规则的权重与原来完全一致。
- */
-
 :where(.shell:not(.legacy-chat)) .workspace {
     padding: 0;
     background: var(--color-bg);
@@ -218,8 +195,6 @@ body {
     color: var(--color-text-strong);
 }
 
-/* 列表卡片不再各自浮起，改为发丝线分隔的行。
-   .group-list-card 只出现在群聊页，故不在此列，保持原版卡片观感。 */
 .feedback-card,
 .userlist-card {
     border-color: var(--color-hairline);
@@ -235,11 +210,6 @@ body {
     box-shadow: none;
 }
 
-/* ══════════ 按钮 ══════════ */
-
-/* 侧边栏里的按钮不受 .legacy-chat 影响，所以按钮基线规则拆成
-   「非聊天页的任意按钮」＋「侧边栏按钮」两条，聊天页正文里的按钮保持原尺寸
-   （原版手机端有更大的触控区，压到 30px 会不好点）。 */
 :where(.shell:not(.legacy-chat)) .primary-button,
 :where(.shell:not(.legacy-chat)) .ghost-button,
 :where(.shell:not(.legacy-chat)) .icon-button,
@@ -320,10 +290,6 @@ body {
     border-color: var(--color-danger);
 }
 
-/* ══════════ 表单控件 ══════════ */
-
-/* 聊天页的输入框、发送框由 layout.css / responsive.css 原样负责，
-   尤其手机端 .composer textarea 有自己的尺寸，别被这里的 30px 压掉 */
 :where(.shell:not(.legacy-chat)) :is(
     input[type="text"],
     input[type="search"],

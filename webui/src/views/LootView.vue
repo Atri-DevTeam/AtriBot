@@ -20,46 +20,36 @@
         </div>
       </header>
 
-      <section class="content userlist-layout">
-        <section class="chat-panel userlist-panel loot-panel">
-          <div class="chat-head">
-            <div class="userlist-source-tabs" role="tablist">
+      <section class="content loot-layout">
+        <section class="loot-page">
+          <div class="loot-page-nav">
+            <div class="loot-tabs" role="tablist">
               <button v-for="t in tabs" :key="t.key"
-                      class="userlist-source-tab" :class="{ active: tab === t.key }"
+                      class="loot-tab" :class="{ active: tab === t.key }"
                       type="button" role="tab" :aria-selected="tab === t.key"
                       @click="switchTab(t.key)">{{ t.label }}</button>
             </div>
-            <span class="status-pill" style="margin-left:auto">
-              <span class="dot ok"></span>{{ tabSummary }}
-            </span>
+            <div class="loot-nav-actions">
+              <button v-if="tab === 'items'" class="primary-button" type="button" @click="showCreateForm = true">新增物品卡</button>
+              <div class="loot-tab-summary"><strong>{{ tabSummary }}</strong><span>当前页面</span></div>
+            </div>
           </div>
 
-          <!-- 工具条压在内容区之上做通栏，和 UserListView 的搜索条保持同一套结构。
-               放进 .userlist-content 里会被那 18px 内边距顶成一条悬空白块，下边框也会变成一道断线。 -->
-          <form v-if="tab === 'items'" class="loot-upload-form" @submit.prevent="createItem">
-            <input v-model="createForm.displayName" class="loot-upload-input" placeholder="物品名称" required />
-            <input v-model="createForm.description" class="loot-upload-input" placeholder="介绍文案（用于单抽结果卡）" />
-            <label class="loot-special-check">
-              <input v-model="createForm.special" type="checkbox" />
-              特殊类型卡
-            </label>
-            <input ref="createFileInput" class="loot-upload-file" type="file" accept="image/*" @change="onCreateFileChange" required />
-            <button class="primary-button" type="submit" :disabled="creating">{{ creating ? '上传中...' : '新增物品卡' }}</button>
-          </form>
-
-          <div v-else-if="tab === 'leaderboard'" class="userlist-search-bar">
-            <input v-model="leaderboardSearchText" class="userlist-search-input" placeholder="搜索用户ID..." @keyup.enter="doLeaderboardSearch" />
+          <div v-if="tab === 'leaderboard'" class="loot-search-bar">
+            <div class="loot-tool-copy"><strong>金粒排行榜</strong><span>按用户 ID 查找排行记录</span></div>
+            <input v-model="leaderboardSearchText" class="loot-search-input" placeholder="输入用户 ID" @keyup.enter="doLeaderboardSearch" />
             <button class="primary-button" :disabled="loading" @click="doLeaderboardSearch">搜索</button>
             <button v-if="leaderboardSearchText" class="ghost-button" @click="clearLeaderboardSearch">清除</button>
           </div>
 
-          <div v-else-if="tab === 'ownership'" class="userlist-search-bar">
-            <input v-model="searchText" class="userlist-search-input" placeholder="搜索用户ID..." @keyup.enter="doSearch" />
+          <div v-else-if="tab === 'ownership'" class="loot-search-bar">
+            <div class="loot-tool-copy"><strong>用户库存</strong><span>查看金粒余额和持有卡片</span></div>
+            <input v-model="searchText" class="loot-search-input" placeholder="输入用户 ID" @keyup.enter="doSearch" />
             <button class="primary-button" :disabled="loading" @click="doSearch">搜索</button>
             <button v-if="searchText" class="ghost-button" @click="clearSearch">清除</button>
           </div>
 
-          <div class="userlist-content">
+          <div class="loot-content">
             <!-- 提示条只占一行，不再顶掉整个标签页的内容：
                  一次保存失败不该把上传表单和整张卡池一起清空 -->
             <div v-if="error" class="loot-banner danger" role="alert">
@@ -168,6 +158,45 @@
         </section>
       </section>
     </main>
+
+    <!-- 新增物品卡 -->
+    <div v-if="showCreateForm" class="modal-backdrop" @click="closeCreateForm">
+      <form class="modal loot-create-modal" @submit.prevent="createItem" @click.stop>
+        <div class="modal-head">
+          <div><h2>新增物品卡</h2><p>填写抽卡展示信息并上传卡片图片</p></div>
+          <button class="icon-button" type="button" aria-label="关闭" :disabled="creating" @click="closeCreateForm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body loot-create-modal-body">
+          <label class="loot-form-field loot-create-name"><span>物品名称</span><input v-model="createForm.displayName" class="loot-upload-input" placeholder="输入名称" required /></label>
+          <label class="loot-form-field"><span>介绍文案</span><textarea v-model="createForm.description" class="loot-create-description" rows="6" placeholder="填写单抽结果卡中展示的介绍文案"></textarea></label>
+          <div class="loot-form-field">
+            <span>卡片图片</span>
+            <div class="loot-image-picker">
+              <input ref="createFileInput" class="loot-image-input" type="file" accept="image/*" @change="onCreateFileChange" />
+              <button class="ghost-button loot-image-button" type="button" @click="createFileInput?.click()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+                </svg>
+                {{ createFile ? '更换图片' : '选择图片' }}
+              </button>
+              <div v-if="createPreviewUrl" class="loot-image-preview">
+                <img :src="createPreviewUrl" alt="待上传图片预览"/>
+                <span :title="createFile?.name">{{ createFile?.name }}</span>
+                <button class="icon-button" type="button" aria-label="移除图片" @click="resetCreateFile">×</button>
+              </div>
+              <span v-else class="loot-image-empty">尚未选择图片</span>
+            </div>
+          </div>
+          <label class="checkbox-label loot-special-check"><input v-model="createForm.special" type="checkbox"/> 特殊类型卡</label>
+        </div>
+        <div class="modal-foot">
+          <button class="ghost-button" type="button" :disabled="creating" @click="closeCreateForm">取消</button>
+          <button class="primary-button" type="submit" :disabled="creating">{{ creating ? '上传中...' : '添加物品卡' }}</button>
+        </div>
+      </form>
+    </div>
 
     <!-- 用户详情弹窗 -->
     <div v-if="showUserModal" class="modal-backdrop" @click="showUserModal = false">
@@ -402,6 +431,7 @@ function switchTab(key) {
   tab.value = key
   error.value = ''
   notice.value = ''
+  showCreateForm.value = false
   refreshCurrentTab()
 }
 
@@ -420,7 +450,9 @@ const itemsTotalPages = computed(() => Math.max(1, Math.ceil(itemsTotal.value / 
 const imageBaseUrl = ref('')
 const createForm = ref({ displayName: '', description: '', special: false })
 const createFile = ref(null)
+const createPreviewUrl = ref('')
 const createFileInput = ref(null)
+const showCreateForm = ref(false)
 const creating = ref(false)
 const savingId = ref('')
 const brokenThumbs = reactive(new Set())
@@ -432,13 +464,23 @@ function thumbUrl(itemId) {
 }
 
 function onCreateFileChange(e) {
+  if (createPreviewUrl.value) URL.revokeObjectURL(createPreviewUrl.value)
   createFile.value = e.target.files?.[0] || null
+  createPreviewUrl.value = createFile.value ? URL.createObjectURL(createFile.value) : ''
 }
 
 function resetCreateFile() {
+  if (createPreviewUrl.value) URL.revokeObjectURL(createPreviewUrl.value)
+  createPreviewUrl.value = ''
   createFile.value = null
   // 只清 ref 不清原生 input，文件名会一直挂在那儿，而且再选同一个文件不会触发 change
   if (createFileInput.value) createFileInput.value.value = ''
+}
+
+function closeCreateForm() {
+  showCreateForm.value = false
+  createForm.value = { displayName: '', description: '', special: false }
+  resetCreateFile()
 }
 
 async function fetchItems() {
@@ -479,6 +521,7 @@ async function createItem() {
     catalogLoaded.value = false
     await fetchItems()
     flash('物品卡已新增')
+    showCreateForm.value = false
   } catch (e) {
     error.value = e.message
   } finally {

@@ -14,6 +14,7 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 /**
 * @Author AndyOctopus
@@ -39,7 +40,9 @@ public final class GroupModerationListener implements Listener {
         if (settings.getKeywordRecall().isEnabled()) {
             ThreadManager.execute(() -> handleKeywordCheck(event, settings, content, memberOpenId));
         }
-        if (settings.getAiRecall().isEnabled()) {
+        if (settings.getAiRecall().isEnabled()
+                && settings.getAiRecall().getSchedule() != null
+                && settings.getAiRecall().getSchedule().isActive(LocalDateTime.now())) {
             ThreadManager.execute(() -> handleAiCheck(event, settings, content, memberOpenId));
         }
     }
@@ -51,7 +54,10 @@ public final class GroupModerationListener implements Listener {
         if (rule == null) {
             return;
         }
-        applyAction(event, memberOpenId, settings.getKeywordRecall().getAction(), "KEYWORD_RECALL",
+        ModerationAction action = rule.getAction() != null
+                ? rule.getAction()
+                : settings.getKeywordRecall().getAction();
+        applyAction(event, memberOpenId, action, "KEYWORD_RECALL",
                 "命中规则「" + rule.getRemark() + "」(" + rule.getType() + ": " + rule.getKeyword() + ")");
     }
 

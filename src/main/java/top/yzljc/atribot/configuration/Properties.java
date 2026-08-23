@@ -13,6 +13,8 @@ public class Properties {
 
     public static final String CONFIG = "config.yml";
 
+    public static final String REQUEST = "request.json";
+
     public static final String ATRIBOT = "atribot.yml";
 
     public static final String ILLEGAL_WORDS = "filter.yml";
@@ -37,15 +39,17 @@ public class Properties {
 
     public static final String FUNCTION_SETTINGS = "data/function-settings.json";
 
+    public static final String COMMAND_DISABLE_SETTINGS = "data/command-disable-settings.json";
+
     public static final String LOOT_FREE_DRAW_RECORD = "data/loot-free-draws.json";
 
     public static final String JOIN_APPROVAL_STRATEGY_SNAPSHOT = "data/join-approval-strategy-snapshot.json";
 
     public static final String JOIN_APPROVAL_WHITELIST = "data/join-approval-whitelist.json";
 
-    public static final String MINECRAFT_NAME_WHITELIST = "data/whitelist_name.json";
-
     public static final String USERS_LISTED = "data/users-listed.txt";
 
     public static final String GROUP_MODERATION_CONFIG = "data/group-moderation.json";
+
+    public static final String REMINDERS = "data/reminders.json";
 }

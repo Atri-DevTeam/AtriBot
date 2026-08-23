@@ -199,7 +199,7 @@ public class EventRecord implements Listener {
     public void callback(OfficialButtonInteractionEvent event) {
         if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(Config.getInstance().getDebugGroupOpenId()))
             return;
-        if (OfficialUsers.isIgnored(event.getUnionOpenId()) || OfficialUsers.isBlocked(event.getUnionOpenId())) {
+        if (OfficialUsers.isIgnored(event.getUserOpenId()) || OfficialUsers.isBlocked(event.getUserOpenId())) {
             event.setCancelled(true);
             return;
         }
@@ -208,7 +208,7 @@ public class EventRecord implements Listener {
             return;
         }
         String eventInfo = "[官机] 收到来自用户 %s (场景%s: %s) 的交互事件: %s (类型: %d)".formatted(
-                event.getUnionOpenId(),
+                event.getUserOpenId(),
                 event.getScene(),
                 event.getGroupOpenId() == null ? "x" : event.getGroupOpenId(),
                 event.getData().getResolved(),

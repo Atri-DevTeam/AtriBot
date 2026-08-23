@@ -55,6 +55,8 @@ public class Config {
     private String ugcApiUrl;
     @Getter
     private String ossDumpBaseUrl;
+    @Getter
+    private String minecraftModerationReviewKey;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -123,6 +125,8 @@ public class Config {
     private String officialWebuiToken;
     @Getter
     private String officialOpenId;
+    @Getter
+    private String qqBotUin;
     @Getter
     @Deprecated(since = "3.1.7") // 直接 /users/@me 拿，硬编码狗都不用
     private String officialUsername;
@@ -248,6 +252,7 @@ public class Config {
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
+            this.minecraftModerationReviewKey = yaml.getString("minecraft-moderation.review-key", "");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
@@ -312,6 +317,7 @@ public class Config {
                 this.qqWebhookPath = "/qq/webhook";
             }
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
+            this.qqBotUin = yaml.getString("qq.bot-uin", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");

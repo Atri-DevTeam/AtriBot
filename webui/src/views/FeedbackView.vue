@@ -69,8 +69,8 @@
                   </div>
                 </div>
                 <div class="feedback-card-actions">
-                  <button class="primary-button feedback-action" @click="openReply(fb)">
-                    {{ fb.replyContent ? '重新回复' : '回复' }}
+                  <button class="primary-button feedback-action" :disabled="isNapcatFeedback(fb)" @click="openReply(fb)">
+                    {{ isNapcatFeedback(fb) ? 'NapCat 回复已停用' : (fb.replyContent ? '重新回复' : '回复') }}
                   </button>
                 </div>
               </article>
@@ -128,8 +128,10 @@ import {ref, reactive, computed, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import {formatTime} from '../lib/time.js'
 
 const quickReplies = [
+  "已完成审核。",
   "你好，根据开放平台用户安全策略，相关内容无法提供",
   "相关反馈内容无效",
   "您的反馈已收到，但我们还需进一步处理，我们将在问题处理后予以再次答复，感谢您的支持",
@@ -279,13 +281,8 @@ function shortId(value) {
   return value.length <= 8 ? value : value.substring(0, 8)
 }
 
-function formatTime(value) {
-  if (!value) return '-'
-  const raw = String(value)
-  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
-  if (Number.isNaN(date.getTime())) return raw
-  const pad = n => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+function isNapcatFeedback(feedback) {
+  return String(feedback?.platform || '').toUpperCase().startsWith('NAPCAT')
 }
 
 onMounted(async () => {

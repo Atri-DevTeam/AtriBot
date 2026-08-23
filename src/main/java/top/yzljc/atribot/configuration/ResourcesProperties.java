@@ -1,5 +1,12 @@
 package top.yzljc.atribot.configuration;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName ResourcesProperties
@@ -8,6 +15,8 @@ package top.yzljc.atribot.configuration;
  * @Package top.yzljc.atribot.configuration
  */
 public final class ResourcesProperties {
+
+    private static final Map<String, String> REQUEST = loadRequestProperties();
 
     private static final String API = Config.getInstance().getApiUrl();
 
@@ -18,46 +27,46 @@ public final class ResourcesProperties {
     public static final String DUMP = API + "/v2/atrimeow/image-dump";
 
     // @ClassName RconHandler
-    public static final String RCON_GUIDE_IMG = "https://res.yzljc.top/images/rcon-shower.png";
+    public static final String RCON_GUIDE_IMG = request("resource.image.rcon-guide");
 
     // @ClassName Test, MusicCommand
-    public static final String A_SILENT_MIRROR_MP3 = "https://res.yzljc.top/images/a_silent_mirror.mp3";
+    public static final String A_SILENT_MIRROR_MP3 = request("resource.audio.a-silent-mirror");
 
     // @ClassName MusicCommand
-    public static final String BIOME_FEST_MP3 = "https://res.yzljc.top/images/c418.mp3";
+    public static final String BIOME_FEST_MP3 = request("resource.audio.biome-fest");
 
     // @ClassName HypixelAnnouncements
-    public static final String HYPIXEL_HEADER_IMG = "https://res.yzljc.top/images/hypixel-header.png";
+    public static final String HYPIXEL_HEADER_IMG = request("resource.image.hypixel-header");
 
     // @ClassName MinecraftCommand, VersionCheckImpl
-    public static final String GRASS_BLOCK_IMG = "https://res.yzljc.top/images/grass-block-img.png";
+    public static final String GRASS_BLOCK_IMG = request("resource.image.grass-block");
 
     // @ClassName ElectricCheck
-    public static final String TUFE_LOGO_IMG = "https://res.yzljc.top/images/tufe-logo.png";
+    public static final String TUFE_LOGO_IMG = request("resource.image.tufe-logo");
 
     // @ClassName EventRecord
-    public static final String WELCOME_IMG = "https://res.yzljc.top/images/welcome-img-w.png";
+    public static final String WELCOME_IMG = request("resource.image.welcome");
 
     // @ClassName EventRecord
-    public static final String WELCOME_DEV_IMG = "https://res.yzljc.top/images/welcome-dev-img.png";
+    public static final String WELCOME_DEV_IMG = request("resource.image.welcome-dev");
 
     // @ClassName MinecraftNetwork
-    public static final String CONSOLE_LOGO_IMG = "https://res.yzljc.top/images/console-logo.png";
+    public static final String CONSOLE_LOGO_IMG = request("resource.image.console-logo");
 
     // @ClassName DiceImpl
-    public static final String SKB_LOGO_IMG = "https://res.yzljc.top/images/skb-logo.png";
+    public static final String SKB_LOGO_IMG = request("resource.image.skyblock-logo");
 
     // @ClassName DiceImpl
-    public static final String SKB_BANK_LOGO_IMG = "https://res.yzljc.top/images/skb-bank-logo.png";
+    public static final String SKB_BANK_LOGO_IMG = request("resource.image.skyblock-bank-logo");
 
     // @ClassName DiceImpl （模板，使用时将 <id> 替换为点数）
-    public static final String DICE_RENDER_RESULT_IMG_T = "https://res.yzljc.top/images/dice_render_result_<id>.png";
+    public static final String DICE_RENDER_RESULT_IMG_T = request("resource.image.dice-result-template");
 
     // @ClassName DiceImpl
-    public static final String DICE_RENDER_RESULT_7_IMG = "https://res.yzljc.top/images/dice_render_result_7.png";
+    public static final String DICE_RENDER_RESULT_7_IMG = request("resource.image.dice-result-seven");
 
     // @ClassName FullMessageEnableCommand
-    public static final String FULL_MESSAGE_ENABLE_GUIDE = "https://res.yzljc.top/images/enable_full_message_guide.png";
+    public static final String FULL_MESSAGE_ENABLE_GUIDE = request("resource.image.full-message-guide");
 
     // @ClassName MinecraftNews
     public static final String MC_NEWS_API = UGC_API + "/v2/atrimeow/mcnews";
@@ -72,7 +81,7 @@ public final class ResourcesProperties {
     public static final String SPONSORS_API = UGC_API + "/v2/atrimeow/sponsors";
 
     // @ClassName SignCommand
-    public static final String GOLD_IMG = "https://res.yzljc.top/images/gold.png";
+    public static final String GOLD_IMG = request("resource.image.gold");
 
     // @ClassName HypixelStatus
     public static final String HYPIXEL_STATUS_API = UGC_API + "/v2/atrimeow/hypixel-status";
@@ -93,31 +102,31 @@ public final class ResourcesProperties {
     public static final String PLAYER_CARD_API = UGC_API + "/v2/atrimeow/player-game-stats";
 
     // @ClassName PlayerProfile
-    public static final String PLAYER_ACHIEVEMENTS_NAME_API = "https://www.yzljc.top/data/api/v2/player/achievements/name/{name}";
+    public static final String PLAYER_ACHIEVEMENTS_NAME_API = request("request.player.achievements-by-name");
 
     // @ClassName PlayerProfile
-    public static final String PLAYER_ACHIEVEMENTS_UUID_API = "https://www.yzljc.top/data/api/v2/player/achievements/uuid/{uuid}";
+    public static final String PLAYER_ACHIEVEMENTS_UUID_API = request("request.player.achievements-by-uuid");
 
     // @ClassName PlayerProfile
-    public static final String PLAYER_FRIENDS_NAME_API = "https://www.yzljc.top/data/api/v2/player/friends/name/{name}";
+    public static final String PLAYER_FRIENDS_NAME_API = request("request.player.friends-by-name");
 
     // @ClassName PlayerProfile
-    public static final String PLAYER_FRIENDS_UUID_API = "https://www.yzljc.top/data/api/v2/player/friends/uuid/{uuid}";
+    public static final String PLAYER_FRIENDS_UUID_API = request("request.player.friends-by-uuid");
 
     // @ClassName PingCommand
     public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
 
     // @ClassName SkyblockResourceChecker
-    public static final String SKB_VERSION_CHECK = "https://api.hypixel.net/v2/resources/packs";
+    public static final String SKB_VERSION_CHECK = request("request.hypixel.resource-packs");
 
     // @ClassName PlayerProfile
-    public static final String PLAYER_WEB_QUERY = "https://www.yzljc.top/mc/query/";
+    public static final String PLAYER_WEB_QUERY = request("resource.web.player-query");
 
     // @ClassName HelpCommand
-    public static final String MINECRAFT_CAPE_EXAMPLE = "https://res.yzljc.top/images/mc-cape-2013.png";
+    public static final String MINECRAFT_CAPE_EXAMPLE = request("resource.image.minecraft-cape-example");
 
     // @ClassName VerifyMinecraftCommand （使用时将 {uuid} 替换为玩家 UUID）
-    public static final String PLAYER_AVATAR_API = "https://www.yzljc.top/data/api/v1/avatar/{uuid}";
+    public static final String PLAYER_AVATAR_API = request("request.player.avatar");
 
     // @ClassName ManosabaDate
     public static final String MANOSABA_DATE_IMG = UGC_API + "/v2/atrimeow/manosaba-date";
@@ -158,12 +167,38 @@ public final class ResourcesProperties {
     // @ClassName LootAdminClient
     public static final String LOOTS_ITEM_IMAGE_API = UGC_API + "/v2/atrimeow/loots/image";
 
-    // @ClassName MinecraftWhitelistName
+    // @ClassName FetchMinecraftProfile
     public static final String PLAYER_PROFILE_API = UGC_API + "/v1/mc/profile/info/{uuid}";
+
+    public static final String MINECRAFT_MODERATION_API = UGC_API + "/v1";
+
+    // @ClassName FetchMinecraftProfile
+    public static final String PLAYER_REVIEWED_PROFILE = UGC_API + "/v1/mc/profile/reviewed/{player}";
 
     // @ClassName HypixelTNTWizards
     public static final String HYPIXEL_TNT_WIZARDS_API = UGC_API + "/v2/atrimeow/hypixel-tnt-wizards";
 
     // @ClassName HypixelZombies
     public static final String HYPIXEL_ZOMBIES_API = UGC_API + "/v2/atrimeow/hypixel-zombies";
+
+    private static Map<String, String> loadRequestProperties() {
+        Path path = Path.of(Properties.REQUEST);
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalStateException("缺少请求资源配置文件: " + path.toAbsolutePath());
+        }
+        try {
+            Map<String, String> values = new ObjectMapper().readValue(path.toFile(), new TypeReference<>() {});
+            return values == null ? Map.of() : Map.copyOf(values);
+        } catch (Exception e) {
+            throw new IllegalStateException("无法读取请求资源配置: " + path.toAbsolutePath(), e);
+        }
+    }
+
+    private static String request(String key) {
+        String value = REQUEST.get(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("request.json 缺少有效配置项: " + key);
+        }
+        return value.trim();
+    }
 }

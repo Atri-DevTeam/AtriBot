@@ -32,10 +32,7 @@ import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.net.URI;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -422,8 +419,8 @@ public class HypixelReward implements CommandExecutor, Listener {
         if (!event.getButtonValue().equals("reward_claim")) return;
 
         String buttonId = event.getButtonId();
-        RewardSession session = getSessionByUserId(event.getUnionOpenId());
-        if (session == null) {
+        RewardSession session = getSessionByUserId(event.getUserOpenId());
+        if (!Objects.equals(session.userId, event.getUserOpenId())) {
             event.answer(AnswerCode.NO_PERMISSION);
             return;
         }
@@ -699,6 +696,7 @@ public class HypixelReward implements CommandExecutor, Listener {
             Map.entry("TNTGAMES", "TNT游戏"),
             Map.entry("MURDER_MYSTERY", "密室杀手"),
             Map.entry("adsense_token", "每日奖励代币"),
-            Map.entry("SURVIVAL_GAMES", "闪电饥饿游戏")
+            Map.entry("SURVIVAL_GAMES", "闪电饥饿游戏"),
+            Map.entry("housing_package", "家园世界装饰品")
     );
 }

@@ -107,7 +107,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
             return;
         }
 
-        String userId = event.getUnionOpenId();
+        String userId = event.getUserOpenId();
         boolean isPlayerA = userId.equals(game.playerAOpenId);
 
         // 玩家A不能选两次

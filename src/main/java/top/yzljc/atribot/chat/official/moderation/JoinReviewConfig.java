@@ -2,6 +2,9 @@ package top.yzljc.atribot.chat.official.moderation;
 
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
 * @Author AndyOctopus
 * @ClassName JoinReviewConfig
@@ -11,6 +14,8 @@ import lombok.Data;
 */
 @Data
 public class JoinReviewConfig {
+    private boolean enabled = false;
+    private List<JoinReviewRule> rules = new ArrayList<>();
     private JoinReviewMode mode = JoinReviewMode.DISABLED;
     private JoinReviewKeywordRule keywordRule = new JoinReviewKeywordRule();
     private String aiSystemPrompt = "";

@@ -7,6 +7,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
@@ -119,7 +120,13 @@ public abstract class PushTask {
         );
         if (platform.equals(Platform.OFFICIAL_GROUP)) {
             if (this.needActiveMessage) {
-                String messageId = GroupChat.sendMessage(groupOpenId, md, keys);
+                // 探测主动消息权限：发送失败以异常形式抛出，需映射回失败分支引导授权
+                String messageId;
+                try {
+                    messageId = GroupChat.sendMessage(groupOpenId, md, keys);
+                } catch (QQMessageSendException e) {
+                    messageId = null;
+                }
                 if (messageId == null) {
                     GroupChat.replyMessage(groupOpenId, operatorOpenId, commandMessageId, FullMessageAuth.a());
                     return;
@@ -130,7 +137,13 @@ public abstract class PushTask {
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), true, operatorOpenId);
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
             if (this.needActiveMessage) {
-                String messageId = C2CChat.sendMessage(operatorOpenId, md, keys);
+                // 探测主动消息权限：发送失败以异常形式抛出，需映射回失败分支引导授权
+                String messageId;
+                try {
+                    messageId = C2CChat.sendMessage(operatorOpenId, md, keys);
+                } catch (QQMessageSendException e) {
+                    messageId = null;
+                }
                 if (messageId == null) {
                     C2CChat.replyMessage(operatorOpenId, commandMessageId, FullMessageAuth.a());
                     return;

@@ -45,9 +45,11 @@ bin/
 ### AI ###
 /.mimocode/
 /.claude/
+/.zcode/
 
 ### Bot Generated Contents ###
 /config.yml
+/request.json
 /data.json
 /webui/dist/
 /webui/node_modules/

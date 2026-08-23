@@ -1,9 +1,3 @@
-/*
- * 调试页：Postman 风格。
- * 关键点是一条完整的地址栏（方法/路径/发送拼成一条）、按 HTTP 动词着色的方法、
- * 以及请求与响应各自的页签区。圆角保持 tokens 里的 3/5/7px，不做胶囊。
- */
-
 .debug-layout {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);

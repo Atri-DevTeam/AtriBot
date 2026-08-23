@@ -65,7 +65,7 @@ public class WebUICommand implements CommandExecutor, Listener {
         if (!"webui_session".equals(event.getButtonValue())) return;
 
         AnswerCode code = AnswerCode.SUCCESS;
-        if (!OfficialUsers.isAdmin(event.getUnionOpenId())) {
+        if (!OfficialUsers.isAdmin(event.getUserOpenId())) {
             event.answer(AnswerCode.NO_PERMISSION);
             return;
         }

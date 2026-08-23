@@ -1,0 +1,454 @@
+/* ============ 机器人设置页 ============ */
+
+.bot-settings-layout {
+  display: block;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.bot-settings-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- 卡片 ---- */
+
+.bs-card {
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.bs-card-head {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.bs-card-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.bs-card-desc {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ---- 机器人资料 ---- */
+
+.bs-profile {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.bs-avatar {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+  background: var(--color-surface-alt);
+}
+
+.bs-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-text-subtle);
+}
+
+.bs-profile-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bs-profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* 字段区铺满卡片宽度，不被头像列占用 */
+.bs-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-4) 0 0;
+}
+
+.bs-profile-name {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.bs-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.bs-badge--prod {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.bs-badge--sandbox {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.bs-badge--mode {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+
+.bs-field dt {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-text-muted);
+}
+
+.bs-field dd {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.bs-mono {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.bs-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bs-share-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.bs-share-row .bs-ellipsis {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bs-copy-btn {
+  flex: 0 0 auto;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+}
+
+/* ---- 分享二维码（悬浮气泡） ---- */
+
+/* errors-surface 默认 overflow:hidden 会裁掉气泡，资料卡需要放行 */
+.bs-profile-card {
+  overflow: visible;
+}
+
+.bs-share-actions {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 隐形桥：盖住图标与气泡之间的 8px 空隙，鼠标穿过时不离开悬浮区域 */
+.bs-share-actions::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 176px;
+  height: 8px;
+}
+
+.bs-share-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.bs-share-icon:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.bs-share-icon.active {
+  color: var(--color-accent-text);
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-soft);
+}
+
+.bs-share-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 176px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.bs-share-qr-empty {
+  font-size: var(--text-xs);
+  color: var(--color-warning-strong);
+  line-height: var(--leading-normal);
+}
+
+.bs-qr-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  width: 110px;
+  height: 110px;
+  background: #ffffff;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.bs-qr-img {
+  display: block;
+  width: 110px;
+  height: 110px;
+}
+
+.bs-qr-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+}
+
+.bs-qr-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.bs-qr-url {
+  max-width: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.bs-qr-popover-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---- 基础设置 ---- */
+
+.bs-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.bs-setting-row:last-of-type {
+  border-bottom: none;
+}
+
+.bs-setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bs-setting-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-text-strong);
+}
+
+.bs-tag-restart {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-warning-strong);
+}
+
+.bs-setting-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.bs-setting-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.bs-input {
+  width: 260px;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  outline: none;
+}
+
+.bs-input:focus {
+  border-color: var(--color-accent-border);
+  box-shadow: var(--focus-ring);
+}
+
+.bs-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.bs-message {
+  margin: 0;
+  font-size: var(--text-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bs-message.ok {
+  color: var(--color-success);
+}
+
+.bs-message.err {
+  color: var(--color-danger);
+}
+
+.bs-save-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+}
+
+/* ---- 面板设置（行式结构与基础设置共用 bs-setting-row） ---- */
+
+.bs-setting-control .bs-reset-done {
+  margin-right: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-success);
+}
+
+.bs-reset-btn {
+  min-height: 32px;
+}
+
+/* ---- 手机端 ---- */
+
+@media (max-width: 760px) {
+  .bot-settings-page {
+    padding: var(--space-4) var(--space-4) var(--space-6);
+  }
+
+  .bs-card {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  /* 头部：保持「头像在左、信息在右」的紧凑行布局，只缩小头像与间距 */
+  .bs-profile {
+    gap: var(--space-3);
+  }
+
+  .bs-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .bs-avatar-placeholder {
+    font-size: var(--text-xl);
+  }
+
+  .bs-profile-name-row {
+    row-gap: var(--space-1);
+  }
+
+  .bs-profile-name {
+    font-size: var(--text-lg);
+  }
+
+  /* 二维码图标独占一行，靠左贴着头像列 */
+  .bs-share-actions {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .bs-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .bs-setting-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .bs-input {
+    width: 100%;
+  }
+
+  .bs-settings-footer {
+    flex-wrap: wrap;
+  }
+}

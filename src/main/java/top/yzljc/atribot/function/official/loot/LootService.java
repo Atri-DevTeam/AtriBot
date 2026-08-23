@@ -273,7 +273,7 @@ public class LootService {
         int currentCount = record != null ? record.count() : 0;
         boolean currentSpecial = record != null && record.special();
         return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins,
-                picked.itemId(), currentCount, currentSpecial);
+                picked.itemId(), picked.displayName(), currentCount, currentSpecial);
     }
 
     private static LootCatalogItem pickByOwnedWeight(List<LootCatalogItem> drawable, Set<String> ownedItemIds) {

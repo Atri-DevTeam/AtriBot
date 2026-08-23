@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.2.0-Release"
+version = "3.2.1-Release"
 description = "AtriBot"
 
 repositories {

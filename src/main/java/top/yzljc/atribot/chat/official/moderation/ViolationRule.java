@@ -16,4 +16,8 @@ public class ViolationRule {
     private MatchMode matchMode = MatchMode.CONTAINS;
     private String keyword = "";
     private String remark = "";
+    /**
+     * 规则级处理动作；保持 null 默认值，旧数据缺该字段时回退到 {@link KeywordModerationConfig#getAction()}
+     */
+    private ModerationAction action;
 }

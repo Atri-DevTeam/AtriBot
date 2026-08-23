@@ -1,10 +1,3 @@
-/*
- * 错误报告页
- *
- * 结构原则：页面背景 → 唯一一层卡片（列表 / 详情），不再套 chat-panel。
- * 分隔一律用发丝线与留白，平面不用阴影。
- */
-
 .errors-layout {
   display: block;
   overflow-y: auto;

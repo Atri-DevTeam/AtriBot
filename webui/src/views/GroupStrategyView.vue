@@ -301,6 +301,7 @@ import {ref, reactive, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import {formatTime} from '../lib/time.js'
 
 const router = useRouter()
 
@@ -703,14 +704,6 @@ function toLocalInput(rfc3339) {
 function shortId(value) {
   if (!value) return '-'
   return value.length <= 8 ? value : value.substring(0, 8)
-}
-
-function formatTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  const pad = n => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 onMounted(async () => {

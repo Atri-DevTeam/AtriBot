@@ -51,7 +51,8 @@ public class LootsCommand implements CommandExecutor {
         int netCoins = d.refundCoins() - d.costCoins();
         String coinChange = String.format("%+d金粒", netCoins);
         String levelLine = "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16)
-                + "当前物品等级 " + Markdown.colored(pickLevelColor(d.count(), d.special()), "Lv." + d.count())
+                + "当前物品「" + (d.itemName() != null ? d.itemName() : d.itemId()) + "」等级 "
+                + Markdown.colored(pickLevelColor(d.count(), d.special()), "Lv." + d.count())
                 + " (" + coinChange + ")   "
                 + Markdown.enterCommand("/golds", "查看剩余金粒");
         Markdown md = TC.md(Markdown.img(d.image().url(), d.image().width(), d.image().height()) + "\n\n" + levelLine);

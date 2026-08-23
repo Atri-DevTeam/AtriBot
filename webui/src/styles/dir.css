@@ -7,9 +7,6 @@
   row-gap: 8px;
 }
 
-/* ── 名单页面板：头部 / 搜索条 / 内容三行，内容区吃满剩余高度。
-   搜索条必须放进面板内（与 LootView 同构），否则面板 height:100% 加上外部搜索条
-   会让 .content 总高超出一屏，触发外层滚动。── */
 .dir-panel {
   grid-template-rows: auto auto minmax(0, 1fr);
 }

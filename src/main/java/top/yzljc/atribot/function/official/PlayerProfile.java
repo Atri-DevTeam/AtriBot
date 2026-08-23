@@ -5,7 +5,6 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -20,9 +19,9 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.official.minecraft.MinecraftUserData;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 import top.yzljc.atribot.webui.Result;
 
 import java.util.ArrayList;
@@ -43,11 +42,6 @@ public class PlayerProfile implements Listener, CommandExecutor {
             return true;
         }
 
-        boolean isWhiteListed = false;
-        if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
-            if (OfficialGroups.isWhitelist(qq.getGroupId())) isWhiteListed = true;
-        }
-
         if (args.length < 1) {
             MinecraftUserData data = MinecraftBind.getDataByOpenId(qq.getUserId());
             if (data.memberOpenId().equals("-1")) {
@@ -57,22 +51,22 @@ public class PlayerProfile implements Listener, CommandExecutor {
             }
 
             String uuid = data.uuid();
-            return getMarkdownText(uuid, qq, getKeyBoard(uuid), isWhiteListed);
+            return getMarkdownText(uuid, qq, getKeyBoard(uuid));
         }
 
         String key = args[0];
 
         if (key.equalsIgnoreCase("am") || key.equalsIgnoreCase("achievements")) {
             String playerKey = args.length > 1 ? args[1] : null;
-            return getAchievements(playerKey, qq, getKeyBoard(playerKey), isWhiteListed);
+            return getAchievements(playerKey, qq, getKeyBoard(playerKey));
         }
 
         if (key.equalsIgnoreCase("friends")) {
             String playerKey = args.length > 1 ? args[1] : null;
-            return getFriends(playerKey, qq, getKeyBoard(playerKey), isWhiteListed);
+            return getFriends(playerKey, qq, getKeyBoard(playerKey));
         }
 
-        return getMarkdownText(key, qq, getKeyBoard(key), isWhiteListed);
+        return getMarkdownText(key, qq, getKeyBoard(key));
     }
 
     private Object getKeyBoard(String key) {
@@ -91,12 +85,12 @@ public class PlayerProfile implements Listener, CommandExecutor {
         return TC.keyboard(layout);
     }
 
-    private static boolean getMarkdownText(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
+    private static boolean getMarkdownText(String key, QQCommandSender sender, Object keyboard) {
 
         if (key == null) return false;
 
         String messageId = sender.sendMessage("正在获取玩家数据喵，请稍等片刻！");
-        var d = PreImageGenerate.dump(ResourcesProperties.PLAYER_CARD_API, Map.of("player", key, "whitelist", isWhitelisted));
+        var d = PreImageGenerate.dump(ResourcesProperties.PLAYER_CARD_API, Map.of("player", key));
         sender.recall(messageId);
 
         if (d.url() == null) {
@@ -104,13 +98,13 @@ public class PlayerProfile implements Listener, CommandExecutor {
             return true;
         }
 
-        String text = "玩家 **" + (isWhitelisted ? key : "---") + "** 的在档数据如下";
+        String text = "玩家 **" + FetchMinecraftProfile.getFilteredUserName(key) + "** 的在档数据如下";
         sender.sendMessage(TC.md(text + "\n\n" + Markdown.img(d.url(), d.width(), d.height())), keyboard);
 
         return true;
     }
 
-    public static boolean getAchievements(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
+    public static boolean getAchievements(String key, QQCommandSender sender, Object keyboard) {
 
         if (key == null) return false;
 
@@ -141,7 +135,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 return true;
             }
 
-            StringBuilder markdown = new StringBuilder("玩家 **" + (isWhitelisted ? key : "---") + "** 的成就数据如下：\n\n");
+            StringBuilder markdown = new StringBuilder("玩家 **" + FetchMinecraftProfile.getFilteredUserName(key) + "** 的成就数据如下：\n\n");
             for (Achievement ach : resultObject.getData()) {
                 String statusEmoji = ach.finished() ? "✅" : "❌";
                 String title = (ach.hidden && !ach.finished) ? "**隐藏成就**" : String.format("**%s** %s ", ach.name(), statusEmoji);
@@ -160,7 +154,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
         }
     }
 
-    public static boolean getFriends(String key, QQCommandSender sender, Object keyboard, boolean isWhitelisted) {
+    public static boolean getFriends(String key, QQCommandSender sender, Object keyboard) {
 
         if (key == null) return false;
 
@@ -193,7 +187,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
                 return true;
             }
 
-            String markdown = "玩家 **" + (isWhitelisted ? key : "---") + "** 的好友列表如下：\n\n";
+            String markdown = "玩家 **" + FetchMinecraftProfile.getFilteredUserName(key) + "** 的好友列表如下：\n\n";
 
             FriendsData data = resultObject.getData();
             if (data.friendList() == null || data.friendList().isEmpty()) {
@@ -202,7 +196,7 @@ public class PlayerProfile implements Listener, CommandExecutor {
             }
 
             for (FriendsData.FriendInfo friend : data.friendList()) {
-                String name = "**" + (isWhitelisted ? friend.friendName() : maskMiddle(friend.friendName())) + "**";
+                String name = "**" + FetchMinecraftProfile.getFilteredUserName(friend.friendName()) + "**";
                 String body = "> UUID: `" + friend.friendUuid() + "`\n> 添加时间: `" + FormatTools.formatTimestampMilli(friend.addTime()) + "`";
                 markdown += name + "\n" + body + "\n\n";
             }

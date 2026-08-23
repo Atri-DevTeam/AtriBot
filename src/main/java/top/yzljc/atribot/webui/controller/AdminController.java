@@ -9,7 +9,7 @@ import top.yzljc.atribot.database.EventLogDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.*;
-import top.yzljc.atribot.function.general.Feedback;
+import top.yzljc.atribot.function.official.Feedback;
 import top.yzljc.atribot.function.official.PushTaskCommand;
 import top.yzljc.atribot.function.official.pushtask.PushTask;
 import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
@@ -198,6 +198,12 @@ public class AdminController {
         ReplyFeedbackDTO dto = ctx.bodyAsClass(ReplyFeedbackDTO.class);
         if (isBlank(dto.getId()) || isBlank(dto.getReplyContent())) {
             ctx.json(Result.fail(400, "id 和 replyContent 不能为空"));
+            return;
+        }
+        FeedbackDTO target = FeedbackRepository.findById(dto.getId());
+        if (target != null && target.getPlatform() != null
+                && target.getPlatform().toUpperCase(java.util.Locale.ROOT).startsWith("NAPCAT")) {
+            ctx.json(Result.fail(400, "NapCat 来源反馈已停止回复接入"));
             return;
         }
         boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden());

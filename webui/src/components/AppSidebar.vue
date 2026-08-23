@@ -74,14 +74,15 @@
         </svg>
         统计数据
       </button>
-      <button class="side-nav-item" :class="{ active: route.path === '/function-settings' }" @click="go('/function-settings')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 7h10" />
-          <path d="M4 17h16" />
-          <circle cx="17" cy="7" r="2.5" />
-          <circle cx="8" cy="17" r="2.5" />
+      <button class="side-nav-item" :class="{ active: route.path === '/bot-settings' }" @click="go('/bot-settings')">
+        <svg width="18" height="18" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round">
+          <line x1="32" y1="10" x2="32" y2="18" stroke-width="3.5"/>
+          <circle cx="32" cy="8" r="4" stroke-width="3.5"/>
+          <rect x="16" y="18" width="32" height="28" rx="10" stroke-width="3.5"/>
+          <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor" stroke="none"/>
+          <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor" stroke="none"/>
         </svg>
-        功能设置
+        机器人设置
       </button>
       <button class="side-nav-item" :class="{ active: route.path === '/group-strategy' }" title="加群策略" @click="go('/group-strategy')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -170,8 +171,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppBrand from './AppBrand.vue'
+import { NAV_COLLAPSED_KEY } from '../lib/panelLayout.js'
 
-const NAV_COLLAPSED_KEY = 'atri.webui.nav_collapsed'
 const collapsed = ref(false)
 
 onMounted(() => {

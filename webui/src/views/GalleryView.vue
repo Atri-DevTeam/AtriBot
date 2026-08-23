@@ -321,6 +321,7 @@ import {ref, reactive, computed, onMounted, onUnmounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import {formatTime} from '../lib/time.js'
 
 const denyReasons = [
   '图片内容与图源主题无关',
@@ -575,15 +576,6 @@ function formatDimensions(width, height) {
 
 function hasProcessedInfo(item) {
   return Number(item?.processedWidth) > 0 || Number(item?.processedHeight) > 0 || Number(item?.processedFileSize) > 0
-}
-
-function formatTime(value) {
-  if (!value) return '-'
-  const raw = String(value)
-  const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'))
-  if (Number.isNaN(date.getTime())) return raw
-  const pad = n => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function onKey(e) {

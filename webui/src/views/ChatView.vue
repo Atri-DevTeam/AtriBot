@@ -1,9 +1,8 @@
 <template>
   <div class="shell legacy-chat">
-    <AppSidebar ref="sidebarRef" v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
+    <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
         <button class="ghost-button" :disabled="loadingConvs" @click="loadConversations()">刷新</button>
-        <button class="ghost-button" title="恢复列表宽度、输入框高度和导航栏状态" @click="resetLayout">重置</button>
         <button class="ghost-button" @click="logout">退出</button>
       </template>
     </AppSidebar>
@@ -632,6 +631,7 @@ import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import { hasArkMessage } from '../lib/ark.js'
+import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
 import UserProfileForm from '../components/UserProfileForm.vue'
@@ -675,7 +675,6 @@ const resizingComposer = ref(false)
 
 const DEFAULT_LIST_WIDTH = 296
 const LIST_MIN_WIDTH = 200
-const LAYOUT_KEY = 'atri.webui.chat_layout'
 const listWidth = ref(DEFAULT_LIST_WIDTH)
 const resizingList = ref(false)
 
@@ -723,7 +722,6 @@ let highlightTimer = null
 let noticeTimer = null
 
 const sidebarOpen = ref(false)
-const sidebarRef = ref(null)
 const previewImg = ref(null)
 const previewVideo = ref(null)
 const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
@@ -933,7 +931,7 @@ function stopListResize() {
 
 function loadLayout() {
   try {
-    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}')
+    const saved = JSON.parse(localStorage.getItem(CHAT_LAYOUT_KEY) || '{}')
     if (Number.isFinite(saved.listWidth)) listWidth.value = saved.listWidth
     if (Number.isFinite(saved.composerHeight)) {
       composerHeight.value = Math.max(COMPOSER_MIN_HEIGHT, saved.composerHeight)
@@ -944,21 +942,11 @@ function loadLayout() {
 
 function saveLayout() {
   try {
-    localStorage.setItem(LAYOUT_KEY, JSON.stringify({
+    localStorage.setItem(CHAT_LAYOUT_KEY, JSON.stringify({
       listWidth: Math.round(listWidth.value),
       composerHeight: Math.round(composerHeight.value)
     }))
   } catch { /* 隐私模式下 localStorage 可能不可写，忽略 */ }
-}
-
-// 恢复出厂布局：列表宽度、输入框高度，以及侧边栏的收窄状态
-function resetLayout() {
-  listWidth.value = DEFAULT_LIST_WIDTH
-  composerHeight.value = COMPOSER_MIN_HEIGHT
-  try {
-    localStorage.removeItem(LAYOUT_KEY)
-  } catch { /* ignore */ }
-  sidebarRef.value?.resetCollapsed()
 }
 
 // ═══════════════ API 基础 ═══════════════

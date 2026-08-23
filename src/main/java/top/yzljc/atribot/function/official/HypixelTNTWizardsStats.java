@@ -8,9 +8,7 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
-import top.yzljc.atribot.function.official.minecraft.MinecraftWhitelist;
 import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 
 import java.util.Map;
 
@@ -27,7 +25,6 @@ public class HypixelTNTWizardsStats implements CommandExecutor {
 
         if (sender instanceof QQCommandSender user) {
             String player;
-            boolean isAllowedName = false;
             if (args.length < 1) {
                 if (MinecraftBind.getDataByOpenId(user.getUserId()).uuid() != null) {
                     player = MinecraftBind.getDataByOpenId(user.getUserId()).uuid();
@@ -38,18 +35,14 @@ public class HypixelTNTWizardsStats implements CommandExecutor {
             } else {
                 player = args[0];
             }
-            isAllowedName = MinecraftWhitelist.isNameWhitelisted(FetchMinecraftProfile.getUsernameByUuid(player));
-
             String msgId = user.sendMessage("正在查询相关数据，请稍等片刻...");
 
-            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player, "is_allowed_name", isAllowedName));
+            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player));
             user.recall(msgId);
 
             if (!d.isError()) {
                 if (d.url() != null) {
-                    ImageComponent image = ImageComponent.imageOf(d.url());
-                    if (!isAllowedName) image.setText("为保障内容合规，用户名和皮肤须审查后才能放出，使用 /加白 用户名 提交审查。");
-                    user.sendMessage(image);
+                    user.sendMessage(ImageComponent.imageOf(d.url()).setText("根据开放平台要求，自定义内容须审核后才能显示，请使用 /反馈 <用户名> 提交审核。"));
                     return true;
                 }
             }

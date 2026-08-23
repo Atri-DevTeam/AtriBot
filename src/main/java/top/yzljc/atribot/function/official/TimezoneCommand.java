@@ -169,8 +169,9 @@ public class TimezoneCommand implements CommandExecutor {
         switch (sender) {
             case QQCommandSender qq -> qq.sendMessage(TC.md(text), false);
             case QQGuildCommandSender guild -> guild.sendMessage(text);
-            case NapcatCommandSender nc -> nc.sendMessage(text);
-            case null, default -> sender.sendMessage(text);
+//            case NapcatCommandSender nc -> nc.sendMessage(text);
+//            case null, default -> sender.sendMessage(text);
+            default -> {}
         }
     }
 
@@ -320,6 +321,8 @@ public class TimezoneCommand implements CommandExecutor {
         map.put("零时区", "UTC|协调世界时");
         map.put("东八区", "Asia/Shanghai|东八区北京时间");
         map.put("东九区", "Asia/Tokyo|东九区东京时间");
+        map.put("seattle", "America/Los_Angeles|美国洛杉矶");
+        map.put("andy", "America/Los_Angeles|美国洛杉矶");
         return map;
     }
 

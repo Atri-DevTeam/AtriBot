@@ -30,15 +30,15 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     private final int chatType;
     private final Data data;
     private final String groupOpenId;
-    private final String unionOpenId;
+    private final String userOpenId;
     private boolean cancelled;
 
-    public OfficialButtonInteractionEvent(String applicationId, String eventId, int chatType, Data data, String groupOpenId, String unionOpenId, String id, String scene, String timestamp, int type, int version) {
+    public OfficialButtonInteractionEvent(String applicationId, String eventId, int chatType, Data data, String groupOpenId, String userOpenId, String id, String scene, String timestamp, int type, int version) {
         super(applicationId, eventId, id, scene, timestamp, type, version);
         this.chatType = chatType;
         this.data = data;
         this.groupOpenId = groupOpenId;
-        this.unionOpenId = unionOpenId;
+        this.userOpenId = userOpenId;
     }
 
     @Override
@@ -88,11 +88,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     public String replyMessage(Markdown markdown, boolean at) {
         if (this.chatType == 1) {
             if (at) {
-                return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown);
+                return GroupChat.replyEventMessage(this.groupOpenId, this.userOpenId, this.eventId, markdown);
             }
             return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, markdown);
+            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, markdown);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -107,11 +107,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     public String replyMessage(Markdown markdown, Object keyboard, boolean at) {
         if (this.chatType == 1) {
             if (at) {
-                return GroupChat.replyEventMessage(this.groupOpenId, this.unionOpenId, this.eventId, markdown, keyboard);
+                return GroupChat.replyEventMessage(this.groupOpenId, this.userOpenId, this.eventId, markdown, keyboard);
             }
             return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown, keyboard);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, markdown, keyboard);
+            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, markdown, keyboard);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -122,7 +122,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.chatType == 1) {
             return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, text);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, text);
+            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, text);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -133,7 +133,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.chatType == 1) {
             return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, image);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.unionOpenId, this.eventId, image);
+            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, image);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -144,7 +144,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.chatType == 1) {
             return GroupChat.sendMessage(this.groupOpenId, text);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.unionOpenId, text);
+            return C2CChat.sendMessage(this.userOpenId, text);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -155,7 +155,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.chatType == 1) {
             return GroupChat.sendMessage(this.groupOpenId, content);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.unionOpenId, content);
+            return C2CChat.sendMessage(this.userOpenId, content);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -166,7 +166,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.chatType == 1) {
             return GroupChat.sendMessage(this.groupOpenId, content, keyboard);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.unionOpenId, content, keyboard);
+            return C2CChat.sendMessage(this.userOpenId, content, keyboard);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -179,7 +179,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
                 return true;
             }
         }
-        if (OfficialUsers.isBlocked(this.unionOpenId) || OfficialUsers.isIgnored(this.unionOpenId)) {
+        if (OfficialUsers.isBlocked(this.userOpenId) || OfficialUsers.isIgnored(this.userOpenId)) {
             answer(AnswerCode.FAIL);
             return true;
         }

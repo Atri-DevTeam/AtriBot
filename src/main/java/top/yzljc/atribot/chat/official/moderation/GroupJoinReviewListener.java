@@ -25,6 +25,12 @@ public final class GroupJoinReviewListener implements Listener {
         }
         GroupModerationSettings settings = GroupModerationStore.get(event.getGroupOpenId());
         JoinReviewConfig config = settings.getJoinReview();
+        if (config.getRules() != null && !config.getRules().isEmpty()) {
+            if (config.isEnabled()) {
+                ThreadManager.execute(() -> processRules(event, config));
+            }
+            return;
+        }
         JoinReviewMode mode = config.getMode();
         if (mode == JoinReviewMode.DISABLED) {
             return;
@@ -49,6 +55,56 @@ public final class GroupJoinReviewListener implements Listener {
         });
     }
 
+    private void processRules(OfficialGroupJoinRequestEvent event, JoinReviewConfig config) {
+        for (JoinReviewRule rule : config.getRules()) {
+            if (rule == null || !rule.isEnabled()) {
+                continue;
+            }
+
+            JoinReviewRuleOutcome outcome;
+            String detail;
+            if (rule.getType() == JoinReviewRuleType.KEYWORD) {
+                if (!matchesKeywords(rule, event.getAnswer())) {
+                    continue;
+                }
+                outcome = rule.getOnMatch();
+                detail = "命中规则「" + rule.getName() + "」";
+            } else {
+                AiModerationVerdict verdict = AiModerationService.reviewJoinRequest(
+                        rule.getAiSystemPrompt(), event.getQuestion(), event.getAnswer());
+                outcome = verdict.violation() ? rule.getOnViolation() : rule.getOnPass();
+                detail = "AI 规则「" + rule.getName() + "」：" + verdict.reason();
+            }
+
+            if (outcome == null || outcome == JoinReviewRuleOutcome.CONTINUE) {
+                continue;
+            }
+            JoinReviewDecision decision = outcome == JoinReviewRuleOutcome.APPROVE
+                    ? JoinReviewDecision.APPROVE
+                    : JoinReviewDecision.REJECT;
+            apply(event, decision, config, detail, rule.getRejectReason());
+            return;
+        }
+    }
+
+    private boolean matchesKeywords(JoinReviewRule rule, String answer) {
+        if (rule.getKeywords() == null || answer == null) {
+            return false;
+        }
+        for (String keyword : rule.getKeywords()) {
+            if (keyword == null || keyword.isBlank()) {
+                continue;
+            }
+            boolean hit = rule.getMatchMode() == MatchMode.EQUALS
+                    ? answer.trim().equals(keyword.trim())
+                    : answer.contains(keyword);
+            if (hit) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private JoinReviewDecision matchKeyword(JoinReviewKeywordRule rule, String answer) {
         if (rule == null || rule.getKeywords() == null || answer == null) {
             return null;
@@ -69,9 +125,17 @@ public final class GroupJoinReviewListener implements Listener {
 
     private void apply(OfficialGroupJoinRequestEvent event, JoinReviewDecision decision,
                         JoinReviewConfig config, String detail) {
+        apply(event, decision, config, detail, config.getRejectReason());
+    }
+
+    private void apply(OfficialGroupJoinRequestEvent event, JoinReviewDecision decision,
+                       JoinReviewConfig config, String detail, String ruleRejectReason) {
+        String rejectReason = ruleRejectReason == null || ruleRejectReason.isBlank()
+                ? config.getRejectReason()
+                : ruleRejectReason;
         boolean success = decision == JoinReviewDecision.APPROVE
                 ? event.approve()
-                : event.deny(config.getRejectReason());
+                : event.deny(rejectReason);
         ModerationLogRepository.log(event.getGroupOpenId(), "JOIN_REVIEW", decision.name().toLowerCase(),
                 event.getMemberOpenId(), detail + (success ? "" : "（接口调用失败）"));
 

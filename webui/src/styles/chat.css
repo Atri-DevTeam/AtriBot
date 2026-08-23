@@ -86,8 +86,6 @@
 }
 
 /* ── 左：会话列表 ── */
-
-/* 宽度走自定义属性，由 ChatView 内联在 .chatnt 上；手机端的 100% 仍能正常覆盖 */
 .chatnt-list {
   display: flex;
   flex-direction: column;
@@ -98,7 +96,6 @@
   border-right: 1px solid #e4e6ea;
 }
 
-/* 分隔条本体只有 5px，靠 ::before 的一条竖线做视觉，命中区比视觉宽好抓 */
 .chatnt-splitter {
   position: relative;
   width: 5px;
@@ -207,13 +204,7 @@
   gap: 10px;
   width: 100%;
   max-width: 100%;
-  /*
-   * 必须显式禁止收缩：父级 .chatnt-items 是纵向 flex 容器，条目默认 flex-shrink:1；
-   * 而下面的 overflow:hidden 又让「自动最小高度」失效（min-height:auto 只在
-   * overflow:visible 时生效），两者叠加会让列表变长时每张卡被压扁。
-   */
   flex-shrink: 0;
-  /* 右侧多留一截给图钉，免得悬停时压住预览文字的尾巴 */
   padding: 9px 30px 9px 10px;
   border: none;
   border-radius: 8px;
@@ -226,9 +217,6 @@
 
 .cnv { position: relative; }
 .cnv:hover { background: #eceef1; }
-
-/* 置顶项换个底色，一眼能看出上面这几条是被顶上来的。
-   必须排除 .active，否则同特异性下这条在后面会盖掉选中项的蓝底 */
 .cnv.pinned:not(.active) { background: #f0f4f9; }
 .cnv.pinned:not(.active):hover { background: #e7edf5; }
 
@@ -434,8 +422,6 @@
 .chatnt-members-btn:hover { color: #0099ff; background: #e8eaee; }
 .chatnt-members-btn.active { color: #0099ff; background: #e0f0ff; }
 .chatnt-members-btn svg { display: block; }
-
-/* 遮罩只盖聊天区，点它关闭；桌面端也保留，避免点别处不知道怎么关 */
 .chatnt-members-backdrop {
   position: absolute;
   inset: 0;
@@ -1116,11 +1102,6 @@
   color: #9aa3b2;
 }
 
-/*
- * 自己发的消息整列靠右，名字行也整体倒置：ID → 机器人标 → 名字，
- * 让名字紧挨着头像那一侧。row-reverse 下主轴起点就在右边，
- * 所以这里不能再写 justify-content: flex-end（那会把内容顶到左边去）。
- */
 .qm.mine .qm-name { flex-direction: row-reverse; }
 
 .qm-name-text {
@@ -1146,14 +1127,11 @@
 
 .qm-role.role-owner { color: #b7791f; background: #fdf3dc; }
 .qm-role.role-admin { color: #1f6feb; background: #e3edfb; }
-
-/* #12B7F5 沿用旧页面机器人图标的配色，保持全站一致 */
 .qm-bot {
   display: block;
   flex-shrink: 0;
   color: #12b7f5;
 }
-
 .qm-bubble {
   position: relative;
   max-width: 100%;
@@ -1166,9 +1144,6 @@
   word-break: break-word;
   box-shadow: 0 1px 2px rgba(16, 20, 28, 0.04);
 }
-
-/* 比主题蓝 #0099ff 浅一档：整片气泡铺满时那个饱和度压眼睛，
-   主题蓝仍留给选中会话和发送按钮那种小面积元素 */
 .qm.mine .qm-bubble {
   background: #4db8ff;
   color: #ffffff;
@@ -1190,9 +1165,6 @@
 }
 
 .qm.mine .qm-bubble.recalled { background: #eceef1; color: #9aa3b2; }
-
-/* 蓝色气泡里的 Markdown 配色微调：.md-body 自带深色文字声明会挡住气泡的白色继承，
-   先整体覆盖成白色，再针对链接/代码/引用做浅色区分 */
 .qm.mine .qm-bubble .md-body { color: #ffffff; }
 .qm.mine .qm-bubble .md-body a { color: #dff1ff; }
 .qm.mine .qm-bubble .md-body code {
@@ -1509,8 +1481,6 @@
   padding: 0 16px 12px;
 }
 
-/* 不复用 .hint：layout.css 里那条 `.empty-state, .hint` 是给空状态占位块用的
-   （display:grid + min-height:220px），会把发送栏撑高一大截 */
 .chatnt-composer-foot .chatnt-hint {
   font-size: 11px;
   color: #b5bcc9;
@@ -1762,7 +1732,6 @@
 
   .chatnt-head { padding: 8px 12px; min-height: 54px; }
   .chatnt-msgs { padding: 12px 12px 6px; }
-  /* 手机端抽屉铺得更宽，交互仍是点击展开 */
   .chatnt-members { width: 86%; max-width: 340px; }
   .chatnt-notice { top: 62px; left: 12px; right: 12px; }
   .chatnt-replybar { margin: 0 12px; }
@@ -1774,8 +1743,6 @@
   .mute-picker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  /* 32 位 ID 在窄屏挤不下，默认收起，点头像才展开成独立一行 */
   .qm-avatar { cursor: pointer; }
   .qm-uid { display: none; }
 

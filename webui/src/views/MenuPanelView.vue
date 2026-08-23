@@ -225,7 +225,7 @@
               </div>
               <div class="mp-panel-grid">
               <article v-for="p in panels" :key="p.panelId" class="mp-panel-card"
-                       :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId, 'mp-panel-card--readonly': isLegacyPanel(p) }"
+                       :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId }"
                        @click="selectPanel(p)">
                 <div class="mp-panel-card-head">
                   <div class="mp-panel-card-title">
@@ -241,9 +241,9 @@
                       {{ scopeLabel(p.scope) }}
                     </span>
                     <span class="mp-badge" :class="p.targetType === 'specific' ? 'mp-badge--specific' : 'mp-badge--all'">{{ p.targetType === 'specific' ? '指定对象' : '全局' }}</span>
-                    <span v-if="isLegacyPanel(p)" class="mp-badge mp-badge--legacy" title="旧版绝版面板，仅支持查看和复制">
+                    <span v-if="isLegacyPanel(p)" class="mp-badge mp-badge--legacy" title="旧版面板">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                      旧版只读
+                      旧版
                     </span>
                   </div>
                 </div>
@@ -260,15 +260,14 @@
                 <div class="mp-panel-card-foot">
                   <span class="gs-id" :title="p.panelId">#{{ p.panelId }}</span>
                   <div class="mp-panel-actions">
-                    <button class="icon-button mp-edit" :title="isLegacyPanel(p) ? '旧版面板禁止编辑' : '编辑'"
-                            :disabled="isLegacyPanel(p)" @click.stop="openEdit(p)">
+                    <button class="icon-button mp-edit" title="编辑" @click.stop="openEdit(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
-                    <button class="icon-button mp-target" :title="isLegacyPanel(p) ? '旧版面板禁止修改关联对象' : '关联对象'"
-                            :disabled="p.targetType !== 'specific' || isLegacyPanel(p)" @click.stop="openTarget(p)">
+                    <button class="icon-button mp-target" title="关联对象"
+                            :disabled="p.targetType !== 'specific'" @click.stop="openTarget(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </button>
-                    <button class="icon-button mp-danger" :title="isLegacyPanel(p) ? '旧版面板禁止删除' : '删除'"
+                    <button class="icon-button mp-danger" :title="isLegacyPanel(p) ? '旧版面板不可删除' : '删除'"
                             :disabled="isLegacyPanel(p)" @click.stop="removePanel(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
@@ -790,7 +789,6 @@ function openCreate() {
 }
 
 function openEdit(p) {
-  if (isLegacyPanel(p)) return
   panelForm.remark = p.panel?.remark || ''
   panelForm.items = panelToDraftItems(p.panel)
   if (panelForm.items.length === 0) panelForm.items.push(newPanelDraftItem())
@@ -802,10 +800,6 @@ function closePanelModal() {
 }
 
 async function savePanel() {
-  if (panelModal.value.mode === 'edit' && panelModal.value.panelId?.startsWith('mp_')) {
-    alert('旧版绝版面板为只读，禁止修改')
-    return
-  }
   if (panelForm.items.length === 0) {
     alert('请至少配置一个面板元素')
     return
@@ -855,7 +849,6 @@ async function removePanel(p) {
 }
 
 async function openTarget(p) {
-  if (isLegacyPanel(p)) return
   submitting.value = false
   try {
     const detail = await api(`/panels/${p.panelId}`)

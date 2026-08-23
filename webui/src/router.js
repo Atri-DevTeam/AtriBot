@@ -61,9 +61,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/function-settings',
-      name: 'functionSettings',
-      component: () => import('./views/FunctionSettingsView.vue'),
+      path: '/bot-settings',
+      name: 'botSettings',
+      component: () => import('./views/BotSettingsView.vue'),
       meta: { requiresAuth: true }
     },
     {
