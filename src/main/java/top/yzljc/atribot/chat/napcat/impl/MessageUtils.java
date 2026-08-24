@@ -77,12 +77,12 @@ public class MessageUtils {
     }
 
     public static String replyPrivateMessage(String userId, String messageId, Collection<MessageSegment> messageSegments) {
-        List<MessageSegment> replayContent = new ArrayList<>();
-        replayContent.add(replySegment(messageId));
+        List<MessageSegment> replyContent = new ArrayList<>();
+        replyContent.add(replySegment(messageId));
         if (messageSegments != null && !messageSegments.isEmpty()) {
-            replayContent.addAll(messageSegments);
+            replyContent.addAll(messageSegments);
         }
-        return privateMessage(userId, replayContent);
+        return privateMessage(userId, replyContent);
     }
 
     public static String chatMessage(String userId, String groupId, String text, boolean whetherAt) {
@@ -114,12 +114,12 @@ public class MessageUtils {
     }
 
     public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, Collection<MessageSegment> messageSegments) {
-        List<MessageSegment> replayContent = whetherAt ? buildWithAtPrefix(userId, null) : new ArrayList<>();
-        replayContent.add(replySegment(messageId));
+        List<MessageSegment> replyContent = whetherAt ? buildWithAtPrefix(userId, null) : new ArrayList<>();
+        replyContent.add(replySegment(messageId));
         if (messageSegments != null && !messageSegments.isEmpty()) {
-            replayContent.addAll(messageSegments);
+            replyContent.addAll(messageSegments);
         }
-        return groupMessage(groupId, replayContent);
+        return groupMessage(groupId, replyContent);
     }
 
     public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, ImageComponent image) {
@@ -186,8 +186,8 @@ public class MessageUtils {
     }
 
     public static void atUser(String userId, String groupId, String text) {
-        List<MessageSegment> replayContent = buildWithAtPrefix(userId, List.of(textSegment(text)));
-        groupMessage(groupId, replayContent);
+        List<MessageSegment> replyContent = buildWithAtPrefix(userId, List.of(textSegment(text)));
+        groupMessage(groupId, replyContent);
     }
 
     // ──────────────────────────────────
