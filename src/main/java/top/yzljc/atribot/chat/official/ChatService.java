@@ -21,7 +21,6 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -98,17 +97,6 @@ public class ChatService {
     }
 
     /**
-     * 同步发送单聊消息
-     *
-     * @param openId  用户 openId
-     * @param request 消息体
-     * @return 消息 ID，发送失败返回 null
-     */
-    public String sendPrivateMessage(String openId, MessageBody request) {
-        return awaitSend(sendPrivateMessageAsync(openId, request), "单聊");
-    }
-
-    /**
      * 异步发送单聊消息，成功后自动记录到 ChatContentRecord
      *
      * @param openId  用户 openId
@@ -131,17 +119,6 @@ public class ChatService {
                         return null;
                     }
                 });
-    }
-
-    /**
-     * 同步发送群聊消息
-     *
-     * @param groupOpenId 群 openId
-     * @param request     消息体
-     * @return 消息 ID，发送失败返回 null
-     */
-    public String sendGroupMessage(String groupOpenId, MessageBody request) {
-        return awaitSend(sendGroupMessageAsync(groupOpenId, request), "群聊");
     }
 
     /**
@@ -309,23 +286,6 @@ public class ChatService {
 
     private CompletableFuture<ChatResponse> sendMessageAsync(String url, MessageBody request, String logType) {
         return ThreadManager.supplyAsync(() -> doSendMessage(url, request, logType));
-    }
-
-    private String awaitSend(CompletableFuture<String> future, String logType) {
-        try {
-            return future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("{}消息发送等待被中断", logType, e);
-            return null;
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof QQMessageSendException officialError) {
-                throw officialError;
-            }
-            log.error("{}消息发送任务失败: {}", logType, cause != null ? cause : e);
-            return null;
-        }
     }
 
     private ChatResponse doSendMessage(String url, MessageBody request, String logType) {

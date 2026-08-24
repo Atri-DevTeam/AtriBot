@@ -1,6 +1,7 @@
 import java.util.Properties
 import java.text.SimpleDateFormat
 import java.util.Date
+import org.gradle.api.file.DuplicatesStrategy
 
 plugins {
     `java-library`
@@ -119,12 +120,23 @@ tasks.jar {
 
 tasks.shadowJar {
     archiveClassifier.set("")
+    // Shadow transformers must see duplicate resources before they are merged.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
     manifest {
         attributes("Main-Class" to "top.yzljc.atribot.Atri")
     }
 
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+
+    exclude(
+        "META-INF/LICENSE",
+        "META-INF/LICENSE.txt",
+        "META-INF/LICENSE.md",
+        "META-INF/NOTICE",
+        "META-INF/NOTICE.txt",
+        "META-INF/NOTICE.md"
+    )
 
     mergeServiceFiles()
 

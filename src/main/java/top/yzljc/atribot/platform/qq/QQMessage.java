@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.function.official.SignCommand;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
@@ -26,14 +27,16 @@ public class QQMessage extends Message implements Recallable {
     private final JsonNode attachments;
     private final JsonNode ark;
     private final JsonNode reference;
+    private final EventType messageEventType;
 
-    public QQMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, int type, String refIdx, JsonNode attachments, JsonNode ark, JsonNode reference) {
+    public QQMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, int type, String refIdx, JsonNode attachments, JsonNode ark, JsonNode reference, EventType messageEventType) {
         super(platform, messageId, content, timestamp, mentionedUsers);
         this.type = type;
         this.refIdx = refIdx;
         this.attachments = attachments;
         this.ark = ark;
         this.reference = reference;
+        this.messageEventType = messageEventType;
     }
 
     public boolean isCommand() {

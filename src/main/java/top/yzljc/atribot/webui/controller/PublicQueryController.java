@@ -3,6 +3,7 @@ package top.yzljc.atribot.webui.controller;
 import io.javalin.http.Context;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
@@ -134,6 +135,17 @@ public class PublicQueryController {
                 window.endString(),
                 PublicOfficialQueryRepo.queryDailySeries(window.start(), window.end())
         ));
+    }
+
+    public static void publicOfficialSign(Context ctx) {
+        String type = trimToNull(ctx.queryParam("type"));
+        if (type == null || !("daily".equalsIgnoreCase(type) || "overall".equalsIgnoreCase(type))) {
+            ctx.json(Result.fail(400, "type 必须是 daily 或 overall"));
+            return;
+        }
+        String normalizedType = type.toLowerCase(java.util.Locale.ROOT);
+        String cacheKey = publicCacheKey("sign_" + normalizedType, null, null, null);
+        publicAsyncCached(ctx, cacheKey, () -> SignRepository.queryPublicData(normalizedType));
     }
 
     public record PublicSeriesDTO(String startTime, String endTime,

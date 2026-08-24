@@ -214,9 +214,10 @@
                         </a>
                       </template>
                     </div>
+                    <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
                     <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
-                    <pre v-if="!hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="!hasArk(message) && message.messageType === 2" class="md-body"
+                    <pre v-if="!forwardRecord(message) && !hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                    <div v-if="!forwardRecord(message) && !hasArk(message) && message.messageType === 2" class="md-body"
                          v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
                   </template>
                 </div>
@@ -631,9 +632,11 @@ import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import { hasArkMessage } from '../lib/ark.js'
+import { parseForwardContent } from '../lib/forward.js'
 import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
+import ForwardMessageCard from '../components/ForwardMessageCard.vue'
 import UserProfileForm from '../components/UserProfileForm.vue'
 
 const router = useRouter()
@@ -730,6 +733,7 @@ const avatarFailed = reactive({})
 const attachFailed = reactive({})
 // 手机端点头像展开 ID（PC 端 ID 常驻，这个状态不参与）
 const expandedIds = reactive({})
+const forwardCache = new WeakMap()
 
 function toggleUid(id) {
   expandedIds[id] = !expandedIds[id]
@@ -2087,6 +2091,16 @@ function renderContent(message) {
 
 function hasArk(message) {
   return hasArkMessage(message?.ark)
+}
+
+function forwardRecord(message) {
+  if (!message || typeof message !== 'object') return null
+  const content = message.content || ''
+  const cached = forwardCache.get(message)
+  if (cached && cached.content === content) return cached.value
+  const value = parseForwardContent(content)
+  forwardCache.set(message, { content, value })
+  return value
 }
 
 // Markdown 里的图片由 v-html 动态生成，不能在 img 上绑定 Vue 的 @error。

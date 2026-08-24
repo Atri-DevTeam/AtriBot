@@ -88,6 +88,19 @@ public final class AsyncGroupChat {
     }
 
     /**
+     * 异步引用回复群聊纯文本消息
+     *
+     * @param groupOpenId 群 openId
+     * @param msgId       被回复的消息 ID
+     * @param replyText   回复内容
+     * @param refIdx      被引用消息的索引 ID
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, String replyText, String refIdx) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().replyTextRef(msgId, replyText, refIdx));
+    }
+
+    /**
      * 异步回复群聊 Markdown 消息并 @ 用户
      *
      * @param groupOpenId 群 openId

@@ -68,6 +68,16 @@ final class MessageBodyFactory {
                 .build();
     }
 
+    public MessageBody replyTextRef(String msgId, String text, String refIdx) {
+        return MessageBody.builder()
+                .msgType(GroupMessageType.TEXT.getValue())
+                .msgId(msgId)
+                .msgSeq(msgSeqProvider.apply(msgId))
+                .messageReference(Map.of("message_id", refIdx))
+                .content(text)
+                .build();
+    }
+
     public MessageBody eventText(String eventId, String text) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())

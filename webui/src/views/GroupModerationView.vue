@@ -432,37 +432,83 @@
               </div>
               <p class="errors-search-hint">群管操作记录</p>
 
-              <div v-if="logsLoading" class="empty-state">加载中...</div>
-              <div v-else-if="logsError" class="empty-state error">{{ logsError }}</div>
-              <div v-else-if="logItems.length === 0" class="empty-state">暂无操作日志</div>
-
-              <div v-else class="errors-surface">
-                <div class="sendlogs-grid gm-log-thead">
-                  <span>分类</span>
-                  <span>处理</span>
-                  <span>成员</span>
-                  <span>详情</span>
-                  <span>时间</span>
+              <template v-if="logMode === 'detail' && logDetail">
+                <div class="errors-detail-bar">
+                  <button class="ghost-button" @click="backToLogList">返回列表</button>
+                  <span class="errors-detail-crumb">操作详情</span>
                 </div>
 
-                <div class="errors-list">
-                  <article v-for="row in logItems" :key="row.id" class="sendlogs-grid gm-log-row">
-                    <span>
-                      <span class="gm-log-type" :class="logTypeClass(row.category)">{{ logCategoryText(row.category) }}</span>
-                    </span>
-                    <span class="gm-log-action">{{ logActionText(row.action) }}</span>
-                    <span class="gm-log-member" :title="row.targetMemberOpenId">{{ row.targetMemberOpenId || '-' }}</span>
-                    <span class="gm-log-detail" :title="row.detail">{{ row.detail || '-' }}</span>
-                    <span class="sendlogs-time" :title="formatTime(row.createdAt)">{{ relativeTime(row.createdAt) }}</span>
-                  </article>
-                </div>
-              </div>
+                <article class="errors-surface errors-detail">
+                  <header class="errors-detail-head">
+                    <span class="gm-log-type" :class="logTypeClass(logDetail.category)">{{ logCategoryText(logDetail.category) }}</span>
+                    <h3 class="errors-detail-message">{{ logActionText(logDetail.action) }}</h3>
+                    <span class="errors-detail-time">{{ formatTime(logDetail.createdAt) }}</span>
+                  </header>
 
-              <div v-if="!logsLoading && !logsError && logTotalPages > 1" class="errors-pagination">
-                <button class="ghost-button" :disabled="logPage <= 1" @click="goLogPage(logPage - 1)">上一页</button>
-                <span class="errors-pagination-label">第 {{ logPage }} / {{ logTotalPages }} 页</span>
-                <button class="ghost-button" :disabled="logPage >= logTotalPages" @click="goLogPage(logPage + 1)">下一页</button>
-              </div>
+                  <dl class="errors-fields">
+                    <div class="errors-field">
+                      <dt class="errors-field-label">日志 id</dt>
+                      <dd class="errors-field-value errors-mono">{{ logDetail.id }}</dd>
+                    </div>
+                    <div class="errors-field">
+                      <dt class="errors-field-label">分类</dt>
+                      <dd class="errors-field-value">{{ logCategoryText(logDetail.category) }}（{{ logDetail.category }}）</dd>
+                    </div>
+                    <div class="errors-field">
+                      <dt class="errors-field-label">处理动作</dt>
+                      <dd class="errors-field-value">{{ logActionText(logDetail.action) }}（{{ logDetail.action }}）</dd>
+                    </div>
+                    <div class="errors-field">
+                      <dt class="errors-field-label">时间</dt>
+                      <dd class="errors-field-value">{{ formatTime(logDetail.createdAt) }}（{{ relativeTime(logDetail.createdAt) }}）</dd>
+                    </div>
+                    <div class="errors-field">
+                      <dt class="errors-field-label">成员 OpenID</dt>
+                      <dd class="errors-field-value errors-mono">{{ logDetail.targetMemberOpenId || '-' }}</dd>
+                    </div>
+                  </dl>
+
+                  <section class="errors-block">
+                    <h4 class="errors-block-title">详情</h4>
+                    <p class="gm-log-detail-full">{{ logDetail.detail || '(无详情)' }}</p>
+                  </section>
+                </article>
+              </template>
+
+              <template v-else>
+                <div v-if="logsLoading" class="empty-state">加载中...</div>
+                <div v-else-if="logsError" class="empty-state error">{{ logsError }}</div>
+                <div v-else-if="logItems.length === 0" class="empty-state">暂无操作日志</div>
+
+                <div v-else class="errors-surface">
+                  <div class="sendlogs-grid gm-log-thead">
+                    <span>分类</span>
+                    <span>处理</span>
+                    <span>成员</span>
+                    <span>详情</span>
+                    <span>时间</span>
+                  </div>
+
+                  <div class="errors-list">
+                    <article v-for="row in logItems" :key="row.id" class="sendlogs-grid gm-log-row"
+                             @click="openLogDetail(row)">
+                      <span>
+                        <span class="gm-log-type" :class="logTypeClass(row.category)">{{ logCategoryText(row.category) }}</span>
+                      </span>
+                      <span class="gm-log-action">{{ logActionText(row.action) }}</span>
+                      <span class="gm-log-member" :title="row.targetMemberOpenId">{{ row.targetMemberOpenId || '-' }}</span>
+                      <span class="gm-log-detail" :title="row.detail">{{ row.detail || '-' }}</span>
+                      <span class="sendlogs-time" :title="formatTime(row.createdAt)">{{ relativeTime(row.createdAt) }}</span>
+                    </article>
+                  </div>
+                </div>
+
+                <div v-if="!logsLoading && !logsError && logTotalPages > 1" class="errors-pagination">
+                  <button class="ghost-button" :disabled="logPage <= 1" @click="goLogPage(logPage - 1)">上一页</button>
+                  <span class="errors-pagination-label">第 {{ logPage }} / {{ logTotalPages }} 页</span>
+                  <button class="ghost-button" :disabled="logPage >= logTotalPages" @click="goLogPage(logPage + 1)">下一页</button>
+                </div>
+              </template>
             </div>
           </div>
         </section>
@@ -513,6 +559,20 @@ const logTabs = [
   {value: 'JOIN_REVIEW', label: '入群审核'}
 ]
 const logTotalPages = computed(() => Math.max(1, Math.ceil(logTotal.value / logPageSize)))
+
+// 日志二级详情（行数据已含全部字段，直接展示，无需再请求详情接口）
+const logMode = ref('list')
+const logDetail = ref(null)
+
+function openLogDetail(row) {
+  logDetail.value = row
+  logMode.value = 'detail'
+}
+
+function backToLogList() {
+  logMode.value = 'list'
+  logDetail.value = null
+}
 
 const expandedRuleId = ref('')
 const weekDays = [
@@ -812,6 +872,7 @@ function actionSummary(action) {
 
 function switchToLogs() {
   tab.value = 'logs'
+  logMode.value = 'list'
   if (!groupOpenId.value) return
   logPage.value = 1
   fetchLogStats()
@@ -863,6 +924,7 @@ function logTabCount(value) {
 }
 
 function selectLogCategory(value) {
+  logMode.value = 'list'
   if (logCategory.value === value) return
   logCategory.value = value
   logPage.value = 1
@@ -871,6 +933,7 @@ function selectLogCategory(value) {
 
 function doLogSearch() {
   logKeyword.value = logSearchInput.value.trim()
+  logMode.value = 'list'
   logPage.value = 1
   fetchLogs()
 }
@@ -878,6 +941,7 @@ function doLogSearch() {
 function resetLogSearch() {
   logSearchInput.value = ''
   logKeyword.value = ''
+  logMode.value = 'list'
   logPage.value = 1
   fetchLogs()
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
+import org.java_websocket.drafts.Draft_6455;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.DiscordMessageCreateEvent;
 import top.yzljc.atribot.event.events.DiscordSlashCommandEvent;
@@ -20,10 +21,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class DiscordWebSocketClient extends WebSocketClient {
 
+    private static final int CONNECT_TIMEOUT_MS = 15_000;
     private static final int DISCORD_HEARTBEAT = 1;
     private static final int DISCORD_IDENTIFY = 2;
     private static final int DISCORD_RESUME = 6;
@@ -46,7 +49,9 @@ public class DiscordWebSocketClient extends WebSocketClient {
     private volatile boolean heartbeatAcked = true;
 
     public DiscordWebSocketClient(URI serverUri, DiscordManager manager, String botToken, int intents, int shardId, int shardCount) {
-        super(serverUri);
+        // Do not leave TCP connect timeout at the library default (0). A
+        // blackholed gateway can otherwise block the retry cycle for minutes.
+        super(serverUri, new Draft_6455(), Map.of(), CONNECT_TIMEOUT_MS);
         this.manager = manager;
         this.botToken = botToken;
         this.intents = intents;
@@ -106,7 +111,7 @@ public class DiscordWebSocketClient extends WebSocketClient {
             return;
         }
 
-        manager.onClose(code, reason, remote);
+        manager.onClose(this, code, reason, remote);
     }
 
     @Override

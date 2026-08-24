@@ -13,6 +13,8 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -223,6 +225,77 @@ public class SignRepository {
         return 0;
     }
 
+    /**
+     * 查询公开接口使用的签到数据。
+     *
+     * @param type daily 查询当天签到记录，overall 查询累计签到排行
+     */
+    public static PublicSignData queryPublicData(String type) {
+        if ("daily".equalsIgnoreCase(type)) {
+            return queryDailyPublicData();
+        }
+        if ("overall".equalsIgnoreCase(type)) {
+            return queryOverallPublicData();
+        }
+        throw new IllegalArgumentException("type 必须是 daily 或 overall");
+    }
+
+    private static PublicSignData queryDailyPublicData() {
+        LocalDate today = LocalDate.now();
+        List<DailySignRecord> records = new ArrayList<>();
+        String sql = "SELECT `user_open_id`, `check_in_time`, `check_in_date`, `coins` " +
+                "FROM `check_in_daily` WHERE `check_in_date` = ? ORDER BY `id`";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(today));
+            try (var rs = ps.executeQuery()) {
+                int rank = 0;
+                while (rs.next()) {
+                    rank++;
+                    Date checkInDate = rs.getDate("check_in_date");
+                    records.add(new DailySignRecord(
+                            rank,
+                            rs.getString("user_open_id"),
+                            rs.getLong("check_in_time"),
+                            checkInDate == null ? null : checkInDate.toLocalDate().toString(),
+                            rs.getInt("coins")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            log.error("查询公开每日签到数据失败", e);
+        }
+        return new PublicSignData("daily", today.toString(), records.size(), records);
+    }
+
+    private static PublicSignData queryOverallPublicData() {
+        List<OverallSignRecord> records = new ArrayList<>();
+        String sql = "SELECT `user_open_id`, `total_count`, `last_check_in_date` " +
+                "FROM `check_in_total` ORDER BY `total_count` DESC, `last_check_in_date` DESC, `user_open_id`";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql);
+             var rs = ps.executeQuery()) {
+            int rank = 0;
+            while (rs.next()) {
+                rank++;
+                int totalCount = rs.getInt("total_count");
+                String userOpenId = rs.getString("user_open_id");
+                Date lastCheckInDate = rs.getDate("last_check_in_date");
+                records.add(new OverallSignRecord(
+                        rank,
+                        userOpenId,
+                        totalCount,
+                        LootRepository.getCoins(userOpenId),
+                        lastCheckInDate == null ? null : lastCheckInDate.toLocalDate().toString()
+                ));
+            }
+        } catch (Exception e) {
+            log.error("查询公开累计签到数据失败", e);
+        }
+        return new PublicSignData("overall", null, records.size(), records);
+    }
+
     public static void exportAndClearDaily() {
         LocalDate today = LocalDate.now();
         String dateStr = today.format(DateTimeFormatter.ISO_LOCAL_DATE);
@@ -282,5 +355,16 @@ public class SignRepository {
     }
 
     public record CheckInResult(int rank, int totalCount, int coins, int totalCoins) {
+    }
+
+    public record PublicSignData(String type, String date, long totalCount, List<?> records) {
+    }
+
+    public record DailySignRecord(int rank, String userOpenId, long checkInTime,
+                                  String checkInDate, int coins) {
+    }
+
+    public record OverallSignRecord(int rank, String userOpenId, int totalCount,
+                                    int totalCoins, String lastCheckInDate) {
     }
 }

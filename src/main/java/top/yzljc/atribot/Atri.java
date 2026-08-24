@@ -310,6 +310,7 @@ public class Atri {
         CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
         CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
+        CommandManager.getCommand("bantrack").setExecutor(new BanTrackCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());

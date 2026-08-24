@@ -762,6 +762,70 @@ public class MySlashCommand implements SlashCommandExecutor {
 }
 ```
 
+#### 在 YAML 中声明参数（options）
+
+在 `src/main/resources/atribot.yml` 的命令节点下加 `options:` 数组，bot 启动时会自动转译为 Discord JSON 推送给 Discord（命令对应 `CommandOptionDefinition`）。`type` 直接用 Discord 官方编号：
+
+```yaml
+commands:
+  ban:
+    description: 封禁用户
+    options:
+      - name: user
+        type: 6              # USER
+        description: 被封禁的用户
+        required: true
+      - name: reason
+        type: 3              # STRING
+        description: 封禁原因
+      - name: duration
+        type: 4              # INTEGER
+        description: 封禁天数
+        min_value: 1
+        max_value: 365
+      - name: notify
+        type: 5              # BOOLEAN
+        description: 是否通知
+      - name: scope
+        type: 3
+        description: 范围
+        choices:
+          - name: 全服
+            value: global
+          - name: 仅本群
+            value: local
+```
+
+支持的字段：
+
+| 字段 | 适用 type | 说明 |
+|---|---|---|
+| `name` | 全部 | 必填，≤32 字符，匹配 Discord 命名规范（小写、数字、下划线、连字符） |
+| `type` | 全部 | 必填，Discord 官方编号 (1-11) |
+| `description` | 全部 | 缺省回退到 `name` |
+| `required` | leaf (3-11) | 仅叶子类型生效；写在 sub_command/sub_command_group 上会被忽略并 warn |
+| `choices` | STRING/INTEGER/NUMBER | 每个 choice 是 `{name, value}`，value 类型需与 option type 匹配；最多 25 个 |
+| `min_value` / `max_value` | INTEGER/NUMBER | 数值范围 |
+| `channel_types` | CHANNEL | Discord 频道类型编号数组 |
+| `options` | SUB_COMMAND/SUB_COMMAND_GROUP | 嵌套子命令，结构相同；嵌套层级最多 2 层（sub_command_group → sub_command → leaf） |
+
+Type 编号速查：1=SUB_COMMAND、2=SUB_COMMAND_GROUP、3=STRING、4=INTEGER、5=BOOLEAN、6=USER、7=CHANNEL、8=ROLE、9=MENTIONABLE、10=NUMBER、11=ATTACHMENT。
+
+运行时通过 `SlashCommandArguments` 取值（`getString` / `getInteger` / `getLong` / `getNumber` / `getBoolean`，或 `getOption(name)` 拿 `Option(name, type, value, raw)` 原始节点）：
+
+```java
+@Override
+public boolean onSlashCommand(DiscordCommandSender sender, Command command,
+                              String label, SlashCommandArguments args) {
+    String userId = args.getString("user");
+    Integer days = args.getInteger("duration");
+    Boolean notify = args.getBoolean("notify");
+    // ...
+    return true;
+}
+```
+
+
 ### CommandSender 常用方法
 
 `CommandSender` 是统一的发送者接口；按平台分别有 `NapcatCommandSender` / `QQCommandSender` / `QQGuildCommandSender` / `DiscordCommandSender` / `ConsoleCommandSender`，各自暴露平台特有的方法。共有的方法：
@@ -1145,6 +1209,7 @@ WebUI 使用会话 Cookie + Challenge/Nonce 机制（`WebUISessionManager`）。
 | `GET /c2c/messages/sent` | C2C 发送消息计数 |
 | `GET /dau` | DAU 和消息统计 |
 | `GET /series` | 时间序列聚合（消息量、DAU 等） |
+| `GET /sign?type=daily|overall` | 每日/累计签到数据 |
 | `GET /users/{userOpenId}` | 用户信息查询 |
 | `GET /groups/{groupOpenId}` | 群聊信息查询 |
 | `POST /ntuid` | 单条 / 批量 NTUID 查询（`SizeNtUid` 接入，20 QPM/IP 频控） |
@@ -1313,6 +1378,7 @@ src/main/java/top/yzljc/atribot/
 │   ├── Command.java              #   指令抽象类
 │   ├── CommandFeature.java       #   可绑定执行器的指令
 │   ├── CommandDefinition.java    #   YAML 解析后的定义
+│   ├── CommandOptionDefinition.java  #   Discord Slash 参数声明（YAML → Discord JSON）
 │   ├── CommandExecutor.java      #   普通指令执行器
 │   ├── SlashCommandExecutor.java #   Discord Slash 指令执行器
 │   ├── SlashCommandArguments.java

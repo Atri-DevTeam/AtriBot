@@ -5,12 +5,20 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.ConsoleCommandSender;
+import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.command.SlashCommandExecutor;
 
 import java.util.Map;
 
-public class GroupConfigInfo implements CommandExecutor {
+public class GroupConfigInfo implements CommandExecutor, SlashCommandExecutor {
     private static final Map<String, Boolean> registeredFeatures = GroupConfigManager.getRegisteredFeatures();
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+        return onCommand(sender, command, label, args == null ? new String[0] : args.toArray());
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

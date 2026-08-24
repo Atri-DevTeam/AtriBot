@@ -266,6 +266,7 @@ public class WebUIRouter {
         server.get(prefix + "/c2c/messages/sent", PublicQueryController::publicOfficialC2CSentMessages);
         server.get(prefix + "/dau", PublicQueryController::publicOfficialDau);
         server.get(prefix + "/series", PublicQueryController::publicOfficialSeries);
+        server.get(prefix + "/sign", PublicQueryController::publicOfficialSign);
         server.get(prefix + "/users/{userOpenId}", PublicQueryController::publicOfficialUserInfo);
         server.get(prefix + "/groups/{groupOpenId}", PublicQueryController::publicOfficialGroupInfo);
         server.before(prefix + "/ntuid", WebUIRouter::ntUidRateLimit);

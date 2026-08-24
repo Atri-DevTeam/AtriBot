@@ -5,6 +5,7 @@ import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
@@ -12,6 +13,7 @@ import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @Author YZ_Ljc_
@@ -75,12 +77,30 @@ public class QQSenderImpl implements QQCommandSender {
     @Override
     public String sendMessage(String text) {
         if (this.user.getPlatform().equals(Platform.OFFICIAL_GROUP)) {
-            return this.user.sendMessage(this.groupId, this.message.getMessageId(), text);
+            if (this.message.getMessageEventType().equals(EventType.OFFICIAL_GROUP_MESSAGE)) {
+                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, this.message.getRefIdx());
+            } else {
+                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text);
+            }
         } else {
             return this.user.sendMessage(this.message.getMessageId(), text);
         }
     }
 
+    @Override
+    public String sendMessage(String text, boolean ref) {
+        switch (this.user.getPlatform()) {
+            case OFFICIAL_GROUP -> {
+                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, this.message.getRefIdx());
+            }
+            case OFFICIAL_C2C -> {
+                return C2CChat.refMessage(this.user.getUserId(), this.message.getRefIdx(), text);
+            }
+        }
+        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(String text, boolean ref)");
+    }
+
+    @Override
     public String sendMessage(Markdown markdown) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
@@ -93,6 +113,7 @@ public class QQSenderImpl implements QQCommandSender {
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown)");
     }
 
+    @Override
     public String sendMessage(Markdown markdown, Object buttons) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
@@ -104,7 +125,8 @@ public class QQSenderImpl implements QQCommandSender {
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons)");
     }
-    
+
+    @Override
     public String sendMessage(Markdown markdown, boolean at) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
@@ -116,7 +138,8 @@ public class QQSenderImpl implements QQCommandSender {
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, boolean at)");
     }
-    
+
+    @Override
     public String sendMessage(Markdown markdown, Object buttons, boolean at) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
@@ -142,24 +165,23 @@ public class QQSenderImpl implements QQCommandSender {
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image)");
     }
 
+    @Override
     public String sendStreamTextMessage(List<String> textDeltas) {
-        switch (this.user.getPlatform()) {
-            case OFFICIAL_C2C -> {
-                return C2CChat.replyTextStreamDeltas(this.user.getUserId(), this.message.getMessageId(), textDeltas);
-            }
+        if (Objects.requireNonNull(this.user.getPlatform()) == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyTextStreamDeltas(this.user.getUserId(), this.message.getMessageId(), textDeltas);
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendStreamTextMessage(List<String> textDeltas)");
     }
 
+    @Override
     public String sendStreamMarkdownMessage(List<Markdown> markdownDeltas) {
-        switch (this.user.getPlatform()) {
-            case OFFICIAL_C2C -> {
-                return C2CChat.replyStreamDeltas(this.user.getUserId(), this.message.getMessageId(), markdownDeltas);
-            }
+        if (Objects.requireNonNull(this.user.getPlatform()) == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyStreamDeltas(this.user.getUserId(), this.message.getMessageId(), markdownDeltas);
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendStreamMarkdownMessage(List<Markdown> markdownDeltas)");
     }
 
+    @Override
     public boolean recall() {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
@@ -172,6 +194,7 @@ public class QQSenderImpl implements QQCommandSender {
         throw new UnsupportedPlatform(this.user.getPlatform(), "recall()");
     }
 
+    @Override
     public boolean recall(String messageId) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {

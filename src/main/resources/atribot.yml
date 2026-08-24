@@ -97,10 +97,19 @@ commands:
     description: Minecraft相关
     usage: "/mc <子命令> [参数]"
     aliases:
-      - bt
-      - bantracker
       - mcv
       - skbpack
+  bantrack:
+    description: Hypixel BanTracker
+    usage: "/bantrack [时间参数]"
+    aliases:
+      - bt
+      - bantracker
+    options:
+      - name: window
+        type: 3
+        description: 时间范围，单位为m/h/d/w/mo
+        required: false
   test:
     description: 测试命令
   feedback:
@@ -296,6 +305,11 @@ commands:
       - tz
       - 世界时间
       - 当前时间
+    options:
+      - name: zone
+        type: 3
+        description: 地区
+        required: false
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

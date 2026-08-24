@@ -1,17 +1,13 @@
 package top.yzljc.atribot.function.general;
 
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.function.official.BanTracker;
 import top.yzljc.atribot.function.official.minecraft.*;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
@@ -44,14 +40,9 @@ public class MinecraftCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender instanceof QQGuildCommandSender guildSender) {
-            if (label.equals("bt") || label.equals("bantracker")) {
-                return BanTracker.handle(guildSender, command, label, args);
-            } else if (label.equals("mcv") || (args.length > 0 &&
-                    (args[0].equalsIgnoreCase("version") || args[0].equalsIgnoreCase("ver")))) {
+            if (label.equals("mcv") || (args.length > 0 && (args[0].equalsIgnoreCase("version") || args[0].equalsIgnoreCase("ver")))) {
                 MinecraftVersionChecker.onCommand(guildSender);
-            } else if (label.equals("skbpack") || (args.length > 0 &&
-                    (args[0].equalsIgnoreCase("sr") || args[0].equalsIgnoreCase("skb") ||
-                            args[0].equalsIgnoreCase("skbresource")))) {
+            } else if (label.equals("skbpack") || (args.length > 0 && (args[0].equalsIgnoreCase("sr") || args[0].equalsIgnoreCase("skb") || args[0].equalsIgnoreCase("skbresource")))) {
                 return Atri.getInstance().getSkyblockResourcePackChecker()
                         .onCommand(guildSender, command, label, args);
             } else {
@@ -63,9 +54,6 @@ public class MinecraftCommand implements CommandExecutor {
         if (!(sender instanceof QQCommandSender qq)) return true;
 
         switch (label) {
-            case "bt", "bantracker" -> {
-                return BanTracker.handle(qq, command, label, args);
-            }
             case "mcv" -> {
                 MinecraftVersionChecker.onCommand(qq);
                 return true;
@@ -130,14 +118,14 @@ public class MinecraftCommand implements CommandExecutor {
                 String hexColorOnline = null;
                 MinecraftProfile onlineHeadPic = null;
                 if (d != null) {
-                    colorOnline =  MinecraftLocationBarColor.getPlayerRGBColor(d.uuid());
+                    colorOnline = MinecraftLocationBarColor.getPlayerRGBColor(d.uuid());
                     hexColorOnline = String.format("#%06X", colorOnline & 0xFFFFFF);
                     onlineHeadPic = FetchMinecraftProfile.getPlayerProfile(d.uuid().toString());
                 }
                 int colorOffline = MinecraftLocationBarColor.getPlayerRGBColor(uuidOffline);
                 String hexColorOffline = String.format("#%06X", colorOffline & 0xFFFFFF);
 
-                Markdown md = TC.md( ((onlineHeadPic != null && onlineHeadPic.avatarUrl() != null && onlineHeadPic.username() != null) ? Markdown.img("pic", onlineHeadPic.avatarUrl(), 16, 16) + onlineHeadPic.username() : "") + " **查询结果如下**\n\n" +
+                Markdown md = TC.md(((onlineHeadPic != null && onlineHeadPic.avatarUrl() != null && onlineHeadPic.username() != null) ? Markdown.img("pic", onlineHeadPic.avatarUrl(), 16, 16) + onlineHeadPic.username() : "") + " **查询结果如下**\n\n" +
                         "离线UUID: `" + uuidOffline + "`\n\n" +
                         "RGB颜色代码: `" + hexColorOffline + "`\n\n" +
                         "> 参考颜色: " + "$\\textcolor{" + hexColorOffline + "}{\\text{" + "▄" + "}}$\n\n" +

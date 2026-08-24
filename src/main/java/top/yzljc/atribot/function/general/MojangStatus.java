@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.general;
 
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
@@ -16,7 +17,7 @@ import java.util.Map;
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.overall
  */
-public class MojangStatus implements CommandExecutor {
+public class MojangStatus implements CommandExecutor, SlashCommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -53,6 +54,23 @@ public class MojangStatus implements CommandExecutor {
             default -> {
             }
         }
+        return true;
+    }
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+
+        sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
+        var data = PreImageGenerate.dump(ResourcesProperties.MOJANG_STATUS_API, Map.of());
+
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            sender.sendMessage("在查询Minecraft验证服务器服务状态时出现错误: " + errMsg);
+            return true;
+        }
+
+        sender.sendEmbed(new DiscordEmbed().image(data.url()));
+
         return true;
     }
 }

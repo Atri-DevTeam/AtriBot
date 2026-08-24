@@ -83,6 +83,20 @@ public final class GroupChat {
     }
 
     /**
+     * 引用回复群聊纯文本消息
+     *
+     * @param groupOpenId 群 openId
+     * @param msgId       被回复的消息 ID
+     * @param replyText   回复内容
+     * @param refIdx    被引用消息的索引 ID
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String groupOpenId, String msgId, String replyText, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, replyText, refIdx));
+    }
+
+    /**
      * 回复群聊 Markdown 消息并 @ 用户
      *
      * @param groupOpenId 群 openId

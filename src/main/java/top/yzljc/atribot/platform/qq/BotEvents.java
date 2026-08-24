@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.management.JoinRequestApproval;
 import top.yzljc.atribot.event.EventManager;
+import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.event.impl.FriendAddScene;
 import top.yzljc.atribot.event.impl.RequestSource;
@@ -69,7 +70,7 @@ public class BotEvents {
             }
 
             User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef);
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_GROUP_MESSAGE);
             OfficialGroupMessageCreateEvent event = new OfficialGroupMessageCreateEvent(sender, groupOpenId, msg, timestamp, isAtBot);
             EventManager.getInstance().callEvent(event);
 
@@ -94,7 +95,7 @@ public class BotEvents {
             String refIdx = extValue.substring(8);
 
             User sender = new User(Platform.OFFICIAL_C2C, isBot, unionOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, refIdx, attachment, ark, msgRef);
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_C2C_MESSAGE);
             OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
@@ -134,7 +135,7 @@ public class BotEvents {
             }
 
             User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef);
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_GROUP_AT_MESSAGE);
             OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(sender, msg, groupOpenId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {

@@ -8,6 +8,8 @@ import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.configuration.Config;
 
+import java.util.Objects;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName User
@@ -90,28 +92,32 @@ public class User {
     }
 
     @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, String messageId, String text, String refIdx) {
+        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
+            return GroupChat.replyMessage(groupId, messageId, text, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String refIdx)");
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, Markdown md) {
         return this.sendMessage(groupId, messageId, md, true);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, Markdown md, boolean at) {
-        switch (this.platform) {
-            case OFFICIAL_GROUP -> {
-                return at
-                        ? GroupChat.replyMessage(groupId, this.userId, messageId, md)
-                        : GroupChat.replyMessage(groupId, messageId, md);
-            }
+        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
+            return at
+                    ? GroupChat.replyMessage(groupId, this.userId, messageId, md)
+                    : GroupChat.replyMessage(groupId, messageId, md);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, Markdown md) {
-        switch (this.platform) {
-            case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, md);
-            }
+        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyMessage(this.userId, messageId, md);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md)");
     }
@@ -123,22 +129,18 @@ public class User {
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard, boolean at) {
-        switch (this.platform) {
-            case OFFICIAL_GROUP -> {
-                return at
-                        ? GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard)
-                        : GroupChat.replyMessage(groupId, messageId, md, keyboard);
-            }
+        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
+            return at
+                    ? GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard)
+                    : GroupChat.replyMessage(groupId, messageId, md, keyboard);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md, Object keyboard)");
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, Markdown md, Object keyboard) {
-        switch (this.platform) {
-            case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, md, keyboard);
-            }
+        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyMessage(this.userId, messageId, md, keyboard);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
     }

@@ -3,12 +3,7 @@ package top.yzljc.atribot.function.official;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.service.ai.AiService;
@@ -29,7 +24,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.function.official
  */
 @Slf4j
-public class TimezoneCommand implements CommandExecutor {
+public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
 
     /** 默认时区，北京时间 */
     private static final String DEFAULT_ZONE_ID = "Asia/Shanghai";
@@ -81,6 +76,34 @@ public class TimezoneCommand implements CommandExecutor {
             }
         });
 
+        return true;
+    }
+
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+        String query = args.getString("zone", "zh").trim();
+
+        ThreadManager.execute(() -> {
+            try {
+                ResolvedZone zone = resolveZone(query);
+                if (zone == null) {
+                    sender.sendMessage("亚托莉没能理解你输入的时区，请换个写法再试试～");
+                    return;
+                }
+
+                ZonedDateTime now = ZonedDateTime.now(zone.zoneId);
+                String text = "> **" + "目标地区时间" + "**\n" +
+                        "> 当前时间：" + now.format(DATE_FORMATTER) + "\n" +
+                        "> 时区偏移：UTC" + now.getOffset().getId();
+
+                sender.sendMessage(text);
+
+            } catch (Exception e) {
+                log.error("TimezoneCommand 执行失败, query='{}'", query, e);
+                sender.sendMessage(Identifier.HANDLER_ERROR);
+            }
+        });
         return true;
     }
 
