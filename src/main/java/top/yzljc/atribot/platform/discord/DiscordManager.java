@@ -25,12 +25,44 @@ public class DiscordManager {
 
     private static final String GATEWAY_QUERY = "v=10&encoding=json";
     private static final Set<Integer> FATAL_CLOSE_CODES = Set.of(4004, 4010, 4011, 4012, 4013, 4014);
+    private static final Set<Integer> NON_RESUMABLE_CLOSE_CODES = Set.of(1000, 1001, 4007, 4009);
+    private static final int GATEWAY_REFRESH_FAILURE_THRESHOLD = 3;
+
+    enum ConnectionMode {
+        IDENTIFY,
+        RESUME
+    }
+
+    @FunctionalInterface
+    interface ClientFactory {
+        DiscordWebSocketClient create(
+                URI uri,
+                DiscordManager manager,
+                String botToken,
+                int intents,
+                int shardId,
+                int shardCount
+        );
+    }
+
+    @FunctionalInterface
+    interface ReconnectScheduler {
+        void schedule(Runnable task, long delay, TimeUnit unit);
+    }
+
+    @FunctionalInterface
+    interface GatewayUrlProvider {
+        URI fetch() throws Exception;
+    }
 
     private final String apiBaseUrl;
     private final String botToken;
     private final int intents;
     private final int shardId;
     private final int shardCount;
+    private final ClientFactory clientFactory;
+    private final ReconnectScheduler reconnectScheduler;
+    private final GatewayUrlProvider gatewayUrlProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private volatile String applicationId;
@@ -41,32 +73,62 @@ public class DiscordManager {
     private volatile DiscordWebSocketClient webSocketClient;
     private volatile boolean stopping;
     private volatile boolean reconnectPending;
+    private volatile boolean gatewayReady;
+    private volatile ConnectionMode connectionMode = ConnectionMode.IDENTIFY;
     private int reconnectAttempts;
+    private int gatewayConnectionFailures;
 
     public DiscordManager(String apiBaseUrl, String botToken, int intents) {
         this(apiBaseUrl, botToken, intents, 0, 1);
     }
 
     public DiscordManager(String apiBaseUrl, String botToken, int intents, int shardId, int shardCount) {
+        this(
+                apiBaseUrl,
+                botToken,
+                intents,
+                shardId,
+                shardCount,
+                DiscordWebSocketClient::new,
+                ThreadManager::schedule,
+                null
+        );
+    }
+
+    DiscordManager(
+            String apiBaseUrl,
+            String botToken,
+            int intents,
+            int shardId,
+            int shardCount,
+            ClientFactory clientFactory,
+            ReconnectScheduler reconnectScheduler,
+            GatewayUrlProvider gatewayUrlProvider
+    ) {
         this.apiBaseUrl = apiBaseUrl;
         this.botToken = normalizeBotToken(botToken);
         this.intents = intents;
         this.shardId = shardId;
         this.shardCount = shardCount;
+        this.clientFactory = clientFactory;
+        this.reconnectScheduler = reconnectScheduler;
+        this.gatewayUrlProvider = gatewayUrlProvider;
     }
 
     public synchronized void start() throws Exception {
         stopping = false;
         reconnectPending = false;
         reconnectAttempts = 0;
+        gatewayConnectionFailures = 0;
+        gatewayReady = false;
         if (applicationId == null) {
             applicationId = fetchApplicationId();
         }
         registerSlashCommands();
         if (gatewayUrl == null) {
-            gatewayUrl = fetchGatewayUrl();
+            refreshGatewayUrl();
         }
-        connect(resolveGatewayUri(false));
+        connect(ConnectionMode.IDENTIFY);
     }
 
     public synchronized void stop() {
@@ -90,56 +152,68 @@ public class DiscordManager {
         return lastSequence;
     }
 
-    synchronized void onOpen() {
-        reconnectPending = false;
-        reconnectAttempts = 0;
+    synchronized boolean isCurrentClient(DiscordWebSocketClient source) {
+        return source != null && webSocketClient == source;
     }
 
-    synchronized void onHello(int heartbeatInterval) {
-        DiscordWebSocketClient client = webSocketClient;
-        if (client != null) {
-            client.startHeartbeat(heartbeatInterval);
+    synchronized void onOpen(DiscordWebSocketClient source) {
+        if (!isCurrentClient(source)) {
+            return;
         }
+        reconnectPending = false;
     }
 
-    synchronized void onDispatch(String eventType, JsonNode eventData, Integer sequence) {
+    synchronized void onHello(DiscordWebSocketClient source, int heartbeatInterval) {
+        if (!isCurrentClient(source)) {
+            return;
+        }
+        source.startHeartbeat(heartbeatInterval);
+    }
+
+    synchronized void onDispatch(DiscordWebSocketClient source, String eventType, JsonNode eventData, Integer sequence) {
+        if (!isCurrentClient(source)) {
+            return;
+        }
+
         if (sequence != null) {
             lastSequence = sequence;
         }
 
         if ("READY".equals(eventType)) {
             sessionId = eventData.path("session_id").asText(null);
+            resumeGatewayUrl = null;
             String resumeUrl = eventData.path("resume_gateway_url").asText(null);
             if (resumeUrl != null && !resumeUrl.isBlank()) {
                 resumeGatewayUrl = normalizeGatewayUri(URI.create(resumeUrl));
             }
+            markGatewayReady();
             log.info("Discord READY: session_id={}, resume_gateway_url={}", sessionId, resumeGatewayUrl);
             return;
         }
 
         if ("RESUMED".equals(eventType)) {
+            markGatewayReady();
             log.info("Discord session resumed successfully");
             return;
         }
     }
 
-    synchronized void onHeartbeatAck() {
-        DiscordWebSocketClient client = webSocketClient;
-        if (client != null) {
-            client.markHeartbeatAck();
+    synchronized void onReconnectRequested(DiscordWebSocketClient source) {
+        if (!isCurrentClient(source)) {
+            return;
         }
+        scheduleReconnect(canResume() ? ConnectionMode.RESUME : ConnectionMode.IDENTIFY, 1000L);
     }
 
-    synchronized void onReconnectRequested() {
-        scheduleReconnect(true, 1000L);
-    }
-
-    synchronized void onInvalidSession(boolean resumable) {
+    synchronized void onInvalidSession(DiscordWebSocketClient source, boolean resumable) {
+        if (!isCurrentClient(source)) {
+            return;
+        }
         if (!resumable) {
             clearSessionState();
         }
         long delay = resumable ? randomDelay(1000L, 5000L) : 0L;
-        scheduleReconnect(resumable, delay);
+        scheduleReconnect(resumable ? ConnectionMode.RESUME : ConnectionMode.IDENTIFY, delay);
     }
 
     synchronized void onClose(DiscordWebSocketClient source, int code, String reason, boolean remote) {
@@ -150,12 +224,14 @@ public class DiscordManager {
         // A previous connection can finish closing after a replacement has
         // already been installed. Its callback must not schedule a reconnect
         // that shuts down the replacement connection.
-        if (source != null && webSocketClient != source) {
+        if (!isCurrentClient(source)) {
             return;
         }
-        if (source != null) {
-            webSocketClient = null;
-        }
+
+        ConnectionMode closedMode = connectionMode;
+        boolean closedReadyConnection = gatewayReady;
+        webSocketClient = null;
+        gatewayReady = false;
 
         if (FATAL_CLOSE_CODES.contains(code)) {
             log.error("Discord gateway closed with fatal code={}, reason={}, remote={}", code, reason, remote);
@@ -163,16 +239,40 @@ public class DiscordManager {
             return;
         }
 
+        ConnectionMode nextMode;
+        if (NON_RESUMABLE_CLOSE_CODES.contains(code)) {
+            clearSessionState();
+            nextMode = ConnectionMode.IDENTIFY;
+            log.warn("Discord session cannot be resumed after close code={}, starting a new session", code);
+        } else if (closedMode == ConnectionMode.RESUME && !closedReadyConnection) {
+            clearSessionState();
+            nextMode = ConnectionMode.IDENTIFY;
+            log.warn(
+                    "Discord resume gateway failed before RESUMED: code={}, reason={}; falling back to the primary gateway",
+                    code,
+                    reason
+            );
+        } else if (canResume()) {
+            nextMode = ConnectionMode.RESUME;
+        } else {
+            if (!closedReadyConnection) {
+                gatewayConnectionFailures++;
+            }
+            nextMode = ConnectionMode.IDENTIFY;
+        }
+
         if (reconnectPending) {
             return;
         }
 
-        log.info("Discord gateway closed: code={}, reason={}, remote={}", code, reason, remote);
-        scheduleReconnect(canResume(), nextReconnectDelay());
-    }
-
-    synchronized void onClose(int code, String reason, boolean remote) {
-        onClose(null, code, reason, remote);
+        log.info(
+                "Discord gateway closed: code={}, reason={}, remote={}, next_mode={}",
+                code,
+                reason,
+                remote,
+                nextMode
+        );
+        scheduleReconnect(nextMode, nextReconnectDelay());
     }
 
     synchronized void onError(Exception ex) {
@@ -183,12 +283,15 @@ public class DiscordManager {
         return applicationId;
     }
 
-    private void connect(URI uri) {
+    private void connect(ConnectionMode mode) {
+        URI uri = resolveGatewayUri(mode);
         if (uri == null) {
             throw new IllegalStateException("Discord gateway URI is null");
         }
 
-        DiscordWebSocketClient client = new DiscordWebSocketClient(
+        connectionMode = mode;
+        gatewayReady = false;
+        DiscordWebSocketClient client = clientFactory.create(
                 uri,
                 this,
                 botToken,
@@ -197,10 +300,18 @@ public class DiscordManager {
                 shardCount
         );
         webSocketClient = client;
-        client.connect();
+        log.info("Connecting to Discord gateway: mode={}, uri={}", mode, uri);
+        try {
+            client.connect();
+        } catch (RuntimeException e) {
+            if (webSocketClient == client) {
+                webSocketClient = null;
+            }
+            throw e;
+        }
     }
 
-    private synchronized void reconnect(boolean resumePreferred) throws Exception {
+    synchronized void reconnect(ConnectionMode requestedMode) throws Exception {
         if (stopping) {
             return;
         }
@@ -209,16 +320,26 @@ public class DiscordManager {
         // must be allowed to enqueue the next one from onClose/catch below.
         reconnectPending = false;
 
+        ConnectionMode actualMode = requestedMode == ConnectionMode.RESUME && canResume()
+                ? ConnectionMode.RESUME
+                : ConnectionMode.IDENTIFY;
+        connectionMode = actualMode;
+
         if (webSocketClient != null) {
             webSocketClient.shutdown();
             webSocketClient = null;
         }
 
-        URI uri = resolveGatewayUri(resumePreferred);
-        connect(uri);
+        if (actualMode == ConnectionMode.IDENTIFY
+                && (gatewayUrl == null || gatewayConnectionFailures >= GATEWAY_REFRESH_FAILURE_THRESHOLD)) {
+            refreshGatewayUrl();
+            gatewayConnectionFailures = 0;
+        }
+
+        connect(actualMode);
     }
 
-    private synchronized void scheduleReconnect(boolean resumePreferred, long delayMs) {
+    private synchronized void scheduleReconnect(ConnectionMode requestedMode, long delayMs) {
         if (stopping) {
             return;
         }
@@ -227,22 +348,48 @@ public class DiscordManager {
         }
         reconnectPending = true;
 
-        ThreadManager.schedule(() -> {
+        reconnectScheduler.schedule(() -> {
             try {
-                reconnect(resumePreferred);
+                reconnect(requestedMode);
             } catch (Exception e) {
                 log.error("Discord reconnect failed", e);
+                ConnectionMode retryMode;
                 synchronized (DiscordManager.this) {
                     reconnectPending = false;
+                    gatewayReady = false;
+                    retryMode = connectionMode;
+                    if (retryMode == ConnectionMode.RESUME) {
+                        clearSessionState();
+                        retryMode = ConnectionMode.IDENTIFY;
+                        log.warn("Discord resume connection failed; falling back to the primary gateway");
+                    } else {
+                        gatewayConnectionFailures++;
+                    }
                 }
-                scheduleReconnect(resumePreferred, nextReconnectDelay());
+                scheduleReconnect(retryMode, nextReconnectDelay());
             }
         }, delayMs, TimeUnit.MILLISECONDS);
+    }
+
+    private void markGatewayReady() {
+        gatewayReady = true;
+        reconnectPending = false;
+        reconnectAttempts = 0;
+        gatewayConnectionFailures = 0;
     }
 
     private synchronized long nextReconnectDelay() {
         int exponent = Math.min(reconnectAttempts++, 5);
         return Math.min(30_000L, 1_000L << exponent);
+    }
+
+    private void refreshGatewayUrl() throws Exception {
+        gatewayUrl = gatewayUrlProvider == null ? fetchGatewayUrl() : gatewayUrlProvider.fetch();
+        if (gatewayUrl == null) {
+            throw new IllegalStateException("Discord gateway provider returned null");
+        }
+        gatewayUrl = normalizeGatewayUri(gatewayUrl);
+        log.info("Discord primary gateway refreshed: {}", gatewayUrl);
     }
 
     private void clearSessionState() {
@@ -469,8 +616,8 @@ public class DiscordManager {
         return node;
     }
 
-    private URI resolveGatewayUri(boolean resumePreferred) {
-        URI base = resumePreferred && resumeGatewayUrl != null ? resumeGatewayUrl : gatewayUrl;
+    private URI resolveGatewayUri(ConnectionMode mode) {
+        URI base = mode == ConnectionMode.RESUME && resumeGatewayUrl != null ? resumeGatewayUrl : gatewayUrl;
         if (base == null) {
             return null;
         }
