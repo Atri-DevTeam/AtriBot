@@ -27,6 +27,7 @@ import java.util.Map;
 public class DiscordWebSocketClient extends WebSocketClient {
 
     private static final int CONNECT_TIMEOUT_MS = 15_000;
+    static final int HEARTBEAT_TIMEOUT_CLOSE_CODE = 4000;
     private static final int DISCORD_HEARTBEAT = 1;
     private static final int DISCORD_IDENTIFY = 2;
     private static final int DISCORD_RESUME = 6;
@@ -61,12 +62,17 @@ public class DiscordWebSocketClient extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        manager.onOpen();
+        manager.onOpen(this);
         log.info("Discord gateway connected: {}", getURI());
     }
 
     @Override
     public void onMessage(String message) {
+        if (!manager.isCurrentClient(this)) {
+            log.debug("Ignoring Discord payload from stale gateway client: {}", getURI());
+            return;
+        }
+
         try {
             JsonNode payload = objectMapper.readTree(message);
             int op = payload.path("op").asInt(-1);
@@ -79,7 +85,7 @@ public class DiscordWebSocketClient extends WebSocketClient {
                 case DISCORD_HELLO -> {
                     int heartbeatInterval = payload.path("d").path("heartbeat_interval").asInt();
                     log.info("Discord HELLO received, heartbeat interval={}ms", heartbeatInterval);
-                    manager.onHello(heartbeatInterval);
+                    manager.onHello(this, heartbeatInterval);
                     if (manager.canResume()) {
                         sendResume();
                     } else {
@@ -88,8 +94,8 @@ public class DiscordWebSocketClient extends WebSocketClient {
                 }
                 case DISCORD_HEARTBEAT -> sendHeartbeat();
                 case DISCORD_HEARTBEAT_ACK -> heartbeatAcked = true;
-                case DISCORD_RECONNECT -> manager.onReconnectRequested();
-                case DISCORD_INVALID_SESSION -> manager.onInvalidSession(payload.path("d").asBoolean(false));
+                case DISCORD_RECONNECT -> manager.onReconnectRequested(this);
+                case DISCORD_INVALID_SESSION -> manager.onInvalidSession(this, payload.path("d").asBoolean(false));
                 case 0 -> handleDispatch(payload);
                 default -> log.debug("Discord gateway opcode {} ignored", op);
             }
@@ -142,8 +148,7 @@ public class DiscordWebSocketClient extends WebSocketClient {
                 try {
                     if (!heartbeatAcked) {
                         log.warn("Discord heartbeat ACK missing, disconnecting");
-                        manager.onReconnectRequested();
-                        close();
+                        handleHeartbeatTimeout();
                         return;
                     }
                     sendHeartbeat();
@@ -152,6 +157,15 @@ public class DiscordWebSocketClient extends WebSocketClient {
                 }
             }
         }, initialDelay, intervalMs);
+    }
+
+    void handleHeartbeatTimeout() {
+        if (heartbeatTimer != null) {
+            heartbeatTimer.cancel();
+            heartbeatTimer = null;
+        }
+        manager.onReconnectRequested(this);
+        close(HEARTBEAT_TIMEOUT_CLOSE_CODE, "Heartbeat ACK missing");
     }
 
     public void markHeartbeatAck() {
@@ -179,7 +193,7 @@ public class DiscordWebSocketClient extends WebSocketClient {
             handleInteractionCreate(eventData);
         }
 
-        manager.onDispatch(eventType, eventData, sequence);
+        manager.onDispatch(this, eventType, eventData, sequence);
     }
 
     private void handleMessageCreate(JsonNode eventData) {
