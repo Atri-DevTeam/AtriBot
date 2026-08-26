@@ -152,6 +152,9 @@ public final class ResourcesProperties {
     // @ClassName EarthOnline
     public static final String EARTH_ONLINE_API = UGC_API + "/v2/atrimeow/earth-online";
 
+    // @ClassName WeatherCommand
+    public static final String WEATHER_API = UGC_API + "/v2/atrimeow/weather";
+
     // @ClassName LootService
     public static final String LOOTS_API = UGC_API + "/v2/atrimeow/loots";
 
