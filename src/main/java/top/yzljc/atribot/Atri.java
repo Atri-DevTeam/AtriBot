@@ -27,10 +27,18 @@ import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.database.repo.EventLogRepository;
+import top.yzljc.atribot.function.command.*;
+import top.yzljc.atribot.function.minecraft.McVersionImpl;
+import top.yzljc.atribot.function.minecraft.PackVersion;
+import top.yzljc.atribot.function.minecraft.SkyblockPackCheckImpl;
+import top.yzljc.atribot.function.official.HypixelTNTWizardsCommand;
 import top.yzljc.atribot.function.official.pic.ImageSourceStatsCommand;
 import top.yzljc.atribot.function.official.pic.ImageSubmitCommand;
 import top.yzljc.atribot.function.official.loot.LootsCommand;
 import top.yzljc.atribot.function.official.minecraft.*;
+import top.yzljc.atribot.function.tasks.HypixelAnnouncements;
+import top.yzljc.atribot.function.tasks.MinecraftNews;
+import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.test.*;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
@@ -48,7 +56,6 @@ import top.yzljc.atribot.function.official.tufe.TufeCheckHelp;
 import top.yzljc.atribot.function.official.tufe.TufeElectricBind;
 import top.yzljc.atribot.function.official.tufe.TufeElectricQuery;
 import top.yzljc.atribot.function.task.*;
-import top.yzljc.atribot.function.task.Calendar;
 import top.yzljc.atribot.platform.napcat.RequestReceiver;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -102,7 +109,7 @@ public class Atri {
     @Getter
     private final Reboot reboot;
     @Getter
-    private final MinecraftVersionChecker minecraftVersionCheck;
+    private final McVersionImpl minecraftVersionCheck;
     @Getter
     private final MinecraftNews minecraftNews;
     @Getter
@@ -110,10 +117,12 @@ public class Atri {
     @Getter
     private final HypixelAlphaForums hypixelAlphaForums;
     @Getter
-    private final SkyblockResourcePackChecker skyblockResourcePackChecker;
+    private final SkyblockPackCheckImpl skyblockPackCheck;
     private final DiscordManager discordManager;
     @Getter
     private final ChannelCliClient tencentChannelCliClient;
+    @Getter
+    private final CalendarTask calendarTask;
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private final QQWebhookHandler qqWebhookHandler;
@@ -138,11 +147,11 @@ public class Atri {
         this.checkMojira = new MojiraStatus();
         this.cardLike = new CardLike();
         this.reboot = new Reboot();
-        this.minecraftVersionCheck = new MinecraftVersionChecker();
+        this.minecraftVersionCheck = new McVersionImpl();
         this.minecraftNews = new MinecraftNews();
         this.hypixelAnnouncements = new HypixelAnnouncements();
         this.hypixelAlphaForums = new HypixelAlphaForums();
-        this.skyblockResourcePackChecker = new SkyblockResourcePackChecker();
+        this.skyblockPackCheck = new SkyblockPackCheckImpl();
         this.tencentChannelCliClient = new ChannelCliClient(
                 config.isTencentChannelEnabled(),
                 config.getTencentChannelCliPath(),
@@ -150,6 +159,7 @@ public class Atri {
                 Duration.ofSeconds(config.getTencentChannelTimeoutSeconds()),
                 objectMapper
         );
+        this.calendarTask = new CalendarTask();
         this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
                 ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
                 : null;
@@ -212,7 +222,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new NotifyRecalled());
         EventManager.getInstance().registerEvents(new GroupModeManager());
         EventManager.getInstance().registerEvents(new AnnoyUser());
-        EventManager.getInstance().registerEvents(new HypixelReward());
+        EventManager.getInstance().registerEvents(new HypixelRewardCommand());
         EventManager.getInstance().registerEvents(new GroupContentRecord());
         EventManager.getInstance().registerEvents(new AtriChat());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
@@ -245,15 +255,15 @@ public class Atri {
         CommandManager.getCommand("recall").setExecutor(new RM());
         CommandManager.getCommand("rollback").setExecutor(new RollbackMessages());
         CommandManager.getCommand("gt").setExecutor(CucumberGirl.INSTANCE);
-        CommandManager.getCommand("mojang").setExecutor(new MojangStatus());
-        CommandManager.getCommand("cl").setExecutor(new HypixelReward());
+        CommandManager.getCommand("mojang").setExecutor(new McStatusCommand());
+        CommandManager.getCommand("cl").setExecutor(new HypixelRewardCommand());
         CommandManager.getCommand("check-mc").setExecutor(this.minecraftNews);
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(new AutoSign());
         CommandManager.getCommand("chat").setExecutor(new MessageStats());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
-        CommandManager.getCommand("calendar").setExecutor(new Calendar());
+//        CommandManager.getCommand("calendar").setExecutor(new Calendar());
         CommandManager.getCommand("check-mojira").setExecutor(this.checkMojira);
         CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
         CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
@@ -270,7 +280,7 @@ public class Atri {
         CommandManager.getCommand("feedback").setExecutor(new Feedback());
         CommandManager.getCommand("ogroup").setExecutor(new GroupCommand());
         CommandManager.getCommand("perm").setExecutor(new UserMgrCommand());
-        CommandManager.getCommand("today").setExecutor(new top.yzljc.atribot.function.general.Calendar());
+        CommandManager.getCommand("today").setExecutor(this.calendarTask);
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
@@ -307,10 +317,13 @@ public class Atri {
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
-        CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsStats());
+        CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsCommand());
         CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
         CommandManager.getCommand("bantrack").setExecutor(new BanTrackCommand());
+
+        CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
+        CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -361,22 +374,22 @@ public class Atri {
             GithubCommitNotify.register(server, webhookPath, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
-            GroupConfigManager.registerFeature("mc_news", false);
-            GroupConfigManager.registerFeature("hyp_news", false);
-            GroupConfigManager.registerFeature("hyp_alpha_news", false);
+//            GroupConfigManager.registerFeature("mc_news", false);
+//            GroupConfigManager.registerFeature("hyp_news", false);
+//            GroupConfigManager.registerFeature("hyp_alpha_news", false);
             GroupConfigManager.registerFeature("annoy_user", true);
             GroupConfigManager.registerFeature("new_year", true);
             GroupConfigManager.registerFeature("one_text", true);
             GroupConfigManager.registerFeature("repeat_msg", false);
             GroupConfigManager.registerFeature("send_poke", true);
             GroupConfigManager.registerFeature("like_user", false);
-            GroupConfigManager.registerFeature("mojang_status", true);
-            GroupConfigManager.registerFeature("hypixel_status", true);
+//            GroupConfigManager.registerFeature("mojang_status", true);
+//            GroupConfigManager.registerFeature("hypixel_status", true);
             GroupConfigManager.registerFeature("github_info", false);
             GroupConfigManager.registerFeature("bv_check", false);
             GroupConfigManager.registerFeature("mojira_tracker", false);
-            GroupConfigManager.registerFeature("broadcast", true);
-            GroupConfigManager.registerFeature("calendar", true);
+//            GroupConfigManager.registerFeature("broadcast", true);
+//            GroupConfigManager.registerFeature("calendar", true);
             GroupConfigManager.registerFeature("get_hypixel_reward", false);
             GroupConfigManager.registerFeature("atri_chat", false);
             GroupConfigManager.registerFeature("tufe_class_alert", false);
@@ -424,7 +437,7 @@ public class Atri {
         }
         MinecraftRemote.disconnect();
         qqBotManagerService.stop();
-        HypixelReward.shutdown();
+        HypixelRewardCommand.shutdown();
         RunScheduleTask.shutdown();
         if (imap != null) {
             imap.close();

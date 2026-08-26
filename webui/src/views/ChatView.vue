@@ -36,7 +36,10 @@
                   class="cnv" :class="{ active: isActive(c), pinned: isPinned(c) }"
                   @click="selectConv(c)">
             <span class="cnv-avatar" :style="c.type === 'group' ? groupTileStyle(c.openId) : null">
-              <template v-if="c.type === 'c2c'">
+              <img v-if="c.type === 'group' && groupAvatarUrls[c.openId]"
+                   :src="groupAvatarUrls[c.openId]" :alt="convName(c)"
+                   class="cnv-group-avatar" />
+              <template v-else-if="c.type === 'c2c'">
                 <span>{{ convAvatarText(c) }}</span>
                 <img v-if="userAvatarUrl(c.openId) && !avatarFailed['cnv-' + c.openId]"
                      :src="userAvatarUrl(c.openId)" :alt="convName(c)"
@@ -634,6 +637,7 @@ import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import { hasArkMessage } from '../lib/ark.js'
 import { parseForwardContent } from '../lib/forward.js'
 import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
+import GroupAvatarRenderer from '../lib/GroupAvatarRenderer.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
 import ForwardMessageCard from '../components/ForwardMessageCard.vue'
@@ -646,6 +650,12 @@ const atriImg = import.meta.env.BASE_URL + 'img/atri-main.png'
 const appId = ref('')
 const botOpenId = ref('')
 const botName = ref('AtriBot')
+const groupAvatarUrls = reactive({})
+
+const groupAvatarRenderer = new GroupAvatarRenderer({
+  loadMembers: groupOpenId => api(`/groups/${encodeURIComponent(groupOpenId)}/members`),
+  avatarUrl: memberOpenId => userAvatarUrl(memberOpenId)
+})
 
 const conversations = ref([])
 const pinnedKeys = ref([])
@@ -764,6 +774,24 @@ const filteredConvs = computed(() => {
   return [...list].sort((a, b) => (isPinned(b) ? 1 : 0) - (isPinned(a) ? 1 : 0))
 })
 
+function queueGroupAvatars(list) {
+  for (const conversation of list) {
+    if (conversation.type !== 'group' || groupAvatarUrls[conversation.openId]) continue
+    groupAvatarRenderer.enqueue(conversation.openId).then(url => {
+      if (!url) return
+      const stillPresent = conversations.value.some(c => c.type === 'group' && c.openId === conversation.openId)
+      if (stillPresent) groupAvatarUrls[conversation.openId] = url
+    })
+  }
+}
+
+// Queue only after the list changes; the renderer itself limits network work.
+watch(
+  () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)],
+  () => queueGroupAvatars(filteredConvs.value),
+  { immediate: true }
+)
+
 // 已加载的「非置顶」会话数：置顶会话由后端单独前置、不计入分页偏移，翻页 offset 只按它算
 const nonPinnedLoadedCount = computed(() =>
   conversations.value.filter(c => !isPinned(c)).length
@@ -832,6 +860,7 @@ onBeforeUnmount(() => {
   if (noticeTimer) clearTimeout(noticeTimer)
   stopComposerResize()
   stopListResize()
+  groupAvatarRenderer.dispose()
 })
 
 function onDocumentClick(e) {

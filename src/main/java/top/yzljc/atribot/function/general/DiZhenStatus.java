@@ -14,7 +14,7 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
@@ -45,7 +45,7 @@ public class DiZhenStatus implements ScheduledTask, CommandExecutor {
 
     @Override
     public TaskSchedule schedule() {
-        return new DefaultTaskSchedule().setMode(ScheduleMode.a_quarter);
+        return new TaskPlan().setMode(ScheduleMode.a_quarter);
     }
 
     @Override

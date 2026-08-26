@@ -12,7 +12,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.general.MinecraftNews;
+import top.yzljc.atribot.function.tasks.MinecraftNews;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;

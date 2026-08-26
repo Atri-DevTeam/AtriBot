@@ -319,24 +319,19 @@ public class Feedback implements CommandExecutor, Listener {
     }
 
     private static String buildReplyMessage(FeedbackDTO feedback, boolean markdown) {
-        String title = markdown ? "**你的反馈已被受理**" : "你的反馈已被受理";
-        String sep = markdown ? "---\n" : "————————————\n";
-
         StringBuilder sb = new StringBuilder();
-        sb.append(title).append("\n");
-        sb.append("反馈编号: ").append(feedback.getId(), 0, 8).append("\n");
-        sb.append("时间: ").append(formatTime(feedback.getCreateTime())).append("\n");
+        sb.append("**您的反馈已被受理**").append("\n\n");
+        sb.append("> 反馈编号: ").append(feedback.getId(), 0, 8).append("\n");
+        sb.append("> 时间: ").append(formatTime(feedback.getCreateTime())).append("\n");
 
         if (feedback.isHidden()) {
-            sb.append("反馈内容：已被隐藏\n");
+            sb.append("> 反馈内容：已被隐藏\n");
         } else {
-            sb.append("反馈内容：").append(feedback.getSubmitContent()).append("\n");
+            sb.append("> 反馈内容：").append(feedback.getSubmitContent()).append("\n");
         }
 
-        sb.append(sep);
-        sb.append("回复时间: ").append(formatTime(feedback.getReplyTime())).append("\n");
-        sb.append("回复内容: ").append(feedback.getReplyContent()).append("\n");
-        sb.append(sep);
+        sb.append("> 回复时间: ").append(formatTime(feedback.getReplyTime())).append("\n");
+        sb.append("> 回复内容: ").append(feedback.getReplyContent()).append("\n\n");
         sb.append("如有任何问题欢迎继续联系我们！");
 
         return sb.toString();

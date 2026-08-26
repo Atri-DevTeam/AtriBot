@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.general;
 
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.function.official.BanTracker;
-import top.yzljc.atribot.function.official.minecraft.*;
+import top.yzljc.atribot.function.minecraft.DiceImpl;
+import top.yzljc.atribot.function.minecraft.McPackMetaImpl;
+import top.yzljc.atribot.function.official.minecraft.McCapesImpl;
+import top.yzljc.atribot.function.minecraft.McLocationBarColorImpl;
+import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 import top.yzljc.atribot.utils.tools.MinecraftProfile;
 
@@ -23,6 +23,7 @@ import java.util.UUID;
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.official
  */
+@Deprecated(since = "3.2.2")
 public class MinecraftCommand implements CommandExecutor {
 
     private static final Markdown ValidCommands = TC.md(
@@ -41,10 +42,7 @@ public class MinecraftCommand implements CommandExecutor {
 
         if (sender instanceof QQGuildCommandSender guildSender) {
             if (label.equals("mcv") || (args.length > 0 && (args[0].equalsIgnoreCase("version") || args[0].equalsIgnoreCase("ver")))) {
-                MinecraftVersionChecker.onCommand(guildSender);
-            } else if (label.equals("skbpack") || (args.length > 0 && (args[0].equalsIgnoreCase("sr") || args[0].equalsIgnoreCase("skb") || args[0].equalsIgnoreCase("skbresource")))) {
-                return Atri.getInstance().getSkyblockResourcePackChecker()
-                        .onCommand(guildSender, command, label, args);
+                McVersionImpl.onCommand(guildSender);
             } else {
                 guildSender.sendMessage("QQ频道当前支持 /mc ver、/mc sr 和 /bantracker 查询");
             }
@@ -55,11 +53,8 @@ public class MinecraftCommand implements CommandExecutor {
 
         switch (label) {
             case "mcv" -> {
-                MinecraftVersionChecker.onCommand(qq);
+                McVersionImpl.onCommand(qq);
                 return true;
-            }
-            case "skbpack" -> {
-                return Atri.getInstance().getSkyblockResourcePackChecker().onCommand(qq, command, label, args);
             }
         }
 
@@ -77,18 +72,19 @@ public class MinecraftCommand implements CommandExecutor {
 
         switch (subCommand) {
             case "version", "ver" -> {
-                MinecraftVersionChecker.onCommand(qq);
+                McVersionImpl.onCommand(qq);
                 return true;
             }
             case "capes", "cape" -> {
-                return MinecraftCapes.handleCapesCommand(qq);
+                return McCapesImpl.handleCapesCommand(qq);
             }
-            case "pack" -> {
-                PackMcmetaGenerator.handle(qq, args);
-                return true;
-            }
+//            case "pack" -> {
+//                McPackMetaImpl.handle(qq, args);
+//                return true;
+//            }
             case "sr", "skb", "skbresource" -> {
-                return Atri.getInstance().getSkyblockResourcePackChecker().onCommand(qq, command, label, args);
+                qq.sendMessage("该指令已调整，请使用 /hyp pack 完成查询。");
+                return true;
             }
             case "lb" -> {
                 if (args.length < 2) {
@@ -118,11 +114,11 @@ public class MinecraftCommand implements CommandExecutor {
                 String hexColorOnline = null;
                 MinecraftProfile onlineHeadPic = null;
                 if (d != null) {
-                    colorOnline = MinecraftLocationBarColor.getPlayerRGBColor(d.uuid());
+                    colorOnline = McLocationBarColorImpl.getPlayerRGBColor(d.uuid());
                     hexColorOnline = String.format("#%06X", colorOnline & 0xFFFFFF);
                     onlineHeadPic = FetchMinecraftProfile.getPlayerProfile(d.uuid().toString());
                 }
-                int colorOffline = MinecraftLocationBarColor.getPlayerRGBColor(uuidOffline);
+                int colorOffline = McLocationBarColorImpl.getPlayerRGBColor(uuidOffline);
                 String hexColorOffline = String.format("#%06X", colorOffline & 0xFFFFFF);
 
                 Markdown md = TC.md(((onlineHeadPic != null && onlineHeadPic.avatarUrl() != null && onlineHeadPic.username() != null) ? Markdown.img("pic", onlineHeadPic.avatarUrl(), 16, 16) + onlineHeadPic.username() : "") + " **查询结果如下**\n\n" +

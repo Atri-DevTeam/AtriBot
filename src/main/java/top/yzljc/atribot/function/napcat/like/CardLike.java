@@ -18,7 +18,7 @@ import top.yzljc.atribot.platform.napcat.PostRequest;
 import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
@@ -84,7 +84,7 @@ public final class CardLike implements Listener, ScheduledTask {
 
     @Override
     public TaskSchedule schedule() {
-        return new DefaultTaskSchedule().setMode(ScheduleMode.daily).setTime(LocalTime.of(0, 3, 0));
+        return new TaskPlan().setMode(ScheduleMode.daily).setTime(LocalTime.of(0, 3, 0));
     }
 
     @Override

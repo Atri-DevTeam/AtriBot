@@ -18,7 +18,7 @@ import top.yzljc.atribot.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
@@ -68,7 +68,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
 
     @Override
     public TaskSchedule schedule() {
-        return new DefaultTaskSchedule().setMode(ScheduleMode.half_hour);
+        return new TaskPlan().setMode(ScheduleMode.half_hour);
     }
 
     @Override

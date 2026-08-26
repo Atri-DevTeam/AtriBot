@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.service.taskscheduler.DefaultTaskSchedule;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
@@ -52,7 +52,7 @@ public class Reboot implements CommandExecutor, ScheduledTask {
 
     @Override
     public TaskSchedule schedule() {
-        return new DefaultTaskSchedule().setMode(ScheduleMode.daily).setTime(LocalTime.of(5, 20, 0));
+        return new TaskPlan().setMode(ScheduleMode.daily).setTime(LocalTime.of(5, 20, 0));
     }
 
     @Override

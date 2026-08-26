@@ -9,19 +9,18 @@ import top.yzljc.atribot.command.QQCommandSender;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName HypixelZombies
- * @Created_at 2026/08/19
+ * @ClassName HypixelTNTWizardsStats
+ * @Created_at 2026/08/15
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official
  */
 @Deprecated(since = "3.2.2")
-public class HypixelZombies implements CommandExecutor {
+public class HypixelTNTWizardsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender instanceof QQCommandSender user) {
-
-            user.sendMessage(TC.md("> 该指令已弃用，请使用二级指令 " + Markdown.enterCommand("/hyp zs", "/hyp zs") + "查询！"));
+            user.sendMessage(TC.md("> 该指令已弃用，请使用二级指令 " + Markdown.enterCommand("/hyp wz", "/hyp wz") + "查询！"));
             return true;
 
 //            String player;
@@ -37,7 +36,7 @@ public class HypixelZombies implements CommandExecutor {
 //            }
 //            String msgId = user.sendMessage("正在查询相关数据，请稍等片刻...");
 //
-//            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_ZOMBIES_API, Map.of("player", player));
+//            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player));
 //            user.recall(msgId);
 //
 //            if (!d.isError()) {

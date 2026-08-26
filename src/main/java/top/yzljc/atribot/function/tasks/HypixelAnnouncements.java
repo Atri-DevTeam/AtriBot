@@ -1,7 +1,8 @@
-package top.yzljc.atribot.function.general;
+package top.yzljc.atribot.function.tasks;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,20 +15,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -55,40 +48,40 @@ import java.util.regex.Pattern;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName HypixelAlphaForums
- * @Created_at 2026/07/27
+ * @ClassName HypixelAnnouncements
+ * @Created_at 2026/06/18
  * @Project AtriMeow
- * @Package top.yzljc.atribot.function.official.minecraft
+ * @Package top.yzljc.atribot.function.general
  */
 @Slf4j
-public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask {
+public final class HypixelAnnouncements implements CommandExecutor, ScheduledTask {
 
-    private static final String HYPIXEL_ALPHA_FORUMS_URL = "https://hypixel.net/skyblock-alpha/index.rss";
-    private record FeedConfig(String url, String label) {}
+    private static final String HYPIXEL_ANNOUNCEMENT_URL = "https://hypixel.net/forums/news-and-announcements.4/index.rss";
+    private static final String HYPIXEL_SKYBLOCK_PATCH_NOTES_URL = "https://hypixel.net/forums/skyblock-patch-notes.158/index.rss";
+
+    private record FeedConfig(String url, String label) {
+    }
+
     private static final List<FeedConfig> FEEDS = List.of(
-            new FeedConfig(HYPIXEL_ALPHA_FORUMS_URL, "Hypixel Alpha")
+            new FeedConfig(HYPIXEL_ANNOUNCEMENT_URL, "Hypixel"),
+            new FeedConfig(HYPIXEL_SKYBLOCK_PATCH_NOTES_URL, "Hypixel Skyblock")
     );
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final String HISTORY_FILE = Properties.HYPIXEL_ALPHA_FORUMS;
+    private static final String HISTORY_FILE = Properties.HYPIXEL_ANNOUNCEMENTS;
     private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     private static final DateTimeFormatter PUBLISH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int INTRO_MAX_LENGTH = 100;
     private static final int MAX_PUSH_PER_RUN = 3;
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
     private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
-    private static final Set<String> OFFICIAL_CREATORS = Set.of(
-            "Hypixel Team",
-            "MotorGorilla",
-            "ConnorLinfoot"
-    );
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (!(sender instanceof QQCommandSender) && !((sender instanceof ConsoleCommandSender))) return true;
 
         boolean result = feedAnnouncements();
         if (!result) {
-            qq.sendMessage("暂无新的 Hypixel Alpha公告");
+            sender.sendMessage("暂无新的 Hypixel 公告");
             return true;
         }
 
@@ -97,7 +90,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
     @Override
     public TaskSchedule schedule() {
-        return new TaskPlan().setMode(ScheduleMode.half_hour);
+        return new TaskPlan().setMode(ScheduleMode.hourly);
     }
 
     @Override
@@ -127,15 +120,15 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 
-            String text = headerText + "！\n" +
-                    "标题: " + a.title() + "\n" +
-                    "作者: " + a.author() + "\n" +
-                    "时间: " + a.publishTime() + "\n" +
-                    "链接: " + a.link() + "\n" +
-                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
+//            String text = headerText + "！\n" +
+//                    "标题: " + a.title() + "\n" +
+//                    "作者: " + a.author() + "\n" +
+//                    "时间: " + a.publishTime() + "\n" +
+//                    "链接: " + a.link() + "\n" +
+//                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
 
-            var glist = OfficialGroups.enabledGroups("hyp_alpha_news");
-            var ulist = OfficialUsers.enabledUsers("hyp_alpha_news");
+            var glist = OfficialGroups.enabledGroups("hyp_news");
+            var ulist = OfficialUsers.enabledUsers("hyp_news");
             for (String gid : glist) {
                 GroupChat.sendMessage(gid, md);
             }
@@ -143,15 +136,15 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                 C2CChat.sendMessage(uid, md);
             }
 
-            Set<String> gids = GroupInformation.fetchAllGroupIds();
-            for (String gid : gids) {
-                if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_alpha_news")) continue;
-                if (banner != null) {
-                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
-                } else {
-                    GroupMessage.chatMessage(gid, text);
-                }
-            }
+//            Set<String> gids = GroupInformation.fetchAllGroupIds();
+//            for (String gid : gids) {
+//                if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_news")) continue;
+//                if (banner != null) {
+//                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
+//                } else {
+//                    GroupMessage.chatMessage(gid, text);
+//                }
+//            }
 
             Markdown forumsMarkdown = TC.md(
                     "**" + headerText + "**\n\n" +
@@ -162,7 +155,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 
-            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), a.title(), forumsMarkdown);
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_NEWS.getChannelId(), a.title(), forumsMarkdown);
 //            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), text.trim());
 //            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), md);
         }
@@ -210,7 +203,9 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             }
 
             Document rssDoc = Jsoup.parse(rssXml, "", Parser.xmlParser());
+
             List<Element> items = rssDoc.select("rss > channel > item");
+
             if (items.isEmpty()) {
                 items = rssDoc.select("channel > item");
             }
@@ -224,11 +219,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                 Announcement announcement = parseAnnouncementItem(item, source);
 
                 if (announcement == null) {
-                    continue;
-                }
-
-                if (!isOfficialCreator(announcement.creator())) {
-//                    log.info("Ignored Hypixel Alpha forum thread from non-official creator: {}", announcement.creator());
                     continue;
                 }
 
@@ -254,7 +244,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         String link = directChildText(item, "link");
         String guid = directChildText(item, "guid");
         String pubDate = directChildText(item, "pubDate");
-        String creator = directChildText(item, "dc:creator");
 
         if (title.isBlank() && link.isBlank()) {
             return null;
@@ -266,12 +255,19 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         }
 
         String author = extractAuthor(directChildText(item, "author"));
-        if ("Unknown".equals(author) && !creator.isBlank()) {
-            author = creator;
+
+        if ("Unknown".equals(author)) {
+            String creator = directChildText(item, "dc:creator");
+
+            if (!creator.isBlank()) {
+                author = creator;
+            }
         }
 
         String publishTime = formatRssTime(pubDate);
+
         String contentEncoded = directChildText(item, "content:encoded");
+
         String headerImage = null;
         String intro = "";
 
@@ -281,12 +277,14 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             intro = parsedContent.intro();
         }
 
-        return new Announcement(title, author, publishTime, link, guid, headerImage, intro, source, creator);
+        return new Announcement(title, author, publishTime, link, guid, headerImage, intro, source);
     }
 
     private static ParsedContent parseContentEncoded(String contentEncoded) {
         Document contentDoc = Jsoup.parse(contentEncoded);
+
         String headerImage = null;
+
         Element img = contentDoc.selectFirst("img[src]:not([src^=data:])");
 
         if (img != null) {
@@ -322,6 +320,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         }
 
         List<Announcement> newOnes = new ArrayList<>();
+
         for (Announcement announcement : latest) {
             if (!storedGuids.contains(announcement.guid())) {
                 newOnes.add(announcement);
@@ -332,7 +331,9 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             for (Announcement announcement : newOnes) {
                 storedGuids.add(announcement.guid());
             }
+
             saveGuids(storedGuids);
+
             log.info("{} new Hypixel announcement(s) detected and saved", newOnes.size());
         }
 
@@ -353,6 +354,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
         try {
             List<String> guidList = objectMapper.readValue(file, new TypeReference<>() {});
+
             return new HashSet<>(guidList);
 
         } catch (IOException e) {
@@ -369,6 +371,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                 guids.add(announcement.guid());
             }
         }
+
         saveGuids(guids);
     }
 
@@ -384,8 +387,11 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
             List<String> sorted = new ArrayList<>(guids);
             sorted.sort(String::compareTo);
+
             File tempFile = new File(file.getAbsolutePath() + ".tmp");
+
             objectMapper.writeValue(tempFile, sorted);
+
             Files.move(tempFile.toPath(),
                     file.toPath(),
                     StandardCopyOption.REPLACE_EXISTING,
@@ -396,6 +402,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             try {
                 List<String> sorted = new ArrayList<>(guids);
                 sorted.sort(String::compareTo);
+
                 objectMapper.writeValue(file, sorted);
             } catch (IOException e) {
                 log.error("Failed to save Hypixel announcement guids to {}", HISTORY_FILE, e);
@@ -412,11 +419,8 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         if (matcher.find()) {
             return matcher.group(1);
         }
-        return guid.trim();
-    }
 
-    private static boolean isOfficialCreator(String creator) {
-        return creator != null && OFFICIAL_CREATORS.contains(creator.trim());
+        return guid.trim();
     }
 
     private static String extractAuthor(String author) {
@@ -429,13 +433,16 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         if (author.contains("(") && author.contains(")")) {
             int start = author.indexOf('(') + 1;
             int end = author.lastIndexOf(')');
+
             if (start < end) {
                 String extracted = author.substring(start, end).trim();
+
                 if (!extracted.isBlank()) {
                     return extracted;
                 }
             }
         }
+
         return author;
     }
 
@@ -448,7 +455,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             ZonedDateTime zdt = ZonedDateTime.parse(pubDate.trim(), DateTimeFormatter.RFC_1123_DATE_TIME);
             return PUBLISH_FORMATTER.format(zdt);
         } catch (Exception e) {
-            log.error("Failed to parse RSS pubDate: {}", pubDate, e);
+            log.debug("Failed to parse RSS pubDate: {}", pubDate, e);
             return pubDate;
         }
     }
@@ -562,8 +569,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
      * @param guid        RSS 唯一标识
      * @param headerImage 头图
      * @param intro       简介
-     * @param source      来源（如 Hypixel Alpha）
-     * @param creator     RSS dc:creator
+     * @param source      来源（如 Hypixel、Hypixel Skyblock）
      */
     public record Announcement(
             String title,
@@ -573,8 +579,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             String guid,
             String headerImage,
             String intro,
-            String source,
-            String creator
+            String source
     ) {
     }
 }

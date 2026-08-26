@@ -12,6 +12,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.function.command.CalendarTask;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Deprecated(since = "3.2.2")
 public class Calendar implements CommandExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(Calendar.class);
@@ -54,9 +56,8 @@ public class Calendar implements CommandExecutor {
         }
     }
 
-    @Schedule(time = "06:00:00", type = ScheduleType.DAILY)
     public static void sendToAllGroups() {
-        top.yzljc.atribot.function.general.Calendar.sendCalendar();
+//        CalendarTask.sendCalendar();
         ThreadManager.execute(() -> {
             if (!calendarPushInProgress.compareAndSet(false, true)) {
                 log.warn("日历推送已在进行中，触发重复推送保护");

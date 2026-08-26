@@ -310,6 +310,19 @@ commands:
         type: 3
         description: 地区
         required: false
+
+  hyp:
+    description: Hypixel查询二级指令
+    usage: /hyp <子命令> [参数]
+    aliases:
+      - hypixel
+  mctool:
+    description: Mc工具二级指令
+    usage: /mctool <子命令> [参数]
+    aliases:
+      - mctools
+      - minecrafttool
+      - minecrafttools
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

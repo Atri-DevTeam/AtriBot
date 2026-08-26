@@ -121,11 +121,11 @@ public class HelpCommand implements CommandExecutor {
             return true;
         }
 
-        if (sender instanceof NapcatCommandSender nc) {
-            GroupMessage.forwardMessage(nc.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
-                    "项目开发说明", "指令帮助", "功能介绍");
-            return true;
-        }
+//        if (sender instanceof NapcatCommandSender nc) {
+//            GroupMessage.forwardMessage(nc.getGroupId(), getAtriHelp(), "ATRI - YZ_Ljc_ Bot 帮助文档", "查看项目帮助信息",
+//                    "项目开发说明", "指令帮助", "功能介绍");
+//            return true;
+//        }
         return true;
     }
 

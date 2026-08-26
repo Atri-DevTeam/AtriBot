@@ -13,6 +13,7 @@ import top.yzljc.atribot.utils.FormatTools;
 
 import java.util.Set;
 
+@Deprecated(since = "3.2.2")
 public class Broadcast implements CommandExecutor {
     private static final Set<String> groupList = GroupInformation.fetchAllGroupIds();
     private static final String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();

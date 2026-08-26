@@ -17,6 +17,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.general
  */
+@Deprecated(since = "3.2.2")
 public class HypixelStatus implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

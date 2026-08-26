@@ -144,7 +144,7 @@ public final class ResourcesProperties {
     public static final String PACK_VERSION_API = US_API + "/mcmeta/versions/data.json";
 
     // @ClassName SkyblockResourceChecker
-    public static final String SKB_VERSION_IMG_API = UGC_API + "/v2/atrimeow/skyblock-resource-pack";
+    public static final String SKB_PACK_VERSION_API = UGC_API + "/v2/atrimeow/skyblock-resource-pack";
 
     // @ClassName Hitokoto
     public static final String HITOKOTO_API = UGC_API + "/v2/atrimeow/hitokoto";
