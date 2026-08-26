@@ -284,6 +284,29 @@
   gap: 6px;
 }
 
+.mp-transfer-actions {
+  gap: 8px;
+}
+
+.mp-transfer-actions .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 760px) {
+  .mp-transfer-actions .ghost-button {
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .mp-transfer-label {
+    display: none;
+  }
+}
+
 .mp-panel-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

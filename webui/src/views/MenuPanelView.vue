@@ -24,6 +24,17 @@
             <button :class="{ active: tab === 'panel' }" @click="switchTab('panel')">指令面板</button>
           </div>
         </div>
+        <div class="topbar-right mp-transfer-actions">
+          <input ref="transferFileInput" type="file" accept="application/json,.json" hidden @change="importTransferFile"/>
+          <button class="ghost-button" title="导入 JSON" aria-label="导入 JSON" :disabled="transferBusy" @click="transferFileInput?.click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+            <span class="mp-transfer-label">导入 JSON</span>
+          </button>
+          <button class="ghost-button" title="导出 JSON" aria-label="导出 JSON" :disabled="transferBusy" @click="exportTransferFile">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+            <span class="mp-transfer-label">{{ transferBusy ? '处理中...' : '导出 JSON' }}</span>
+          </button>
+        </div>
       </header>
 
       <section class="content feedback-layout">
@@ -432,6 +443,7 @@ import {ref, reactive, computed, watch, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import {createTransferDocument, parseTransferDocument} from '../lib/menuPanelTransfer.js'
 
 const router = useRouter()
 
@@ -441,6 +453,8 @@ const botOpenId = ref('')
 const sidebarOpen = ref(false)
 
 const tab = ref('menu')
+const transferBusy = ref(false)
+const transferFileInput = ref(null)
 
 // ============ 自定义菜单 ============
 const menuLoading = ref(false)
@@ -519,6 +533,163 @@ function switchTab(name) {
   tab.value = name
   if (name === 'panel' && panels.value.length === 0 && !panelLoading.value) {
     loadPanels(true)
+  }
+}
+
+async function fetchAllPanels() {
+  const result = []
+  for (const scope of PANEL_SCOPES) {
+    let cursor = ''
+    const seenCursors = new Set()
+    do {
+      const query = new URLSearchParams({scope, limit: '50'})
+      if (cursor) query.set('cursor', cursor)
+      const page = await api(`/panels?${query}`)
+      result.push(...(page?.records || []))
+      if (result.length > 200) throw new Error('面板数量超过 200，导出已停止')
+      const nextCursor = page?.nextCursor || ''
+      if (!nextCursor || page?.isEnd) break
+      if (seenCursors.has(nextCursor)) throw new Error(`${scope} 面板分页游标重复，导出已停止`)
+      seenCursors.add(nextCursor)
+      cursor = nextCursor
+    } while (true)
+  }
+  return result
+}
+
+function transferPanelData(record, detail) {
+  const targetType = record.targetType || 'all'
+  return {
+    scope: record.scope,
+    targetType,
+    panel: record.panel,
+    userOpenIds: targetType === 'specific' && record.scope === 'c2c' ? (detail?.userOpenIds || []) : [],
+    groupOpenIds: targetType === 'specific' && record.scope === 'group' ? (detail?.groupOpenIds || []) : []
+  }
+}
+
+function downloadJson(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], {type: 'application/json;charset=utf-8'})
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+function safeFilenamePart(value) {
+  return (value || 'atribot').trim().replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'atribot'
+}
+
+function targetBatches(values) {
+  const batches = []
+  for (let index = 0; index < values.length; index += 20) batches.push(values.slice(index, index + 20))
+  return batches
+}
+
+async function exportTransferFile() {
+  transferBusy.value = true
+  try {
+    const [menuData, records] = await Promise.all([api('/menu'), fetchAllPanels()])
+    const panelData = []
+    for (const record of records) {
+      const detail = (record.targetType || 'all') === 'specific'
+        ? await api(`/panels/${record.panelId}`)
+        : null
+      panelData.push(transferPanelData(record, detail))
+    }
+    const document = createTransferDocument({
+      menu: menuData?.menu?.items?.length ? menuData.menu : null,
+      panels: panelData
+    })
+    const date = new Date().toISOString().slice(0, 10)
+    downloadJson(document, `${safeFilenamePart(botName.value)}-menu-panels-${date}.json`)
+  } catch (e) {
+    alert('导出失败: ' + e.message)
+  } finally {
+    transferBusy.value = false
+  }
+}
+
+async function applyTransferDocument(document) {
+  const existingPanels = await fetchAllPanels()
+  const errors = []
+  let menuImported = false
+  let panelImported = 0
+
+  if (document.menu) {
+    try {
+      await api('/menu', {method: 'PUT', body: JSON.stringify({menu: document.menu})})
+      menuImported = true
+    } catch (e) {
+      errors.push(`自定义菜单：${e.message}`)
+    }
+  }
+
+  for (const entry of document.panels) {
+    let createdPanelId = ''
+    try {
+      const existing = entry.targetType === 'all'
+        ? existingPanels.find(panel => panel.scope === entry.scope && (panel.targetType || 'all') === 'all')
+        : null
+      if (existing) {
+        await api(`/panels/${existing.panelId}`, {method: 'PUT', body: JSON.stringify({panel: entry.panel})})
+      } else {
+        const body = {scope: entry.scope, targetType: entry.targetType, panel: entry.panel}
+        const targets = entry.scope === 'c2c' ? entry.userOpenIds : entry.groupOpenIds
+        const batches = entry.targetType === 'specific' ? targetBatches(targets) : []
+        if (batches.length && entry.scope === 'c2c') body.userOpenIds = batches[0]
+        if (batches.length && entry.scope === 'group') body.groupOpenIds = batches[0]
+        const panelId = await api('/panels', {method: 'POST', body: JSON.stringify(body)})
+        createdPanelId = panelId
+        for (const batch of batches.slice(1)) {
+          const targetBody = {op: 'add'}
+          if (entry.scope === 'c2c') targetBody.userOpenIds = batch
+          else targetBody.groupOpenIds = batch
+          await api(`/panels/${panelId}/target`, {method: 'PUT', body: JSON.stringify(targetBody)})
+        }
+      }
+      panelImported++
+    } catch (e) {
+      const partial = createdPanelId ? '（面板已创建，部分关联对象可能未导入）' : ''
+      errors.push(`${scopeLabel(entry.scope)}面板「${entry.panel.remark || '未命名'}」：${e.message}${partial}`)
+    }
+  }
+
+  await Promise.all([loadMenu(), loadPanels(true)])
+  const successParts = []
+  if (document.menu) successParts.push(menuImported ? '菜单 1 项' : '菜单 0 项')
+  successParts.push(`面板 ${panelImported}/${document.panels.length} 个`)
+  if (errors.length) {
+    alert(`导入部分完成：${successParts.join('，')}\n\n失败项：\n${errors.join('\n')}`)
+  } else {
+    alert(`导入完成：${successParts.join('，')}`)
+  }
+}
+
+async function importTransferFile(event) {
+  const input = event.target
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  transferBusy.value = true
+  try {
+    const document = parseTransferDocument(await file.text())
+    const menuSummary = document.menu ? '1 份自定义菜单' : '不含自定义菜单'
+    const confirmed = confirm(
+      `将导入${menuSummary}和 ${document.panels.length} 个指令面板。\n\n` +
+      '自定义菜单会被覆盖；同场景的全局面板会更新；指定对象面板会新增。现有面板不会被删除。是否继续？'
+    )
+    if (!confirmed) return
+    await applyTransferDocument(document)
+  } catch (e) {
+    alert('导入失败: ' + e.message)
+  } finally {
+    transferBusy.value = false
   }
 }
 
