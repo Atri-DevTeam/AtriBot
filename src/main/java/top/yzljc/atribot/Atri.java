@@ -321,6 +321,9 @@ public class Atri {
         CommandManager.getCommand("zombies").setExecutor(new HypixelZombies());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
         CommandManager.getCommand("bantrack").setExecutor(new BanTrackCommand());
+        CommandManager.getCommand("weather").setExecutor(new WeatherCommand());
+
+        // TODO: Evaluate official group active-message permissions before wiring scheduled weather delivery.
 
         CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
