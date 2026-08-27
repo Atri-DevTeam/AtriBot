@@ -209,6 +209,17 @@
   gap: 8px;
 }
 
+.mp-editor-import {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px dashed var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
 .mp-panel-item {
   display: flex;
   align-items: center;
@@ -257,6 +268,11 @@
 @media (max-width: 640px) {
   .mp-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .mp-editor-import {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .mp-menu-item-head,

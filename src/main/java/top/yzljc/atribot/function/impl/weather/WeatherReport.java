@@ -13,7 +13,7 @@ public record WeatherReport(
         int messageCount,
         int activeUsers,
         int imageCount,
-        int gameParticipants,
+        int botMessages,
         int activityIndex,
         int imageIndex,
         int nightIndex,
@@ -34,7 +34,7 @@ public record WeatherReport(
         payload.put("messageCount", messageCount);
         payload.put("activeUsers", activeUsers);
         payload.put("imageCount", imageCount);
-        payload.put("gameParticipants", gameParticipants);
+        payload.put("botMessages", botMessages);
         payload.put("activityIndex", activityIndex);
         payload.put("imageIndex", imageIndex);
         payload.put("nightIndex", nightIndex);

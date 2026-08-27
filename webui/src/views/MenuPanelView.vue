@@ -353,6 +353,18 @@
             <input v-model="panelForm.remark" class="gs-input" type="text" maxlength="255" placeholder="面板备注，可留空"/>
           </label>
 
+          <div v-if="panelModal.mode === 'edit'" class="mp-editor-import">
+            <input ref="panelEditorFileInput" type="file" accept="application/json,.json" hidden
+                   @change="importPanelIntoEditor"/>
+            <div>
+              <span class="gs-form-label">导入到当前面板</span>
+              <div class="gs-muted">仅替换当前编辑器中的备注和面板元素，生效场景与关联对象保持不变；点击保存后生效。</div>
+            </div>
+            <button class="ghost-button" :disabled="transferBusy" @click="panelEditorFileInput?.click()">
+              选择面板文件
+            </button>
+          </div>
+
           <div class="mp-panel-items">
             <div class="mp-subs-head">
               <span class="gs-form-label">面板元素（最多 20 个）</span>
@@ -457,6 +469,7 @@ const sidebarOpen = ref(false)
 const tab = ref('menu')
 const transferBusy = ref(false)
 const transferFileInput = ref(null)
+const panelEditorFileInput = ref(null)
 
 // ============ 自定义菜单 ============
 const menuLoading = ref(false)
@@ -705,6 +718,36 @@ async function importTransferFile(event) {
     )
     if (!confirmed) return
     await applyTransferDocument(document)
+  } catch (e) {
+    alert('导入失败: ' + e.message)
+  } finally {
+    transferBusy.value = false
+  }
+}
+
+async function importPanelIntoEditor(event) {
+  const input = event.target
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  transferBusy.value = true
+  try {
+    const document = parseTransferDocument(await file.text())
+    if (document.menu || document.panels.length !== 1) {
+      throw new Error('请选择只包含一个指令面板的导出文件')
+    }
+    const entry = document.panels[0]
+    const confirmed = confirm(
+      `将用导入文件中的备注和 ${entry.panel.items.length} 个面板元素覆盖当前编辑内容。\n\n` +
+      '当前面板的生效场景、作用范围和关联对象不会改变。是否继续？'
+    )
+    if (!confirmed) return
+
+    panelForm.remark = entry.panel.remark || ''
+    panelForm.items = panelToDraftItems(entry.panel)
+    if (panelForm.items.length === 0) panelForm.items.push(newPanelDraftItem())
+    alert('已导入到当前编辑器，点击“保存”后生效。')
   } catch (e) {
     alert('导入失败: ' + e.message)
   } finally {

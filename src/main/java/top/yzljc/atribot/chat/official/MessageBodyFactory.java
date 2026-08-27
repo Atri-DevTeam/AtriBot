@@ -23,6 +23,24 @@ final class MessageBodyFactory {
                 .build();
     }
 
+    public MessageBody ark23(Ark23 ark) {
+        return ark23(ark, null, null);
+    }
+
+    public MessageBody ark23(Ark23 ark, String msgId, String eventId) {
+        if (ark == null) throw new IllegalArgumentException("Ark23 must not be null");
+        MessageBody.MessageBodyBuilder builder = MessageBody.builder()
+                .msgType(GroupMessageType.ARK.getValue())
+                .ark(ark.toPayload());
+        if (msgId != null) {
+            builder.msgId(msgId).msgSeq(msgSeqProvider.apply(msgId));
+        }
+        if (eventId != null) {
+            builder.eventId(eventId);
+        }
+        return builder.build();
+    }
+
     public MessageBody textRef(String text, String refIdx) {
         return MessageBody.builder()
                 .msgType(GroupMessageType.TEXT.getValue())

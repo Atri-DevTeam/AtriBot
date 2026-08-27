@@ -32,6 +32,11 @@ public final class GroupChat {
         return await(AsyncGroupChat.sendMessage(groupOpenId, text));
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    public static String sendMessage(String groupOpenId, Ark23 ark) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, ark));
+    }
+
     /**
      * 发送群聊 Markdown 主动消息
      *
@@ -80,6 +85,11 @@ public final class GroupChat {
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String groupOpenId, String msgId, String replyText) {
         return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, replyText));
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String groupOpenId, String msgId, Ark23 ark) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, ark));
     }
 
     /**
@@ -246,6 +256,11 @@ public final class GroupChat {
     @SuppressWarnings("UnusedReturnValue")
     public static String replyEventMessage(String groupOpenId, String eventId, String text) {
         return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, text));
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String groupOpenId, String eventId, Ark23 ark) {
+        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, ark));
     }
 
     /**
