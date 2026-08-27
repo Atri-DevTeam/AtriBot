@@ -2,6 +2,7 @@ package top.yzljc.atribot.test;
 
 import lombok.extern.slf4j.Slf4j;
 
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Ark23;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -186,26 +187,26 @@ public class Test implements CommandExecutor, Listener {
         sender.sendMessage("查询失败: " + result.getError().toString());
     }
 
-//    @EventHandler
-//    public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
-//        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
-//        event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md(Markdown.at(event.getUser().getUserId()) + "(仅供娱乐)\n\n" + Markdown.colored(new HexColor("#FF8FAB"), "七夕节哦，我喜欢你")), false);
-//        UsersListed.recordUser(event.getUser().getUserId());
-//    }
-//
-//    @EventHandler
-//    public void onGroupMessageCreateButAt(OfficialGroupMessageCreateEvent event) {
-//        if (event.isAtBot()) {
-//            if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
-//            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md(Markdown.at(event.getUser().getUserId()) + "(仅供娱乐)\n\n" + Markdown.colored(new HexColor("#FF8FAB"), "七夕节哦，我喜欢你")), false);
-//            UsersListed.recordUser(event.getUser().getUserId());
-//        }
-//    }
-//
-//    @EventHandler
-//    public void onC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
-//        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
-//        event.getUser().sendMessage(event.getMessage().getMessageId(), TC.md("(仅供娱乐)\n\n" + Markdown.colored(new HexColor("#FF8FAB"), "七夕节哦，我喜欢你")));
-//        UsersListed.recordUser(event.getUser().getUserId());
-//    }
+    @EventHandler
+    public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
+        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+        event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+        UsersListed.recordUser(event.getUser().getUserId());
+    }
+
+    @EventHandler
+    public void onGroupMessageCreateButAt(OfficialGroupMessageCreateEvent event) {
+        if (event.isAtBot()) {
+            if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+            UsersListed.recordUser(event.getUser().getUserId());
+        }
+    }
+
+    @EventHandler
+    public void onC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
+        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+        event.getUser().sendMessage(event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+        UsersListed.recordUser(event.getUser().getUserId());
+    }
 }

@@ -85,9 +85,9 @@ public class DiceImpl {
 
         List<List<Button>> buttons = List.of(
                 List.of(
-                        new Button("c1", "再掷 1 次", "/mc dice", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                        new Button("c2", "掷 10 次", "/mc dice 10", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                        new Button("c3", "掷 100 次", "/mc dice 100", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                        new Button("c1", "再掷 1 次", "/hyp dice", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        new Button("c2", "掷 10 次", "/hyp dice 10", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        new Button("c3", "掷 100 次", "/hyp dice 100", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                 )
         );
 

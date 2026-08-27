@@ -77,11 +77,11 @@ public class QQEventRecord implements Listener {
         Markdown md = TC.md(
                 Markdown.at(event.getMemberOpenId()) + " " + welStr + "\n\n" +
                         Markdown.img(url, width, height) + "\n\n" +
-                        "> " + Markdown.enterCommand("/推送任务 关闭 member_add_welcome", "关闭欢迎提示")
+                        "> " + Markdown.enterCommand("/tasks disable member_add_welcome", "关闭欢迎提示")
         );
         Object buttons = TC.keyboard(
                 List.of(
-                        List.of(new Button("c1", "打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        List.of(new Button("c1", "打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "帮助", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c3", "提建议", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ), ButtonSize.SMALL

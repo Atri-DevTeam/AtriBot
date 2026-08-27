@@ -103,7 +103,7 @@ public class PushTaskCommand implements CommandExecutor {
                     }
                     return true;
                 }
-                case "disable" -> {
+                case "disable", "关闭" -> {
                     if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
                         qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
