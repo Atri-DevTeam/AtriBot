@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.GroupRepository;
+import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.qq.GroupProfile;
@@ -277,17 +278,17 @@ public class OfficialGroups {
         ObjectNode config = getFunctionConfig(groupOpenId);
 
         if (!config.has(functionKey)) {
-            return false;
+            return PushTaskCommand.isFunctionDefaultEnabled(functionKey);
         }
 
         JsonNode funcNode = config.get(functionKey);
         if (funcNode == null || !funcNode.isObject()) {
-            return false;
+            return PushTaskCommand.isFunctionDefaultEnabled(functionKey);
         }
 
         JsonNode enabledNode = funcNode.get("enabled");
         if (enabledNode == null || !enabledNode.isBoolean()) {
-            return false;
+            return PushTaskCommand.isFunctionDefaultEnabled(functionKey);
         }
 
         return enabledNode.asBoolean();

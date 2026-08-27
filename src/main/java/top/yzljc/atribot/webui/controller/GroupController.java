@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.function.command.PushTaskCommand;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.ChatPinnedRepo;
@@ -293,7 +294,12 @@ public class GroupController {
 
     public static void getGroupFunctions(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
-        ctx.json(Result.success(OfficialGroups.getRawFunctionConfig(groupOpenId)));
+        ObjectNode config = OfficialGroups.getRawFunctionConfig(groupOpenId);
+        for (PushTask task : PushTaskCommand.getTasks()) {
+            if (!task.isDefaultEnabled() || hasExplicitEnabled(config, task.getFunctionId())) continue;
+            config.putObject(task.getFunctionId()).put("enabled", true);
+        }
+        ctx.json(Result.success(config));
     }
 
     public static void listGroupFunctionKeys(Context ctx) {
@@ -384,11 +390,25 @@ public class GroupController {
         TreeSet<String> keys = new TreeSet<>();
         config.fieldNames().forEachRemaining(key -> {
             JsonNode funcNode = config.get(key);
-            if (funcNode != null && funcNode.isObject() && funcNode.has("enabled") && funcNode.get("enabled").asBoolean()) {
+            if (hasExplicitEnabled(config, key) && funcNode.get("enabled").asBoolean()) {
                 keys.add(key);
             }
         });
+        for (PushTask task : PushTaskCommand.getTasks()) {
+            if (task.isDefaultEnabled() && !hasExplicitEnabled(config, task.getFunctionId())) {
+                keys.add(task.getFunctionId());
+            }
+        }
         return List.copyOf(keys);
+    }
+
+    private static boolean hasExplicitEnabled(ObjectNode config, String functionKey) {
+        JsonNode funcNode = config.get(functionKey);
+        if (funcNode == null || !funcNode.isObject()) {
+            return false;
+        }
+        JsonNode enabledNode = funcNode.get("enabled");
+        return enabledNode != null && enabledNode.isBoolean();
     }
 
     public record SendGroupMessageResponse(String messageOpenId) {

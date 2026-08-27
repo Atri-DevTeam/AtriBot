@@ -5,19 +5,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** QQ Ark template 23 payload. */
+/**
+ * @Author YZ_Ljc_
+ * @ClassName Ark23
+ * @Created_at 2026/08/27
+ * @Project AtriBot
+ * @Package top.yzljc.atribot.chat.official
+ */
 public record Ark23(String description, String prompt, List<Item> items) {
 
     public Ark23 {
-        if (description == null || description.isBlank()) {
-            throw new IllegalArgumentException("Ark23 description must not be blank");
-        }
-        if (prompt == null || prompt.isBlank()) {
-            throw new IllegalArgumentException("Ark23 prompt must not be blank");
-        }
-        if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("Ark23 items must not be empty");
-        }
         if (items.stream().anyMatch(java.util.Objects::isNull)) {
             throw new IllegalArgumentException("Ark23 items must not contain null");
         }
@@ -47,12 +44,6 @@ public record Ark23(String description, String prompt, List<Item> items) {
     }
 
     public record Item(String description, String link) {
-
-        public Item {
-            if (description == null || description.isBlank()) {
-                throw new IllegalArgumentException("Ark23 item description must not be blank");
-            }
-        }
 
         public static Item text(String description) {
             return new Item(description, null);

@@ -71,18 +71,19 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
             guild.sendMessage("""
                     ======== 频道指令帮助 ========
                     /zs <玩家>  查询 Hypixel 僵尸末日数据
-                    /wz <玩家>  查询 Hypixel 法师决战数据
+                    /wz <玩家>  查询 Hypixel 法师掘战数据
                     /help  查看帮助
                     /whoami  查看当前账号及场景信息
                     /feedback <内容>  提交反馈
                     /hypstatus  查询 Hypixel 服务状态
                     /mojang  查询 Mojang 服务状态
+                    /today  查看今日日历
                     /newyear  查看新年倒计时
                     /time [地区]  查询地区时间
                     /mcv  查询 Minecraft 最新版本
                     /mccape  查询 Minecraft 披风状态
                     /skbpack  查询 Skyblock 资源包版本
-                    /sign  频道签到
+                    /sign  每日打卡签到
                     /bantrack [时间范围]  查询 Hypixel 封禁统计
                     """.trim());
             return true;
@@ -109,12 +110,13 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
                 .title(QQBot.BOT_NAME + " Discord 指令帮助")
                 .description("""
                         `/zs <player>` Hypixel 僵尸末日数据
-                        `/wz <player>` Hypixel 法师决战数据
+                        `/wz <player>` Hypixel 法师掘战数据
                         `/hypstatus` Hypixel 服务状态
                         `/mojang` Mojang 服务状态
                         `/mcv` Minecraft 最新版本
                         `/mccape` Minecraft 披风状态
                         `/skbpack` Skyblock 资源包版本
+                        `/today` 查看今日日历
                         `/newyear` 新年倒计时
                         `/time [zone]` 地区时间
                         `/bantrack [window]` Hypixel 封禁统计

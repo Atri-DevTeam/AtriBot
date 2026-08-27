@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
@@ -29,7 +30,7 @@ import java.util.Map;
  * @Package top.yzljc.qqbot.official.function
  */
 @Slf4j
-public class CalendarTask implements CommandExecutor, ScheduledTask {
+public class CalendarTask implements CommandExecutor, ScheduledTask, SlashCommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -84,5 +85,22 @@ public class CalendarTask implements CommandExecutor, ScheduledTask {
         for (String uid : userLists) {
             C2CChat.sendMessage(uid, TC.md(today));
         }
+    }
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+
+        ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
+        if (data.isError()) {
+            String errMsg = data.errorMessage();
+            sender.sendMessage("获取日历图片失败: " + errMsg);
+            Alert.notify("日历图片获取失败: " + errMsg);
+            log.warn("获取日历图片失败: {}", errMsg);
+            return true;
+        }
+
+        String today = "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
+        sender.sendEmbed(new DiscordEmbed().title(today).image(data.url()));
+        return true;
     }
 }

@@ -2,6 +2,8 @@ package top.yzljc.atribot.test;
 
 import lombok.extern.slf4j.Slf4j;
 
+import top.yzljc.atribot.chat.official.Ark23;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -141,19 +143,38 @@ public class Test implements CommandExecutor, Listener {
 //        sender.sendMessage(ImageComponent.imageOf("https://thirdqq.qlogo.cn/g?b=oidb&k=9ibwZcgtYsVOkxNVvIbaeSg&kti=adPQXgwBHsE&s=0&t=1775489118"));
 //        ImageSourceClient.migrateUnreviewedToDirs();
 
-        var user = (QQCommandSender) sender;
-        Markdown md = TC.md("1");
-        Object btn1 = TC.keyboard(List.of(
-                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
-                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
-        ), ButtonSize.SMALL);
-        Object btn2 = TC.keyboard(List.of(
-                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
-                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+//        var user = (QQCommandSender) sender;
+//        Markdown md = TC.md("1");
+//        Object btn1 = TC.keyboard(List.of(
+//                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
+//                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+//        ), ButtonSize.SMALL);
+//        Object btn2 = TC.keyboard(List.of(
+//                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
+//                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+//        ));
+//        user.sendMessage(md, btn1);
+//        user.sendMessage(md, btn2);
+        var art = new Ark23("标题", "内容", List.of(
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                Ark23.Item.text("描述"),
+                new Ark23.Item("描述2", "https://qun.qq.com")
         ));
-        user.sendMessage(md, btn1);
-        user.sendMessage(md, btn2);
 
+        var user = (QQCommandSender) sender;
+        GroupChat.replyMessage(user.getGroupId(), user.getMessage().getMessageId(), art);
         return true;
     }
 

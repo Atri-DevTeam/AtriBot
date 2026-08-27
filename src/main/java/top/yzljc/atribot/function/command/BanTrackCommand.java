@@ -78,15 +78,15 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
 
         Object buttons = TC.keyboard(
                 List.of(
-                        List.of(new Button("c1", "30m", "/bantracker 30min", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        List.of(new Button("c1", "30m", "/bantrack 30min", true, ButtonStyle.BLUE, ButtonType.COMMAND),
 //                                new Button("c2", "1h", "/bantracker 1h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c2", "3h", "/bantracker 3h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c3", "24h", "/bantracker 24h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c5", "7d", "/bantracker 7d", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c6", "30d", "/bantracker 30d", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                                new Button("c2", "3h", "/bantrack 3h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c3", "24h", "/bantrack 24h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c5", "7d", "/bantrack 7d", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c6", "30d", "/bantrack 30d", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                         ),
                         List.of(
-                                new Button("c7", "自定义查询时长", "/bantracker ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                                new Button("c7", "自定义查询时长", "/bantrack ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
                         )
                 )
         );

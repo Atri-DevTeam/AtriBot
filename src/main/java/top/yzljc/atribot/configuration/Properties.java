@@ -52,4 +52,6 @@ public class Properties {
     public static final String GROUP_MODERATION_CONFIG = "data/group-moderation.json";
 
     public static final String REMINDERS = "data/reminders.json";
+
+    public static final String CLICK_TRAIN_RECORD = "data/click-train-record.json";
 }

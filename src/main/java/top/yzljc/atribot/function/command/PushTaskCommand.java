@@ -87,11 +87,11 @@ public class PushTaskCommand implements CommandExecutor {
             }
 
             switch (cmd) {
-                case "详情" -> {
+                case "detail" -> {
                     qq.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : qq.getUserId()), buttons(functionId));
                     return true;
                 }
-                case "开启" -> {
+                case "enable" -> {
                     if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
                         qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
@@ -103,7 +103,7 @@ public class PushTaskCommand implements CommandExecutor {
                     }
                     return true;
                 }
-                case "关闭" -> {
+                case "disable" -> {
                     if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
                         qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
                         return true;
@@ -122,8 +122,8 @@ public class PushTaskCommand implements CommandExecutor {
     }
 
     private static String getFunctionStatusIcon(Platform platform, String platformIdentifyId, PushTask task) {
-        var on = Markdown.enterCommand("/推送任务 关闭 " + task.getFunctionId(), "\uD83D\uDFE2已启用");
-        var off = Markdown.enterCommand("/推送任务 开启 " + task.getFunctionId(), "⚪未开启");
+        var on = Markdown.enterCommand("/tasks disable " + task.getFunctionId(), "\uD83D\uDFE2已启用");
+        var off = Markdown.enterCommand("/tasks enable " + task.getFunctionId(), "⚪未开启");
         if (platform.equals(Platform.OFFICIAL_GROUP)) {
             if (task.isGroupEnabled(platformIdentifyId)) {
                 return on;
@@ -142,7 +142,7 @@ public class PushTaskCommand implements CommandExecutor {
     }
 
     private static String getFunctionDescriptionText(PushTask task) {
-        return Markdown.enterCommand("/推送任务 详情 " + task.getFunctionId(), task.getDisplayName());
+        return Markdown.enterCommand("/tasks detail " + task.getFunctionId(), task.getDisplayName());
     }
 
     private static PushTask get(String functionId) {
@@ -158,8 +158,8 @@ public class PushTaskCommand implements CommandExecutor {
         PushTask task = get(functionId);
         if (task == null) return null;
 
-        Button toggleOffButton = new Button("c1", "关闭任务", "/推送任务 关闭 " + functionId, true, ButtonStyle.RED, ButtonType.COMMAND);
-        Button toggleOnButton = new Button("c2", "开启任务", "/推送任务 开启 " + functionId, true, ButtonStyle.BLUE, ButtonType.COMMAND);
+        Button toggleOffButton = new Button("c1", "关闭任务", "/tasks disable " + functionId, true, ButtonStyle.RED, ButtonType.COMMAND);
+        Button toggleOnButton = new Button("c2", "开启任务", "/tasks enable " + functionId, true, ButtonStyle.BLUE, ButtonType.COMMAND);
 
         return TC.keyboard(
                 List.of(
@@ -170,6 +170,13 @@ public class PushTaskCommand implements CommandExecutor {
     }
 
     private static Button back() {
-        return new Button("c3", "返回列表", "/推送任务", true, ButtonStyle.BLUE, ButtonType.COMMAND);
+        return new Button("c3", "返回列表", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND);
+    }
+
+
+    public static boolean isFunctionDefaultEnabled(final String functionId) {
+        var func = get(functionId);
+        if (func == null) return false;
+        return func.isDefaultEnabled();
     }
 }

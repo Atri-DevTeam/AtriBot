@@ -23,7 +23,7 @@ import java.util.Set;
 public class HypixelCommand implements CommandExecutor {
 
     private static final Set<SubCommand> availableSubCommands = Set.of(
-            new SubCommand("wz", "查询玩家TNT游戏法师决战详细数据", ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, true, false),
+            new SubCommand("wz", "查询玩家TNT游戏法师掘战详细数据", ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, true, false),
             new SubCommand("zs", "查询玩家街机游戏僵尸末日详细数据", ResourcesProperties.HYPIXEL_ZOMBIES_API, true, false),
             new SubCommand("gs", "查询各小游戏在线情况", ResourcesProperties.HYPIXEL_STATUS_API, false, false),
             new SubCommand("pack", "查询Skyblock资源包版本信息", ResourcesProperties.SKB_PACK_VERSION_API, false, true),

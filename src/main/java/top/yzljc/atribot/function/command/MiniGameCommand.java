@@ -23,6 +23,7 @@ public class MiniGameCommand implements CommandExecutor {
 
         Markdown md = TC.md("**小游戏列表**\n\n" +
                 "- " + Markdown.enterCommand("/扫雷", "/扫雷") + " - 扫雷小游戏(5x6)\n" +
+                "- " + Markdown.enterCommand("/反应力测试", "/反应力测试") + " - 测试你的反应速度\n" +
                 "- " + Markdown.enterCommand("/四子棋", "/四子棋") + " - 四子棋小游戏\n" +
                 "- " + Markdown.enterCommand("/幸运轮盘", "/幸运轮盘") + " - 幸运轮盘(2-5人)\n" +
                 "- " + Markdown.enterCommand("/rsp", "/石头剪刀布") + " - 石头剪刀布小游戏\n" +

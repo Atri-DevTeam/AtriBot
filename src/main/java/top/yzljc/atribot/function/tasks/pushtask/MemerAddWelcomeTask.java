@@ -13,7 +13,7 @@ import top.yzljc.atribot.platform.Platform;
  */
 public final class MemerAddWelcomeTask extends PushTask {
     public MemerAddWelcomeTask() {
-        super("member_add_welcome", "新成员入群欢迎语", false, true, false);
+        super("member_add_welcome", "新成员入群欢迎语", false, true, false, true);
     }
 
     @Override

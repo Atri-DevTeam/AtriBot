@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.admin.update;
 
+import top.yzljc.atribot.chat.official.Ark23;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -16,6 +18,7 @@ import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Author YZ_Ljc_
@@ -105,7 +108,6 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
 
         String groupId;
         if (event.getSender() instanceof QQCommandSender qq) {
-            if (qq.getPlatform() != Platform.OFFICIAL_GROUP) return;
             groupId = qq.getGroupId();
         } else {
             return;

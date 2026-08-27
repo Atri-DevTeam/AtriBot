@@ -181,6 +181,12 @@ commands:
     aliases:
       - 四子棋
       - c4
+  clicktrain:
+    description: 点击训练游戏
+    aliases:
+      - 点击训练
+      - ctr
+      - 反应力测试
   roulette:
     description: 幸运轮盘游戏
     aliases:

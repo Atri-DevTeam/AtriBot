@@ -30,6 +30,7 @@ import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.function.admin.*;
 import top.yzljc.atribot.function.command.*;
 import top.yzljc.atribot.function.command.HelpCommand;
+import top.yzljc.atribot.function.games.ClickTrainGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
@@ -240,6 +241,8 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
+        ClickTrainGame clickTrainGame = new ClickTrainGame();
+        EventManager.getInstance().registerEvents(clickTrainGame);
         RockPaperScissorsGame rockPaperScissorsGame = new RockPaperScissorsGame();
         EventManager.getInstance().registerEvents(rockPaperScissorsGame);
         EventManager.getInstance().registerEvents(new SignCommand());
@@ -290,6 +293,7 @@ public class Atri {
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
         CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
+        CommandManager.getCommand("clicktrain").setExecutor(clickTrainGame);
         CommandManager.getCommand("roulette").setExecutor(new LuckyRouletteGame());
         CommandManager.getCommand("hitokoto").setExecutor(new HitokotoCommand());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());

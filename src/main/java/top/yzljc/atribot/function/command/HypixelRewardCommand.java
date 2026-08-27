@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.PermissionType;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -536,9 +537,9 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId))
+                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER)
                                         )
                                 ))
                         );
@@ -550,9 +551,9 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                                 TC.md(sb.toString()),
                                 TC.keyboard(List.of(
                                         List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId))
+                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER)
                                         )
                                 ))
                         );

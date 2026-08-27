@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.tasks.pushtask;
 
 import lombok.Getter;
+import lombok.Setter;
 import top.yzljc.atribot.auth.official.FullMessageAuth;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -36,6 +37,8 @@ public abstract class PushTask {
     private final boolean groupEnable;
     @Getter
     private final boolean c2cEnable;
+    @Getter @Setter
+    private boolean defaultEnabled = false;
 
     public PushTask(String functionId, String displayName, boolean needActiveMessage) {
         this.functionId = functionId;
@@ -51,6 +54,16 @@ public abstract class PushTask {
         this.needActiveMessage = needActiveMessage;
         this.groupEnable = groupEnable;
         this.c2cEnable = c2cEnable;
+    }
+
+    public PushTask(String functionId, String displayName, boolean needActiveMessage, boolean groupEnable, boolean c2cEnable, boolean defaultEnabled) {
+        this.functionId = functionId;
+        this.displayName = displayName;
+        this.needActiveMessage = needActiveMessage;
+        this.groupEnable = groupEnable;
+        this.c2cEnable = c2cEnable;
+        this.defaultEnabled = defaultEnabled;
+        if (this.needActiveMessage) this.defaultEnabled = false;
     }
 
     public List<String> getEnabledGroupOpenIds() {
@@ -85,6 +98,9 @@ public abstract class PushTask {
                 }
             } else {
                 statusLine = "> 当前状态：未配置";
+                if (this.defaultEnabled) {
+                    statusLine += "（默认启用）";
+                }
             }
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
             var statusInfo = OfficialUsers.getFunctionInfo(platformIdentifyId, this.functionId);
@@ -114,8 +130,8 @@ public abstract class PushTask {
         Markdown md = TC.md("✅ 已启用**" + this.getDisplayName() + "**");
         Object keys = TC.keyboard(
                 List.of(
-                        List.of(new Button("c1", "关闭", "/推送任务 关闭 " + this.getFunctionId(), true, ButtonStyle.RED, ButtonType.COMMAND),
-                                new Button("c2", "返回列表", "/推送任务", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                        List.of(new Button("c1", "关闭", "/tasks disable " + this.getFunctionId(), true, ButtonStyle.RED, ButtonType.COMMAND),
+                                new Button("c2", "返回列表", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                 )
         );
         if (platform.equals(Platform.OFFICIAL_GROUP)) {
@@ -161,8 +177,8 @@ public abstract class PushTask {
         Markdown md = TC.md("❌ 已关闭**" + this.getDisplayName() + "**");
         Object keys = TC.keyboard(
                 List.of(
-                        List.of(new Button("c1", "启用", "/推送任务 开启 " + this.getFunctionId(), true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c2", "返回列表", "/推送任务", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                        List.of(new Button("c1", "启用", "/tasks enable " + this.getFunctionId(), true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c2", "返回列表", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                 )
         );
         if (platform.equals(Platform.OFFICIAL_GROUP)) {

@@ -358,7 +358,7 @@
                    @change="importPanelIntoEditor"/>
             <div>
               <span class="gs-form-label">导入到当前面板</span>
-              <div class="gs-muted">仅替换当前编辑器中的备注和面板元素，生效场景与关联对象保持不变；点击保存后生效。</div>
+              <div class="gs-muted">注意：此操作会覆盖现有配置！</div>
             </div>
             <button class="ghost-button" :disabled="transferBusy" @click="panelEditorFileInput?.click()">
               选择面板文件
