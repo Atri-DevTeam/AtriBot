@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.qqguild;
 
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
@@ -17,7 +18,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official
  */
-public class HypixelTNTWizardsCommand implements CommandExecutor {
+public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -51,6 +52,25 @@ public class HypixelTNTWizardsCommand implements CommandExecutor {
             user.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
         }
 
+        return true;
+    }
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+                                  SlashCommandArguments args) {
+        String player = args.getString("player", "").trim();
+        if (player.isBlank()) {
+            sender.sendEphemeralMessage("请指定要查询的 Minecraft 玩家名或 UUID。");
+            return true;
+        }
+
+        sender.sendMessage("正在查询相关数据，请稍等片刻...");
+        var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player));
+        if (data.isError() || data.url() == null) {
+            sender.sendMessage(data.isError() ? data.errorMessage() : "在执行操作时出现错误，请稍后重试。");
+            return true;
+        }
+        sender.sendEmbed(new DiscordEmbed().title("Hypixel 法师决战数据").image(data.url()));
         return true;
     }
 }

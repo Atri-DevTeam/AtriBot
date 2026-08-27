@@ -5,8 +5,11 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.command.SlashCommandExecutor;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.event.EventHandler;
@@ -34,7 +37,7 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.atribot.function.general
  */
 @Slf4j
-public class FeedbackCommand implements CommandExecutor, Listener {
+public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, Listener {
 
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
     private static final String SOURCE = "feedback";
@@ -60,6 +63,17 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         return handleSubmitFeedback(sender, args);
     }
 
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+                                  SlashCommandArguments args) {
+        String content = args.getString("content", "").trim();
+        if (content.isBlank()) {
+            sender.sendEphemeralMessage("请提供反馈或建议的内容。");
+            return true;
+        }
+        return handleSubmitFeedback(sender, new String[]{content});
+    }
+
     private boolean handleSubmitFeedback(CommandSender sender, String[] args) {
         String platformName;
         String groupId;
@@ -69,6 +83,9 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         } else if (sender instanceof QQGuildCommandSender guildSender) {
             platformName = guildSender.getPlatform().name();
             groupId = guildSender.getGuildId();
+        } else if (sender instanceof DiscordCommandSender discordSender) {
+            platformName = discordSender.getPlatform().name();
+            groupId = discordSender.getChannelId();
         } else {
             platformName = null;
             groupId = null;

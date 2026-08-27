@@ -1,5 +1,8 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -9,6 +12,11 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.command.DiscordCommandSender;
+import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.command.SlashCommandExecutor;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.qq.QQBot;
 
@@ -21,7 +29,7 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.command
  */
-public class HelpCommand implements CommandExecutor {
+public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -56,8 +64,101 @@ public class HelpCommand implements CommandExecutor {
                     )
             );
             user.sendMessage(md, keyboard);
+            return true;
+        }
+
+        if (sender instanceof QQGuildCommandSender guild) {
+            guild.sendMessage("""
+                    ======== 频道指令帮助 ========
+                    /zs <玩家>  查询 Hypixel 僵尸末日数据
+                    /wz <玩家>  查询 Hypixel 法师决战数据
+                    /help  查看帮助
+                    /whoami  查看当前账号及场景信息
+                    /feedback <内容>  提交反馈
+                    /hypstatus  查询 Hypixel 服务状态
+                    /mojang  查询 Mojang 服务状态
+                    /newyear  查看新年倒计时
+                    /time [地区]  查询地区时间
+                    /mcv  查询 Minecraft 最新版本
+                    /mccape  查询 Minecraft 披风状态
+                    /skbpack  查询 Skyblock 资源包版本
+                    /sign  频道签到
+                    /bantrack [时间范围]  查询 Hypixel 封禁统计
+                    """.trim());
+            return true;
+        }
+
+        if (sender instanceof NapcatCommandSender napcat) {
+            GroupMessage.forwardMessage(
+                    napcat.getGroupId(),
+                    napcatHelp(),
+                    QQBot.BOT_NAME + " Napcat 帮助",
+                    "查看 Napcat 端支持的指令",
+                    "常用指令", "群功能", "管理指令"
+            );
+            return true;
         }
 
         return true;
+    }
+
+    @Override
+    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+                                  SlashCommandArguments args) {
+        sender.sendEmbed(new DiscordEmbed()
+                .title(QQBot.BOT_NAME + " Discord 指令帮助")
+                .description("""
+                        `/zs <player>` Hypixel 僵尸末日数据
+                        `/wz <player>` Hypixel 法师决战数据
+                        `/hypstatus` Hypixel 服务状态
+                        `/mojang` Mojang 服务状态
+                        `/mcv` Minecraft 最新版本
+                        `/mccape` Minecraft 披风状态
+                        `/skbpack` Skyblock 资源包版本
+                        `/newyear` 新年倒计时
+                        `/time [zone]` 地区时间
+                        `/bantrack [window]` Hypixel 封禁统计
+                        `/whoami` 当前 Discord 场景信息
+                        `/feedback <content>` 提交反馈
+                        """.trim())
+                .footer("Discord 查询指令不会读取 QQ 绑定信息"));
+        return true;
+    }
+
+    private static List<MessageSegment> napcatHelp() {
+        return List.of(
+                GroupMessage.createTextNode("""
+                        【Napcat 常用指令】
+                        /help  查看本帮助
+                        /ping  检查机器人响应
+                        /hitokoto  获取随机一言
+                        /chat [y|overall|@用户]  查看消息统计
+                        /贡献名单  查看项目贡献名单
+                        /search "关键词"  搜索群聊记录
+                        """.trim()),
+                GroupMessage.createTextNode("""
+                        【按群配置开放的功能】
+                        /gt <文字>  生成表情内容
+                        /anan <文字> [模式]  生成表情内容
+                        /py <文字>  转换为拼音
+                        /emj <模式> [用户]  表情互动
+                        /newyear  查看新年倒计时
+                        /cl <Hypixel 链接>  领取每日奖励
+                        /groupinfo  查看本群功能配置
+
+                        实际可用项以本群当前功能配置为准。
+                        """.trim()),
+                GroupMessage.createTextNode("""
+                        【管理与维护指令】
+                        /recall、/rollback  撤回消息
+                        /github、/autolike  管理群功能
+                        /check-mc、/check-mojira  检查新闻源
+                        /signall  执行自动签到
+                        /info @用户、/debug  排查运行信息
+                        /reboot  重启机器人
+
+                        此部分仅对具有相应权限的用户开放。
+                        """.trim())
+        );
     }
 }

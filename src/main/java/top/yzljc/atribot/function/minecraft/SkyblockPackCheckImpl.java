@@ -10,7 +10,9 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Properties;
@@ -55,6 +57,11 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
     }
 
     public boolean onCommand(QQGuildCommandSender sender) {
+        check(sender);
+        return true;
+    }
+
+    public boolean onCommand(DiscordCommandSender sender) {
         check(sender);
         return true;
     }
@@ -126,6 +133,11 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                 qqSender.sendMessage(image);
             } else if (sender instanceof QQGuildCommandSender guildSender) {
                 guildSender.sendMessage(image);
+            } else if (sender instanceof DiscordCommandSender discordSender) {
+                discordSender.sendEmbed(new DiscordEmbed()
+                        .title("Hypixel Skyblock 资源包")
+                        .description(lastUpdatedTime)
+                        .image(r.url()));
             }
         } else {
             if (r.url() == null || r.isError()) {

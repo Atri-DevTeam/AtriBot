@@ -32,6 +32,11 @@ public final class C2CChat {
         return await(AsyncC2CChat.sendMessage(openId, text));
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    public static String sendMessage(String openId, Ark23 ark) {
+        return await(AsyncC2CChat.sendMessage(openId, ark));
+    }
+
     /**
      * 发送单聊 Markdown 主动消息
      *
@@ -80,6 +85,11 @@ public final class C2CChat {
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String openId, String msgId, String replyText) {
         return await(AsyncC2CChat.replyMessage(openId, msgId, replyText));
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String openId, String msgId, Ark23 ark) {
+        return await(AsyncC2CChat.replyMessage(openId, msgId, ark));
     }
 
     /**
@@ -173,6 +183,11 @@ public final class C2CChat {
     @SuppressWarnings("UnusedReturnValue")
     public static String replyEventMessage(String openId, String eventId, String text) {
         return await(AsyncC2CChat.replyEventMessage(openId, eventId, text));
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyEventMessage(String openId, String eventId, Ark23 ark) {
+        return await(AsyncC2CChat.replyEventMessage(openId, eventId, ark));
     }
 
     /**

@@ -37,6 +37,10 @@ public final class AsyncC2CChat {
         return service().sendPrivateMessageAsync(openId, service().getBodyFactory().text(text));
     }
 
+    public static CompletableFuture<String> sendMessage(String openId, Ark23 ark) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark23(ark));
+    }
+
     /**
      * 异步发送单聊 Markdown 主动消息
      *
@@ -86,6 +90,10 @@ public final class AsyncC2CChat {
      */
     public static CompletableFuture<String> replyMessage(String openId, String msgId, String replyText) {
         return service().sendPrivateMessageAsync(openId, service().getBodyFactory().replyText(msgId, replyText));
+    }
+
+    public static CompletableFuture<String> replyMessage(String openId, String msgId, Ark23 ark) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark23(ark, msgId, null));
     }
 
     /**
@@ -185,6 +193,10 @@ public final class AsyncC2CChat {
     public static CompletableFuture<String> replyEventMessage(String openId, String eventId, String text) {
         return service().sendPrivateMessageAsync(openId,
                 service().getBodyFactory().eventText(eventId, text));
+    }
+
+    public static CompletableFuture<String> replyEventMessage(String openId, String eventId, Ark23 ark) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark23(ark, null, eventId));
     }
 
     /**

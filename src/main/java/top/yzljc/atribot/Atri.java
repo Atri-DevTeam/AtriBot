@@ -323,11 +323,14 @@ public class Atri {
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
-        CommandManager.getCommand("wizard").setExecutor(new HypixelTNTWizardsCommand());
-        CommandManager.getCommand("zombies").setExecutor(new HypixelZombiesCommand());
+        CommandManager.getCommand("wz").setExecutor(new HypixelTNTWizardsCommand());
+        CommandManager.getCommand("zs").setExecutor(new HypixelZombiesCommand());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
         CommandManager.getCommand("bantrack").setExecutor(new BanTrackCommand());
         CommandManager.getCommand("weather").setExecutor(new WeatherCommand());
+        CommandManager.getCommand("mcv").setExecutor(new MinecraftVersionCommand());
+        CommandManager.getCommand("mccape").setExecutor(new MinecraftCapeCommand());
+        CommandManager.getCommand("skbpack").setExecutor(new SkyblockPackCommand());
 
         // TODO: Evaluate official group active-message permissions before wiring scheduled weather delivery.
 

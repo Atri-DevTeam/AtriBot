@@ -98,9 +98,15 @@ commands:
   mc:
     description: Minecraft相关
     usage: "/mc <子命令> [参数]"
-    aliases:
-      - mcv
-      - skbpack
+  mcv:
+    description: 查询最新的 Minecraft 版本
+    usage: /mcv
+  mccape:
+    description: 查询 Minecraft 披风状态
+    usage: /mccape
+  skbpack:
+    description: 查询 Hypixel Skyblock 资源包版本
+    usage: /skbpack
   bantrack:
     description: Hypixel BanTracker
     usage: "/bantrack [时间参数]"
@@ -124,6 +130,11 @@ commands:
       - 反馈
       - 举报
       - 建议
+    options:
+      - name: content
+        type: 3
+        description: 反馈内容
+        required: true
   submit:
     description: 投稿图片到图源
     usage: /submit [图片]
@@ -286,25 +297,35 @@ commands:
   ua:
     description: 统一身份验证
     usage: /ua
-  wizard:
+  wz:
     description: Hypixel法师掘战数据查询
-    usage: /wizard
+    usage: /wz <玩家名或 UUID>
     aliases:
+      - wizard
       - hypwizard
       - hypixelwizard
       - hypixel-wizard
       - wd
       - wi
-      - wz
-  zombies:
+    options:
+      - name: player
+        type: 3
+        description: Minecraft 玩家名或 UUID
+        required: true
+  zs:
     description: Hypixel僵尸末日数据查询
-    usage: /zombies
+    usage: /zs <玩家名或 UUID>
     aliases:
+      - zombies
       - zombie
-      - zs
       - hypixelzombies
       - hypixel-zombies
       - hypzombies
+    options:
+      - name: player
+        type: 3
+        description: Minecraft 玩家名或 UUID
+        required: true
   time:
     description: 查询指定国家/地区的当前时间，不带参数默认查询北京时间
     usage: /time <国家代称/中文名/城市名/时区ID>
@@ -325,7 +346,6 @@ commands:
     usage: /hyp <子命令> [参数]
     aliases:
       - hypixel
-      - skbpack
   mctool:
     description: Mc工具二级指令
     usage: /mctool <子命令> [参数]
@@ -333,8 +353,6 @@ commands:
       - mctools
       - minecrafttool
       - minecrafttools
-      - mcv
-      - mccape
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

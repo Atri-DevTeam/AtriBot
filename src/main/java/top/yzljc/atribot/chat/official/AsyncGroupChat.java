@@ -36,6 +36,10 @@ public final class AsyncGroupChat {
         return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().text(text));
     }
 
+    public static CompletableFuture<String> sendMessage(String groupOpenId, Ark23 ark) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark));
+    }
+
     /**
      * 异步发送群聊 Markdown 主动消息
      *
@@ -85,6 +89,10 @@ public final class AsyncGroupChat {
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, String replyText) {
         return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().replyText(msgId, replyText));
+    }
+
+    public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, Ark23 ark) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark, msgId, null));
     }
 
     /**
@@ -262,6 +270,10 @@ public final class AsyncGroupChat {
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, String text) {
         return service().sendGroupMessageAsync(groupOpenId,
                 service().getBodyFactory().eventText(eventId, text));
+    }
+
+    public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, Ark23 ark) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark, null, eventId));
     }
 
     /**

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 @Slf4j
 public final class WeatherDataService {
@@ -30,9 +29,10 @@ public final class WeatherDataService {
     private static final Duration CURRENT_WINDOW = Duration.ofHours(24);
     private static final int BASELINE_DAYS = 7;
     private static final int MIN_BASELINE_COVERAGE_MINUTES = 12 * 60;
-    private static final Pattern GAME_COMMAND = Pattern.compile(
-            "(?iu)(?:^|\\s)/(?:games?|小游戏|游戏|minesweeper|扫雷|sl|connect4|connectfour|四子棋|c4|roulette|幸运轮盘|rr|rsp|石头剪刀布)(?:\\s|$)"
-    );
+    private static final int BURST_BUCKET_MINUTES = 15;
+    private static final int MIN_THUNDERSTORM_PEAK = 20;
+    private static final int MIN_THUNDERSTORM_USERS = 5;
+    private static final double MIN_THUNDERSTORM_ACCELERATION = 2.5;
 
     private WeatherDataService() {
     }
@@ -45,8 +45,8 @@ public final class WeatherDataService {
 
         String minSql = "SELECT MIN(created_at) FROM `official_group_record` " +
                 "WHERE group_openId = ? AND sender_is_bot = FALSE";
-        String rowsSql = "SELECT union_openId, content, attachments, created_at FROM `official_group_record` " +
-                "WHERE group_openId = ? AND sender_is_bot = FALSE AND created_at >= ? " +
+        String rowsSql = "SELECT union_openId, attachments, sender_is_bot, created_at FROM `official_group_record` " +
+                "WHERE group_openId = ? AND created_at >= ? " +
                 "AND (? IS NULL OR message_openId IS NULL OR message_openId <> ?) ORDER BY created_at ASC, id ASC";
 
         try (var conn = DatabaseManager.getConnection()) {
@@ -79,7 +79,7 @@ public final class WeatherDataService {
                                 createdAt.toInstant(),
                                 userId == null ? "" : userId,
                                 countImages(rs.getString("attachments")),
-                                isGameCommand(rs.getString("content"))
+                                rs.getBoolean("sender_is_bot")
                         ));
                     }
                 }
@@ -109,7 +109,7 @@ public final class WeatherDataService {
         List<WindowStats> baselines = baselineStats(allMessages, currentStart, firstRecordedAt);
         Baseline baseline = Baseline.from(baselines);
 
-        Burst burst = burst(current, observedStart, windowMinutes);
+        Burst burst = burst(current, observedStart);
         double rapidTurnRatio = rapidTurnRatio(current);
         WeatherType weather = chooseWeather(currentStats, baseline, burst);
         List<Phenomenon> phenomena = choosePhenomena(currentStats, baseline, rapidTurnRatio);
@@ -127,6 +127,13 @@ public final class WeatherDataService {
         int nightIndex = currentStats.messages() == 0
                 ? 0
                 : percentage(currentStats.nightMessages() / (double) currentStats.messages() * 100.0);
+        int interactionIndex;
+        if (baseline.days() > 0 && baseline.botMessages() >= 1.0) {
+            interactionIndex = percentage(currentStats.botMessages() / baseline.botMessages() * 50.0);
+        } else {
+            interactionIndex = percentage(currentStats.botMessages()
+                    / (double) Math.max(4, currentStats.messages()) * 240.0);
+        }
 
         return new WeatherReport(
                 now,
@@ -136,11 +143,11 @@ public final class WeatherDataService {
                 currentStats.messages(),
                 currentStats.activeUsers(),
                 currentStats.images(),
-                currentStats.gameParticipants(),
+                currentStats.botMessages(),
                 activityIndex,
                 imageIndex,
                 nightIndex,
-                percentage(rapidTurnRatio * 100.0),
+                interactionIndex,
                 baseline.days()
         );
     }
@@ -168,33 +175,57 @@ public final class WeatherDataService {
 
     private static WindowStats stats(List<MessageSample> messages, Instant start, Instant end) {
         Set<String> users = new HashSet<>();
-        Set<String> gameUsers = new HashSet<>();
+        Map<Long, Integer> messageBuckets = new HashMap<>();
         int messageCount = 0;
         int images = 0;
+        int botMessages = 0;
         int nightMessages = 0;
         for (MessageSample message : messages) {
             if (message.time().isBefore(start) || message.time().isAfter(end)) continue;
+            if (message.botMessage()) {
+                botMessages++;
+                continue;
+            }
             messageCount++;
+            long bucket = Math.max(0, Duration.between(start, message.time()).toMinutes()) / BURST_BUCKET_MINUTES;
+            messageBuckets.merge(bucket, 1, Integer::sum);
             if (!message.userId().isBlank()) users.add(message.userId());
-            if (message.gameCommand() && !message.userId().isBlank()) gameUsers.add(message.userId());
             images += message.imageCount();
             int hour = ZonedDateTime.ofInstant(message.time(), DISPLAY_ZONE).getHour();
             if (hour >= 0 && hour < 6) nightMessages++;
         }
-        return new WindowStats(messageCount, users.size(), images, gameUsers.size(), nightMessages);
+        int peakMessages = messageBuckets.values().stream().max(Integer::compareTo).orElse(0);
+        return new WindowStats(messageCount, users.size(), images, botMessages, nightMessages, peakMessages);
     }
 
-    private static Burst burst(List<MessageSample> messages, Instant start, int windowMinutes) {
-        if (messages.isEmpty()) return new Burst(0, 0.0);
-        Map<Long, Integer> buckets = new HashMap<>();
+    private static Burst burst(List<MessageSample> messages, Instant start) {
+        Map<Long, List<MessageSample>> buckets = new HashMap<>();
         for (MessageSample message : messages) {
-            long bucket = Math.max(0, Duration.between(start, message.time()).toMinutes()) / 15;
-            buckets.merge(bucket, 1, Integer::sum);
+            if (message.botMessage()) continue;
+            long bucket = Math.max(0, Duration.between(start, message.time()).toMinutes()) / BURST_BUCKET_MINUTES;
+            buckets.computeIfAbsent(bucket, ignored -> new ArrayList<>()).add(message);
         }
-        int peak = buckets.values().stream().max(Integer::compareTo).orElse(0);
-        double bucketCount = Math.max(1.0, windowMinutes / 15.0);
-        double expected = Math.max(1.0, messages.size() / bucketCount);
-        return new Burst(peak, peak / expected);
+        if (buckets.isEmpty()) return new Burst(0, 0, 0.0);
+
+        long peakBucket = buckets.entrySet().stream()
+                .max(Comparator.comparingInt(entry -> entry.getValue().size()))
+                .map(Map.Entry::getKey)
+                .orElse(0L);
+        List<MessageSample> peakMessages = buckets.get(peakBucket);
+        int peak = peakMessages.size();
+        int peakUsers = (int) peakMessages.stream()
+                .map(MessageSample::userId)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .count();
+
+        int nearbyMessages = 0;
+        for (long bucket = peakBucket - 2; bucket <= peakBucket + 2; bucket++) {
+            if (bucket == peakBucket) continue;
+            nearbyMessages += buckets.getOrDefault(bucket, List.of()).size();
+        }
+        double nearbyAverage = Math.max(2.0, nearbyMessages / 4.0);
+        return new Burst(peak, peakUsers, peak / nearbyAverage);
     }
 
     private static double rapidTurnRatio(List<MessageSample> messages) {
@@ -203,6 +234,7 @@ public final class WeatherDataService {
         for (int i = 1; i < messages.size(); i++) {
             MessageSample previous = messages.get(i - 1);
             MessageSample current = messages.get(i);
+            if (previous.botMessage() || current.botMessage()) continue;
             if (previous.userId().isBlank() || current.userId().isBlank()) continue;
             long seconds = Duration.between(previous.time(), current.time()).toSeconds();
             if (seconds < 0 || seconds > 120) continue;
@@ -213,12 +245,17 @@ public final class WeatherDataService {
     }
 
     private static WeatherType chooseWeather(WindowStats current, Baseline baseline, Burst burst) {
-        boolean thunderstorm = burst.peak() >= 6
-                && (burst.intensity() >= 2.8 || burst.peak() >= Math.ceil(current.messages() * 0.35));
+        int historicalPeakThreshold = baseline.days() == 0
+                ? MIN_THUNDERSTORM_PEAK
+                : Math.max(MIN_THUNDERSTORM_PEAK, (int) Math.ceil(baseline.peakMessages() * 1.75));
+        boolean thunderstorm = burst.peak() >= historicalPeakThreshold
+                && burst.peakUsers() >= MIN_THUNDERSTORM_USERS
+                && burst.localAcceleration() >= MIN_THUNDERSTORM_ACCELERATION;
         if (thunderstorm) return WeatherType.THUNDERSTORM;
 
-        if (baseline.days() > 0 && baseline.messages() >= 8.0
-                && current.messages() < baseline.messages() * 0.45) {
+        if (baseline.days() > 0 && baseline.messages() >= 12.0
+                && current.messages() < baseline.messages() * 0.38
+                && current.activeUsers() <= Math.max(3, Math.ceil(baseline.activeUsers() * 0.60))) {
             return WeatherType.WINDLESS_NIGHT;
         }
         if (baseline.days() == 0 && current.messages() <= 3 && current.activeUsers() <= 2) {
@@ -226,10 +263,12 @@ public final class WeatherDataService {
         }
 
         int activeThreshold = baseline.days() > 0
-                ? Math.max(6, (int) Math.ceil(baseline.activeUsers() * 1.20))
+                ? Math.max(8, (int) Math.ceil(baseline.activeUsers() * 1.35))
                 : 8;
-        boolean stable = burst.peak() < Math.max(6, (int) Math.ceil(current.messages() * 0.25));
-        if (current.activeUsers() >= activeThreshold && stable) {
+        boolean stable = burst.localAcceleration() < MIN_THUNDERSTORM_ACCELERATION
+                || burst.peak() < Math.max(MIN_THUNDERSTORM_PEAK,
+                (int) Math.ceil(current.messages() * 0.20));
+        if (current.messages() >= 18 && current.activeUsers() >= activeThreshold && stable) {
             return WeatherType.CLOUDY;
         }
         return WeatherType.SUNNY;
@@ -246,9 +285,15 @@ public final class WeatherDataService {
             candidates.add(new ScoredPhenomenon(Phenomenon.RAINBOW_CLOUD,
                     imageShare / 0.15 + current.images() / Math.max(4.0, baseline.images() * 1.6)));
         }
-        if (current.gameParticipants() >= 3) {
+        double interactionShare = current.botMessages()
+                / (double) Math.max(1, current.messages() + current.botMessages());
+        boolean interactionIncreased = baseline.days() == 0
+                ? current.botMessages() >= 4
+                : current.botMessages() >= Math.max(4.0, baseline.botMessages() * 1.5);
+        if (interactionIncreased && (interactionShare >= 0.08 || current.botMessages() >= 8)) {
             candidates.add(new ScoredPhenomenon(Phenomenon.METEOR_SHOWER,
-                    current.gameParticipants() / 3.0));
+                    interactionShare / 0.08
+                            + current.botMessages() / Math.max(4.0, baseline.botMessages() * 1.5)));
         }
         double nightShare = current.messages() == 0
                 ? 0.0
@@ -256,8 +301,8 @@ public final class WeatherDataService {
         if (current.nightMessages() >= 5 && nightShare >= 0.30) {
             candidates.add(new ScoredPhenomenon(Phenomenon.AURORA, nightShare / 0.30));
         }
-        if (current.messages() >= 7 && current.activeUsers() >= 3 && rapidTurnRatio >= 0.55) {
-            candidates.add(new ScoredPhenomenon(Phenomenon.PRESSURE_WAVE, rapidTurnRatio / 0.55));
+        if (current.messages() >= 12 && current.activeUsers() >= 4 && rapidTurnRatio >= 0.70) {
+            candidates.add(new ScoredPhenomenon(Phenomenon.PRESSURE_WAVE, rapidTurnRatio / 0.70));
         }
 
         return candidates.stream()
@@ -284,10 +329,6 @@ public final class WeatherDataService {
         }
     }
 
-    private static boolean isGameCommand(String content) {
-        return content != null && GAME_COMMAND.matcher(content.trim()).find();
-    }
-
     private static int percentage(double value) {
         return clamp((int) Math.round(value), 0, 100);
     }
@@ -296,26 +337,29 @@ public final class WeatherDataService {
         return Math.max(min, Math.min(max, value));
     }
 
-    record MessageSample(Instant time, String userId, int imageCount, boolean gameCommand) {
+    record MessageSample(Instant time, String userId, int imageCount, boolean botMessage) {
     }
 
-    private record WindowStats(int messages, int activeUsers, int images, int gameParticipants,
-                               int nightMessages) {
+    private record WindowStats(int messages, int activeUsers, int images, int botMessages,
+                               int nightMessages, int peakMessages) {
     }
 
-    private record Baseline(int days, double messages, double activeUsers, double images) {
+    private record Baseline(int days, double messages, double activeUsers, double images,
+                            double botMessages, double peakMessages) {
         private static Baseline from(List<WindowStats> values) {
-            if (values.isEmpty()) return new Baseline(0, 0, 0, 0);
+            if (values.isEmpty()) return new Baseline(0, 0, 0, 0, 0, 0);
             return new Baseline(
                     values.size(),
                     values.stream().mapToInt(WindowStats::messages).average().orElse(0),
                     values.stream().mapToInt(WindowStats::activeUsers).average().orElse(0),
-                    values.stream().mapToInt(WindowStats::images).average().orElse(0)
+                    values.stream().mapToInt(WindowStats::images).average().orElse(0),
+                    values.stream().mapToInt(WindowStats::botMessages).average().orElse(0),
+                    values.stream().mapToInt(WindowStats::peakMessages).average().orElse(0)
             );
         }
     }
 
-    private record Burst(int peak, double intensity) {
+    private record Burst(int peak, int peakUsers, double localAcceleration) {
     }
 
     private record ScoredPhenomenon(Phenomenon phenomenon, double score) {
