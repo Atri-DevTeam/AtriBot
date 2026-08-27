@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import top.yzljc.atribot.function.impl.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 
 import java.sql.Timestamp;
 

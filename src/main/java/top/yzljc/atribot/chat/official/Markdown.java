@@ -56,4 +56,9 @@ public class Markdown {
     public static String colored(HexColor color, String content) {
         return "$\\textcolor{" + color.value() + "}{\\text{" + content + "}}$";
     }
+
+    @Override
+    public String toString() {
+        return text;
+    }
 }

@@ -9,10 +9,10 @@ import lombok.Data;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.*;
-import top.yzljc.atribot.function.impl.ImageReviewStatus;
-import top.yzljc.atribot.function.official.pic.ImageReviewService;
-import top.yzljc.atribot.function.official.pic.ImageSourceClient;
-import top.yzljc.atribot.function.official.loot.LootAdminClient;
+import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.pic.ImageReviewService;
+import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
+import top.yzljc.atribot.function.impl.drawitem.LootAdminClient;
 import top.yzljc.atribot.webui.Result;
 
 import java.io.IOException;

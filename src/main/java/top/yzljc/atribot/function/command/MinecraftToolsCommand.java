@@ -4,10 +4,7 @@ import org.jspecify.annotations.NonNull;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.McLocationBarColorImpl;
@@ -34,7 +31,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
 
     private static final String commandHeader = "/mctool";
     private static final Set<SubCommand> availableSubCommands = Set.of(
-            new SubCommand("ver", "查询最新的MC游戏版本"),
+            new SubCommand("ver", "查询最新的MC版本"),
             new SubCommand("cape", "查询MC披风拥有情况"),
             new SubCommand("lb", "查询玩家Location Bar颜色"),
             new SubCommand("pack", "查询MC资源包版本信息")
@@ -51,7 +48,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
 
     private static Markdown getSubCommands() {
         StringBuilder s = new StringBuilder();
-        String title = "**Mc综合指令二级菜单**";
+        String title = "**MC综合指令二级菜单**";
         s.append(title).append("\n\n");
         for (var cmd : availableSubCommands) {
             s.append(cmd.toString());
@@ -80,7 +77,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
                 case "ver" -> {
                     return McVersionImpl.onCommand(user);
                 }
-                case "cape" -> {
+                case "cape", "capes" -> {
                     return checkMinecraftCape(user);
                 }
                 case "pack" -> {
@@ -136,6 +133,15 @@ public class MinecraftToolsCommand implements CommandExecutor {
             }
         }
 
+        if (sender instanceof QQGuildCommandSender user) {
+            if (label.equals("mcv")) {
+                return McVersionImpl.onCommand(user);
+            }
+            if (label.equals("mccape")) {
+                return checkMinecraftCape(user);
+            }
+        }
+
         return true;
     }
 
@@ -160,6 +166,8 @@ public class MinecraftToolsCommand implements CommandExecutor {
 
         if (sender instanceof QQCommandSender) {
             ((QQCommandSender) sender).sendMessage(ImageComponent.imageOf(data.url()));
+        } else if (sender instanceof QQGuildCommandSender) {
+            ((QQGuildCommandSender) sender).sendMessage(ImageComponent.imageOf(data.url()));
         }
         return true;
     }

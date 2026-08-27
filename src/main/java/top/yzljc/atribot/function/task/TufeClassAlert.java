@@ -4,7 +4,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.function.napcat.classtable.ProcessClassTable;
+import top.yzljc.atribot.function.utils.napcat.classtable.ProcessClassTable;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;

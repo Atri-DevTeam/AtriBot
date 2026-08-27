@@ -114,7 +114,7 @@ public final class ResourcesProperties {
     public static final String PLAYER_FRIENDS_UUID_API = request("request.player.friends-by-uuid");
 
     // @ClassName PingCommand
-    public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
+//    public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
 
     // @ClassName SkyblockResourceChecker
     public static final String SKB_VERSION_CHECK = request("request.hypixel.resource-packs");

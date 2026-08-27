@@ -26,13 +26,9 @@
         </div>
         <div class="topbar-right mp-transfer-actions">
           <input ref="transferFileInput" type="file" accept="application/json,.json" hidden @change="importTransferFile"/>
-          <button class="ghost-button" title="导入 JSON" aria-label="导入 JSON" :disabled="transferBusy" @click="transferFileInput?.click()">
+          <button class="ghost-button" title="导入单个配置" aria-label="导入单个配置" :disabled="transferBusy" @click="transferFileInput?.click()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
-            <span class="mp-transfer-label">导入 JSON</span>
-          </button>
-          <button class="ghost-button" title="导出 JSON" aria-label="导出 JSON" :disabled="transferBusy" @click="exportTransferFile">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
-            <span class="mp-transfer-label">{{ transferBusy ? '处理中...' : '导出 JSON' }}</span>
+            <span class="mp-transfer-label">导入单项</span>
           </button>
         </div>
       </header>
@@ -46,6 +42,9 @@
               <span v-if="menuVersion > 0" class="status-pill"><span class="dot ok"></span>版本 {{ menuVersion }}</span>
               <button class="ghost-button" :disabled="menuLoading" @click="loadMenu">
                 {{ menuLoading ? '加载中...' : '重新加载' }}
+              </button>
+              <button class="ghost-button" :disabled="transferBusy || menuLoading || menuItems.length === 0" @click="exportMenuFile">
+                导出菜单
               </button>
               <button class="primary-button" :disabled="menuSaving || menuItems.length === 0" @click="saveMenu">
                 {{ menuSaving ? '保存中...' : '保存菜单' }}
@@ -271,6 +270,9 @@
                 <div class="mp-panel-card-foot">
                   <span class="gs-id" :title="p.panelId">#{{ p.panelId }}</span>
                   <div class="mp-panel-actions">
+                    <button class="icon-button mp-export" title="导出此面板" :disabled="transferBusy" @click.stop="exportPanelFile(p)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+                    </button>
                     <button class="icon-button mp-edit" title="编辑" @click.stop="openEdit(p)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
@@ -293,7 +295,7 @@
     </main>
 
     <!-- ============ 面板新建/编辑弹窗 ============ -->
-    <div v-if="panelModal" class="modal-backdrop" @click.self="closePanelModal">
+    <div v-if="panelModal" class="modal-backdrop">
       <div class="modal">
         <div class="modal-head">
           <h2>{{ panelModal.mode === 'create' ? '新建面板' : '编辑面板' }}</h2>
@@ -590,23 +592,36 @@ function targetBatches(values) {
   return batches
 }
 
-async function exportTransferFile() {
+async function exportMenuFile() {
   transferBusy.value = true
   try {
-    const [menuData, records] = await Promise.all([api('/menu'), fetchAllPanels()])
-    const panelData = []
-    for (const record of records) {
-      const detail = (record.targetType || 'all') === 'specific'
-        ? await api(`/panels/${record.panelId}`)
-        : null
-      panelData.push(transferPanelData(record, detail))
-    }
+    const menuData = await api('/menu')
     const document = createTransferDocument({
       menu: menuData?.menu?.items?.length ? menuData.menu : null,
-      panels: panelData
+      panels: []
     })
     const date = new Date().toISOString().slice(0, 10)
-    downloadJson(document, `${safeFilenamePart(botName.value)}-menu-panels-${date}.json`)
+    downloadJson(document, `${safeFilenamePart(botName.value)}-menu-${date}.json`)
+  } catch (e) {
+    alert('导出失败: ' + e.message)
+  } finally {
+    transferBusy.value = false
+  }
+}
+
+async function exportPanelFile(record) {
+  transferBusy.value = true
+  try {
+    const detail = (record.targetType || 'all') === 'specific'
+      ? await api(`/panels/${record.panelId}`)
+      : null
+    const document = createTransferDocument({
+      menu: null,
+      panels: [transferPanelData(record, detail)]
+    })
+    const date = new Date().toISOString().slice(0, 10)
+    const name = safeFilenamePart(record.panel?.remark || record.panelId)
+    downloadJson(document, `${safeFilenamePart(botName.value)}-panel-${name}-${date}.json`)
   } catch (e) {
     alert('导出失败: ' + e.message)
   } finally {
@@ -615,59 +630,54 @@ async function exportTransferFile() {
 }
 
 async function applyTransferDocument(document) {
-  const existingPanels = await fetchAllPanels()
-  const errors = []
-  let menuImported = false
-  let panelImported = 0
+  const hasMenu = !!document.menu
+  const hasPanel = document.panels.length === 1
+  if ((hasMenu ? 1 : 0) + (hasPanel ? 1 : 0) !== 1) {
+    throw new Error('导入文件必须只包含一个菜单或一个指令面板')
+  }
 
-  if (document.menu) {
+  if (hasMenu) {
     try {
       await api('/menu', {method: 'PUT', body: JSON.stringify({menu: document.menu})})
-      menuImported = true
     } catch (e) {
-      errors.push(`自定义菜单：${e.message}`)
+      throw new Error(`自定义菜单：${e.message}`)
     }
+    await loadMenu()
+    alert('导入完成：自定义菜单')
+    return
   }
 
-  for (const entry of document.panels) {
-    let createdPanelId = ''
-    try {
-      const existing = entry.targetType === 'all'
-        ? existingPanels.find(panel => panel.scope === entry.scope && (panel.targetType || 'all') === 'all')
-        : null
-      if (existing) {
-        await api(`/panels/${existing.panelId}`, {method: 'PUT', body: JSON.stringify({panel: entry.panel})})
-      } else {
-        const body = {scope: entry.scope, targetType: entry.targetType, panel: entry.panel}
-        const targets = entry.scope === 'c2c' ? entry.userOpenIds : entry.groupOpenIds
-        const batches = entry.targetType === 'specific' ? targetBatches(targets) : []
-        if (batches.length && entry.scope === 'c2c') body.userOpenIds = batches[0]
-        if (batches.length && entry.scope === 'group') body.groupOpenIds = batches[0]
-        const panelId = await api('/panels', {method: 'POST', body: JSON.stringify(body)})
-        createdPanelId = panelId
-        for (const batch of batches.slice(1)) {
-          const targetBody = {op: 'add'}
-          if (entry.scope === 'c2c') targetBody.userOpenIds = batch
-          else targetBody.groupOpenIds = batch
-          await api(`/panels/${panelId}/target`, {method: 'PUT', body: JSON.stringify(targetBody)})
-        }
+  const entry = document.panels[0]
+  const existingPanels = await fetchAllPanels()
+  let createdPanelId = ''
+  try {
+    const existing = entry.targetType === 'all'
+      ? existingPanels.find(panel => panel.scope === entry.scope && (panel.targetType || 'all') === 'all')
+      : null
+    if (existing) {
+      await api(`/panels/${existing.panelId}`, {method: 'PUT', body: JSON.stringify({panel: entry.panel})})
+    } else {
+      const body = {scope: entry.scope, targetType: entry.targetType, panel: entry.panel}
+      const targets = entry.scope === 'c2c' ? entry.userOpenIds : entry.groupOpenIds
+      const batches = entry.targetType === 'specific' ? targetBatches(targets) : []
+      if (batches.length && entry.scope === 'c2c') body.userOpenIds = batches[0]
+      if (batches.length && entry.scope === 'group') body.groupOpenIds = batches[0]
+      const panelId = await api('/panels', {method: 'POST', body: JSON.stringify(body)})
+      createdPanelId = panelId
+      for (const batch of batches.slice(1)) {
+        const targetBody = {op: 'add'}
+        if (entry.scope === 'c2c') targetBody.userOpenIds = batch
+        else targetBody.groupOpenIds = batch
+        await api(`/panels/${panelId}/target`, {method: 'PUT', body: JSON.stringify(targetBody)})
       }
-      panelImported++
-    } catch (e) {
-      const partial = createdPanelId ? '（面板已创建，部分关联对象可能未导入）' : ''
-      errors.push(`${scopeLabel(entry.scope)}面板「${entry.panel.remark || '未命名'}」：${e.message}${partial}`)
     }
+  } catch (e) {
+    const partial = createdPanelId ? '（面板已创建，部分关联对象可能未导入）' : ''
+    throw new Error(`${scopeLabel(entry.scope)}面板「${entry.panel.remark || '未命名'}」：${e.message}${partial}`)
   }
 
-  await Promise.all([loadMenu(), loadPanels(true)])
-  const successParts = []
-  if (document.menu) successParts.push(menuImported ? '菜单 1 项' : '菜单 0 项')
-  successParts.push(`面板 ${panelImported}/${document.panels.length} 个`)
-  if (errors.length) {
-    alert(`导入部分完成：${successParts.join('，')}\n\n失败项：\n${errors.join('\n')}`)
-  } else {
-    alert(`导入完成：${successParts.join('，')}`)
-  }
+  await loadPanels(true)
+  alert(`导入完成：${scopeLabel(entry.scope)}面板「${entry.panel.remark || '未命名'}」`)
 }
 
 async function importTransferFile(event) {
@@ -679,10 +689,19 @@ async function importTransferFile(event) {
   transferBusy.value = true
   try {
     const document = parseTransferDocument(await file.text())
-    const menuSummary = document.menu ? '1 份自定义菜单' : '不含自定义菜单'
+    const hasMenu = !!document.menu
+    const hasPanel = document.panels.length === 1
+    if ((hasMenu ? 1 : 0) + (hasPanel ? 1 : 0) !== 1) {
+      throw new Error('只支持导入一个菜单或一个指令面板，请选择单项配置文件')
+    }
+    const summary = hasMenu
+      ? '1 份自定义菜单'
+      : `1 个${scopeLabel(document.panels[0].scope)}指令面板`
     const confirmed = confirm(
-      `将导入${menuSummary}和 ${document.panels.length} 个指令面板。\n\n` +
-      '自定义菜单会被覆盖；同场景的全局面板会更新；指定对象面板会新增。现有面板不会被删除。是否继续？'
+      `将导入${summary}。\n\n` +
+      (hasMenu
+        ? '自定义菜单会被覆盖。是否继续？'
+        : '同场景的全局面板会更新；指定对象面板会新增。是否继续？')
     )
     if (!confirmed) return
     await applyTransferDocument(document)

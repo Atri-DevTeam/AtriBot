@@ -1,7 +1,7 @@
 package top.yzljc.atribot.function.task;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.function.official.loot.LootService;
+import top.yzljc.atribot.function.impl.drawitem.LootService;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 

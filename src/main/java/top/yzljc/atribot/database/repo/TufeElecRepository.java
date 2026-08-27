@@ -2,7 +2,7 @@ package top.yzljc.atribot.database.repo;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.function.official.tufe.ElecDTO;
+import top.yzljc.atribot.function.impl.tufe.ElecDTO;
 
 import java.util.ArrayList;
 import java.util.List;

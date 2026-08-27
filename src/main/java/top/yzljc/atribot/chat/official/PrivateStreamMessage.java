@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
-import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -204,7 +204,7 @@ final class PrivateStreamMessage {
                 if (messageId != null) {
                     OfficialSendLogRepository.recordResponse(traceId, "单聊流式", "POST", url, json,
                             res.status(), res.body());
-                    ChatContentRecord.recordSentC2CMessage(openId, bodyFactory.streamRequestToMessageBody(request), messageId, messageIdx, timestamp);
+                    QQChatContentRecord.recordSentC2CMessage(openId, bodyFactory.streamRequestToMessageBody(request), messageId, messageIdx, timestamp);
                     return messageId;
                 }
                 OfficialSendLogRepository.recordError(traceId, "单聊流式", "POST", url, json,

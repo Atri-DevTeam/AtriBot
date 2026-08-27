@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.GroupRepository;
-import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.qq.GroupProfile;
 

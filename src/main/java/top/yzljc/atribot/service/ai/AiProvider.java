@@ -13,8 +13,8 @@ import lombok.Getter;
 public enum AiProvider {
 
     DEFAULT("default"),
-    OTHER("other"),
-    OPENCODE("opencode");
+    PLAN_1("plan_1"),
+    PLAN_2("plan_2");
 
     private final String configKey;
 

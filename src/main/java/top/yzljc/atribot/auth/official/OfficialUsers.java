@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.C2CRepository;
-import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

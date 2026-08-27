@@ -9,7 +9,7 @@ import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.function.general.DebugCommand;
+import top.yzljc.atribot.function.admin.DebugCommand;
 
 import java.net.URI;
 import java.util.Timer;

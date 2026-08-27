@@ -11,8 +11,8 @@ import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
-import top.yzljc.atribot.function.official.ChatContentRecord;
-import top.yzljc.atribot.function.official.PushTaskCommand;
+import top.yzljc.atribot.function.tasks.QQChatContentRecord;
+import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.ChatPinnedRepo;
@@ -61,23 +61,23 @@ public class GroupController {
         }
 
         // 置顶会话单独取最新一条消息并前置（按置顶顺序），分页里排除它们避免重复
-        List<ChatContentRecord.ConversationRecord> pinned = new ArrayList<>();
+        List<QQChatContentRecord.ConversationRecord> pinned = new ArrayList<>();
         for (String groupOpenId : pinnedGroups) {
-            var c = ChatContentRecord.fetchConversation("group", groupOpenId);
+            var c = QQChatContentRecord.fetchConversation("group", groupOpenId);
             if (c != null) pinned.add(c);
         }
         for (String userOpenId : pinnedC2c) {
-            var c = ChatContentRecord.fetchConversation("c2c", userOpenId);
+            var c = QQChatContentRecord.fetchConversation("c2c", userOpenId);
             if (c != null) pinned.add(c);
         }
 
-        var page = ChatContentRecord.fetchConversations(limit, offset, pinnedGroups, pinnedC2c);
-        List<ChatContentRecord.ConversationRecord> items = new ArrayList<>(pinned);
+        var page = QQChatContentRecord.fetchConversations(limit, offset, pinnedGroups, pinnedC2c);
+        List<QQChatContentRecord.ConversationRecord> items = new ArrayList<>(pinned);
         items.addAll(page.items());
         ctx.json(Result.success(new ConversationListResult(items, page.hasMore())));
     }
 
-    public record ConversationListResult(List<ChatContentRecord.ConversationRecord> items, boolean hasMore) {
+    public record ConversationListResult(List<QQChatContentRecord.ConversationRecord> items, boolean hasMore) {
     }
 
     public static void listChatPinned(Context ctx) {
@@ -104,14 +104,14 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
-        ctx.json(Result.success(ChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
+        ctx.json(Result.success(QQChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
     }
 
     public static void clearGroupMessages(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         try {
-            var result = ChatContentRecord.clearGroupMessages(groupOpenId,
+            var result = QQChatContentRecord.clearGroupMessages(groupOpenId,
                     body == null ? "all" : body.path("mode").asText("all"),
                     body == null ? 0 : body.path("count").asInt(0),
                     body == null ? null : body.path("start").asText(null),
@@ -135,7 +135,7 @@ public class GroupController {
     /** 群成员列表（实为「在本群发过言的人」，官方 API 不提供真实名册） */
     public static void listGroupMembers(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
-        ctx.json(Result.success(ChatContentRecord.fetchGroupMembers(groupOpenId)));
+        ctx.json(Result.success(QQChatContentRecord.fetchGroupMembers(groupOpenId)));
     }
 
     public static void getGroupMuteState(Context ctx) {
@@ -202,7 +202,7 @@ public class GroupController {
             ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
             return;
         }
-        var result = ChatContentRecord.locateGroupMessageByReference(
+        var result = QQChatContentRecord.locateGroupMessageByReference(
                 groupOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
         if (result == null) {
             ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
@@ -228,7 +228,7 @@ public class GroupController {
                 if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
                 messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
                 if (messageId != null) {
-                    ChatContentRecord.patchRefDisplayData(messageId,
+                    QQChatContentRecord.patchRefDisplayData(messageId,
                             dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
                 }
             } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {

@@ -5,7 +5,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.function.official.minecraft.MinecraftRemote;
+import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 
 import java.util.Set;
 

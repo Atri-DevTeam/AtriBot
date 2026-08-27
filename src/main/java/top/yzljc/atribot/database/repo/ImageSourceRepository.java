@@ -2,7 +2,7 @@ package top.yzljc.atribot.database.repo;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.function.impl.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 
 import java.sql.Timestamp;

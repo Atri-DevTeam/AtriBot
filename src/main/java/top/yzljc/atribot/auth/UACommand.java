@@ -13,7 +13,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupJoinRequestEvent;
-import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
+import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.webui.repo.JoinApprovalWhitelistRepo;
 
 import java.util.HashMap;

@@ -11,7 +11,7 @@ import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.function.napcat.GroupContentRecord;
+import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
 

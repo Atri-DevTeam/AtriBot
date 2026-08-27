@@ -92,7 +92,9 @@ commands:
     aliases: [unbanme]
     usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
   whoami:
-    description: 我的账号信息
+    description: 用户场景信息
+  test-whoami:
+    description: 测试用 - 用户场景信息
   mc:
     description: Minecraft相关
     usage: "/mc <子命令> [参数]"
@@ -122,11 +124,11 @@ commands:
       - 反馈
       - 举报
       - 建议
-  投稿:
+  submit:
     description: 投稿图片到图源
-    usage: /投稿 [图片]
+    usage: /submit [图片]
     aliases:
-      - submit
+      - 投稿
       - 图源投稿
       - 上传图片
   图源:
@@ -168,11 +170,6 @@ commands:
     aliases:
       - 四子棋
       - c4
-  sudoku:
-    description: 数独游戏
-    aliases:
-      - 数独
-      - sd
   roulette:
     description: 幸运轮盘游戏
     aliases:
@@ -193,17 +190,26 @@ commands:
   全量消息:
     description: 授权全量消息
     usage: /全量消息
-  推送任务:
+  tasks:
     description: 推送任务列表
+    aliases:
+      - 任务
+      - 推送任务
   四子棋:
     description: 四子棋游戏
     aliases:
       - c4
       - connect4
       - connectfour
-  打卡:
+  sign:
     description: 每日打卡签到
     usage: /打卡
+    aliases:
+      - 打卡
+      - 每日打卡
+      - 每日签到
+      - 签到
+      - 冒泡
   debug:
     description: 调试
   check-hyp:
@@ -254,9 +260,9 @@ commands:
       - earth
       - online
       - 地球
-  随机物品:
+  drawitem:
     description: 抽取Minecraft物品卡
-    usage: /随机物品 [bag]
+    usage: /drawitem [bag]
     aliases:
       - 随机物品
       - 随机物品卡
@@ -319,6 +325,7 @@ commands:
     usage: /hyp <子命令> [参数]
     aliases:
       - hypixel
+      - skbpack
   mctool:
     description: Mc工具二级指令
     usage: /mctool <子命令> [参数]
@@ -326,6 +333,8 @@ commands:
       - mctools
       - minecrafttool
       - minecrafttools
+      - mcv
+      - mccape
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息

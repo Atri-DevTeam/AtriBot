@@ -6,7 +6,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.function.napcat.GroupContentRecord;
+import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.webui.Result;

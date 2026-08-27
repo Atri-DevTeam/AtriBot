@@ -574,7 +574,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                     }
 
                     Object keyboard = TC.keyboard(List.of(List.of(
-                            new Button("c0", "再领取一个", "/cl", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                            new Button("c0", "再领取一个", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
                     )));
 
                     switch (session.platform) {

@@ -9,11 +9,11 @@ import top.yzljc.atribot.database.EventLogDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.*;
-import top.yzljc.atribot.function.official.Feedback;
-import top.yzljc.atribot.function.official.PushTaskCommand;
-import top.yzljc.atribot.function.official.pushtask.PushTask;
-import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
-import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings.DisableScope;
+import top.yzljc.atribot.function.command.FeedbackCommand;
+import top.yzljc.atribot.function.command.PushTaskCommand;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings.DisableScope;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 
@@ -209,7 +209,7 @@ public class AdminController {
         boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden());
         if (success) {
             // 主动推送涉及网络，别阻塞 WebUI 请求线程
-            ThreadManager.execute(() -> Feedback.dispatchReply(dto.getId()));
+            ThreadManager.execute(() -> FeedbackCommand.dispatchReply(dto.getId()));
             ctx.json(Result.success("ok"));
         } else {
             ctx.json(Result.fail(500, "回复失败，可能该反馈不存在"));

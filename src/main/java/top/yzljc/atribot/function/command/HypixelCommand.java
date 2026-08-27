@@ -3,14 +3,11 @@ package top.yzljc.atribot.function.command;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
-import top.yzljc.atribot.function.official.minecraft.MinecraftBind;
+import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 
 import java.util.Map;
 import java.util.Set;
@@ -128,9 +125,13 @@ public class HypixelCommand implements CommandExecutor {
                     }
                 }
             }
-
             user.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
+        }
 
+        if (sender instanceof QQGuildCommandSender user) {
+            if (label.equals("skbpack")) {
+                return Atri.getInstance().getSkyblockPackCheck().onCommand(user);
+            }
         }
 
         return true;

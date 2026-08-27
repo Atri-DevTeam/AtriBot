@@ -4,7 +4,7 @@ import io.javalin.Javalin;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.function.napcat.SizeNtUid;
+import top.yzljc.atribot.function.utils.SizeNtUid;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.controller.*;
 

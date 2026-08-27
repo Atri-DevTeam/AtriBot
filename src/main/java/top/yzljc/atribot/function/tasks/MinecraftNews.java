@@ -22,7 +22,7 @@ import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.function.official.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;

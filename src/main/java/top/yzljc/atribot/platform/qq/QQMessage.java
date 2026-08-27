@@ -5,7 +5,7 @@ import lombok.Getter;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.event.EventType;
-import top.yzljc.atribot.function.official.SignCommand;
+import top.yzljc.atribot.function.command.SignCommand;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.Recallable;

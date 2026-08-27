@@ -160,7 +160,7 @@ public final class McVersionImpl implements ScheduledTask {
         return sender.sendMessage(TC.md(versionInfo)) != null;
     }
 
-    public static void onCommand(QQGuildCommandSender sender) {
+    public static boolean onCommand(QQGuildCommandSender sender) {
         Map<String, VersionInfo> versions = checkCurrentVersion();
         VersionInfo release = versions.get("release");
         VersionInfo snapshot = versions.get("snapshot");
@@ -179,7 +179,7 @@ public final class McVersionImpl implements ScheduledTask {
                 snapshot != null ? snapshot.id() : "未知",
                 snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()).trim() : "未知"
         );
-        sender.sendMessage(versionInfo.trim());
+        return sender.sendMessage(versionInfo.trim()) != null;
     }
 
     private static void pushUpdateInfo(VersionType type, VersionInfo versionInfo) {

@@ -10,7 +10,7 @@ import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
-import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.SseBroadcaster;
 
@@ -46,7 +46,7 @@ public class C2CController {
                 openIds.add(data.userOpenId());
             }
         }
-        Map<String, String> usernames = ChatContentRecord.findLatestKnownUsernames(openIds);
+        Map<String, String> usernames = QQChatContentRecord.findLatestKnownUsernames(openIds);
         List<C2CUserDTO> users = new ArrayList<>(all.size());
         for (var data : all) {
             users.add(toC2CUserDTO(data, usernames.get(data.userOpenId())));
@@ -56,7 +56,7 @@ public class C2CController {
 
     public static void getC2CUserPermissions(Context ctx) {
         var data = OfficialUsers.getData(ctx.pathParam("userOpenId"));
-        String username = ChatContentRecord.findLatestKnownUsername(data.userOpenId());
+        String username = QQChatContentRecord.findLatestKnownUsername(data.userOpenId());
         ctx.json(Result.success(toC2CUserDTO(data, username)));
     }
 
@@ -155,21 +155,21 @@ public class C2CController {
         }
 
         var updated = OfficialUsers.getData(userOpenId);
-        ctx.json(Result.success(toC2CUserDTO(updated, ChatContentRecord.findLatestKnownUsername(updated.userOpenId()))));
+        ctx.json(Result.success(toC2CUserDTO(updated, QQChatContentRecord.findLatestKnownUsername(updated.userOpenId()))));
     }
 
     public static void fetchC2CMessages(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
-        ctx.json(Result.success(ChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize)));
+        ctx.json(Result.success(QQChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize)));
     }
 
     public static void clearC2CMessages(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         try {
-            var result = ChatContentRecord.clearC2CMessages(userOpenId,
+            var result = QQChatContentRecord.clearC2CMessages(userOpenId,
                     body == null ? "all" : body.path("mode").asText("all"),
                     body == null ? 0 : body.path("count").asInt(0),
                     body == null ? null : body.path("start").asText(null),
@@ -195,7 +195,7 @@ public class C2CController {
             ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
             return;
         }
-        var result = ChatContentRecord.locateC2CMessageByReference(
+        var result = QQChatContentRecord.locateC2CMessageByReference(
                 userOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
         if (result == null) {
             ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
@@ -220,7 +220,7 @@ public class C2CController {
                 if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
                 messageId = C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent());
                 if (messageId != null) {
-                    ChatContentRecord.patchC2CRefDisplayData(messageId,
+                    QQChatContentRecord.patchC2CRefDisplayData(messageId,
                             dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
                 }
             } else if (replyId != null && !replyId.isBlank()) {

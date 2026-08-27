@@ -13,7 +13,7 @@ import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.event.impl.ErrorCode;
-import top.yzljc.atribot.function.official.ChatContentRecord;
+import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
@@ -111,7 +111,7 @@ public class ChatService {
         return sendMessageAsync(privateMessageUrl(openId), effectiveRequest, "单聊")
                 .thenApply(response -> {
                     if (response != null) {
-                        ChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                        QQChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
                     }
                     if (response != null) {
                         return response.id() ;
@@ -139,7 +139,7 @@ public class ChatService {
         return sendMessageAsync(groupMessageUrl(groupOpenId), effectiveRequest, "群聊")
                 .thenApply(response -> {
                     if (response != null) {
-                        ChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                        QQChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
                         if (effectiveRequest.getMsgId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
                             OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
                         }
