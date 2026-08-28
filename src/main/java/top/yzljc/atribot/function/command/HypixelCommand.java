@@ -9,6 +9,7 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,6 +22,33 @@ import java.util.Set;
  * @Description Hypixel -> 综合查询二级菜单
  */
 public class HypixelCommand implements CommandExecutor {
+
+    private static final Map<String, String> GAME_IDS_BY_ALIAS = Map.ofEntries(
+            Map.entry("sb", "SKYBLOCK"),
+            Map.entry("bw", "BEDWARS"),
+            Map.entry("arc", "ARCADE"),
+            Map.entry("duel", "DUELS"),
+            Map.entry("duels", "DUELS"),
+            Map.entry("sw", "SKYWARS"),
+            Map.entry("bb", "BUILD_BATTLE"),
+            Map.entry("mm", "MURDER_MYSTERY"),
+            Map.entry("tnt", "TNTGAMES"),
+            Map.entry("wool", "WOOL_GAMES"),
+            Map.entry("uhc", "UHC"),
+            Map.entry("bsg", "SURVIVAL_GAMES"),
+            Map.entry("sg", "SURVIVAL_GAMES"),
+            Map.entry("mw", "WALLS3"),
+            Map.entry("wl", "BATTLEGROUND"),
+            Map.entry("cvc", "MCGO"),
+            Map.entry("smash", "SUPER_SMASH"),
+            Map.entry("classic", "LEGACY"),
+            Map.entry("proto", "PROTOTYPE"),
+            Map.entry("pit", "PIT"),
+            Map.entry("smp", "SMP"),
+            Map.entry("housing", "HOUSING"));
+    private static final String GAME_ALIAS_HELP =
+            "sb / bw / arc / duel / sw / bb / mm / tnt / wool / uhc / bsg / mw / wl / cvc / "
+                    + "smash / classic / proto / pit / smp / housing";
 
     private static final Set<SubCommand> availableSubCommands = Set.of(
             new SubCommand("wz", "查询玩家TNT游戏法师掘战详细数据", ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, true, false),
@@ -75,7 +103,7 @@ public class HypixelCommand implements CommandExecutor {
                 return true;
             }
 
-            var sub = getCommand(args[0]);
+            var sub = getCommand(args[0].toLowerCase(Locale.ROOT));
             if (sub == null) {
                 user.sendMessage("执行指令时出现错误：请向开发者报告此问题！");
                 return true;
@@ -101,8 +129,22 @@ public class HypixelCommand implements CommandExecutor {
                         }
                     }
                 } else {
+                    Map<String, Object> request = Map.of();
+                    if ("gs".equals(sub.prefix()) && args.length > 1) {
+                        if (args.length > 2) {
+                            user.sendMessage("用法: /hyp gs [游戏代称]\n支持: " + GAME_ALIAS_HELP);
+                            return true;
+                        }
+                        String alias = args[1].toLowerCase(Locale.ROOT);
+                        String gameId = GAME_IDS_BY_ALIAS.get(alias);
+                        if (gameId == null) {
+                            user.sendMessage("未知的游戏代称，支持: " + GAME_ALIAS_HELP);
+                            return true;
+                        }
+                        request = Map.of("game", gameId);
+                    }
                     String msgId = user.sendMessage("正在查询目标数据，请稍等片刻...");
-                    var d = PreImageGenerate.dump(sub.api(), Map.of());
+                    var d = PreImageGenerate.dump(sub.api(), request);
 
                     user.getMessage().recall(msgId);
 
