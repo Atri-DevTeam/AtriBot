@@ -622,6 +622,37 @@ public class LootRepository {
         return new UserLootsSummary(userId, 0, new ArrayList<>());
     }
 
+    /**
+     * 查询用户卡片拥有量（持有卡片总张数）的全区排名。
+     * 采用竞赛排名：总量更高的每名用户都排在其前面，总量相同的用户并列；
+     * 一张卡都没有的用户排在所有持有者之后。查询失败返回 null。
+     */
+    public static LootRank getLootOwnershipRank(String userId) {
+        String rankSql = "SELECT COUNT(*) + 1 FROM (" +
+                "  SELECT `user_id`, SUM(`count`) AS total FROM `user_loot_items` GROUP BY `user_id`" +
+                ") t WHERE t.total > (SELECT COALESCE(SUM(`count`), 0) FROM `user_loot_items` WHERE `user_id` = ?)";
+        String totalSql = "SELECT COUNT(DISTINCT `user_id`) FROM `user_loot_items`";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(rankSql)) {
+            ps.setString(1, userId);
+            int rank;
+            try (var rs = ps.executeQuery()) {
+                rs.next();
+                rank = rs.getInt(1);
+            }
+            int totalPlayers;
+            try (var ps2 = con.prepareStatement(totalSql);
+                 var rs2 = ps2.executeQuery()) {
+                rs2.next();
+                totalPlayers = rs2.getInt(1);
+            }
+            return new LootRank(rank, totalPlayers);
+        } catch (Exception e) {
+            log.error("查询卡片拥有量排名失败: userId={}", userId, e);
+        }
+        return null;
+    }
+
     // ==================== 内部工具 ====================
 
     private static void ensureLootUser(Connection con, String userId) throws Exception {
@@ -756,5 +787,9 @@ public class LootRepository {
         public int totalLootCount() {
             return loots.stream().mapToInt(LootRecord::count).sum();
         }
+    }
+
+    /** 卡片拥有量全区排名：rank 为名次（并列同名次），totalPlayers 为持有过卡片的人数 */
+    public record LootRank(int rank, int totalPlayers) {
     }
 }

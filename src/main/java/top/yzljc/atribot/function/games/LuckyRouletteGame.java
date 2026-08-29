@@ -122,7 +122,7 @@ public class LuckyRouletteGame implements CommandExecutor {
 
     private void sendWelcomeScreen(String sessionId, QQCommandSender sender) {
         String markdown = """
-                **幸运轮盘** 🎲
+                🪄**魔法轮盘**
 
                 **规则:**
                 > 轮盘共 6 格，其中 1 格是魔法格，每次转动过后不重置
@@ -139,7 +139,7 @@ public class LuckyRouletteGame implements CommandExecutor {
 
         List<Button> row = new ArrayList<>();
         for (int n = MIN_PLAYERS; n <= MAX_PLAYERS; n++) {
-            row.add(new Button("btn_size_" + n, "🎲 " + n + "人局", "/幸运轮盘 start " + n,
+            row.add(new Button("btn_size_" + n, + n + "人局", "/幸运轮盘 start " + n,
                     true, ButtonStyle.GRAY, ButtonType.COMMAND));
         }
 
@@ -287,7 +287,7 @@ public class LuckyRouletteGame implements CommandExecutor {
 
     private void sendWaitingUpdate(GameState game, QQCommandSender sender) {
         StringBuilder sb = new StringBuilder();
-        sb.append("**幸运轮盘 (").append(game.maxPlayers).append("人局)** 🎲\n\n");
+        sb.append("🪄**魔法轮盘 (").append(game.maxPlayers).append("人局)**\n\n");
         sb.append("**规则:** 轮盘 6 格含 1 魔法格且不重置，指定目标施展魔法，")
                 .append("目标安全则轮到下家，魔法命中者淘汰、其余人获胜喵！\n\n");
         sb.append("**当前状态 (").append(game.players.size()).append("/").append(game.maxPlayers).append("):**\n");
@@ -321,7 +321,7 @@ public class LuckyRouletteGame implements CommandExecutor {
         String currentPlayerId = game.players.get(game.currentPlayer);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("**幸运轮盘** 🎲 | 剩余格数: ").append(remaining).append("/").append(SLOTS)
+        sb.append("**魔法轮盘** 🪄 | 剩余格数: ").append(remaining).append("/").append(SLOTS)
                 .append(" | 当前命中概率: 1/").append(remaining).append("\n\n");
         if (statusMsg != null && !statusMsg.isEmpty()) {
             sb.append("> ").append(statusMsg).append("\n\n");
@@ -382,7 +382,7 @@ public class LuckyRouletteGame implements CommandExecutor {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("**幸运轮盘 - 结算** 🎲\n\n");
+        sb.append("🪄**魔法轮盘 - 结算**\n\n");
         sb.append("**结果:** ");
         if (prefix != null) {
             sb.append(prefix).append("\n>");

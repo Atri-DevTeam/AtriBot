@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
@@ -18,6 +20,7 @@ import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.test.WhatFuckingPing;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -140,7 +143,7 @@ public class ChatService {
                 .thenApply(response -> {
                     if (response != null) {
                         QQChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
-                        if (effectiveRequest.getMsgId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
+                        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
                             OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
                         }
                     }
@@ -303,10 +306,17 @@ public class ChatService {
             return null;
         }
 
-        String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
         var res = HttpService.postJsonDetailed(url, json,
                 "Authorization", "QQBot " + tokenManager.getAccessToken());
+
+        if (request.getContent() != null && !request.getContent().isBlank() && request.getContent().equalsIgnoreCase("Boop!")) {
+            long ms2 = System.currentTimeMillis();
+            long ms = ms2 - WhatFuckingPing.getAccessMs().get(request.getMsgId());
+            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "消息发送耗时: " + ms + "ms, 链路: onCommand -> doMessageSend");
+        }
+
         try {
+            String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
             if (res.status() >= 200 && res.status() < 300 && res.body() != null && !res.body().isBlank()) {
                 JsonNode result = objectMapper.readTree(res.body());
                 JsonNode idNode = result.get("id");
@@ -350,6 +360,7 @@ public class ChatService {
                 throw QQMessageSendException.fromResponse(objectMapper, res.body(), "消息发送失败");
             }
         } catch (JsonProcessingException e) {
+            String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
             OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
                     res.status(), res.body(), "响应解析失败: " + e.getMessage());
             log.error("{}消息响应解析失败: ", logType, e);

@@ -24,7 +24,7 @@ import java.util.Set;
 public class HypixelCommand implements CommandExecutor {
 
     private static final Map<String, String> GAME_IDS_BY_ALIAS = Map.ofEntries(
-            Map.entry("sb", "SKYBLOCK"),
+            Map.entry("skb", "SKYBLOCK"),
             Map.entry("bw", "BEDWARS"),
             Map.entry("arc", "ARCADE"),
             Map.entry("duel", "DUELS"),
@@ -42,7 +42,7 @@ public class HypixelCommand implements CommandExecutor {
             Map.entry("cvc", "MCGO"),
             Map.entry("smash", "SUPER_SMASH"),
             Map.entry("classic", "LEGACY"),
-            Map.entry("proto", "PROTOTYPE"),
+            Map.entry("ptl", "PROTOTYPE"),
             Map.entry("pit", "PIT"),
             Map.entry("smp", "SMP"),
             Map.entry("housing", "HOUSING"));
@@ -120,7 +120,7 @@ public class HypixelCommand implements CommandExecutor {
                     String msgId = user.sendMessage("正在查询目标玩家数据，请稍等片刻...");
                     var d = PreImageGenerate.dump(sub.api(), Map.of("player", player));
 
-                    user.getMessage().recall(msgId);
+                    user.recall(msgId);
 
                     if (!d.isError()) {
                         if (d.url() != null) {
@@ -132,13 +132,13 @@ public class HypixelCommand implements CommandExecutor {
                     Map<String, Object> request = Map.of();
                     if ("gs".equals(sub.prefix()) && args.length > 1) {
                         if (args.length > 2) {
-                            user.sendMessage("用法: /hyp gs [游戏代称]\n支持: " + GAME_ALIAS_HELP);
+                            user.sendMessage("用法: /hyp gs [小游戏]\n支持: " + GAME_ALIAS_HELP);
                             return true;
                         }
                         String alias = args[1].toLowerCase(Locale.ROOT);
                         String gameId = GAME_IDS_BY_ALIAS.get(alias);
                         if (gameId == null) {
-                            user.sendMessage("未知的游戏代称，支持: " + GAME_ALIAS_HELP);
+                            user.sendMessage("未知的小游戏编号，请在总人数列表里查看可用参数。");
                             return true;
                         }
                         request = Map.of("game", gameId);
@@ -146,11 +146,11 @@ public class HypixelCommand implements CommandExecutor {
                     String msgId = user.sendMessage("正在查询目标数据，请稍等片刻...");
                     var d = PreImageGenerate.dump(sub.api(), request);
 
-                    user.getMessage().recall(msgId);
+                    user.recall(msgId);
 
                     if (!d.isError()) {
                         if (d.url() != null) {
-                            user.sendMessage(ImageComponent.imageOf(d.url()));
+                            user.sendMessage(ImageComponent.imageOf(d.url()).setText("你可以使用 /hyp gs [小游戏] 来查询指定小游戏的在线情况。 "));
                             return true;
                         }
                     }

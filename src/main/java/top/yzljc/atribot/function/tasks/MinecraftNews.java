@@ -288,9 +288,8 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
 //                if (!GroupConfigManager.isFeatureEnabled(gid, "mc_news")) continue;
 //                GroupMessage.forwardTo(gid, messageId);
 //            }
-            String markdown = "![MC #" + data.width() + "px #" + data.height() + "px](" + url + ")\n\n" +
-                    "> Minecraft官方发布了新的文章，点击图片查看详情！\n" +
-                    "> 时间：" + t;
+            String markdown = "**Minecraft官方发布了新的文章，点击图片查看详情！**\n\n" + "> 时间: " + t + "\n\n" + "![MC #" + data.width() + "px #" + data.height() + "px](" + url + ")\n\n" +
+                    "> " + Markdown.enterCommand("/tasks disable mc_news", "关闭此类推送");
 
             List<String> activeGroups = OfficialGroups.enabledGroups("mc_news");
             List<String> userLists = OfficialUsers.enabledUsers("mc_news");

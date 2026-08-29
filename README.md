@@ -1216,6 +1216,8 @@ WebUI 使用会话 Cookie + Challenge/Nonce 机制（`WebUISessionManager`）。
 
 所有接口有 1 分钟内存缓存，支持 `start`/`end`/`startTime`/`from`/`endTime`/`to`/`all`/`groupOpenId`/`userOpenId`/`unionOpenId` 等参数。
 
+公开查询接口频控：按 IP 60 次/分钟 + 全局 600 次/分钟，超出返回 HTTP 429；`/ntuid` 另有 20 QPM/IP 的独立频控。
+
 ---
 
 ## 构建与运行

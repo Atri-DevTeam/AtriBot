@@ -1,6 +1,9 @@
 package top.yzljc.atribot.webui.controller;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.javalin.http.Context;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.database.repo.SignRepository;
@@ -8,12 +11,14 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -22,18 +27,24 @@ import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.nullToDash;
 import static top.yzljc.atribot.webui.WebUiSupport.trimToNull;
 
+@Slf4j
 /** 公开官方机器人查询 */
 public class PublicQueryController {
 
     private static final DateTimeFormatter PUBLIC_QUERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId BEIJING_ZONE = ZoneId.of("Asia/Shanghai");
-    private static final long PUBLIC_QUERY_CACHE_TTL_MILLIS = 60_000L;
-    private static final ConcurrentHashMap<String, PublicQueryCacheEntry> PUBLIC_QUERY_CACHE = new ConcurrentHashMap<>();
+    /** 公开查询响应缓存：60s TTL + 容量上限，防止恶意请求用无限个 key 撑大内存 */
+    private static final Cache<String, Result<Object>> PUBLIC_QUERY_CACHE = CacheBuilder.newBuilder()
+            .maximumSize(2048)
+            .expireAfterWrite(Duration.ofSeconds(60))
+            .build();
+    /** 执行中的查询，用于合并同 key 的并发 miss，避免缓存击穿打爆数据库 */
+    private static final ConcurrentHashMap<String, CompletableFuture<Result<Object>>> IN_FLIGHT_QUERIES = new ConcurrentHashMap<>();
 
     public static void publicOfficialGroupReceivedMessages(Context ctx) {
         QueryWindow window = parseQueryWindowOrFail(ctx);
         if (window == null) return;
-        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
+        String groupOpenId = normalizeOpenIdParam(ctx.queryParam("groupOpenId"));
         String cacheKey = publicCacheKey("group_received", window, groupOpenId, null);
         publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
                 "official_group_received_messages",
@@ -49,7 +60,7 @@ public class PublicQueryController {
     public static void publicOfficialGroupSentMessages(Context ctx) {
         QueryWindow window = parseQueryWindowOrFail(ctx);
         if (window == null) return;
-        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
+        String groupOpenId = normalizeOpenIdParam(ctx.queryParam("groupOpenId"));
         String cacheKey = publicCacheKey("group_sent", window, groupOpenId, null);
         publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
                 "official_group_sent_messages",
@@ -65,7 +76,7 @@ public class PublicQueryController {
     public static void publicOfficialC2CReceivedMessages(Context ctx) {
         QueryWindow window = parseQueryWindowOrFail(ctx);
         if (window == null) return;
-        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String userOpenId = normalizeOpenIdParam(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
         String cacheKey = publicCacheKey("c2c_received", window, null, userOpenId);
         publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
                 "official_c2c_received_messages",
@@ -81,7 +92,7 @@ public class PublicQueryController {
     public static void publicOfficialC2CSentMessages(Context ctx) {
         QueryWindow window = parseQueryWindowOrFail(ctx);
         if (window == null) return;
-        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String userOpenId = normalizeOpenIdParam(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
         String cacheKey = publicCacheKey("c2c_sent", window, null, userOpenId);
         publicAsyncCached(ctx, cacheKey, () -> new PublicMessageCountDTO(
                 "official_c2c_sent_messages",
@@ -97,8 +108,8 @@ public class PublicQueryController {
     public static void publicOfficialDau(Context ctx) {
         QueryWindow window = parseQueryWindowOrFail(ctx);
         if (window == null) return;
-        String groupOpenId = trimToNull(ctx.queryParam("groupOpenId"));
-        String userOpenId = trimToNull(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String groupOpenId = normalizeOpenIdParam(ctx.queryParam("groupOpenId"));
+        String userOpenId = normalizeOpenIdParam(firstNonBlank(ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
         String cacheKey = publicCacheKey("dau", window, groupOpenId, userOpenId);
         publicAsyncCached(ctx, cacheKey, () -> {
             var stats = PublicOfficialQueryRepo.queryDau(window.start(), window.end(), groupOpenId, userOpenId);
@@ -152,7 +163,7 @@ public class PublicQueryController {
                                   List<PublicOfficialQueryRepo.DailyPoint> points) {}
 
     public static void publicOfficialUserInfo(Context ctx) {
-        String userOpenId = trimToNull(firstNonBlank(ctx.pathParam("userOpenId"), ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
+        String userOpenId = normalizeOpenIdParam(firstNonBlank(ctx.pathParam("userOpenId"), ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
         if (userOpenId == null) {
             ctx.json(Result.fail(400, "userOpenId 不能为空"));
             return;
@@ -179,7 +190,7 @@ public class PublicQueryController {
     }
 
     public static void publicOfficialGroupInfo(Context ctx) {
-        String groupOpenId = trimToNull(firstNonBlank(ctx.pathParam("groupOpenId"), ctx.queryParam("groupOpenId")));
+        String groupOpenId = normalizeOpenIdParam(firstNonBlank(ctx.pathParam("groupOpenId"), ctx.queryParam("groupOpenId")));
         if (groupOpenId == null) {
             ctx.json(Result.fail(400, "groupOpenId 不能为空"));
             return;
@@ -213,37 +224,29 @@ public class PublicQueryController {
         });
     }
 
-    private static <T> void publicAsyncCached(Context ctx, String cacheKey, Supplier<T> supplier) {
-        PublicQueryCacheEntry cached = PUBLIC_QUERY_CACHE.get(cacheKey);
-        long now = System.currentTimeMillis();
-        if (cached != null && now - cached.createdAt() < PUBLIC_QUERY_CACHE_TTL_MILLIS) {
-            ctx.json(cached.result());
+    private static void publicAsyncCached(Context ctx, String cacheKey, Supplier<Object> dataSupplier) {
+        Result<Object> cached = PUBLIC_QUERY_CACHE.getIfPresent(cacheKey);
+        if (cached != null) {
+            ctx.json(cached);
             return;
         }
 
-        publicAsync(ctx, () -> {
-            T data = supplier.get();
-            Result<T> result = Result.success(data);
-            PUBLIC_QUERY_CACHE.put(cacheKey, new PublicQueryCacheEntry(now, result));
-            cleanupPublicQueryCache(now);
-            return result;
-        }, true);
-    }
-
-    private static <T> void publicAsync(Context ctx, Supplier<T> supplier) {
-        publicAsync(ctx, supplier, false);
-    }
-
-    private static <T> void publicAsync(Context ctx, Supplier<T> supplier, boolean alreadyWrapped) {
-        ctx.future(() -> ThreadManager.supplyAsync(() -> {
-            try {
-                return alreadyWrapped ? supplier.get() : Result.success(supplier.get());
-            } catch (IllegalArgumentException e) {
-                return Result.fail(400, e.getMessage());
-            } catch (Exception e) {
-                return Result.fail(500, "公开查询失败: " + e.getMessage());
-            }
-        }).thenAccept(ctx::json));
+        // computeIfAbsent 保证同 key 的并发 miss 只有一个请求真正查库，其余共享同一个 Future
+        CompletableFuture<Result<Object>> future = IN_FLIGHT_QUERIES.computeIfAbsent(cacheKey, key ->
+                ThreadManager.supplyAsync(() -> {
+                    try {
+                        Result<Object> result = Result.success(dataSupplier.get());
+                        PUBLIC_QUERY_CACHE.put(key, result);
+                        return result;
+                    } catch (IllegalArgumentException e) {
+                        return Result.fail(400, e.getMessage());
+                    } catch (Exception e) {
+                        log.error("公开查询执行失败: {}", e.getMessage(), e);
+                        return Result.fail(500, "公开查询失败，请稍后重试");
+                    }
+                }));
+        future.whenComplete((ignored, error) -> IN_FLIGHT_QUERIES.remove(cacheKey));
+        ctx.future(() -> future.thenAccept(ctx::json));
     }
 
     private static String publicCacheKey(String name, QueryWindow window, String groupOpenId, String userOpenId) {
@@ -252,11 +255,10 @@ public class PublicQueryController {
         return name + "|start=" + start + "|end=" + end + "|group=" + nullToDash(groupOpenId) + "|user=" + nullToDash(userOpenId);
     }
 
-    private static void cleanupPublicQueryCache(long now) {
-        if (PUBLIC_QUERY_CACHE.size() < 512) {
-            return;
-        }
-        PUBLIC_QUERY_CACHE.entrySet().removeIf(entry -> now - entry.getValue().createdAt() >= PUBLIC_QUERY_CACHE_TTL_MILLIS);
+    /** openId 参数统一规整：trim、空白转 null；真实 openid 为 32 位十六进制，超长输入视为未提供，防止缓存 key 与查询参数被撑大 */
+    private static String normalizeOpenIdParam(String value) {
+        String trimmed = trimToNull(value);
+        return trimmed != null && trimmed.length() <= 64 ? trimmed : null;
     }
 
     private static QueryWindow parseQueryWindowOrFail(Context ctx) {
@@ -326,9 +328,6 @@ public class PublicQueryController {
         String endString() {
             return end == null ? null : end.format(PUBLIC_QUERY_TIME_FMT);
         }
-    }
-
-    private record PublicQueryCacheEntry(long createdAt, Result<?> result) {
     }
 
     public record PublicMessageCountDTO(String metric, String scope, String startTime, String endTime,

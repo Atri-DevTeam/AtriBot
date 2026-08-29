@@ -12,6 +12,7 @@ import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
+import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.qq.QQBot;
 
@@ -87,7 +88,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onFullMessageFail(OfficialGroupSendFailEvent event) {
         String groupOpenId = event.getGroupOpenId();
-        if (OfficialGroups.allowProactiveMsg(groupOpenId) && groupOpenId != null) {
+        if (groupOpenId != null && event.getErrorCode() == ErrorCode.NO_ACTIVE_MESSAGE_PERMISSION.getErrorCode()) {
             OfficialGroups.setAllowProactiveMsg(groupOpenId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isGroupEnabled(groupOpenId)) {
@@ -101,7 +102,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onC2CPushFail(OfficialC2CSendFailEvent event) {
         String userId = event.getUserId();
-        if (OfficialUsers.isC2CPushEnabled(userId) && event.getErrorCode() == 40034105 && userId != null) {
+        if (event.getErrorCode() == ErrorCode.NO_ACTIVE_MESSAGE_PERMISSION.getErrorCode() && userId != null) {
             OfficialUsers.setC2CPush(userId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isUserEnabled(userId)) {

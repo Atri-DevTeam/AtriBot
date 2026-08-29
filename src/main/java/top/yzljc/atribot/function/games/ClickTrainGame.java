@@ -46,6 +46,8 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     private static final long GAME_TIMEOUT_MS = 120_000;
     private static final int REWARD_PER_HIT = 2;
     private static final int MAX_REWARD = 40;
+    private static final int MISS_PENALTY = 2;
+    private static final int MIN_REWARD = 10;
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final File RECORD_FILE = new File(Properties.CLICK_TRAIN_RECORD);
 
@@ -177,17 +179,20 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     private Object buildKeyboard(GameState game) {
         List<List<Button>> layout = new ArrayList<>();
 
+        boolean needPermissionRestriction = game.platform == Platform.OFFICIAL_GROUP;
         for (int row = 0; row < ROWS; row++) {
             List<Button> buttons = new ArrayList<>();
             for (int col = 0; col < COLS; col++) {
-                buttons.add(new Button(
+                var btn = new Button(
                         cellButtonId(row, col),
                         String.valueOf(game.cellNumbers[row][col]),
                         CALLBACK_VALUE + ":" + game.ownerOpenId,
                         true,
                         ButtonStyle.BLUE,
-                        ButtonType.CALLBACK
-                ).setAllowedOpenIds(List.of(game.ownerOpenId)).setPermissionType(PermissionType.SPECIFIC_USER));
+                        ButtonType.CALLBACK);
+                if (needPermissionRestriction) btn.setAllowedOpenIds(List.of(game.ownerOpenId)).setPermissionType(PermissionType.SPECIFIC_USER);
+
+                buttons.add(btn);
             }
             layout.add(buttons);
         }
@@ -199,13 +204,13 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 **反应力测试**
                 
                 > 请按照从1点到30的顺序点击，首次点击后开始计时
-                > 手机端由于点击间隔无法完成，请使用PC端测试
+                > 手机端由于点击间隔无法快速完成，建议使用PC端测试
                 > 开始后限时 2 分钟，未完成自动取消
                 > 你的最好记录: """ + formatBest(ownerId);
     }
 
     /**
-     * 结束游戏并发放奖励：每次顺序正确 2 金粒，单人封顶 40，防止无脑刷分
+     * 结束游戏并发放奖励：每次顺序正确 2 金粒，单人封顶 40；每次失误扣 2 金粒，最低保留 10，防止无脑刷分
      */
     private String endGame(GameState game, boolean completed) {
         game.phase = Phase.FINISHED;
@@ -214,7 +219,9 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         Map<String, Integer> rewards = new LinkedHashMap<>();
         if (completed) {
             for (Map.Entry<String, Integer> entry : game.hits.entrySet()) {
-                int reward = Math.min(entry.getValue() * REWARD_PER_HIT, MAX_REWARD);
+                int reward = Math.max(MIN_REWARD,
+                        Math.min(entry.getValue() * REWARD_PER_HIT, MAX_REWARD)
+                                - game.misses.getOrDefault(entry.getKey(), 0) * MISS_PENALTY);
                 rewards.put(entry.getKey(), LootRepository.addCoins(entry.getKey(), reward));
             }
         }

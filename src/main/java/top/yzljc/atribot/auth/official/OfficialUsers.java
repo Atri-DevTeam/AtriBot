@@ -319,6 +319,52 @@ public class OfficialUsers {
         return new FunctionInfo(enabled, operator, time);
     }
 
+    /**
+     * 读取用户个人偏好设置中的某个字段，不存在返回 null。
+     * 返回 JsonNode，可通过 asText()/asInt()/asBoolean() 等取值。
+     */
+    public static JsonNode getUserSetting(String userOpenId, String setting) {
+        String jsonStr = C2CRepository.getUserSettingsJson(userOpenId);
+        if (jsonStr == null || jsonStr.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode settings = objectMapper.readTree(jsonStr);
+            if (settings.isObject() && settings.has(setting)) {
+                return settings.get(setting);
+            }
+        } catch (Exception e) {
+            log.error("读取用户 {} 的偏好设置 {} 失败: {}", userOpenId, setting, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 设置用户个人偏好设置中的某个字段，data 可为任意可被 Jackson 序列化的类型
+     * （字符串、数字、布尔、对象、数组等）。原有其他字段不受影响。
+     */
+    public static boolean setUserSetting(String userOpenId, String setting, Object data) {
+        String jsonStr = C2CRepository.getUserSettingsJson(userOpenId);
+        if (jsonStr == null || jsonStr.isBlank()) {
+            jsonStr = "{}";
+        }
+
+        JsonNode settings;
+        try {
+            settings = objectMapper.readTree(jsonStr);
+            if (!settings.isObject()) {
+                log.error("用户 {} 的偏好设置不是 JSON 对象，拒绝覆盖以免丢失数据", userOpenId);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("解析用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
+            return false;
+        }
+
+        ((ObjectNode) settings).set(setting, objectMapper.valueToTree(data));
+        return C2CRepository.saveUserSettingsJson(userOpenId, settings.toString());
+    }
+
     private static Set<String> parsePermissions(String permissionsString) {
         if (permissionsString == null || permissionsString.isBlank()) {
             return Set.of();

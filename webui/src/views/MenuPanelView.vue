@@ -8,7 +8,7 @@
     <div class="sidebar-spacer"/>
 
     <main class="workspace">
-      <header class="topbar">
+      <header class="topbar menu-panel-topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -40,14 +40,32 @@
             <strong>自定义菜单（单聊）</strong>
             <div class="chat-head-right">
               <span v-if="menuVersion > 0" class="status-pill"><span class="dot ok"></span>版本 {{ menuVersion }}</span>
-              <button class="ghost-button" :disabled="menuLoading" @click="loadMenu">
-                {{ menuLoading ? '加载中...' : '重新加载' }}
+              <button class="ghost-button mp-head-action" :title="menuLoading ? '加载中' : '重新加载'"
+                      :aria-label="menuLoading ? '加载中' : '重新加载'" :disabled="menuLoading" @click="loadMenu">
+                <svg class="mp-action-icon" :class="{ 'mp-action-icon--spin': menuLoading }" width="16" height="16"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6v5h-5"/><path d="M4 18v-5h5"/>
+                  <path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 11M4 13l2.4 4.6A7 7 0 0 0 17.9 15"/>
+                </svg>
+                <span class="mp-action-label">{{ menuLoading ? '加载中...' : '重新加载' }}</span>
               </button>
-              <button class="ghost-button" :disabled="transferBusy || menuLoading || menuItems.length === 0" @click="exportMenuFile">
-                导出菜单
+              <button class="ghost-button mp-head-action" title="导出菜单" aria-label="导出菜单"
+                      :disabled="transferBusy || menuLoading || menuItems.length === 0" @click="exportMenuFile">
+                <svg class="mp-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 21V9"/><polyline points="7 14 12 9 17 14"/><path d="M5 3h14"/>
+                </svg>
+                <span class="mp-action-label">导出菜单</span>
               </button>
-              <button class="primary-button" :disabled="menuSaving || menuItems.length === 0" @click="saveMenu">
-                {{ menuSaving ? '保存中...' : '保存菜单' }}
+              <button class="primary-button mp-head-action" :title="menuSaving ? '保存中' : '保存菜单'"
+                      :aria-label="menuSaving ? '保存中' : '保存菜单'" :disabled="menuSaving || menuItems.length === 0" @click="saveMenu">
+                <svg class="mp-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span class="mp-action-label">{{ menuSaving ? '保存中...' : '保存菜单' }}</span>
               </button>
             </div>
           </div>
@@ -174,12 +192,19 @@
             <strong>指令面板</strong>
             <div class="chat-head-right">
               <span class="status-pill"><span class="dot ok"></span>{{ panels.length }} 个面板</span>
-              <button class="ghost-button" :disabled="panelLoading" @click="loadPanels(true)">
-                {{ panelLoading ? '加载中...' : '刷新' }}
+              <button class="ghost-button mp-head-action" :title="panelLoading ? '加载中' : '刷新面板'"
+                      :aria-label="panelLoading ? '加载中' : '刷新面板'" :disabled="panelLoading" @click="loadPanels(true)">
+                <svg class="mp-action-icon" :class="{ 'mp-action-icon--spin': panelLoading }" width="16" height="16"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6v5h-5"/><path d="M4 18v-5h5"/>
+                  <path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 11M4 13l2.4 4.6A7 7 0 0 0 17.9 15"/>
+                </svg>
+                <span class="mp-action-label">{{ panelLoading ? '加载中...' : '刷新' }}</span>
               </button>
-              <button class="primary-button mp-add-btn" @click="openCreate">
+              <button class="primary-button mp-add-btn mp-head-action" title="新建面板" aria-label="新建面板" @click="openCreate">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                新建面板
+                <span class="mp-action-label">新建面板</span>
               </button>
             </div>
           </div>
@@ -887,6 +912,8 @@ async function saveMenu() {
     alert('子菜单名称最多 7 个汉字或 14 个字母')
     return
   }
+  const confirmed = confirm(`确认保存当前自定义菜单？\n\n将保存 ${menuItems.value.length} 个菜单项，当前线上菜单会被覆盖。`)
+  if (!confirmed) return
   menuSaving.value = true
   try {
     const version = await api('/menu', {

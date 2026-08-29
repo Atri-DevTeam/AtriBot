@@ -66,7 +66,7 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
                         "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
 
                 switch (sender) {
-                    case QQCommandSender qq -> qq.sendMessage(TC.md(text), false);
+                    case QQCommandSender qq -> qq.sendMessage(TC.md(text));
                     case QQGuildCommandSender guild -> guild.sendMessage(text);
 //                    case NapcatCommandSender nc -> nc.sendMessage(text);
 //                    case null, default -> sender.sendMessage(Identifier.UNSUPPORTED_PLATFORM);

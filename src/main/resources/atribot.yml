@@ -41,6 +41,11 @@ commands:
   cl:
     description: 领取Hypixel奖励
     usage: /cl <Hypixel每日签到链接>
+  preferences:
+    description: 管理个人偏好设置
+    usage: /preferences hypixel_reward [enable|disable|mode|priority|remove]
+    aliases:
+      - 偏好设置
   anan:
     description: 夏目安安素描本
     usage: /anan <文本> [模式]

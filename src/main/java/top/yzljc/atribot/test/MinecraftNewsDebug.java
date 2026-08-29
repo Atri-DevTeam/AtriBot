@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
@@ -147,6 +148,11 @@ public class MinecraftNewsDebug implements CommandExecutor {
                     "Minecraft官网发布了新的文章，点击图片查看详细！\n\n"
                             + "![MC #" + data.width() + "px #" + data.height() + "px](" + data.url() + ")"
             );
+
+            String markdown = "**Minecraft官方发布了新的文章，点击图片查看详情！**\n\n" + "> 时间: " + "2026-3-5 19:00" + "\n\n" + "![MC #" + data.width() + "px #" + data.height() + "px](" + data.url() + ")\n\n" +
+                    "> " + Markdown.enterCommand("/tasks disable mc_news", "关闭此类推送");
+
+            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), TC.md(markdown));
 
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[动态] " + article.title, forumsMarkdown);
             GroupMessage.chatMessage(debugGroup,

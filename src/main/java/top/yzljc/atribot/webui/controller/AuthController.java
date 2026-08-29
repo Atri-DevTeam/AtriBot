@@ -81,17 +81,25 @@ public class AuthController {
         clearLegacyTokenCookie(ctx);
         ctx.res().addHeader("Set-Cookie", WebUISessionManager.SESSION_COOKIE + "=" + sessionId
                 + "; Path=/; Max-Age=" + WebUISessionManager.SESSION_TTL_SECONDS
-                + "; HttpOnly; SameSite=Strict");
+                + "; HttpOnly; SameSite=Strict" + secureAttribute(ctx));
     }
 
     private static void clearSessionCookies(Context ctx) {
         ctx.res().addHeader("Set-Cookie", WebUISessionManager.SESSION_COOKIE
-                + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+                + "=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" + secureAttribute(ctx));
         clearLegacyTokenCookie(ctx);
     }
 
     private static void clearLegacyTokenCookie(Context ctx) {
-        ctx.res().addHeader("Set-Cookie", "webui_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+        ctx.res().addHeader("Set-Cookie", "webui_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" + secureAttribute(ctx));
+    }
+
+    /**
+     * HTTPS 下追加 Secure，浏览器只会在 TLS 连接回传该 cookie，避免明文 HTTP 泄露会话。
+     * 依赖 Jetty ForwardedRequestCustomizer 读取反代的 X-Forwarded-Proto；裸 HTTP 部署时不加，否则浏览器拒存 cookie 导致无法登录。
+     */
+    private static String secureAttribute(Context ctx) {
+        return "https".equalsIgnoreCase(ctx.req().getScheme()) ? "; Secure" : "";
     }
 
     public record ChallengeDTO(String nonce, String expiresAt, String algorithm) {

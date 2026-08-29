@@ -310,6 +310,26 @@
   gap: 6px;
 }
 
+.mp-head-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.mp-action-icon {
+  flex: 0 0 auto;
+}
+
+.mp-action-icon--spin {
+  animation: mp-action-spin 0.8s linear infinite;
+}
+
+@keyframes mp-action-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 760px) {
   .mp-transfer-actions .ghost-button {
     width: 32px;
@@ -552,6 +572,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex: 0 0 auto;
   padding: 5px 8px;
   border-radius: var(--radius-md);
   background: #f5f6f8;
@@ -641,6 +662,78 @@
 
   .mp-menu-preview {
     position: static;
+  }
+}
+
+/* 手机端使用图标操作，保持标题栏单行且不压缩按钮 */
+@media (max-width: 640px) {
+  .menu-panel-topbar {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .menu-panel-topbar .topbar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .menu-panel-topbar .topbar-right {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .menu-panel-topbar .feedback-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .menu-panel-topbar .feedback-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-panel-topbar .feedback-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .feedback-panel > .chat-head > strong {
+    flex: 1 1 auto;
+  }
+
+  .feedback-panel > .chat-head > .chat-head-right {
+    width: auto;
+    min-width: 0;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .feedback-panel .mp-head-action {
+    flex: 0 0 auto;
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
+  }
+
+  .feedback-panel .mp-action-label {
+    display: none;
+  }
+
+  /* Flex gaps count toward the line width; zero the old 100% minimum so
+     controls wrap cleanly without creating horizontal overflow. */
+  .mp-menu-item-head .gs-input,
+  .mp-sub .gs-input,
+  .mp-panel-item .gs-input {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mp-menu-item-head .mp-type,
+  .mp-menu-item-head .mp-align,
+  .mp-sub .mp-type {
+    flex-basis: 100%;
   }
 }
 

@@ -29,6 +29,7 @@ import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.minecraft.HypixelRewardAutoClaim;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
@@ -421,7 +422,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
 
         String buttonId = event.getButtonId();
         RewardSession session = getSessionByUserId(event.getUserOpenId());
-        if (!Objects.equals(session.userId, event.getUserOpenId())) {
+        if (session == null || session.userId == null || !Objects.equals(session.userId, event.getUserOpenId())) {
             event.answer(AnswerCode.NO_PERMISSION);
             return;
         }
@@ -511,12 +512,18 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                             response.path("original_url").asText()
                     );
 
+                    boolean isAutoClaimEnabled = HypixelRewardAutoClaim.isAutoClaimEnabled(session.userId);
+
                     StringBuilder sb = new StringBuilder("🎁 解析成功！");
 
                     if (session.platform == Platform.NAPCAT_GROUP) {
                         sb.append("请在 1 分钟内直接回复数字 (0-2) 领取：\n");
                     } else {
-                        sb.append("请在 1 分钟内点击下方按钮领取奖励：\n");
+                        if (!isAutoClaimEnabled) {
+                            sb.append("请在 1 分钟内点击下方按钮领取奖励：\n");
+                        } else {
+                            sb.append("自动领取已启用，等待领取中...\n");
+                        }
                     }
 
                     if (session.platform == Platform.NAPCAT_GROUP) {
@@ -529,34 +536,57 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(getColoredItem(r.asText())).append("\n");
                         }
+                        sb.append("> ").append(Markdown.enterCommand("/preferences hypixel_reward", "设置自动领取规则"));
                         if (!OfficialGroups.allowProactiveMsg(session.groupId)) {
-                            sb.append("\n使用 ").append(Markdown.enterCommand("/全量消息 ", "/全量消息")).append(" 授权后可省去`/cl`前缀，直接解析链接");
+                            sb.append("\n").append(Markdown.enterCommand("/全量消息", "/全量消息")).append("授权后可直接解析链接");
                         }
-                        GroupChat.replyMessage(session.groupId, session.userId,
-                                session.messageId,
-                                TC.md(sb.toString()),
-                                TC.keyboard(List.of(
-                                        List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER)
-                                        )
-                                ))
-                        );
+                            if (isAutoClaimEnabled) {
+                            GroupChat.replyMessage(session.groupId, session.userId, session.messageId, TC.md(sb.toString()));
+                        } else {
+                            GroupChat.replyMessage(session.groupId, session.userId,
+                                    session.messageId,
+                                    TC.md(sb.toString()),
+                                    TC.keyboard(List.of(
+                                            List.of(
+                                                    new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                    new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
+                                                    new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER)
+                                            )
+                                    ))
+                            );
+                        }
                     } else if (session.platform == Platform.OFFICIAL_C2C) {
                         for (JsonNode r : response.path("rewards")) {
                             sb.append("> ").append(getColoredItem(r.asText())).append("\n");
                         }
-                        C2CChat.replyMessage(session.userId, session.messageId,
-                                TC.md(sb.toString()),
-                                TC.keyboard(List.of(
-                                        List.of(
-                                                new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
-                                                new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER),
-                                                new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER)
-                                        )
-                                ))
-                        );
+                        sb.append("> ").append(Markdown.enterCommand("/preferences hypixel_reward", "设置自动领取规则"));
+                        if (isAutoClaimEnabled) {
+                            C2CChat.replyMessage(session.userId, session.messageId, TC.md(sb.toString()));
+                        } else {
+                            C2CChat.replyMessage(session.userId, session.messageId,
+                                    TC.md(sb.toString()),
+                                    TC.keyboard(List.of(
+                                            List.of(
+                                                    new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                    new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取"),
+                                                    new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取")
+                                            )
+                                    ))
+                            );
+                        }
+                    }
+
+                    if (HypixelRewardAutoClaim.isAutoClaimEnabled(session.userId)) {
+                        // 自动领取：官机用户开启自动模式后，按其偏好设置自动选择并领取（界面仍照常展示）
+                        if (session.platform == Platform.OFFICIAL_GROUP || session.platform == Platform.OFFICIAL_C2C) {
+                            List<String> rewardLines = new ArrayList<>();
+                            response.path("rewards").forEach(r -> rewardLines.add(r.asText()));
+                            Integer choice = HypixelRewardAutoClaim.selectReward(session.userId, rewardLines);
+                            if (choice != null) {
+                                claimReward(session, choice);
+                                log.info("用户 {} 自动领取已选择奖励 [{}]，SessionID: {}", session.userId, choice, session.sessionId);
+                            }
+                        }
                     }
 
                 } else if ("result".equals(type)) {
@@ -630,8 +660,8 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
         }
     }
 
-    private static final Pattern REWARD_LINE_PATTERN = Pattern.compile("^(\\[\\d+])\\s+([A-Za-z]+):\\s*(.*)$");
-    private static final Pattern REWARD_KEY_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*");
+    public static final Pattern REWARD_LINE_PATTERN = Pattern.compile("^(\\[\\d+])\\s+([A-Za-z]+):\\s*(.*)$");
+    public static final Pattern REWARD_KEY_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*");
 
     private static String getColoredItem(String rawContent) {
         Matcher lineMatcher = REWARD_LINE_PATTERN.matcher(rawContent);
@@ -673,7 +703,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
             "LEGENDARY", "传说"
     );
 
-    private static final Map<String, String> itemNamespace = Map.ofEntries(
+    public static final Map<String, String> itemNamespace = Map.ofEntries(
             Map.entry("dust", "神秘之尘"),
             Map.entry("souls", "空岛战争灵魂"),
             Map.entry("tokens", "代币"),

@@ -20,8 +20,13 @@ public class WebUIRouter {
     private static final String INDEX_HTML = "/official-webui/index.html";
 
     private static final int NTUID_RATE_LIMIT = 20;
-    private static final long NTUID_RATE_WINDOW_MS = 60_000L;
+    /** 公开查询接口频控：按 IP 60 QPM + 全局 600 QPM，滑动窗口 */
+    private static final int PUBLIC_RATE_LIMIT_PER_IP = 60;
+    private static final int PUBLIC_RATE_LIMIT_GLOBAL = 600;
+    private static final long RATE_WINDOW_MS = 60_000L;
     private static final Map<String, Deque<Long>> NTUID_REQUESTS = new ConcurrentHashMap<>();
+    private static final Map<String, Deque<Long>> PUBLIC_IP_REQUESTS = new ConcurrentHashMap<>();
+    private static final Deque<Long> PUBLIC_GLOBAL_REQUESTS = new ConcurrentLinkedDeque<>();
 
     private record MetaDTO(String appId, String botOpenId) {}
 
@@ -29,6 +34,10 @@ public class WebUIRouter {
         // 关闭状态下，静态资源/API/SPA fallback 一律不给任何响应体
         server.before("/webui", WebUIRouter::activeGuard);
         server.before("/webui/*", WebUIRouter::activeGuard);
+
+        // 禁止被 iframe 嵌套，防点击劫持
+        server.before("/webui", ctx -> ctx.header("X-Frame-Options", "DENY"));
+        server.before("/webui/*", ctx -> ctx.header("X-Frame-Options", "DENY"));
 
         // 必须登录
         server.before("/webui/meta/*", WebUIRouter::auth);
@@ -193,18 +202,57 @@ public class WebUIRouter {
     }
 
     private static void ntUidRateLimit(Context ctx) {
-        String ip = ctx.ip();
-        long now = System.currentTimeMillis();
-        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ip, _ -> new ConcurrentLinkedDeque<>());
-        while (!timestamps.isEmpty() && now - timestamps.peekFirst() > NTUID_RATE_WINDOW_MS) {
-            timestamps.pollFirst();
-        }
-        if (timestamps.size() >= NTUID_RATE_LIMIT) {
+        Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ctx.ip(), _ -> new ConcurrentLinkedDeque<>());
+        if (!tryAcquireRateSlot(timestamps, NTUID_RATE_LIMIT, RATE_WINDOW_MS, System.currentTimeMillis())) {
             ctx.status(429).json(Result.fail(429, "超出接口频控限制"));
             ctx.skipRemainingHandlers();
             return;
         }
+        cleanupRateBuckets(NTUID_REQUESTS, System.currentTimeMillis());
+    }
+
+    /** 公开查询接口双层频控：先全局后按 IP；超限的全局请求不触碰 per-IP 表，防止伪造 IP 撑大内存 */
+    private static void publicRateLimit(Context ctx) {
+        long now = System.currentTimeMillis();
+        if (!tryAcquireRateSlot(PUBLIC_GLOBAL_REQUESTS, PUBLIC_RATE_LIMIT_GLOBAL, RATE_WINDOW_MS, now)) {
+            rejectTooManyRequests(ctx);
+            return;
+        }
+        Deque<Long> ipSlots = PUBLIC_IP_REQUESTS.computeIfAbsent(ctx.ip(), _ -> new ConcurrentLinkedDeque<>());
+        if (!tryAcquireRateSlot(ipSlots, PUBLIC_RATE_LIMIT_PER_IP, RATE_WINDOW_MS, now)) {
+            rejectTooManyRequests(ctx);
+            return;
+        }
+        cleanupRateBuckets(PUBLIC_IP_REQUESTS, now);
+    }
+
+    private static void rejectTooManyRequests(Context ctx) {
+        ctx.status(429).json(Result.fail(429, "请求过于频繁，请稍后再试"));
+        ctx.skipRemainingHandlers();
+    }
+
+    /** 滑动窗口取一个频控名额；窗口内已满则返回 false 且不占用名额 */
+    private static boolean tryAcquireRateSlot(Deque<Long> timestamps, int limit, long windowMs, long now) {
+        while (!timestamps.isEmpty() && now - timestamps.peekFirst() > windowMs) {
+            timestamps.pollFirst();
+        }
+        if (timestamps.size() >= limit) {
+            return false;
+        }
         timestamps.addLast(now);
+        return true;
+    }
+
+    /** 频控桶总量超过阈值时，移除整个窗口内无请求的 IP，防止伪造 IP 无限撑大内存 */
+    private static void cleanupRateBuckets(Map<String, Deque<Long>> buckets, long now) {
+        if (buckets.size() < 10_000) {
+            return;
+        }
+        long cutoff = now - RATE_WINDOW_MS;
+        buckets.entrySet().removeIf(entry -> {
+            Long last = entry.getValue().peekLast();
+            return last == null || last < cutoff;
+        });
     }
 
     private static void activeGuard(Context ctx) {
@@ -260,6 +308,7 @@ public class WebUIRouter {
     }
 
     private static void registerPublicOfficialRoutes(Javalin server, String prefix) {
+        server.before(prefix + "/*", WebUIRouter::publicRateLimit);
         server.get(prefix + "/group/messages/received", PublicQueryController::publicOfficialGroupReceivedMessages);
         server.get(prefix + "/group/messages/sent", PublicQueryController::publicOfficialGroupSentMessages);
         server.get(prefix + "/c2c/messages/received", PublicQueryController::publicOfficialC2CReceivedMessages);

@@ -54,7 +54,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
 
         String window = "30min";
         if (args.length == 1) {
-            window = args[0];
+            window = args[0].toLowerCase();
         }
 
         if (!isValidType(window)) {
@@ -103,7 +103,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
 
         String window = "30min";
         if (args.length == 1) {
-            window = args[0];
+            window = args[0].toLowerCase();
         }
 
         if (!isValidType(window)) {
@@ -163,7 +163,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
         if (args.length < 1) {
             return "30min";
         }
-        return args[0];
+        return args[0].toLowerCase();
     }
 
     private static boolean isValidType(String window) {

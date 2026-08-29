@@ -1331,7 +1331,7 @@ public class QQChatContentRecord implements Listener {
             return result;
         }
 
-        String sql = "SELECT r.union_openId, r.username, r.member_role, r.event_timestamp, r.created_at, t.msg_count " +
+        String sql = "SELECT r.union_openId, r.username, r.member_role, r.sender_is_bot, r.event_timestamp, r.created_at, t.msg_count " +
                 "FROM `" + GROUP_TABLE + "` r " +
                 "JOIN (SELECT union_openId, MAX(id) AS max_id, COUNT(*) AS msg_count FROM `" + GROUP_TABLE + "` " +
                 "      WHERE group_openId = ? AND event_type <> ? AND union_openId IS NOT NULL " +
@@ -1348,6 +1348,7 @@ public class QQChatContentRecord implements Listener {
                         rs.getString("union_openId"),
                         rs.getString("username"),
                         rs.getString("member_role"),
+                        rs.getBoolean("sender_is_bot"),
                         rs.getLong("msg_count"),
                         firstNonBlank(rs.getString("event_timestamp"), rs.getString("created_at"))
                 ));
@@ -1377,7 +1378,7 @@ public class QQChatContentRecord implements Listener {
     }
 
     public record GroupMemberRecord(String unionOpenId, String username, String memberRole,
-                                    long messageCount, String lastActiveAt) {
+                                    boolean senderIsBot, long messageCount, String lastActiveAt) {
     }
 
 //    private static final int DEFAULT_CONVERSATION_LIMIT = 300;

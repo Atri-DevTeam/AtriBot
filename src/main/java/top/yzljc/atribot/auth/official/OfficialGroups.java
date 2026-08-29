@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
@@ -175,6 +176,13 @@ public class OfficialGroups {
     public static boolean isGroupBlacklisted(String groupOpenId) {
         if (groupOpenId == null) return false;
         return getData(groupOpenId).isBlacklisted();
+    }
+
+    /**
+     * 获取群名称
+     */
+    public static @Nullable String getGroupName(String groupOpenId) {
+        return getData(groupOpenId).groupName();
     }
 
     /**

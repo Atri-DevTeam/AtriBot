@@ -97,6 +97,17 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onGroupJoin(OfficialGroupAddRobotEvent event) {
+        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★");
+        Object keyboard = TC.keyboard(
+                List.of(
+                        List.of(new Button("c1", "看看指令", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c2", "每日打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c3", "小游戏", "/games", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                ), ButtonSize.SMALL
+        );
+
+        event.sendOpeningMessage(md, keyboard);
+
         boolean result = OfficialGroups.registerGroup(event.getGroupOpenId(), event.getOpMemberOpenId(), event.getTimestamp());
         if (!result) {
             log.error("Failed to register group: {}", event.getGroupOpenId());
@@ -144,7 +155,7 @@ public class QQEventRecord implements Listener {
             if (event.getMessage().getContent().contains("签到") || event.getMessage().getContent().contains("hypixel.net")) return;
             if (!c2cNotifiedUsers.contains(userId)) {
                 c2cNotifiedUsers.add(userId);
-                event.sendMessage(TC.md("你好喵~\n\n你发送的消息不是指令，亚托莉喵无法理解喵，我们暂且不支持角色扮演等聊天功能，请您理解~\n\n> 您可以发送" + Markdown.enterCommand("/help") + " 来查看可用的指令列表喵~"));
+                event.sendMessage(TC.md("你好喵~\n\n你发送的消息不是指令，亚托莉喵无法理解喵，我们暂且不支持角色扮演等聊天功能，请您理解~\n\n> 您可以发送" + Markdown.enterCommand("/help") + "来查看可用的指令列表喵~"));
             }
         }
     }
@@ -297,15 +308,16 @@ public class QQEventRecord implements Listener {
 
             String info;
             if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
-                info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (群: %s)".formatted(
+                info = "[!] 用户 %s (%s) 使用指令: /%s %s (群: %s -> %s)".formatted(
                         qq.getUsername(),
                         qq.getUserId(),
                         event.getCommandHeader(),
                         String.join(" ", event.getArgs()),
+                        OfficialGroups.getGroupName(qq.getGroupId()) != null ? OfficialGroups.getGroupName(qq.getGroupId()) : "未知群名",
                         qq.getGroupId()
                 );
             } else {
-                info = "[官机] 用户 %s (%s) 执行了命令: /%s %s (私聊)".formatted(
+                info = "[!] 用户 %s (%s) 使用指令: /%s %s (私聊)".formatted(
                         qq.getUsername(),
                         qq.getUserId(),
                         event.getCommandHeader(),

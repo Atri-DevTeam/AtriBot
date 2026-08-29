@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -317,7 +318,7 @@ public class LootService {
     }
 
     /**
-     * 渲染用户持有物品卡的总览图
+     * 渲染用户持有物品卡的总览图（附带卡片拥有量的全区排名）
      */
     public static LootDao renderOverviewCard(String userId) {
         List<LootRepository.LootRecord> owned = LootRepository.getLoots(userId);
@@ -330,8 +331,16 @@ public class LootService {
                         "special", r.special()))
                 .toList();
 
-        ImageDTO dto = PreImageGenerate.dump(ResourcesProperties.LOOTS_OVERVIEW_CARD_API,
-                Map.of("items", items, "user_id", userId));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("items", items);
+        payload.put("user_id", userId);
+        LootRepository.LootRank rank = LootRepository.getLootOwnershipRank(userId);
+        if (rank != null) {
+            payload.put("rank", rank.rank());
+            payload.put("total_players", rank.totalPlayers());
+        }
+
+        ImageDTO dto = PreImageGenerate.dump(ResourcesProperties.LOOTS_OVERVIEW_CARD_API, payload);
         if (dto.isError() || dto.url() == null) {
             return LootDao.fail("渲染总览图失败 - 开发错误，请联系开发者处理");
         }

@@ -181,6 +181,7 @@ public class Atri {
                 staticFiles.hostedPath = "/webui";
                 staticFiles.directory = "/official-webui";
                 staticFiles.location = Location.CLASSPATH;
+                staticFiles.headers.put("X-Frame-Options", "DENY");
             });
             cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
@@ -254,6 +255,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new UACommand());
         EventManager.getInstance().registerEvents(new GroupModerationListener());
         EventManager.getInstance().registerEvents(new GroupJoinReviewListener());
+        EventManager.getInstance().registerEvents(new WhatFuckingPing());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -266,6 +268,7 @@ public class Atri {
         CommandManager.getCommand("gt").setExecutor(CucumberGirl.INSTANCE);
         CommandManager.getCommand("mojang").setExecutor(new McStatusCommand());
         CommandManager.getCommand("cl").setExecutor(new HypixelRewardCommand());
+        CommandManager.getCommand("preferences").setExecutor(new PreferencesSettingsCommand());
         CommandManager.getCommand("check-mc").setExecutor(this.minecraftNews);
         CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());

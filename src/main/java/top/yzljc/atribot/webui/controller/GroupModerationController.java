@@ -4,6 +4,7 @@ import io.javalin.http.Context;
 import top.yzljc.atribot.chat.official.moderation.GroupModerationSettings;
 import top.yzljc.atribot.chat.official.moderation.GroupModerationStore;
 import top.yzljc.atribot.database.repo.ModerationLogRepository;
+import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 
 import java.util.List;
@@ -55,7 +56,7 @@ public final class GroupModerationController {
                         formatFeedbackTime(row.createdAt())
                 ))
                 .toList();
-        ctx.json(Result.success(new ModerationLogListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void logStats(Context ctx) {
@@ -86,9 +87,6 @@ public final class GroupModerationController {
 
     public record ModerationLogItemDTO(long id, String category, String action, String targetMemberOpenId,
                                        String detail, String createdAt) {
-    }
-
-    public record ModerationLogListResult(List<ModerationLogItemDTO> items, int total, int page, int pageSize) {
     }
 
     public record ModerationLogStatsDTO(int all, int today, int last24h, int keywordRecall, int aiRecall,

@@ -13,6 +13,7 @@ import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.function.impl.pic.ImageReviewService;
 import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
 import top.yzljc.atribot.function.impl.drawitem.LootAdminClient;
+import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class ContentController {
         List<ImageSourceDTO> list = ImageSourceRepository.findPaginated(filter, page, pageSize);
 
         List<GalleryItemDTO> items = list.stream().map(ContentController::toGalleryItem).toList();
-        ctx.json(Result.success(new GalleryListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void countGallery(Context ctx) {
@@ -123,9 +124,6 @@ public class ContentController {
                                  String reviewStatus, String reviewer, String reviewRemark,
                                  String reviewTime, String createTime,
                                  @JsonProperty("isNotified") boolean isNotified) {
-    }
-
-    public record GalleryListResult(List<GalleryItemDTO> items, int total, int page, int pageSize) {
     }
 
     public record GalleryCountDTO(int pending, int reviewed, int denied, int all) {
@@ -247,7 +245,7 @@ public class ContentController {
         String search = ctx.queryParam("search");
         List<LootRepository.CoinLeaderboardEntry> entries = LootRepository.getCoinLeaderboard(search, page, pageSize);
         int total = LootRepository.countUsersMatching(search);
-        ctx.json(Result.success(new CoinLeaderboardResult(entries, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(entries, total, page, pageSize)));
     }
 
     public static void adjustUserCoins(Context ctx) {
@@ -279,7 +277,7 @@ public class ContentController {
         List<LootUserListItemDTO> items = summaries.stream()
                 .map(s -> new LootUserListItemDTO(s.userId(), s.coins(), s.totalLootCount()))
                 .toList();
-        ctx.json(Result.success(new LootUserListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void getUserLootsDetail(Context ctx) {
@@ -371,13 +369,7 @@ public class ContentController {
         return result;
     }
 
-    public record CoinLeaderboardResult(List<LootRepository.CoinLeaderboardEntry> items, int total, int page, int pageSize) {
-    }
-
     public record LootUserListItemDTO(String userId, int coins, int cardCount) {
-    }
-
-    public record LootUserListResult(List<LootUserListItemDTO> items, int total, int page, int pageSize) {
     }
 
     public record UserLootsDetailDTO(String userId, int coins, List<LootRepository.LootRecord> loots,

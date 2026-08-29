@@ -15,6 +15,7 @@ import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings.DisableScope;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 
 import java.time.format.DateTimeFormatter;
@@ -184,7 +185,7 @@ public class AdminController {
                 fb.isHidden()
         )).toList();
 
-        ctx.json(Result.success(new FeedbackListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void countFeedback(Context ctx) {
@@ -222,8 +223,6 @@ public class AdminController {
                                    String replyContent, String replyTime,
                                    @JsonProperty("isHidden") boolean isHidden) {}
 
-    public record FeedbackListResult(List<FeedbackItemDTO> items, int total, int page, int pageSize) {}
-
     public record FeedbackCountDTO(int unreplied, int replied, int all) {}
 
     @Data
@@ -251,7 +250,7 @@ public class AdminController {
                 .map(AdminController::toErrorItem)
                 .toList();
 
-        ctx.json(Result.success(new ErrorListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     /**
@@ -311,8 +310,6 @@ public class AdminController {
                                  List<String> stackTrace, String causeType, String causeMessage,
                                  List<String> causeStackTrace, String createTime) {}
 
-    public record ErrorListResult(List<ErrorItemDTO> items, int total, int page, int pageSize) {}
-
     public record ErrorStatsDTO(int total, int last24h, int last7d, Map<String, Integer> topExceptionTypes) {}
 
     // ============ 发送日志 ============
@@ -331,7 +328,7 @@ public class AdminController {
                 .stream()
                 .map(AdminController::toSendLogItem)
                 .toList();
-        ctx.json(Result.success(new SendLogListResult(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void getOfficialSendLog(Context ctx) {
@@ -412,8 +409,6 @@ public class AdminController {
                                    Integer errorCode, String errorReason, String errorMessage,
                                    String createTime) {}
 
-    public record SendLogListResult(List<SendLogItemDTO> items, int total, int page, int pageSize) {}
-
     public record SendLogStatsDTO(int all, int send, int response, int error) {}
 
     // ============ 原始事件记录 ============
@@ -439,7 +434,7 @@ public class AdminController {
                         formatFeedbackTime(log.getCreateTime())
                 ))
                 .toList();
-        ctx.json(Result.success(new RawEventLogListResult(dtos, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(dtos, total, page, pageSize)));
     }
 
     public static void getRawEventLog(Context ctx) {
@@ -499,8 +494,6 @@ public class AdminController {
     public record RawEventLogItemDTO(long id, String eventType, String eventId, Integer seq, String rawData, String createTime) {}
 
     public record RawEventLogDetailDTO(long id, String eventType, String eventId, Integer seq, String rawData, String createTime) {}
-
-    public record RawEventLogListResult(List<RawEventLogItemDTO> items, int total, int page, int pageSize) {}
 
     public record RawEventLogStatsDTO(int all, int today, int last24h, Map<String, Integer> topTypes) {}
 

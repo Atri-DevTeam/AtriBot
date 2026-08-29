@@ -41,14 +41,15 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
                     "> " + Markdown.img(ResourcesProperties.CONSOLE_LOGO_IMG, 16, 16) + Markdown.enterCommand("/drawitem", "抽取随机Minecraft物品") + "\n" +
                     "> " + Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 16, 16) + Markdown.enterCommand("/mctool", "Minecraft工具二级菜单") + "\n" +
                     "> " + Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6"), 16, 16) + Markdown.enterCommand("/hyp dice", "Skyblock运气测试") + "\n" +
-                    "> " + Markdown.img(ResourcesProperties.HYPIXEL_HEADER_IMG, 16, 16) + Markdown.enterCommand("/hyp gs", "查询Hypixel全服在线情况") + "\n" +
+                    "> " + Markdown.img(ResourcesProperties.HYPIXEL_HEADER_IMG, 16, 16) + Markdown.enterCommand("/hyp", "Hypixel数据查询二级菜单") + "\n" +
                     "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取Hypixel每日签到奖励") + "\n" +
                     "> " + Markdown.enterCommand("/rsp", "✊一场酣畅淋漓的石头剪刀布") + "\n" +
                     "> " + Markdown.enterCommand("/mojang", "\uD83D\uDEE0查询MC验证服务器状态") + "\n" +
                     "> " + Markdown.enterCommand("/newyear", "\uD83E\uDDE8查看新年倒计时") + "\n" +
                     "> " + Markdown.enterCommand("/tasks", "\uD83D\uDD14设置推送任务") + "\n" +
                     "> " + Markdown.img(ResourcesProperties.MINECRAFT_CAPE_EXAMPLE, 16, 16) + Markdown.enterCommand("/mctool cape", "查看MC披风拥有情况") + "\n" +
-                    "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABHypixel Ban Track"));
+                    "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABHypixel Ban Track") + "\n" +
+                    "> " + Markdown.enterCommand("/games", "\uD83E\uDDE9游玩更多经典小游戏"));
 
             Object keyboard = TC.keyboard(
                     List.of(

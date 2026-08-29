@@ -23,8 +23,6 @@ public class GroupRepository {
     private static final String GROUP_TABLE = "official_groups";
     private static final String GROUP_FUNCTION_TABLE = "group_function_list";
 
-    // ==================== Table init ====================
-
     public static void initTables() {
         String sqlGroup = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
                 "  `group_openId` VARCHAR(256) NOT NULL," +
@@ -62,13 +60,11 @@ public class GroupRepository {
             log.error("初始化群相关数据库表失败", e);
         }
 
-        migrateCurrentGroupSchema();
-        migrateGroupTable("group_whitelist");
-        migrateGroupTable("group-whiteist");
-        migrateFunctionTable("function_list");
+//        migrateCurrentGroupSchema();
+//        migrateGroupTable("group_whitelist");
+//        migrateGroupTable("group-whiteist");
+//        migrateFunctionTable("function_list");
     }
-
-    // ==================== CRUD ====================
 
     /**
      * 加载所有群数据行（用于启动时填充缓存）
@@ -345,108 +341,108 @@ public class GroupRepository {
         return groups;
     }
 
-    private static void migrateGroupTable(String legacyTable) {
-        if (!tableExists(legacyTable)) {
-            return;
-        }
-
-        String joinedAtColumn = columnExists(legacyTable, "joined_at") ? "joined_at" : "CAST(`timestamp` AS CHAR)";
-        String allowProactiveColumn = columnExists(legacyTable, "allow_proactive_msg") ? "allow_proactive_msg" : "is_allowed_active";
-        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` " +
-                "(group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted, allow_proactive_msg, real_group_id) " +
-                "SELECT group_openId, op_member_openId, " + joinedAtColumn + ", is_whitelist, is_blacklisted, " + allowProactiveColumn + ", real_group_id " +
-                "FROM `" + legacyTable + "`";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            int count = ps.executeUpdate();
-            log.info("已从旧表 {} 迁移 {} 条群数据到 {}", legacyTable, count, GROUP_TABLE);
-        } catch (Exception e) {
-            log.warn("从旧群表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_TABLE, e.getMessage());
-        }
-    }
-
-    private static void migrateFunctionTable(String legacyTable) {
-        if (!tableExists(legacyTable)) {
-            return;
-        }
-
-        String sql = "INSERT IGNORE INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) " +
-                "SELECT group_openId, functions FROM `" + legacyTable + "`";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            int count = ps.executeUpdate();
-            log.info("已从旧表 {} 迁移 {} 条群功能配置到 {}", legacyTable, count, GROUP_FUNCTION_TABLE);
-        } catch (Exception e) {
-            log.warn("从旧群功能表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_FUNCTION_TABLE, e.getMessage());
-        }
-    }
-
-    private static void migrateCurrentGroupSchema() {
-        renameColumnIfNeeded(GROUP_TABLE, "timestamp", "joined_at", "VARCHAR(64) NULL");
-        ensureColumn(GROUP_TABLE, "joined_at", "VARCHAR(64) NULL AFTER `op_member_openId`");
-        renameColumnIfNeeded(GROUP_TABLE, "is_allowed_active", "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE");
-        ensureColumn(GROUP_TABLE, "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE AFTER `is_blacklisted`");
-        ensureColumn(GROUP_TABLE, "member_openid", "VARCHAR(256) NULL AFTER `real_group_id`");
-        ensureColumn(GROUP_TABLE, "recv_msg_setting", "VARCHAR(64) NULL AFTER `member_openid`");
-        ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `recv_msg_setting`");
-        ensureColumn(GROUP_TABLE, "group_name", "VARCHAR(256) NULL AFTER `member_role`");
-        ensureColumn(GROUP_TABLE, "group_finger_memo", "VARCHAR(512) NULL AFTER `group_name`");
-        ensureColumn(GROUP_TABLE, "group_class_text", "VARCHAR(256) NULL AFTER `group_finger_memo`");
-        ensureColumn(GROUP_TABLE, "group_tags", "JSON NULL AFTER `group_class_text`");
-        ensureColumn(GROUP_TABLE, "group_member_num", "INT NOT NULL DEFAULT 0 AFTER `group_tags`");
-    }
-
-    private static void renameColumnIfNeeded(String tableName, String oldColumn, String newColumn, String definition) {
-        if (!columnExists(tableName, oldColumn)) {
-            return;
-        }
-        if (columnExists(tableName, newColumn)) {
-            String sql = "UPDATE `" + tableName + "` SET `" + newColumn + "` = `" + oldColumn + "` WHERE `" + newColumn + "` IS NULL";
-            executeSchemaUpdate(sql, "回填列 " + tableName + "." + newColumn + " 失败");
-            return;
-        }
-        String sql = "ALTER TABLE `" + tableName + "` CHANGE COLUMN `" + oldColumn + "` `" + newColumn + "` " + definition;
-        executeSchemaUpdate(sql, "重命名列 " + tableName + "." + oldColumn + " 失败");
-    }
-
-    private static void ensureColumn(String tableName, String columnName, String definition) {
-        if (columnExists(tableName, columnName)) {
-            return;
-        }
-        String sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition;
-        executeSchemaUpdate(sql, "添加列 " + tableName + "." + columnName + " 失败");
-    }
-
-    private static boolean tableExists(String tableName) {
-        try (var con = DatabaseManager.getConnection();
-             var rs = con.getMetaData().getTables(null, null, tableName, null)) {
-            return rs.next();
-        } catch (Exception e) {
-            log.warn("检查数据表 {} 是否存在失败: {}", tableName, e.getMessage());
-            return false;
-        }
-    }
-
-    private static boolean columnExists(String tableName, String columnName) {
-        try (var con = DatabaseManager.getConnection();
-             var rs = con.getMetaData().getColumns(null, null, tableName, columnName)) {
-            return rs.next();
-        } catch (Exception e) {
-            log.warn("检查列 {}.{} 是否存在失败: {}", tableName, columnName, e.getMessage());
-            return false;
-        }
-    }
-
-    private static void executeSchemaUpdate(String sql, String errorMessage) {
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.executeUpdate();
-        } catch (Exception e) {
-            log.warn("{}: {}", errorMessage, e.getMessage());
-        }
-    }
+//    private static void migrateGroupTable(String legacyTable) {
+//        if (!tableExists(legacyTable)) {
+//            return;
+//        }
+//
+//        String joinedAtColumn = columnExists(legacyTable, "joined_at") ? "joined_at" : "CAST(`timestamp` AS CHAR)";
+//        String allowProactiveColumn = columnExists(legacyTable, "allow_proactive_msg") ? "allow_proactive_msg" : "is_allowed_active";
+//        String sql = "INSERT IGNORE INTO `" + GROUP_TABLE + "` " +
+//                "(group_openId, op_member_openId, joined_at, is_whitelist, is_blacklisted, allow_proactive_msg, real_group_id) " +
+//                "SELECT group_openId, op_member_openId, " + joinedAtColumn + ", is_whitelist, is_blacklisted, " + allowProactiveColumn + ", real_group_id " +
+//                "FROM `" + legacyTable + "`";
+//
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement(sql)) {
+//            int count = ps.executeUpdate();
+//            log.info("已从旧表 {} 迁移 {} 条群数据到 {}", legacyTable, count, GROUP_TABLE);
+//        } catch (Exception e) {
+//            log.warn("从旧群表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_TABLE, e.getMessage());
+//        }
+//    }
+//
+//    private static void migrateFunctionTable(String legacyTable) {
+//        if (!tableExists(legacyTable)) {
+//            return;
+//        }
+//
+//        String sql = "INSERT IGNORE INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) " +
+//                "SELECT group_openId, functions FROM `" + legacyTable + "`";
+//
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement(sql)) {
+//            int count = ps.executeUpdate();
+//            log.info("已从旧表 {} 迁移 {} 条群功能配置到 {}", legacyTable, count, GROUP_FUNCTION_TABLE);
+//        } catch (Exception e) {
+//            log.warn("从旧群功能表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_FUNCTION_TABLE, e.getMessage());
+//        }
+//    }
+//
+//    private static void migrateCurrentGroupSchema() {
+//        renameColumnIfNeeded(GROUP_TABLE, "timestamp", "joined_at", "VARCHAR(64) NULL");
+//        ensureColumn(GROUP_TABLE, "joined_at", "VARCHAR(64) NULL AFTER `op_member_openId`");
+//        renameColumnIfNeeded(GROUP_TABLE, "is_allowed_active", "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE");
+//        ensureColumn(GROUP_TABLE, "allow_proactive_msg", "BOOLEAN NOT NULL DEFAULT FALSE AFTER `is_blacklisted`");
+//        ensureColumn(GROUP_TABLE, "member_openid", "VARCHAR(256) NULL AFTER `real_group_id`");
+//        ensureColumn(GROUP_TABLE, "recv_msg_setting", "VARCHAR(64) NULL AFTER `member_openid`");
+//        ensureColumn(GROUP_TABLE, "member_role", "VARCHAR(32) NULL AFTER `recv_msg_setting`");
+//        ensureColumn(GROUP_TABLE, "group_name", "VARCHAR(256) NULL AFTER `member_role`");
+//        ensureColumn(GROUP_TABLE, "group_finger_memo", "VARCHAR(512) NULL AFTER `group_name`");
+//        ensureColumn(GROUP_TABLE, "group_class_text", "VARCHAR(256) NULL AFTER `group_finger_memo`");
+//        ensureColumn(GROUP_TABLE, "group_tags", "JSON NULL AFTER `group_class_text`");
+//        ensureColumn(GROUP_TABLE, "group_member_num", "INT NOT NULL DEFAULT 0 AFTER `group_tags`");
+//    }
+//
+//    private static void renameColumnIfNeeded(String tableName, String oldColumn, String newColumn, String definition) {
+//        if (!columnExists(tableName, oldColumn)) {
+//            return;
+//        }
+//        if (columnExists(tableName, newColumn)) {
+//            String sql = "UPDATE `" + tableName + "` SET `" + newColumn + "` = `" + oldColumn + "` WHERE `" + newColumn + "` IS NULL";
+//            executeSchemaUpdate(sql, "回填列 " + tableName + "." + newColumn + " 失败");
+//            return;
+//        }
+//        String sql = "ALTER TABLE `" + tableName + "` CHANGE COLUMN `" + oldColumn + "` `" + newColumn + "` " + definition;
+//        executeSchemaUpdate(sql, "重命名列 " + tableName + "." + oldColumn + " 失败");
+//    }
+//
+//    private static void ensureColumn(String tableName, String columnName, String definition) {
+//        if (columnExists(tableName, columnName)) {
+//            return;
+//        }
+//        String sql = "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition;
+//        executeSchemaUpdate(sql, "添加列 " + tableName + "." + columnName + " 失败");
+//    }
+//
+//    private static boolean tableExists(String tableName) {
+//        try (var con = DatabaseManager.getConnection();
+//             var rs = con.getMetaData().getTables(null, null, tableName, null)) {
+//            return rs.next();
+//        } catch (Exception e) {
+//            log.warn("检查数据表 {} 是否存在失败: {}", tableName, e.getMessage());
+//            return false;
+//        }
+//    }
+//
+//    private static boolean columnExists(String tableName, String columnName) {
+//        try (var con = DatabaseManager.getConnection();
+//             var rs = con.getMetaData().getColumns(null, null, tableName, columnName)) {
+//            return rs.next();
+//        } catch (Exception e) {
+//            log.warn("检查列 {}.{} 是否存在失败: {}", tableName, columnName, e.getMessage());
+//            return false;
+//        }
+//    }
+//
+//    private static void executeSchemaUpdate(String sql, String errorMessage) {
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement(sql)) {
+//            ps.executeUpdate();
+//        } catch (Exception e) {
+//            log.warn("{}: {}", errorMessage, e.getMessage());
+//        }
+//    }
 
     public record GroupRow(String groupOpenId, String opMemberOpenId, String joinedAt,
                            boolean isWhitelist, boolean isBlacklisted,

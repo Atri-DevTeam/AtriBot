@@ -316,6 +316,14 @@
                     <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
                       <span class="mbr-top">
                         <span class="mbr-name">{{ m.username || 'Unknown' }}</span>
+                        <svg v-if="m.senderIsBot" class="qm-bot"
+                             width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
+                          <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                          <circle cx="32" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                          <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                          <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor"/>
+                          <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor"/>
+                        </svg>
                         <span v-if="isSpecialRole(m.memberRole)" class="qm-role"
                               :class="'role-' + m.memberRole.toLowerCase()">{{ roleLabel(m.memberRole) }}</span>
                       </span>

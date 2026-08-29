@@ -3,6 +3,7 @@ package top.yzljc.atribot.database.repo;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class C2CRepository {
                 "  `is_blocked` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `is_ignored` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `c2c_push` BOOLEAN NOT NULL DEFAULT TRUE," +
+                "  `user_settings` JSON NULL," +
                 "  PRIMARY KEY (`user_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -46,7 +48,25 @@ public class C2CRepository {
         } catch (Exception e) {
             log.error("初始化 official_users/c2c_function_list 表失败: {}", e.getMessage());
         }
+//
+//        migrateUserSettingsColumn();
     }
+
+//    /**
+//     * 旧表迁移：为 official_users 补充 user_settings 列（JSON，存个人偏好设置），列已存在则忽略
+//     */
+//    private static void migrateUserSettingsColumn() {
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement(
+//                     "ALTER TABLE `" + USER_TABLE + "` ADD COLUMN `user_settings` JSON NULL")) {
+//            ps.execute();
+//            log.info("official_users 表已扩列 user_settings");
+//        } catch (SQLException ignored) {
+//            // 列已存在，忽略
+//        } catch (Exception e) {
+//            log.error("official_users 表扩列 user_settings 失败: {}", e.getMessage());
+//        }
+//    }
 
     /**
      * 加载所有数据（用于启动时填充缓存）
@@ -194,6 +214,45 @@ public class C2CRepository {
             return true;
         } catch (Exception e) {
             log.error("删除用户数据失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 读取用户个人偏好设置 JSON 字符串，未设置返回 null。
+     */
+    public static String getUserSettingsJson(String userOpenId) {
+        String sql = "SELECT user_settings FROM `" + USER_TABLE + "` WHERE user_openId = ?";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("user_settings");
+            }
+        } catch (Exception e) {
+            log.error("读取用户 {} 的个人偏好设置失败: {}", userOpenId, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 保存用户个人偏好设置 JSON 字符串（用户不存在时插入默认权限行）。
+     */
+    public static boolean saveUserSettingsJson(String userOpenId, String json) {
+        String sql = "INSERT INTO `" + USER_TABLE + "` (user_openId, role, permissions, user_settings) " +
+                "VALUES (?, 'USER', '', ?) " +
+                "ON DUPLICATE KEY UPDATE user_settings = VALUES(user_settings)";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            ps.setString(2, json);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("保存用户 {} 的个人偏好设置失败: {}", userOpenId, e.getMessage());
             return false;
         }
     }

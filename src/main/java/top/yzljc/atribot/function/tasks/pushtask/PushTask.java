@@ -127,7 +127,7 @@ public abstract class PushTask {
     public abstract Markdown getDescription(Platform platform, String platformIdentifyId);
 
     public void enable(Platform platform, String groupOpenId, String operatorOpenId, String commandMessageId) {
-        Markdown md = TC.md("✅ 已启用**" + this.getDisplayName() + "**");
+        Markdown md = TC.md( Markdown.at(operatorOpenId) + "\n\n" + "✅ 已启用**" + this.getDisplayName() + "**");
         Object keys = TC.keyboard(
                 List.of(
                         List.of(new Button("c1", "关闭", "/tasks disable " + this.getFunctionId(), true, ButtonStyle.RED, ButtonType.COMMAND),
