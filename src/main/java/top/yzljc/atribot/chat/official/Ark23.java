@@ -11,6 +11,7 @@ import java.util.Map;
  * @Created_at 2026/08/27
  * @Project AtriBot
  * @Package top.yzljc.atribot.chat.official
+ * @Description 公域机器人无被动 Ark 消息权限，仅能主动调用
  */
 public record Ark23(String description, String prompt, List<Item> items) {
 

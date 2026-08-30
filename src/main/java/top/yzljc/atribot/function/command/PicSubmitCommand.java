@@ -42,7 +42,7 @@ public class PicSubmitCommand implements CommandExecutor {
 
         List<String> imageUrls = getImageUrls(qq.getMessage().getAttachments());
         if (imageUrls.isEmpty()) {
-            qq.sendMessage("请在发送 /投稿 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/投稿 [图片]");
+            qq.sendMessage("请在发送 /submit 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/submit [图片]");
             return true;
         }
 

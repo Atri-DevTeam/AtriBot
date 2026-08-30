@@ -102,20 +102,14 @@ public class DiceImpl {
         long[] results = new long[8];
         System.arraycopy(calculatedPulls, 0, results, 1, 7);
         StringBuilder sb = new StringBuilder();
-        sb.append("![skb #32px #32px](" + ResourcesProperties.DICE_RENDER_RESULT_7_IMG + ") **连续投掷").append(times).append("次High Class Archfiend Dice结果：**\n\n");
-        sb.append("- **1点** (-300❤)：`").append(results[1]).append("` 次\n");
-        sb.append("- **2点** (-200❤)：`").append(results[2]).append("` 次\n");
-        sb.append("- **3点** (-100❤)：`").append(results[3]).append("` 次\n");
-        sb.append("- **4点** (+100❤)：`").append(results[4]).append("` 次\n");
-        sb.append("- **5点** (+200❤)：`").append(results[5]).append("` 次\n");
-        sb.append("- **6点** (+300❤)：`").append(results[6]).append("` 次\n");
-
-        if (results[7] > 0) {
-            sb.append("\n\n🎉 **恭喜你出货了牢大！**\n");
-            sb.append("- **7点** (Archfiend Dye)：`").append(results[7]).append("` 次！\n");
-        } else {
-            sb.append("- **7点** (Archfiend Dye)：`0` 次\n");
-        }
+        sb.append("![skb #20px #20px](").append(ResourcesProperties.DICE_RENDER_RESULT_7_IMG).append(") **连续投掷").append(times).append("次High Class Archfiend Dice结果：**\n\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "1"), 16, 16)).append("**1点** (-300❤)：").append(results[1]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "2"), 16, 16)).append("**2点** (-200❤)：").append(results[2]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "3"), 16, 16)).append("**3点** (-100❤)：").append(results[3]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "4"), 16, 16)).append("**4点** (+100❤)：").append(results[4]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "5"), 16, 16)).append("**5点** (+200❤)：").append(results[5]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6"), 16, 16)).append("**6点** (+300❤)：").append(results[6]).append(" 次\n");
+        sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_7_IMG, 16, 16)).append("**7点** (Archfiend Dye)：").append(results[7]).append(" 次！\n");
 
         long totalLostHealth = (results[1] * 300L) + (results[2] * 200L) + (results[3] * 100L);
         long totalGainedHealth = (results[4] * 100L) + (results[5] * 200L) + (results[6] * 300L);
@@ -124,13 +118,14 @@ public class DiceImpl {
         BigDecimal gainedMoney = BigDecimal.valueOf(results[6]).multiply(BigDecimal.valueOf(100));
         BigDecimal netMoney = gainedMoney.subtract(costMoney);
 
-        sb.append("\n![bank #20px #20px](" + ResourcesProperties.SKB_BANK_LOGO_IMG + ") Purse: `").append(netMoney.compareTo(BigDecimal.ZERO) > 0 ? "+" : "")
+        sb.append("---\n\n");
+        sb.append("\n> ![bank #20px #20px](").append(ResourcesProperties.SKB_BANK_LOGO_IMG).append(") Purse: ").append(netMoney.compareTo(BigDecimal.ZERO) > 0 ? "+" : "")
                 .append(netMoney.stripTrailingZeros().toPlainString()).append("M ")
                 .append("(- ").append(costMoney.stripTrailingZeros().toPlainString()).append("M | ")
-                .append("+ ").append(gainedMoney.stripTrailingZeros().toPlainString()).append("M)`\n\n");
-        sb.append("当前理论血量：`").append(-totalLostHealth + totalGainedHealth).append("❤`\n");
+                .append("+ ").append(gainedMoney.stripTrailingZeros().toPlainString()).append("M)\n");
+        sb.append("> 当前理论血量：").append(-totalLostHealth + totalGainedHealth).append("❤\n");
 
-        sb.append("\n![skb #24px #24px](" + ResourcesProperties.SKB_LOGO_IMG + ")数据来源于 Hypixel Skyblock, 结果仅供娱乐");
+        sb.append("\n![skb #24px #24px](").append(ResourcesProperties.SKB_LOGO_IMG).append(")数据来源于 Hypixel Skyblock, 结果仅供娱乐");
 
         List<List<Button>> buttons = List.of(
                 List.of(

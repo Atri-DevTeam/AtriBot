@@ -8,6 +8,7 @@ import com.google.common.cache.CacheBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
@@ -207,13 +208,14 @@ public class ChatService {
      */
     public boolean recallPrivateMessage(String userOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/users/" + userOpenId + "/messages/" + messageId;
-        try {
-            var t = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
-            return !t.equals("error");
-        } catch (Exception e) {
-            log.error("撤回单聊消息失败, unionOpenId: {}, messageId: {}", userOpenId, messageId, e);
-            return false;
+        var res = HttpService.deleteRequestDetailed(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+        boolean ok = res.status() >= 200 && res.status() < 300;
+        if (!ok) {
+            log.warn("撤回单聊消息失败, userOpenId: {}, messageId: {}, status: {}, body: {}",
+                    userOpenId, messageId, res.status(), res.body());
         }
+        recordRecallLog("单聊撤回", url, res, ok);
+        return ok;
     }
 
     private MessageBody emergencyPauseRequestOrNull(MessageBody request, String logType) {
@@ -246,13 +248,32 @@ public class ChatService {
      */
     public boolean recallGroupMessage(String groupOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
-        try {
-            var t = HttpService.deleteRequestStr(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
-            return !t.equals("error");
-        } catch (Exception e) {
-            log.error("撤回群聊消息失败, groupOpenId: {}, messageId: {}", groupOpenId, messageId, e);
-            return false;
+        var res = HttpService.deleteRequestDetailed(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+        boolean ok = res.status() >= 200 && res.status() < 300;
+        if (!ok) {
+            log.warn("撤回群聊消息失败, groupOpenId: {}, messageId: {}, status: {}, body: {}",
+                    groupOpenId, messageId, res.status(), res.body());
         }
+        recordRecallLog("群聊撤回", url, res, ok);
+        return ok;
+    }
+
+    /**
+     * 撤回接口的发送日志：SEND/RESPONSE/ERROR 三态共用一个 traceId。
+     * 撤回本身是同步调用，落库统一丢给调度器异步执行，不阻塞调用线程。
+     */
+    private void recordRecallLog(String scene, String url, HttpService.GetResult result, boolean ok) {
+        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
+            String traceId = OfficialSendLogRepository.recordSend(scene, "DELETE", url, null);
+            if (ok) {
+                OfficialSendLogRepository.recordResponse(traceId, scene, "DELETE", url, null,
+                        result.status(), result.body());
+            } else {
+                String reason = result.status() == 0 ? "请求异常: " + result.body() : "接口返回状态异常 " + result.status();
+                OfficialSendLogRepository.recordError(traceId, scene, "DELETE", url, null,
+                        result.status(), result.body(), reason);
+            }
+        });
     }
 
     /**
@@ -336,7 +357,7 @@ public class ChatService {
                 throw QQMessageSendException.fromResponse(objectMapper, res.body(), "官方接口未返回消息ID");
             } else {
                 OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
-                        res.status(), res.body(), "HTTP 状态异常或响应为空");
+                        res.status(), res.body(), "请求状态异常或响应为空");
                 log.error("{}消息发送失败, status: {}, body: {}", logType, res.status(), res.body());
                 if (res.body() != null) {
                     try {
