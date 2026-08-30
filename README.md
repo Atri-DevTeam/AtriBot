@@ -33,7 +33,7 @@
 
 ## 平台架构
 
-项目同时运行四套适配层，共享同一套事件系统和指令系统：
+项目的四套主适配层共享同一套事件系统和指令系统；可选的 `qq.groups` 附加 Bot 使用独立群聊事件链路：
 
 | 层级 | Napcat（OneBot） | QQ 官方机器人 | QQ 频道（Guild） | Discord |
 |------|------------------|---------------|------------------|---------|
@@ -48,7 +48,7 @@
 - `QQ 官方机器人` 默认通过 WebSocket 网关连接，也支持通过 `qq.connection-mode: webhook` 使用 HTTPS Webhook
 - `QQ 频道` 通过 `ChannelCliClient` 调用本机 CLI 程序，每次按需启停进程
 
-四个平台通过 `CommandManager` 统一处理指令，通过 `EventManager` 统一派发事件。
+四个主平台通过 `CommandManager` 统一处理指令，通过 `EventManager` 统一派发事件；`qq.groups` 附加 Bot 不进入这两个全局组件。
 
 ---
 
@@ -149,7 +149,6 @@ qq:
       enabled: false
       app-id: ""
       client-secret: ""
-      api-base-url: "https://sandbox.api.sgroup.qq.com"
       webhook-path: "/qq/groups/secondary/webhook"
   official-webui-token: "your-random-token"   # WebUI 登录 Token（自行生成）
   official-openId: ""                         # Bot 自身 OpenId（启动时由 /users/@me 自动拉取）
@@ -158,7 +157,23 @@ qq:
   super_admin_id: "null"                      # 超级管理员用户 OpenId
 ```
 
-`qq.groups` 下每个启用项都是独立实例，只使用 HTTPS Webhook，并且只接收群聊域事件；不会接收 C2C、频道消息或频道私信。实例各自持有 AppID、Client Secret、access token 缓存和消息序号缓存，但复用现有 `OfficialGroup*Event`、`EventManager` 与指令系统。群事件触发的回复、图片、按钮、撤回、禁言及入群审批会按群 OpenID 自动路由回收到该事件的实例。
+`qq.groups` 下每个启用项都是独立的 HTTPS Webhook 实例，仅接收群消息与群按钮事件，不接收 C2C、频道消息、频道私信、成员变更或入群申请。实例各自持有 AppID、Client Secret、access token、消息序号、事件监听器和发送客户端；不会进入主 Bot 的 `OfficialGroup*Event`、`EventManager`、指令系统或数据库记录链路，也不会根据群 OpenID 在两个 Bot 之间动态路由。第二 Bot 只提供群消息发送（文本、Markdown、按钮、Ark 或自定义 `MessageBody`）与撤回能力，所有实例共用顶层 `qq.api-base-url`。
+
+第二 Bot 的事件需要直接注册到目标实例，事件对象中的回复方法始终使用该实例自己的鉴权：
+
+```java
+GroupBotClient secondary = Atri.getInstance().getQqGroupBotClients().stream()
+        .filter(client -> client.key().equals("secondary"))
+        .findFirst()
+        .orElseThrow();
+
+secondary.addEventListener(new GroupBotEventListener() {
+    @Override
+    public void onGroupMessage(GroupBotMessageEvent event) {
+        event.reply("received");
+    }
+});
+```
 
 生产环境可用环境变量覆盖凭据，变量名格式为 `QQ_GROUP_BOT_<KEY>_APP_ID` 与 `QQ_GROUP_BOT_<KEY>_CLIENT_SECRET`；例如 `secondary` 对应 `QQ_GROUP_BOT_SECONDARY_APP_ID`。每个启用实例的 AppID 和 Webhook 路径都必须唯一。
 

@@ -15,7 +15,6 @@ import top.yzljc.atribot.event.Cancellable;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.event.impl.UnknownButtonInteractionScene;
 import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.util.Map;
 
@@ -60,15 +59,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
             status = AnswerCode.FAIL;
         }
         Map<String, Integer> body = Map.of("code", status.getCode());
-        var groupBot = GroupBotRegistry.find(this.groupOpenId);
-        String apiBaseUrl = groupBot
-                .map(client -> client.getConfig().apiBaseUrl())
-                .orElseGet(() -> Config.getInstance().getQqApiBaseUrl());
-        String token = groupBot
-                .map(client -> client.getTokenManager().getAccessToken())
-                .orElseGet(() -> Atri.getInstance().getTokenManager().getAccessToken());
-        JsonNode response = HttpService.putJson(apiBaseUrl + "/interactions/" + id, body,
-                "Authorization", "QQBot " + token);
+        JsonNode response = HttpService.putJson(Config.getInstance().getQqApiBaseUrl() + "/interactions/" + id, body, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
         return response != null;
     }
 

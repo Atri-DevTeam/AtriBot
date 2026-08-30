@@ -2,12 +2,10 @@ package top.yzljc.sakuraba_ema.groups;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.nio.charset.StandardCharsets;
@@ -106,24 +104,13 @@ public final class GroupWebhookHandler {
             return;
         }
 
-        String recordedPayload = payloadWithInstance(payload);
         ThreadManager.execute(() -> {
             try {
-                EventLogRepository.record(eventType, eventId, null, recordedPayload);
                 eventDispatcher.dispatch(eventType, eventId, eventData);
             } catch (Exception e) {
                 log.error("实例 {} 派发 QQ 群聊事件 {} 失败", client.key(), eventType, e);
             }
         });
-    }
-
-    private String payloadWithInstance(JsonNode payload) {
-        if (payload instanceof ObjectNode objectNode) {
-            ObjectNode copy = objectNode.deepCopy();
-            copy.put("_atribot_group_bot", client.key());
-            return copy.toString();
-        }
-        return payload.toString();
     }
 
     static byte[] deriveSeed(String secret) {

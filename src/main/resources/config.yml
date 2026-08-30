@@ -142,15 +142,13 @@ qq:
   connection-mode: "ws"
   # Webhook 回调路径；需要通过 HTTPS 暴露给 QQ 开放平台
   webhook-path: "/qq/webhook"
-  # 额外的群聊专用官方 Bot；每个子项都是完全独立的 Webhook/token 实例
-  # 仅接收群消息、群成员、机器人进退群、入群申请和群按钮事件
+  # 额外的群聊专用官方 Bot；每个子项都是完全独立的 Webhook/token/事件实例
+  # 仅接收群消息和群按钮事件，只提供消息发送与撤回能力
   groups:
     secondary:
       enabled: false
       app-id: ""
       client-secret: ""
-      # 可省略，默认继承 qq.api-base-url
-      api-base-url: "https://sandbox.api.sgroup.qq.com"
       # 每个实例必须使用不同的回调路径
       webhook-path: "/qq/groups/secondary/webhook"
   # 官方机器人 WebUI 登录 Token（请改成足够长的随机字符串）

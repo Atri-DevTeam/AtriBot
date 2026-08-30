@@ -435,7 +435,6 @@ public class Config {
             String appId = environmentOrValue(envPrefix + "_APP_ID", values.get("app-id"), "");
             String clientSecret = environmentOrValue(
                     envPrefix + "_CLIENT_SECRET", values.get("client-secret"), "");
-            String apiBaseUrl = stringValue(values.get("api-base-url"), this.qqApiBaseUrl);
             String webhookPath = stringValue(
                     values.get("webhook-path"), "/qq/groups/" + key + "/webhook");
 
@@ -444,7 +443,6 @@ public class Config {
                     enabled,
                     appId,
                     clientSecret,
-                    apiBaseUrl,
                     webhookPath
             ));
         }

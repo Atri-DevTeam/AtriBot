@@ -1,35 +1,40 @@
 package top.yzljc.sakuraba_ema.groups;
 
 import io.javalin.http.Context;
+import lombok.AccessLevel;
 import lombok.Getter;
-import top.yzljc.atribot.chat.official.ChatService;
-import top.yzljc.atribot.platform.qq.TokenManager;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Runtime state for one webhook-only, group-only QQ bot.
  *
- * <p>Every instance owns its token manager and chat service. No credential or
- * token cache is shared with the primary bot or another group bot instance.</p>
+ * <p>Every instance owns its credentials, token cache, message sequence,
+ * webhook handler and event listeners. It never routes through the primary
+ * bot by group OpenID.</p>
  */
 @Getter
+@Slf4j
 public final class GroupBotClient implements AutoCloseable {
 
     private final GroupBotConfig config;
-    private final TokenManager tokenManager;
-    private final ChatService chatService;
+    private final GroupBotTokenManager tokenManager;
+    private final GroupBotChat chat;
     private final GroupEventDispatcher eventDispatcher;
     private final GroupWebhookHandler webhookHandler;
+    @Getter(AccessLevel.NONE)
+    private final CopyOnWriteArrayList<GroupBotEventListener> eventListeners = new CopyOnWriteArrayList<>();
+    @Getter(AccessLevel.NONE)
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public GroupBotClient(GroupBotConfig config) {
+    public GroupBotClient(GroupBotConfig config, String apiBaseUrl) {
         this.config = config;
         config.validateEnabled();
-        this.tokenManager = new TokenManager(
-                config.appId(), config.clientSecret(), "groups:" + config.key());
-        this.chatService = new ChatService(
-                config.apiBaseUrl(), tokenManager, "group-bot:" + config.key());
+        this.tokenManager = new GroupBotTokenManager(config.key(), config.appId(), config.clientSecret());
+        this.chat = new GroupBotChat(apiBaseUrl, tokenManager);
         this.eventDispatcher = new GroupEventDispatcher(this);
         this.webhookHandler = new GroupWebhookHandler(this, eventDispatcher);
     }
@@ -38,12 +43,32 @@ public final class GroupBotClient implements AutoCloseable {
         return config.key();
     }
 
-    public String apiBaseUrl() {
-        return config.apiBaseUrl();
+    public void addEventListener(GroupBotEventListener listener) {
+        eventListeners.addIfAbsent(Objects.requireNonNull(listener, "listener"));
     }
 
-    public String accessToken() {
-        return tokenManager.getAccessToken();
+    public void removeEventListener(GroupBotEventListener listener) {
+        eventListeners.remove(listener);
+    }
+
+    void publish(GroupBotMessageEvent event) {
+        for (GroupBotEventListener listener : eventListeners) {
+            try {
+                listener.onGroupMessage(event);
+            } catch (Exception e) {
+                log.error("QQ 群聊 Bot 实例 {} 的消息监听器执行失败", key(), e);
+            }
+        }
+    }
+
+    void publish(GroupBotButtonInteractionEvent event) {
+        for (GroupBotEventListener listener : eventListeners) {
+            try {
+                listener.onButtonInteraction(event);
+            } catch (Exception e) {
+                log.error("QQ 群聊 Bot 实例 {} 的按钮监听器执行失败", key(), e);
+            }
+        }
     }
 
     public void handleWebhook(Context context) {
@@ -57,7 +82,7 @@ public final class GroupBotClient implements AutoCloseable {
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
-            GroupBotRegistry.remove(this);
+            eventListeners.clear();
         }
     }
 }

@@ -14,20 +14,14 @@ public class TokenManager {
 
     private final String appId;
     private final String clientSecret;
-    private final String instanceName;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String currentAccessToken;
     private long expireTime = 0;
 
     public TokenManager(String appId, String clientSecret) {
-        this(appId, clientSecret, "primary");
-    }
-
-    public TokenManager(String appId, String clientSecret, String instanceName) {
         this.appId = appId;
         this.clientSecret = clientSecret;
-        this.instanceName = instanceName == null || instanceName.isBlank() ? "unnamed" : instanceName;
     }
 
     public synchronized String getAccessToken() {
@@ -61,12 +55,12 @@ public class TokenManager {
                 long validSeconds = expiresIn - buffer;
 
                 this.expireTime = System.currentTimeMillis() + (validSeconds * 1000);
-                log.info("Renewed token for QQ bot instance {}, overdue at: {}", instanceName, this.expireTime);
+                log.info("Renewed token to official bot, overdue at: {}", this.expireTime);
             } else {
-                log.error("QQ Bot 实例 {} 获取 Token 失败，接口返回: {}", instanceName, response);
+                log.error("获取 Token 失败，接口返回: {}", response);
             }
         } catch (JsonProcessingException e) {
-            log.error("QQ Bot 实例 {} 请求腾讯 Token 接口序列化失败", instanceName, e);
+            log.error("请求腾讯 Token 接口序列化失败", e);
         }
     }
 }

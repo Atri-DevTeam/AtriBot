@@ -3,7 +3,6 @@ package top.yzljc.atribot.chat.official;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.platform.qq.FileType;
-import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -297,9 +296,7 @@ public final class GroupChat {
      * @param messageId   消息 ID
      */
     public static boolean recallMessage(String groupOpenId, String messageId) {
-        ChatService service = GroupBotRegistry.findChatService(groupOpenId)
-                .orElseGet(() -> Atri.getInstance().getChatService());
-        return service.recallGroupMessage(groupOpenId, messageId);
+        return Atri.getInstance().getChatService().recallGroupMessage(groupOpenId, messageId);
     }
 
     private static String await(CompletableFuture<String> future) {

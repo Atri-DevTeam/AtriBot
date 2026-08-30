@@ -47,7 +47,6 @@ public class ChatService {
 
     private final String apiBaseUrl;
     private final TokenManager tokenManager;
-    private final String botRecordName;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageBodyFactory bodyFactory;
     private final OfficialMediaUploader mediaUploader;
@@ -59,13 +58,8 @@ public class ChatService {
             .build();
 
     public ChatService(String apiBaseUrl, TokenManager tokenManager) {
-        this(apiBaseUrl, tokenManager, null);
-    }
-
-    public ChatService(String apiBaseUrl, TokenManager tokenManager, String botRecordName) {
         this.apiBaseUrl = apiBaseUrl;
         this.tokenManager = tokenManager;
-        this.botRecordName = botRecordName;
         this.bodyFactory = new MessageBodyFactory(this::getNextMsgSeq);
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
@@ -149,16 +143,8 @@ public class ChatService {
         return sendMessageAsync(groupMessageUrl(groupOpenId), effectiveRequest, "群聊")
                 .thenApply(response -> {
                     if (response != null) {
-                        if (botRecordName == null) {
-                            QQChatContentRecord.recordSentGroupMessage(
-                                    groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
-                        } else {
-                            QQChatContentRecord.recordSentGroupMessage(
-                                    groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp(),
-                                    null, botRecordName);
-                        }
-                        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null
-                                && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
+                        QQChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
                             OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
                         }
                     }

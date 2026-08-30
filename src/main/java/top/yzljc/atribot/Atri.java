@@ -89,7 +89,6 @@ import top.yzljc.atribot.webui.WebUISessionManager;
 import top.yzljc.sakuraba_ema.ChannelCliClient;
 import top.yzljc.sakuraba_ema.groups.GroupBotClient;
 import top.yzljc.sakuraba_ema.groups.GroupBotConfig;
-import top.yzljc.sakuraba_ema.groups.GroupBotRouteStore;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -380,7 +379,6 @@ public class Atri {
 
         MinecraftBind.init();
         OfficialGroups.init();
-        GroupBotRouteStore.initialize(qqGroupBotClients);
         OfficialUsers.init();
         TufeElecRepository.init();
         SignRepository.init();
@@ -542,7 +540,7 @@ public class Atri {
                 throw new IllegalArgumentException(
                         "Duplicate QQ bot app-id for group instance: " + groupBotConfig.key());
             }
-            clients.add(new GroupBotClient(groupBotConfig));
+            clients.add(new GroupBotClient(groupBotConfig, config.getQqApiBaseUrl()));
         }
         return List.copyOf(clients);
     }

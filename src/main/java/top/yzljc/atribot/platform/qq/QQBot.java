@@ -10,7 +10,6 @@ import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.tools.Alert;
-import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.util.ArrayList;
 import java.util.ArrayDeque;
@@ -51,6 +50,10 @@ public final class QQBot {
             "11255",
             "40011026",
             String.valueOf(ErrorCode.REQUESTED_RESOURCE_NOT_FOUND.getErrorCode()));
+
+    private static final String BOT_GROUP_STATE_URL = Config.getInstance().getQqApiBaseUrl() + "/v2/groups/{group_openid}/bot_state";
+
+    private static final String GROUP_INFO_URL = Config.getInstance().getQqApiBaseUrl() + "/v2/groups/{group_openid}/info";
 
     private static final EndpointRateLimiter BOT_GROUP_STATE_LIMITER = new EndpointRateLimiter("群聊 /bot_state", 30);
 
@@ -104,16 +107,10 @@ public final class QQBot {
             return new GroupProfileResult(null, null);
         }
 
-        var groupBot = GroupBotRegistry.find(groupId);
-        String apiBaseUrl = groupBot
-                .map(client -> client.getConfig().apiBaseUrl())
-                .orElseGet(() -> Config.getInstance().getQqApiBaseUrl());
-        String token = groupBot
-                .map(client -> client.getTokenManager().getAccessToken())
-                .orElseGet(() -> Atri.getInstance().getTokenManager().getAccessToken());
+        String token = Atri.getInstance().getTokenManager().getAccessToken();
         String authHeader = "QQBot " + token;
-        String groupInfoUrl = apiBaseUrl + "/v2/groups/" + groupId + "/info";
-        String botGroupStateUrl = apiBaseUrl + "/v2/groups/" + groupId + "/bot_state";
+        String groupInfoUrl = GROUP_INFO_URL.replace("{group_openid}", groupId);
+        String botGroupStateUrl = BOT_GROUP_STATE_URL.replace("{group_openid}", groupId);
 
         if (!BOT_GROUP_STATE_LIMITER.waitForRateLimit()) {
             return new GroupProfileResult(null, null);

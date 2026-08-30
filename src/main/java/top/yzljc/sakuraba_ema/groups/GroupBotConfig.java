@@ -10,7 +10,6 @@ public record GroupBotConfig(
         boolean enabled,
         String appId,
         String clientSecret,
-        String apiBaseUrl,
         String webhookPath
 ) {
 
@@ -18,7 +17,6 @@ public record GroupBotConfig(
         key = normalizeKey(key);
         appId = normalize(appId);
         clientSecret = normalize(clientSecret);
-        apiBaseUrl = stripTrailingSlash(normalize(apiBaseUrl));
         webhookPath = normalize(webhookPath);
     }
 
@@ -28,7 +26,6 @@ public record GroupBotConfig(
         }
         requireConfigured(appId, "app-id");
         requireConfigured(clientSecret, "client-secret");
-        requireConfigured(apiBaseUrl, "api-base-url");
         if (webhookPath.isBlank() || !webhookPath.startsWith("/") || "/".equals(webhookPath)) {
             throw new IllegalArgumentException(
                     "qq.groups.%s.webhook-path must be an absolute non-root path".formatted(key));
@@ -54,10 +51,4 @@ public record GroupBotConfig(
         return Objects.requireNonNullElse(value, "").trim();
     }
 
-    private static String stripTrailingSlash(String value) {
-        while (value.endsWith("/") && value.length() > 1) {
-            value = value.substring(0, value.length() - 1);
-        }
-        return value;
-    }
 }
