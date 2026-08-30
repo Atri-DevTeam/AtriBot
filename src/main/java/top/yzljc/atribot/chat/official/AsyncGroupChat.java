@@ -4,6 +4,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.platform.qq.FileType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -21,8 +22,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class AsyncGroupChat {
 
-    private static ChatService service() {
-        return Atri.getInstance().getChatService();
+    private static ChatService service(String groupOpenId) {
+        return GroupBotRegistry.findChatService(groupOpenId)
+                .orElseGet(() -> Atri.getInstance().getChatService());
     }
 
     /**
@@ -33,11 +35,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String groupOpenId, String text) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().text(text));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().text(text));
     }
 
     public static CompletableFuture<String> sendMessage(String groupOpenId, Ark23 ark) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().ark23(ark));
     }
 
     /**
@@ -48,7 +52,8 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().markdown(markdown));
     }
 
     /**
@@ -59,12 +64,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String groupOpenId, ImageComponent image) {
+        ChatService service = service(groupOpenId);
         return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊主动", null, null, image.getText()))
+                        service.getMediaUploader().buildImageRequest(
+                                service.groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊主动", null, null, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendGroupMessageAsync(groupOpenId, request));
+                        : service.sendGroupMessageAsync(groupOpenId, request));
     }
 
     /**
@@ -76,7 +82,8 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, Object keyboard) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown, keyboard));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().markdown(markdown, keyboard));
     }
 
     /**
@@ -88,11 +95,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, String replyText) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().replyText(msgId, replyText));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().replyText(msgId, replyText));
     }
 
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, Ark23 ark) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark, msgId, null));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().ark23(ark, msgId, null));
     }
 
     /**
@@ -105,7 +114,8 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, String replyText, String refIdx) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().replyTextRef(msgId, replyText, refIdx));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().replyTextRef(msgId, replyText, refIdx));
     }
 
     /**
@@ -118,9 +128,10 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(
-                        service().getBodyFactory().atMarkdown(userOpenId, markdown), null, msgId, null));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(
+                        service.getBodyFactory().atMarkdown(userOpenId, markdown), null, msgId, null));
     }
 
     /**
@@ -132,8 +143,9 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown.getText(), null, msgId, null));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(markdown.getText(), null, msgId, null));
     }
 
     /**
@@ -147,9 +159,10 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown, Object keyboard) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(
-                        service().getBodyFactory().atMarkdown(userOpenId, markdown), keyboard, msgId, null));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(
+                        service.getBodyFactory().atMarkdown(userOpenId, markdown), keyboard, msgId, null));
     }
 
     /**
@@ -162,8 +175,9 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, Markdown markdown, Object keyboard) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown.getText(), keyboard, msgId, null));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(markdown.getText(), keyboard, msgId, null));
     }
 
     /**
@@ -175,12 +189,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, ImageComponent image) {
+        ChatService service = service(groupOpenId);
         return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊", msgId, null, image.getText()))
+                        service.getMediaUploader().buildImageRequest(
+                                service.groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊", msgId, null, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendGroupMessageAsync(groupOpenId, request));
+                        : service.sendGroupMessageAsync(groupOpenId, request));
     }
 
     /**
@@ -193,12 +208,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, String msgId, FileType fileType, String value) {
+        ChatService service = service(groupOpenId);
         return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildFileRequest(
-                                service().groupFileUrl(groupOpenId), fileType, value, "文件发送", msgId))
+                        service.getMediaUploader().buildFileRequest(
+                                service.groupFileUrl(groupOpenId), fileType, value, "文件发送", msgId))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendGroupMessageAsync(groupOpenId, request));
+                        : service.sendGroupMessageAsync(groupOpenId, request));
     }
 
     /**
@@ -211,9 +227,10 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(
-                        service().getBodyFactory().atMarkdown(memberOpenId, markdown), null, null, eventId));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(
+                        service.getBodyFactory().atMarkdown(memberOpenId, markdown), null, null, eventId));
     }
 
     /**
@@ -227,9 +244,10 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(
-                        service().getBodyFactory().atMarkdown(memberOpenId, markdown), buttons, null, eventId));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(
+                        service.getBodyFactory().atMarkdown(memberOpenId, markdown), buttons, null, eventId));
     }
 
     /**
@@ -241,8 +259,9 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown.getText(), null, null, eventId));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(markdown.getText(), null, null, eventId));
     }
 
     /**
@@ -255,8 +274,9 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, Markdown markdown, Object buttons) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown.getText(), buttons, null, eventId));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().markdown(markdown.getText(), buttons, null, eventId));
     }
 
     /**
@@ -268,12 +288,14 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, String text) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().eventText(eventId, text));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId,
+                service.getBodyFactory().eventText(eventId, text));
     }
 
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, Ark23 ark) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark, null, eventId));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().ark23(ark, null, eventId));
     }
 
     /**
@@ -285,12 +307,13 @@ public final class AsyncGroupChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> replyEventMessage(String groupOpenId, String eventId, ImageComponent image) {
+        ChatService service = service(groupOpenId);
         return ThreadManager.supplyAsync(() ->
-                        service().getMediaUploader().buildImageRequest(
-                                service().groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊事件", null, eventId, image.getText()))
+                        service.getMediaUploader().buildImageRequest(
+                                service.groupFileUrl(groupOpenId), image.getType(), image.getData(), "群聊事件", null, eventId, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendGroupMessageAsync(groupOpenId, request));
+                        : service.sendGroupMessageAsync(groupOpenId, request));
     }
 
     /**
@@ -302,6 +325,7 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, String content) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().textRef(content, refIdx));
+        ChatService service = service(groupOpenId);
+        return service.sendGroupMessageAsync(groupOpenId, service.getBodyFactory().textRef(content, refIdx));
     }
 }

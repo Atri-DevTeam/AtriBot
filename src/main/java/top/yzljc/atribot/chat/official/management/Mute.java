@@ -7,6 +7,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -61,7 +62,17 @@ public final class Mute {
     }
 
     private static String getUrl(String groupId) {
-        return Config.getInstance().getQqApiBaseUrl() + "/v2/groups/" + groupId + "/restrict_chat_setting";
+        String apiBaseUrl = GroupBotRegistry.find(groupId)
+                .map(client -> client.getConfig().apiBaseUrl())
+                .orElseGet(() -> Config.getInstance().getQqApiBaseUrl());
+        return apiBaseUrl + "/v2/groups/" + groupId + "/restrict_chat_setting";
+    }
+
+    private static String authHeader(String groupId) {
+        String token = GroupBotRegistry.find(groupId)
+                .map(client -> client.getTokenManager().getAccessToken())
+                .orElseGet(() -> Atri.getInstance().getTokenManager().getAccessToken());
+        return "QQBot " + token;
     }
 
     /**
@@ -135,7 +146,7 @@ public final class Mute {
             return null;
         }
         String url = getUrl(groupOpenId);
-        String auth = "QQBot " + Atri.getInstance().getTokenManager().getAccessToken();
+        String auth = authHeader(groupOpenId);
         String scene = "群禁言状态";
         try {
             HttpService.GetResult result = HttpService.sendGetRequestDetailed(url, "Authorization", auth);
@@ -181,7 +192,7 @@ public final class Mute {
 
     private static boolean doSetMute(String groupOpenId, List<MuteItem> members) {
         String url = getUrl(groupOpenId);
-        String auth = "QQBot " + Atri.getInstance().getTokenManager().getAccessToken();
+        String auth = authHeader(groupOpenId);
         String scene = "群禁言设置";
         String requestJson = null;
         try {

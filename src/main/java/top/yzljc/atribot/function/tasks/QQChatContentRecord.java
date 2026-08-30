@@ -232,11 +232,17 @@ public class QQChatContentRecord implements Listener {
     }
 
     public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId, String refIdx, String timestamp) {
+        recordSentGroupMessage(groupOpenId, request, messageOpenId, refIdx, timestamp,
+                BOT_UNION_OPEN_ID, QQBot.BOT_NAME);
+    }
+
+    public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId,
+                                              String refIdx, String timestamp, String botOpenId, String botName) {
         String messageReference = buildReferenceDisplayJson(true, extractReferenceMessageId(request));
         recordGroupMessage(
                 groupOpenId,
-                BOT_UNION_OPEN_ID,
-                QQBot.BOT_NAME,
+                botOpenId,
+                botName,
                 extractContent(request),
                 messageOpenId,
                 true,

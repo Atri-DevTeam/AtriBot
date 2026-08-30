@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.service.ai.AiProperties;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.utils.YamlConfiguration;
+import top.yzljc.sakuraba_ema.groups.GroupBotConfig;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -134,6 +135,8 @@ public class Config {
     private String debugGroupOpenId;
     @Getter
     private String superAdminId;
+    @Getter
+    private List<GroupBotConfig> qqGroupBots = List.of();
 
     // ########## 腾讯频道 CLI（第二账号）配置参数 ##########
     @Getter
@@ -322,6 +325,7 @@ public class Config {
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
             this.superAdminId = yaml.getString("qq.super_admin_id", "null");
+            this.qqGroupBots = loadQqGroupBots();
 
             // ########## 腾讯频道 CLI（第二账号）配置参数 ##########
             this.tencentChannelEnabled = yaml.getBoolean("tencent-channel.enabled", false);
@@ -409,6 +413,64 @@ public class Config {
 
         log.info("已加载 {} 个 AI 配置: {}", map.size(), map.keySet());
         return map;
+    }
+
+    private List<GroupBotConfig> loadQqGroupBots() {
+        YamlConfiguration.ConfigSection groupsSection = yaml.getSection("qq.groups");
+        if (groupsSection == null) {
+            return List.of();
+        }
+
+        List<GroupBotConfig> bots = new ArrayList<>();
+        for (String key : groupsSection.getKeys()) {
+            Object raw = groupsSection.get(key);
+            if (!(raw instanceof Map<?, ?> values)) {
+                log.warn("忽略无效的 qq.groups.{} 配置：应为对象", key);
+                continue;
+            }
+
+            boolean enabled = booleanValue(values.get("enabled"), false);
+            String envPrefix = "QQ_GROUP_BOT_" + key.toUpperCase(Locale.ROOT)
+                    .replaceAll("[^A-Z0-9]", "_");
+            String appId = environmentOrValue(envPrefix + "_APP_ID", values.get("app-id"), "");
+            String clientSecret = environmentOrValue(
+                    envPrefix + "_CLIENT_SECRET", values.get("client-secret"), "");
+            String apiBaseUrl = stringValue(values.get("api-base-url"), this.qqApiBaseUrl);
+            String webhookPath = stringValue(
+                    values.get("webhook-path"), "/qq/groups/" + key + "/webhook");
+
+            bots.add(new GroupBotConfig(
+                    key,
+                    enabled,
+                    appId,
+                    clientSecret,
+                    apiBaseUrl,
+                    webhookPath
+            ));
+        }
+        return List.copyOf(bots);
+    }
+
+    private static String environmentOrValue(String environmentKey, Object value, String defaultValue) {
+        String environmentValue = System.getenv(environmentKey);
+        if (environmentValue != null && !environmentValue.isBlank()) {
+            return environmentValue;
+        }
+        return stringValue(value, defaultValue);
+    }
+
+    private static String stringValue(Object value, String defaultValue) {
+        return value == null ? defaultValue : String.valueOf(value);
+    }
+
+    private static boolean booleanValue(Object value, boolean defaultValue) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof String text) {
+            return Boolean.parseBoolean(text);
+        }
+        return defaultValue;
     }
 
     private AiProperties loadAiProperties(String prefix) {

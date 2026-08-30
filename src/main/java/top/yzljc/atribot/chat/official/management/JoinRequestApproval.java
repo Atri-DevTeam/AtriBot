@@ -7,6 +7,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.sakuraba_ema.groups.GroupBotRegistry;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,8 +51,21 @@ public final class JoinRequestApproval {
     private static final int MAX_LIMIT = 100;
 
     private static String getUrl(String groupOpenId, String memberOpenId) {
-        return Config.getInstance().getQqApiBaseUrl()
+        return apiBaseUrl(groupOpenId)
                 + "/v2/groups/" + groupOpenId + "/approval_join_request/" + memberOpenId;
+    }
+
+    private static String apiBaseUrl(String groupOpenId) {
+        return GroupBotRegistry.find(groupOpenId)
+                .map(client -> client.getConfig().apiBaseUrl())
+                .orElseGet(() -> Config.getInstance().getQqApiBaseUrl());
+    }
+
+    private static String authHeader(String groupOpenId) {
+        String token = GroupBotRegistry.find(groupOpenId)
+                .map(client -> client.getTokenManager().getAccessToken())
+                .orElseGet(() -> Atri.getInstance().getTokenManager().getAccessToken());
+        return "QQBot " + token;
     }
 
     /**
@@ -101,7 +115,7 @@ public final class JoinRequestApproval {
             return false;
         }
         String url = getUrl(groupOpenId, memberOpenId);
-        String auth = "QQBot " + Atri.getInstance().getTokenManager().getAccessToken();
+        String auth = authHeader(groupOpenId);
         String scene = "入群申请审批";
         String requestJson = null;
         try {
@@ -155,12 +169,12 @@ public final class JoinRequestApproval {
         if (limit > MAX_LIMIT) {
             limit = MAX_LIMIT;
         }
-        String url = Config.getInstance().getQqApiBaseUrl()
+        String url = apiBaseUrl(groupOpenId)
                 + "/v2/groups/" + groupOpenId + "/join_request_list?limit=" + limit;
         if (cursor != null && !cursor.isBlank()) {
             url += "&cursor=" + URLEncoder.encode(cursor, StandardCharsets.UTF_8);
         }
-        String auth = "QQBot " + Atri.getInstance().getTokenManager().getAccessToken();
+        String auth = authHeader(groupOpenId);
         String scene = "入群申请列表";
         try {
             HttpService.GetResult result = HttpService.sendGetRequestDetailed(url, "Authorization", auth);

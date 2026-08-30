@@ -144,12 +144,23 @@ qq:
   api-base-url: "https://sandbox.api.sgroup.qq.com"  # 沙箱/正式环境
   connection-mode: "ws"                      # ws（默认）、webhook（也可写 wh）
   webhook-path: "/qq/webhook"                 # Webhook 回调路径
+  groups:                                     # 可选：额外的群聊专用 Bot，可配置多个实例
+    secondary:                                # 实例 key，仅允许字母、数字、_、-
+      enabled: false
+      app-id: ""
+      client-secret: ""
+      api-base-url: "https://sandbox.api.sgroup.qq.com"
+      webhook-path: "/qq/groups/secondary/webhook"
   official-webui-token: "your-random-token"   # WebUI 登录 Token（自行生成）
   official-openId: ""                         # Bot 自身 OpenId（启动时由 /users/@me 自动拉取）
   official-username: ""                       # 兼容字段（已弃用）
   debug-group-openId: ""                      # Debug 群 OpenId
   super_admin_id: "null"                      # 超级管理员用户 OpenId
 ```
+
+`qq.groups` 下每个启用项都是独立实例，只使用 HTTPS Webhook，并且只接收群聊域事件；不会接收 C2C、频道消息或频道私信。实例各自持有 AppID、Client Secret、access token 缓存和消息序号缓存，但复用现有 `OfficialGroup*Event`、`EventManager` 与指令系统。群事件触发的回复、图片、按钮、撤回、禁言及入群审批会按群 OpenID 自动路由回收到该事件的实例。
+
+生产环境可用环境变量覆盖凭据，变量名格式为 `QQ_GROUP_BOT_<KEY>_APP_ID` 与 `QQ_GROUP_BOT_<KEY>_CLIENT_SECRET`；例如 `secondary` 对应 `QQ_GROUP_BOT_SECONDARY_APP_ID`。每个启用实例的 AppID 和 Webhook 路径都必须唯一。
 
 ### QQ 频道 CLI
 

@@ -87,8 +87,14 @@ import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.webui.WebUIRouter;
 import top.yzljc.atribot.webui.WebUISessionManager;
 import top.yzljc.sakuraba_ema.ChannelCliClient;
+import top.yzljc.sakuraba_ema.groups.GroupBotClient;
+import top.yzljc.sakuraba_ema.groups.GroupBotConfig;
+import top.yzljc.sakuraba_ema.groups.GroupBotRouteStore;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,6 +139,8 @@ public class Atri {
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private final QQWebhookHandler qqWebhookHandler;
+    @Getter
+    private final List<GroupBotClient> qqGroupBotClients;
     private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
@@ -151,6 +159,7 @@ public class Atri {
         this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager, config.getQqConnectionMode());
         this.qqWebhookHandler = new QQWebhookHandler(config.getQqAppId(), config.getQqClientSecret());
         this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
+        this.qqGroupBotClients = createGroupBotClients(config);
         this.checkMojira = new MojiraStatus();
         this.cardLike = new CardLike();
         this.reboot = new RebootCommand();
@@ -205,6 +214,12 @@ public class Atri {
         if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
             server.post(config.getQqWebhookPath(), qqWebhookHandler::handle);
             log.info("QQ Webhook 回调已启用: POST {}", config.getQqWebhookPath());
+        }
+
+        for (GroupBotClient groupBotClient : qqGroupBotClients) {
+            server.post(groupBotClient.getConfig().webhookPath(), groupBotClient::handleWebhook);
+            log.info("QQ 群聊 Bot 实例 {} 的 Webhook 已启用: POST {}",
+                    groupBotClient.key(), groupBotClient.getConfig().webhookPath());
         }
 
         WebUIRouter.register(server);
@@ -365,6 +380,7 @@ public class Atri {
 
         MinecraftBind.init();
         OfficialGroups.init();
+        GroupBotRouteStore.initialize(qqGroupBotClients);
         OfficialUsers.init();
         TufeElecRepository.init();
         SignRepository.init();
@@ -476,6 +492,7 @@ public class Atri {
             scheduler.shutdown();
         }
         tencentChannelCliClient.close();
+        qqGroupBotClients.forEach(GroupBotClient::close);
         ThreadManager.shutdown();
         System.out.println("==== AtriBot Disabled ====");
     }
@@ -499,5 +516,34 @@ public class Atri {
         }
 
         ConsoleManager.start();
+    }
+
+    private static List<GroupBotClient> createGroupBotClients(Config config) {
+        Set<String> webhookPaths = new HashSet<>();
+        Set<String> appIds = new HashSet<>();
+        if (config.isOfficialBotEnabled()) {
+            appIds.add(config.getQqAppId());
+            if ("webhook".equals(config.getQqConnectionMode())) {
+                webhookPaths.add(config.getQqWebhookPath());
+            }
+        }
+
+        List<GroupBotClient> clients = new ArrayList<>();
+        for (GroupBotConfig groupBotConfig : config.getQqGroupBots()) {
+            if (!groupBotConfig.enabled()) {
+                continue;
+            }
+            groupBotConfig.validateEnabled();
+            if (!webhookPaths.add(groupBotConfig.webhookPath())) {
+                throw new IllegalArgumentException(
+                        "Duplicate QQ webhook path: " + groupBotConfig.webhookPath());
+            }
+            if (!appIds.add(groupBotConfig.appId())) {
+                throw new IllegalArgumentException(
+                        "Duplicate QQ bot app-id for group instance: " + groupBotConfig.key());
+            }
+            clients.add(new GroupBotClient(groupBotConfig));
+        }
+        return List.copyOf(clients);
     }
 }
