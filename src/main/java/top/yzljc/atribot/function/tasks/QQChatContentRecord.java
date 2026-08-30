@@ -117,7 +117,13 @@ public class QQChatContentRecord implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    /*
+     * 入站消息一律用 LOWEST 优先级落库：CommandManager 等业务监听器跑在 NORMAL，
+     * 且 QQSenderImpl -> C2CChat/GroupChat 的发送是 future.get() 阻塞的，
+     * 机器人回复会在业务监听器里先写进表拿到更小的自增 id。
+     * WebUI 按 id 排序展示，这会让回复排在用户原消息前面，因此必须先于业务监听器记录。
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialC2CMessage(OfficialC2CMessageCreateEvent event) {
         User user = event.getUser();
         String uid = user.getUserId();
@@ -146,7 +152,7 @@ public class QQChatContentRecord implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
         ensureGroupInCache(event.getGroupId());
         User user = event.getUser();
@@ -169,7 +175,7 @@ public class QQChatContentRecord implements Listener {
         );
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialGroupMessage(OfficialGroupMessageCreateEvent event) {
         ensureGroupInCache(event.getGroupId());
         User user = event.getUser();
