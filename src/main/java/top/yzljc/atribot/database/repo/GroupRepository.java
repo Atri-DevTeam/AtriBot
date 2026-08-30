@@ -22,6 +22,7 @@ public class GroupRepository {
 
     private static final String GROUP_TABLE = "official_groups";
     private static final String GROUP_FUNCTION_TABLE = "group_function_list";
+    private static final String GROUP_JOIN_WELCOME_TABLE = "group_join_welcome";
 
     public static void initTables() {
         String sqlGroup = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
@@ -49,11 +50,20 @@ public class GroupRepository {
                 "  PRIMARY KEY (`group_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
+        String sqlJoinWelcome = "CREATE TABLE IF NOT EXISTS `" + GROUP_JOIN_WELCOME_TABLE + "` (" +
+                "  `group_openId` VARCHAR(256) NOT NULL," +
+                "  `config` JSON NOT NULL," +
+                "  PRIMARY KEY (`group_openId`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
         try (var con = DatabaseManager.getConnection()) {
             try (var ps = con.prepareStatement(sqlGroup)) {
                 ps.execute();
             }
             try (var ps = con.prepareStatement(sqlFunc)) {
+                ps.execute();
+            }
+            try (var ps = con.prepareStatement(sqlJoinWelcome)) {
                 ps.execute();
             }
         } catch (Exception e) {
@@ -443,6 +453,63 @@ public class GroupRepository {
 //            log.warn("{}: {}", errorMessage, e.getMessage());
 //        }
 //    }
+
+    // ==================== group_join_welcome CRUD ====================
+
+    /**
+     * 读取群入群欢迎个性化配置 JSON 字符串，不存在返回 null
+     */
+    public static String getJoinWelcomeConfigJson(String groupOpenId) {
+        String sql = "SELECT config FROM `" + GROUP_JOIN_WELCOME_TABLE + "` WHERE group_openId = ?";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            var rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("config");
+            }
+        } catch (Exception e) {
+            log.error("读取群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 保存群入群欢迎个性化配置 JSON 字符串
+     */
+    public static boolean saveJoinWelcomeConfigJson(String groupOpenId, String json) {
+        String sql = "INSERT INTO `" + GROUP_JOIN_WELCOME_TABLE + "` (group_openId, config) VALUES (?, ?) " +
+                "ON DUPLICATE KEY UPDATE config = VALUES(config)";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            ps.setString(2, json);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("保存群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 删除群入群欢迎个性化配置
+     */
+    public static boolean deleteJoinWelcomeConfig(String groupOpenId) {
+        String sql = "DELETE FROM `" + GROUP_JOIN_WELCOME_TABLE + "` WHERE group_openId = ?";
+
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            log.error("删除群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
+            return false;
+        }
+    }
 
     public record GroupRow(String groupOpenId, String opMemberOpenId, String joinedAt,
                            boolean isWhitelist, boolean isBlacklisted,

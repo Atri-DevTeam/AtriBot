@@ -256,6 +256,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new GroupModerationListener());
         EventManager.getInstance().registerEvents(new GroupJoinReviewListener());
         EventManager.getInstance().registerEvents(new WhatFuckingPing());
+        EventManager.getInstance().registerEvents(new GroupJoinWelcome());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -284,8 +285,8 @@ public class Atri {
         CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
         CommandManager.getCommand("info").setExecutor(new SizeNtUid());
 
-        CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
-        CommandManager.getCommand("rc").setExecutor(new RconHandler());
+//        CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
+//        CommandManager.getCommand("rc").setExecutor(new RconHandler());
         CommandManager.getCommand("test-whoami").setExecutor(new DebugWhoAmI());
         CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
         CommandManager.getCommand("test").setExecutor(new Test());
@@ -339,11 +340,10 @@ public class Atri {
         CommandManager.getCommand("mccape").setExecutor(new MinecraftCapeCommand());
         CommandManager.getCommand("skbpack").setExecutor(new SkyblockPackCommand());
 
-        // TODO: Evaluate official group active-message permissions before wiring scheduled weather delivery.
-
         CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());
+        CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());

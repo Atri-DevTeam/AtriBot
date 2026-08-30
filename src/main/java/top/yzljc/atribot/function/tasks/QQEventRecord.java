@@ -46,50 +46,6 @@ public class QQEventRecord implements Listener {
     private static final List<String> c2cNotifiedUsers = new CopyOnWriteArrayList<>();
 
     @EventHandler
-    public void onMemberJoin(OfficialGroupMemberAddEvent event) {
-        // 成员入群后刷新一次所在群资料（成员数等）
-        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
-        log.info("[!] 成员入群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
-        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
-            if (event.getGroupOpenId().equals("8B4709F81FE02E5E64AC31B2F910793A")) {
-                if (CoinGainLogRepository.countCoinGains(event.getMemberOpenId(), "join_my_group") < 1) {
-                    LootRepository.addCoins(event.getMemberOpenId(), 100, "join_my_group");
-                    log.info("Added coins to new member {} for joining group {} (join_my_group)", event.getMemberOpenId(), event.getGroupOpenId());
-                }
-            }
-        });
-        if (!OfficialGroups.isFunctionEnabled(event.getGroupOpenId(), "member_add_welcome")) {
-            return;
-        }
-        // Guided by GordonHim
-        String url = ResourcesProperties.WELCOME_IMG;
-        String welStr = "欢迎新人喵~";
-        int width = 1238;
-        int height = 564;
-        if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.OWNER) {
-            welStr = "欢迎" + QQBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
-            url = ResourcesProperties.WELCOME_DEV_IMG;
-            width = 850;
-            height = 479;
-        } else if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.ADMIN) {
-            welStr = "欢迎" + QQBot.BOT_NAME + "管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
-        }
-        Markdown md = TC.md(
-                Markdown.at(event.getMemberOpenId()) + " " + welStr + "\n\n" +
-                        Markdown.img(url, width, height) + "\n\n" +
-                        "> " + Markdown.enterCommand("/tasks disable member_add_welcome", "关闭欢迎提示")
-        );
-        Object buttons = TC.keyboard(
-                List.of(
-                        List.of(new Button("c1", "打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c2", "帮助", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c3", "提建议", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
-                ), ButtonSize.SMALL
-        );
-        event.sendMessage(md, buttons);
-    }
-
-    @EventHandler
     public void onMemberRemove(OfficialGroupMemberRemoveEvent event) {
         Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
         log.info("[!] 成员退群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
@@ -123,7 +79,7 @@ public class QQEventRecord implements Listener {
         }
     }
 
-    private static void fetchAndSaveGroupProfile(String groupOpenId) {
+    public static void fetchAndSaveGroupProfile(String groupOpenId) {
         var profile = QQBot.fetchGroupProfile(groupOpenId);
         if (profile == null) {
             log.warn("新加群后获取群资料失败: {}", groupOpenId);

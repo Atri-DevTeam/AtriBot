@@ -90,8 +90,8 @@ commands:
   verify:
     description: 验证YZ_Ljc_ Network账号
     usage: /verify <验证码>
-  stats:
-    description: 玩家资料查询
+  how-to-custom-text:
+    description: 如何设置群个性化欢迎文本
   rc:
     description: 服务器 RCON 控制
     aliases: [unbanme]

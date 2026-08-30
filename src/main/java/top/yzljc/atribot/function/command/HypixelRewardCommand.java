@@ -729,6 +729,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
             Map.entry("adsense_token", "每日奖励代币"),
             Map.entry("SURVIVAL_GAMES", "闪电饥饿游戏"),
             Map.entry("housing_package", "家园世界装饰品"),
-            Map.entry("GINGERBREAD", "卡丁车竞赛")
+            Map.entry("GINGERBREAD", "卡丁车竞赛"),
+            Map.entry("SKYWARS", "空岛战争")
     );
 }
