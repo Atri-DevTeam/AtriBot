@@ -69,8 +69,6 @@ commands:
     usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息'
   groupinfo:
     description: 查看群组配置
-  calendar:
-    description: 查看日历
   hypstatus:
     description: Hypixel Server Status
     usage: /hypstatus
@@ -87,15 +85,8 @@ commands:
   autolike:
     description: 自动点赞列表
     usage: /autolike <add|remove|list> (不需要输入QQ号，非管理员不允许更改他人设置)
-  verify:
-    description: 验证YZ_Ljc_ Network账号
-    usage: /verify <验证码>
   how-to-custom-text:
     description: 如何设置群个性化欢迎文本
-  rc:
-    description: 服务器 RCON 控制
-    aliases: [unbanme]
-    usage: /rc <服务器号> <命令> - 该指令为Minecraft服务器管理使用，仅对有需求用户开放
   whoami:
     description: 用户场景信息
   test-whoami:
@@ -306,8 +297,11 @@ commands:
     description: 测试Markdown渲染
     usage: /test-markdown
   ua:
-    description: 统一身份验证
-    usage: /ua
+    description: 统一身份认证管理
+    usage: /ua <UUID / OpenID / UIN / Minecraft UUID / 用户名>
+  bind:
+    description: 绑定正版 Minecraft 玩家
+    usage: /bind <Minecraft 用户名或 UUID>
   wz:
     description: Hypixel法师掘战数据查询
     usage: /wz <玩家名或 UUID>

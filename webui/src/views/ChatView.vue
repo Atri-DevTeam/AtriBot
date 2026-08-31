@@ -793,9 +793,9 @@ function queueGroupAvatars(list) {
   }
 }
 
-// Queue only after the list changes; the renderer itself limits network work.
+// Queue only when the app ID or visible conversation IDs actually change.
 watch(
-  () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)],
+  () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)].join('\u0000'),
   () => queueGroupAvatars(filteredConvs.value),
   { immediate: true }
 )
@@ -814,13 +814,23 @@ const filteredMembers = computed(() => {
   )
 })
 
-// 仿 QQ NT：按身份分组，后端已排好序，这里只做分桶
+// 仿 QQ NT：按身份分组，后端已排好序，这里只做分桶。
+// 角色优先级为群主 > 管理员 > 机器人 > 普通成员，避免机器人重复归类。
 const memberSections = computed(() => {
   const list = filteredMembers.value
   return [
     { key: 'owner', label: '群主', items: list.filter(m => m.memberRole === 'OWNER') },
     { key: 'admin', label: '管理员', items: list.filter(m => m.memberRole === 'ADMIN') },
-    { key: 'member', label: '成员', items: list.filter(m => !isSpecialRole(m.memberRole)) }
+    {
+      key: 'bot',
+      label: '机器人',
+      items: list.filter(m => m.senderIsBot && m.memberRole !== 'OWNER' && m.memberRole !== 'ADMIN')
+    },
+    {
+      key: 'member',
+      label: '成员',
+      items: list.filter(m => !m.senderIsBot && !isSpecialRole(m.memberRole))
+    }
   ]
 })
 

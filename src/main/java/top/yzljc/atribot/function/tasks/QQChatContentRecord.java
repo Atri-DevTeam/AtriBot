@@ -1340,14 +1340,13 @@ public class QQChatContentRecord implements Listener {
         String sql = "SELECT r.union_openId, r.username, r.member_role, r.sender_is_bot, r.event_timestamp, r.created_at, t.msg_count " +
                 "FROM `" + GROUP_TABLE + "` r " +
                 "JOIN (SELECT union_openId, MAX(id) AS max_id, COUNT(*) AS msg_count FROM `" + GROUP_TABLE + "` " +
-                "      WHERE group_openId = ? AND event_type <> ? AND union_openId IS NOT NULL " +
+                "      WHERE group_openId = ? AND union_openId IS NOT NULL " +
                 "      GROUP BY union_openId) t " +
                 "ON r.id = t.max_id";
 
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, groupOpenId);
-            stmt.setString(2, "BOT_SEND");
             var rs = stmt.executeQuery();
             while (rs.next()) {
                 result.add(new GroupMemberRecord(
@@ -1690,8 +1689,7 @@ public class QQChatContentRecord implements Listener {
     }
 
     /**
-     * WebUI 用户名单用：批量取回一批 unionOpenId 各自最近一次非空、非机器人发送的用户名
-     * （群+私聊消息表各取最新，再按时间取最新）。查不到的 openId 不会进返回的 map。
+     * 批量查询用户的用户名
      */
     public static Map<String, String> findLatestKnownUsernames(Set<String> unionOpenIds) {
         if (unionOpenIds == null || unionOpenIds.isEmpty()) {

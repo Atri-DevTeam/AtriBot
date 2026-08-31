@@ -235,7 +235,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
         markdown.append("**反应力测试 - 结算**\n\n");
         if (completed) {
-            markdown.append("🎉 完成测验\n\n");
+            markdown.append("🎉 完成测验，排名 #").append(getUserRank(game.ownerOpenId) != 0 ? getUserRank(game.ownerOpenId) : "-").append("\n\n");
         } else {
             markdown.append("❌ 未在规定时间内完成，进度 ").append(game.completedCount).append("/").append(TOTAL_CELLS).append("\n\n");
         }
@@ -335,7 +335,29 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         JsonNode user = loadRecords().path(ownerId);
         long bestMs = user.path("bestMs").asLong(0);
         if (bestMs <= 0) return "暂无";
-        return String.format("%.1f 秒（%d 失误，%s）", bestMs / 1000.0, user.path("bestMisses").asInt(0), user.path("bestDate").asText(""));
+        return String.format("%.1f 秒（%d 失误，%s）#%s", bestMs / 1000.0, user.path("bestMisses").asInt(0), user.path("bestDate").asText(""), getUserRank(ownerId) != 0 ? String.valueOf(getUserRank(ownerId)) : "-");
+    }
+
+    /**
+     * 获取用户在所有完成过测试的用户中的用时排名。
+     *
+     * @return 从 1 开始的排名；用户没有有效完成记录时返回 0。用时相同的用户并列。
+     */
+    public static int getUserRank(String ownerId) {
+        if (ownerId == null || ownerId.isBlank()) return 0;
+
+        ObjectNode root = loadRecords();
+        long userBestMs = root.path(ownerId).path("bestMs").asLong(0);
+        if (userBestMs <= 0) return 0;
+
+        int rank = 1;
+        var fields = root.fields();
+        while (fields.hasNext()) {
+            JsonNode record = fields.next().getValue();
+            long bestMs = record.path("bestMs").asLong(0);
+            if (bestMs > 0 && bestMs < userBestMs) rank++;
+        }
+        return rank;
     }
 
     private void scheduleGameTimeout(String sessionId, GameState game) {

@@ -1,9 +1,9 @@
 package top.yzljc.atribot.test;
 
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.platform.Platform;
 
 /**
@@ -22,16 +22,6 @@ public class RecoverLostGolds implements CommandExecutor {
             var userId = qq.getUserId();
             var groupId = qq.getGroupId() == null ? "none" : qq.getGroupId();
             switch (label) {
-                case "recovermcbind" -> {
-                    if (CoinGainLogRepository.countCoinGains(userId, "mc_bind") < 1 && !MinecraftBind.getDataByOpenId(userId).memberOpenId().equals("-1")) {
-                        LootRepository.addCoins(userId, 200, "mc_bind");
-                        qq.sendMessage("补发mc_bind奖励200金粒成功！");
-                        return true;
-                    } else {
-                        qq.sendMessage("不符合补发条件！");
-                        return true;
-                    }
-                }
                 case "recoverjoin" -> {
                     if (CoinGainLogRepository.countCoinGains(userId, "join_my_group") < 1 && groupId.equals("8B4709F81FE02E5E64AC31B2F910793A")) {
                         LootRepository.addCoins(userId, 200, "join_my_group");

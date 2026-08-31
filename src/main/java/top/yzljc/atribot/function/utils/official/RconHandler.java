@@ -22,6 +22,7 @@ import java.util.Map;
  * @Project AtriBot
  * @Package top.yzljc.atribot.official.function
  */
+@Deprecated(since = "3.2.2")
 public class RconHandler implements CommandExecutor {
 
     private static final Map<String, MinecraftNetwork> registeredServer = Map.of(

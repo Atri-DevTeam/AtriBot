@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.utils.official.minecraft;
 
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
@@ -14,6 +15,7 @@ import java.util.List;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.functions.official.minecraft
  */
+@Deprecated(since = "3.2.2")
 public final class AtriNetwork extends MinecraftNetwork {
 
     public AtriNetwork() {
@@ -34,7 +36,8 @@ public final class AtriNetwork extends MinecraftNetwork {
     public String modifyCommand(QQCommandSender sender, String[] args) {
         String command = commandsJoin(args).trim();
         if (command.equalsIgnoreCase("reboot 30s")) {
-            return command + " 远程重启请求，UUID: " + MinecraftBind.getDataByOpenId(sender.getUserId()).uuid();
+            var account = UnifiedAuthentication.findByQqUserOpenId(sender.getUserId());
+            return command + " 远程重启请求，UUID: " + (account == null ? null : account.minecraftUuid());
         }
         return command;
     }
@@ -48,7 +51,9 @@ public final class AtriNetwork extends MinecraftNetwork {
             return true;
         }
         String finalCommandContent = commandContent.trim();
-        return ALLOWED_COMMANDS.stream().anyMatch(cmd -> finalCommandContent.equals(cmd) || finalCommandContent.startsWith(cmd + " ")) && (MinecraftBind.getDataByOpenId(sender.getUserId()).uuid() != null);
+        var account = UnifiedAuthentication.findByQqUserOpenId(sender.getUserId());
+        return ALLOWED_COMMANDS.stream().anyMatch(cmd -> finalCommandContent.equals(cmd) || finalCommandContent.startsWith(cmd + " "))
+                && account != null && account.minecraftUuid() != null;
     }
 
     @Override

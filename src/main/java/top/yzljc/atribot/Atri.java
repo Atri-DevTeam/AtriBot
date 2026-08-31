@@ -49,7 +49,6 @@ import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.command.PicStatsCommand;
 import top.yzljc.atribot.function.command.PicSubmitCommand;
 import top.yzljc.atribot.function.command.DrawCommand;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.utils.personal.*;
 import top.yzljc.atribot.platform.qq.QQBot;
@@ -235,7 +234,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new AtriChat());
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
-        EventManager.getInstance().registerEvents(new VerifyMinecraftCommand());
         EventManager.getInstance().registerEvents(new QQEventRecord());
         EventManager.getInstance().registerEvents(new QQChatContentRecord());
         EventManager.getInstance().registerEvents(new FeedbackCommand());
@@ -282,7 +280,7 @@ public class Atri {
         CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
-        CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
+//        CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
         CommandManager.getCommand("info").setExecutor(new SizeNtUid());
 
 //        CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
@@ -331,6 +329,7 @@ public class Atri {
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
+        CommandManager.getCommand("bind").setExecutor(new McBindCommand());
         CommandManager.getCommand("wz").setExecutor(new HypixelTNTWizardsCommand());
         CommandManager.getCommand("zs").setExecutor(new HypixelZombiesCommand());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
@@ -363,7 +362,6 @@ public class Atri {
         QQChatContentRecord.init();
         MinecraftNews.loadHistory();
 
-        MinecraftBind.init();
         OfficialGroups.init();
         OfficialUsers.init();
         TufeElecRepository.init();

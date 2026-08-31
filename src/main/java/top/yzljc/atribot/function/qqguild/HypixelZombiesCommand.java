@@ -1,13 +1,13 @@
 package top.yzljc.atribot.function.qqguild;
 
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 
 import java.util.Map;
 
@@ -30,8 +30,9 @@ public class HypixelZombiesCommand implements CommandExecutor, SlashCommandExecu
         if (sender instanceof QQGuildCommandSender user) {
             String player;
             if (args.length < 1) {
-                if (MinecraftBind.getDataByOpenId(user.getUserOpenId()).uuid() != null) {
-                    player = MinecraftBind.getDataByOpenId(user.getUserOpenId()).uuid();
+                var account = UnifiedAuthentication.findByQqUserOpenId(user.getUserOpenId());
+                if (account != null && account.minecraftUuid() != null) {
+                    player = account.minecraftUuid();
                 } else {
                     user.sendMessage("笨蛋喵，你没有绑定用户信息，请阅读帮助文档查看绑定事项，或指定一个查询玩家。");
                     return true;

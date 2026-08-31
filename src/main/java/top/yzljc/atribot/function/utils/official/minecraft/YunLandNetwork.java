@@ -15,6 +15,7 @@ import java.util.List;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.functions.official.minecraft
  */
+@Deprecated(since = "3.2.2")
 public final class YunLandNetwork extends MinecraftNetwork {
 
     public YunLandNetwork() {

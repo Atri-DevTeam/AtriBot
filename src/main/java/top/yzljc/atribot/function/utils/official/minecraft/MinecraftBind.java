@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Package top.yzljc.qqbot.functions.impl
  */
 @Slf4j
+@Deprecated(since = "3.2.2")
 public class MinecraftBind {
 
     private static final Map<String, MinecraftUserData> cache = new ConcurrentHashMap<>();

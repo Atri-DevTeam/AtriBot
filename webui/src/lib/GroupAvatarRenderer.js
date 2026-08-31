@@ -25,6 +25,7 @@ export default class GroupAvatarRenderer {
     this.cacheLimit = Math.max(1, Number(cacheLimit) || 100)
     this.cache = new Map()
     this.inflight = new Map()
+    this.attempted = new Set()
     this.queue = []
     this.running = 0
   }
@@ -35,6 +36,10 @@ export default class GroupAvatarRenderer {
     if (!id) return Promise.resolve(null)
     if (this.cache.has(id)) return Promise.resolve(this.cache.get(id))
     if (this.inflight.has(id)) return this.inflight.get(id)
+    // A group is loaded at most once during this ChatView visit. Empty member
+    // lists and transient failures fall back to the placeholder until re-entry.
+    if (this.attempted.has(id)) return Promise.resolve(null)
+    this.attempted.add(id)
 
     const promise = new Promise(resolve => {
       this.queue.push({ id, resolve })
@@ -47,15 +52,19 @@ export default class GroupAvatarRenderer {
   clear(groupOpenId) {
     if (groupOpenId == null) {
       this.cache.clear()
+      this.attempted.clear()
       return
     }
-    this.cache.delete(String(groupOpenId))
+    const id = String(groupOpenId)
+    this.cache.delete(id)
+    this.attempted.delete(id)
   }
 
   dispose() {
     this.queue.splice(0).forEach(job => job.resolve(null))
     this.cache.clear()
     this.inflight.clear()
+    this.attempted.clear()
   }
 
   drain() {

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
  * @Project AtriBot
  * @Package top.yzljc.qqbot.functions.official.minecraft
  */
+@Deprecated(since = "3.2.2")
 public abstract class MinecraftNetwork {
 
     private final boolean isSelf;

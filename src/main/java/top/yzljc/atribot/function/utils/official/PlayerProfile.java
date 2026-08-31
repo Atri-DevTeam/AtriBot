@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.utils.official;
 
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,8 +17,6 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
-import top.yzljc.atribot.function.minecraft.MinecraftUserData;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.FormatTools;
@@ -30,10 +29,11 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
+@Deprecated(since = "3.2.2")
 public class PlayerProfile implements Listener, CommandExecutor {
 
     private static final Object keyboard = TC.keyboard(List.of(
-            List.of(new Button("c1", "绑定账号", "/verify ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+            List.of(new Button("c1", "绑定账号", "/bind ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
     ));
 
     @Override
@@ -43,14 +43,14 @@ public class PlayerProfile implements Listener, CommandExecutor {
         }
 
         if (args.length < 1) {
-            MinecraftUserData data = MinecraftBind.getDataByOpenId(qq.getUserId());
-            if (data.memberOpenId().equals("-1")) {
-                Markdown md = TC.md("您尚未绑定玩家身份，请先加入社区服务器使用`/verify`获取绑定码！");
+            var account = UnifiedAuthentication.findByQqUserOpenId(qq.getUserId());
+            if (account == null || account.minecraftUuid() == null) {
+                Markdown md = TC.md("您尚未绑定玩家身份，请使用 `/bind <Minecraft 用户名或 UUID>` 绑定！");
                 qq.sendMessage(md, keyboard);
                 return true;
             }
 
-            String uuid = data.uuid();
+            String uuid = account.minecraftUuid();
             return getMarkdownText(uuid, qq, getKeyBoard(uuid));
         }
 

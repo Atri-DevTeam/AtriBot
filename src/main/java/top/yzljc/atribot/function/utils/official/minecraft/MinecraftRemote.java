@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+@Deprecated(since = "3.2.2")
 public class MinecraftRemote {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftRemote.class);

@@ -7,6 +7,7 @@ import top.yzljc.atribot.database.repo.UnifiedAccountRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +45,16 @@ public class UnifiedAuthentication {
                                           String minecraftUuid, UnifiedRole role, List<String> permissions,
                                           AccountStatus status) {
         return cachePut(UnifiedAccountRepository.create(username, qqUserOpenId, qqUserUin, minecraftUuid, role, permissions, status));
+    }
+
+    public static UnifiedAccount ensureByQqUserOpenId(String openId, String username) {
+        UnifiedAccount account = findByQqUserOpenId(openId);
+        return account != null ? account : register(username, openId, null, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
+    }
+
+    public static UnifiedAccount ensureByQqUserUin(String uin, String username) {
+        UnifiedAccount account = findByQqUserUin(uin);
+        return account != null ? account : register(username, null, uin, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
     }
 
     public static UnifiedAccount get(UUID uuid) {
@@ -116,6 +127,30 @@ public class UnifiedAuthentication {
         return new ArrayList<>(cache.values());
     }
 
+    /** 按统一账号任意字段精确查询，用户名允许命中多个账号。 */
+    public static List<UnifiedAccount> findMatching(String value) {
+        if (value == null || value.isBlank()) return List.of();
+        String query = value.trim();
+        Map<UUID, UnifiedAccount> matches = new LinkedHashMap<>();
+        for (UnifiedAccount account : cache.values()) {
+            if (matches(account, query)) matches.put(account.uuid(), account);
+        }
+        return new ArrayList<>(matches.values());
+    }
+
+    public static int countByMinecraftUuid(String minecraftUuid) {
+        if (minecraftUuid == null || minecraftUuid.isBlank()) return 0;
+        String query = minecraftUuid.trim();
+        return (int) cache.values().stream()
+                .filter(account -> query.equalsIgnoreCase(account.minecraftUuid()))
+                .count();
+    }
+
+    public static boolean bindMinecraftUuid(UUID uuid, String minecraftUuid) {
+        if (uuid == null || minecraftUuid == null || minecraftUuid.isBlank()) return false;
+        return updateMinecraftUuid(uuid, minecraftUuid.trim());
+    }
+
     public static int count() {
         return cache.size();
     }
@@ -163,6 +198,14 @@ public class UnifiedAuthentication {
         UnifiedAccount account = dto.toAccount();
         cache.put(account.uuid(), account);
         return account;
+    }
+
+    private static boolean matches(UnifiedAccount account, String query) {
+        return query.equalsIgnoreCase(String.valueOf(account.uuid()))
+                || query.equals(account.username())
+                || query.equals(account.qqUserOpenId())
+                || query.equals(account.qqUserUin())
+                || query.equalsIgnoreCase(account.minecraftUuid());
     }
 
     private static boolean refreshAfterUpdate(UUID uuid, boolean updated) {

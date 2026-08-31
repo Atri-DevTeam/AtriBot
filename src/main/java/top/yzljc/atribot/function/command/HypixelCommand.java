@@ -1,13 +1,13 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 
 import java.util.Locale;
 import java.util.Map;
@@ -183,8 +183,9 @@ public class HypixelCommand implements CommandExecutor {
         String player = null;
 
         if (args.length == 1) {
-            if (MinecraftBind.getDataByOpenId(userId).uuid() != null) {
-                player = MinecraftBind.getDataByOpenId(userId).uuid();
+            var account = UnifiedAuthentication.findByQqUserOpenId(userId);
+            if (account != null && account.minecraftUuid() != null) {
+                player = account.minecraftUuid();
             }
         } else {
             if (args.length < 1) return null;

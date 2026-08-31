@@ -46,13 +46,18 @@ public class UnifiedAccountRepository {
                 "  PRIMARY KEY (`uuid`)," +
                 "  UNIQUE KEY `uk_qq_user_open_id` (`qq_user_open_id`)," +
                 "  UNIQUE KEY `uk_qq_user_uin` (`qq_user_uin`)," +
-                "  UNIQUE KEY `uk_minecraft_uuid` (`minecraft_uuid`)," +
                 "  KEY `idx_username` (`username`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         try (var con = DatabaseManager.getConnection()) {
             try (var ps = con.prepareStatement(sql)) {
                 ps.execute();
+            }
+            // 同一个正版 Minecraft 账号允许绑定多个统一账号。
+            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` DROP INDEX `uk_minecraft_uuid`")) {
+                ps.execute();
+            } catch (SQLException ignored) {
+                // 新表没有该索引，或数据库已完成迁移。
             }
             log.info("统一账号表初始化完成");
         } catch (Exception e) {

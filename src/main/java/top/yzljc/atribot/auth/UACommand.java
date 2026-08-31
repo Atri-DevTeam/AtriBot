@@ -13,7 +13,6 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupJoinRequestEvent;
-import top.yzljc.atribot.function.utils.official.minecraft.MinecraftBind;
 import top.yzljc.atribot.webui.repo.JoinApprovalWhitelistRepo;
 
 import java.util.HashMap;
@@ -39,15 +38,20 @@ public class UACommand implements CommandExecutor, Listener {
         if (!(sender instanceof QQCommandSender user)) {
             return true;
         }
+        if (!user.getPlatform().isOfficialQQPlatform()) {
+            user.sendMessage("[!] /ua 仅支持 QQ 官方机器人平台。");
+            return true;
+        }
 
-        if (args.length > 0 && args[0].equalsIgnoreCase("bindqq")) {
-            if (UnifiedAuthentication.findByQqUserOpenId(user.getUserId()) == null) {
-                user.sendMessage("[!] 当前身份用户未完成统一身份认证注册，请先执行 /ua 注册！");
-                return true;
-            }
-            if (args.length > 1) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("qq")) {
+            if (args.length == 2) {
                 var qq = args[1];
                 if (qq.matches("\\d+") && qq.length() >= 5 && qq.length() <= 10) {
+                    var account = UnifiedAuthentication.ensureByQqUserOpenId(user.getUserId(), user.getUsername());
+                    if (account == null) {
+                        user.sendMessage("[!] 统一身份认证账号创建失败，请稍后再试！");
+                        return true;
+                    }
                     pendingBindQq.put(user.getUserId(), qq);
                     boolean success = JoinApprovalStrategy.updateWhitelist(strategyId, JoinApprovalStrategy.WhitelistOp.ADD, List.of(qq));
                     JoinApprovalWhitelistRepo.addUsers(strategyId, List.of(qq));
@@ -60,36 +64,49 @@ public class UACommand implements CommandExecutor, Listener {
                     return true;
                 }
             }
-            user.sendMessage("[!] 无效的号码标识，请重新输入！");
+            user.sendMessage("[!] 用法：/ua qq <QQ号>，QQ号必须是 5-10 位数字！");
             return true;
         }
 
-        if (UnifiedAuthentication.findByQqUserOpenId(user.getUserId()) != null) {
-            user.sendMessage("[!] 当前身份用户已完成统一身份认证注册！");
+        if (!user.hasPermission()) {
+            user.sendMessage("[!] 只有管理员可以查询统一身份认证信息！");
+            return true;
         }
 
-        var d = UnifiedAuthentication.register(user.getUserId(), user.getUsername().isBlank() ? null : user.getUsername());
-        // 查询: 是否绑定过Minecraft账号
-        var mc = MinecraftBind.getDataByOpenId(user.getUserId());
-        if (mc != null && mc.uuid() != null && UnifiedAuthentication.updateMinecraftUuid(d.uuid(), mc.uuid())) {
-            log.info("[!] 用户 {} 已绑定过 Minecraft 账号，已同步 UUID: {}", user.getUserId(), mc.uuid());
+        if (args.length != 1 || args[0].isBlank()) {
+            user.sendMessage("[!] 用法：/ua <UUID / OpenID / UIN / Minecraft UUID / 用户名>");
+            return true;
         }
 
-        if (d.uuid() != null) {
-            log.info("[!] 用户 {} 统一身份认证注册成功，UUID: {}", user.getUserId(), d.uuid());
-            user.sendMessage(
-                    TC.md("**统一身份认证成功**\n\n" +
-                            "UUID: `" + d.uuid() + "`\n\n" +
-                            "用户名: " + Markdown.at(user.getUserId()) + "\n\n" +
-                            "OpenID: `" + user.getUserId() + "`\n\n" +
-                            "MinecraftUUID: `" + d.minecraftUuid() + "`\n\n" +
-                            "QQ: `" + "未绑定" + "`")
-            );
-        } else {
-            user.sendMessage("[!] 统一身份认证注册失败，请联系开发者处理！");
+        var matches = UnifiedAuthentication.findMatching(args[0]);
+        if (matches.isEmpty()) {
+            user.sendMessage("[!] 未找到匹配的统一身份认证账号！");
+            return true;
         }
+
+        StringBuilder message = new StringBuilder("**统一身份认证查询**\n\n");
+        for (int i = 0; i < matches.size(); i++) {
+            var account = matches.get(i);
+            if (i > 0) message.append("\n---\n\n");
+            message.append("**账号 ").append(i + 1).append("**\n")
+                    .append("UUID: `").append(account.uuid()).append("`\n")
+                    .append("用户名: `").append(display(account.username())).append("`\n")
+                    .append("QQ OpenID: `").append(display(account.qqUserOpenId())).append("`\n")
+                    .append("QQ UIN: `").append(display(account.qqUserUin())).append("`\n")
+                    .append("Minecraft UUID: `").append(display(account.minecraftUuid())).append("`\n")
+                    .append("角色: `").append(account.role().getDisplayName()).append("`\n")
+                    .append("状态: `").append(account.status()).append("`\n")
+                    .append("权限: `").append(account.permissions().isEmpty() ? "无" : String.join(", ", account.permissions())).append("`\n")
+                    .append("创建时间: `").append(display(account.createTime())).append("`\n")
+                    .append("最后更新: `").append(display(account.lastUpdateTime())).append("`\n");
+        }
+        user.sendMessage(TC.md(message.toString()));
 
         return true;
+    }
+
+    private static String display(String value) {
+        return value == null || value.isBlank() ? "未绑定" : value;
     }
 
     @EventHandler
