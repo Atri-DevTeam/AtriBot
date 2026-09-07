@@ -27,6 +27,7 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
@@ -127,31 +128,33 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 
-            String text = headerText + "！\n" +
-                    "标题: " + a.title() + "\n" +
-                    "作者: " + a.author() + "\n" +
-                    "时间: " + a.publishTime() + "\n" +
-                    "链接: " + a.link() + "\n" +
-                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
+            PushTask.push("hyp_alpha_news", md);
 
-            var glist = OfficialGroups.enabledGroups("hyp_alpha_news");
-            var ulist = OfficialUsers.enabledUsers("hyp_alpha_news");
-            for (String gid : glist) {
-                GroupChat.sendMessage(gid, md);
-            }
-            for (String uid : ulist) {
-                C2CChat.sendMessage(uid, md);
-            }
+//            String text = headerText + "！\n" +
+//                    "标题: " + a.title() + "\n" +
+//                    "作者: " + a.author() + "\n" +
+//                    "时间: " + a.publishTime() + "\n" +
+//                    "链接: " + a.link() + "\n" +
+//                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
 
-            Set<String> gids = GroupInformation.fetchAllGroupIds();
-            for (String gid : gids) {
-                if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_alpha_news")) continue;
-                if (banner != null) {
-                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
-                } else {
-                    GroupMessage.chatMessage(gid, text);
-                }
-            }
+//            var glist = OfficialGroups.enabledGroups("hyp_alpha_news");
+//            var ulist = OfficialUsers.enabledUsers("hyp_alpha_news");
+//            for (String gid : glist) {
+//                GroupChat.sendMessage(gid, md);
+//            }
+//            for (String uid : ulist) {
+//                C2CChat.sendMessage(uid, md);
+//            }
+
+//            Set<String> gids = GroupInformation.fetchAllGroupIds();
+//            for (String gid : gids) {
+//                if (!GroupConfigManager.isFeatureEnabled(gid, "hyp_alpha_news")) continue;
+//                if (banner != null) {
+//                    GroupMessage.chatMessage(gid, ImageComponent.imageOf(banner.url()).setText(text));
+//                } else {
+//                    GroupMessage.chatMessage(gid, text);
+//                }
+//            }
 
             Markdown forumsMarkdown = TC.md(
                     "**" + headerText + "**\n\n" +

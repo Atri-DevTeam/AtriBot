@@ -21,6 +21,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -120,6 +121,8 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
             );
 
+            PushTask.push("hyp_news", md);
+
 //            String text = headerText + "！\n" +
 //                    "标题: " + a.title() + "\n" +
 //                    "作者: " + a.author() + "\n" +
@@ -127,14 +130,14 @@ public final class HypixelAnnouncements implements CommandExecutor, ScheduledTas
 //                    "链接: " + a.link() + "\n" +
 //                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
 
-            var glist = OfficialGroups.enabledGroups("hyp_news");
-            var ulist = OfficialUsers.enabledUsers("hyp_news");
-            for (String gid : glist) {
-                GroupChat.sendMessage(gid, md);
-            }
-            for (String uid : ulist) {
-                C2CChat.sendMessage(uid, md);
-            }
+//            var glist = OfficialGroups.enabledGroups("hyp_news");
+//            var ulist = OfficialUsers.enabledUsers("hyp_news");
+//            for (String gid : glist) {
+//                GroupChat.sendMessage(gid, md);
+//            }
+//            for (String uid : ulist) {
+//                C2CChat.sendMessage(uid, md);
+//            }
 
 //            Set<String> gids = GroupInformation.fetchAllGroupIds();
 //            for (String gid : gids) {

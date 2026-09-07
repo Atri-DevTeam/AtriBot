@@ -14,7 +14,7 @@ import top.yzljc.atribot.platform.Platform;
 public final class CalendarTask extends PushTask {
 
     public CalendarTask() {
-        super("daily_calendar", "日历推送", true);
+        super("daily_calendar", "每日日历", true);
     }
 
     @Override

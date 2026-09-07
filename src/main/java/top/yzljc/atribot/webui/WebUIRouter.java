@@ -175,6 +175,7 @@ public class WebUIRouter {
 
         // Minecraft 玩家名审核
         server.post("/webui/api/minecraft-moderation/players", MinecraftWhitelistController::submitPlayer);
+        server.get("/webui/api/minecraft-moderation/profile", MinecraftWhitelistController::resolveProfile);
         server.get("/webui/api/minecraft-moderation/names", MinecraftWhitelistController::listNames);
         server.get("/webui/api/minecraft-moderation/skins", MinecraftWhitelistController::listSkins);
         server.put("/webui/api/minecraft-moderation/names/{id}", MinecraftWhitelistController::reviewName);

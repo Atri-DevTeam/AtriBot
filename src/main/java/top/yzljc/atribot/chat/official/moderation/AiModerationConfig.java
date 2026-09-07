@@ -16,7 +16,11 @@ import java.util.List;
 @Data
 public class AiModerationConfig {
     private boolean enabled = false;
+    /** 内容审核接口模式：0 纯词库，1 词库与 AI 都查，2 词库优先，3 纯 AI。 */
+    private int type = 2;
     private String systemPrompt = "";
+    private String customOutput = "";
+    private List<String> allowedDomains = new ArrayList<>();
     private ModerationAction action = new ModerationAction();
     private AiModerationSchedule schedule = new AiModerationSchedule();
     private List<AiPromptPreset> promptPresets = defaultPromptPresets();

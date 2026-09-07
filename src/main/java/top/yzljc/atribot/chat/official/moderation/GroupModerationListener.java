@@ -34,44 +34,50 @@ public final class GroupModerationListener implements Listener {
         String groupOpenId = event.getGroupId();
         GroupModerationSettings settings = GroupModerationStore.get(groupOpenId);
         QQMessage message = event.getMessage();
+
+        if (message.getContent().isBlank()) return;
+
         String content = message.getContent();
         String memberOpenId = event.getUser().getUserId();
 
-        if (settings.getKeywordRecall().isEnabled()) {
-            ThreadManager.execute(() -> handleKeywordCheck(event, settings, content, memberOpenId));
-        }
-        if (settings.getAiRecall().isEnabled()
+        if (settings.getKeywordRecall().isEnabled()
+                || (settings.getAiRecall().isEnabled()
                 && settings.getAiRecall().getSchedule() != null
-                && settings.getAiRecall().getSchedule().isActive(LocalDateTime.now())) {
-            ThreadManager.execute(() -> handleAiCheck(event, settings, content, memberOpenId));
+                && settings.getAiRecall().getSchedule().isActive(LocalDateTime.now()))) {
+            ThreadManager.execute(() -> handleModeration(event, settings, content, memberOpenId));
         }
     }
 
-    private void handleKeywordCheck(OfficialGroupMessageCreateEvent event, GroupModerationSettings settings,
-                                     String content, String memberOpenId) {
-        ViolationRule rule = KeywordViolationMatcher.match(content, event.getMessage().getArk(),
-                settings.getKeywordRecall().getRules());
-        if (rule == null) {
+    private void handleModeration(OfficialGroupMessageCreateEvent event, GroupModerationSettings settings,
+                                  String content, String memberOpenId) {
+        if (settings.getKeywordRecall().isEnabled()) {
+            ViolationRule rule = KeywordViolationMatcher.match(content, event.getMessage().getArk(),
+                    settings.getKeywordRecall().getRules());
+            if (rule != null) {
+                ModerationAction action = rule.getAction() != null
+                        ? rule.getAction()
+                        : settings.getKeywordRecall().getAction();
+                applyAction(event, memberOpenId, action, "KEYWORD_RECALL",
+                        "命中规则「" + rule.getRemark() + "」(" + rule.getType() + ": " + rule.getKeyword() + ")", null);
+                return;
+            }
+        }
+        if (!settings.getAiRecall().isEnabled()
+                || settings.getAiRecall().getSchedule() == null
+                || !settings.getAiRecall().getSchedule().isActive(LocalDateTime.now())) {
             return;
         }
-        ModerationAction action = rule.getAction() != null
-                ? rule.getAction()
-                : settings.getKeywordRecall().getAction();
-        applyAction(event, memberOpenId, action, "KEYWORD_RECALL",
-                "命中规则「" + rule.getRemark() + "」(" + rule.getType() + ": " + rule.getKeyword() + ")");
-    }
 
-    private void handleAiCheck(OfficialGroupMessageCreateEvent event, GroupModerationSettings settings,
-                                String content, String memberOpenId) {
-        AiModerationVerdict verdict = AiModerationService.reviewMessage(settings.getAiRecall().getSystemPrompt(), content);
-        if (!verdict.violation()) {
-            return;
+        AiModerationConfig ai = settings.getAiRecall();
+        AiModerationVerdict verdict = AiModerationService.reviewMessage(
+                ai.getSystemPrompt(), ai.getCustomOutput(), ai.getAllowedDomains(), ai.getType(), content);
+        if (verdict.violation()) {
+            applyAction(event, memberOpenId, ai.getAction(), "AI_RECALL", verdict.reason(), verdict.customMessage());
         }
-        applyAction(event, memberOpenId, settings.getAiRecall().getAction(), "AI_RECALL", verdict.reason());
     }
 
     private void applyAction(OfficialGroupMessageCreateEvent event, String memberOpenId,
-                              ModerationAction action, String category, String detail) {
+                              ModerationAction action, String category, String detail, String customReminder) {
         String groupOpenId = event.getGroupId();
 
         if (action.isRecall()) {
@@ -79,8 +85,10 @@ public final class GroupModerationListener implements Listener {
             ModerationLogRepository.log(groupOpenId, category, "recall", memberOpenId, detail);
         }
 
-        if (action.isRemind() && action.getRemindMessage() != null && !action.getRemindMessage().isBlank()) {
-            event.sendMessage(action.getRemindMessage());
+        String remindMessage = customReminder != null && !customReminder.isBlank()
+                ? customReminder : action.getRemindMessage();
+        if (action.isRemind() && remindMessage != null && !remindMessage.isBlank()) {
+            event.sendMessage(remindMessage);
         }
 
         if (action.isMute() && action.getMuteSeconds() > 0) {

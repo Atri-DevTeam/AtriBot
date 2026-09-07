@@ -18,6 +18,7 @@ import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -145,15 +146,18 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                 return;
             }
 
-            var groups = OfficialGroups.enabledGroups("skyblock_resource_pack");
-            var users = OfficialUsers.enabledUsers("skyblock_resource_pack");
+//            var groups = OfficialGroups.enabledGroups("skyblock_resource_pack");
+//            var users = OfficialUsers.enabledUsers("skyblock_resource_pack");
             var lastUpdatedTime = "Skyblock资源包已在近期更新，上一次的更新时间为 " + FormatTools.formatTimestampMilli(tmpLastTime);
-            for (var gid : groups) {
-                GroupChat.sendMessage(gid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
-            }
-            for (var uid : users) {
-                C2CChat.sendMessage(uid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
-            }
+//            for (var gid : groups) {
+//                GroupChat.sendMessage(gid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
+//            }
+//            for (var uid : users) {
+//                C2CChat.sendMessage(uid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
+//            }
+
+            PushTask.push("skyblock_resource_pack", ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
+
             Markdown md = TC.md(
                     lastUpdatedTime + "\n\n" + Markdown.img(r.url(), r.width(), r.height())
             );

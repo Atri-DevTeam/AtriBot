@@ -43,9 +43,11 @@
               <span class="debug-preset-label">预设</span>
               <select v-model="selectedPreset" class="debug-preset" @change="applyPreset">
                 <option value="">-- 选择接口样例 --</option>
-                <option v-for="item in debugPresets" :key="item.key" :value="item.key">
-                  {{ item.label }}
-                </option>
+                <optgroup v-for="group in groupedPresets" :key="group.category" :label="group.category">
+                  <option v-for="item in group.items" :key="item.key" :value="item.key">
+                    {{ item.method }} · {{ item.label }}
+                  </option>
+                </optgroup>
               </select>
               <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
             </div>
@@ -58,6 +60,10 @@
               <label class="debug-template-field">
                 <span>{user_openid}</span>
                 <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id" />
+              </label>
+              <label v-for="name in additionalTemplateNames" :key="name" class="debug-template-field">
+                <span>{{ '{' + name + '}' }}</span>
+                <input v-model="templateValues[name]" spellcheck="false" :placeholder="`填写 ${name}`" />
               </label>
             </div>
 
@@ -200,6 +206,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { API_BASE, LEGACY_TOKEN_KEY } from '../router.js'
 import router from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import { officialApiPresets } from '../data/officialApiPresets.js'
 
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
 const sampleKeyboard = {
@@ -229,7 +236,7 @@ const sampleKeyboard = {
     ]
   }
 }
-const debugPresets = [
+const messageExamples = [
   {
     key: 'share-link',
     label: '机器人分享链接',
@@ -582,6 +589,13 @@ const debugPresets = [
   }
 ]
 
+const debugPresets = [
+  ...officialApiPresets,
+  ...messageExamples
+    .filter(example => !officialApiPresets.some(item => item.key === example.key))
+    .map(example => ({ ...example, category: '消息进阶样例' }))
+]
+
 const sidebarOpen = ref(false)
 const appId = ref('')
 const botOpenId = ref('')
@@ -602,6 +616,24 @@ const copied = ref(false)
 const queryParams = ref([])
 const templateGroupOpenId = ref('')
 const templateUserOpenId = ref('')
+const templateValues = ref({})
+
+const groupedPresets = computed(() => {
+  const groups = new Map()
+  for (const preset of debugPresets) {
+    const category = preset.category || '其他'
+    if (!groups.has(category)) groups.set(category, [])
+    groups.get(category).push(preset)
+  }
+  return [...groups].map(([category, items]) => ({ category, items }))
+})
+
+const additionalTemplateNames = computed(() => {
+  const text = `${path.value}\n${headers.value}\n${body.value}`
+  return [...text.matchAll(/\{([a-z][a-z0-9_]*)\}/gi)]
+    .map(match => match[1])
+    .filter((name, index, names) => !['group_openid', 'user_openid'].includes(name) && names.indexOf(name) === index)
+})
 
 const responseText = computed(() => {
   if (!result.value) return ''
@@ -802,9 +834,13 @@ function normalizeTemplateValue(value) {
 }
 
 function applyTemplateVariables(value) {
-  return String(value || '')
+  let resolved = String(value || '')
     .replace(/\{group_openid\}/g, templateGroupOpenId.value.trim())
     .replace(/\{user_openid\}/g, templateUserOpenId.value.trim())
+  for (const name of additionalTemplateNames.value) {
+    resolved = resolved.replaceAll(`{${name}}`, String(templateValues.value[name] || '').trim())
+  }
+  return resolved
 }
 
 function missingTemplateValues(value) {
@@ -812,6 +848,9 @@ function missingTemplateValues(value) {
   const missing = []
   if (text.includes('{group_openid}') && !templateGroupOpenId.value.trim()) missing.push('{group_openid}')
   if (text.includes('{user_openid}') && !templateUserOpenId.value.trim()) missing.push('{user_openid}')
+  for (const name of additionalTemplateNames.value) {
+    if (!String(templateValues.value[name] || '').trim()) missing.push(`{${name}}`)
+  }
   return missing
 }
 

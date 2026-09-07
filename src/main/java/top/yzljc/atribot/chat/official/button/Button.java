@@ -26,6 +26,7 @@ public class Button {
     private PermissionType permissionType = PermissionType.ALL;
     private List<String> allowedOpenIds = Collections.emptyList();
     private Modal modal;
+    private String buttonGroupId;
 
     public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
         this.buttonId = buttonId;
@@ -85,6 +86,11 @@ public class Button {
         this.modal.content = content;
         this.modal.confirmText = confirmText;
         this.modal.cancelText = cancelText;
+        return this;
+    }
+
+    public Button setButtonGroupId(String buttonGroupId) {
+        this.buttonGroupId = buttonGroupId;
         return this;
     }
 

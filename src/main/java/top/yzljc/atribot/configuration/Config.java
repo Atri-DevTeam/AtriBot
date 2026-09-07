@@ -57,6 +57,10 @@ public class Config {
     private String ossDumpBaseUrl;
     @Getter
     private String minecraftModerationReviewKey;
+    @Getter
+    private String censorApiUrl;
+    @Getter
+    private String censorApiKey;
 
     // ########## Napcat设置区域 ##########
     @Getter
@@ -253,6 +257,8 @@ public class Config {
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
             this.minecraftModerationReviewKey = yaml.getString("minecraft-moderation.review-key", "");
+            this.censorApiUrl = yaml.getString("censor.api-url", "");
+            this.censorApiKey = yaml.getString("censor.api-key", "");
 
             // ########## Napcat设置区域 ##########
             this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);

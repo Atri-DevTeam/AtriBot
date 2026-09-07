@@ -55,6 +55,8 @@ public class IMAP {
     /** IDLE 监听任务 */
     private volatile Future<?> idleTask;
 
+    private static boolean isLogged = false;
+
     /**
      * 构造 IMAP 邮件监听器。
      */
@@ -83,7 +85,10 @@ public class IMAP {
         try {
             Config config = Config.getInstance();
             newStore.connect(config.getEmailUsername(), config.getEmailPassword());
-            log.info("IMAP Store 连接成功: {}", config.getEmailUsername());
+            if (!isLogged) {
+                log.info("IMAP Store 连接成功: {}", config.getEmailUsername());
+                isLogged = true;
+            }
         } catch (MessagingException e) {
             try {
                 newStore.close();
@@ -97,7 +102,10 @@ public class IMAP {
         try {
             newFolder = (IMAPFolder) newStore.getFolder("INBOX");
             newFolder.open(Folder.READ_WRITE);
-            log.info("INBOX 已打开 (READ_WRITE)");
+            if (!isLogged) {
+                log.info("IMAP Folder 打开成功: INBOX");
+                isLogged = true;
+            }
         } catch (MessagingException e) {
             closeResources();
             throw e;
@@ -105,7 +113,9 @@ public class IMAP {
         this.folder = newFolder;
         registerMessageCountListener(newFolder);
 
-        log.info("IMAP 连接建立完成，当前邮件数: {}", newFolder.getMessageCount());
+        if (!isLogged) {
+            log.info("IMAP 连接建立完成，当前邮件数: {}", newFolder.getMessageCount());
+        }
     }
 
     private void registerMessageCountListener(IMAPFolder targetFolder) {

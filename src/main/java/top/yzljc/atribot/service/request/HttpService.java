@@ -24,7 +24,7 @@ public class HttpService {
     private static final int MAX_LOG_BODY_LENGTH = 4096;
     private static final String DEFAULT_USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    public static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
+    public static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(60)).build();
 
     public static final HttpClient redirectHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).followRedirects(HttpClient.Redirect.ALWAYS).build();
 
@@ -201,6 +201,21 @@ public class HttpService {
     }
 
     public record GetResult(int status, String body) {
+    }
+
+    /**
+     * POST JSON and preserve both the HTTP status and response body, including
+     * non-2xx responses. This overload mirrors {@link #postJson(String, Object, String...)}
+     * for callers that need to inspect an error response payload.
+     */
+    public static PostResult postJsonDetailed(String url, Object bodyObj, String... headers) {
+        try {
+            String jsonBody = mapper.writeValueAsString(bodyObj);
+            return postJsonDetailed(url, jsonBody, headers);
+        } catch (Exception e) {
+            logRequestError("POST(detailed)", url, e);
+            return new PostResult(0, e.getClass().getName() + ": " + e.getMessage());
+        }
     }
 
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {

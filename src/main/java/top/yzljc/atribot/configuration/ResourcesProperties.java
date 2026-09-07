@@ -184,6 +184,11 @@ public final class ResourcesProperties {
     // @ClassName HypixelZombies
     public static final String HYPIXEL_ZOMBIES_API = UGC_API + "/v2/atrimeow/hypixel-zombies";
 
+    // @ClassName SkyblockCoop
+    public static final String SKYBLOCK_COOP_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-coops";
+
+    public static final String SKYBLOCK_DUNGEON_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-dungeons";
+
     private static Map<String, String> loadRequestProperties() {
         Path path = Path.of(Properties.REQUEST);
         if (!Files.isRegularFile(path)) {

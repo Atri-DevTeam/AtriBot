@@ -19,6 +19,8 @@ public class JoinReviewConfig {
     private JoinReviewMode mode = JoinReviewMode.DISABLED;
     private JoinReviewKeywordRule keywordRule = new JoinReviewKeywordRule();
     private String aiSystemPrompt = "";
+    private String customOutput = "";
+    private List<String> allowedDomains = new ArrayList<>();
     private String rejectReason = "";
     private boolean notifyDebugGroup = false;
 }

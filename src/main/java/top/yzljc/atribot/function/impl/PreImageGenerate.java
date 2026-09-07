@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.impl;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.service.request.HttpService;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class PreImageGenerate {
 
     private static final String AUTH_HEADER = "Authorization";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static String bearer() {
         return "Bearer " + Config.getInstance().getAtribotKeySecret();
@@ -68,9 +70,17 @@ public class PreImageGenerate {
     }
 
     public static ImageDTO dump(String url, Map<String, ?> body) {
-        JsonNode resp = HttpService.postJson(url, body, AUTH_HEADER, bearer());
+        HttpService.PostResult result = HttpService.postJsonDetailed(url, body, AUTH_HEADER, bearer());
+        JsonNode resp = parseResponseBody(result.body());
+        int responseStatus = resp == null ? 0 : resp.path("status").asInt(0);
 
-        if (resp == null || resp.path("status").asInt() != 200) {
+        if (resp == null || responseStatus != 200) {
+            if (responseStatus == 432 || result.status() == 432) {
+                String message = resp == null
+                        ? "访问远程数据失败，如持续发生请向开发者报告此问题"
+                        : resp.path("message").asText("访问远程数据失败，如持续发生请向开发者报告此问题");
+                return new ImageDTO(null, 0, 0, message, "100432");
+            }
             var err = ErrorReport.report(PreImageGenerate.class.getName(), new ServerNoResponseException());
             return new ImageDTO(null, 0, 0, "访问远程数据失败，如持续发生请向开发者报告此问题，traceId: " + err, err);
         }
@@ -80,5 +90,16 @@ public class PreImageGenerate {
         int height = resp.path("data").path("height").asInt();
 
         return new ImageDTO(urlTmp, width, height);
+    }
+
+    private static JsonNode parseResponseBody(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        try {
+            return MAPPER.readTree(body);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

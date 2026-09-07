@@ -1,6 +1,7 @@
 package top.yzljc.atribot.service.taskscheduler;
 
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.function.task.QqBotDocsMonitor;
 import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
 
 import java.util.List;
@@ -17,7 +18,8 @@ public final class TaskSchedulerRegistry {
             Atri.getInstance().getHypixelAnnouncements(),
             Atri.getInstance().getSkyblockPackCheck(),
             Atri.getInstance().getHypixelAlphaForums(),
-            RefreshGroupProfilesTask.INSTANCE
+            RefreshGroupProfilesTask.INSTANCE,
+            QqBotDocsMonitor.INSTANCE
     );
 
     private TaskSchedulerRegistry() {

@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
@@ -189,15 +190,15 @@ public final class McVersionImpl implements ScheduledTask {
 
         String verId = type.getDisplayName();
 
-        String textInfo = """
-                Minecraft更新了新的%s
-                版本号: %s
-                发布时间: %s
-                """.formatted(
-                verId,
-                versionInfo.id(),
-                FormatTools.formatIsoTime(versionInfo.releaseTime()).trim()
-        );
+//        String textInfo = """
+//                Minecraft更新了新的%s
+//                版本号: %s
+//                发布时间: %s
+//                """.formatted(
+//                verId,
+//                versionInfo.id(),
+//                FormatTools.formatIsoTime(versionInfo.releaseTime()).trim()
+//        );
 
         String markdownInfo = """
                 **Minecraft更新了新的%s**
@@ -210,13 +211,14 @@ public final class McVersionImpl implements ScheduledTask {
                 FormatTools.formatIsoTime(versionInfo.releaseTime())
         );
 
-        groups.stream().filter(group -> GroupConfigManager.isFeatureEnabled(group, "mc_news"))
-                .forEach(group -> GroupMessage.chatMessage(group, textInfo));
+        PushTask.push("mc_news", TC.md(markdownInfo));
 
-        officialGroups.forEach(group -> GroupChat.sendMessage(group, TC.md(markdownInfo)));
+//        groups.stream().filter(group -> GroupConfigManager.isFeatureEnabled(group, "mc_news"))
+//                .forEach(group -> GroupMessage.chatMessage(group, textInfo));
+//
+//        officialGroups.forEach(group -> GroupChat.sendMessage(group, TC.md(markdownInfo)));
 
         ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[版本更新] Minecraft发布了新的版本", TC.md(markdownInfo));
-
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
     }
 

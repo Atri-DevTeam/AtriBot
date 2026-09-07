@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import lombok.Getter;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -34,7 +35,8 @@ public class PushTaskCommand implements CommandExecutor {
             new HypixelNewsTask(),
             new MemerAddWelcomeTask(),
             new SkyblockResourcePackTask(),
-            new HypixelAlphaTask()
+            new HypixelAlphaTask(),
+            new OpenPlatformDocTask().setPrivateFunction(true)
     );
 
     @Override
@@ -55,16 +57,18 @@ public class PushTaskCommand implements CommandExecutor {
             for (PushTask task : tasks) {
                 if (platform.equals(Platform.OFFICIAL_GROUP)) {
                     if (task.isGroupEnable()) {
-                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, groupOpenId, task), getFunctionDescriptionText(task)));
+                        if (task.isPrivateFunction() && !OfficialGroups.isWhitelist(groupOpenId)) continue;
+                        markdown.append(String.format("> %s - %s\n", getFunctionStatusIcon(platform, groupOpenId, task), getFunctionDescriptionText(task)));
                     }
                 }
                 if (platform.equals(Platform.OFFICIAL_C2C)) {
                     if (task.isC2cEnable()) {
-                        markdown.append(String.format("- %s - %s\n\n", getFunctionStatusIcon(platform, qq.getUserId(), task), getFunctionDescriptionText(task)));
+                        markdown.append(String.format("> %s - %s\n", getFunctionStatusIcon(platform, qq.getUserId(), task), getFunctionDescriptionText(task)));
                     }
                 }
             }
-            markdown.append("> 点击名称可以查看详细描述\n> 点击按钮可以快速开关功能");
+            markdown.append("\n---\n\n");
+            markdown.append("> 点击名称可以查看详细描述, 点击按钮可以快速开关功能");
 
             Object feedbackButton = TC.keyboard(
                     List.of(
@@ -83,6 +87,11 @@ public class PushTaskCommand implements CommandExecutor {
 
             if (task == null) {
                 qq.sendMessage("未找到对应的推送任务！");
+                return true;
+            }
+
+            if (task.isPrivateFunction() && !OfficialGroups.isWhitelist(groupOpenId)) {
+                qq.sendMessage("该推送任务暂不对外开放！");
                 return true;
             }
 

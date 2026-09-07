@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.command;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
@@ -12,6 +13,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
@@ -75,16 +77,17 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
             return;
         }
 
-        String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n> 晨曦已至，世界睁开了眼睛。愿你今日如朝露般清澈，如朝阳般明媚。";
+        String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "  " + Markdown.enterCommand("/sign", "打卡") + "\n> 晨曦已至，世界睁开了眼睛。愿你今日如朝露般清澈，如朝阳般明媚。";
 
-        var groupLists = OfficialGroups.enabledGroups("daily_calendar");
-        var userLists = OfficialUsers.enabledUsers("daily_calendar");
-        for (String gid : groupLists) {
-            GroupChat.sendMessage(gid, TC.md(today));
-        }
-        for (String uid : userLists) {
-            C2CChat.sendMessage(uid, TC.md(today));
-        }
+//        var groupLists = OfficialGroups.enabledGroups("daily_calendar");
+//        var userLists = OfficialUsers.enabledUsers("daily_calendar");
+//        for (String gid : groupLists) {
+//            GroupChat.sendMessage(gid, TC.md(today));
+//        }
+//        for (String uid : userLists) {
+//            C2CChat.sendMessage(uid, TC.md(today));
+//        }
+        PushTask.push("daily_calendar", TC.md(today));
     }
 
     @Override

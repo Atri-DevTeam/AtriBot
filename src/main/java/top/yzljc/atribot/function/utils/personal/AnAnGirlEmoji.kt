@@ -53,7 +53,7 @@ object AnAnGirlEmoji : CommandExecutor {
             modeParam = lastArg.removePrefix("-")
             argsList.removeAt(argsList.size - 1)
         } else {
-            modeParam = "-开心"
+            modeParam = "开心"
         }
 
         val text = argsList.joinToString(" ")

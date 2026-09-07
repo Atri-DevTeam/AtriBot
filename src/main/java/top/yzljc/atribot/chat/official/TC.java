@@ -71,6 +71,7 @@ public class TC {
 
                 Map<String, Object> button = new HashMap<>();
                 button.put("id", btn.getButtonId());
+                button.put("group_id", btn.getButtonGroupId());
                 button.put("render_data", renderData);
                 button.put("action", action);
 

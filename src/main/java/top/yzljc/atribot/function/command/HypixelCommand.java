@@ -11,6 +11,7 @@ import top.yzljc.atribot.function.minecraft.DiceImpl;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -55,7 +56,9 @@ public class HypixelCommand implements CommandExecutor {
             new SubCommand("zs", "查询玩家街机游戏僵尸末日详细数据", ResourcesProperties.HYPIXEL_ZOMBIES_API, true, false),
             new SubCommand("gs", "查询各小游戏在线情况", ResourcesProperties.HYPIXEL_STATUS_API, false, false),
             new SubCommand("pack", "查询Skyblock资源包版本信息", ResourcesProperties.SKB_PACK_VERSION_API, false, true),
-            new SubCommand("dice", "随机Skyblock Dice(鉴定你的欧气)", null, false, true)
+            new SubCommand("dice", "随机Skyblock Dice(鉴定你的欧气)", null, false, true),
+            new SubCommand("coop", "查询玩家全部Coop的最近上线情况", ResourcesProperties.SKYBLOCK_COOP_API, true, false),
+            new SubCommand("dungeon", "查询玩家最近地牢游玩场次", ResourcesProperties.SKYBLOCK_DUNGEON_API, true, false)
     );
 
     private static Markdown getSubCommands() {
@@ -125,6 +128,11 @@ public class HypixelCommand implements CommandExecutor {
                     if (!d.isError()) {
                         if (d.url() != null) {
                             user.sendMessage(ImageComponent.imageOf(d.url()).setText("根据开放平台要求，自定义内容须审核后才能显示，请使用 /反馈 <用户名> 提交审核。"));
+                            return true;
+                        }
+                    } else {
+                        if (Objects.equals(d.traceId(), "100432")) {
+                            user.sendMessage(d.errorMessage());
                             return true;
                         }
                     }

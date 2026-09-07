@@ -5,6 +5,7 @@ import lombok.Setter;
 import top.yzljc.atribot.auth.official.FullMessageAuth;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -39,6 +40,8 @@ public abstract class PushTask {
     private final boolean c2cEnable;
     @Getter @Setter
     private boolean defaultEnabled = false;
+    @Getter
+    private boolean isPrivateFunction = false;
 
     public PushTask(String functionId, String displayName, boolean needActiveMessage) {
         this.functionId = functionId;
@@ -72,6 +75,11 @@ public abstract class PushTask {
 
     public List<String> getEnabledUserOpenIds() {
         return OfficialUsers.enabledUsers(this.functionId);
+    }
+
+    public PushTask setPrivateFunction(boolean isPrivateFunction) {
+        this.isPrivateFunction = isPrivateFunction;
+        return this;
     }
 
     public boolean isGroupEnabled(String groupOpenId) {
@@ -148,7 +156,7 @@ public abstract class PushTask {
                     return;
                 }
             } else {
-                GroupChat.replyMessage(groupOpenId, operatorOpenId, commandMessageId, md, keys);
+                GroupChat.replyMessage(groupOpenId, commandMessageId, md, keys);
             }
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), true, operatorOpenId);
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
@@ -190,5 +198,46 @@ public abstract class PushTask {
         } else {
             throw new UnsupportedPlatform(platform, "推送任务在该平台不支持");
         }
+    }
+
+    private enum Type {
+        IMAGE_COMPONENT,
+        TEXT,
+        MARKDOWN
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static <T> boolean push(String functionId, T content) {
+        Type type = Type.TEXT;
+
+        if (content != null) {
+            if (content instanceof Markdown) type = Type.MARKDOWN;
+            else if (content instanceof ImageComponent) type = Type.IMAGE_COMPONENT;
+        } else {
+            return false;
+        }
+
+        List<String> activeGroups = OfficialGroups.enabledGroups(functionId);
+        List<String> userLists = OfficialUsers.enabledUsers(functionId);
+
+        for (String groupOpenId : activeGroups) {
+            try {
+                switch (type) {
+                    case IMAGE_COMPONENT -> GroupChat.sendMessage(groupOpenId, (ImageComponent) content);
+                    case TEXT -> GroupChat.sendMessage(groupOpenId, (String) content);
+                    case MARKDOWN -> GroupChat.sendMessage(groupOpenId, (Markdown) content);
+                }
+            } catch (QQMessageSendException _) {}
+        }
+        for (String uid : userLists) {
+            try {
+                switch (type) {
+                    case IMAGE_COMPONENT -> C2CChat.sendMessage(uid, (ImageComponent) content);
+                    case TEXT -> C2CChat.sendMessage(uid, (String) content);
+                    case MARKDOWN -> C2CChat.sendMessage(uid, (Markdown) content);
+                }
+            } catch (QQMessageSendException _) {}
+        }
+        return true;
     }
 }

@@ -21,6 +21,11 @@ api-url: null
 minecraft-moderation:
   review-key: ""
 
+# 内容审核 API（独立于 ai 配置和 Minecraft 审核密钥）
+censor:
+  api-url: ""
+  api-key: ""
+
 delivery:
   oss-dump-base-url: "null"
 

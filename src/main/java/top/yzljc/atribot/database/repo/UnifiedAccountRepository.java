@@ -53,12 +53,12 @@ public class UnifiedAccountRepository {
             try (var ps = con.prepareStatement(sql)) {
                 ps.execute();
             }
-            // 同一个正版 Minecraft 账号允许绑定多个统一账号。
-            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` DROP INDEX `uk_minecraft_uuid`")) {
-                ps.execute();
-            } catch (SQLException ignored) {
-                // 新表没有该索引，或数据库已完成迁移。
-            }
+//            // 同一个正版 Minecraft 账号允许绑定多个统一账号。
+//            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` DROP INDEX `uk_minecraft_uuid`")) {
+//                ps.execute();
+//            } catch (SQLException ignored) {
+//                // 新表没有该索引，或数据库已完成迁移。
+//            }
             log.info("统一账号表初始化完成");
         } catch (Exception e) {
             log.error("初始化统一账号表失败", e);

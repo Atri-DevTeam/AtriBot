@@ -126,6 +126,15 @@
                     <h4>生效时间</h4>
                     <p>限制 AI 审查生效的日期、星期和每日时间段。</p>
                   </div>
+                  <label class="gm-mode-field">
+                    <span class="gs-form-label">审核模式</span>
+                    <select v-model.number="settings.aiRecall.type" class="gs-input gm-mode-select">
+                      <option :value="0">0 · 仅本地词库</option>
+                      <option :value="1">1 · 词库 + AI 都查</option>
+                      <option :value="2">2 · 先查词库，命中不查 AI（默认）</option>
+                      <option :value="3">3 · 仅 AI</option>
+                    </select>
+                  </label>
                   <label class="checkbox-label">
                     <input type="checkbox" v-model="settings.aiRecall.schedule.enabled"/> 启用定时
                   </label>
@@ -243,6 +252,12 @@
                 </div>
                 <textarea v-model="settings.aiRecall.systemPrompt" class="gs-textarea gm-prompt-textarea" rows="14"
                           placeholder="选择预选配置或直接填写审核提示词"/>
+                <label class="gm-field-label">违规提醒自定义输出（可选）</label>
+                <textarea v-model="settings.aiRecall.customOutput" class="gs-textarea gm-custom-output" rows="4"
+                          placeholder="例如：请以猫娘身份写一段违规提醒，返回 reply 字段"/>
+                <label class="gm-field-label">域名放行规则（每行一个正则；留空则按服务端默认拦截）</label>
+                <textarea v-model="allowedDomainsText" class="gs-textarea gm-custom-output" rows="3"
+                          placeholder=".*\\.atri\\.top"/>
               </section>
 
               <section class="gm-ai-section">
@@ -541,6 +556,12 @@ const loadError = ref('')
 const saving = ref(false)
 
 const settings = reactive(emptySettings())
+const allowedDomainsText = computed({
+  get: () => (settings.aiRecall.allowedDomains || []).join('\n'),
+  set: value => {
+    settings.aiRecall.allowedDomains = String(value || '').split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+  }
+})
 
 const logItems = ref([])
 const logsLoading = ref(false)
@@ -606,7 +627,7 @@ const scheduleSummary = computed(() => {
 function emptySettings() {
   return {
     keywordRecall: {enabled: false, rules: [], action: emptyAction()},
-    aiRecall: {enabled: false, systemPrompt: '', action: emptyAction(), promptPresets: [], schedule: emptySchedule()},
+    aiRecall: {enabled: false, type: 2, systemPrompt: '', customOutput: '', allowedDomains: [], action: emptyAction(), promptPresets: [], schedule: emptySchedule()},
     joinReview: {
       enabled: false,
       rules: [],
@@ -696,6 +717,10 @@ async function loadSettings() {
     Object.assign(settings, emptySettings(), data)
     if (!settings.keywordRecall.action) settings.keywordRecall.action = emptyAction()
     if (!settings.aiRecall.action) settings.aiRecall.action = emptyAction()
+    const censorType = Number(settings.aiRecall.type)
+    settings.aiRecall.type = Number.isInteger(censorType) && censorType >= 0 && censorType <= 3 ? censorType : 2
+    if (typeof settings.aiRecall.customOutput !== 'string') settings.aiRecall.customOutput = ''
+    if (!Array.isArray(settings.aiRecall.allowedDomains)) settings.aiRecall.allowedDomains = []
     if (!Array.isArray(settings.aiRecall.promptPresets)) settings.aiRecall.promptPresets = []
     if (!settings.aiRecall.schedule) settings.aiRecall.schedule = emptySchedule()
     else settings.aiRecall.schedule = {...emptySchedule(), ...settings.aiRecall.schedule}
@@ -812,7 +837,7 @@ function closePresetEditor() {
 function savePreset() {
   const name = presetEditor.name.trim()
   const prompt = presetEditor.prompt.trim()
-  if (!name || !prompt) {
+  if (!name) {
     alert('请填写配置名称和提示词')
     return
   }

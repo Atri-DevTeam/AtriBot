@@ -39,6 +39,20 @@ public final class MinecraftWhitelistController {
                 ctx.queryParam("status"), intParam(ctx, "page", 1), intParam(ctx, "size", 20)))));
     }
 
+    /** 解析正版玩家名或 UUID，供审核列表搜索使用。 */
+    public static void resolveProfile(Context ctx) {
+        run(ctx, () -> {
+            String player = ctx.queryParam("player");
+            if (player == null || player.isBlank()) throw new IllegalArgumentException("请输入玩家名或 UUID");
+            var profile = FetchMinecraftProfile.find(player.trim());
+            if (profile == null || profile.uuid() == null) throw new IllegalArgumentException("无法找到该正版 Minecraft 玩家");
+            Map<String, String> data = new LinkedHashMap<>();
+            data.put("name", profile.username());
+            data.put("uuid", profile.uuid().toString());
+            ctx.json(Result.success(data));
+        });
+    }
+
     public static void reviewName(Context ctx) { review(ctx, true); }
     public static void reviewSkin(Context ctx) { review(ctx, false); }
 

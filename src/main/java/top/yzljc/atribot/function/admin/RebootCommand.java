@@ -25,7 +25,7 @@ public class RebootCommand implements CommandExecutor, ScheduledTask {
             return true;
         }
 
-        if (!(sender instanceof NapcatCommandSender nc)) return true;
+        if (!(sender instanceof NapcatCommandSender nc) || label.equals("stop")) return true;
         if (!nc.hasPermission()) {
             nc.sendMessage("你没有权限执行此命令");
             return true;

@@ -49,7 +49,8 @@ public final class GroupJoinReviewListener implements Listener {
 
         ThreadManager.execute(() -> {
             AiModerationVerdict verdict = AiModerationService.reviewJoinRequest(
-                    config.getAiSystemPrompt(), event.getQuestion(), event.getAnswer());
+                    config.getAiSystemPrompt(), config.getCustomOutput(), config.getAllowedDomains(),
+                    event.getQuestion(), event.getAnswer());
             JoinReviewDecision decision = verdict.violation() ? JoinReviewDecision.REJECT : JoinReviewDecision.APPROVE;
             apply(event, decision, config, verdict.reason());
         });

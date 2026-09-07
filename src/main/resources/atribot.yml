@@ -271,7 +271,6 @@ commands:
       - earthonline
       - eo
       - earth
-      - online
       - 地球
   drawitem:
     description: 抽取Minecraft物品卡

@@ -13,7 +13,7 @@ import top.yzljc.atribot.platform.Platform;
  */
 public class SkyblockResourcePackTask extends PushTask {
     public SkyblockResourcePackTask() {
-        super("skyblock_resource_pack", "Skyblock 资源包版本更新", true);
+        super("skyblock_resource_pack", "Skyblock 材质包更新", true);
     }
 
     @Override

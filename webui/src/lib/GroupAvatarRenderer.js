@@ -83,7 +83,9 @@ export default class GroupAvatarRenderer {
     try {
       const members = await this.loadMembers(id)
       const ids = this.memberIds(members)
-      const result = ids.length ? await this.render(id, ids) : null
+      // A one-member group must keep the default group glyph in ChatView;
+      // using that member's avatar makes it look like a private conversation.
+      const result = ids.length > 1 ? await this.render(id, ids) : null
       if (result) this.remember(id, result)
       resolve(result)
     } catch {

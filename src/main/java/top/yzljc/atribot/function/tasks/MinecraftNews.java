@@ -1,9 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,20 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
@@ -64,8 +57,8 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!(sender instanceof NapcatCommandSender nc)) return true;
-        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
+        if (!(sender instanceof QQCommandSender nc)) return true;
+//        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
 
         if (!nc.hasPermission()) {
             nc.sendMessage(Identifier.NO_PERMISSION);
@@ -291,14 +284,15 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             String markdown = "**Minecraft官方发布了新的文章，点击图片查看详情！**\n\n" + "> 时间: " + t + "\n\n" + "![MC #" + data.width() + "px #" + data.height() + "px](" + url + ")\n\n" +
                     "> " + Markdown.enterCommand("/tasks disable mc_news", "关闭此类推送");
 
-            List<String> activeGroups = OfficialGroups.enabledGroups("mc_news");
-            List<String> userLists = OfficialUsers.enabledUsers("mc_news");
-            for (String groupOpenId : activeGroups) {
-                GroupChat.sendMessage(groupOpenId, TC.md(markdown));
-            }
-            for (String uid : userLists) {
-                C2CChat.sendMessage(uid, TC.md(markdown));
-            }
+//            List<String> activeGroups = OfficialGroups.enabledGroups("mc_news");
+//            List<String> userLists = OfficialUsers.enabledUsers("mc_news");
+//            for (String groupOpenId : activeGroups) {
+//                GroupChat.sendMessage(groupOpenId, TC.md(markdown));
+//            }
+//            for (String uid : userLists) {
+//                C2CChat.sendMessage(uid, TC.md(markdown));
+//            }
+            PushTask.push("mc_news", TC.md(markdown));
 
             Markdown forumsMarkdown = TC.md(
                     "Minecraft官网发布了新的文章，点击图片查看详细！\n\n"

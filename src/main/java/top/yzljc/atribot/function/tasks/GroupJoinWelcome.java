@@ -291,8 +291,8 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
             // Guided by GordonHim
             String url = ResourcesProperties.WELCOME_IMG;
             String welStr = "欢迎新人喵~";
-            int width = 1238;
-            int height = 564;
+            int width = 1858;
+            int height = 846;
             if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.OWNER) {
                 welStr = "欢迎" + QQBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
                 url = ResourcesProperties.WELCOME_DEV_IMG;
