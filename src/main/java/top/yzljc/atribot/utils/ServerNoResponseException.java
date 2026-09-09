@@ -9,6 +9,6 @@ package top.yzljc.atribot.utils;
  */
 public class ServerNoResponseException extends RuntimeException {
     public ServerNoResponseException() {
-        super("ugc源服务器未返回内容");
+        super("远程服务器未返回内容");
     }
 }

@@ -101,6 +101,13 @@
         </svg>
         群管系统
       </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/join-welcome' }" title="入群欢迎" @click="go('/join-welcome')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.5 8.5 0 0 1-12 7.7L3 21l1.8-6A8.5 8.5 0 1 1 21 11.5Z" />
+          <path d="M8 12h8M12 8v8" />
+        </svg>
+        入群欢迎
+      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/menu-panel' }" title="菜单与面板" @click="go('/menu-panel')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6" />

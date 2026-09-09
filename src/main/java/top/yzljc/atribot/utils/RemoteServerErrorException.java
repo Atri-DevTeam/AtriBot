@@ -7,6 +7,7 @@ package top.yzljc.atribot.utils;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.utils
  */
+@Deprecated(since = "3.2.1")
 public class RemoteServerErrorException extends Exception {
     public RemoteServerErrorException(String message) {
         super("远程服务器连接错误: " + message);

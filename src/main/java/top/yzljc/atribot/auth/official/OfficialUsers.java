@@ -204,9 +204,13 @@ public class OfficialUsers {
     }
 
     /**
-     * 删除整个用户数据
+     * 删除用户资料及私聊功能配置；拉黑和忽略用户保留数据。
      */
     public static boolean removeUser(String userOpenId) {
+        if (userOpenId == null || userOpenId.isBlank()) {
+            log.warn("拒绝删除用户数据：用户 OpenID 为空");
+            return false;
+        }
         if (isIgnored(userOpenId) || isBlocked(userOpenId)) {
             log.warn("用户 {} 已被拉黑，保留相关数据不再清除", userOpenId);
             return false;

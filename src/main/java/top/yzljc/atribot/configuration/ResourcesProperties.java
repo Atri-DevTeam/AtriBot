@@ -189,6 +189,20 @@ public final class ResourcesProperties {
 
     public static final String SKYBLOCK_DUNGEON_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-dungeons";
 
+    public static final String HYPIXEL_PLAYER_LOBBY_FISHING_API = UGC_API + "/v2/atrimeow/hypixel-lobby-fishing";
+
+    public static final String ICON_DIAMOND_PICKAXE = request("resource.image.icon-diamond-pickaxe");
+
+    public static final String ICON_KNOWLEDGE_BOOK = request("resource.image.icon-knowledge-book");
+
+    public static final String ICON_ZOMBIE_HEAD = request("resource.image.icon-zombie-head");
+
+    public static final String ICON_TNT = request("resource.image.icon-tnt");
+
+    public static final String ICON_SKYBLOCK_DUNGEON = request("resource.image.icon-skyblock-dungeon");
+
+    public static final String ICON_FISHING_ROD = request("resource.image.icon-fishing-rod");
+
     private static Map<String, String> loadRequestProperties() {
         Path path = Path.of(Properties.REQUEST);
         if (!Files.isRegularFile(path)) {

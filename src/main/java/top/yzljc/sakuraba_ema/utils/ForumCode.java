@@ -9,6 +9,7 @@ import lombok.Getter;
  * @Created_at 2026/08/15
  * @Project AtriMeow
  * @Package top.yzljc.sakuraba_ema.utils
+ * @Description 这是一个私人内容，如有参考请忽略此处的内容
  */
 @Getter
 @AllArgsConstructor

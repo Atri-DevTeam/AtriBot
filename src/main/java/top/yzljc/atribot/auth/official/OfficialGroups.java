@@ -67,7 +67,7 @@ public class OfficialGroups {
     }
 
     /**
-     * 删除群数据
+     * 删除群数据及功能配置，数据库事务成功后移除缓存。
      */
     public static boolean removeGroup(String groupOpenId) {
         if (isGroupBlacklisted(groupOpenId)) return false; // 黑名单群不允许删除

@@ -1,1038 +1,283 @@
-.loot-panel {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
+/* 抽卡管理 */
+.loot-shell { height: 100dvh; }
+.loot-workspace { min-width: 0; }
+.loot-topbar { flex-shrink: 0; }
+.loot-refresh,
+.loot-add-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; }
 
-.loot-upload-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.loot-upload-input {
-  flex: 1 1 160px;
-  min-width: 0;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  background: var(--color-surface-alt);
-}
-
-/* 文件选择框不锁死高度：原生按钮被 36px 压住会在 Chrome / Safari 里裁掉一截 */
-.loot-upload-file {
-  flex: 0 1 220px;
-  min-width: 170px;
-  max-width: 100%;
-  min-height: 32px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  background: var(--color-surface-alt);
-}
-
-.loot-upload-form .primary-button {
-  flex: 0 0 auto;
-}
-
-/* 「特殊卡」勾选：与上传表单同排，不换行 */
-.loot-special-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex: 0 0 auto;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* 用户详情里特殊卡的紫色徽标 */
-.badge.loot-special-tag {
-  margin-right: 4px;
-  padding: 1px 6px;
-  font-size: 10px;
-}
-
-/* 提示条：只占一行，不接管整个内容区 */
-.loot-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding: 9px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.loot-banner > span {
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-}
-
-.loot-banner.danger {
-  color: var(--color-danger-strong);
-  background: var(--color-danger-soft);
-  border-color: var(--color-danger);
-}
-
-.loot-banner.ok {
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-}
-
-.loot-banner-close {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: inherit;
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0.65;
-}
-
-.loot-banner-close:hover {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.loot-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 184px));
-  justify-content: start;
-  gap: 12px;
-}
-
-.loot-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.loot-thumb {
-  width: 100%;
-  height: 118px;
-  object-fit: contain;
-  padding: 6px;
-  box-sizing: border-box;
-  background: var(--color-surface-sunken);
-}
-
-/* 图挂了或目录还没回来时的占位，避免整块塌成 0 高把卡片挤变形 */
-.loot-thumb-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-subtle);
-  font-size: 12px;
-}
-
-.loot-card-body {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.loot-inline-input {
-  font-size: 14px;
-  font-weight: 600;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 2px 4px;
-  background: transparent;
-}
-
-.loot-inline-input:focus {
-  border-color: var(--color-border-input);
-  background: var(--color-surface-alt);
-}
-
-.loot-inline-textarea {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 4px;
-  resize: vertical;
-  min-height: 48px;
-  background: transparent;
-}
-
-.loot-inline-textarea:focus {
-  border-color: var(--color-border-input);
-  background: var(--color-surface-alt);
-}
-
-.loot-card-actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-.loot-card-meta {
-  font-size: 10px;
-  color: var(--color-text-subtle);
-  word-break: break-all;
-}
-
-.loot-file-label {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.ghost-button.small {
-  min-height: 26px;
-  padding: 2px 8px;
-  font-size: 12px;
-  height: auto;
-}
-
-@media (max-width: 640px) {
-  .loot-upload-form {
-    padding: 8px;
-    gap: 6px;
-  }
-
-  .loot-upload-input {
-    flex-basis: 100%;
-    height: 32px;
-  }
-
-  .loot-upload-file {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .loot-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-
-  .loot-thumb {
-    height: 96px;
-    padding: 5px;
-  }
-}
-
-/* ══════════ 抽卡管理页新版主框架 ══════════ */
-
-.loot-layout {
-  display: block;
-  overflow-y: auto;
-  background: var(--color-bg);
-}
-
-.loot-page {
-  display: flex;
-  width: 100%;
-  max-width: 1180px;
-  min-height: 100%;
-  margin: 0 auto;
-  padding: var(--space-5) var(--space-6) var(--space-7);
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.loot-page-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.loot-tabs { display: flex; min-width: 0; gap: var(--space-1); }
+.loot-layout { display: block; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+.loot-page { width: 100%; max-width: 1240px; min-width: 0; margin: 0 auto; padding: 0 2px 28px; }
+.loot-page-nav { margin-bottom: 22px; border-bottom: 1px solid var(--color-border); }
+.loot-tabs { display: flex; gap: 24px; min-width: 0; }
 .loot-tab {
-  min-height: 34px;
-  padding: 0 var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--text-base);
-  font-weight: 500;
-}
-.loot-tab:hover { background: var(--color-surface-hover); color: var(--color-text-secondary); }
-.loot-tab.active { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); font-weight: 600; }
-
-.loot-tab-summary {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: 0 var(--space-2);
-}
-.loot-nav-actions { display: flex; align-items: center; gap: var(--space-2); }
-.loot-nav-actions > .primary-button { min-height: 32px; }
-
-.loot-create-modal { width: min(560px, calc(100vw - 28px)); }
-.loot-create-modal .modal-head > div { min-width: 0; }
-.loot-create-modal .modal-head h2 { margin: 0; font-size: var(--text-lg); }
-.loot-create-modal .modal-head p { margin: 3px 0 0; color: var(--color-text-muted); font-size: var(--text-xs); }
-.loot-create-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
-.loot-create-modal .loot-form-field { width: 100%; flex: none; }
-.loot-create-modal .loot-create-name { width: min(320px, 100%); }
-.loot-create-modal .loot-create-name .loot-upload-input {
-  height: 30px;
-  min-height: 30px;
-  max-height: 30px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.loot-create-modal .loot-upload-input,
-.loot-create-modal .loot-upload-file { background: var(--color-surface); }
-.loot-create-description {
-  width: 100%;
-  min-height: 132px;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  resize: vertical;
-}
-.loot-create-modal .loot-special-check { align-self: flex-start; }
-.loot-image-picker { display: flex; min-height: 62px; align-items: center; gap: var(--space-3); }
-.loot-image-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); opacity: 0; }
-.loot-image-button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: 34px; }
-.loot-image-preview {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  grid-template-columns: 56px minmax(0, 1fr) 28px;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
-}
-.loot-image-preview img { width: 56px; height: 56px; border-radius: var(--radius-sm); background: var(--color-surface-sunken); object-fit: contain; }
-.loot-image-preview span { overflow: hidden; color: var(--color-text-muted); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
-.loot-image-preview .icon-button { width: 26px; min-height: 26px; padding: 0; }
-.loot-image-empty { color: var(--color-text-subtle); font-size: var(--text-xs); }
-
-@media (max-width: 520px) {
-  .loot-image-picker { align-items: stretch; flex-direction: column; }
-  .loot-image-button { align-self: flex-start; }
-  .loot-image-empty { padding-bottom: var(--space-1); }
-}
-.loot-tab-summary strong { color: var(--color-text-strong); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
-.loot-tab-summary span { color: var(--color-text-subtle); font-size: var(--text-xs); }
-
-.loot-upload-form,
-.loot-search-bar {
-  display: flex;
-  align-items: end;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-.loot-upload-form {
-  display: grid;
-  grid-template-columns: 155px minmax(140px, 1fr) minmax(180px, 1.5fr) auto;
-  grid-template-areas:
-    "copy name description submit"
-    "copy special file submit";
-  align-items: end;
-}
-.loot-upload-form > .loot-tool-copy { grid-area: copy; align-self: center; }
-.loot-upload-form > .loot-form-field:nth-child(2) { grid-area: name; }
-.loot-upload-form > .loot-form-description { grid-area: description; }
-.loot-upload-form > .loot-special-check { grid-area: special; align-self: center; }
-.loot-upload-form > .loot-file-field { grid-area: file; }
-.loot-upload-form > .loot-create-actions { grid-area: submit; align-self: end; }
-.loot-tool-copy { display: flex; min-width: 155px; align-self: center; flex-direction: column; gap: 2px; }
-.loot-tool-copy strong { color: var(--color-text-strong); font-size: var(--text-md); }
-.loot-tool-copy span { color: var(--color-text-muted); font-size: var(--text-xs); }
-.loot-form-field { display: flex; min-width: 0; flex: 1 1 150px; flex-direction: column; gap: var(--space-1); color: var(--color-text-muted); font-size: var(--text-xs); }
-.loot-form-description { flex-grow: 1.5; }
-.loot-file-field { flex: 0 1 205px; }
-.loot-upload-input,
-.loot-upload-file,
-.loot-search-input {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: 34px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-  font-size: var(--text-base);
-}
-.loot-upload-file { padding: 4px 6px; }
-.loot-special-check { align-self: center; }
-.loot-create-button { flex: 0 0 auto; min-width: 64px; }
-.loot-create-actions { display: flex; gap: var(--space-2); }
-.loot-create-actions > button { min-height: 34px; }
-.loot-search-input { width: min(320px, 40vw); margin-left: auto; }
-
-.loot-content {
-  min-height: 300px;
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.loot-content .loot-grid {
-  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
-  gap: var(--space-3);
-}
-.loot-content .loot-card {
-  border-color: var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: border-color .16s, box-shadow .16s, transform .16s;
-}
-.loot-content .loot-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-.loot-content .loot-thumb { height: 150px; padding: var(--space-3); }
-.loot-content .loot-card-body { gap: var(--space-2); padding: var(--space-3); }
-.loot-content .loot-inline-input { font-size: var(--text-md); }
-.loot-content .loot-card-actions { padding-top: var(--space-1); border-top: 1px solid var(--color-hairline); }
-.loot-content .loot-card-meta { padding-top: 2px; font-family: var(--font-mono); }
-
-.loot-content .loot-leaderboard-row {
-  min-height: 58px;
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  border-bottom: 1px solid var(--color-hairline);
-  border-radius: 0;
-}
-.loot-content .loot-leaderboard-row:last-child { border-bottom: 0; }
-.loot-content .loot-rank { width: 48px; color: var(--color-text-subtle); font-variant-numeric: tabular-nums; }
-.loot-content .loot-leaderboard-row:nth-child(-n+3) .loot-rank { color: var(--color-accent-text); }
-
-.loot-content .loot-owner-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--space-3); }
-.loot-content .loot-owner-card { gap: var(--space-3); border-color: var(--color-border); border-radius: var(--radius-lg); box-shadow: none; }
-.loot-content .loot-owner-card:hover { box-shadow: var(--shadow-sm); }
-.loot-content .loot-owner-stat { border: 1px solid var(--color-hairline); background: var(--color-surface-alt); }
-
-@media (max-width: 960px) {
-  .loot-upload-form {
-    grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.4fr) auto;
-    grid-template-areas:
-      "copy copy copy"
-      "name description submit"
-      "special file submit";
-  }
-}
-
-@media (max-width: 640px) {
-  .loot-page { padding: var(--space-3); }
-  .loot-page-nav { align-items: stretch; flex-direction: column; }
-  .loot-tabs { width: 100%; }
-  .loot-tab { min-width: 0; flex: 1; padding-inline: var(--space-2); }
-  .loot-nav-actions { justify-content: space-between; }
-  .loot-tab-summary { justify-content: flex-end; }
-  .loot-upload-form {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas: "copy" "name" "description" "special" "file" "submit";
-    align-items: stretch;
-    padding: var(--space-3);
-  }
-  .loot-search-bar { align-items: stretch; flex-direction: column; padding: var(--space-3); }
-  .loot-form-field, .loot-file-field { width: 100%; flex-basis: auto; }
-  .loot-special-check { align-self: flex-start; }
-  .loot-create-actions { width: 100%; }
-  .loot-create-actions > button { flex: 1; }
-  .loot-search-input { width: 100%; margin-left: 0; }
-  .loot-content { padding: var(--space-3); }
-  .loot-content .loot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-  .loot-content .loot-thumb { height: 110px; }
-}
-
-@media (max-width: 420px) {
-  .loot-content .loot-grid { grid-template-columns: 1fr; }
-}
-
-.loot-leaderboard-row {
-  align-items: center;
-}
-
-.loot-rank {
-  width: 40px;
-  flex-shrink: 0;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.loot-coins {
-  font-weight: 600;
-  color: var(--color-accent);
-  margin-left: auto;
-  margin-right: 12px;
-}
-
-.loot-clickable-row {
-  cursor: pointer;
-}
-
-.loot-modal-hint {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: var(--color-text-subtle);
-}
-
-/* 用户卡片持有 */
-.loot-owner-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 12px;
-}
-
-.loot-owner-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.loot-owner-card:hover,
-.loot-owner-card:focus-visible {
-  border-color: var(--color-accent);
-  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.1);
-  outline: none;
-  transform: translateY(-1px);
-}
-
-.loot-owner-card-head,
-.loot-owner-modal-title {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 10px;
-}
-
-.loot-owner-avatar {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface-sunken);
-  object-fit: cover;
-}
-
-.loot-owner-identity {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.loot-owner-label,
-.loot-owner-section-kicker,
-.loot-owner-modal-title > div > span {
-  color: var(--color-text-subtle);
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.loot-owner-id {
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loot-owner-stats,
-.loot-owner-overview {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.loot-owner-stat,
-.loot-owner-overview > div {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
-}
-
-.loot-owner-stat > span,
-.loot-owner-overview span {
-  color: var(--color-text-subtle);
-  font-size: 11px;
-}
-
-.loot-owner-stat strong,
-.loot-owner-overview strong {
-  color: var(--color-text);
-  font-size: 17px;
-  line-height: 1.15;
-}
-
-.loot-owner-stat small,
-.loot-owner-overview small {
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.loot-owner-open {
-  width: 100%;
-}
-
-.loot-owner-modal {
-  width: min(900px, calc(100vw - 28px));
-  max-height: calc(100vh - 28px);
-}
-
-.loot-owner-modal .modal-body {
-  overflow-y: auto;
-}
-
-.loot-owner-modal-title h2 {
-  max-width: min(450px, 60vw);
-  margin: 2px 0 0;
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loot-owner-modal-body {
-  display: grid;
-  gap: 18px;
-}
-
-.loot-owner-overview {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.loot-owner-section {
-  display: grid;
-  gap: 9px;
-}
-
-.loot-owner-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.loot-owner-section-head h3 {
-  margin: 2px 0 0;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.loot-owner-selection-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.loot-owner-selection-bar > span {
-  margin-right: auto;
-}
-
-.loot-owner-special-action {
-  color: #ffffff;
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-}
-
-.loot-owner-special-action:hover:not(:disabled) {
-  border-color: var(--color-accent-hover);
-  background: var(--color-accent-hover);
-}
-
-.loot-owner-special-action:disabled {
-  color: #ffffff;
-  border-color: var(--color-accent-border);
-  background: var(--color-accent-border);
-  opacity: 0.7;
-}
-
-.loot-owner-inventory {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 7px;
-}
-
-.loot-owner-loot,
-.loot-owner-catalog-card {
-  min-width: 0;
-}
-
-.loot-owner-loot-thumb,
-.loot-owner-catalog-thumb {
-  height: 64px;
-  padding: 4px;
-}
-
-.loot-owner-loot-copy {
-  gap: 2px;
-  padding: 5px 6px 2px;
-}
-
-.loot-owner-loot-name strong,
-.loot-owner-catalog-card > strong {
-  font-size: 11px;
-}
-
-.loot-owner-loot-count,
-.loot-owner-loot-way {
-  font-size: 10px;
-}
-
-.loot-owner-check {
-  top: 5px;
-  left: 5px;
-  width: 17px;
-  height: 17px;
-}
-
-.loot-owner-check input {
-  transform: scale(0.8);
-}
-
-.loot-owner-special-mark {
-  border-top-width: 24px;
-  border-left-width: 24px;
-}
-
-.loot-owner-special-mark::after {
-  top: -21px;
-  right: 3px;
-  transform: scale(0.8) rotate(-45deg);
-  transform-origin: top right;
-}
-
-.loot-owner-loot-actions {
-  gap: 3px;
-  margin: 4px 6px 6px;
-}
-
-.loot-owner-loot-actions .ghost-button {
-  min-height: 23px;
-  padding: 2px;
-  font-size: 10px;
-}
-
-.loot-owner-loot,
-.loot-owner-catalog-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.loot-owner-loot:hover,
-.loot-owner-catalog-card:hover,
-.loot-owner-loot.selected,
-.loot-owner-catalog-card.selected {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
-}
-
-.loot-owner-check {
-  position: absolute;
-  z-index: 1;
-  top: 7px;
-  left: 7px;
-  display: flex;
-  width: 20px;
-  height: 20px;
+  min-height: 46px;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--color-surface);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.24);
-  cursor: pointer;
-}
-
-.loot-owner-check input {
-  margin: 0;
-}
-
-.loot-owner-loot-thumb,
-.loot-owner-catalog-thumb {
-  width: 100%;
-  height: 98px;
-  box-sizing: border-box;
-  padding: 5px;
-  background: var(--color-surface-sunken);
-  object-fit: contain;
-}
-
-.loot-owner-loot-copy {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-  padding: 7px 8px 3px;
-}
-
-.loot-owner-special-mark {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-top: 30px solid var(--color-accent);
-  border-left: 30px solid transparent;
-}
-
-.loot-owner-special-mark::after {
-  position: absolute;
-  top: -25px;
-  right: 4px;
-  width: 10px;
-  height: 6px;
-  border-bottom: 2px solid #ffffff;
-  border-left: 2px solid #ffffff;
-  content: '';
-  transform: rotate(-45deg);
-}
-
-.loot-owner-loot-name {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 5px;
-}
-
-.loot-owner-loot-name strong,
-.loot-owner-catalog-card > strong {
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loot-owner-loot-count {
-  flex: 0 0 auto;
-  color: var(--color-accent);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.loot-owner-loot-way,
-.loot-owner-loot-time {
-  overflow: hidden;
-  color: var(--color-text-subtle);
-  font-size: 10px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loot-owner-loot-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-  margin: 5px 8px 8px;
-}
-
-.loot-owner-loot-actions .ghost-button {
-  min-width: 0;
-  padding-inline: 4px;
-}
-
-.loot-owner-catalog-head {
-  display: flex;
-  gap: 8px;
-}
-
-.loot-owner-catalog-search {
-  min-width: 0;
-  flex: 1;
-  height: 32px;
-  box-sizing: border-box;
-  padding: 0 9px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.loot-owner-catalog-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  grid-auto-rows: 98px;
-  align-items: stretch;
   gap: 7px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 2px;
-}
-
-.loot-owner-catalog-card {
-  min-height: 0;
-}
-
-.loot-owner-catalog-card > strong {
-  min-width: 0;
-  padding: 5px 6px 6px;
-}
-
-.loot-owner-catalog-thumb {
-  height: 64px;
-}
-
-.loot-owner-catalog-card > strong {
-  padding: 7px 9px 9px;
-}
-
-.loot-owner-catalog-thumb {
-  height: 92px;
-}
-
-.loot-owner-empty {
-  margin: 0;
-  padding: 16px;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  color: var(--color-text-subtle);
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
   font-size: 13px;
-  text-align: center;
+  white-space: nowrap;
 }
+.loot-tab svg { flex-shrink: 0; }
+.loot-tab:hover { color: var(--color-text); }
+.loot-tab.active { color: var(--color-accent); font-weight: 600; }
+.loot-tab.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: currentColor; content: ''; }
+.loot-section-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.loot-section-heading { min-width: 0; }
+.loot-section-heading h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 0; color: var(--color-text); font-size: 16px; font-weight: 600; }
+.loot-total { padding: 3px 8px; border-radius: 5px; background: var(--color-surface-sunken); color: var(--color-text-muted); font-size: 11px; font-weight: 400; }
+.loot-content { min-width: 0; }
+.loot-search-bar { display: flex; flex: 0 1 420px; min-width: 0; align-items: center; gap: 8px; margin: 0; }
+.loot-search-field { display: grid; flex: 1; min-width: 0; height: 38px; grid-template-columns: 16px minmax(0, 1fr); align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--color-border-input); border-radius: 7px; background: var(--color-surface); transition: border-color .12s, box-shadow .12s; }
+.loot-search-field > svg { display: block; color: var(--color-text-subtle); }
+.loot-search-field:hover { border-color: var(--color-border-strong); }
+.loot-search-field:focus-within { border-color: var(--color-accent); box-shadow: var(--focus-ring); }
+/* 搜索框由外层统一绘制边框，避免通用输入框样式叠加。 */
+.loot-workspace .loot-search-field input.loot-search-input { display: block; width: 100%; min-width: 0; min-height: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; box-shadow: none; appearance: none; background: transparent; color: var(--color-text); font-size: 13px; }
+.loot-search-input::-webkit-search-decoration,
+.loot-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.loot-workspace .loot-search-bar > button { flex-shrink: 0; height: 38px; min-height: 38px; padding: 0 12px; white-space: nowrap; }
 
-.loot-owner-grant-section {
-  padding: 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
+.loot-banner { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid transparent; border-radius: 7px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.loot-banner > span { flex: 1; min-width: 0; }
+.loot-banner.danger { border-color: color-mix(in srgb, var(--color-danger) 22%, transparent); background: var(--color-danger-soft); color: var(--color-danger-strong); }
+.loot-banner.ok { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); }
+.loot-banner-close { flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font-size: 20px; }
+.loot-banner-close:hover { background: rgb(0 0 0 / 5%); }
+.loot-empty { display: flex; min-height: 240px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; border: 1px dashed var(--color-border); border-radius: 10px; color: var(--color-text-subtle); font-size: 13px; text-align: center; }
+.loot-empty strong { color: var(--color-text-secondary); font-size: 14px; font-weight: 500; }
+
+/* 卡片目录 */
+.loot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(224px, 100%), 1fr)); gap: 16px; }
+.loot-card { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); transition: border-color .15s, box-shadow .15s; }
+.loot-card:hover,
+.loot-card:focus-within { border-color: var(--color-border-strong); box-shadow: 0 3px 12px rgb(20 30 40 / 5%); }
+.loot-card-art { display: grid; min-width: 0; aspect-ratio: 4 / 3; place-items: center; overflow: hidden; border-bottom: 1px solid var(--color-hairline); background: var(--color-surface-alt); }
+.loot-thumb { display: block; width: 100%; height: 100%; min-height: 0; padding: 18px; object-fit: contain; }
+.loot-thumb-empty { display: flex; min-width: 0; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--color-text-subtle); font-size: 11px; }
+.loot-card-body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 7px; padding: 12px; }
+.loot-inline-input,
+.loot-inline-textarea { display: block; width: 100%; min-width: 0; padding: 5px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--color-text); }
+.loot-inline-input { height: 32px; font-size: 14px; font-weight: 600; }
+.loot-inline-textarea { min-height: 50px; resize: vertical; color: var(--color-text-muted); font-size: 12px; line-height: 1.6; }
+.loot-inline-input:hover,
+.loot-inline-textarea:hover { background: var(--color-surface-alt); }
+.loot-inline-input:focus,
+.loot-inline-textarea:focus { border-color: var(--color-accent-border); outline: none; background: var(--color-surface-alt); }
+.loot-card-meta { min-width: 0; overflow: hidden; padding: 0 6px; color: var(--color-text-subtle); font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.loot-card-actions { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-hairline); }
+.ghost-button.small { min-height: 26px; height: auto; padding: 2px 8px; font-size: 12px; }
+.loot-shell .ghost-button.small { min-height: 32px; }
+.loot-card-actions .loot-save { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); }
+.loot-card-actions .loot-delete { width: 32px; margin-left: auto; padding: 0; }
+.loot-file-label { position: relative; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+.loot-file-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.loot-file-label:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.loot-skeleton { overflow: hidden; padding-bottom: 20px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.loot-skeleton > div { aspect-ratio: 4 / 3; margin-bottom: 16px; background: var(--color-surface-sunken); }
+.loot-skeleton > span { display: block; width: 70%; height: 12px; margin: 12px; border-radius: 4px; background: var(--color-surface-sunken); }
+.loot-skeleton > span:last-child { width: 45%; }
+.loot-page .userlist-bottom-pager { position: static; margin-top: 20px; padding: 10px; border: 0; background: transparent; }
+
+/* 排行榜 */
+.loot-leaderboard { overflow: hidden; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.loot-leaderboard-head,
+.loot-leaderboard-row { display: grid; grid-template-columns: 36px 36px minmax(0, 1fr) minmax(90px, 160px) 56px; align-items: center; gap: 14px; padding: 14px 20px; }
+.loot-leaderboard-head { padding-block: 11px; border-bottom: 1px solid var(--color-hairline); background: var(--color-surface-alt); color: var(--color-text-muted); font-size: 11px; }
+.loot-leaderboard-head > span:nth-child(2) { grid-column: 2 / 4; }
+.loot-leaderboard-head > span:nth-child(3) { text-align: right; }
+.loot-leaderboard-head > span:last-child { text-align: center; }
+.loot-leaderboard-row + .loot-leaderboard-row { border-top: 1px solid var(--color-hairline); }
+.loot-leaderboard-row:hover { background: var(--color-surface-hover); }
+.loot-rank { display: grid; width: 28px; height: 28px; place-items: center; color: var(--color-text-subtle); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.loot-rank-leading { border-radius: 7px; background: var(--color-warning-soft); color: var(--color-warning); }
+.loot-leaderboard-avatar { position: relative; display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; overflow: hidden; border: 1px solid var(--color-hairline); border-radius: 50%; background: var(--color-surface-sunken); color: var(--color-text-muted); font-size: 13px; }
+.loot-leaderboard-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.loot-leaderboard-id { min-width: 0; overflow: hidden; color: var(--color-text-secondary); font-family: var(--font-mono); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.loot-coins { display: flex; min-width: 0; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 5px; }
+.loot-coins strong { min-width: 0; color: var(--color-text); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.loot-coins > span { color: var(--color-text-subtle); font-size: 10px; }
+.loot-adjust { width: 100%; }
+
+/* 用户库存 */
+.loot-owner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; }
+.loot-owner-card { display: flex; min-width: 0; flex-direction: column; gap: 18px; padding: 18px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.loot-owner-card:hover,
+.loot-owner-card:focus-visible { border-color: var(--color-accent-border); box-shadow: 0 3px 12px rgb(20 30 40 / 4%); }
+.loot-owner-card-head { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.loot-owner-card-head > svg { flex: 0 0 16px; color: var(--color-text-subtle); }
+.loot-owner-id { min-width: 0; flex: 1; overflow: hidden; font-family: var(--font-mono); font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.loot-owner-stats,
+.loot-owner-overview { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.loot-owner-stat,
+.loot-owner-overview > div { display: flex; min-width: 0; flex-direction: column; gap: 6px; }
+.loot-owner-stat + .loot-owner-stat { padding-left: 16px; border-left: 1px solid var(--color-hairline); }
+.loot-owner-stat > span,
+.loot-owner-overview span { color: var(--color-text-muted); font-size: 11px; }
+.loot-owner-stat strong,
+.loot-owner-overview strong { color: var(--color-text); font-size: 22px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.loot-owner-stat small,
+.loot-owner-overview small { color: var(--color-text-subtle); font-size: 11px; font-weight: 400; }
+.loot-owner-open { padding-top: 12px; border-top: 1px solid var(--color-hairline); color: var(--color-accent); font-size: 12px; }
+
+/* 弹窗：标题与操作固定，内容区独立滚动 */
+.loot-modal-backdrop { padding: 24px; }
+.loot-modal-backdrop > .modal { width: min(540px, 100%); max-width: 100%; max-height: calc(100dvh - 48px); min-width: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+.loot-modal-backdrop > .loot-owner-modal { width: min(920px, 100%); }
+.loot-modal-backdrop > .loot-adjust-modal { width: min(420px, 100%); }
+.loot-modal-backdrop .modal-head,
+.loot-modal-backdrop .modal-foot { flex-shrink: 0; gap: 12px; padding: 16px 20px; }
+.loot-modal-backdrop .modal-head > div { min-width: 0; }
+.loot-modal-backdrop .modal-head h2 { margin: 0; color: var(--color-text); font-size: 16px; }
+.loot-modal-backdrop .modal-head p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; }
+.loot-modal-backdrop .modal-head .icon-button { flex: 0 0 32px; width: 32px; min-height: 32px; }
+.loot-modal-backdrop .modal-body { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px; }
+.loot-modal-backdrop .modal-foot { border-top: 1px solid var(--color-hairline); background: var(--color-surface-alt); }
+.loot-modal-backdrop .loot-banner { flex-shrink: 0; margin-bottom: 0; }
+.loot-create-modal-body { gap: 18px; }
+.loot-form-field { display: flex; min-width: 0; flex-direction: column; gap: 7px; color: var(--color-text-secondary); font-size: 12px; }
+.loot-upload-input,
+.loot-create-description,
+.loot-owner-catalog-search,
+.loot-owner-grant-form input:not([type="checkbox"]) { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid var(--color-border-input); border-radius: 7px; background: var(--color-surface); color: var(--color-text); font-size: 13px; }
+.loot-create-description { min-height: 110px; resize: vertical; line-height: 1.6; }
+.loot-upload-input:focus,
+.loot-create-description:focus,
+.loot-owner-catalog-search:focus,
+.loot-owner-grant-form input:focus { border-color: var(--color-accent); }
+.loot-image-picker { display: flex; flex-wrap: wrap; min-width: 0; align-items: center; gap: 12px; padding: 14px; border: 1px dashed var(--color-border-strong); border-radius: 8px; background: var(--color-surface-alt); }
+.loot-image-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); opacity: 0; }
+.loot-image-button { display: inline-flex; align-items: center; gap: 7px; }
+.loot-image-preview { display: grid; width: 100%; min-width: 0; grid-template-columns: 64px minmax(0, 1fr) 28px; align-items: center; gap: 10px; }
+.loot-image-preview img { width: 64px; height: 64px; object-fit: contain; border-radius: 6px; background: var(--color-surface); }
+.loot-image-preview span { min-width: 0; overflow: hidden; color: var(--color-text-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.loot-image-preview .icon-button { width: 28px; padding: 0; }
+.loot-image-empty { color: var(--color-text-subtle); font-size: 12px; }
+.loot-special-check,
+.loot-owner-special-check { display: inline-flex; min-width: 0; align-items: center; gap: 8px; align-self: flex-start; color: var(--color-text-muted); font-size: 12px; }
+.loot-modal-backdrop input[type="checkbox"] { width: 16px; height: 16px; flex: 0 0 16px; margin: 0; accent-color: var(--color-accent); }
+
+/* 库存与赠送目录 */
+.loot-owner-modal-title { display: flex; min-width: 0; align-items: center; gap: 12px; }
+.loot-owner-avatar { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; object-fit: cover; background: var(--color-surface-sunken); }
+.loot-owner-modal-title > div { min-width: 0; }
+.loot-owner-modal-title > div > span { color: var(--color-text-muted); font-size: 11px; }
+.loot-modal-backdrop .loot-owner-modal-title h2 { margin-top: 4px; font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.loot-owner-modal-body { gap: 24px; }
+.loot-owner-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid var(--color-hairline); border-radius: 8px; background: var(--color-surface-alt); }
+.loot-owner-section { display: grid; min-width: 0; gap: 12px; }
+.loot-owner-section-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; }
+.loot-owner-section-kicker { display: none; }
+.loot-owner-section-head h3 { margin: 0; color: var(--color-text); font-size: 14px; font-weight: 600; }
+.loot-owner-selection-bar { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 7px; padding: 10px; border-radius: 7px; background: var(--color-surface-alt); color: var(--color-text-muted); font-size: 12px; }
+.loot-owner-selection-bar > span { margin-right: auto; }
+.loot-owner-special-action { color: var(--color-accent-text); border-color: var(--color-accent-border); background: var(--color-accent-soft); }
+.loot-owner-inventory { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 10px; }
+.loot-owner-loot { position: relative; display: grid; min-width: 0; grid-template-columns: 24px 56px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); cursor: pointer; }
+.loot-owner-loot.selected,
+.loot-owner-catalog-card.selected { border-color: var(--color-accent); background: var(--color-accent-soft); }
+.loot-owner-loot:hover,
+.loot-owner-catalog-card:hover { border-color: var(--color-accent-border); }
+.loot-owner-check { display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; cursor: pointer; }
+.loot-owner-loot-thumb { display: block; width: 56px; height: 64px; padding: 3px; border-radius: 5px; background: var(--color-surface-alt); object-fit: contain; }
+.loot-owner-loot-thumb.loot-thumb-empty { display: flex; }
+.loot-owner-loot-copy { display: grid; min-width: 0; gap: 4px; }
+.loot-owner-loot-name { display: flex; min-width: 0; align-items: center; gap: 5px; }
+.loot-owner-loot-name strong { display: -webkit-box; min-width: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--color-text); font-size: 12px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.loot-owner-loot-count { flex-shrink: 0; color: var(--color-accent); font-size: 11px; font-weight: 600; }
+.loot-owner-loot-way,
+.loot-owner-loot-time { min-width: 0; overflow: hidden; color: var(--color-text-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.loot-owner-special-mark { width: 7px; height: 7px; flex: 0 0 7px; transform: rotate(45deg); border-radius: 1px; background: var(--color-accent); }
+.loot-owner-loot-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-hairline); }
+.loot-owner-loot-actions .ghost-button { min-width: 0; }
+.loot-owner-grant-section { padding-top: 20px; border-top: 1px solid var(--color-border); }
+.loot-owner-grant-form { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.loot-owner-grant-form label:not(.checkbox-label) { display: grid; min-width: 0; gap: 7px; color: var(--color-text-secondary); font-size: 12px; }
+.loot-owner-grant-form .primary-button { min-height: 38px; }
+.loot-owner-special-check { grid-column: 1 / -1; }
+.loot-owner-catalog-head { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.loot-owner-catalog-search { flex: 1; }
+.loot-owner-catalog-head > button { flex-shrink: 0; }
+.loot-owner-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr)); align-content: start; gap: 10px; max-height: 340px; overflow: auto; padding: 2px; }
+.loot-owner-catalog-card { position: relative; display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); cursor: pointer; }
+.loot-owner-catalog-card .loot-owner-check { position: absolute; top: 4px; left: 4px; border-radius: 5px; background: var(--color-surface); }
+.loot-owner-catalog-thumb { display: block; width: 100%; height: 100px; flex-shrink: 0; padding: 10px; background: var(--color-surface-alt); object-fit: contain; }
+.loot-owner-catalog-thumb.loot-thumb-empty { display: flex; }
+.loot-owner-catalog-card > strong { min-width: 0; overflow: hidden; padding: 9px; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.loot-owner-empty { margin: 0; padding: 24px 14px; border: 1px dashed var(--color-border); border-radius: 8px; color: var(--color-text-subtle); font-size: 12px; text-align: center; }
+.loot-adjust-heading p { overflow-wrap: anywhere; }
+.loot-adjust-balance { margin: 0; color: var(--color-text-muted); font-size: 13px; }
+.loot-adjust-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 8px; background: var(--color-surface-sunken); }
+.loot-adjust-options button { min-height: 34px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--color-text-muted); font-size: 13px; }
+.loot-adjust-options button.active { border-color: var(--color-accent-border); background: var(--color-surface); color: var(--color-accent-text); }
+.loot-modal-hint { margin: 0; color: var(--color-text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+
+/* 窄屏先拆开工具栏，再将卡片切成横向排列。 */
+@media (max-width: 900px) {
+  .loot-section-head { flex-wrap: wrap; }
+  .loot-search-bar { flex-basis: 100%; width: 100%; }
+  .loot-grid { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 12px; }
 }
-
-.loot-owner-grant-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 10px;
+@media (max-width: 600px) {
+  .loot-workspace { padding: 12px; }
+  .loot-topbar { margin-bottom: 6px; }
+  .loot-topbar .loot-refresh { min-height: 36px; padding: 6px 10px; }
+  .loot-page { padding: 0 0 20px; }
+  .loot-page-nav { margin-bottom: 16px; }
+  .loot-tabs { gap: 0; }
+  .loot-tab { flex: 1; gap: 5px; min-height: 44px; padding-inline: 4px; font-size: 12px; }
+  .loot-section-head { gap: 12px; margin-bottom: 14px; }
+  .loot-section-heading h3 { gap: 6px; font-size: 14px; }
+  .loot-total { padding: 3px 6px; font-size: 10px; }
+  .loot-add-button { min-height: 36px; padding-inline: 10px; font-size: 12px; }
+  .loot-leaderboard-head { display: none; }
+  .loot-leaderboard-row { grid-template-columns: 24px 32px minmax(0, 1fr) 52px; column-gap: 9px; row-gap: 4px; padding: 14px 10px; }
+  .loot-rank { grid-row: 1 / 3; width: 24px; height: 26px; font-size: 12px; }
+  .loot-leaderboard-row .loot-leaderboard-avatar { grid-column: 2; grid-row: 1 / 3; width: 32px; height: 32px; }
+  .loot-leaderboard-id { grid-column: 3; grid-row: 1; font-size: 11px; }
+  .loot-coins { grid-column: 3; grid-row: 2; justify-content: flex-start; }
+  .loot-coins strong { font-size: 15px; }
+  .loot-adjust { grid-column: 4; grid-row: 1 / 3; }
+  .loot-owner-grid { grid-template-columns: 1fr; gap: 10px; }
+  .loot-owner-card { padding: 15px; gap: 15px; }
+  .loot-owner-stat strong { font-size: 21px; }
+  .loot-modal-backdrop { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  .loot-modal-backdrop > .modal { max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 10px; }
+  .loot-modal-backdrop .modal-head,
+  .loot-modal-backdrop .modal-foot { padding: 12px 14px; }
+  .loot-modal-backdrop .modal-body { padding: 14px; }
+  .loot-modal-backdrop .modal-foot > button { min-height: 38px; }
+  .loot-owner-modal-title { gap: 9px; }
+  .loot-owner-overview { gap: 8px; padding: 12px; }
+  .loot-owner-overview strong { font-size: 18px; }
+  .loot-owner-overview span { font-size: 10px; }
+  .loot-owner-selection-bar { gap: 6px; }
+  .loot-owner-selection-bar > span { flex-basis: 100%; margin-bottom: 3px; }
+  .loot-owner-selection-bar > button { flex: 1; padding-inline: 5px; }
+  .loot-owner-inventory { grid-template-columns: 1fr; }
+  .loot-owner-catalog-grid { grid-template-columns: repeat(auto-fill, minmax(min(100px, 100%), 1fr)); gap: 8px; }
+  .loot-owner-catalog-thumb { height: 86px; }
+  .loot-owner-grant-form { grid-template-columns: minmax(0, 1fr); }
+  .loot-owner-grant-form .primary-button { grid-row: 3; width: 100%; }
+  .loot-shell .ghost-button.small { min-height: 34px; }
 }
-
-.loot-owner-grant-form label:not(.checkbox-label) {
-  display: grid;
-  min-width: 0;
-  gap: 5px;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.loot-owner-grant-form select,
-.loot-owner-grant-form input:not([type="checkbox"]) {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: 32px;
-  padding: 0 9px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.loot-owner-special-check {
-  grid-column: 1 / -1;
-  justify-self: start;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.loot-owner-grant-form .primary-button {
-  min-height: 32px;
-}
-
-@media (max-width: 640px) {
-  .loot-owner-grid {
-    grid-template-columns: 1fr;
-    gap: 9px;
-  }
-
-  .loot-owner-card {
-    padding: 14px;
-  }
-
-  .loot-owner-modal {
-    width: calc(100vw - 18px);
-  }
-
-  .loot-owner-modal-title h2 {
-    max-width: 62vw;
-  }
-
-  .loot-owner-overview {
-    grid-template-columns: 1fr;
-  }
-
-  .loot-owner-overview > div {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-  }
-
-  .loot-owner-inventory,
-  .loot-owner-catalog-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .loot-owner-catalog-grid {
-    grid-auto-rows: 98px;
-  }
-
-  .loot-owner-grant-form {
-    grid-template-columns: 1fr;
-  }
-
-  .loot-owner-special-check {
-    grid-column: auto;
-  }
-
-  .loot-owner-grant-form .primary-button {
-    width: 100%;
-  }
+@media (max-width: 440px) {
+  .loot-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .loot-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); }
+  .loot-card-art { height: 100%; aspect-ratio: auto; border-right: 1px solid var(--color-hairline); border-bottom: 0; }
+  .loot-thumb { max-height: 180px; padding: 9px; }
+  .loot-card-body { gap: 5px; padding: 9px; }
+  .loot-inline-input { padding: 4px; font-size: 13px; }
+  .loot-inline-textarea { min-height: 46px; padding: 4px; font-size: 12px; }
+  .loot-card-actions { gap: 6px; padding-top: 8px; }
+  .loot-card-meta { padding-inline: 4px; }
+  .loot-skeleton { display: grid; grid-template-columns: 96px minmax(0, 1fr); min-height: 170px; padding: 0; }
+  .loot-skeleton > div { grid-row: 1 / 3; height: 100%; margin: 0; aspect-ratio: auto; }
+  .loot-skeleton > span { align-self: center; }
 }

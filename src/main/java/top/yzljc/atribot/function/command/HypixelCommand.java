@@ -4,15 +4,17 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.chat.official.button.Button;
+import top.yzljc.atribot.chat.official.button.ButtonStyle;
+import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
+import top.yzljc.atribot.platform.qq.QQBot;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @Author YZ_Ljc_
@@ -52,13 +54,23 @@ public class HypixelCommand implements CommandExecutor {
                     + "smash / classic / proto / pit / smp / housing";
 
     private static final Set<SubCommand> availableSubCommands = Set.of(
-            new SubCommand("wz", "查询玩家TNT游戏法师掘战详细数据", ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, true, false),
-            new SubCommand("zs", "查询玩家街机游戏僵尸末日详细数据", ResourcesProperties.HYPIXEL_ZOMBIES_API, true, false),
-            new SubCommand("gs", "查询各小游戏在线情况", ResourcesProperties.HYPIXEL_STATUS_API, false, false),
-            new SubCommand("pack", "查询Skyblock资源包版本信息", ResourcesProperties.SKB_PACK_VERSION_API, false, true),
-            new SubCommand("dice", "随机Skyblock Dice(鉴定你的欧气)", null, false, true),
-            new SubCommand("coop", "查询玩家全部Coop的最近上线情况", ResourcesProperties.SKYBLOCK_COOP_API, true, false),
-            new SubCommand("dungeon", "查询玩家最近地牢游玩场次", ResourcesProperties.SKYBLOCK_DUNGEON_API, true, false)
+            new SubCommand("wz", "查询玩家法师掘战详细数据", ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, true, false, ResourcesProperties.ICON_TNT),
+            new SubCommand("zs", "查询玩家僵尸末日详细数据", ResourcesProperties.HYPIXEL_ZOMBIES_API, true, false, ResourcesProperties.ICON_ZOMBIE_HEAD),
+            new SubCommand("gs", "全服小游戏在线情况", ResourcesProperties.HYPIXEL_STATUS_API, false, false, ResourcesProperties.HYPIXEL_HEADER_IMG),
+            new SubCommand("pack", "查询玩家Skyblock资源包版本信息", ResourcesProperties.SKB_PACK_VERSION_API, false, true, ResourcesProperties.ICON_KNOWLEDGE_BOOK),
+            new SubCommand("dice", "随机Skyblock Dice(鉴定你的欧气)", null, false, true, ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6")),
+            new SubCommand("coop", "查询玩家Skyblock Coop在线情况", ResourcesProperties.SKYBLOCK_COOP_API, true, false, ResourcesProperties.ICON_DIAMOND_PICKAXE),
+            new SubCommand("dungeon", "查询玩家最近地牢游玩场次", ResourcesProperties.SKYBLOCK_DUNGEON_API, true, false, ResourcesProperties.ICON_SKYBLOCK_DUNGEON),
+            new SubCommand("lf", "查询玩家大厅钓鱼数据", ResourcesProperties.HYPIXEL_PLAYER_LOBBY_FISHING_API, true, false, ResourcesProperties.ICON_FISHING_ROD)
+    );
+
+    public static final Object keyboard = TC.keyboard(
+            List.of(
+                    List.of(
+                            new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
+                            new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK)
+                    )
+            )
     );
 
     private static Markdown getSubCommands() {
@@ -66,11 +78,13 @@ public class HypixelCommand implements CommandExecutor {
         String title = "**Hypixel 综合查询二级菜单**\n\n";
         String cmdPrefix = "/hyp ";
         s.append(title);
+        s.append("> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n");
+        s.append("---\n\n");
         for (var cmd : availableSubCommands) {
-            s.append("> ").append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmdPrefix + cmd.prefix()))
-                    .append(" - ").append(cmd.description()).append("\n");
+//            s.append("> ").append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmdPrefix + cmd.prefix()))
+//                    .append(" - ").append(cmd.description()).append("\n");
+            s.append("> ").append(Markdown.img(cmd.icon(), 16, 16)).append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmd.description())).append("\n");
         }
-        s.append("\nTips: 上方指令可直接点击哦~");
         return new Markdown(s.toString());
     }
 
@@ -97,7 +111,7 @@ public class HypixelCommand implements CommandExecutor {
 
         if (sender instanceof QQCommandSender user) {
             if (args.length == 0) {
-                user.sendMessage(getSubCommands());
+                user.sendMessage(getSubCommands(), keyboard);
                 return true;
             }
 
@@ -116,7 +130,7 @@ public class HypixelCommand implements CommandExecutor {
                 if (sub.needPlayer()) {
                     String player = getPlayer(user.getUserId(), args);
                     if (player == null) {
-                        user.sendMessage("笨蛋喵，你没有绑定用户信息，请阅读帮助文档查看绑定事项，或在指令后指明查询用户，例如: /hyp " + sub.prefix() + " Steve。");
+                        user.sendMessage("笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
                         return true;
                     }
 
@@ -202,5 +216,5 @@ public class HypixelCommand implements CommandExecutor {
         return player;
     }
 
-    private record SubCommand(String prefix, String description, String api, boolean needPlayer, boolean special) {}
+    private record SubCommand(String prefix, String description, String api, boolean needPlayer, boolean special, String icon) {}
 }

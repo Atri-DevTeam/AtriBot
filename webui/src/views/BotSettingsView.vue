@@ -64,7 +64,7 @@
                     </button>
                     <div v-if="shareQr" class="bs-share-popover">
                       <template v-if="!qrText">
-                        <div class="bs-share-qr-empty">未配置 qq.bot-uin（机器人 QQ 号），无法生成群分享二维码</div>
+                        <div class="bs-share-qr-empty">{{ shareQr === 'group' ? '尚未获取到机器人 QQ 号或 AppID，无法生成群分享二维码' : '尚未获取到 AppID，无法生成频道分享二维码' }}</div>
                       </template>
                       <template v-else>
                         <div class="bs-qr-title">{{ shareQr === 'group' ? '添加到群 / 消息列表' : '添加到频道' }}</div>
@@ -85,6 +85,10 @@
               </div>
             </div>
             <dl class="bs-fields">
+              <div class="bs-field">
+                <dt>机器人 QQ 号</dt>
+                <dd class="bs-mono">{{ profile.botUin || '未获取' }}</dd>
+              </div>
               <div class="bs-field">
                 <dt>AppID</dt>
                 <dd class="bs-mono">{{ profile.appId || '-' }}</dd>
@@ -165,6 +169,32 @@
                 <button class="ghost-button bs-reset-btn" @click="resetPanel">重置</button>
               </div>
             </div>
+            <div class="bs-setting-row">
+              <div class="bs-setting-info">
+                <span class="bs-setting-label">聊天背景</span>
+                <span class="bs-setting-desc">使用随机图片作为聊天背景，设置自动保存在当前浏览器</span>
+              </div>
+              <div class="bs-setting-control">
+                <button type="button" class="nt-switch" :class="{ on: chatBackground.enabled }"
+                        role="switch" :aria-checked="chatBackground.enabled" aria-label="聊天背景"
+                        @click="updateChatBackground({ enabled: !chatBackground.enabled })"><span class="nt-switch-knob" /></button>
+              </div>
+            </div>
+            <div class="bs-setting-row">
+              <div class="bs-setting-info">
+                <label for="chat-background-transparency" class="bs-setting-label">背景透明度</label>
+                <span class="bs-setting-desc">数值越高，背景越淡；100% 时完全透明</span>
+              </div>
+              <div class="bs-setting-control bs-background-opacity">
+                <input id="chat-background-transparency" type="range" min="0" max="100" step="1"
+                       :value="chatBackground.transparency" :disabled="!chatBackground.enabled"
+                       :aria-valuetext="`${chatBackground.transparency}%`"
+                       @input="updateChatBackground({ transparency: Number($event.target.value) })" />
+                <output for="chat-background-transparency">{{ chatBackground.transparency }}%</output>
+              </div>
+            </div>
+            <OrphanedRecordCleanup ref="cleanupPanel" :api="api" />
+            <OrphanedRecordCleanup ref="friendCleanupPanel" kind="friend" :api="api" />
           </div>
 
           <!-- 指令管理 -->
@@ -198,10 +228,13 @@ import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import FunctionSettingsPanel from '../components/FunctionSettingsPanel.vue'
 import CommandSettingsPanel from '../components/CommandSettingsPanel.vue'
+import OrphanedRecordCleanup from '../components/OrphanedRecordCleanup.vue'
 import {resetPanelLayout} from '../lib/panelLayout.js'
+import {useChatBackground} from '../lib/chatBackground.js'
 import QRCode from 'qrcode'
 
 const router = useRouter()
+const { settings: chatBackground, updateSettings: updateChatBackground } = useChatBackground()
 
 const sidebarOpen = ref(false)
 const sidebarRef = ref(null)
@@ -218,6 +251,8 @@ const saveMessage = ref('')
 const saveError = ref('')
 const functionPanel = ref(null)
 const commandPanel = ref(null)
+const cleanupPanel = ref(null)
+const friendCleanupPanel = ref(null)
 
 const loading = computed(() => settingsLoading.value)
 const connectionModeText = computed(() => profile.connectionMode === 'webhook' ? 'Webhook' : 'WebSocket')
@@ -322,6 +357,8 @@ async function saveSettings() {
 }
 
 function refreshAll() {
+  cleanupPanel.value?.reload()
+  friendCleanupPanel.value?.reload()
   loadProfile()
   loadSettings()
   functionPanel.value?.load()
@@ -486,13 +523,6 @@ async function downloadQr() {
     if (avatar) {
       const cx = width / 2
       const cy = qrY + QR_SIZE / 2
-      ctx.beginPath()
-      ctx.arc(cx, cy, 64, 0, Math.PI * 2)
-      ctx.fillStyle = '#ffffff'
-      ctx.fill()
-      ctx.lineWidth = 3
-      ctx.strokeStyle = '#d5d9e0'
-      ctx.stroke()
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, 54, 0, Math.PI * 2)

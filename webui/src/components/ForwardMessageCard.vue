@@ -1,45 +1,33 @@
 <template>
-  <section class="forward-card">
-    <header class="forward-card-title">
-      <span class="forward-card-icon" aria-hidden="true">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 8h12v12H8z"/><path d="M4 16V4h12"/>
-        </svg>
-      </span>
-      <span class="forward-card-title-text">{{ displayTitle(record.title) }}</span>
-    </header>
-    <div class="forward-card-items">
-      <ForwardMessageItem v-for="(item, index) in record.items.slice(0, 4)" :key="index"
-                          :item="item" :depth="0" :compact="true" @open-forward="openViewer" />
-    </div>
-    <button v-if="record.items.length" type="button" class="forward-card-toggle" @click="openViewer()">
-      <span>点击查看</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </button>
-  </section>
+  <ForwardRecordPreview :record="record" @open="openViewer()" />
 
   <Teleport v-if="viewerStack.length" to="body">
     <div class="forward-viewer-backdrop" @click.self="closeViewer">
-      <section class="forward-viewer" role="dialog" aria-modal="true" :aria-label="viewerTitle">
+      <section ref="viewerEl" class="forward-viewer" role="dialog" aria-modal="true"
+               :aria-label="viewerTitle" tabindex="-1" @keydown="onViewerKeydown">
         <header class="forward-viewer-head">
-          <button v-if="viewerStack.length > 1" type="button" class="forward-viewer-back"
-                  aria-label="返回上一层" title="返回上一层" @click="goBack">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-          <span class="forward-viewer-title">{{ viewerTitle }}</span>
+          <div class="forward-viewer-nav">
+            <button v-if="viewerStack.length > 1" type="button" class="forward-viewer-back"
+                    aria-label="返回上一层" title="返回上一层" @click="goBack">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m14 6-6 6 6 6" />
+              </svg>
+            </button>
+          </div>
+          <div class="forward-viewer-heading">
+            <span class="forward-viewer-title">{{ viewerTitle }}</span>
+            <span class="forward-viewer-count">{{ currentRecord.items.length }} 条消息</span>
+          </div>
           <button type="button" class="forward-viewer-close" aria-label="关闭" title="关闭" @click="closeViewer">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="m6 6 12 12M18 6 6 18" />
             </svg>
           </button>
         </header>
-        <div class="forward-viewer-items">
+        <div ref="itemsEl" class="forward-viewer-items">
           <ForwardMessageItem v-for="(item, index) in currentRecord.items" :key="index"
-                              :item="item" :depth="viewerStack.length - 1" @open-forward="openViewer" />
+                              :item="item" @open-forward="openViewer" />
+          <p v-if="!currentRecord.items.length" class="forward-viewer-empty">暂无消息内容</p>
         </div>
       </section>
     </div>
@@ -47,39 +35,76 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { forwardTitle } from '../lib/forward.js'
 import ForwardMessageItem from './ForwardMessageItem.vue'
+import ForwardRecordPreview from './ForwardRecordPreview.vue'
 
 const props = defineProps({
   record: { type: Object, required: true }
 })
 
 const viewerStack = ref([])
-const currentRecord = computed(() => viewerStack.value[viewerStack.value.length - 1])
-const viewerTitle = computed(() => displayTitle(currentRecord.value?.title))
+const viewerEl = ref(null)
+const itemsEl = ref(null)
+let opener = null
+const currentRecord = computed(() => viewerStack.value.at(-1)?.record)
+const viewerTitle = computed(() => forwardTitle(currentRecord.value?.title))
 
-function openViewer(item = props.record) {
-  if (!viewerStack.value.length) viewerStack.value = [props.record]
-  if (item !== props.record && item?.forward?.length) {
-    viewerStack.value.push({ title: nestedTitle(item), items: item.forward })
+async function openViewer(item) {
+  if (!viewerStack.value.length) {
+    opener = document.activeElement
+    viewerStack.value = [{ record: props.record, scrollTop: 0 }]
   }
+  if (item?.forward?.length) {
+    const parent = viewerStack.value.at(-1)
+    parent.scrollTop = itemsEl.value?.scrollTop || 0
+    parent.trigger = document.activeElement
+    viewerStack.value.push({ record: { title: item.content, items: item.forward }, scrollTop: 0 })
+  }
+  await nextTick()
+  if (itemsEl.value) itemsEl.value.scrollTop = 0
+  viewerEl.value?.focus()
 }
 
-function nestedTitle(item) {
-  const title = String(item?.content || '').trim()
-  return /^\[[^\]\n]+的聊天记录\]$/.test(title) ? '聊天记录' : (title || '聊天记录')
-}
-
-function displayTitle(title) {
-  const value = String(title || '').trim()
-  return value || '聊天记录'
-}
-
-function goBack() {
+async function goBack() {
+  if (viewerStack.value.length < 2) return
   viewerStack.value.pop()
+  await nextTick()
+  const parent = viewerStack.value.at(-1)
+  if (!parent) return
+  if (itemsEl.value) itemsEl.value.scrollTop = parent.scrollTop
+  if (parent.trigger?.isConnected) parent.trigger.focus()
+  else viewerEl.value?.focus()
 }
 
 function closeViewer() {
   viewerStack.value = []
+  if (opener?.isConnected) opener.focus()
+  opener = null
 }
+
+function onViewerKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    closeViewer()
+    return
+  }
+  if (event.key !== 'Tab') return
+  const controls = [...viewerEl.value.querySelectorAll('button, a[href], video[controls], audio[controls], [tabindex="0"]')]
+  const first = controls[0]
+  const last = controls.at(-1)
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === viewerEl.value)) {
+    event.preventDefault()
+    last?.focus()
+  } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === viewerEl.value)) {
+    event.preventDefault()
+    first?.focus()
+  }
+}
+
+onBeforeUnmount(() => {
+  if (viewerStack.value.length && opener?.isConnected) opener.focus()
+})
 </script>

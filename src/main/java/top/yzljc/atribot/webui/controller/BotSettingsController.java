@@ -54,7 +54,7 @@ public final class BotSettingsController {
                 apiBaseUrl != null && apiBaseUrl.contains("sandbox"),
                 config.getQqConnectionMode(),
                 normalize(QQBot.BOT_SHARE_LINK),
-                normalize(config.getQqBotUin())
+                normalize(QQBot.BOT_UIN)
         )));
     }
 

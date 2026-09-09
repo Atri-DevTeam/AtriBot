@@ -3,6 +3,7 @@ package top.yzljc.atribot.platform.qq;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
@@ -16,6 +17,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * @Author YZ_Ljc_
@@ -28,7 +30,7 @@ import java.util.Set;
 public final class QQBot {
 
     /** 注意，这个B玩意是union_id不是user_openid，可能为null */
-    public static String BOT_UNIONID;
+    @Nullable public static String BOT_UNIONID;
 
     public static String BOT_AVATAR_URL;
 
@@ -37,6 +39,8 @@ public final class QQBot {
     public static String BOT_SHARE_LINK;
 
     public static String BOT_WELCOME_MSG;
+
+    @Nullable public static String BOT_UIN;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,6 +81,14 @@ public final class QQBot {
         BOT_NAME = d.path("username").asText(null);
         BOT_SHARE_LINK = d.path("share_url").asText(null);
         BOT_WELCOME_MSG = d.path("welcome_msg").asText(null);
+
+        if (BOT_SHARE_LINK != null) {
+            var p = Pattern.compile("robot_uin=(\\d+)");
+            var m = p.matcher(BOT_SHARE_LINK);
+            if (m.find()) {
+                BOT_UIN = m.group(1);
+            }
+        }
 
         log.info("Fetched bot info: unionid={}, avatar_url={}, name={}, share_link={}, welcome_msg={}",
                 BOT_UNIONID, BOT_AVATAR_URL, BOT_NAME, BOT_SHARE_LINK, BOT_WELCOME_MSG);

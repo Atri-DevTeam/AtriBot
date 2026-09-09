@@ -130,8 +130,6 @@ public class Config {
     @Getter
     private String officialOpenId;
     @Getter
-    private String qqBotUin;
-    @Getter
     @Deprecated(since = "3.1.7") // 直接 /users/@me 拿，硬编码狗都不用
     private String officialUsername;
     @Getter
@@ -323,7 +321,6 @@ public class Config {
                 this.qqWebhookPath = "/qq/webhook";
             }
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
-            this.qqBotUin = yaml.getString("qq.bot-uin", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");

@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.SseBroadcaster;
+import top.yzljc.atribot.webui.repo.OrphanedFriendRecordCleanup;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -27,6 +28,16 @@ import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
 
 /** C2C 私聊 */
 public class C2CController {
+
+    /** 扫描并清理已删除好友的私聊记录 */
+    public static void startOrphanedFriendRecordCleanup(Context ctx) {
+        ctx.json(Result.success(OrphanedFriendRecordCleanup.start()));
+    }
+
+    /** 查询好友记录清理进度 */
+    public static void getOrphanedFriendRecordCleanupStatus(Context ctx) {
+        ctx.json(Result.success(OrphanedFriendRecordCleanup.getStatus()));
+    }
 
     public static void recallC2CMessage(Context ctx) {
         C2CRecallDTO dto = ctx.bodyAsClass(C2CRecallDTO.class);
@@ -213,6 +224,14 @@ public class C2CController {
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
         String refId = dto.getRefMessageId();
+        if (!isBlank(refId) && !"text".equals(msgType)) {
+            ctx.status(400).json(Result.fail(400, "当前仅文本消息支持引用"));
+            return;
+        }
+        if (!isBlank(refId) && !isBlank(replyId)) {
+            ctx.status(400).json(Result.fail(400, "私聊暂不支持同时发送被动消息和引用"));
+            return;
+        }
         String messageId;
         try {
             if (refId != null && !refId.isBlank()) {
@@ -234,7 +253,9 @@ public class C2CController {
                     messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
-                    messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
+                    messageId = "markdown".equals(msgType)
+                            ? C2CChat.replyMessage(dto.getUserOpenId(), replyId, new Markdown(dto.getContent()))
+                            : C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {
@@ -277,6 +298,14 @@ public class C2CController {
             ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
             return;
         }
+        if (!isBlank(dto.getRefMessageId())) {
+            ctx.status(400).json(Result.fail(400, "流式消息暂不支持引用"));
+            return;
+        }
+        if (isBlank(dto.getReplyMessageId())) {
+            ctx.status(400).json(Result.fail(400, "流式消息需要指定被动回复的来源消息"));
+            return;
+        }
         if (isBlank(dto.getContent())) {
             ctx.status(400).json(Result.fail(400, "内容不能为空"));
             return;
@@ -291,12 +320,7 @@ public class C2CController {
         }
         String messageId;
         try {
-            String replyId = dto.getReplyMessageId();
-            if (!isBlank(replyId)) {
-                messageId = C2CChat.replyStreamDeltas(dto.getUserOpenId(), replyId, deltas);
-            } else {
-                messageId = C2CChat.streamDeltas(dto.getUserOpenId(), deltas);
-            }
+            messageId = C2CChat.replyStreamDeltas(dto.getUserOpenId(), dto.getReplyMessageId(), deltas);
         } catch (QQMessageSendException e) {
             ctx.status(502).json(Result.fail(502, e.getMessage()));
             return;
@@ -316,6 +340,7 @@ public class C2CController {
         private String userOpenId;
         private String content;
         private String replyMessageId;
+        private String refMessageId;
     }
 
     public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,

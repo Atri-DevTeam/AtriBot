@@ -481,7 +481,7 @@ GuildDirectChat.replyMessage(guildId, msgId, "回复内容");
 GuildDirectChat.replyImageMessage(guildId, msgId, ImageComponent.imageOf("https://example.com/img.png"));
 ```
 
-> 频道方向上，绝大部分业务逻辑（`sakuraba_ema` 调用 CLI）由 `top.yzljc.sakuraba_ema.ChannelCliClient` 统一封装，包括发帖、回帖、转发、论坛渲染等（`ChannelPosts`、`ForumCode` 等）。
+> 频道第二账号的调用由 `top.yzljc.sakuraba_ema.ChannelCliClient` 统一执行，业务层通过 `ChannelPosts`、`ChannelComments`、`ChannelPrivateChat` 等静态类使用。完整分类、64 个命令入口和发送示例见 [频道第二账号静态调用索引](docs/sakuraba-ema-calls.md)。
 
 #### 官方机器人消息类型总结
 
@@ -1555,19 +1555,28 @@ src/main/java/top/yzljc/atribot/
 
 src/main/java/top/yzljc/sakuraba_ema/   # QQ 频道 CLI 客户端
 ├── ChannelCliClient.java           # CLI 调用主入口
+├── ChannelCalls.java               # 通用静态同步 / 异步执行
+├── ChannelSystem.java              # 静态版本 / 登录 / schema 查询
 ├── guild/
 │   ├── ChannelInformation.java     # 频道信息查询
-│   ├── ChannelPosts.java           # 帖子（发帖 / 回帖 / 转发）
+│   ├── ChannelPosts.java           # 帖子查询 / 发布 / 管理
+│   ├── ChannelComments.java        # 评论 / 回复 / 点赞
+│   ├── ChannelPrivateChat.java     # 频道私信发送
+│   ├── ChannelNotices.java         # 互动消息 / 通知管理
+│   ├── management/
+│   │   ├── ChannelMembers.java     # 成员查询 / 踢出 / 禁言
+│   │   ├── ChannelRoles.java       # 身份组 / 管理员管理
+│   │   └── ChannelManagement.java  # 频道与版块管理
 │   └── impl/
 │       ├── ChannelCliException.java
 │       ├── ChannelCliOptions.java
 │       ├── ChannelCliResult.java
-│       └── ChannelFeedClient.java  # 论坛 Feed 抓取
+│       └── ChannelFeedClient.java  # 底层 feed 命令执行
 ├── manager/
 │   ├── ChannelManageClient.java    # 频道管理
 │   └── ChannelSystemClient.java    # 频道系统接口
 └── utils/
-    └── ForumCode.java              # 论坛渲染（BBCode/Markdown）
+    └── ForumCode.java              # 业务论坛版块 ID 枚举
 
 src/main/resources/
 ├── config.yml                     # 默认配置（首次运行复制到工作目录）

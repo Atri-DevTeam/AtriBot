@@ -9,6 +9,8 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
+import top.yzljc.atribot.chat.official.management.GroupMember;
+import top.yzljc.atribot.chat.official.management.GroupMemberBlacklist;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
@@ -133,10 +135,94 @@ public class GroupController {
         ctx.json(Result.success(OrphanedGroupRecordCleanup.getStatus()));
     }
 
-    /** 群成员列表（实为「在本群发过言的人」，官方 API 不提供真实名册） */
+    /** 群成员列表，当前按本群发言记录聚合 */
     public static void listGroupMembers(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         ctx.json(Result.success(QQChatContentRecord.fetchGroupMembers(groupOpenId)));
+    }
+
+    /** 查询群成员详情，同时返回机器人在本群是否具有管理身份 */
+    public static void getGroupMemberInfo(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        String memberOpenId = ctx.pathParam("memberOpenId");
+        if (isBlank(groupOpenId) || isBlank(memberOpenId)) {
+            ctx.status(400).json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            return;
+        }
+        var info = GroupMember.getMemberInfo(groupOpenId, memberOpenId);
+        // 成员资料查询失败不影响本地已知的机器人管理身份。
+        String infoError = info == null ? "查询成员详情失败，请检查官方接口响应" : null;
+        ctx.json(Result.success(new GroupMemberInfoDTO(info, canManageGroupMembers(groupOpenId), infoError)));
+    }
+
+    /** 踢出单个群成员，可选择同时加入群黑名单 */
+    public static void removeGroupMember(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        String memberOpenId = ctx.pathParam("memberOpenId");
+        if (isBlank(groupOpenId) || isBlank(memberOpenId)) {
+            ctx.status(400).json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            return;
+        }
+        if (!canManageGroupMembers(groupOpenId)) {
+            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法踢出成员"));
+            return;
+        }
+        JsonNode body = ctx.body().isBlank() ? null : ctx.bodyAsClass(JsonNode.class);
+        boolean addToMemberBlacklist = body != null && body.path("addToMemberBlacklist").asBoolean(false);
+        var result = GroupMember.removeMembersDetailed(groupOpenId, List.of(memberOpenId), addToMemberBlacklist);
+        if (result == null || !"success".equals(result.removeMembersResult())) {
+            ctx.status(502).json(Result.fail(502, "踢出成员失败，请检查官方接口响应"));
+            return;
+        }
+        // 移除成功但拉黑失败时保留详细结果，前端分别提示。
+        ctx.json(Result.success(result));
+    }
+
+    private static boolean canManageGroupMembers(String groupOpenId) {
+        var group = OfficialGroups.getData(groupOpenId);
+        if (group == null || group.memberRole() == null) return false;
+        String role = group.memberRole().name();
+        return "OWNER".equals(role) || "ADMIN".equals(role);
+    }
+
+    public record GroupMemberInfoDTO(GroupMember.MemberInfo memberInfo, boolean canManage, String memberInfoError) {}
+
+    /** 分页查询群成员黑名单 */
+    public static void getGroupMemberBlacklist(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        if (!canManageGroupMembers(groupOpenId)) {
+            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法查询群黑名单"));
+            return;
+        }
+        var result = GroupMemberBlacklist.getMemberBlacklist(groupOpenId,
+                ctx.queryParam("cursor"), parseInt(ctx.queryParam("limit"), 20));
+        if (result == null) {
+            ctx.status(502).json(Result.fail(502, "查询群黑名单失败，请检查官方接口响应"));
+            return;
+        }
+        ctx.json(Result.success(result));
+    }
+
+    /** 将指定成员加入群黑名单，目标成员必须已不在群内 */
+    public static void addGroupMemberBlacklist(Context ctx) {
+        String groupOpenId = ctx.pathParam("groupOpenId");
+        if (!canManageGroupMembers(groupOpenId)) {
+            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法添加群黑名单"));
+            return;
+        }
+        JsonNode body = ctx.body().isBlank() ? null : ctx.bodyAsClass(JsonNode.class);
+        String memberOpenId = body == null ? null : body.path("memberOpenId").asText(null);
+        if (isBlank(memberOpenId)) {
+            ctx.status(400).json(Result.fail(400, "memberOpenId 不能为空"));
+            return;
+        }
+        var result = GroupMemberBlacklist.setMemberBlacklistDetailed(groupOpenId,
+                GroupMemberBlacklist.Op.ADD, List.of(memberOpenId));
+        if (result == null || !result.failOpenIds().isEmpty()) {
+            ctx.status(502).json(Result.fail(502, "添加群黑名单失败，请检查官方接口响应"));
+            return;
+        }
+        ctx.json(Result.success(null));
     }
 
     public static void getGroupMuteState(Context ctx) {
@@ -220,19 +306,26 @@ public class GroupController {
         }
 
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
+        String replyId = dto.getReplyMessageId();
+        String refId = dto.getRefMessageId();
+        if (!isBlank(refId) && !"text".equals(msgType)) {
+            ctx.status(400).json(Result.fail(400, "当前仅文本消息支持引用"));
+            return;
+        }
         String messageId;
 
         try {
-            String refId = dto.getRefMessageId();
             if (refId != null && !refId.isBlank()) {
-                // 引用回复：发送带 message_reference 的主动消息
+                // 群聊文本支持独立引用，也支持在被动回复中附带引用。
                 if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
-                messageId = GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent());
+                messageId = isBlank(replyId)
+                        ? GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent())
+                        : GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent(), refId);
                 if (messageId != null) {
                     QQChatContentRecord.patchRefDisplayData(messageId,
                             dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
                 }
-            } else if (dto.getReplyMessageId() != null && !dto.getReplyMessageId().isBlank()) {
+            } else if (!isBlank(replyId)) {
                 // 被动回复
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
@@ -241,10 +334,12 @@ public class GroupController {
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
-                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), image);
+                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), replyId, image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
-                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), dto.getReplyMessageId(), dto.getContent());
+                    messageId = "markdown".equals(msgType)
+                            ? GroupChat.replyMessage(dto.getGroupOpenId(), replyId, new Markdown(dto.getContent()))
+                            : GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {

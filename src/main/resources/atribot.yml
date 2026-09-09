@@ -3,6 +3,9 @@ version: ${version}
 main: top.yzljc.atribot.Atri
 
 commands:
+  ema:
+    description: 频道第二账号管理（仅机器人管理员）
+    usage: '/ema help；/ema <分类> <动作> [可选项] <参数> [正文...]'
   newyear:
     aliases:
       - 新年快乐

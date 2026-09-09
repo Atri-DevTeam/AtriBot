@@ -187,11 +187,15 @@ public class BotEvents {
 
     public static void handleFriendRemoveEvent(JsonNode eventData) {
         try {
-            String userOpenId = eventData.path("author").get("union_openid").asText();
-            if (userOpenId.isEmpty()) {
+            String userOpenId = eventData.path("author").path("union_openid").asText(null);
+            if (userOpenId == null || userOpenId.isBlank()) {
                 userOpenId = eventData.path("openid").asText(null);
             }
-            String timestamp = eventData.get("timestamp").asText();
+            if (userOpenId == null || userOpenId.isBlank()) {
+                log.warn("忽略缺少用户 OpenID 的好友删除事件");
+                return;
+            }
+            String timestamp = eventData.path("timestamp").asText(null);
 
             OfficialFriendDelEvent event = new OfficialFriendDelEvent(userOpenId, timestamp);
             EventManager.getInstance().callEvent(event);

@@ -130,13 +130,23 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onFriendDel(OfficialFriendDelEvent event) {
-        log.info("Friend removed: {}", event.getUserOpenId());
-        if (OfficialUsers.removeUser(event.getUserOpenId())) {
-            log.info("Removed official user data for deleted friend: {}", event.getUserOpenId());
-        } else {
-            log.warn("Failed to remove official user data for deleted friend: {}", event.getUserOpenId());
+        String userOpenId = event.getUserOpenId();
+        if (userOpenId == null || userOpenId.isBlank()) {
+            log.warn("忽略缺少用户 OpenID 的好友删除事件，timestamp: {}", event.getTimestamp());
+            return;
         }
-        Alert.notify("有好友删除了亚托莉喵，OpenID: " + event.getUserOpenId());
+        log.info("Friend removed: {}", userOpenId);
+        c2cNotifiedUsers.remove(userOpenId);
+        if (OfficialUsers.isIgnored(userOpenId) || OfficialUsers.isBlocked(userOpenId)) {
+            log.info("已删除好友 {} 处于拉黑或忽略状态，按规则保留用户数据", userOpenId);
+        } else if (OfficialUsers.removeUser(userOpenId)) {
+            log.info("Removed official user data for deleted friend: {}", userOpenId);
+        } else {
+            log.error("Failed to remove official user data for deleted friend: {}", userOpenId);
+            Alert.notify("好友已删除，但清理用户资料及私聊功能配置失败，OpenID: " + userOpenId);
+            return;
+        }
+        Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
     }
 
     @EventHandler

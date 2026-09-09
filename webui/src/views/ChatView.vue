@@ -127,111 +127,114 @@
 
           <div v-if="notice" class="chatnt-notice">{{ notice }}</div>
 
-          <div ref="messageListRef" class="chatnt-msgs" @scroll="onScroll">
-            <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
-            <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
-            <div v-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
-            <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
+          <div class="chatnt-message-area">
+            <ChatBackground />
+            <div ref="messageListRef" class="chatnt-msgs" @scroll="onScroll">
+              <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
+              <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
+              <div v-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
+              <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
-            <article v-for="message in orderedMessages" :key="message.id"
-                     :data-message-id="message.id"
-                     class="qm" :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id }">
-              <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)">
-                <span>{{ avatarText(message) }}</span>
-                <img v-if="avatarUrl(message) && !avatarFailed[message.id]"
-                     :src="avatarUrl(message)" :alt="message.username"
-                     referrerpolicy="no-referrer"
-                     @error="avatarFailed[message.id] = true" />
-              </span>
-              <div class="qm-main">
-                <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
-                  <span class="qm-name-text">{{ displayName(message) }}</span>
-                  <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。
-                       图案沿用旧页面，配色改走 currentColor 交给 CSS 管 -->
-                  <svg v-if="isMe(message) || message.senderIsBot" class="qm-bot"
-                       width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
-                    <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
-                    <circle cx="32" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                    <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                    <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                    <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                  </svg>
-                  <!-- 只标群主/管理员，普通成员不标 -->
-                  <span v-if="!isMe(message) && active.type === 'group' && isSpecialRole(message.memberRole)"
-                        class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
-                  <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
-                </div>
-                <div class="qm-bubble" :class="{ recalled: recalledIds[message.messageOpenId] }"
-                     @contextmenu.prevent.stop="onContextMenu($event, message)">
-                  <pre v-if="recalledIds[message.messageOpenId]">{{ isMe(message) ? '你撤回了一条消息' : '该消息已被撤回' }}</pre>
-                  <template v-else>
-                    <div v-if="msgRef(message)" class="qm-ref qm-ref--clickable"
-                         title="跳转到引用来源" @click.stop="jumpToReference(message)">
-                      <span class="qm-ref-author">{{ msgRef(message).author || '引用消息' }}</span>
-                      <div class="qm-ref-content" v-html="renderRefContent(msgRef(message))"></div>
-                    </div>
-                    <div v-if="message.attachments" class="qm-attach">
-                      <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
-                        <img v-if="att.type === 'image' && !attachFailed[att.url]"
-                             :src="att.url" :alt="att.filename"
-                             referrerpolicy="no-referrer"
-                             @error="attachFailed[att.url] = true"
-                             @click="previewImg = att.url" />
-                        <span v-else-if="att.type === 'image'" class="attach-fail">📎 {{ att.filename }}</span>
-                        <div v-else-if="att.type === 'video'" class="qm-video">
-                          <template v-if="att.url && !attachFailed[att.url]">
-                            <video :src="att.url" controls playsinline preload="metadata"
-                                   @error="attachFailed[att.url] = true"></video>
-                            <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
-                            <button type="button" class="qm-video-expand" title="放大查看" aria-label="放大查看"
-                                    @click.stop="previewVideo = att.url">
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              <article v-for="message in orderedMessages" :key="message.id"
+                       :data-message-id="message.id"
+                       class="qm" :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id }">
+                <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)">
+                  <span>{{ avatarText(message) }}</span>
+                  <img v-if="avatarUrl(message) && !avatarFailed[message.id]"
+                       :src="avatarUrl(message)" :alt="message.username"
+                       referrerpolicy="no-referrer"
+                       @error="avatarFailed[message.id] = true" />
+                </span>
+                <div class="qm-main">
+                  <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
+                    <span class="qm-name-text">{{ displayName(message) }}</span>
+                    <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。
+                         图案沿用旧页面，配色改走 currentColor 交给 CSS 管 -->
+                    <svg v-if="isMe(message) || message.senderIsBot" class="qm-bot"
+                         width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
+                      <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <circle cx="32" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                      <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
+                      <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor"/>
+                      <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor"/>
+                    </svg>
+                    <!-- 只标群主/管理员，普通成员不标 -->
+                    <span v-if="!isMe(message) && active.type === 'group' && isSpecialRole(message.memberRole)"
+                          class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
+                    <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
+                  </div>
+                  <div class="qm-bubble" :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
+                       @contextmenu.prevent.stop="onContextMenu($event, message)">
+                    <pre v-if="recalledIds[message.messageOpenId]">{{ isMe(message) ? '你撤回了一条消息' : '该消息已被撤回' }}</pre>
+                    <template v-else>
+                      <div v-if="msgRef(message)" class="qm-ref qm-ref--clickable"
+                           title="跳转到引用来源" @click.stop="jumpToReference(message)">
+                        <span class="qm-ref-author">{{ msgRef(message).author || '引用消息' }}</span>
+                        <div class="qm-ref-content" v-html="renderRefContent(msgRef(message))"></div>
+                      </div>
+                      <div v-if="message.attachments" class="qm-attach">
+                        <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
+                          <img v-if="att.type === 'image' && !attachFailed[att.url]"
+                               :src="att.url" :alt="att.filename"
+                               referrerpolicy="no-referrer"
+                               @error="attachFailed[att.url] = true"
+                               @click="previewImg = att.url" />
+                          <span v-else-if="att.type === 'image'" class="attach-fail">📎 {{ att.filename }}</span>
+                          <div v-else-if="att.type === 'video'" class="qm-video">
+                            <template v-if="att.url && !attachFailed[att.url]">
+                              <video :src="att.url" controls playsinline preload="metadata"
+                                     @error="attachFailed[att.url] = true"></video>
+                              <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
+                              <button type="button" class="qm-video-expand" title="放大查看" aria-label="放大查看"
+                                      @click.stop="previewVideo = att.url">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                                </svg>
+                              </button>
+                            </template>
+                            <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank" rel="noreferrer">
+                              🎬 {{ att.filename || '视频' }}（点击在新标签打开）
+                            </a>
+                            <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
+                          </div>
+                          <div v-else-if="att.type === 'voice'" class="qm-voice">
+                            <div class="qm-voice-title">语音消息</div>
+                            <div v-if="att.asrText" class="qm-voice-asr">{{ att.asrText }}</div>
+                            <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
+                            <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
+                          </div>
+                          <a v-else-if="att.type === 'file'" class="qm-file"
+                             :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
+                            <span class="qm-file-icon">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
                               </svg>
-                            </button>
-                          </template>
-                          <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank" rel="noreferrer">
-                            🎬 {{ att.filename || '视频' }}（点击在新标签打开）
+                            </span>
+                            <span class="qm-file-body">
+                              <span class="qm-file-name">{{ att.filename || '文件' }}</span>
+                              <span class="qm-file-size">{{ fmtSize(att.size) || '点击下载' }}</span>
+                            </span>
                           </a>
-                          <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
-                        </div>
-                        <div v-else-if="att.type === 'voice'" class="qm-voice">
-                          <div class="qm-voice-title">语音消息</div>
-                          <div v-if="att.asrText" class="qm-voice-asr">{{ att.asrText }}</div>
-                          <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
-                          <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
-                        </div>
-                        <a v-else-if="att.type === 'file'" class="qm-file"
-                           :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
-                          <span class="qm-file-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                              <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                          </span>
-                          <span class="qm-file-body">
-                            <span class="qm-file-name">{{ att.filename || '文件' }}</span>
-                            <span class="qm-file-size">{{ fmtSize(att.size) || '点击下载' }}</span>
-                          </span>
-                        </a>
-                      </template>
-                    </div>
-                    <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
-                    <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
-                    <pre v-if="!forwardRecord(message) && !hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                    <div v-if="!forwardRecord(message) && !hasArk(message) && message.messageType === 2" class="md-body"
-                         v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
-                  </template>
+                        </template>
+                      </div>
+                      <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
+                      <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
+                      <pre v-if="!forwardRecord(message) && !hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                      <div v-if="!forwardRecord(message) && !hasArk(message) && message.messageType === 2" class="md-body"
+                           v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
+                    </template>
+                  </div>
+                  <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
                 </div>
-                <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
-              </div>
-            </article>
+              </article>
+            </div>
           </div>
 
           <div v-if="replyTo" class="chatnt-replybar">
-            <span>{{ refMode ? '引用' : '回复' }} {{ replyTo.username || '...' }}：{{ replyPreview }}</span>
-            <button aria-label="取消回复" @click="cancelReply">×</button>
+            <span>已选 {{ replyTo.username || '...' }}：{{ replyPreview }}</span>
+            <button aria-label="取消选择消息" @click="cancelReply">×</button>
           </div>
 
           <form class="chatnt-composer" @submit.prevent="sendMessage">
@@ -248,6 +251,24 @@
                 </svg>
               </button>
               <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <div class="chatnt-send-options" aria-label="发送方式">
+                <button type="button" class="chatnt-mode-toggle" :class="{ active: passiveMode }"
+                        :aria-pressed="passiveMode" :disabled="!!passiveDisabledReason"
+                        :title="passiveDisabledReason || '使用所选消息发送被动回复'" @click="passiveMode = !passiveMode">
+                  <span class="chatnt-mode-check" aria-hidden="true">
+                    <svg v-if="passiveMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                  </span>
+                  被动消息
+                </button>
+                <button type="button" class="chatnt-mode-toggle" :class="{ active: refMode }"
+                        :aria-pressed="refMode" :disabled="!!referenceDisabledReason"
+                        :title="referenceDisabledReason || '发送时附带所选消息的引用'" @click="refMode = !refMode">
+                  <span class="chatnt-mode-check" aria-hidden="true">
+                    <svg v-if="refMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                  </span>
+                  引用
+                </button>
+              </div>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="chatnt-paste-preview" title="点击清除" @click="clearSelectedImage" />
             <div class="chatnt-resize-handle" :class="{ dragging: resizingComposer }"
@@ -259,7 +280,7 @@
                       @paste="onPaste"
                       @keydown.enter.exact.prevent="sendMessage"></textarea>
             <div class="chatnt-composer-foot">
-              <span class="chatnt-hint">Enter 发送 · Shift+Enter 换行</span>
+              <span class="chatnt-hint">{{ sendModeHint || 'Enter 发送 · Shift+Enter 换行' }}</span>
               <button class="chatnt-send" :disabled="!canSend">{{ sending ? '发送中…' : '发送' }}</button>
             </div>
           </form>
@@ -306,13 +327,14 @@
                 <template v-for="section in memberSections" :key="section.key">
                   <div v-if="section.items.length" class="chatnt-members-group">{{ section.label }}（{{ section.items.length }}）</div>
                   <div v-for="m in section.items" :key="m.unionOpenId" class="mbr">
-                    <span class="mbr-avatar">
+                    <button type="button" class="mbr-avatar" title="查看成员详情"
+                            :aria-label="`查看 ${m.username || '该成员'} 的详情`" @click.stop="memberInfoTarget = m">
                       <span>{{ (m.username || '?').slice(0, 1).toUpperCase() }}</span>
                       <img v-if="userAvatarUrl(m.unionOpenId) && !avatarFailed['mbr-' + m.unionOpenId]"
                            :src="userAvatarUrl(m.unionOpenId)" :alt="m.username"
                            referrerpolicy="no-referrer"
                            @error="avatarFailed['mbr-' + m.unionOpenId] = true" />
-                    </span>
+                    </button>
                     <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
                       <span class="mbr-top">
                         <span class="mbr-name">{{ m.username || 'Unknown' }}</span>
@@ -330,9 +352,9 @@
                       <span class="mbr-sub">{{ m.messageCount }} 条 · {{ fmtMemberTime(m.lastActiveAt) }}</span>
                     </button>
                     <button class="mbr-mention" title="@ 该成员" aria-label="@ 该成员" @click.stop="atMember(m)">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="8"/>
-                        <path d="M16 16v-4a4 4 0 1 0-4 4c2.2 0 4-1.8 4-4v-1.5c0-1.4 1-2.5 2.2-2.5 1.2 0 1.8 1 1.8 2.2V12a6 6 0 1 1-2-4.5"/>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
                       </svg>
                     </button>
                     <button class="mbr-cog" title="用户设置" aria-label="用户设置"
@@ -452,6 +474,9 @@
                   </template>
                 </div>
 
+                <GroupBlacklistPanel :group-open-id="active.openId" :can-manage="canQueryMuteState"
+                                     :request="api" :format-time="fmtGroupTime" @notice="showNotice" />
+
                 <div class="chatnt-info-section">
                   <div class="chatnt-info-label">功能开关</div>
                   <div class="nt-card">
@@ -528,29 +553,6 @@
                   </button>
                   <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>
 
-                  <div class="chatnt-clear-divider"></div>
-                  <div class="chatnt-cleanup-title">已退出群记录</div>
-                  <button type="button" class="chatnt-clear-submit chatnt-scan-submit"
-                          :disabled="orphanCleanup.running" @click="startOrphanedGroupCleanup">
-                    {{ orphanCleanup.running ? orphanCleanup.phase : '扫描并清理' }}
-                  </button>
-                  <div v-if="orphanCleanup.state !== 'idle'" class="chatnt-cleanup-progress">
-                    <div class="chatnt-cleanup-progress-head">
-                      <span>{{ orphanCleanup.phase }}</span>
-                      <span>{{ orphanCleanupProgress }}%</span>
-                    </div>
-                    <progress :value="orphanCleanupProgress" max="100"></progress>
-                    <div class="chatnt-cleanup-stats">
-                      <template v-if="orphanCleanup.state === 'scanning'">
-                        已扫描 {{ orphanCleanup.scannedGroups }} / {{ orphanCleanup.totalGroups }} 个群
-                      </template>
-                      <template v-else>
-                        发现 {{ orphanCleanup.orphanedGroups }} 个无效群，已删除 {{ orphanCleanup.deletedRecords }} 条记录
-                      </template>
-                    </div>
-                    <div v-if="orphanCleanup.error" class="chatnt-cleanup-error">{{ orphanCleanup.error }}</div>
-                  </div>
-                  <div class="chatnt-clear-hint">清除所有已退群记录并归档</div>
                 </div>
               </div>
             </div>
@@ -576,12 +578,7 @@
               @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言</button>
       <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
               @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言</button>
-      <button @click="startReply(ctxMenu.message); ctxMenu.visible = false">回复</button>
-      <!-- 引用回复走 refMessageId，群聊私聊都支持，但要求来源消息有 ref_idx。
-           缺 ref_idx 时置灰而不是隐藏，否则看不出是「不支持」还是「这条不行」 -->
-      <button :disabled="!ctxMenu.message.refIdx"
-              :title="ctxMenu.message.refIdx ? '' : '这条消息没有记录 ref_idx（引用所需），无法引用'"
-              @click="startRefReply(ctxMenu.message); ctxMenu.visible = false">引用回复</button>
+      <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">引用</button>
       <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
       <!-- 别人的消息也给撤回入口，能不能撤由官方接口判定，前端不预判权限 -->
       <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
@@ -594,7 +591,12 @@
       <video v-else :src="previewVideo" controls autoplay playsinline @click.stop></video>
     </div>
 
-    <!-- 禁言设置弹窗：仿权限设置的大 modal，Teleport 到 body 顶层，不依赖父级 v-if -->
+    <GroupMemberDialog v-if="memberInfoTarget && active?.type === 'group'"
+                       :group-open-id="active.openId" :member="memberInfoTarget" :request="api"
+                       :avatar-url="userAvatarUrl(memberInfoTarget.unionOpenId)"
+                       @close="memberInfoTarget = null" @mute="muteFromMemberInfo" @removed="memberRemoved" />
+
+    <!-- 禁言设置弹窗：Teleport 到 body，避免聊天布局裁切时长菜单 -->
     <Teleport to="body">
       <div v-if="mutePanel.visible" class="mute-modal-backdrop" @click="mutePanel.visible = false"></div>
       <div v-if="mutePanel.visible" class="mute-modal" @click.stop>
@@ -602,9 +604,9 @@
           <div class="mute-modal-title">禁言设置</div>
           <button class="mute-modal-close" aria-label="关闭" @click="mutePanel.visible = false">×</button>
         </div>
-        <div class="mute-modal-body">
+        <div class="mute-modal-body" @click="mutePickerOpen = null">
           <div class="mute-modal-target">对 {{ mutePanel.message?.username || '该成员' }} 执行禁言</div>
-          <div class="mute-picker" aria-label="禁言时长">
+          <div ref="mutePickerEl" class="mute-picker" aria-label="禁言时长">
             <div v-for="field in MUTE_DURATION_FIELDS" :key="field.key"
                  class="mute-picker-field" :class="{ open: mutePickerOpen === field.key }">
               <button type="button" class="mute-picker-trigger"
@@ -615,7 +617,7 @@
                 <span class="mute-picker-unit">{{ field.label }}</span>
                 <span class="mute-picker-chevron" aria-hidden="true"></span>
               </button>
-              <div v-if="mutePickerOpen === field.key" ref="mutePickerMenuEl" class="mute-picker-menu" role="listbox">
+              <div v-if="mutePickerOpen === field.key" class="mute-picker-menu" role="listbox">
                 <button v-for="value in field.options" :key="field.key + '-' + value" type="button"
                         class="mute-picker-option" :class="{ selected: muteDuration[field.key] === value }"
                         role="option" :aria-selected="muteDuration[field.key] === value"
@@ -649,7 +651,10 @@ import GroupAvatarRenderer from '../lib/GroupAvatarRenderer.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
 import ForwardMessageCard from '../components/ForwardMessageCard.vue'
+import ChatBackground from '../components/ChatBackground.vue'
 import UserProfileForm from '../components/UserProfileForm.vue'
+import GroupMemberDialog from '../components/GroupMemberDialog.vue'
+import GroupBlacklistPanel from '../components/GroupBlacklistPanel.vue'
 
 const router = useRouter()
 
@@ -688,6 +693,7 @@ const msgType = ref('text')
 const imageData = ref(null)
 const pastePreview = ref(null)
 const replyTo = ref(null)
+const passiveMode = ref(false)
 const refMode = ref(false)
 
 const COMPOSER_MIN_HEIGHT = 36
@@ -715,15 +721,23 @@ const newFunctionKey = ref('')
 const convStats = ref(null)
 const convStatsError = ref('')
 const clearForm = reactive({ mode: 'all', count: 100, start: '', end: '', loading: false })
-const orphanCleanup = reactive({
-  state: 'idle', phase: '等待开始', running: false, progress: 0,
-  totalGroups: 0, scannedGroups: 0, orphanedGroups: 0,
-  orphanedRecords: 0, processedGroups: 0, deletedRecords: 0,
-  deletedGroupIds: [], error: null, startedAt: null, finishedAt: null
-})
 const muteState = ref(null)
 const muteStateLoading = ref(false)
 const muteStateError = ref('')
+const memberInfoTarget = ref(null)
+
+function muteFromMemberInfo(member) {
+  memberInfoTarget.value = null
+  openMutePanel(member)
+}
+
+function memberRemoved(member) {
+  memberInfoTarget.value = null
+  const result = member.blacklistFailed
+    ? '，但加入群黑名单失败'
+    : member.addToMemberBlacklist ? '，并加入群黑名单' : ''
+  showNotice(`已将 ${member.username || '该成员'} 踢出群聊${result}`)
+}
 
 // ── 用户档案（私聊对端 / 群成员）──
 const profileTarget = ref('')
@@ -763,8 +777,6 @@ const composerRef = ref(null)
 
 let eventSource = null
 let convRefreshTimer = null
-let orphanCleanupTimer = null
-let orphanCleanupObservedRunning = false
 
 const activeConv = computed(() =>
   active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
@@ -836,12 +848,38 @@ const memberSections = computed(() => {
 
 const orderedMessages = computed(() => [...messages.value].reverse())
 const hasMore = computed(() => messages.value.length < totalMessages.value)
-const orphanCleanupProgress = computed(() => Math.max(0, Math.min(100, Number(orphanCleanup.progress) || 0)))
 
 const canSend = computed(() => {
   if (!active.value || sending.value) return false
   if (msgType.value === 'image') return !!imageData.value
   return !!draft.value.trim()
+})
+
+// 只开放 GroupChat / C2CChat 现有方法支持的组合。
+const passiveDisabledReason = computed(() => {
+  if (replyTo.value && (isMe(replyTo.value) || !replyTo.value.messageOpenId)) return '该消息不能作为被动回复的来源'
+  if (active.value?.type === 'c2c' && refMode.value) return '私聊暂不支持同时发送被动消息和引用'
+  return ''
+})
+
+const referenceDisabledReason = computed(() => {
+  if (msgType.value !== 'text') return '当前仅文本消息支持引用'
+  if (replyTo.value && !replyTo.value.refIdx) return '所选消息缺少引用索引，无法附带引用'
+  if (active.value?.type === 'c2c' && passiveMode.value) return '私聊暂不支持同时发送被动消息和引用'
+  return ''
+})
+
+const sendModeHint = computed(() => {
+  if (msgType.value === 'stream' && !passiveMode.value) return '流式消息需开启被动消息，并选择来源消息'
+  if ((passiveMode.value || refMode.value) && !replyTo.value) return '请右键消息，选择「引用」指定来源'
+  if (replyTo.value && !passiveMode.value && !refMode.value) return '未开启被动消息或引用，将按普通消息发送'
+  return ''
+})
+
+watch([msgType, () => active.value?.type, replyTo], () => {
+  if (msgType.value !== 'text' || (replyTo.value && !replyTo.value.refIdx)) refMode.value = false
+  if (replyTo.value && (isMe(replyTo.value) || !replyTo.value.messageOpenId)) passiveMode.value = false
+  if (active.value?.type === 'c2c' && passiveMode.value) refMode.value = false
 })
 
 const composerPlaceholder = computed(() => {
@@ -863,7 +901,6 @@ onMounted(async () => {
   loadLayout()
   await loadConfig()
   await Promise.all([loadConversations(), loadPinned()])
-  loadOrphanedGroupCleanupStatus()
   connectSse()
   applyDeepLink()
 })
@@ -873,7 +910,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', clampListWidth)
   if (eventSource) eventSource.close()
   if (convRefreshTimer) clearTimeout(convRefreshTimer)
-  if (orphanCleanupTimer) clearTimeout(orphanCleanupTimer)
   if (highlightTimer) clearTimeout(highlightTimer)
   if (noticeTimer) clearTimeout(noticeTimer)
   stopComposerResize()
@@ -1234,6 +1270,7 @@ async function selectConv(c) {
   cancelReply()
   ctxMenu.visible = false
   mutePanel.visible = false
+  memberInfoTarget.value = null
   closePanel()
   members.value = []
   memberSearch.value = ''
@@ -1565,63 +1602,6 @@ async function clearCurrentConversation() {
   }
 }
 
-function applyOrphanCleanupStatus(data) {
-  if (!data) return
-  Object.assign(orphanCleanup, data)
-  orphanCleanup.deletedGroupIds = Array.isArray(data.deletedGroupIds) ? data.deletedGroupIds : []
-}
-
-function scheduleOrphanCleanupPoll() {
-  if (orphanCleanupTimer) clearTimeout(orphanCleanupTimer)
-  orphanCleanupTimer = setTimeout(loadOrphanedGroupCleanupStatus, 700)
-}
-
-async function loadOrphanedGroupCleanupStatus() {
-  const wasObservedRunning = orphanCleanupObservedRunning
-  try {
-    const data = await api('/chat/cleanup/orphaned-groups')
-    applyOrphanCleanupStatus(data)
-    if (orphanCleanup.running) {
-      orphanCleanupObservedRunning = true
-      scheduleOrphanCleanupPoll()
-      return
-    }
-    orphanCleanupTimer = null
-    if (wasObservedRunning) {
-      orphanCleanupObservedRunning = false
-      await loadConversations()
-      if (orphanCleanup.state === 'completed') {
-        if (active.value?.type === 'group' && orphanCleanup.deletedGroupIds.includes(active.value.openId)) {
-          active.value = null
-          messages.value = []
-          totalMessages.value = 0
-          currentPage.value = 0
-          mobileChatOpen.value = false
-          closePanel()
-        }
-        showNotice(`扫描完成，清理 ${orphanCleanup.orphanedGroups} 个群、${orphanCleanup.deletedRecords} 条记录`)
-      } else if (orphanCleanup.error) {
-        showNotice(orphanCleanup.error)
-      }
-    }
-  } catch (error) {
-    orphanCleanupTimer = null
-    if (orphanCleanupObservedRunning) scheduleOrphanCleanupPoll()
-  }
-}
-
-async function startOrphanedGroupCleanup() {
-  if (orphanCleanup.running) return
-  if (!confirm('确认扫描全部群聊记录，并清理机器人已退出群的记录吗？统计数据会先归档，聊天记录删除后无法恢复。')) return
-  try {
-    const data = await api('/chat/cleanup/orphaned-groups', { method: 'POST' })
-    applyOrphanCleanupStatus(data)
-    orphanCleanupObservedRunning = orphanCleanup.running
-    if (orphanCleanup.running) scheduleOrphanCleanupPoll()
-  } catch (error) {
-    showNotice(error.message || '无法启动清理任务')
-  }
-}
 
 // ── 用户档案（群成员和私聊对端共用一套 /c2c/{id}/profile）──
 
@@ -1826,12 +1806,28 @@ function connectSse() {
 
 async function sendMessage() {
   if (!canSend.value) return
+  if ((passiveMode.value || refMode.value) && !replyTo.value) {
+    showNotice('请先右键消息，选择「引用」指定来源')
+    return
+  }
+  if (passiveMode.value && passiveDisabledReason.value) {
+    showNotice(passiveDisabledReason.value)
+    return
+  }
+  if (refMode.value && referenceDisabledReason.value) {
+    showNotice(referenceDisabledReason.value)
+    return
+  }
+  if (msgType.value === 'stream' && !passiveMode.value) {
+    showNotice('流式消息需要开启被动消息')
+    return
+  }
   sending.value = true
   const type = active.value.type
   try {
     if (msgType.value === 'stream' && type === 'c2c') {
       const body = { userOpenId: active.value.openId, content: draft.value }
-      if (replyTo.value) body.replyMessageId = replyTo.value.messageOpenId
+      if (passiveMode.value) body.replyMessageId = replyTo.value.messageOpenId
       await api('/c2c/stream', { method: 'POST', body: JSON.stringify(body) })
     } else {
       const body = { msgType: msgType.value, content: draft.value.trim() }
@@ -1846,13 +1842,13 @@ async function sendMessage() {
       }
       if (replyTo.value) {
         if (refMode.value) {
-          // 引用回复：后端用 refMessageId 走 GroupChat/C2CChat.refMessage，
-          // 同时要把来源的展示数据一起带上，否则历史里那条引用块是空的
+          // 引用展示信息与被动回复 ID 分别传递，群聊文本允许同时启用。
           body.refMessageId = replyTo.value.refIdx
           body.refAuthor = replyTo.value.username || ''
           body.refContent = replyTo.value.content || ''
           body.refAttachments = replyTo.value.attachments || null
-        } else {
+        }
+        if (passiveMode.value) {
           body.replyMessageId = replyTo.value.messageOpenId
         }
       }
@@ -1919,19 +1915,14 @@ function onContextMenu(e, message) {
   ctxMenu.message = message
 }
 
-function startReply(message) {
+function selectReplyTarget(message) {
   replyTo.value = message
-  refMode.value = false
-}
-
-// 引用回复：带 message_reference 主动发，来源消息会显示成可点的引用块
-function startRefReply(message) {
-  replyTo.value = message
-  refMode.value = true
+  nextTick(() => composerRef.value?.focus())
 }
 
 function cancelReply() {
   replyTo.value = null
+  passiveMode.value = false
   refMode.value = false
 }
 
@@ -1947,7 +1938,7 @@ function atUser(message) {
 // 禁言弹窗：老 QQ 风格四段时长选择，提交时换算为后端需要的总秒数
 const mutePanel = reactive({ visible: false, message: null })
 const mutePickerOpen = ref(null)
-const mutePickerMenuEl = ref(null)
+const mutePickerEl = ref(null)
 const muteDuration = reactive({ days: 0, hours: 1, minutes: 0, seconds: 0 })
 const MUTE_DURATION_FIELDS = [
   { key: 'days', label: '天', options: Array.from({ length: 31 }, (_, i) => i) },
@@ -1981,7 +1972,7 @@ function toggleMutePicker(key) {
   mutePickerOpen.value = mutePickerOpen.value === key ? null : key
   if (mutePickerOpen.value) {
     nextTick(() => {
-      const menu = mutePickerMenuEl.value
+      const menu = mutePickerEl.value?.querySelector('.mute-picker-menu')
       if (!menu) return
       const selected = menu.querySelector('.mute-picker-option.selected')
       if (selected) {
@@ -1996,6 +1987,7 @@ function selectMuteValue(key, value) {
   mutePickerOpen.value = null
 }
 function openMutePanel(message) {
+  mutePickerOpen.value = null
   mutePanel.message = message
   muteDuration.days = 0
   muteDuration.hours = 1

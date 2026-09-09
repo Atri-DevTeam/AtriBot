@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.sql.Types;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -135,18 +136,35 @@ public class GroupRepository {
     }
 
     /**
-     * 删除群数据
+     * 在同一事务中删除群数据及功能配置。
      */
     public static boolean deleteGroup(String groupOpenId) {
         String sql = "DELETE FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
+        String functionSql = "DELETE FROM `" + GROUP_FUNCTION_TABLE + "` WHERE group_openId = ?";
 
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            ps.executeUpdate();
-            return true;
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                try (var ps = con.prepareStatement(sql)) {
+                    ps.setString(1, groupOpenId);
+                    ps.executeUpdate();
+                }
+                try (var ps = con.prepareStatement(functionSql)) {
+                    ps.setString(1, groupOpenId);
+                    ps.executeUpdate();
+                }
+                con.commit();
+                return true;
+            } catch (SQLException e) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                throw e;
+            }
         } catch (Exception e) {
-            log.error("删除群数据失败: {}", e.getMessage());
+            log.error("删除群 {} 的数据及功能配置失败", groupOpenId, e);
             return false;
         }
     }
@@ -460,6 +478,15 @@ public class GroupRepository {
      * 读取群入群欢迎个性化配置 JSON 字符串，不存在返回 null
      */
     public static String getJoinWelcomeConfigJson(String groupOpenId) {
+        try {
+            return getJoinWelcomeConfigJsonOrThrow(groupOpenId);
+        } catch (SQLException e) {
+            log.error("读取群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
+            return null;
+        }
+    }
+
+    public static String getJoinWelcomeConfigJsonOrThrow(String groupOpenId) throws SQLException {
         String sql = "SELECT config FROM `" + GROUP_JOIN_WELCOME_TABLE + "` WHERE group_openId = ?";
 
         try (var con = DatabaseManager.getConnection();
@@ -469,8 +496,6 @@ public class GroupRepository {
             if (rs.next()) {
                 return rs.getString("config");
             }
-        } catch (Exception e) {
-            log.error("读取群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
         }
         return null;
     }

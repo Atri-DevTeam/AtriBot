@@ -1,6 +1,18 @@
 const TOP_SEPARATOR = /^=== 消息 (\d+) ===$/
 const NESTED_SEPARATOR = /^--- 第(\d+)条 ---$/
 
+export function forwardTitle(title) {
+  const value = String(title || '').trim()
+  return value.replace(/^\[([^\]\n]*聊天记录)\]$/, '$1') || '聊天记录'
+}
+
+export function forwardSummary(item) {
+  if (item.type === '合并转发消息' || item.forward?.length) return '[聊天记录]'
+  const content = String(item.content || '').replace(/\s+/g, ' ').trim()
+  const attachments = (item.attachments || []).map(attachment => `[${attachment.type || '附件'}]`).join(' ')
+  return [content, attachments, item.card ? `[${item.card.name || '卡片消息'}]` : ''].filter(Boolean).join(' ') || `[${item.type || '消息'}]`
+}
+
 function separatorIndent(level) {
   return ' '.repeat(4 * Math.max(0, level - 1))
 }
@@ -166,4 +178,3 @@ export function parseForwardContent(content) {
   if (!parsed.items.length) return null
   return { title, items: parsed.items }
 }
-

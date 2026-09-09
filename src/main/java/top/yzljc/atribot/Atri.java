@@ -28,6 +28,7 @@ import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.function.admin.*;
+import top.yzljc.atribot.function.admin.ema.EmaCommand;
 import top.yzljc.atribot.function.command.*;
 import top.yzljc.atribot.function.command.HelpCommand;
 import top.yzljc.atribot.function.games.ClickTrainGame;
@@ -311,6 +312,7 @@ public class Atri {
         CommandManager.getCommand("空调电表").setExecutor(new TufeElectricQueryCommand(1, "空调电表", "空调电表"));
         CommandManager.getCommand("sign").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
+        CommandManager.getCommand("ema").setExecutor(new EmaCommand());
         CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
         CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());

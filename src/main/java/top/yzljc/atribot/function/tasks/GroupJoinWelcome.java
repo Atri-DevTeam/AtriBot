@@ -49,7 +49,10 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
      * 群是否配置了个性化入群欢迎（文本与键盘任一存在即视为已配置）
      */
     public static boolean hasCustomWelcome(String groupOpenId) {
-        ObjectNode config = loadWelcomeConfig(groupOpenId);
+        return hasCustomWelcome(loadWelcomeConfig(groupOpenId));
+    }
+
+    private static boolean hasCustomWelcome(ObjectNode config) {
         if (config == null) {
             return false;
         }
@@ -77,7 +80,10 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
      * TC.keyboard 序列化，返回可直接传给 sendMessage 的 keyboard 对象；未配置返回 null
      */
     public static Object getWelcomeKeyboard(String groupOpenId) {
-        ObjectNode config = loadWelcomeConfig(groupOpenId);
+        return buildWelcomeKeyboard(loadWelcomeConfig(groupOpenId));
+    }
+
+    public static Object buildWelcomeKeyboard(ObjectNode config) {
         if (config == null) {
             return null;
         }
@@ -98,7 +104,9 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
                     row.add(deserializeButton(btnNode));
                 }
             }
-            layout.add(row);
+            if (!row.isEmpty()) {
+                layout.add(row);
+            }
         }
         if (layout.isEmpty()) {
             return null;
@@ -199,6 +207,9 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
         }
         node.put("style", btn.getStyle().name());
         node.put("type", btn.getActionType().name());
+        if (btn.getButtonGroupId() != null) {
+            node.put("button_group_id", btn.getButtonGroupId());
+        }
         if (btn.getPermissionType() != PermissionType.ALL) {
             node.put("permission", btn.getPermissionType().name());
         }
@@ -237,6 +248,9 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
             btn.setReply(true);
         }
         btn.setPermissionType(parseEnum(node.path("permission").asText("ALL"), PermissionType.class, PermissionType.ALL));
+        if (node.path("button_group_id").isTextual()) {
+            btn.setButtonGroupId(node.path("button_group_id").asText());
+        }
 
         JsonNode ids = node.path("allowed_open_ids");
         if (ids.isArray() && !ids.isEmpty()) {
@@ -287,7 +301,8 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
             return;
         }
 
-        if (!hasCustomWelcome(event.getGroupOpenId())) {
+        ObjectNode welcomeConfig = loadWelcomeConfig(event.getGroupOpenId());
+        if (!hasCustomWelcome(welcomeConfig)) {
             // Guided by GordonHim
             String url = ResourcesProperties.WELCOME_IMG;
             String welStr = "欢迎新人喵~";
@@ -315,12 +330,10 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
             );
             event.sendMessage(md, buttons);
         } else {
-            String text = getWelcomeText(event.getGroupOpenId());
-            Object keyboard = getWelcomeKeyboard(event.getGroupOpenId());
-            if (text != null) {
-                String message = Markdown.at(event.getMemberOpenId()) + " " + text;
-                event.sendMessage(TC.md(message), keyboard);
-            }
+            String text = welcomeConfig.path("text").asText("");
+            Object keyboard = buildWelcomeKeyboard(welcomeConfig);
+            String message = Markdown.at(event.getMemberOpenId()) + (text.isBlank() ? "" : " " + text);
+            event.sendMessage(TC.md(message), keyboard);
         }
     }
 

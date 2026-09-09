@@ -17,6 +17,7 @@ import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.qq.QQBot;
 
@@ -59,8 +60,8 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
                             ),
                             List.of(
 //                                    new Button("l1", "社区交流", "https://qm.qq.com/q/UXrrpLsICG", true, ButtonStyle.BLUE, ButtonType.LINK),
-                                    new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=4019803690&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
-                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=1904114485", true, ButtonStyle.BLUE, ButtonType.LINK)
+                                    new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
+                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + Config.getInstance().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
                             )
                     )
             );

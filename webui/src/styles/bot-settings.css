@@ -258,11 +258,8 @@
   transform: translate(-50%, -50%);
   width: 28px;
   height: 28px;
-  padding: 3px;
   border-radius: 50%;
   object-fit: cover;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
 }
 
 .bs-qr-title {
@@ -393,6 +390,11 @@
 .bs-reset-btn {
   min-height: 32px;
 }
+
+.bs-background-opacity { gap: 12px; }
+.bs-background-opacity input { width: 160px; max-width: 100%; margin: 0; accent-color: #0099ff; cursor: pointer; }
+.bs-background-opacity input:disabled { cursor: default; opacity: .45; }
+.bs-background-opacity output { min-width: 4ch; color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; text-align: right; }
 
 /* ---- 手机端 ---- */
 

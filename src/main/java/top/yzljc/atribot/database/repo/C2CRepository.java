@@ -202,18 +202,42 @@ public class C2CRepository {
     }
 
     /**
-     * 删除用户数据
+     * 在同一事务中删除用户资料及私聊功能配置。
      */
     public static boolean delete(String userOpenId) {
+        if (userOpenId == null || userOpenId.isBlank()) {
+            log.warn("拒绝删除用户数据：用户 OpenID 为空");
+            return false;
+        }
         String sql = "DELETE FROM `" + USER_TABLE + "` WHERE user_openId = ?";
+        String functionSql = "DELETE FROM `" + C2C_FUNCTION_TABLE + "` WHERE user_openId = ?";
 
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userOpenId);
-            ps.executeUpdate();
-            return true;
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                int userRows;
+                int functionRows;
+                try (var ps = con.prepareStatement(sql)) {
+                    ps.setString(1, userOpenId);
+                    userRows = ps.executeUpdate();
+                }
+                try (var ps = con.prepareStatement(functionSql)) {
+                    ps.setString(1, userOpenId);
+                    functionRows = ps.executeUpdate();
+                }
+                con.commit();
+                log.info("清理私聊用户 {} 完成：用户资料 {} 行，功能配置 {} 行", userOpenId, userRows, functionRows);
+                return true;
+            } catch (SQLException e) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                throw e;
+            }
         } catch (Exception e) {
-            log.error("删除用户数据失败: {}", e.getMessage());
+            log.error("删除私聊用户 {} 的资料及功能配置失败", userOpenId, e);
             return false;
         }
     }

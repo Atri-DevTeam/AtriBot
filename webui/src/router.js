@@ -85,6 +85,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/join-welcome',
+      name: 'joinWelcome',
+      component: () => import('./views/JoinWelcomeView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/errors',
       name: 'errors',
       component: () => import('./views/ErrorsView.vue'),
