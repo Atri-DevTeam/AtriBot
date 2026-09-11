@@ -8,7 +8,7 @@ plugins {
     `maven-publish`
     application
     id("com.gradleup.shadow") version "9.6.1"
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.4.20"
 }
 
 group = "top.yzljc"
@@ -42,7 +42,7 @@ dependencies {
     api("ch.qos.logback:logback-classic:1.6.3")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
-    api("org.jline:jline:4.4.1")
+    api("org.jline:jline:4.4.3")
 
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
