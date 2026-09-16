@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class OfficialUsers {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    public static final String BILIBILI_UID_SETTING = "bv_uid";
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
@@ -348,25 +349,19 @@ public class OfficialUsers {
      * （字符串、数字、布尔、对象、数组等）。原有其他字段不受影响。
      */
     public static boolean setUserSetting(String userOpenId, String setting, Object data) {
-        String jsonStr = C2CRepository.getUserSettingsJson(userOpenId);
-        if (jsonStr == null || jsonStr.isBlank()) {
-            jsonStr = "{}";
-        }
-
-        JsonNode settings;
         try {
-            settings = objectMapper.readTree(jsonStr);
-            if (!settings.isObject()) {
-                log.error("用户 {} 的偏好设置不是 JSON 对象，拒绝覆盖以免丢失数据", userOpenId);
-                return false;
-            }
+            return C2CRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
+                    BILIBILI_UID_SETTING.equals(setting)) == C2CRepository.SettingWriteResult.SAVED;
         } catch (Exception e) {
-            log.error("解析用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
+            log.error("保存用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
             return false;
         }
+    }
 
-        ((ObjectNode) settings).set(setting, objectMapper.valueToTree(data));
-        return C2CRepository.saveUserSettingsJson(userOpenId, settings.toString());
+    /** 关注校验通过后调用；一个用户只能首次绑定，同一个 UID 只能绑定一个用户。 */
+    public static C2CRepository.SettingWriteResult bindBilibiliUid(String userOpenId, long uid) {
+        if (uid <= 0) return C2CRepository.SettingWriteResult.FAILED;
+        return C2CRepository.setUserSetting(userOpenId, BILIBILI_UID_SETTING, Long.toString(uid), true);
     }
 
     private static Set<String> parsePermissions(String permissionsString) {

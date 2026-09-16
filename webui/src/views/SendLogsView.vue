@@ -2,7 +2,7 @@
   <div class="shell">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
-        <button class="ghost-button" :disabled="loading" @click="refresh">刷新</button>
+        <button class="ghost-button" :disabled="listLoading || detailLoading" @click="refresh">刷新</button>
         <button class="ghost-button" @click="logout">退出</button>
       </template>
     </AppSidebar>
@@ -45,7 +45,7 @@
               </div>
               <div class="errors-metric">
                 <dt class="errors-metric-label">当前结果</dt>
-                <dd class="errors-metric-value">{{ mode === 'detail' ? 1 : total }}</dd>
+                <dd class="errors-metric-value">{{ mode === 'detail' ? 1 : contextAnchor ? contextItems.length : total }}</dd>
               </div>
             </dl>
           </div>
@@ -55,10 +55,10 @@
               v-for="tab in tabs"
               :key="tab.type"
               class="sendlogs-tab"
-              :class="{ active: activeType === tab.type }"
+              :class="{ active: !contextAnchor && activeType === tab.type }"
               type="button"
               role="tab"
-              :aria-selected="activeType === tab.type"
+              :aria-selected="!contextAnchor && activeType === tab.type"
               @click="selectType(tab.type)"
             >
               <span>{{ tab.label }}</span>
@@ -75,16 +75,17 @@
               @keyup.enter="doSearch"
             />
             <button class="primary-button errors-search-btn" @click="doSearch">查询</button>
-            <button v-if="keyword || mode === 'detail'" class="ghost-button errors-search-btn" @click="resetSearch">
+            <button v-if="keyword || contextAnchor || mode === 'detail'" class="ghost-button errors-search-btn" @click="resetSearch">
               重置
             </button>
           </div>
-          <p class="errors-search-hint">请求上报数据记录</p>
+          <p class="errors-search-hint">请求上报数据记录 · 点击日志查看详情，点击“查看临近”排查前后事件</p>
 
           <template v-if="mode === 'detail'">
             <div class="errors-detail-bar">
-              <button class="ghost-button" @click="backToList">返回列表</button>
+              <button class="ghost-button" @click="backToList">{{ contextAnchor ? '返回临近事件' : '返回列表' }}</button>
               <span class="errors-detail-crumb">日志详情</span>
+              <button v-if="detail" class="ghost-button" @click="openContext(detail.id)">查看临近事件</button>
             </div>
 
             <div v-if="detailLoading" class="empty-state">加载中...</div>
@@ -95,7 +96,7 @@
               <header class="errors-detail-head">
                 <span class="sendlogs-type" :class="typeClass(detail.entryType)">{{ typeLabel(detail.entryType) }}</span>
                 <h3 class="errors-detail-message">{{ detail.scene || '官方接口' }}</h3>
-                <span class="errors-detail-time">{{ formatTime(detail.createTime) }}</span>
+                <span class="errors-detail-time">{{ formatLogTime(detail.createTime) }}</span>
               </header>
 
               <dl class="errors-fields">
@@ -137,9 +138,13 @@
           </template>
 
           <template v-else>
-            <div v-if="loading" class="empty-state">加载中...</div>
-            <div v-else-if="error" class="empty-state error">{{ error }}</div>
-            <div v-else-if="items.length === 0" class="empty-state">暂无数据</div>
+            <div v-if="contextAnchor" class="sendlogs-context-bar">
+              <button class="ghost-button" @click="closeContext">{{ keyword ? '返回搜索结果' : '返回列表' }}</button>
+              <span>日志 #{{ contextAnchor }} 的临近事件：前后各最多 10 条，包含全部类型，不受搜索条件限制，最新在前。</span>
+            </div>
+            <div v-if="listLoading" class="empty-state">加载中...</div>
+            <div v-else-if="listError" class="empty-state error">{{ listError }}</div>
+            <div v-else-if="displayItems.length === 0" class="empty-state">暂无数据</div>
 
             <div v-else class="errors-surface">
               <div class="sendlogs-grid sendlogs-thead">
@@ -148,13 +153,15 @@
                 <span>接口</span>
                 <span>状态</span>
                 <span>时间</span>
+                <span class="sendlogs-actions">操作</span>
               </div>
 
               <div class="errors-list">
                 <article
-                  v-for="item in items"
+                  v-for="item in displayItems"
                   :key="item.id"
                   class="sendlogs-grid sendlogs-row"
+                  :class="{ 'sendlogs-row--anchor': item.id === contextAnchor }"
                   @click="openDetail(item.id)"
                 >
                   <span>
@@ -168,15 +175,32 @@
                   <span class="sendlogs-status" :class="{ danger: item.entryType === 'ERROR' }">
                     {{ statusText(item) }}
                   </span>
-                  <span class="sendlogs-time" :title="formatTime(item.createTime)">{{ relativeTime(item.createTime) }}</span>
+                  <span class="sendlogs-time" :title="formatLogTime(item.createTime)">
+                    <b v-if="item.id === contextAnchor" class="sendlogs-anchor-label">定位日志</b>
+                    {{ contextAnchor ? formatLogTime(item.createTime) : relativeTime(item.createTime) }}
+                  </span>
+                  <span class="sendlogs-actions">
+                    <button class="ghost-button" @click.stop="openContext(item.id)">查看临近</button>
+                  </span>
                 </article>
               </div>
             </div>
 
-            <div v-if="!loading && !error && totalPages > 1" class="errors-pagination">
+            <div v-if="contextAnchor && !listLoading && !listError" class="errors-pagination sendlogs-pagination">
+              <button class="ghost-button" :disabled="!hasNewer" @click="openContext(contextItems[0].id)">查看更晚事件</button>
+              <span class="errors-pagination-label">共 {{ contextItems.length }} 条</span>
+              <button class="ghost-button" :disabled="!hasOlder" @click="openContext(contextItems[contextItems.length - 1].id)">查看更早事件</button>
+            </div>
+            <div v-if="!contextAnchor && !loading && !error && totalPages > 1" class="errors-pagination sendlogs-pagination">
               <button class="ghost-button" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
               <span class="errors-pagination-label">第 {{ page }} / {{ totalPages }} 页</span>
               <button class="ghost-button" :disabled="page >= totalPages" @click="goPage(page + 1)">下一页</button>
+              <form class="sendlogs-page-jump" @submit.prevent="goPage(pageInput)">
+                <label for="sendlogs-page-input">跳至</label>
+                <input id="sendlogs-page-input" v-model="pageInput" type="number" min="1" :max="totalPages" step="1" required />
+                <span>页</span>
+                <button class="ghost-button" type="submit">跳转</button>
+              </form>
             </div>
           </template>
         </div>
@@ -186,11 +210,11 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, onBeforeUnmount, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
-import {formatTime, relativeTime} from '../lib/time.js'
+import {formatTime, parseTime, relativeTime} from '../lib/time.js'
 
 const router = useRouter()
 const botName = ref('AtriBot')
@@ -211,6 +235,7 @@ const error = ref('')
 const items = ref([])
 const total = ref(0)
 const page = ref(1)
+const pageInput = ref(1)
 const pageSize = 20
 const mode = ref('list')
 const detail = ref(null)
@@ -220,6 +245,18 @@ const searchInput = ref('')
 const keyword = ref('')
 const stats = reactive({all: 0, send: 0, response: 0, error: 0})
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+const contextAnchor = ref(null)
+const contextItems = ref([])
+const contextLoading = ref(false)
+const contextError = ref('')
+const hasNewer = ref(false)
+const hasOlder = ref(false)
+const displayItems = computed(() => contextAnchor.value ? contextItems.value : items.value)
+const listLoading = computed(() => contextAnchor.value ? contextLoading.value : loading.value)
+const listError = computed(() => contextAnchor.value ? contextError.value : error.value)
+let listRequest = 0
+let detailRequest = 0
+let contextRequest = 0
 
 async function api(path, options) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -265,6 +302,7 @@ async function fetchStats() {
 }
 
 async function fetchList() {
+  const request = ++listRequest
   loading.value = true
   error.value = ''
   try {
@@ -274,29 +312,67 @@ async function fetchList() {
     params.set('type', activeType.value)
     if (keyword.value) params.set('keyword', keyword.value)
     const data = await api(`/send-logs/list?${params.toString()}`)
+    if (request !== listRequest) return
     items.value = data.items || []
     total.value = data.total || 0
+    page.value = data.page || 1
+    pageInput.value = page.value
   } catch (e) {
+    if (request !== listRequest) return
     error.value = e.message
     items.value = []
     total.value = 0
   } finally {
-    loading.value = false
+    if (request === listRequest) loading.value = false
   }
 }
 
 async function fetchDetail(id) {
+  const request = ++detailRequest
   mode.value = 'detail'
   detail.value = null
   detailLoading.value = true
   detailError.value = ''
   try {
-    detail.value = await api(`/send-logs/${encodeURIComponent(id)}`)
+    const data = await api(`/send-logs/${encodeURIComponent(id)}`)
+    if (request === detailRequest) detail.value = data
   } catch (e) {
-    detailError.value = e.message
+    if (request === detailRequest) detailError.value = e.message
   } finally {
-    detailLoading.value = false
+    if (request === detailRequest) detailLoading.value = false
   }
+}
+
+async function openContext(id) {
+  if (!id) return
+  backToList()
+  const request = ++contextRequest
+  contextAnchor.value = id
+  contextItems.value = []
+  contextLoading.value = true
+  contextError.value = ''
+  hasNewer.value = false
+  hasOlder.value = false
+  try {
+    const data = await api(`/send-logs/${encodeURIComponent(id)}/context`)
+    if (request !== contextRequest) return
+    contextItems.value = data.items || []
+    hasNewer.value = data.hasNewer
+    hasOlder.value = data.hasOlder
+  } catch (e) {
+    if (request === contextRequest) contextError.value = e.message
+  } finally {
+    if (request === contextRequest) contextLoading.value = false
+  }
+}
+
+function closeContext() {
+  ++contextRequest
+  contextAnchor.value = null
+  contextItems.value = []
+  contextLoading.value = false
+  contextError.value = ''
+  backToList()
 }
 
 function openDetail(id) {
@@ -304,13 +380,16 @@ function openDetail(id) {
 }
 
 function backToList() {
+  ++detailRequest
+  detailLoading.value = false
   mode.value = 'list'
   detail.value = null
   detailError.value = ''
 }
 
 function selectType(type) {
-  if (activeType.value === type) return
+  if (activeType.value === type && !contextAnchor.value) return
+  closeContext()
   activeType.value = type
   mode.value = 'list'
   page.value = 1
@@ -318,6 +397,7 @@ function selectType(type) {
 }
 
 function doSearch() {
+  closeContext()
   keyword.value = searchInput.value.trim()
   mode.value = 'list'
   page.value = 1
@@ -325,6 +405,7 @@ function doSearch() {
 }
 
 function resetSearch() {
+  closeContext()
   searchInput.value = ''
   keyword.value = ''
   mode.value = 'list'
@@ -333,8 +414,11 @@ function resetSearch() {
 }
 
 function goPage(p) {
-  if (p < 1 || p > totalPages.value) return
-  page.value = p
+  const target = Number(p)
+  if (loading.value || !Number.isInteger(target) || target < 1 || target > totalPages.value) return
+  pageInput.value = target
+  if (target === page.value) return
+  page.value = target
   fetchList()
 }
 
@@ -342,6 +426,8 @@ async function refresh() {
   await fetchStats()
   if (mode.value === 'detail' && detail.value) {
     await fetchDetail(detail.value.id)
+  } else if (contextAnchor.value) {
+    await openContext(contextAnchor.value)
   } else {
     await fetchList()
   }
@@ -382,6 +468,11 @@ function shortUrl(url) {
   return String(url).replace(/^https?:\/\/[^/]+/i, '')
 }
 
+function formatLogTime(value) {
+  const date = parseTime(value)
+  return date ? `${formatTime(value)}:${String(date.getSeconds()).padStart(2, '0')}` : formatTime(value)
+}
+
 function rowSnippet(item) {
   const raw = item.entryType === 'ERROR'
     ? (item.errorReason || item.errorMessage || item.responseBody)
@@ -401,6 +492,12 @@ function pretty(value) {
     return raw
   }
 }
+
+onBeforeUnmount(() => {
+  ++listRequest
+  ++detailRequest
+  ++contextRequest
+})
 
 onMounted(async () => {
   try {

@@ -201,6 +201,14 @@ public final class AsyncGroupChat {
                         : service().sendGroupMessageAsync(groupOpenId, request));
     }
 
+    /** Audio upload failure must not be mistaken for a successful text fallback. */
+    public static CompletableFuture<String> replyAudioMessage(String groupOpenId, String msgId, String url) {
+        return ThreadManager.supplyAsync(() -> service().getMediaUploader().buildFileRequest(
+                        service().groupFileUrl(groupOpenId), FileType.AUDIO, url, "听声辨物语音", msgId, true))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null)
+                        : service().sendGroupMessageAsync(groupOpenId, request));
+    }
+
     /**
      * 异步回复群聊事件（Markdown，自动 @ 消息发送者）
      *

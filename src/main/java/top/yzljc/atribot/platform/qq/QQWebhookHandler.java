@@ -24,17 +24,30 @@ import java.util.Map;
  * @Package top.yzljc.atribot.platform.qq
  */
 @Slf4j
-public final class QQWebhookHandler {
+public final class QQWebhookHandler implements AutoCloseable {
 
     private static final int ED25519_SEED_SIZE = 32;
 
     private final String appId;
     private final String clientSecret;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final QQWebhookEventQueue eventQueue;
 
     public QQWebhookHandler(String appId, String clientSecret) {
+        this(appId, clientSecret, new QQWebhookEventQueue(
+                Math.max(1, Integer.getInteger("atribot.qq.webhook.queueCapacity", 1024)),
+                ThreadManager::execute,
+                event -> {
+                    EventLogRepository.record(event.type(), event.id(), null, event.rawPayload());
+                    WebSocketClient.dispatchEvent(event.type(), event.id(), event.data());
+                }
+        ));
+    }
+
+    QQWebhookHandler(String appId, String clientSecret, QQWebhookEventQueue eventQueue) {
         this.appId = appId == null ? "" : appId;
         this.clientSecret = clientSecret == null ? "" : clientSecret;
+        this.eventQueue = eventQueue;
     }
 
     public void handle(Context ctx) {
@@ -52,7 +65,8 @@ public final class QQWebhookHandler {
                 return;
             }
             if (op == 0) {
-                handleEvent(payload);
+                handleEvent(ctx, payload);
+                return;
             } else {
                 log.debug("[!] 未被处理的官机Webhook操作码: {}", op);
             }
@@ -90,20 +104,30 @@ public final class QQWebhookHandler {
                 .contentType("application/json");
     }
 
-    private void handleEvent(JsonNode payload) {
+    private void handleEvent(Context ctx, JsonNode payload) {
         String eventType = payload.path("t").asText(null);
         JsonNode eventData = payload.path("d");
-        if (eventType == null || eventData.isMissingNode() || eventData.isNull()) {
+        if (eventType == null || eventType.isBlank() || eventData.isMissingNode() || eventData.isNull()) {
             log.debug("QQ Webhook 事件缺少 t 或 d: {}", payload);
+            writeEventAck(ctx, 400, false);
             return;
         }
 
         String eventId = payload.path("id").asText(null);
         String rawPayload = payload.toString();
-        ThreadManager.execute(() -> {
-            EventLogRepository.record(eventType, eventId, null, rawPayload);
-            WebSocketClient.dispatchEvent(eventType, eventId, eventData);
-        });
+        boolean accepted = eventQueue.offer(new QQWebhookEventQueue.Event(
+                eventType, eventId, eventData, rawPayload));
+        writeEventAck(ctx, accepted ? 200 : 503, accepted);
+    }
+
+    private static void writeEventAck(Context ctx, int status, boolean accepted) {
+        ctx.status(status).contentType("application/json")
+                .result(accepted ? "{\"op\":12,\"d\":0}" : "{\"op\":12,\"d\":1}");
+    }
+
+    @Override
+    public void close() {
+        eventQueue.close();
     }
 
     private static byte[] deriveSeed(String secret) {

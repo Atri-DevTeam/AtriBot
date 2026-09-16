@@ -36,7 +36,9 @@ function renderInline(value) {
     const dimensions = size
       ? ` width="${Math.min(Number(size[1]), 4096)}" height="${Math.min(Number(size[2]), 4096)}"`
       : ''
-    return store(`<img src="${url}" alt="${escapeHtml(alt)}"${dimensions} loading="lazy" referrerpolicy="no-referrer">`)
+    const inlineIcon = size && Number(size[1]) > 0 && Number(size[1]) <= 48
+      && Number(size[2]) > 0 && Number(size[2]) <= 48 ? ' class="md-inline-icon"' : ''
+    return store(`<img src="${url}" alt="${escapeHtml(alt)}"${dimensions}${inlineIcon} loading="lazy" referrerpolicy="no-referrer">`)
   })
   text = text.replace(/\[([^\]]+)]\(([^\s)]+)\)/g, (_, label, rawUrl) => {
     const url = safeUrl(rawUrl)

@@ -20,6 +20,11 @@ import java.util.concurrent.ExecutionException;
  */
 public final class C2CChat {
 
+    /** Reply with audio, preserving platform errors and returning null on upload/send failure. */
+    public static String replyAudioMessage(String openId, String msgId, String url) {
+        return await(AsyncC2CChat.replyAudioMessage(openId, msgId, url));
+    }
+
     /**
      * 发送单聊纯文本主动消息
      *

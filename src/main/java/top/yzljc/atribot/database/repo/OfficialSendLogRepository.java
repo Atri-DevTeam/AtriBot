@@ -23,6 +23,10 @@ public class OfficialSendLogRepository {
     public static final String TYPE_ERROR = "ERROR";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String SUMMARY_COLUMNS = "`id`, `trace_id`, `entry_type`, `scene`, `method`, `url`, " +
+            "LEFT(`request_json`, 400) AS `request_json`, `response_status`, " +
+            "LEFT(`response_body`, 400) AS `response_body`, `error_code`, `error_reason`, " +
+            "LEFT(`error_message`, 400) AS `error_message`, `create_time`";
 
     public static void init() {
         String sql = "CREATE TABLE IF NOT EXISTS `official_send_log` (" +
@@ -74,14 +78,11 @@ public class OfficialSendLogRepository {
 
     public static List<OfficialSendLogDTO> findPaginated(int page, int pageSize, String entryType, String keyword) {
         List<Object> params = new ArrayList<>();
-        String sql = "SELECT `id`, `trace_id`, `entry_type`, `scene`, `method`, `url`, " +
-                "LEFT(`request_json`, 400) AS `request_json`, `response_status`, " +
-                "LEFT(`response_body`, 400) AS `response_body`, `error_code`, `error_reason`, " +
-                "LEFT(`error_message`, 400) AS `error_message`, `create_time` " +
+        String sql = "SELECT " + SUMMARY_COLUMNS + " " +
                 "FROM `official_send_log`" + buildWhere(entryType, keyword, params) +
                 " ORDER BY `create_time` DESC, `id` DESC LIMIT ? OFFSET ?";
         params.add(pageSize);
-        params.add((page - 1) * pageSize);
+        params.add((long) (page - 1) * pageSize);
 
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
             bind(ps, params);
@@ -97,6 +98,52 @@ public class OfficialSendLogRepository {
             return List.of();
         }
     }
+
+    /** Neighbours use the same (create_time, id) ordering as the list, without search filters. */
+    public static SendLogContext findContext(long id, int radius) throws SQLException {
+        try (var con = DatabaseManager.getConnection()) {
+            OfficialSendLogDTO anchor;
+            try (var ps = con.prepareStatement("SELECT " + SUMMARY_COLUMNS + " FROM `official_send_log` WHERE `id` = ?")) {
+                ps.setLong(1, id);
+                try (var rs = ps.executeQuery()) {
+                    if (!rs.next()) return null;
+                    anchor = rowToDTO(rs);
+                }
+            }
+            List<OfficialSendLogDTO> newer = findNeighbours(con, anchor, radius + 1, true);
+            List<OfficialSendLogDTO> older = findNeighbours(con, anchor, radius + 1, false);
+            boolean hasNewer = newer.size() > radius;
+            boolean hasOlder = older.size() > radius;
+            if (hasNewer) newer.removeLast();
+            if (hasOlder) older.removeLast();
+            List<OfficialSendLogDTO> items = new ArrayList<>(newer.reversed());
+            items.add(anchor);
+            items.addAll(older);
+            return new SendLogContext(items, hasNewer, hasOlder);
+        }
+    }
+
+    private static List<OfficialSendLogDTO> findNeighbours(java.sql.Connection con, OfficialSendLogDTO anchor,
+                                                          int limit, boolean newer) throws SQLException {
+        String comparison = newer ? ">" : "<";
+        String direction = newer ? "ASC" : "DESC";
+        String sql = "SELECT " + SUMMARY_COLUMNS + " FROM `official_send_log` WHERE `create_time` " + comparison +
+                " ? OR (`create_time` = ? AND `id` " + comparison + " ?) ORDER BY `create_time` " + direction +
+                ", `id` " + direction + " LIMIT ?";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setTimestamp(1, anchor.getCreateTime());
+            ps.setTimestamp(2, anchor.getCreateTime());
+            ps.setLong(3, anchor.getId());
+            ps.setInt(4, limit);
+            try (var rs = ps.executeQuery()) {
+                List<OfficialSendLogDTO> result = new ArrayList<>();
+                while (rs.next()) result.add(rowToDTO(rs));
+                return result;
+            }
+        }
+    }
+
+    public record SendLogContext(List<OfficialSendLogDTO> items, boolean hasNewer, boolean hasOlder) {}
 
     public static OfficialSendLogDTO findById(long id) {
         String sql = "SELECT * FROM `official_send_log` WHERE `id` = ?";

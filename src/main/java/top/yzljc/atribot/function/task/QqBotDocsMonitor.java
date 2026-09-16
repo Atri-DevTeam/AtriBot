@@ -6,10 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Markdown;
+import org.jsoup.parser.Parser;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
@@ -28,7 +26,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -51,7 +49,10 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     private static final TaskSchedule SCHEDULE = new TaskPlan(ScheduleMode.a_quarter);
     private static final URI INDEX_URI = URI.create("https://bot.q.qq.com/wiki/develop/api-v2/autogen/");
     private static final URI CHANGELOG_URI = URI.create("https://bot.q.qq.com/wiki/develop/api-v2/changelog.html");
-    private static final String DOC_PREFIX = "/wiki/develop/api-v2/autogen/";
+    private static final URI ROOT_URI = URI.create("https://bot.q.qq.com/wiki/");
+    private static final URI SITEMAP_URI = ROOT_URI.resolve("sitemap.xml");
+    private static final String DOC_PREFIX = "/wiki/";
+    private static final Pattern SDK_PATH = Pattern.compile("(?i)^/wiki/develop/[^/]*sdk(?:/|$)");
     private static final Path DATA_DIR = Path.of("data", "qqbot-docs-monitor");
     private static final Path SNAPSHOT_FILE = DATA_DIR.resolve("snapshot.json");
     private static final Path REPORT_FILE = DATA_DIR.resolve("latest-report.txt");
@@ -117,40 +118,124 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     }
 
     private static Map<String, PageSnapshot> crawlAllPages() throws Exception {
-        String indexHtml = fetch(INDEX_URI);
-        Document index = Jsoup.parse(indexHtml, INDEX_URI.toString());
-        Set<URI> urls = new LinkedHashSet<>();
+        return crawlAllPages(QqBotDocsMonitor::fetch);
+    }
+
+    @FunctionalInterface
+    interface PageFetcher {
+        FetchedPage fetch(URI uri) throws Exception;
+    }
+
+    record FetchedPage(URI uri, String html) {
+    }
+
+    static Map<String, PageSnapshot> crawlAllPages(PageFetcher fetcher) throws Exception {
+        // 站点地图覆盖没有导航入口的文档；每页的链接继续补充尚未进入站点地图的页面。
+        // 地图或任意正文抓取失败都会中止本轮，避免把不完整结果写成新的基线。
+        Set<URI> urls = readSitemap(fetcher);
+        urls.add(ROOT_URI);
         urls.add(INDEX_URI);
         urls.add(CHANGELOG_URI);
-
-        for (Element link : index.select("a[href]")) {
-            URI uri;
-            try {
-                uri = URI.create(link.absUrl("href"));
-            } catch (IllegalArgumentException ignored) {
-                continue;
-            }
-            String path = uri.getPath();
-            if (path != null && path.startsWith(DOC_PREFIX)
-                    && (path.contains("/api/") || path.contains("/event/"))
-                    && path.endsWith(".html")) {
-                urls.add(withoutFragmentAndQuery(uri));
-            }
-        }
-        if (urls.size() <= 2) {
-            throw new IOException("接口索引未解析到任何 API 或事件页面，拒绝更新快照");
-        }
-
+        var pending = new ArrayDeque<>(urls);
         Map<String, PageSnapshot> pages = new LinkedHashMap<>();
-        for (URI uri : urls) {
-            String html = uri.equals(INDEX_URI) ? indexHtml : fetch(uri);
-            PageSnapshot page = parsePage(uri, html);
-            pages.put(uri.toString(), page);
+        while (!pending.isEmpty()) {
+            URI uri = pending.removeFirst();
+            if (pages.containsKey(uri.toString())) continue;
+            FetchedPage response = fetcher.fetch(uri);
+            URI resolved = normalizePageUri(uri, response.uri().toString());
+            if (resolved == null) throw new IOException("文档重定向到监控范围之外: " + uri + " -> " + response.uri());
+            // 旧版链接常重定向到文档首页，必须使用最终地址，不能把首页当作多篇文档。
+            urls.add(resolved);
+            if (pages.containsKey(resolved.toString())) continue;
+            pages.put(resolved.toString(), parsePage(resolved, response.html()));
+            for (URI linked : discoverPageLinks(resolved, response.html())) {
+                if (urls.add(linked)) pending.addLast(linked);
+            }
         }
+//        log.info("QQ 官方文档抓取完成，共 {} 页", pages.size());
         return pages;
     }
 
-    private static String fetch(URI uri) throws Exception {
+    private static Set<URI> readSitemap(PageFetcher fetcher) throws Exception {
+        Set<URI> pages = new LinkedHashSet<>();
+        Set<URI> visited = new LinkedHashSet<>();
+        var pending = new ArrayDeque<URI>();
+        pending.add(SITEMAP_URI);
+        while (!pending.isEmpty()) {
+            URI uri = pending.removeFirst();
+            if (!visited.add(uri)) continue;
+            FetchedPage response = fetcher.fetch(uri);
+            if (!isOfficialWikiUri(response.uri())) throw new IOException("站点地图重定向到站外: " + uri);
+            Document xml = Jsoup.parse(response.html(), response.uri().toString(), Parser.xmlParser());
+            if (xml.selectFirst("urlset") != null) {
+                for (Element location : xml.select("urlset > url > loc")) {
+                    URI page = normalizePageUri(uri, location.text());
+                    if (page != null) pages.add(page);
+                }
+            } else if (xml.selectFirst("sitemapindex") != null) {
+                for (Element location : xml.select("sitemapindex > sitemap > loc")) {
+                    URI child = uri.resolve(location.text().strip()).normalize();
+                    if (!isOfficialWikiUri(child) || !child.getPath().endsWith(".xml")) {
+                        throw new IOException("站点地图地址不受支持: " + child);
+                    }
+                    pending.addLast(child);
+                }
+            } else {
+                throw new IOException("站点地图格式无效: " + uri);
+            }
+        }
+        if (pages.isEmpty()) throw new IOException("站点地图未解析到文档，拒绝更新快照");
+        return pages;
+    }
+
+    static Set<URI> discoverPageLinks(URI base, String html) {
+        Set<URI> urls = new LinkedHashSet<>();
+        for (Element link : Jsoup.parse(html, base.toString()).select("a[href]")) {
+            URI uri = normalizePageUri(base, link.attr("href"));
+            if (uri != null) urls.add(uri);
+        }
+        return urls;
+    }
+
+    static URI normalizePageUri(URI base, String href) {
+        try {
+            if (href == null || href.isBlank()) return null;
+            URI uri = base.resolve(href.strip()).normalize();
+            if (!isOfficialWikiUri(uri)) return null;
+            String path = uri.getPath();
+            if (SDK_PATH.matcher(path).find() || path.equals("/wiki/404.html")) return null;
+            if (!(path.endsWith("/") || path.endsWith(".html"))) return null;
+            String rawPath = uri.getRawPath();
+            if (rawPath.endsWith("/index.html")) rawPath = rawPath.substring(0, rawPath.length() - 10);
+            return URI.create("https://" + ROOT_URI.getHost() + rawPath);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private static boolean isOfficialWikiUri(URI uri) {
+        return ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                && ROOT_URI.getHost().equalsIgnoreCase(uri.getHost())
+                && uri.getUserInfo() == null
+                && (uri.getPort() == -1 || ("https".equalsIgnoreCase(uri.getScheme()) ? uri.getPort() == 443 : uri.getPort() == 80))
+                && uri.getPath() != null && uri.getPath().startsWith(DOC_PREFIX);
+    }
+
+    /** 手动导出全站正文，便于核对覆盖范围；不修改运行中的基线，也不触发订阅推送。 */
+    public static void main(String[] args) throws Exception {
+        if (args.length != 2 || !"--export".equals(args[0])) {
+            throw new IllegalArgumentException("用法: QqBotDocsMonitor --export <输出目录>");
+        }
+        Path directory = Path.of(args[1]);
+        Map<String, PageSnapshot> pages = crawlAllPages();
+        Files.createDirectories(directory);
+        JSON.writeValue(directory.resolve("snapshot.json").toFile(),
+                new SnapshotFile(Instant.now().toString(), pages));
+        Files.write(directory.resolve("pages.txt"), pages.keySet().stream().sorted().toList(), StandardCharsets.UTF_8);
+        log.info("已导出 {} 页官方文档至 {}", pages.size(), directory.toAbsolutePath());
+    }
+
+    private static FetchedPage fetch(URI uri) throws Exception {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(30))
                 .header("User-Agent", "AtriMeow-QqBotDocsMonitor/1.0")
@@ -163,7 +248,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
                 HttpResponse<String> response = HTTP.send(request,
                         HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
                 if (response.statusCode() >= 200 && response.statusCode() < 300 && !response.body().isBlank()) {
-                    return response.body();
+                    return new FetchedPage(response.uri(), response.body());
                 }
                 last = new IOException("HTTP " + response.statusCode() + " from " + uri);
             } catch (IOException e) {
@@ -174,7 +259,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         throw last == null ? new IOException("无法抓取 " + uri) : last;
     }
 
-    private static PageSnapshot parsePage(URI uri, String html) throws Exception {
+    static PageSnapshot parsePage(URI uri, String html) throws Exception {
         Document document = Jsoup.parse(html, uri.toString());
         String title = document.selectFirst("h1") != null
                 ? document.selectFirst("h1").text().trim()
@@ -207,7 +292,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         return String.join("\n", lines);
     }
 
-    private static ChangeSet compare(Map<String, PageSnapshot> oldPages, Map<String, PageSnapshot> newPages) {
+    static ChangeSet compare(Map<String, PageSnapshot> oldPages, Map<String, PageSnapshot> newPages) {
         List<String> added = newPages.keySet().stream().filter(url -> !oldPages.containsKey(url)).sorted().toList();
         List<String> removed = oldPages.keySet().stream().filter(url -> !newPages.containsKey(url)).sorted().toList();
         List<String> modified = newPages.keySet().stream()
@@ -217,7 +302,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         return new ChangeSet(added, modified, removed);
     }
 
-    private static String buildReport(ChangeSet changes, Map<String, PageSnapshot> oldPages,
+    static String buildReport(ChangeSet changes, Map<String, PageSnapshot> oldPages,
                                       Map<String, PageSnapshot> newPages) {
         StringBuilder out = new StringBuilder("QQ 开放平台官方文档检测到更新\n")
                 .append("新增 ").append(changes.added.size()).append(" 页，修改 ")
@@ -264,10 +349,6 @@ public final class QqBotDocsMonitor implements ScheduledTask {
 //        }
 //    }
 
-    private static boolean isMissingConfig(String value) {
-        return value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim());
-    }
-
     private static Map<String, PageSnapshot> loadSnapshot() throws IOException {
         if (!Files.isRegularFile(SNAPSHOT_FILE)) return Map.of();
         SnapshotFile file = JSON.readValue(SNAPSHOT_FILE.toFile(), SnapshotFile.class);
@@ -290,10 +371,6 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         }
     }
 
-    private static URI withoutFragmentAndQuery(URI uri) {
-        return URI.create(uri.getScheme() + "://" + uri.getAuthority() + uri.getPath());
-    }
-
     private static String sha256(String content) throws Exception {
         byte[] digest = MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8));
         return java.util.HexFormat.of().formatHex(digest);
@@ -302,7 +379,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     public record CheckResult(boolean baselineCreated, int added, int modified, int removed, String report) {
     }
 
-    private record ChangeSet(List<String> added, List<String> modified, List<String> removed) {
+    record ChangeSet(List<String> added, List<String> modified, List<String> removed) {
         private boolean isEmpty() {
             return added.isEmpty() && modified.isEmpty() && removed.isEmpty();
         }

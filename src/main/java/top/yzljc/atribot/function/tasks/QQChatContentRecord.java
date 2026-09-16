@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.tasks;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -1130,6 +1131,12 @@ public class QQChatContentRecord implements Listener {
                                      Integer messageType, String eventTimestamp,
                                      String attachments, String ark, String mentions, String messageReference,
                                      String refIdx, String createdAt) {
+        /** 机器人权限角色，区别于该条消息中的群身份 memberRole。 */
+        @JsonProperty("userRole")
+        public String userRole() {
+            return senderIsBot || "BOT_SEND".equals(eventType) || unionOpenId == null || unionOpenId.isBlank()
+                    ? "USER" : OfficialUsers.getRole(unionOpenId).name();
+        }
     }
 
     public record GroupMessageLocation(int page, int pageSize, GroupMessageRecord record) {
@@ -1149,6 +1156,12 @@ public class QQChatContentRecord implements Listener {
                                    boolean senderIsBot, Integer messageType,
                                    String eventTimestamp, String attachments, String ark,
                                    String messageReference, String refIdx, String createdAt) {
+        @JsonProperty("userRole")
+        public String userRole() {
+            // 私聊机器人发送记录的 unionOpenId 是对端用户，不能套用对端的权限角色。
+            return senderIsBot || unionOpenId == null || unionOpenId.isBlank()
+                    ? "USER" : OfficialUsers.getRole(unionOpenId).name();
+        }
     }
 
     public record C2CMessageLocation(int page, int pageSize, C2CMessageRecord record) {
@@ -1384,6 +1397,11 @@ public class QQChatContentRecord implements Listener {
 
     public record GroupMemberRecord(String unionOpenId, String username, String memberRole,
                                     boolean senderIsBot, long messageCount, String lastActiveAt) {
+        @JsonProperty("userRole")
+        public String userRole() {
+            return senderIsBot || unionOpenId == null || unionOpenId.isBlank()
+                    ? "USER" : OfficialUsers.getRole(unionOpenId).name();
+        }
     }
 
 //    private static final int DEFAULT_CONVERSATION_LIMIT = 300;

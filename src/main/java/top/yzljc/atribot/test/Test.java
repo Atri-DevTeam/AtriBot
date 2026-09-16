@@ -16,6 +16,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -156,26 +157,27 @@ public class Test implements CommandExecutor, Listener {
 //        ));
 //        user.sendMessage(md, btn1);
 //        user.sendMessage(md, btn2);
-        var art = new Ark23("标题", "内容", List.of(
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                Ark23.Item.text("描述"),
-                new Ark23.Item("描述2", "https://qun.qq.com")
-        ));
+//        var art = new Ark23("标题", "内容", List.of(
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                Ark23.Item.text("描述"),
+//                new Ark23.Item("描述2", "https://qun.qq.com")
+//        ));
+//
+//        var user = (QQCommandSender) sender;
+//        GroupChat.replyMessage(user.getGroupId(), user.getMessage().getMessageId(), art);
 
-        var user = (QQCommandSender) sender;
-        GroupChat.replyMessage(user.getGroupId(), user.getMessage().getMessageId(), art);
         return true;
     }
 

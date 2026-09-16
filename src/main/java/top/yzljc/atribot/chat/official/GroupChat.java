@@ -189,6 +189,11 @@ public final class GroupChat {
         return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, fileType, value));
     }
 
+    /** Returns null if audio upload fails; does not send the ordinary upload-limit text fallback. */
+    public static String replyAudioMessage(String groupOpenId, String msgId, String url) {
+        return await(AsyncGroupChat.replyAudioMessage(groupOpenId, msgId, url));
+    }
+
     /**
      * 回复群聊事件（Markdown，自动 @ 消息发送者）
      *

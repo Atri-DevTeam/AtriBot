@@ -31,6 +31,7 @@ public class PushTaskCommand implements CommandExecutor {
     @Getter
     private static final List<PushTask> tasks = List.of(
             new MinecraftNewsCheckTask(),
+            new MinecraftVersionTask(),
             new CalendarTask(),
             new HypixelNewsTask(),
             new MemerAddWelcomeTask(),
@@ -102,8 +103,10 @@ public class PushTaskCommand implements CommandExecutor {
                 }
                 case "enable" -> {
                     if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
-                        qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
-                        return true;
+                        if (!sender.hasPermission()) {
+                            qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                            return true;
+                        }
                     }
                     if (platform.equals(Platform.OFFICIAL_GROUP)) {
                         task.enable(platform, groupOpenId, qq.getUserId(), qq.getMessage().getMessageId());
@@ -114,8 +117,10 @@ public class PushTaskCommand implements CommandExecutor {
                 }
                 case "disable", "关闭" -> {
                     if (qq.getPlatform().equals(Platform.OFFICIAL_GROUP) && !(qq.getRole() == PlatformRole.ADMIN || qq.getRole() == PlatformRole.OWNER)) {
-                        qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
-                        return true;
+                        if (!sender.hasPermission()) {
+                            qq.sendMessage("只有群组管理员及以上用户才能调整有关设置！");
+                            return true;
+                        }
                     }
                     if (platform.equals(Platform.OFFICIAL_GROUP)) {
                         task.disable(platform, groupOpenId, qq.getUserId(), qq.getMessage().getMessageId());

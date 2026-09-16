@@ -53,15 +53,31 @@ final class OfficialMediaUploader {
     }
 
     MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, String msgId) {
+        return buildFileRequest(uploadUrl, fileType, value, logLabel, msgId, false);
+    }
+
+    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, String msgId,
+                                 boolean requireMedia) {
+        if (requireMedia && ChatService.isEmergencyPaused()) return null;
         MessageBody paused = pausedMediaFallback(logLabel, msgId, null);
         if (paused != null || ChatService.isEmergencyPaused()) {
-            return paused;
+            return requireMedia ? null : paused;
         }
-        String fileInfo = uploadFile(uploadUrl, fileType, value, logLabel);
+        String fileInfo = uploadFile(uploadUrl, fileType, value, logLabel, requireMedia);
         if (fileInfo == null) {
+            if (requireMedia) return null;
             return bodyFactory.text(UPLOAD_LIMIT_MESSAGE);
         }
-        return bodyFactory.media(fileInfo, msgId);
+        MessageBody request = bodyFactory.media(fileInfo, msgId);
+        if (fileType == FileType.AUDIO) {
+            var attachments = objectMapper.createArrayNode();
+            var attachment = attachments.addObject();
+            attachment.put("content_type", "voice");
+            attachment.put("filename", "语音消息");
+            attachment.put("url", value);
+            request.setRecordAttachments(attachments.toString());
+        }
+        return request;
     }
 
     private MessageBody pausedMediaFallback(String logLabel, String msgId, String eventId) {
@@ -86,22 +102,40 @@ final class OfficialMediaUploader {
         return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel);
     }
 
-    private String uploadFile(String uploadUrl, FileType fileType, String value, String logLabel) {
+    private String uploadFile(String uploadUrl, FileType fileType, String value, String logLabel, boolean requireMedia) {
         Map<String, Object> uploadData = new HashMap<>();
         uploadData.put("file_type", fileType.getValue());
         uploadData.put("url", value);
         uploadData.put("srv_send_msg", false);
-        return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel);
+        return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel, requireMedia);
     }
 
     private String uploadAndGetFileInfo(String uploadUrl, Map<String, Object> uploadData, String logLabel) {
+        return uploadAndGetFileInfo(uploadUrl, uploadData, logLabel, false);
+    }
+
+    private String uploadAndGetFileInfo(String uploadUrl, Map<String, Object> uploadData, String logLabel,
+                                        boolean requireMedia) {
         String uploadJson = null;
         String traceId = null;
         try {
             uploadJson = objectMapper.writeValueAsString(uploadData);
             traceId = OfficialSendLogRepository.recordSend(logLabel + "上传", "POST", uploadUrl, uploadJson);
-            String uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
-                    "Authorization", "QQBot " + tokenManager.getAccessToken());
+            String uploadRes;
+            if (requireMedia) {
+                var response = HttpService.postJsonDetailed(uploadUrl, uploadJson,
+                        "Authorization", "QQBot " + tokenManager.getAccessToken());
+                uploadRes = response.body();
+                if (response.status() < 200 || response.status() >= 300) {
+                    OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
+                            response.status(), uploadRes, "音频上传 HTTP 状态异常");
+                    throw QQMessageSendException.fromResponse(objectMapper, uploadRes,
+                            "音频上传失败，HTTP " + response.status());
+                }
+            } else {
+                uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
+                        "Authorization", "QQBot " + tokenManager.getAccessToken());
+            }
 
             if (uploadRes == null || uploadRes.isBlank()) {
                 OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
@@ -115,11 +149,14 @@ final class OfficialMediaUploader {
                 OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
                         null, uploadRes, "未返回 file_info");
                 log.error("{}上传失败，未返回 file_info: {}", logLabel, uploadRes);
+                if (requireMedia) throw QQMessageSendException.fromResponse(objectMapper, uploadRes, "音频上传未返回 file_info");
                 return null;
             }
             OfficialSendLogRepository.recordResponse(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
                     null, uploadRes);
             return resNode.get("file_info").asText();
+        } catch (QQMessageSendException e) {
+            throw e;
         } catch (Exception e) {
             OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
                     null, null, "上传异常: " + e.getMessage());

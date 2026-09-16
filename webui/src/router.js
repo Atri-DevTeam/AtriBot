@@ -19,6 +19,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_BASE),
   routes: [
     {
+      path: '/channels',
+      name: 'channels',
+      component: () => import('./views/ChannelView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/',
       name: 'chat',
       component: () => import('./views/ChatView.vue'),

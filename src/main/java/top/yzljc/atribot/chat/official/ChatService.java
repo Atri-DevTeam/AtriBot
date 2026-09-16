@@ -51,7 +51,7 @@ public class ChatService {
     private final MessageBodyFactory bodyFactory;
     private final OfficialMediaUploader mediaUploader;
     private final ActiveMessageRateLimiter activeRateLimiter;
-    private final PrivateStreamMessage privateStreamHelper;
+    private final C2CStreamMessage privateStreamHelper;
 
     private final Cache<String, AtomicInteger> msgSeqCache = CacheBuilder.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5))
@@ -63,7 +63,7 @@ public class ChatService {
         this.bodyFactory = new MessageBodyFactory(this::getNextMsgSeq);
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
-        this.privateStreamHelper = new PrivateStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory, this::getNextMsgSeq);
+        this.privateStreamHelper = new C2CStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory, this::getNextMsgSeq);
     }
 
     static String emergencyPausedMessage() {

@@ -99,7 +99,7 @@ public class ImageReviewService {
         if (dto.getReviewRemark() != null && !dto.getReviewRemark().isBlank()) {
             sb.append("审核说明: ").append(dto.getReviewRemark()).append("\n");
         }
-        sb.append("> ").append(Markdown.enterCommand("/投稿 ", "我也要投稿"));
+        sb.append("> ").append(Markdown.enterCommand("/submit ", "我也要投稿"));
 
         return sb.toString();
     }

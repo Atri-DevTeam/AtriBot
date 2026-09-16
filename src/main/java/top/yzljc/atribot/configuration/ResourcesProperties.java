@@ -116,6 +116,8 @@ public final class ResourcesProperties {
     // @ClassName PingCommand
 //    public static final String UGC_STATUS_API = UGC_API + "/v2/system/status";
 
+    public static final String BILIBILI_BIND_API = UGC_API + "/v2/atrimeow/bilibili/follow-check";
+
     // @ClassName SkyblockResourceChecker
     public static final String SKB_VERSION_CHECK = request("request.hypixel.resource-packs");
 
@@ -187,9 +189,15 @@ public final class ResourcesProperties {
     // @ClassName SkyblockCoop
     public static final String SKYBLOCK_COOP_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-coops";
 
+    public static final String SKYBLOCK_HOTF_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-hotf";
+
+    public static final String HYPIXEL_LOBBY_PARKOUR_API = UGC_API + "/v2/atrimeow/hypixel-lobby-parkour";
+
     public static final String SKYBLOCK_DUNGEON_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-dungeons";
 
     public static final String HYPIXEL_PLAYER_LOBBY_FISHING_API = UGC_API + "/v2/atrimeow/hypixel-lobby-fishing";
+
+    public static final String HYPIXEL_ARCADE_DROPPER_API = UGC_API + "/v2/atrimeow/hypixel-arcade-dropper";
 
     public static final String ICON_DIAMOND_PICKAXE = request("resource.image.icon-diamond-pickaxe");
 
@@ -202,6 +210,12 @@ public final class ResourcesProperties {
     public static final String ICON_SKYBLOCK_DUNGEON = request("resource.image.icon-skyblock-dungeon");
 
     public static final String ICON_FISHING_ROD = request("resource.image.icon-fishing-rod");
+
+    public static final String ICON_HOTF = request("resource.image.icon-hotf");
+
+    public static final String ICON_PARKOUR = request("resource.image.icon-parkour");
+
+    public static final String ICON_DROPPER = request("resource.image.icon-dropper");
 
     private static Map<String, String> loadRequestProperties() {
         Path path = Path.of(Properties.REQUEST);

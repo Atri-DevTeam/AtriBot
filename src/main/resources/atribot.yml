@@ -203,6 +203,9 @@ commands:
   webui:
     description: WebUI相关功能
     usage: /webui
+  login:
+    description: 确认外部 API 登录授权
+    usage: /login <六位验证码>
   全量消息:
     description: 授权全量消息
     usage: /全量消息
@@ -239,6 +242,14 @@ commands:
   music:
     description: Music
     usage: /music <关键词>
+  sound:
+    description: Minecraft 听声辨物
+    usage: /sound [help] 或 /sound answer <A|B|C|D>
+    aliases:
+      - 听声辨物
+      - soundquiz
+      - sound-quiz
+      - sounds
   ping:
     description: Pong!
     usage: /ping
@@ -275,15 +286,16 @@ commands:
       - eo
       - earth
       - 地球
-  drawitem:
+  item:
     description: 抽取Minecraft物品卡
-    usage: /drawitem [bag]
+    usage: /item [bag]
     aliases:
       - 随机物品
       - 随机物品卡
       - mcitem
       - mcitemcard
       - loot
+      - drawitem
   recovergolds:
     description: 补发金粒
     usage: /recovergolds
@@ -304,6 +316,11 @@ commands:
   bind:
     description: 绑定正版 Minecraft 玩家
     usage: /bind <Minecraft 用户名或 UUID>
+  bvbind:
+    description: 关注校验后绑定 B站 UID（仅可绑定一次）
+    usage: /bvbind <B站 UID>
+    aliases:
+      - B站绑定
   wz:
     description: Hypixel法师掘战数据查询
     usage: /wz <玩家名或 UUID>

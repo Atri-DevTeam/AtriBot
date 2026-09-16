@@ -56,6 +56,12 @@ public class Config {
     @Getter
     private String ossDumpBaseUrl;
     @Getter
+    private String soundResourceBaseUrl;
+    @Getter
+    private String soundIndexPath;
+    @Getter
+    private int soundAnswerSeconds;
+    @Getter
     private String minecraftModerationReviewKey;
     @Getter
     private String censorApiUrl;
@@ -254,6 +260,9 @@ public class Config {
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
+            this.soundResourceBaseUrl = yaml.getString("sound.resource-base-url", "");
+            this.soundIndexPath = yaml.getString("sound.index-path", "minecraft/26.3-rc-3/index.json");
+            this.soundAnswerSeconds = yaml.getInt("sound.answer-seconds", 120);
             this.minecraftModerationReviewKey = yaml.getString("minecraft-moderation.review-key", "");
             this.censorApiUrl = yaml.getString("censor.api-url", "");
             this.censorApiKey = yaml.getString("censor.api-key", "");

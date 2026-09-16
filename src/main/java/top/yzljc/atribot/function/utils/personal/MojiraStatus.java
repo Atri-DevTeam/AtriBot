@@ -28,15 +28,16 @@ import top.yzljc.atribot.utils.tools.RM;
 import java.io.*;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName CheckMojira
+ * @ClassName MojiraStatus
  * @Created_at 2026/06/28
  * @Project AtriMeow
- * @Package top.yzljc.atribot.function.napcat
+ * @Package top.yzljc.atribot.function.utils.personal
  */
-public final class MojiraStatus implements CommandExecutor, ScheduledTask {
+public final class MojiraStatus implements CommandExecutor, ScheduledTask{
 
     private static final Logger log = LoggerFactory.getLogger(MojiraStatus.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -51,6 +52,23 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
     private static final int MAX_CACHE_SIZE = 100;
     private static final Set<String> knownIssues = Collections.synchronizedSet(new LinkedHashSet<>());
     private static volatile boolean running = false;
+    private static final List<Pushable> pushables = new CopyOnWriteArrayList<>();
+
+    public static AutoCloseable registerPushable(Pushable pushable) {
+        Objects.requireNonNull(pushable, "pushable");
+        Pushable subscription = pushable::push;
+        pushables.add(subscription);
+        return () -> pushables.remove(subscription);
+    }
+
+    static void pushContent(MojiraIssue issue, String translatedDescription) {
+        for (Pushable pushable : pushables) {
+            try {
+                pushable.push(issue, translatedDescription);
+            } catch (Exception | LinkageError _) {
+            }
+        }
+    }
 
     static {
         loadCache();
@@ -131,8 +149,13 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
             String created,
             String updated,
             List<String> versions,
-            List<Attachment> attachments
+            List<Attachment> attachments,
+            JsonNode rawDescription
     ) {
+        public MojiraIssue(String id, String key, String summary, String description, String status,
+                           String created, String updated, List<String> versions, List<Attachment> attachments) {
+            this(id, key, summary, description, status, created, updated, versions, attachments, null);
+        }
     }
 
     public record Attachment(
@@ -256,7 +279,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
                     ));
                 }
 
-                issues.add(new MojiraIssue(id, key, summary, description, status, created, updated, versions, attachments));
+                issues.add(new MojiraIssue(id, key, summary, description, status, created, updated, versions, attachments, fields.path("description")));
             } catch (Exception e) {
                 log.warn("[Mojira API] 解析单个 Issue 失败: {}", e.getMessage());
             }
@@ -309,11 +332,13 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
         nodes.add(GroupMessage.createTextNode(sb));
         nodes.add(GroupMessage.createTextNode("描述：\n" + desc));
 
+        String translatedDescription = null;
         // AI 中文翻译作为第三条
         if (!desc.equals("（无描述）")) {
             String translated = MojiraIssueSummarizer.translate(issue.key(), issue.summary(), desc);
             if (!translated.equals(desc)) {
                 nodes.add(GroupMessage.createTextNode("中文翻译：\n" + translated));
+                translatedDescription = translated;
             }
         }
         addAttachmentNodes(nodes, issue.attachments());
@@ -333,6 +358,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
                 }
             });
         }
+        pushContent(issue, translatedDescription);
     }
 
     private static void addAttachmentNodes(List<MessageSegment> nodes, List<Attachment> attachments) {
@@ -394,5 +420,11 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask {
             }
         }
         return news;
+    }
+
+    @FunctionalInterface
+    public interface Pushable {
+        /** 接收原始 Issue 和可选译文；内容格式及耗时发送由插件处理。 */
+        void push(MojiraIssue issue, String translatedDescription);
     }
 }

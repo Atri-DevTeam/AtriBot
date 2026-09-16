@@ -29,6 +29,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName ChannelCliClient
+ * @Created_at 2026/09/11
+ * @Project AtriMeow
+ * @Package top.yzljc.sakuraba_ema
+ */
 @Slf4j
 public final class ChannelCliClient implements AutoCloseable {
 
@@ -135,6 +142,28 @@ public final class ChannelCliClient implements AutoCloseable {
             ChannelCliResult retry = executeOnce(command, parameters, actualOptions, jsonOutput).withAttempts(2);
             logFailure(command, retry);
             return retry;
+        } finally {
+            invocationPermit.release();
+        }
+    }
+
+    /** WebUI 即时请求：复用账号及串行锁，不重试写操作，不将响应内容写入应用日志。 */
+    public ChannelCliResult executeInteractive(String domain, String action, JsonNode parameters,
+                                               ChannelCliOptions options) {
+        validateCommandPart(domain, "domain");
+        validateCommandPart(action, "action");
+        ensureAvailable();
+        try {
+            if (!invocationPermit.tryAcquire(10, TimeUnit.SECONDS)) {
+                throw new ChannelCliException("EMA 正忙，请稍后重试");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ChannelCliException("等待 EMA 时被中断", e);
+        }
+        try {
+            ensureAvailable();
+            return executeOnce(List.of(domain, action, "--log-level", "error"), parameters, options, true);
         } finally {
             invocationPermit.release();
         }

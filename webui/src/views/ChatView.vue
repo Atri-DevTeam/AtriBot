@@ -125,11 +125,16 @@
             </button>
           </header>
 
-          <div v-if="notice" class="chatnt-notice">{{ notice }}</div>
+          <Transition name="chatnt-notice" mode="out-in">
+            <div v-if="notice" :key="notice" class="chatnt-notice" role="status">{{ notice }}</div>
+          </Transition>
 
           <div class="chatnt-message-area">
             <ChatBackground />
-            <div ref="messageListRef" class="chatnt-msgs" @scroll="onScroll">
+            <div ref="messageListRef" class="chatnt-msgs" @scroll="onScroll"
+                 @wheel.passive="interruptMessageScroll" @touchstart.passive="interruptMessageScroll"
+                 @pointerdown="interruptMessageScroll" @keydown="interruptMessageScroll">
+              <div ref="messageContentRef" class="chatnt-msg-content">
               <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
               <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
               <div v-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
@@ -137,7 +142,8 @@
 
               <article v-for="message in orderedMessages" :key="message.id"
                        :data-message-id="message.id"
-                       class="qm" :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id }">
+                       class="qm" :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id, 'qm-arriving': arrivingMessageIds.has(message.id) }"
+                       @animationend.self="arrivingMessageIds.delete(message.id)">
                 <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)">
                   <span>{{ avatarText(message) }}</span>
                   <img v-if="avatarUrl(message) && !avatarFailed[message.id]"
@@ -147,7 +153,7 @@
                 </span>
                 <div class="qm-main">
                   <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
-                    <span class="qm-name-text">{{ displayName(message) }}</span>
+                    <span class="qm-name-text" :class="{ 'bot-staff-name': !isMe(message) && isBotStaff(message) }">{{ displayName(message) }}</span>
                     <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。
                          图案沿用旧页面，配色改走 currentColor 交给 CSS 管 -->
                     <svg v-if="isMe(message) || message.senderIsBot" class="qm-bot"
@@ -163,7 +169,7 @@
                           class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
                     <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
                   </div>
-                  <div class="qm-bubble" :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
+                  <div v-chat-image-layout class="qm-bubble" :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
                        @contextmenu.prevent.stop="onContextMenu($event, message)">
                     <pre v-if="recalledIds[message.messageOpenId]">{{ isMe(message) ? '你撤回了一条消息' : '该消息已被撤回' }}</pre>
                     <template v-else>
@@ -201,8 +207,12 @@
                           <div v-else-if="att.type === 'voice'" class="qm-voice">
                             <div class="qm-voice-title">语音消息</div>
                             <div v-if="att.asrText" class="qm-voice-asr">{{ att.asrText }}</div>
-                            <audio v-if="att.voiceUrl" :src="att.voiceUrl" controls preload="none"></audio>
-                            <a v-else-if="att.url" :href="att.url" target="_blank" rel="noreferrer">打开原始音频</a>
+                            <audio v-if="att.voiceUrl && !attachFailed[att.voiceUrl]" :src="att.voiceUrl" controls preload="none"
+                                   @error="attachFailed[att.voiceUrl] = true"></audio>
+                            <template v-else>
+                              <span class="qm-media-hint">{{ att.voiceUrl ? '音频暂时无法播放' : '未保存音频播放地址' }}</span>
+                              <a v-if="att.url || att.voiceUrl" class="attach-fail" :href="att.url || att.voiceUrl" target="_blank" rel="noreferrer">打开原始音频</a>
+                            </template>
                           </div>
                           <a v-else-if="att.type === 'file'" class="qm-file"
                              :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
@@ -219,6 +229,10 @@
                           </a>
                         </template>
                       </div>
+                      <div v-if="legacyMedia(message) && !parseAttach(message.attachments).length" class="qm-voice">
+                        <div class="qm-voice-title">媒体消息</div>
+                        <span class="qm-media-hint">这条历史消息未保存媒体地址，暂时无法预览</span>
+                      </div>
                       <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
                       <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
                       <pre v-if="!forwardRecord(message) && !hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
@@ -229,7 +243,19 @@
                   <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
                 </div>
               </article>
+              </div>
             </div>
+            <Transition name="chatnt-new-messages">
+              <button v-if="newMessageCount > 0" type="button" class="chatnt-new-messages"
+                      :disabled="loadingMessages" :aria-label="`${newMessageCount} 条新消息，跳到最新消息`"
+                      @click="jumpToLatestMessages">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 4v14m-5-5 5 5 5-5M5 21h14" />
+                </svg>
+                <span aria-live="polite" aria-atomic="true">{{ newMessageCount > 99 ? '99+' : newMessageCount }} 条新消息</span>
+              </button>
+            </Transition>
           </div>
 
           <div v-if="replyTo" class="chatnt-replybar">
@@ -286,8 +312,11 @@
           </form>
 
           <!-- ── 右侧栏：成员 / 信息 / 单用户设置 ── -->
-          <div v-if="panel" class="chatnt-members-backdrop" @click="closePanel" />
-          <aside v-if="panel" class="chatnt-members">
+          <Transition name="chatnt-panel-backdrop">
+            <div v-if="panel" class="chatnt-members-backdrop" @click="closePanel" />
+          </Transition>
+          <Transition name="chatnt-panel" mode="out-in">
+          <aside v-if="panel" :key="panel" class="chatnt-members">
             <div class="chatnt-members-head">
               <button v-if="panel === 'user'" class="chatnt-members-close" aria-label="返回"
                       @click="panel = active.type === 'group' ? 'members' : 'info'">
@@ -337,7 +366,7 @@
                     </button>
                     <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
                       <span class="mbr-top">
-                        <span class="mbr-name">{{ m.username || 'Unknown' }}</span>
+                        <span class="mbr-name" :class="{ 'bot-staff-name': isBotStaff(m) }">{{ m.username || 'Unknown' }}</span>
                         <svg v-if="m.senderIsBot" class="qm-bot"
                              width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
                           <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
@@ -564,6 +593,7 @@
                                @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
             </div>
           </aside>
+          </Transition>
         </template>
       </section>
     </main>
@@ -646,6 +676,9 @@ import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import { hasArkMessage } from '../lib/ark.js'
 import { parseForwardContent } from '../lib/forward.js'
+import { vChatImageLayout } from '../lib/chatImageLayout.js'
+import { countNewMessages, latestMessageId } from '../lib/chatUnread.js'
+import { createChatBottomScroller, prefersReducedMotion } from '../lib/chatMotion.js'
 import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
 import GroupAvatarRenderer from '../lib/GroupAvatarRenderer.js'
 import AppSidebar from '../components/AppSidebar.vue'
@@ -686,6 +719,10 @@ const loadingMessages = ref(false)
 const loadingMore = ref(false)
 const currentPage = ref(0)
 const pageSize = 80
+const newMessageCount = ref(0)
+let knownLatestMessageId = 0n
+let viewingHistoryPage = false
+let followingLatest = true
 
 const sending = ref(false)
 const draft = ref('')
@@ -772,11 +809,24 @@ function toggleUid(id) {
 }
 
 const messageListRef = ref(null)
+const messageContentRef = ref(null)
+const arrivingMessageIds = reactive(new Set())
+const messageScroller = createChatBottomScroller(() => messageListRef.value)
+watch([messageListRef, messageContentRef], ([viewport, content], _, onCleanup) => {
+  if (!viewport || !content) return
+  // load 事件早于图片排版完成，也覆盖不到视频、字体和输入框引起的尺寸变化。
+  // 同时观察内容和可视区域，在浏览器绘制前按最终布局补齐底部。
+  const observer = new ResizeObserver(syncMessageLayout)
+  observer.observe(viewport)
+  observer.observe(content)
+  onCleanup(() => observer.disconnect())
+}, { flush: 'post' })
 const fileInputRef = ref(null)
 const composerRef = ref(null)
 
 let eventSource = null
 let convRefreshTimer = null
+let messageRefreshSeq = 0
 
 const activeConv = computed(() =>
   active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
@@ -906,6 +956,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  messageScroller.cancel()
   document.removeEventListener('click', onDocumentClick)
   window.removeEventListener('resize', clampListWidth)
   if (eventSource) eventSource.close()
@@ -1199,6 +1250,7 @@ function convPreview(c) {
     else if (atts.some(a => a.type === 'voice')) body = '[语音]'
     else if (atts.some(a => a.type === 'file')) body = '[文件]'
   }
+  if (!body && c.isMe && parseLegacyMedia(c.lastContent)) body = '[媒体消息]'
   if (!body) body = stripPreviewTags(c.lastContent) || ' '
   if (c.isMe) return `${botName.value}: ${body}`
   if (c.type === 'group') {
@@ -1263,10 +1315,16 @@ async function selectConv(c) {
     return
   }
   active.value = { type: c.type, openId: c.openId }
+  messageScroller.cancel()
+  arrivingMessageIds.clear()
   mobileChatOpen.value = true
   messages.value = []
   totalMessages.value = 0
   currentPage.value = 0
+  newMessageCount.value = 0
+  knownLatestMessageId = 0n
+  viewingHistoryPage = false
+  followingLatest = true
   cancelReply()
   ctxMenu.visible = false
   mutePanel.visible = false
@@ -1301,7 +1359,7 @@ function applyDeepLink() {
 
 watch(() => router.currentRoute.value.query, applyDeepLink)
 
-async function loadLatestMessages() {
+async function loadLatestMessages({ animate = false } = {}) {
   if (!active.value) return
   const targetKey = currentConvKey()
   const seq = ++convLoadSeq
@@ -1311,10 +1369,16 @@ async function loadLatestMessages() {
     const data = await api(messagesPath(1))
     // 加载期间会话被切换，或又发起了更新的一次加载：这次响应已经过期，丢弃
     if (seq !== convLoadSeq || currentConvKey() !== targetKey) return
+    if (animate) markArrivingMessages(data.records || [])
+    else arrivingMessageIds.clear()
     messages.value = data.records || []
     totalMessages.value = data.total || 0
+    knownLatestMessageId = latestMessageId(messages.value)
+    viewingHistoryPage = false
+    newMessageCount.value = 0
     await nextTick()
-    scrollToBottom()
+    if (seq !== convLoadSeq || currentConvKey() !== targetKey) return
+    scrollToBottom(animate ? 'smooth' : 'auto')
   } catch { /* ignore */ }
   finally { if (seq === convLoadSeq) loadingMessages.value = false }
 }
@@ -1322,29 +1386,77 @@ async function loadLatestMessages() {
 async function loadMore() {
   if (!hasMore.value || loadingMore.value || loadingMessages.value || !active.value) return
   const targetKey = currentConvKey()
+  const seq = convLoadSeq
   loadingMore.value = true
   const el = messageListRef.value
-  const prevHeight = el ? el.scrollHeight : 0
   currentPage.value++
   try {
     const data = await api(messagesPath(currentPage.value))
-    if (currentConvKey() !== targetKey) return
-    messages.value = [...messages.value, ...(data.records || [])]
+    if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
+    const viewportTop = el?.getBoundingClientRect().top || 0
+    const anchor = el && [...el.querySelectorAll('.qm')].find(node => node.getBoundingClientRect().bottom > viewportTop)
+    const anchorTop = anchor?.getBoundingClientRect().top
+    const seen = new Set(messages.value.map(message => message.id))
+    messages.value = [...messages.value, ...(data.records || []).filter(message => !seen.has(message.id))]
     await nextTick()
-    if (el) el.scrollTop = el.scrollHeight - prevHeight
-  } catch { currentPage.value-- }
+    if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
+    if (el && anchor?.isConnected) el.scrollTop += anchor.getBoundingClientRect().top - anchorTop
+  } catch { if (currentConvKey() === targetKey && seq === convLoadSeq) currentPage.value-- }
   finally { loadingMore.value = false }
 }
 
 function onScroll() {
   const el = messageListRef.value
-  if (!el || loadingMore.value || !hasMore.value) return
+  if (!el || loadingMessages.value || messageScroller.running) return
+  // 布局变化和程序定位也会发出 scroll，不能因此误判用户离开了底部。
+  // 用户滚轮、触摸或拖动滚动条时会先由 interruptMessageScroll 解除跟随。
+  if (followingLatest && !viewingHistoryPage) {
+    syncMessageLayout()
+    return
+  }
+  followingLatest = !viewingHistoryPage && el.scrollHeight - el.scrollTop - el.clientHeight <= 1
+  if (followingLatest) newMessageCount.value = 0
+  if (followingLatest || loadingMore.value || !hasMore.value) return
   if (el.scrollTop < 60) loadMore()
 }
 
-function scrollToBottom() {
+function syncMessageLayout() {
+  if (!followingLatest || viewingHistoryPage || loadingMessages.value || loadingMore.value || messageScroller.running) return
   const el = messageListRef.value
-  if (el) el.scrollTop = el.scrollHeight
+  if (!el || !el.clientHeight) return
+  const bottom = Math.max(0, el.scrollHeight - el.clientHeight)
+  if (Math.abs(el.scrollTop - bottom) > 1) messageScroller.scroll('auto')
+}
+
+function scrollToBottom(behavior = 'auto') {
+  const el = messageListRef.value
+  if (!el) return
+  followingLatest = true
+  newMessageCount.value = 0
+  messageScroller.scroll(behavior)
+}
+
+function interruptMessageScroll() {
+  messageScroller.cancel()
+  followingLatest = false
+}
+
+function markArrivingMessages(records) {
+  if (prefersReducedMotion()) return
+  const seen = new Set(messages.value.map(message => message.id))
+  for (const message of records) {
+    if (!seen.has(message.id) && latestMessageId([message]) > knownLatestMessageId) {
+      arrivingMessageIds.add(message.id)
+    }
+  }
+}
+
+async function jumpToLatestMessages() {
+  if (viewingHistoryPage || totalMessages.value > messages.value.length && newMessageCount.value > pageSize) {
+    await loadLatestMessages()
+    return
+  }
+  scrollToBottom('smooth')
 }
 
 function isNearBottom() {
@@ -1593,6 +1705,10 @@ async function clearCurrentConversation() {
     messages.value = []
     totalMessages.value = 0
     currentPage.value = 0
+    newMessageCount.value = 0
+    knownLatestMessageId = 0n
+    viewingHistoryPage = false
+    followingLatest = true
     await Promise.all([loadConversations(), loadConvStats()])
     showNotice(`已清除 ${result?.deleted || 0} 条记录`)
   } catch (error) {
@@ -1638,19 +1754,25 @@ function removePerm(perm) {
 
 async function saveProfile() {
   if (!profileTarget.value) return
+  const savedUserId = profileTarget.value
+  const savedRole = profile.role
   profileSaving.value = true
   profileError.value = ''
   try {
-    await api(`/c2c/${encodeURIComponent(profileTarget.value)}/profile`, {
+    await api(`/c2c/${encodeURIComponent(savedUserId)}/profile`, {
       method: 'POST',
       body: JSON.stringify({
-        role: profile.role,
+        role: savedRole,
         permissions: profile.permissions,
         blocked: profile.blocked,
         ignored: profile.ignored,
         c2cPush: profile.c2cPush
       })
     })
+    const applyRole = user => user.unionOpenId === savedUserId && !user.senderIsBot
+      ? { ...user, userRole: savedRole } : user
+    messages.value = messages.value.map(applyRole)
+    members.value = members.value.map(applyRole)
     showNotice('已保存')
   } catch (error) {
     profileError.value = error.message || '保存失败'
@@ -1740,12 +1862,14 @@ function getRefTargetMsgIdx(message) {
 
 async function jumpToReference(message) {
   if (!active.value) return
+  interruptMessageScroll()
   const msgIdx = getRefTargetMsgIdx(message)
   if (!msgIdx) {
     showNotice('引用来源消息缺少 ref_idx，无法定位')
     return
   }
   const targetKey = currentConvKey()
+  const seq = ++convLoadSeq
   try {
     // 定位统一走后端按 refIdx 定位，前端不再做内容/附件匹配（那套容易跳错）
     const params = new URLSearchParams({
@@ -1754,13 +1878,16 @@ async function jumpToReference(message) {
       excludeId: String(message.id)
     })
     const location = await api(`${messagesBase()}/ref?${params}`)
+    if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     const page = location.page || 1
     const data = await api(messagesPath(page))
     // 请求期间可能已经切走了会话，翻页结果不能再往新会话里塞
-    if (currentConvKey() !== targetKey) return
+    if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     messages.value = data.records || []
     totalMessages.value = data.total || totalMessages.value
     currentPage.value = page
+    viewingHistoryPage = page > 1
+    followingLatest = false
     await nextTick()
     highlightMessage(location.record.id)
   } catch (error) {
@@ -1781,18 +1908,33 @@ function connectSse() {
         (payload.type === 'refresh' && active.value.type === 'group' && payload.groupOpenId === active.value.openId) ||
         (payload.type === 'c2c_refresh' && active.value.type === 'c2c' && payload.userOpenId === active.value.openId)
       if (!matchesActive) return
+      if (loadingMessages.value) return
       const targetKey = currentConvKey()
-      const seq = ++convLoadSeq
+      const seq = convLoadSeq
+      const refreshSeq = ++messageRefreshSeq
       const data = await api(messagesPath(1))
       // 这段等待期间会话被切换，或又发起了更新的一次加载：这次响应已经过期，丢弃
-      if (seq !== convLoadSeq || currentConvKey() !== targetKey) return
+      if (seq !== convLoadSeq || refreshSeq !== messageRefreshSeq || currentConvKey() !== targetKey) return
       const latest = data.records || []
-      const seen = new Set(messages.value.map(m => m.messageOpenId))
-      const fresh = latest.filter(m => !seen.has(m.messageOpenId))
+      const count = countNewMessages(latest, knownLatestMessageId, totalMessages.value, data.total || 0)
+      const follow = !viewingHistoryPage && (messageScroller.running || isNearBottom())
+      const seen = new Set(messages.value.map(m => m.id))
+      const fresh = latest.filter(m => !seen.has(m.id))
+      if (follow) markArrivingMessages(fresh)
+      const latestId = latestMessageId(latest)
+      if (latestId > knownLatestMessageId) knownLatestMessageId = latestId
+      totalMessages.value = data.total ?? totalMessages.value
+      if (viewingHistoryPage) {
+        newMessageCount.value += count
+        return
+      }
       if (fresh.length > 0) {
+        followingLatest = follow
         messages.value = [...fresh, ...messages.value]
-        totalMessages.value = data.total || totalMessages.value
-        if (isNearBottom()) { await nextTick(); scrollToBottom() }
+        if (!follow) newMessageCount.value += count
+        await nextTick()
+        if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
+        if (follow && followingLatest) scrollToBottom('smooth')
       }
     } catch { /* ignore */ }
   }
@@ -1824,6 +1966,7 @@ async function sendMessage() {
   }
   sending.value = true
   const type = active.value.type
+  const targetKey = currentConvKey()
   try {
     if (msgType.value === 'stream' && type === 'c2c') {
       const body = { userOpenId: active.value.openId, content: draft.value }
@@ -1854,11 +1997,12 @@ async function sendMessage() {
       }
       await api(type === 'group' ? '/groups/send' : '/c2c/send', { method: 'POST', body: JSON.stringify(body) })
     }
+    if (currentConvKey() !== targetKey) { scheduleConvRefresh(); return }
     draft.value = ''
     imageData.value = null
     pastePreview.value = null
     cancelReply()
-    await loadLatestMessages()
+    await loadLatestMessages({ animate: true })
     scheduleConvRefresh()
   } catch (error) {
     showNotice(error.message || '发送消息失败')
@@ -2102,6 +2246,10 @@ function displayName(message) {
   return message.username || 'Unknown'
 }
 
+function isBotStaff(user) {
+  return !user.senderIsBot && (user.userRole === 'OWNER' || user.userRole === 'ADMIN')
+}
+
 // 机器人自己发的消息库里往往没存 union_openId，用 /config 拿到的 botOpenId 兜底，
 // 否则我们这侧的消息头会只有名字没有 ID
 function displayUid(message) {
@@ -2110,6 +2258,7 @@ function displayUid(message) {
 }
 
 function renderContent(message) {
+  if (legacyMedia(message)) return ''
   let text = message.content || ''
   text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
@@ -2126,6 +2275,21 @@ function renderContent(message) {
     } catch { /* ignore */ }
   }
   return text
+}
+
+// 旧的 BOT_SEND 记录只有媒体凭证，不能把 file_info 当作音频 URL 或 base64 音频。
+function parseLegacyMedia(content) {
+  if (typeof content !== 'string') return null
+  const match = content.match(/^\s*\[media\]\s*(\{[\s\S]*\})\s*$/)
+  if (!match) return null
+  try {
+    const media = JSON.parse(match[1])
+    return typeof media?.file_info === 'string' && media.file_info.trim() ? media : null
+  } catch { return null }
+}
+
+function legacyMedia(message) {
+  return isMe(message) ? parseLegacyMedia(message.content) : null
 }
 
 function hasArk(message) {
@@ -2171,7 +2335,7 @@ function msgRef(message) {
 function renderRefContent(ref) {
   const parts = []
   if (ref.content) {
-    let t = renderFaceTags(ref.content)
+    let t = parseLegacyMedia(ref.content) ? '[媒体消息]' : renderFaceTags(ref.content)
     t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
     t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
     if (t.trim()) parts.push(`<p>${escapeHtml(t)}</p>`)
@@ -2183,7 +2347,7 @@ function renderRefContent(ref) {
     } else if (type.startsWith('video/')) {
       // 引用块只有 120×80，塞播放器没意义，标一下类型就够
       parts.push(`<span>[视频] ${escapeHtml(a.filename || '')}</span>`)
-    } else if (type === 'voice') {
+    } else if (type === 'voice' || type.startsWith('audio/')) {
       parts.push(`<span>${escapeHtml(a.asr_refer_text || a.filename || '语音消息')}</span>`)
     }
   }
@@ -2218,13 +2382,13 @@ function normalizeAttachment(att) {
   if (contentType.startsWith('video/')) {
     return { ...att, type: 'video', url: absUrl(att.url) }
   }
-  if (contentType === 'voice') {
+  if (contentType === 'voice' || contentType.startsWith('audio/')) {
     return {
       ...att,
       type: 'voice',
       url: absUrl(att.url),
       asrText: att.asr_refer_text || '',
-      voiceUrl: absUrl(att.voice_wav_url)
+      voiceUrl: absUrl(att.voice_wav_url || att.url)
     }
   }
   // content_type 为 file，以及任何有 url 但类型不认识的附件，都按文件卡片兜底，

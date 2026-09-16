@@ -79,6 +79,12 @@ public class Button {
         return this;
     }
 
+    /**
+     * @param content 提示文本
+     * @param confirmText 确认按钮文本，最多4个字
+     * @param cancelText 取消按钮文本，最多4个字
+     * @return
+     */
     public Button setModal(String content, String confirmText, String cancelText) {
         if (confirmText.length() > 4 || cancelText.length() > 4) {
             throw new IllegalArgumentException("键盘按钮的Modal参数中，确认和取消按钮的字数不能超过4个");

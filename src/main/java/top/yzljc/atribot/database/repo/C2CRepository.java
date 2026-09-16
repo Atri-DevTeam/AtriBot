@@ -1,9 +1,12 @@
 package top.yzljc.atribot.database.repo;
 
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.sql.SQLException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +22,113 @@ public class C2CRepository {
 
     private static final String USER_TABLE = "official_users";
     private static final String C2C_FUNCTION_TABLE = "c2c_function_list";
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    public enum SettingWriteResult { SAVED, ALREADY_EXISTS, UID_IN_USE, FAILED }
+
+    /** 在同一个行锁事务内读写单个设置，避免并发更新其他偏好时丢失绑定记录。 */
+    public static SettingWriteResult setUserSetting(String userOpenId, String setting, String valueJson, boolean onlyIfAbsent) {
+        if (userOpenId == null || userOpenId.isBlank() || setting == null || setting.isBlank()) return SettingWriteResult.FAILED;
+        try (var connection = DatabaseManager.getConnection()) {
+            return setUserSetting(connection, userOpenId, setting, valueJson, onlyIfAbsent);
+        } catch (Exception e) {
+            log.error("保存用户 {} 的设置 {} 失败", userOpenId, setting, e);
+            return SettingWriteResult.FAILED;
+        }
+    }
+
+    static SettingWriteResult setUserSetting(Connection connection, String userOpenId, String setting,
+                                              String valueJson, boolean onlyIfAbsent) throws Exception {
+        if ("bv_uid".equals(setting)) {
+            var uid = JSON.readTree(valueJson);
+            if (uid == null || !uid.isIntegralNumber() || !uid.canConvertToLong() || uid.longValue() <= 0) {
+                return SettingWriteResult.FAILED;
+            }
+            // MySQL 命名锁跨连接/实例生效，同一个 UID 的检查与提交必须串行。
+            String lockName = "atrimeow:bv_uid:" + uid.longValue();
+            try (var ps = connection.prepareStatement("SELECT GET_LOCK(?, 10)")) {
+                ps.setString(1, lockName);
+                try (var rs = ps.executeQuery()) {
+                    if (!rs.next() || rs.getInt(1) != 1) throw new SQLException("获取 B站 UID 绑定锁失败");
+                }
+            }
+            try {
+                return writeUserSetting(connection, userOpenId, setting, valueJson, true, uid.longValue());
+            } finally {
+                try (var ps = connection.prepareStatement("SELECT RELEASE_LOCK(?)")) {
+                    ps.setString(1, lockName);
+                    try (var rs = ps.executeQuery()) {
+                        if (!rs.next() || rs.getInt(1) != 1) throw new SQLException("释放 B站 UID 绑定锁失败");
+                    }
+                } catch (Exception releaseError) {
+                    // 连接池复用前必须释放命名锁；释放失败则关闭物理连接。
+                    try { connection.abort(Runnable::run); }
+                    catch (Exception abortError) { releaseError.addSuppressed(abortError); }
+                    throw releaseError;
+                }
+            }
+        }
+        return writeUserSetting(connection, userOpenId, setting, valueJson, onlyIfAbsent, null);
+    }
+
+    private static SettingWriteResult writeUserSetting(Connection connection, String userOpenId, String setting,
+                                                       String valueJson, boolean onlyIfAbsent, Long bilibiliUid) throws Exception {
+        boolean autoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            // 先确保用户行存在，并获取写锁；同一用户的并发首次绑定也会串行执行。
+            try (var ps = connection.prepareStatement("INSERT INTO `" + USER_TABLE
+                    + "` (user_openId, role, permissions) VALUES (?, 'USER', '')"
+                    + " ON DUPLICATE KEY UPDATE user_openId = user_openId")) {
+                ps.setString(1, userOpenId);
+                ps.executeUpdate();
+            }
+            ObjectNode settings;
+            try (var ps = connection.prepareStatement("SELECT user_settings FROM `" + USER_TABLE + "` WHERE user_openId = ? FOR UPDATE")) {
+                ps.setString(1, userOpenId);
+                try (var rs = ps.executeQuery()) {
+                    if (!rs.next()) throw new SQLException("用户设置行不存在");
+                    String raw = rs.getString(1);
+                    var node = raw == null || raw.isBlank() ? JSON.createObjectNode() : JSON.readTree(raw);
+                    if (!(node instanceof ObjectNode object)) throw new SQLException("用户设置不是 JSON 对象，拒绝覆盖");
+                    settings = object;
+                }
+            }
+            if (onlyIfAbsent && settings.hasNonNull(setting)) {
+                connection.rollback();
+                return SettingWriteResult.ALREADY_EXISTS;
+            }
+            if (bilibiliUid != null) {
+                // 也查询升级前已有的 JSON 记录，数字和字符串形式的 UID 均视为占用。
+                // 持有 UID 命名锁期间使用当前事务的首次一致性读取，无需锁住其他用户行。
+                try (var ps = connection.prepareStatement("SELECT user_openId FROM `" + USER_TABLE
+                        + "` WHERE user_openId <> ? AND CAST(JSON_UNQUOTE(JSON_EXTRACT(user_settings, '$.bv_uid'))"
+                        + " AS DECIMAL(20, 0)) = ? LIMIT 1")) {
+                    ps.setString(1, userOpenId);
+                    ps.setLong(2, bilibiliUid);
+                    try (var rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            connection.rollback();
+                            return SettingWriteResult.UID_IN_USE;
+                        }
+                    }
+                }
+            }
+            settings.set(setting, JSON.readTree(valueJson));
+            try (var ps = connection.prepareStatement("UPDATE `" + USER_TABLE + "` SET user_settings = ? WHERE user_openId = ?")) {
+                ps.setString(1, settings.toString());
+                ps.setString(2, userOpenId);
+                ps.executeUpdate();
+            }
+            connection.commit();
+            return SettingWriteResult.SAVED;
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(autoCommit);
+        }
+    }
 
     public static void initTable() {
         String userSql = "CREATE TABLE IF NOT EXISTS `" + USER_TABLE + "` (" +

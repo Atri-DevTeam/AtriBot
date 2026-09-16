@@ -45,13 +45,6 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    /**
-     * 群是否配置了个性化入群欢迎（文本与键盘任一存在即视为已配置）
-     */
-    public static boolean hasCustomWelcome(String groupOpenId) {
-        return hasCustomWelcome(loadWelcomeConfig(groupOpenId));
-    }
-
     private static boolean hasCustomWelcome(ObjectNode config) {
         if (config == null) {
             return false;
@@ -61,26 +54,6 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
         }
         JsonNode keyboard = config.path("keyboard");
         return keyboard.isArray() && !keyboard.isEmpty();
-    }
-
-    /**
-     * 获取群个性化入群欢迎的文本（markdown）部分，未配置返回 null
-     */
-    public static String getWelcomeText(String groupOpenId) {
-        ObjectNode config = loadWelcomeConfig(groupOpenId);
-        if (config == null) {
-            return null;
-        }
-        String text = config.path("text").asText(null);
-        return text == null || text.isBlank() ? null : text;
-    }
-
-    /**
-     * 获取群个性化入群欢迎的键盘部分：把存储的按钮二维数组重建为 Button 并经
-     * TC.keyboard 序列化，返回可直接传给 sendMessage 的 keyboard 对象；未配置返回 null
-     */
-    public static Object getWelcomeKeyboard(String groupOpenId) {
-        return buildWelcomeKeyboard(loadWelcomeConfig(groupOpenId));
     }
 
     public static Object buildWelcomeKeyboard(ObjectNode config) {
@@ -286,9 +259,8 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
 
     @EventHandler
     public void onMemberJoin(OfficialGroupMemberAddEvent event) {
-        // 成员入群后刷新一次所在群资料（成员数等）
-        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> QQEventRecord.fetchAndSaveGroupProfile(event.getGroupOpenId()));
-        log.info("[!] 成员入群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
+        Atri.getInstance().getGroupProfileRefreshBatcher().request(event.getGroupOpenId());
+        log.info("[!] 成员入群，群资料已加入集中刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
         Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
             if (event.getGroupOpenId().equals("8B4709F81FE02E5E64AC31B2F910793A")) {
                 if (CoinGainLogRepository.countCoinGains(event.getMemberOpenId(), "join_my_group") < 1) {

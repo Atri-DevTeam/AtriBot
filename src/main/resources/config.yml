@@ -29,6 +29,14 @@ censor:
 delivery:
   oss-dump-base-url: "null"
 
+# Minecraft 听声辨物（官机群聊 /sound）
+sound:
+  # 资源目录原样上传到此 URL 下，例如 https://example.com/bot/
+  resource-base-url: "https://cnb.cool/Atri-DevTeam/AtriBot-Minecraft/-/git/raw/main/bot/"
+  index-path: "minecraft/26.3-rc-3/index.json"
+  # 语音和题面发送成功后计时，范围 15～120 秒
+  answer-seconds: 120
+
 # MySQL 数据库配置
 mysql:
   host: "localhost"

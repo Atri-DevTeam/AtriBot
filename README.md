@@ -1145,6 +1145,7 @@ Napcat 平台支持按群组独立开关功能，通过 `GroupConfigManager` 管
 | `hypixel_status` | true | Hypixel 状态 |
 | `github_info` | false | GitHub 推送 |
 | `bv_check` | false | B 站视频解析 |
+| `netease_music` | false | 网易云歌曲链接解析，普通消息依次发送歌曲信息和封面；支持网页版、手机分享和 163cn.tv 短链接，同群同歌曲 5 分钟内去重 |
 | `mojira_tracker` | false | Mojira 追踪 |
 | `broadcast` | true | 全服广播 |
 | `calendar` | true | 日历推送 |

@@ -14,6 +14,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName WebUIRouter
+ * @Created_at 2026/09/11
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.webui
+ */
 @Slf4j
 public class WebUIRouter {
 
@@ -53,6 +60,9 @@ public class WebUIRouter {
         registerPublicOfficialRoutes(server, "/webui/api/public/official");
 
         // API routes
+        server.get("/webui/api/channels/query/{operation}", ChannelController::query);
+        server.post("/webui/api/channels/action/{operation}", ChannelController::action);
+        server.get("/webui/api/stats/database", DatabaseStatsController::usage);
         server.get("/webui/api/auth/challenge", AuthController::createChallenge);
         server.post("/webui/api/auth/verify", AuthController::login);
         server.post("/webui/api/auth/logout", AuthController::logout);
@@ -113,6 +123,7 @@ public class WebUIRouter {
         server.get("/webui/api/errors/{traceId}", AdminController::getErrorReport);
         server.get("/webui/api/send-logs/list", AdminController::listOfficialSendLogs);
         server.get("/webui/api/send-logs/stats", AdminController::officialSendLogStats);
+        server.get("/webui/api/send-logs/{id}/context", AdminController::getOfficialSendLogContext);
         server.get("/webui/api/send-logs/{id}", AdminController::getOfficialSendLog);
 
         // 原始事件记录

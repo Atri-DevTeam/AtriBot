@@ -2,7 +2,7 @@
   <div class="shell">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
-        <button class="ghost-button" :disabled="loading" @click="fetchOverview">刷新</button>
+        <button class="ghost-button" :disabled="loading || databaseLoading" @click="refreshStats">刷新</button>
         <button class="ghost-button" @click="logout">退出</button>
       </template>
     </AppSidebar>
@@ -305,6 +305,58 @@
             </dl>
           </section>
         </div>
+        <section class="stats-section stats-database" aria-labelledby="stats-database-title">
+          <header class="stats-section-head stats-database-head">
+            <h3 id="stats-database-title" class="stats-section-title">数据库使用情况</h3>
+            <span v-if="databaseUsage" class="stats-database-name">{{ databaseUsage.database }}</span>
+            <button class="ghost-button" :disabled="databaseLoading" @click="fetchDatabaseUsage">
+              {{ databaseLoading ? '刷新中...' : '刷新' }}
+            </button>
+          </header>
+          <div v-if="databaseError" class="empty-state error stats-state" role="alert">{{ databaseError }}</div>
+          <div v-else-if="databaseLoading && !databaseUsage" class="empty-state stats-state">加载中...</div>
+          <template v-else-if="databaseUsage">
+            <div class="stats-metrics stats-database-metrics">
+              <article class="stats-metric stats-metric--hero">
+                <div class="stats-metric-label">总占用</div>
+                <div class="stats-metric-value">{{ formatBytes(databaseUsage.totalBytes) }}</div>
+              </article>
+              <article class="stats-metric">
+                <div class="stats-metric-label">数据大小</div>
+                <div class="stats-metric-value">{{ formatBytes(databaseUsage.dataBytes) }}</div>
+              </article>
+              <article class="stats-metric">
+                <div class="stats-metric-label">索引大小</div>
+                <div class="stats-metric-value">{{ formatBytes(databaseUsage.indexBytes) }}</div>
+              </article>
+              <article class="stats-metric">
+                <div class="stats-metric-label">数据表</div>
+                <div class="stats-metric-value">{{ formatNumber(databaseUsage.tableCount) }}</div>
+              </article>
+            </div>
+            <div v-if="databaseUsage.tables.length" class="stats-database-tables">
+              <table class="stats-database-table">
+                <thead><tr><th scope="col">表名</th><th scope="col">记录数（估算）</th><th scope="col">数据</th><th scope="col">索引</th><th scope="col">总占用</th></tr></thead>
+                <tbody>
+                  <tr v-for="table in databaseUsage.tables" :key="table.name">
+                    <th scope="row"><span class="stats-database-table-name">{{ table.name }}</span><span class="stats-database-engine">{{ table.engine }}</span></th>
+                    <td>{{ formatNumber(table.estimatedRows) }}</td>
+                    <td>{{ formatBytes(table.dataBytes) }}</td>
+                    <td>{{ formatBytes(table.indexBytes) }}</td>
+                    <td>
+                      <strong>{{ formatBytes(table.totalBytes) }}</strong>
+                      <span class="stats-database-bar" aria-hidden="true"><i :style="{width: databaseShare(table.totalBytes) + '%'}"></i></span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else class="empty-state stats-state">当前数据库暂无数据表</div>
+            <footer class="stats-footnote">
+              约 {{ formatNumber(databaseUsage.estimatedRows) }} 条记录 · 更新于 {{ formatEpoch(databaseUsage.updatedAt) }}
+            </footer>
+          </template>
+        </section>
       </section>
     </main>
   </div>
@@ -343,6 +395,40 @@ const userOpenIdInput = ref('')
 const userStats = ref(null)
 const userLoading = ref(false)
 const userError = ref('')
+
+const databaseUsage = ref(null)
+const databaseLoading = ref(false)
+const databaseError = ref('')
+
+async function fetchDatabaseUsage() {
+  if (databaseLoading.value) return
+  databaseLoading.value = true
+  databaseError.value = ''
+  try {
+    databaseUsage.value = await api('/stats/database')
+  } catch (e) {
+    databaseError.value = e.message
+  } finally {
+    databaseLoading.value = false
+  }
+}
+
+function refreshStats() {
+  return Promise.all([fetchOverview(), fetchDatabaseUsage()])
+}
+
+function formatBytes(value) {
+  const bytes = Number(value)
+  if (!Number.isFinite(bytes) || bytes < 0) return '-'
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+  const index = bytes > 0 ? Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1) : 0
+  return `${(bytes / 1024 ** index).toLocaleString('zh-CN', {maximumFractionDigits: index ? 2 : 0})} ${units[index]}`
+}
+
+function databaseShare(bytes) {
+  const total = databaseUsage.value?.totalBytes || 0
+  return total > 0 ? Math.min(100, Math.max(0, bytes / total * 100)) : 0
+}
 
 const rangeHint = computed(() => {
   if (!startDate.value && !endDate.value) return '默认统计今日'
@@ -875,7 +961,7 @@ onMounted(async () => {
   const today = new Date()
   startDate.value = toDateValue(today)
   endDate.value = toDateValue(today)
-  await fetchOverview()
+  await refreshStats()
 })
 
 /* 图表宽度按容器实测，而不是靠 viewBox 缩放 —— 这样描边宽度和字号不会被拉伸 */

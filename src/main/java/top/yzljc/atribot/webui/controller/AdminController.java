@@ -315,8 +315,8 @@ public class AdminController {
     // ============ 发送日志 ============
 
     public static void listOfficialSendLogs(Context ctx) {
-        int page = parseInt(ctx.queryParam("page"), 1);
-        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+        int page = Math.max(1, parseInt(ctx.queryParam("page"), 1));
+        int pageSize = Math.max(1, parseInt(ctx.queryParam("pageSize"), 20));
         if (pageSize > 200) {
             pageSize = 200;
         }
@@ -324,12 +324,31 @@ public class AdminController {
         String keyword = ctx.queryParam("keyword");
 
         int total = OfficialSendLogRepository.count(type, keyword);
+        page = Math.min(page, Math.max(1, (int) Math.ceil((double) total / pageSize)));
         List<SendLogItemDTO> items = OfficialSendLogRepository.findPaginated(page, pageSize, type, keyword)
                 .stream()
                 .map(AdminController::toSendLogItem)
                 .toList();
         ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
+
+    public static void getOfficialSendLogContext(Context ctx) throws java.sql.SQLException {
+        long id = parseLong(ctx.pathParam("id"), -1L);
+        if (id <= 0) {
+            ctx.json(Result.fail(400, "日志 id 无效"));
+            return;
+        }
+        var context = OfficialSendLogRepository.findContext(id, 10);
+        if (context == null) {
+            ctx.json(Result.fail(404, "未找到该发送日志"));
+            return;
+        }
+        ctx.json(Result.success(new SendLogContextDTO(id,
+                context.items().stream().map(AdminController::toSendLogItem).toList(),
+                context.hasNewer(), context.hasOlder())));
+    }
+
+    public record SendLogContextDTO(long anchorId, List<SendLogItemDTO> items, boolean hasNewer, boolean hasOlder) {}
 
     public static void getOfficialSendLog(Context ctx) {
         long id = parseLong(ctx.pathParam("id"), -1L);

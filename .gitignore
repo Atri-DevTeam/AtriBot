@@ -58,6 +58,7 @@ bin/
 /minecraft_version.json
 /news_history.json
 /data/
+/plugins/
 /errorlogs/
 /sign_data/
 /hypixel_announcements.json

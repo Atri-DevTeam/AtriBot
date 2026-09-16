@@ -86,7 +86,7 @@
                               @click="saveItem(it)">{{ savingId === it.itemId ? '保存中…' : '保存' }}</button>
                       <label class="ghost-button small loot-file-label">
                         换图
-                        <input class="loot-file-input" type="file" accept="image/*" :aria-label="`更换${it.displayName}的图片`" @change="e => replaceImage(it.itemId, e)" />
+                        <input class="loot-file-input" type="file" accept="image/*,.webp,.gif" :aria-label="`更换${it.displayName}的图片`" @change="e => replaceImage(it.itemId, e)" />
                       </label>
                       <button class="ghost-button small danger loot-delete" type="button" :aria-label="`删除${it.displayName}`" title="删除物品卡" @click="deleteItem(it)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button>
                     </div>
@@ -173,7 +173,7 @@
           <div class="loot-form-field">
             <span>卡片图片</span>
             <div class="loot-image-picker">
-              <input ref="createFileInput" class="loot-image-input" type="file" accept="image/*" @change="onCreateFileChange" />
+              <input ref="createFileInput" class="loot-image-input" type="file" accept="image/*,.webp,.gif" @change="onCreateFileChange" />
               <button class="ghost-button loot-image-button" type="button" @click="createFileInput?.click()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
@@ -187,6 +187,7 @@
               </div>
               <span v-else class="loot-image-empty">尚未选择图片</span>
             </div>
+            <span class="loot-image-empty">支持 WebP、GIF，上传时转为静态 PNG 并保留透明背景</span>
           </div>
           <label class="checkbox-label loot-special-check"><input v-model="createForm.special" type="checkbox"/> 特殊类型卡</label>
         </div>
@@ -369,6 +370,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
+import { prepareLootImage } from '../lib/lootImage.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -516,7 +518,7 @@ async function createItem() {
     fd.append('displayName', createForm.value.displayName)
     fd.append('description', createForm.value.description || '')
     fd.append('special', createForm.value.special ? 'true' : 'false')
-    fd.append('image', createFile.value)
+    fd.append('image', await prepareLootImage(createFile.value))
     await apiUpload('/loot/items', fd)
     createForm.value = { displayName: '', description: '', special: false }
     resetCreateFile()
@@ -555,7 +557,7 @@ async function replaceImage(itemId, e) {
   error.value = ''
   try {
     const fd = new FormData()
-    fd.append('image', file)
+    fd.append('image', await prepareLootImage(file))
     await apiUpload(`/loot/items/${encodeURIComponent(itemId)}/image`, fd)
     brokenThumbs.delete(itemId)
     await fetchItems()

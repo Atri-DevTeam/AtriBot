@@ -624,13 +624,26 @@ public class LootRepository {
 
     /**
      * 查询用户卡片拥有量（持有卡片总张数）的全区排名。
-     * 采用竞赛排名：总量更高的每名用户都排在其前面，总量相同的用户并列；
+     * 先按总张数降序，总张数相同时按已收集卡片种类数降序，两项均相同才并列。
+     * 卡池总种类数对所有用户相同，比较已收集种类数等价于比较收集完成度百分比。
      * 一张卡都没有的用户排在所有持有者之后。查询失败返回 null。
      */
     public static LootRank getLootOwnershipRank(String userId) {
-        String rankSql = "SELECT COUNT(*) + 1 FROM (" +
-                "  SELECT `user_id`, SUM(`count`) AS total FROM `user_loot_items` GROUP BY `user_id`" +
-                ") t WHERE t.total > (SELECT COALESCE(SUM(`count`), 0) FROM `user_loot_items` WHERE `user_id` = ?)";
+        String rankSql = """
+                SELECT COUNT(*) + 1
+                FROM (
+                    SELECT `user_id`, SUM(`count`) AS total, COUNT(DISTINCT `item_id`) AS collected
+                    FROM `user_loot_items`
+                    GROUP BY `user_id`
+                ) t
+                CROSS JOIN (
+                    SELECT COALESCE(SUM(`count`), 0) AS total, COUNT(DISTINCT `item_id`) AS collected
+                    FROM `user_loot_items`
+                    WHERE `user_id` = ?
+                ) current_user_loot
+                WHERE t.total > current_user_loot.total
+                   OR (t.total = current_user_loot.total AND t.collected > current_user_loot.collected)
+                """;
         String totalSql = "SELECT COUNT(DISTINCT `user_id`) FROM `user_loot_items`";
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(rankSql)) {

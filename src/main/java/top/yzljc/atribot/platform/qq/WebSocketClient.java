@@ -3,6 +3,8 @@ package top.yzljc.atribot.platform.qq;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
@@ -10,13 +12,20 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.function.admin.DebugCommand;
+import top.yzljc.atribot.utils.tools.Alert;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 
 @Slf4j
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
+
+    /** 两种接入方式共用事件 ID 去重缓存，保留 1 分钟后自动过期。 */
+    private static final Cache<String, Boolean> EVENT_ID_CACHE = CacheBuilder.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .build();
 
     private final TokenManager tokenManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -221,6 +230,12 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
      * Dispatches an event payload shared by WebSocket and Webhook transports.
      */
     public static void dispatchEvent(String eventType, String eventId, JsonNode eventData) {
+        if (eventId != null && !eventId.isBlank() && EVENT_ID_CACHE.asMap().putIfAbsent(eventId, Boolean.TRUE) != null) {
+            Alert.notify("[!] 事件下发重复: eventType " + eventType + ", eventId " + eventId);
+            log.warn("[!] 事件下发重复: eventType {}, eventId {}", eventType, eventId);
+            return;
+        }
+
         switch (eventType) {
             case "READY":
                 return;
@@ -269,7 +284,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 BotEvents.handleGuildDirectMessageCreateEvent(eventData);
                 break;
             default:
-                log.info("[!] 收到新的事件类型: {}\n {}", eventType, eventData);
+                log.info("[!] 收到新的事件类型: {}", eventType);
                 break;
         }
 

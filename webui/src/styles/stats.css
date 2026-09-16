@@ -495,6 +495,31 @@
   font-family: var(--font-mono);
 }
 
+/* ── 数据库使用情况 ── */
+
+.stats-database-head { align-items: center; flex-wrap: wrap; }
+.stats-database-head > button { flex-shrink: 0; margin-left: auto; }
+.stats-database-name { min-width: 0; color: var(--color-text-muted); font-family: var(--font-mono); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.stats-database .stats-database-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.stats-database .stats-metric-value { overflow-wrap: anywhere; }
+.stats-database > .stats-state { padding-top: var(--space-3); }
+.stats-database-tables { max-height: 440px; overflow: auto; }
+.stats-database-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.stats-database-table th,
+.stats-database-table td { padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--color-hairline); text-align: right; white-space: nowrap; }
+.stats-database-table thead th { position: sticky; top: 0; z-index: 1; background: var(--color-surface); color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 500; }
+.stats-database-table th:first-child { text-align: left; }
+.stats-database-table tbody th { min-width: 160px; max-width: 340px; font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
+.stats-database-table tbody tr:last-child > * { border-bottom: 0; }
+.stats-database-table tbody tr:hover { background: var(--color-surface-hover); }
+.stats-database-table-name { display: block; font-family: var(--font-mono); color: var(--color-text); }
+.stats-database-engine { color: var(--color-text-subtle); font-size: var(--text-xs); }
+.stats-database-table td { font-family: var(--font-mono); color: var(--color-text-secondary); }
+.stats-database-table td strong { color: var(--color-text); font-weight: 500; }
+.stats-database-bar { display: block; width: 72px; height: 3px; margin: 5px 0 0 auto; overflow: hidden; border-radius: 2px; background: var(--color-surface-sunken); }
+.stats-database-bar > i { display: block; height: 100%; background: var(--color-accent); }
+.stats-database-note { display: block; margin-top: var(--space-1); }
+
 /* ── 断点：列数始终是 6 的因数（6 / 3 / 2） ── */
 
 @media (min-width: 1240px) {
@@ -510,6 +535,10 @@
 }
 
 @media (max-width: 720px) {
+  .stats-database .stats-database-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats-database-table th,
+  .stats-database-table td { padding: var(--space-2) var(--space-3); }
+
   .stats-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

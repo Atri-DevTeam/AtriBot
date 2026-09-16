@@ -32,11 +32,12 @@ public class DiceImpl {
             0.0015  // 7点
     };
 
+    /** args 只包含投掷参数，不包含 dice 子命令名称。 */
     public static void handle(QQCommandSender sender, String[] args) {
         long count = 1;
-        if (args.length >= 2) {
+        if (args.length > 0) {
             try {
-                count = Long.parseLong(args[1]);
+                count = Long.parseLong(args[0]);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -129,9 +130,9 @@ public class DiceImpl {
 
         List<List<Button>> buttons = List.of(
                 List.of(
-                        new Button("c1", "再掷 1 次", "/mc dice", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                        new Button("c2", "再掷 10 次", "/mc dice 10", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                        new Button("c3", "再掷 100 次", "/mc dice 100", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                        new Button("c1", "再掷 1 次", "/hyp dice", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        new Button("c2", "再掷 10 次", "/hyp dice 10", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                        new Button("c3", "再掷 100 次", "/hyp dice 100", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                 )
         );
 

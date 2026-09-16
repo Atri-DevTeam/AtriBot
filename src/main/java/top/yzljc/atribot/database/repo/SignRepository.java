@@ -170,6 +170,27 @@ public class SignRepository {
         }
     }
 
+    /**
+     * 查询用户是否曾经打过卡，供执行打卡前调用。
+     * 用户标识为空或没有历史打卡记录时返回 false；查询失败抛出异常，避免误判为首次打卡。
+     */
+    public static boolean isSignedBefore(String userOpenId) {
+        if (userOpenId == null || userOpenId.isBlank()) {
+            return false;
+        }
+        String sql = "SELECT 1 FROM `check_in_total` WHERE `user_open_id` = ? AND `total_count` > 0 LIMIT 1";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            try (var rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            log.error("查询历史打卡状态失败，userOpenId: {}", userOpenId, e);
+            throw new IllegalStateException("查询历史打卡状态失败", e);
+        }
+    }
+
     public static boolean hasCheckedInToday(String userOpenId) {
         LocalDate today = LocalDate.now();
         String sql = "SELECT 1 FROM `check_in_daily` WHERE `user_open_id` = ? AND `check_in_date` = ? LIMIT 1";
@@ -203,6 +224,25 @@ public class SignRepository {
             log.error("查询累计打卡次数失败", e);
         }
         return 0;
+    }
+
+    /**
+     * 获取累计参与过打卡的用户总数，每名用户只计一次。
+     * 首次打卡成功（CheckInResult.totalCount() == 1）后调用，结果包含该用户。
+     * 查询失败返回 -1；并发首次打卡时返回查询当时的总人数，不代表严格的先后序号。
+     */
+    public static long getTotalUserCount() {
+        String sql = "SELECT COUNT(*) FROM `check_in_total` WHERE `total_count` > 0";
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement(sql);
+             var rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (Exception e) {
+            log.error("查询累计打卡用户总数失败", e);
+        }
+        return -1;
     }
 
     /**

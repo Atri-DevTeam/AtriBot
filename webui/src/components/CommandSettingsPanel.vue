@@ -3,7 +3,7 @@
     <div class="command-toolbar">
       <label class="command-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input v-model.trim="query" placeholder="搜索指令、别名或说明" />
+        <input v-model.trim="query" class="command-search-input" placeholder="搜索指令、别名或说明" />
       </label>
       <div class="command-stats"><strong>{{ activeRuleCount }}</strong> 条生效规则 · {{ items.length }} 个指令</div>
     </div>
@@ -162,8 +162,53 @@ defineExpose({load})
 </script>
 
 <style scoped>
-.command-toolbar,.command-row,.command-actions,.command-name-line,.command-modal header,.command-modal footer{display:flex;align-items:center}.command-toolbar{justify-content:space-between;gap:16px;margin-bottom:12px}.command-search{height:34px;flex:1;max-width:360px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--color-border-input);border-radius:var(--radius-md);background:var(--color-surface)}.command-search:focus-within{border-color:var(--color-accent-border);box-shadow:var(--focus-ring)}.command-search svg{width:16px;fill:none;stroke:currentColor;color:var(--color-text-muted);stroke-width:2}.command-search input{width:100%;border:0;outline:0;background:none;color:var(--color-text);font-size:var(--text-sm)}.command-stats{font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap}.command-stats strong{color:var(--color-text-strong)}.command-list{border-top:1px solid var(--color-hairline)}.command-row{justify-content:space-between;gap:18px;padding:13px 2px;border-bottom:1px solid var(--color-hairline)}.command-main{min-width:0}.command-name-line{gap:7px}.command-name-line code{font-size:var(--text-md);font-weight:600;color:var(--color-text-strong)}.command-main p{margin:3px 0;color:var(--color-text);font-size:var(--text-sm)}.command-main small{color:var(--color-text-muted);font-size:var(--text-xs)}.command-badge{padding:2px 6px;border-radius:10px;font-size:10px;background:var(--color-surface-sunken);color:var(--color-text-muted)}.command-badge.off{background:var(--color-danger-soft);color:var(--color-danger)}.command-badge.group{background:var(--color-warning-soft);color:var(--color-warning-strong)}.command-actions{gap:7px;flex:none}.command-action{height:30px;min-height:30px;padding:0 9px;font-size:var(--text-xs)}.command-action span{margin-left:3px}.command-modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.42);backdrop-filter:blur(2px)}.command-modal{width:min(620px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;padding:20px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-lg)}.command-modal header{justify-content:space-between;padding-bottom:13px;border-bottom:1px solid var(--color-hairline)}.command-modal h3{margin:0;font-size:var(--text-lg)}.command-modal header p{margin:3px 0 0;color:var(--color-text-muted);font-family:var(--font-mono);font-size:var(--text-xs)}.command-modal-close{border:0;background:none;color:var(--color-text-muted);font-size:25px;cursor:pointer}.command-existing{display:flex;flex-wrap:wrap;gap:7px;padding:13px 0;border-bottom:1px solid var(--color-hairline)}.command-existing-title{width:100%;font-size:var(--text-xs);color:var(--color-text-muted)}.command-existing button{display:flex;gap:7px;padding:6px 8px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer}.command-existing button.active{border-color:var(--color-accent-border);background:var(--color-accent-soft)}.command-existing small{color:var(--color-text-muted)}.command-form{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding-top:15px}.command-form label{display:flex;flex-direction:column;gap:6px}.command-form label.full{grid-column:1/-1}.command-form label>span{font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted)}.command-form input,.command-form textarea{box-sizing:border-box;width:100%;padding:8px 10px;border:1px solid var(--color-border-input);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;outline:none}.command-form input{height:34px}.command-form textarea{resize:vertical}.command-form input:focus,.command-form textarea:focus{border-color:var(--color-accent-border);box-shadow:var(--focus-ring)}.command-time-note{margin:10px 0;font-size:var(--text-xs);color:var(--color-text-muted)}.command-dialog-error{color:var(--color-danger);font-size:var(--text-sm)}.command-modal footer{gap:8px;padding-top:14px;border-top:1px solid var(--color-hairline)}.command-modal footer span{flex:1}.command-modal footer button{min-height:32px}.danger{color:var(--color-danger)}
-@media(max-width:700px){.command-toolbar,.command-row{align-items:stretch;flex-direction:column}.command-search{max-width:none}.command-actions{justify-content:flex-end}.command-form{grid-template-columns:1fr}.command-form label.full{grid-column:auto}}
+.command-toolbar,.command-row,.command-actions,.command-name-line,.command-modal header,.command-modal footer{display:flex;align-items:center}.command-toolbar{justify-content:space-between;gap:16px;margin-bottom:12px}
+.command-search {
+  height: 34px;
+  min-height: 34px;
+  min-width: 0;
+  flex: 1;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.command-search:focus-within {
+  border-color: var(--color-accent-border);
+  box-shadow: var(--focus-ring);
+}
+.command-search svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  color: var(--color-text-muted);
+  stroke-width: 2;
+}
+/* 外层统一绘制边框和聚焦效果，覆盖全局 workspace 输入框样式。 */
+.command-panel .command-search input.command-search-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+.command-stats{font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap}.command-stats strong{color:var(--color-text-strong)}.command-list{border-top:1px solid var(--color-hairline)}.command-row{justify-content:space-between;gap:18px;padding:13px 2px;border-bottom:1px solid var(--color-hairline)}.command-main{min-width:0}.command-name-line{gap:7px}.command-name-line code{font-size:var(--text-md);font-weight:600;color:var(--color-text-strong)}.command-main p{margin:3px 0;color:var(--color-text);font-size:var(--text-sm)}.command-main small{color:var(--color-text-muted);font-size:var(--text-xs)}.command-badge{padding:2px 6px;border-radius:10px;font-size:10px;background:var(--color-surface-sunken);color:var(--color-text-muted)}.command-badge.off{background:var(--color-danger-soft);color:var(--color-danger)}.command-badge.group{background:var(--color-warning-soft);color:var(--color-warning-strong)}.command-actions{gap:7px;flex:none}.command-action{height:30px;min-height:30px;padding:0 9px;font-size:var(--text-xs)}.command-action span{margin-left:3px}.command-modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.42);backdrop-filter:blur(2px)}.command-modal{width:min(620px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;padding:20px;border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-lg)}.command-modal header{justify-content:space-between;padding-bottom:13px;border-bottom:1px solid var(--color-hairline)}.command-modal h3{margin:0;font-size:var(--text-lg)}.command-modal header p{margin:3px 0 0;color:var(--color-text-muted);font-family:var(--font-mono);font-size:var(--text-xs)}.command-modal-close{border:0;background:none;color:var(--color-text-muted);font-size:25px;cursor:pointer}.command-existing{display:flex;flex-wrap:wrap;gap:7px;padding:13px 0;border-bottom:1px solid var(--color-hairline)}.command-existing-title{width:100%;font-size:var(--text-xs);color:var(--color-text-muted)}.command-existing button{display:flex;gap:7px;padding:6px 8px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);cursor:pointer}.command-existing button.active{border-color:var(--color-accent-border);background:var(--color-accent-soft)}.command-existing small{color:var(--color-text-muted)}.command-form{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding-top:15px}.command-form label{display:flex;flex-direction:column;gap:6px}.command-form label.full{grid-column:1/-1}.command-form label>span{font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted)}.command-form input,.command-form textarea{box-sizing:border-box;width:100%;padding:8px 10px;border:1px solid var(--color-border-input);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);font:inherit;outline:none}.command-form input{height:34px}.command-form textarea{resize:vertical}.command-form input:focus,.command-form textarea:focus{border-color:var(--color-accent-border);box-shadow:var(--focus-ring)}.command-time-note{margin:10px 0;font-size:var(--text-xs);color:var(--color-text-muted)}.command-dialog-error{color:var(--color-danger);font-size:var(--text-sm)}.command-modal footer{gap:8px;padding-top:14px;border-top:1px solid var(--color-hairline)}.command-modal footer span{flex:1}.command-modal footer button{min-height:32px}.danger{color:var(--color-danger)}
+@media(max-width:700px){.command-toolbar,.command-row{align-items:stretch;flex-direction:column}.command-search{flex:none;max-width:none}.command-actions{justify-content:flex-end}.command-form{grid-template-columns:1fr}.command-form label.full{grid-column:auto}}
 .command-badge.test{border:1px solid var(--color-danger);background:var(--color-danger-soft);color:var(--color-danger);font-weight:600}
 .command-existing-rule{display:flex;align-items:center;gap:7px;max-width:100%;padding:5px 7px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}
 .command-existing-rule code{max-width:240px;overflow:hidden;text-overflow:ellipsis;color:var(--color-text)}

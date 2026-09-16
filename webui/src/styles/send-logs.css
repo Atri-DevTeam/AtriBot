@@ -42,7 +42,7 @@
 
 .sendlogs-grid {
   display: grid;
-  grid-template-columns: 86px 120px minmax(0, 1fr) 110px 92px;
+  grid-template-columns: 70px 100px minmax(0, 1fr) 90px 140px 84px;
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-4);
@@ -71,6 +71,59 @@
 
 .sendlogs-row:hover {
   background: var(--color-surface-hover);
+}
+
+.sendlogs-row--anchor,
+.sendlogs-row--anchor:hover {
+  background: var(--color-accent-soft);
+  box-shadow: inset 3px 0 var(--color-accent-border);
+}
+
+.sendlogs-anchor-label {
+  display: block;
+  color: var(--color-accent-text);
+  font-weight: 600;
+}
+
+.sendlogs-context-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.sendlogs-pagination {
+  flex-wrap: wrap;
+}
+
+.sendlogs-page-jump {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.sendlogs-page-jump input {
+  width: 76px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.sendlogs-actions {
+  text-align: center;
+}
+
+.sendlogs-actions .ghost-button {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
 }
 
 .sendlogs-type {
@@ -121,7 +174,7 @@
 }
 
 .sendlogs-time {
-  text-align: right;
+  text-align: left;
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
 }
@@ -179,7 +232,7 @@
     grid-template-areas:
       "type time"
       "url  url"
-      "state state";
+      "state actions";
     row-gap: var(--space-1);
     padding: var(--space-2) var(--space-3);
   }
@@ -210,6 +263,12 @@
 
   .sendlogs-row > span:nth-child(5) {
     grid-area: time;
+    text-align: right;
+  }
+
+  .sendlogs-actions {
+    grid-area: actions;
+    text-align: right;
   }
 
   .sendlogs-tabs {

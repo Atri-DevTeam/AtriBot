@@ -9,6 +9,8 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.UACommand;
+import top.yzljc.atribot.auth.LoginCommand;
+import top.yzljc.atribot.auth.LoginService;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -36,6 +38,7 @@ import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
 import top.yzljc.atribot.function.games.RockPaperScissorsGame;
+import top.yzljc.atribot.function.command.SoundCommand;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.function.minecraft.PackVersion;
 import top.yzljc.atribot.function.minecraft.SkyblockPackCheckImpl;
@@ -86,8 +89,10 @@ import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.webui.WebUIRouter;
 import top.yzljc.atribot.webui.WebUISessionManager;
+import top.yzljc.atribot.plugin.PluginManager;
 import top.yzljc.sakuraba_ema.ChannelCliClient;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,6 +100,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class Atri {
+    private final SoundCommand soundCommand = new SoundCommand();
 
     @Getter
     private static Atri instance;
@@ -104,6 +110,10 @@ public class Atri {
     private ChatService chatService;
     @Getter
     private Scheduler scheduler;
+    @Getter
+    private final GroupProfileRefreshBatcher groupProfileRefreshBatcher = new GroupProfileRefreshBatcher(
+            (task, delayMillis) -> scheduler.runTaskLaterAsynchronously(task, delayMillis),
+            QQEventRecord::fetchAndSaveGroupProfile);
     private TaskScheduler taskScheduler;
     @Getter
     private AiService aiService;
@@ -137,6 +147,8 @@ public class Atri {
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean disabled = new AtomicBoolean(false);
+    @Getter
+    private final PluginManager pluginManager = new PluginManager(Path.of("plugins"));
     /** 记录已访问过 webui api 的 IP */
     private final Set<String> seenWebuiApiIps = ConcurrentHashMap.newKeySet();
 
@@ -217,7 +229,7 @@ public class Atri {
     public void onEnable() {
         System.out.println("====== ATRI IS STARTING ======");
         EventManager.getInstance().registerEvents(new HitokotoCommand());
-        EventManager.getInstance().registerEvents(new AutoAcceptFriend());
+//        EventManager.getInstance().registerEvents(new AutoAcceptFriend()); // disabled
         EventManager.getInstance().registerEvents(new CommandManager());
 //        EventManager.getInstance().registerEvents(new DenyFuckGuys());
         EventManager.getInstance().registerEvents(new UnknownInvitation());
@@ -225,6 +237,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new Notify());
         EventManager.getInstance().registerEvents(new Repeater());
         EventManager.getInstance().registerEvents(new BiliBiliResolver());
+        EventManager.getInstance().registerEvents(new NeteaseMusicResolver());
         EventManager.getInstance().registerEvents(new AutoPokeBack());
 //        EventManager.getInstance().registerEvents(new GroupMessageCheck());
         EventManager.getInstance().registerEvents(new NotifyRecalled());
@@ -317,6 +330,7 @@ public class Atri {
         CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
+        CommandManager.getCommand("sound").setExecutor(soundCommand);
         CommandManager.getCommand("ping").setExecutor(new PingCommand());
         CommandManager.getCommand("boop").setExecutor(BoopCommand.INSTANCE);
         CommandManager.getCommand("update").setExecutor(updatePushCommand);
@@ -327,11 +341,13 @@ public class Atri {
         CommandManager.getCommand("图源").setExecutor(new PicStatsCommand());
         CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
-        CommandManager.getCommand("drawitem").setExecutor(new DrawCommand());
+        CommandManager.getCommand("item").setExecutor(new DrawCommand());
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
+        CommandManager.getCommand("login").setExecutor(new LoginCommand());
         CommandManager.getCommand("bind").setExecutor(new McBindCommand());
+        CommandManager.getCommand("bvbind").setExecutor(new BilibiliBindCommand());
         CommandManager.getCommand("wz").setExecutor(new HypixelTNTWizardsCommand());
         CommandManager.getCommand("zs").setExecutor(new HypixelZombiesCommand());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
@@ -407,6 +423,7 @@ public class Atri {
 //            GroupConfigManager.registerFeature("hypixel_status", true);
             GroupConfigManager.registerFeature("github_info", false);
             GroupConfigManager.registerFeature("bv_check", false);
+            GroupConfigManager.registerFeature("netease_music", false);
             GroupConfigManager.registerFeature("mojira_tracker", false);
 //            GroupConfigManager.registerFeature("broadcast", true);
 //            GroupConfigManager.registerFeature("calendar", true);
@@ -444,6 +461,7 @@ public class Atri {
             log.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
 
+        pluginManager.loadPlugins();
         BotRuntimeData.callStartUp();
     }
 
@@ -452,6 +470,10 @@ public class Atri {
             return;
         }
 
+        qqWebhookHandler.close();
+        soundCommand.close();
+        groupProfileRefreshBatcher.close();
+        pluginManager.close();
         if (scheduler != null) {
             scheduler.cancelTask(BotRuntimeData.getTask());
         }
@@ -470,6 +492,7 @@ public class Atri {
             taskScheduler.shutdown();
         }
         if (server != null) {
+            LoginService.getInstance().close();
             server.stop();
         }
         if (scheduler != null) {

@@ -21,6 +21,8 @@
 }
 
 .nav-collapse-btn svg { display: block; flex-shrink: 0; }
+.nav-collapse-icon { transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+.side-nav-label { display: inline-block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 768px) {
   .nav-collapse-btn { display: none; }
@@ -29,12 +31,26 @@
 @media (min-width: 769px) {
   .sidebar,
   .sidebar-spacer {
-    transition: width 0.18s ease;
+    transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1), padding 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .sidebar .side-nav-label,
+  .sidebar .brand > div:last-child {
+    transition: opacity 160ms ease 80ms, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .sidebar .brand { overflow: hidden; }
+  .sidebar .brand > div:last-child { white-space: nowrap; min-width: 0; }
+  .sidebar .brand-avatar, .sidebar .brand-mark { flex-shrink: 0; }
+  .sidebar .side-nav-item, .sidebar .nav-collapse-btn {
+    overflow: hidden;
+    white-space: nowrap;
+    transition: padding 320ms cubic-bezier(0.22, 1, 0.36, 1), background 120ms ease, color 120ms ease;
   }
 
   html.nav-collapsed .sidebar {
     width: 64px;
-    padding: 22px 10px;
+    padding: var(--space-4) 10px;
   }
 
   html.nav-collapsed .sidebar-spacer {
@@ -42,19 +58,26 @@
   }
 
   html.nav-collapsed .brand {
-    justify-content: center;
+    padding-left: 6px;
+    padding-right: 6px;
   }
 
   html.nav-collapsed .brand > div:last-child {
-    display: none;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition-delay: 0ms;
   }
 
   html.nav-collapsed .side-nav-item {
     position: relative;
-    justify-content: center;
-    gap: 0;
-    padding: 10px 0;
-    font-size: 0;
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  html.nav-collapsed .side-nav-label {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition-delay: 0ms;
   }
 
   html.nav-collapsed .side-nav-item .feedback-nav-badge {
@@ -70,7 +93,18 @@
 
   html.nav-collapsed .nav-collapse-btn {
     padding: 8px 0;
-    font-size: 0;
+    gap: 0;
+  }
+
+  html.nav-collapsed .nav-collapse-btn .side-nav-label { width: 0; }
+  html.nav-collapsed .nav-collapse-icon { transform: rotate(180deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .sidebar-spacer, .nav-collapse-icon,
+  .sidebar .side-nav-label, .sidebar .brand > div:last-child,
+  .sidebar .side-nav-item, .sidebar .nav-collapse-btn {
+    transition: none;
   }
 }
 
@@ -442,6 +476,55 @@
   background: #ffffff;
   border-left: 1px solid #e4e6ea;
   box-shadow: -6px 0 18px rgba(16, 20, 28, 0.1);
+}
+
+/* 成员列表、群信息和用户设置共用抽屉动效，只动画合成属性，避免列表布局抖动。 */
+.chatnt-panel-enter-active {
+  transform-origin: right center;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease-out;
+}
+
+.chatnt-panel-leave-active {
+  transform-origin: right center;
+  pointer-events: none;
+  transition: transform 180ms cubic-bezier(0.4, 0, 1, 1), opacity 150ms ease-in;
+}
+
+.chatnt-panel-enter-from {
+  opacity: 0;
+  transform: translate3d(48px, 0, 0) scale(0.98);
+}
+
+.chatnt-panel-leave-to {
+  opacity: 0;
+  transform: translate3d(28px, 0, 0) scale(0.99);
+}
+
+.chatnt-panel-backdrop-enter-active {
+  transition: opacity 240ms ease-out;
+}
+
+.chatnt-panel-backdrop-leave-active {
+  transition: opacity 180ms ease-in;
+}
+
+.chatnt-panel-backdrop-enter-from,
+.chatnt-panel-backdrop-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatnt-panel-enter-active,
+  .chatnt-panel-leave-active,
+  .chatnt-panel-backdrop-enter-active,
+  .chatnt-panel-backdrop-leave-active {
+    transition: none;
+  }
+
+  .chatnt-panel-enter-from,
+  .chatnt-panel-leave-to {
+    transform: none;
+  }
 }
 
 .chatnt-members-head {
@@ -996,11 +1079,56 @@
 }
 
 .chatnt-msgs {
+  overflow-anchor: none;
+  scroll-behavior: auto;
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
   padding: 14px 20px 8px;
+}
+
+.chatnt-msg-content {
+  display: flow-root;
+}
+
+.chatnt-new-messages {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 32px);
+  min-height: 34px;
+  padding: 7px 13px;
+  border: 1px solid #d7e9fa;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #0085df;
+  box-shadow: 0 3px 14px rgba(26, 83, 128, 0.14);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+
+.chatnt-new-messages:hover { background: #f0f8ff; box-shadow: 0 4px 16px rgba(26, 83, 128, 0.2); }
+.chatnt-new-messages:focus-visible { outline: 2px solid #0099ff; outline-offset: 3px; }
+.chatnt-new-messages:disabled { cursor: wait; }
+.chatnt-new-messages svg { flex-shrink: 0; }
+.chatnt-new-messages-enter-active { transition: opacity 180ms ease-out, transform 260ms cubic-bezier(0.22, 1, 0.36, 1); }
+.chatnt-new-messages-leave-active { pointer-events: none; transition: opacity 150ms ease-in, transform 150ms ease-in; }
+.chatnt-new-messages-enter-from,
+.chatnt-new-messages-leave-to { opacity: 0; transform: translateY(8px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chatnt-new-messages,
+  .chatnt-new-messages-enter-active,
+  .chatnt-new-messages-leave-active { transition: none; }
+  .chatnt-new-messages-enter-from,
+  .chatnt-new-messages-leave-to { transform: none; }
 }
 
 .chatnt-msgs .load-tip {
@@ -1019,11 +1147,20 @@
 
 /* 消息行 */
 
+.qm.qm-arriving { animation: qm-arrive 280ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes qm-arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qm.qm-arriving { animation: none; }
+}
+
 .qm {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .qm.mine { flex-direction: row-reverse; }
@@ -1080,6 +1217,12 @@
   white-space: nowrap;
 }
 
+.qm-name-text.bot-staff-name,
+.mbr-name.bot-staff-name {
+  color: #df3e46;
+  font-weight: 600;
+}
+
 .qm-uid {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1103,13 +1246,14 @@
   color: #12b7f5;
 }
 .qm-bubble {
+  --qm-bubble-padding-x: 10px;
   position: relative;
   max-width: 100%;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: 7px var(--qm-bubble-padding-x);
+  border-radius: 8px;
   background: #ffffff;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: #1f2329;
   word-break: break-word;
   box-shadow: 0 1px 2px rgba(16, 20, 28, 0.04);
@@ -1119,13 +1263,32 @@
   color: #ffffff;
 }
 
+.qm-bubble--image-sized {
+  box-sizing: border-box;
+  width: calc(var(--qm-image-width) + var(--qm-bubble-padding-x) + var(--qm-bubble-padding-x));
+}
+
+.qm-bubble--image-sized > .md-body img,
+.qm-bubble--image-sized > .qm-attach > img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 小图标随文字行内排版；原消息的换行仍由 Markdown 的 br / 段落控制。 */
+.qm-bubble > .md-body img.md-inline-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  height: auto;
+  margin: 0 2px;
+}
+
 .qm-bubble pre {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: inherit;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 /* 合并转发：外层摘要卡片，展开后按聊天消息阅读 */
@@ -1388,6 +1551,33 @@
   box-shadow: 0 2px 8px rgba(138, 100, 20, 0.14);
 }
 
+.chatnt-notice-enter-active {
+  transition: opacity 200ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chatnt-notice-leave-active {
+  pointer-events: none;
+  transition: opacity 160ms ease-in, transform 160ms ease-in;
+}
+
+.chatnt-notice-enter-from,
+.chatnt-notice-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatnt-notice-enter-active,
+  .chatnt-notice-leave-active {
+    transition: none;
+  }
+
+  .chatnt-notice-enter-from,
+  .chatnt-notice-leave-to {
+    transform: none;
+  }
+}
+
 .qm-ref-content { overflow-wrap: anywhere; }
 .qm-ref-content p { margin: 0; }
 
@@ -1510,7 +1700,8 @@
 
 .qm-voice-title { font-size: 12px; font-weight: 600; }
 .qm-voice-asr { font-size: 13px; }
-.qm-voice audio { max-width: 240px; }
+.qm-media-hint { font-size: 12px; opacity: 0.8; }
+.qm-voice audio { width: 240px; max-width: 100%; }
 
 .qm-time {
   margin-top: 4px;
@@ -1977,6 +2168,7 @@
 
   .chatnt-head { padding: 8px 12px; min-height: 54px; }
   .chatnt-msgs { padding: 12px 12px 6px; }
+  .chatnt-new-messages { right: 12px; bottom: 12px; }
   .chatnt-members { width: 86%; max-width: 340px; }
   .chatnt-notice { top: 62px; left: 12px; right: 12px; }
   .chatnt-replybar { margin: 0 12px; }

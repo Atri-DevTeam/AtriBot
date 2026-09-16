@@ -47,8 +47,8 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onMemberRemove(OfficialGroupMemberRemoveEvent event) {
-        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
-        log.info("[!] 成员退群，群资料刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
+        Atri.getInstance().getGroupProfileRefreshBatcher().request(event.getGroupOpenId());
+        log.info("[!] 成员退群，群资料已加入集中刷新，群ID {}, 用户ID {}", event.getGroupOpenId(), event.getMemberOpenId());
     }
 
     @EventHandler
@@ -82,14 +82,14 @@ public class QQEventRecord implements Listener {
     public static void fetchAndSaveGroupProfile(String groupOpenId) {
         var profile = QQBot.fetchGroupProfile(groupOpenId);
         if (profile == null) {
-            log.warn("新加群后获取群资料失败: {}", groupOpenId);
+            log.warn("获取群资料失败: {}", groupOpenId);
             return;
         }
         if (!OfficialGroups.saveGroupProfile(profile)) {
-            log.warn("新加群后保存群资料失败: {}", groupOpenId);
+            log.warn("保存群资料失败: {}", groupOpenId);
             return;
         }
-        log.info("[!] 已加载新进群的相关资料，群ID: {}, 群名称: {}", profile.groupId(), profile.groupName());
+        log.info("[!] 已刷新群资料，群ID: {}, 群名称: {}", profile.groupId(), profile.groupName());
     }
 
     @EventHandler

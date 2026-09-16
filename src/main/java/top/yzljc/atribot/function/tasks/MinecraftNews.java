@@ -300,6 +300,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             );
 
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[动态] " + title, forumsMarkdown);
+            ChannelPosts.sendMessage(ForumCode.SUB_MC, ForumCode.SUB_MC_NEWS, "[动态] " + title, forumsMarkdown);
 
         } catch (Exception e) {
             log.warn("推送新闻图片失败: {}", e.getMessage());

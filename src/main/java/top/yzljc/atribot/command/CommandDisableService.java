@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.plugin.PluginCommand;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -146,14 +147,18 @@ public final class CommandDisableService {
         String name = normalizeCommand(commandName);
         CommandFeature command = CommandManager.getCommand(name);
         if (command == null) throw new IllegalArgumentException("指令不存在: " + commandName);
-        return command.getName().toLowerCase();
+        return commandKey(command);
     }
 
     private static String normalizeCommand(String value) {
         if (value == null) return "";
         String name = value.trim().toLowerCase();
         CommandFeature command = CommandManager.getCommand(name);
-        return command == null ? name : command.getName().toLowerCase();
+        return command == null ? name : commandKey(command);
+    }
+
+    private static String commandKey(CommandFeature command) {
+        return command instanceof PluginCommand plugin ? plugin.getQualifiedName() : command.getName().toLowerCase();
     }
 
     private static void validate(DisableRule rule) {

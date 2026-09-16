@@ -28,6 +28,7 @@ import top.yzljc.sakuraba_ema.utils.ForumCode;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,14 +44,11 @@ import java.util.Set;
 public final class McVersionImpl implements ScheduledTask {
 
     private static final String VERSION_API = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private static final File RECORD_FILE = new File("minecraft_version.json");
 
     public static Map<String, VersionInfo> checkCurrentVersion() {
         LatestVersions latest = getLatestVersion();
-
         Map<String, VersionInfo> result = new HashMap<>();
         result.put("release", latest.release());
         result.put("snapshot", latest.snapshot());
@@ -66,9 +64,7 @@ public final class McVersionImpl implements ScheduledTask {
         }
 
         JsonNode latest = response.get("latest");
-
         String releaseId = latest.get("release").asText();
-
         String snapshotId = latest.get("snapshot").asText();
 
         VersionInfo releaseInfo = null;
@@ -140,15 +136,15 @@ public final class McVersionImpl implements ScheduledTask {
 
         String versionInfo = """
                 %s **Minecraft最新版本信息**
-
+                
                 正式版: %s
-
+                
                 > 发布于 %s
-
+                
                 快照版: %s
-
+                
                 > 发布于 %s
-
+                
                 > %s
                 """.formatted(
                 Markdown.img(ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
@@ -168,10 +164,10 @@ public final class McVersionImpl implements ScheduledTask {
 
         String versionInfo = """
                 Minecraft 最新版本信息
-
+                
                 正式版: %s
                 发布于: %s
-
+                
                 快照版: %s
                 发布于: %s
                 """.formatted(
@@ -211,7 +207,7 @@ public final class McVersionImpl implements ScheduledTask {
                 FormatTools.formatIsoTime(versionInfo.releaseTime())
         );
 
-        PushTask.push("mc_news", TC.md(markdownInfo));
+        PushTask.push("mc_ver", TC.md(markdownInfo));
 
 //        groups.stream().filter(group -> GroupConfigManager.isFeatureEnabled(group, "mc_news"))
 //                .forEach(group -> GroupMessage.chatMessage(group, textInfo));
@@ -219,12 +215,13 @@ public final class McVersionImpl implements ScheduledTask {
 //        officialGroups.forEach(group -> GroupChat.sendMessage(group, TC.md(markdownInfo)));
 
         ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[版本更新] Minecraft发布了新的版本", TC.md(markdownInfo));
+        ChannelPosts.sendMessage(ForumCode.SUB_MC, ForumCode.SUB_MC_NEWS_VERSION, "[版本更新] Minecraft发布了新的版本", TC.md(markdownInfo));
         log.info("Pushed {} update info to {} groups, including {} official groups", verId, groups.size(), officialGroups.size());
     }
 
     @Override
     public TaskSchedule schedule() {
-        return new TaskPlan().setMode(ScheduleMode.hourly);
+        return new TaskPlan().setMode(ScheduleMode.a_quarter);
     }
 
     @Override
@@ -237,15 +234,25 @@ public final class McVersionImpl implements ScheduledTask {
             return;
         }
 
-        if (!old.release().id().equals(latest.release().id())) {
-            pushUpdateInfo(VersionType.RELEASE, latest.release());
-        }
-
-        if (!old.snapshot().id().equals(latest.snapshot().id())) {
-            pushUpdateInfo(VersionType.SNAPSHOT, latest.snapshot());
-        }
+        updatesToPush(old, latest).forEach(McVersionImpl::pushUpdateInfo);
 
         saveVersions(latest);
+    }
+
+    static Map<VersionType, VersionInfo> updatesToPush(LatestVersions old, LatestVersions latest) {
+        Map<VersionType, VersionInfo> updates = new LinkedHashMap<>();
+        if (old == null) return updates;
+        if (!old.release().id().equals(latest.release().id())) {
+            updates.put(VersionType.RELEASE, latest.release());
+        }
+        // Mojang's latest.snapshot can point to a release. It is not a second snapshot publication.
+        VersionInfo snapshot = latest.snapshot();
+        if ("snapshot".equals(snapshot.type())
+                && !snapshot.id().equals(latest.release().id())
+                && !snapshot.id().equals(old.snapshot().id())) {
+            updates.put(VersionType.SNAPSHOT, snapshot);
+        }
+        return updates;
     }
 
     @Getter

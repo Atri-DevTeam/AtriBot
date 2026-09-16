@@ -8,7 +8,9 @@ import jakarta.mail.Part;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeUtility;
 import lombok.Getter;
+import org.jsoup.Jsoup;
 import top.yzljc.atribot.event.Event;
+import top.yzljc.atribot.service.email.EmailBodyPreview;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +18,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -30,7 +34,8 @@ import java.util.regex.Pattern;
 public class EmailMessageEvent extends Event {
 
     private static final int SUMMARY_MAX_LENGTH = 600;
-    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]+>");
+    private static final int MAX_INLINE_IMAGE_BYTES = 6 * 1024 * 1024;
+    private static final int MAX_INLINE_TOTAL_BYTES = 16 * 1024 * 1024;
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     private final Message message;
@@ -48,6 +53,8 @@ public class EmailMessageEvent extends Event {
     private final String htmlText;
     private final String contentSummary;
     private final List<String> attachmentFileNames;
+    private final Map<String, byte[]> inlineImages;
+    private final List<EmailBodyPreview.Block> bodyBlocks;
     private final String readError;
 
     public EmailMessageEvent(Message message) {
@@ -74,7 +81,9 @@ public class EmailMessageEvent extends Event {
         this.htmlText = joinContent(content.htmlTextParts);
         this.contentSummary = buildSummary(plainText, htmlText);
         this.attachmentFileNames = Collections.unmodifiableList(content.attachmentFileNames);
-        this.readError = error;
+        this.inlineImages = Collections.unmodifiableMap(content.inlineImages);
+        this.bodyBlocks = List.copyOf(content.bodyBlocks);
+        this.readError = error != null ? error : content.error;
     }
 
     public Date getSentDate() {
@@ -148,32 +157,84 @@ public class EmailMessageEvent extends Event {
 
     private static void collectContent(Part part, MailContent content) throws MessagingException, IOException {
         String fileName = decodeFileName(part.getFileName());
-        if (!fileName.isBlank()) {
+        boolean attachment = Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition());
+        String[] ids = part.getHeader("Content-ID");
+        String[] locations = part.getHeader("Content-Location");
+        boolean inlineImage = !attachment && part.isMimeType("image/*")
+                && ((ids != null && ids.length > 0) || (locations != null && locations.length > 0));
+        if (!fileName.isBlank() && !inlineImage) {
             content.attachmentFileNames.add(fileName);
+        }
+
+        if (attachment) return;
+
+        if (inlineImage) {
+            try (var input = part.getInputStream()) {
+                int limit = Math.min(MAX_INLINE_IMAGE_BYTES, MAX_INLINE_TOTAL_BYTES - content.imageBytes);
+                byte[] bytes = input.readNBytes(limit + 1);
+                if (bytes.length > limit) {
+                    content.error = "部分内嵌图片超过大小限制，正文仍可查看";
+                } else {
+                    content.imageBytes += bytes.length;
+                    if (ids != null) for (String id : ids) content.inlineImages.put(normalizeContentId(id), bytes);
+                    if (locations != null) for (String location : locations) content.inlineImages.put(location.trim(), bytes);
+                }
+            }
+            return;
         }
 
         if (part.isMimeType("multipart/*")) {
             content.multipart = true;
             Object rawContent = part.getContent();
             if (rawContent instanceof Multipart multipartContent) {
+                List<String> selectedPlain = new ArrayList<>();
+                List<String> selectedHtml = new ArrayList<>();
+                List<EmailBodyPreview.Block> selectedPlainBlocks = List.of();
+                List<EmailBodyPreview.Block> selectedHtmlBlocks = List.of();
                 for (int i = 0; i < multipartContent.getCount(); i++) {
-                    collectContent(multipartContent.getBodyPart(i), content);
+                    try {
+                        if (part.isMimeType("multipart/alternative")) {
+                            MailContent alternative = new MailContent();
+                            collectContent(multipartContent.getBodyPart(i), alternative);
+                            if (!alternative.plainTextParts.isEmpty()) {
+                                selectedPlain.clear();
+                                selectedPlain.addAll(alternative.plainTextParts);
+                                selectedPlainBlocks = alternative.bodyBlocks;
+                            }
+                            if (!alternative.htmlTextParts.isEmpty()) {
+                                selectedHtml.clear();
+                                selectedHtml.addAll(alternative.htmlTextParts);
+                                selectedHtmlBlocks = alternative.bodyBlocks;
+                            }
+                            if (content.imageBytes + alternative.imageBytes <= MAX_INLINE_TOTAL_BYTES) {
+                                content.inlineImages.putAll(alternative.inlineImages);
+                                content.imageBytes += alternative.imageBytes;
+                            } else content.error = "部分内嵌图片超过大小限制";
+                            content.attachmentFileNames.addAll(alternative.attachmentFileNames);
+                            if (alternative.error != null) content.error = alternative.error;
+                        } else collectContent(multipartContent.getBodyPart(i), content);
+                    } catch (Exception e) {
+                        content.error = "部分邮件内容读取失败: " + e.getMessage();
+                    }
                 }
+                content.plainTextParts.addAll(selectedPlain);
+                content.htmlTextParts.addAll(selectedHtml);
+                content.bodyBlocks.addAll(selectedHtmlBlocks.isEmpty() ? selectedPlainBlocks : selectedHtmlBlocks);
             }
             return;
         }
 
-        if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())) {
-            return;
-        }
-
         if (part.isMimeType("text/plain")) {
-            content.plainTextParts.add(String.valueOf(part.getContent()));
+            String text = String.valueOf(part.getContent());
+            content.plainTextParts.add(text);
+            content.bodyBlocks.add(EmailBodyPreview.Block.text(text));
             return;
         }
 
         if (part.isMimeType("text/html")) {
-            content.htmlTextParts.add(String.valueOf(part.getContent()));
+            String html = String.valueOf(part.getContent());
+            content.htmlTextParts.add(html);
+            content.bodyBlocks.addAll(EmailBodyPreview.parse(html, ""));
             return;
         }
 
@@ -214,7 +275,19 @@ public class EmailMessageEvent extends Event {
     }
 
     private static String stripHtml(String html) {
-        return HTML_TAG_PATTERN.matcher(html).replaceAll(" ");
+        var document = Jsoup.parse(html);
+        document.select("head,style,script,noscript,template,[hidden]").remove();
+        return document.body().text();
+    }
+
+    public static String normalizeContentId(String value) {
+        String id = value.trim();
+        if (id.regionMatches(true, 0, "cid:", 0, 4)) id = id.substring(4);
+        try {
+            id = java.net.URLDecoder.decode(id.replace("+", "%2B"), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException ignored) {}
+        if (id.startsWith("<") && id.endsWith(">")) id = id.substring(1, id.length() - 1);
+        return id;
     }
 
     @FunctionalInterface
@@ -231,6 +304,10 @@ public class EmailMessageEvent extends Event {
         private final List<String> plainTextParts = new ArrayList<>();
         private final List<String> htmlTextParts = new ArrayList<>();
         private final List<String> attachmentFileNames = new ArrayList<>();
+        private final Map<String, byte[]> inlineImages = new LinkedHashMap<>();
+        private final List<EmailBodyPreview.Block> bodyBlocks = new ArrayList<>();
+        private int imageBytes;
+        private String error;
         private boolean multipart;
     }
 }

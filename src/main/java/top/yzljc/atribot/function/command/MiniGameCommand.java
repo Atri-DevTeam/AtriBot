@@ -27,6 +27,7 @@ public class MiniGameCommand implements CommandExecutor {
                 "- " + Markdown.enterCommand("/四子棋", "/四子棋") + " - 四子棋小游戏\n" +
                 "- " + Markdown.enterCommand("/幸运轮盘", "/幸运轮盘") + " - 幸运轮盘(2-5人)\n" +
                 "- " + Markdown.enterCommand("/rsp", "/石头剪刀布") + " - 石头剪刀布小游戏\n" +
+                "- " + Markdown.enterCommand("/sound", "/sound") + " - Minecraft 听声辨物\n" +
                 "> 点击指令开始游玩，更多内容正在开发制作中！");
         qq.sendMessage(md);
         return true;

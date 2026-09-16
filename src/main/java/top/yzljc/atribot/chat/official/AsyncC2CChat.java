@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.platform.qq.FileType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.List;
@@ -24,6 +25,14 @@ public final class AsyncC2CChat {
 
     private static ChatService service() {
         return Atri.getInstance().getChatService();
+    }
+
+    /** Audio upload failure must not count as a successful text fallback. */
+    public static CompletableFuture<String> replyAudioMessage(String openId, String msgId, String url) {
+        return ThreadManager.supplyAsync(() -> service().getMediaUploader().buildFileRequest(
+                        service().privateFileUrl(openId), FileType.AUDIO, url, "听声辨物私聊语音", msgId, true))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null)
+                        : service().sendPrivateMessageAsync(openId, request));
     }
 
     /**
@@ -230,8 +239,8 @@ public final class AsyncC2CChat {
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, null,
-                PrivateStreamMessage.CONTENT_TYPE_MARKDOWN,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_MARKDOWN,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(texts), null);
     }
 
@@ -251,8 +260,8 @@ public final class AsyncC2CChat {
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, msgId, null,
-                PrivateStreamMessage.CONTENT_TYPE_MARKDOWN,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_MARKDOWN,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(texts), null);
     }
 
@@ -272,8 +281,8 @@ public final class AsyncC2CChat {
         List<String> texts = markdownTexts(markdownDeltas);
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, eventId,
-                PrivateStreamMessage.CONTENT_TYPE_MARKDOWN,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_MARKDOWN,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(texts), null);
     }
 
@@ -290,8 +299,8 @@ public final class AsyncC2CChat {
         }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, null,
-                PrivateStreamMessage.CONTENT_TYPE_TEXT,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_TEXT,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(textDeltas), null);
     }
 
@@ -310,8 +319,8 @@ public final class AsyncC2CChat {
         }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, msgId, null,
-                PrivateStreamMessage.CONTENT_TYPE_TEXT,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_TEXT,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(textDeltas), null);
     }
 
@@ -330,8 +339,8 @@ public final class AsyncC2CChat {
         }
         return service().getPrivateStreamHelper().sendBatchAsync(
                 openId, null, eventId,
-                PrivateStreamMessage.CONTENT_TYPE_TEXT,
-                PrivateStreamMessage.INPUT_MODE_REPLACE,
+                C2CStreamMessage.CONTENT_TYPE_TEXT,
+                C2CStreamMessage.INPUT_MODE_REPLACE,
                 service().getPrivateStreamHelper().toSnapshots(textDeltas), null);
     }
 

@@ -63,10 +63,10 @@ public class MinecraftCommand implements CommandExecutor {
 
         String subCommand = args[0].toLowerCase();
 
-        if (subCommand.equalsIgnoreCase("dice")) {
-            DiceImpl.handle(qq, args);
-            return true;
-        }
+//        if (subCommand.equalsIgnoreCase("dice")) {
+//            DiceImpl.handle(qq, args);
+//            return true;
+//        }
 
         switch (subCommand) {
             case "version", "ver" -> {

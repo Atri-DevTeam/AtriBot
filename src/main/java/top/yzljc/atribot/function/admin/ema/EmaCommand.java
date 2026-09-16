@@ -70,10 +70,13 @@ public final class EmaCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof NapcatCommandSender)) return true;
+
         if (!sender.hasPermission()) {
             sender.sendMessage("你没有权限执行此操作！");
             return true;
         }
+
         try {
             if (args.length == 0) {
                 show(sender, ROOT_HELP);

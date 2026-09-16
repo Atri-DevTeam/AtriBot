@@ -13,6 +13,7 @@ import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.plugin.PluginCommand;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
 import java.io.InputStream;
@@ -29,7 +30,6 @@ public class CommandManager implements Listener {
     private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
     private static final String COMMAND_FILE = Properties.ATRIBOT;
     private static final String COMMAND_PREFIX = Config.getInstance().getCommandPrefix();
-    private static final String FALLBACK_PREFIX = "atri-core";
 
     private static final CommandMap commandMap = new CommandMap();
     private static volatile List<CommandDefinition> registeredDefinitions = List.of();
@@ -47,21 +47,30 @@ public class CommandManager implements Listener {
         List<CommandDefinition> definitions = loadDefinitions();
         registeredDefinitions = List.copyOf(definitions);
 
-        commandMap.clear();
+        List<CommandFeature> commands = new ArrayList<>();
         for (CommandDefinition definition : definitions) {
             CommandFeature command = new CommandFeature(definition);
-            CommandExecutor executor = executors.get(definition.name().toLowerCase());
+            CommandExecutor executor = executors.get(definition.name().toLowerCase(Locale.ROOT));
             if (executor != null) {
                 command.setExecutor(executor);
             }
-            commandMap.register(FALLBACK_PREFIX, command);
+            commands.add(command);
         }
+        commandMap.replaceCoreCommands(commands);
 
         log.info("命令配置已加载，共 {} 个命令", definitions.size());
     }
 
     public static List<CommandDefinition> getDefinitions() {
         return List.copyOf(registeredDefinitions);
+    }
+
+    public static void registerPluginCommands(String owner, List<PluginCommand> commands) {
+        commandMap.registerPluginCommands(owner, commands);
+    }
+
+    public static void unregisterPluginCommands(String owner, List<PluginCommand> commands) {
+        commandMap.unregisterPluginCommands(owner, commands);
     }
 
     private static List<CommandDefinition> loadDefinitions() {

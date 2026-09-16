@@ -144,7 +144,7 @@ public final class RefreshGroupProfilesTask implements ScheduledTask, CommandExe
     private static void finishRefresh(CommandSender sender, RefreshStats stats) {
         running.set(false);
 
-        String result = "[!] 全部群资料刷新完成: 总数 %d, 成功 %d, 失败 %d, 删除(无效群)=%d".formatted(stats.total, stats.success, stats.failed, stats.removed);
+        String result = "[!] 全部群资料刷新完成: 总数 %d, 成功 %d, 失败 %d, 删除(无效群) %d".formatted(stats.total, stats.success, stats.failed, stats.removed);
         if (stats.failed > 0) {
             log.warn(result);
         } else {

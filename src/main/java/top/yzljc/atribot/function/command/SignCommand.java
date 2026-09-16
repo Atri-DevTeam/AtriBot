@@ -142,44 +142,47 @@ public class SignCommand implements CommandExecutor, Listener {
         }
     }
 
-    private static void handleCheckIn(int label, String unionOpenId, String groupOpenId, String messageOpenId) {
+    private static void handleCheckIn(int label, String userOpenId, String groupOpenId, String messageOpenId) {
         ThreadManager.execute(() -> {
 
             if (banned) {
                 if (label == 1) {
-                    C2CChat.replyMessage(unionOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, unionOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
                 }
                 return;
             }
 
             if (SignRepository.isInSettlementWindow()) {
                 if (label == 1) {
-                    C2CChat.replyMessage(unionOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
+                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, unionOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
+                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
                 }
                 return;
             }
 
-            if (SignRepository.hasCheckedInToday(unionOpenId)) {
+            if (SignRepository.hasCheckedInToday(userOpenId)) {
                 if (label == 1) {
-                    C2CChat.replyMessage(unionOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
+                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, unionOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
+                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
                 }
                 return;
             }
 
-            SignRepository.CheckInResult result = SignRepository.checkIn(unionOpenId);
+            boolean isNewUser = SignRepository.isSignedBefore(userOpenId);
+
+            SignRepository.CheckInResult result = SignRepository.checkIn(userOpenId);
 
             Markdown md = null;
             if (result != null) {
                 var d = ImageSourceClient.getRandomImage();
                 md = TC.md(
-                        (label == 1 ? "" : (Markdown.at(unionOpenId) + " ")) + "打卡成功\n\n" +
+                        (label == 1 ? "" : (Markdown.at(userOpenId) + " ")) + "打卡成功\n\n" +
                                 ((d == null || d.url() == null) ? "" : Markdown.img(d.url(), d.w(), d.h()) + "\n\n") +
+                                (!isNewUser ? ("叮！你是第 " + SignRepository.getTotalUserCount() + " 位来报到的新朋友～") : "") + "\n" +
                                 "> 收集自网络，可联系删除 " + Markdown.enterCommand("/submit ", "投稿图片") + "\n" +
                                 "> 你已累计打卡**" + result.totalCount() + "**次！\n" +
                                 "> 今天已有**" + result.rank() + "**人参与了打卡！\n" +
@@ -192,7 +195,7 @@ public class SignCommand implements CommandExecutor, Listener {
             );
 
             if (label == 1) {
-                C2CChat.replyMessage(unionOpenId, messageOpenId, md, buttons);
+                C2CChat.replyMessage(userOpenId, messageOpenId, md, buttons);
             } else {
                 GroupChat.replyMessage(groupOpenId, messageOpenId, md, buttons);
             }
