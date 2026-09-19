@@ -1,16 +1,22 @@
 package top.yzljc.atribot.webui.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.WebUIAuthRateLimiter;
 import top.yzljc.atribot.webui.WebUISessionManager;
+
+import java.io.IOException;
 
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 
 /** 认证会话 + 机器人基础配置 */
 public class AuthController {
+    private static final int MAX_LOGIN_BODY_BYTES = 4 * 1024;
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     public static void getConfig(Context ctx) {
         ctx.json(Result.success(new ConfigDTO(
@@ -24,13 +30,22 @@ public class AuthController {
     }
 
     public static void createChallenge(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
+        if (!allowRequest(ctx, WebUIAuthRateLimiter.checkChallenge(ctx.ip()))) return;
         if (isBlank(getConfiguredToken())) {
             ctx.status(401).json(Result.fail(401, "Official WebUI Token 未配置"));
             return;
         }
 
         String nonce = WebUISessionManager.createChallenge();
-        ctx.header("Cache-Control", "no-store");
+        if (nonce == null) {
+            if (WebUISessionManager.isActive()) {
+                rejectTooManyRequests(ctx, 60);
+            } else {
+                ctx.status(503).json(Result.fail(503, "WebUI 暂不可用，请稍后重试"));
+            }
+            return;
+        }
         ctx.json(Result.success(new ChallengeDTO(
                 nonce,
                 WebUISessionManager.challengeExpiresAt().toString(),
@@ -39,6 +54,8 @@ public class AuthController {
     }
 
     public static void login(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
+        if (!allowRequest(ctx, WebUIAuthRateLimiter.checkLogin(ctx.ip()))) return;
         String configuredToken = getConfiguredToken();
         if (isBlank(configuredToken)) {
             clearSessionCookies(ctx);
@@ -46,23 +63,62 @@ public class AuthController {
             return;
         }
 
-        LoginDTO dto = ctx.bodyAsClass(LoginDTO.class);
-        if (dto == null || !WebUISessionManager.verifyChallenge(dto.getNonce(), dto.getProof(), configuredToken)) {
-            clearSessionCookies(ctx);
-            ctx.status(401).json(Result.fail(401, "未授权"));
-            return;
+        LoginDTO dto = readLogin(ctx);
+        if (dto == null) return;
+        WebUISessionManager.LoginResult result = WebUISessionManager.login(dto.getNonce(), dto.getProof(), configuredToken);
+        switch (result.status()) {
+            case INVALID -> {
+                clearSessionCookies(ctx);
+                ctx.status(401).json(Result.fail(401, "未授权"));
+            }
+            case UNAVAILABLE -> ctx.status(503).json(Result.fail(503, "WebUI 暂不可用，请稍后重试"));
+            case SUCCESS -> {
+                setSessionCookie(ctx, result.sessionId());
+                ctx.json(Result.success("ok"));
+            }
         }
+    }
 
-        String sessionId = WebUISessionManager.createSession();
-        setSessionCookie(ctx, sessionId);
-        ctx.json(Result.success("ok"));
+    private static LoginDTO readLogin(Context ctx) {
+        if (ctx.req().getContentLengthLong() > MAX_LOGIN_BODY_BYTES) {
+            ctx.status(413).json(Result.fail(413, "登录请求体过大"));
+            return null;
+        }
+        try {
+            // 限定实际读取量，未声明 Content-Length 的请求同样受限。
+            byte[] body = ctx.req().getInputStream().readNBytes(MAX_LOGIN_BODY_BYTES + 1);
+            if (body.length > MAX_LOGIN_BODY_BYTES) {
+                ctx.status(413).json(Result.fail(413, "登录请求体过大"));
+                return null;
+            }
+            LoginDTO dto = JSON.readValue(body, LoginDTO.class);
+            if (dto != null) return dto;
+        } catch (IOException | IllegalArgumentException ignored) {
+            // 读取或解析失败统一返回格式错误，不回显请求内容。
+        }
+        ctx.status(400).json(Result.fail(400, "登录请求格式无效"));
+        return null;
+    }
+
+    private static boolean allowRequest(Context ctx, WebUIAuthRateLimiter.Decision decision) {
+        if (decision.allowed()) return true;
+        rejectTooManyRequests(ctx, decision.retryAfterSeconds());
+        return false;
+    }
+
+    private static void rejectTooManyRequests(Context ctx, int retryAfterSeconds) {
+        ctx.header("Cache-Control", "no-store");
+        ctx.header("Retry-After", Integer.toString(retryAfterSeconds));
+        ctx.status(429).json(Result.fail(429, "登录请求过于频繁，请稍后重试"));
     }
 
     public static void verifyToken(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
         ctx.json(Result.success("ok"));
     }
 
     public static void logout(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
         String sessionId = ctx.cookie(WebUISessionManager.SESSION_COOKIE);
         WebUISessionManager.removeSession(sessionId);
         clearSessionCookies(ctx);

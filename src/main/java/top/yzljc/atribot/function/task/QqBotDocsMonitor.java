@@ -7,7 +7,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
-import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
@@ -109,8 +108,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
             Files.createDirectories(DATA_DIR);
             Files.writeString(REPORT_FILE, report, StandardCharsets.UTF_8);
 
-            PushTask.push("open_platform_doc_check", TC.md(report));
-//            notifyOfficialDebugGroup(report);
+            PushTask.push("open_platform_doc_check", report);
             log.info("检测到 QQ 开放平台文档变化：新增 {}，修改 {}，删除 {}；完整报告：{}",
                     changes.added.size(), changes.modified.size(), changes.removed.size(), REPORT_FILE);
         }
@@ -261,6 +259,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
 
     static PageSnapshot parsePage(URI uri, String html) throws Exception {
         Document document = Jsoup.parse(html, uri.toString());
+        document.select(".header-anchor").remove();
         String title = document.selectFirst("h1") != null
                 ? document.selectFirst("h1").text().trim()
                 : document.title().replace(" | QQ 机器人官方文档", "").trim();
@@ -280,16 +279,18 @@ public final class QqBotDocsMonitor implements ScheduledTask {
 
     private static String normalize(String raw) {
         List<String> lines = new ArrayList<>();
-        boolean previousBlank = true;
         for (String source : raw.replace('\u00a0', ' ').replace("\r", "").split("\n")) {
             String line = source.strip().replaceAll("[\\t ]+", " ");
             if (UPDATED_AT.matcher(line).matches()) continue;
-            boolean blank = line.isEmpty();
-            if (!blank || !previousBlank) lines.add(line);
-            previousBlank = blank;
+            // 空行是 HTML 排版噪声，不能参与 LCS 匹配，否则会把未变的正文挤成整段增删。
+            if (!line.isEmpty()) lines.add(line);
         }
-        while (!lines.isEmpty() && lines.getLast().isEmpty()) lines.removeLast();
         return String.join("\n", lines);
+    }
+
+    private static String comparisonContent(PageSnapshot page) {
+        // 兼容旧快照中混入的 VuePress 标题锚点；不移除字段、URL 或示例中的下划线。
+        return normalize(page.content).replaceAll("(?m)^# +", "");
     }
 
     static ChangeSet compare(Map<String, PageSnapshot> oldPages, Map<String, PageSnapshot> newPages) {
@@ -297,7 +298,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         List<String> removed = oldPages.keySet().stream().filter(url -> !newPages.containsKey(url)).sorted().toList();
         List<String> modified = newPages.keySet().stream()
                 .filter(oldPages::containsKey)
-                .filter(url -> !newPages.get(url).hash.equals(oldPages.get(url).hash))
+                .filter(url -> !comparisonContent(newPages.get(url)).equals(comparisonContent(oldPages.get(url))))
                 .sorted().toList();
         return new ChangeSet(added, modified, removed);
     }
@@ -308,46 +309,30 @@ public final class QqBotDocsMonitor implements ScheduledTask {
                 .append("新增 ").append(changes.added.size()).append(" 页，修改 ")
                 .append(changes.modified.size()).append(" 页，删除 ")
                 .append(changes.removed.size()).append(" 页\n");
-        int number = 1;
-        number = appendChanges(out, number, "新增", changes.added, newPages);
-        number = appendChanges(out, number, "修改", changes.modified, newPages);
-        appendChanges(out, number, "删除", changes.removed, oldPages);
+        appendChanges(out, "新增", changes.added, newPages);
 
         for (String url : changes.modified) {
             PageSnapshot before = oldPages.get(url);
             PageSnapshot after = newPages.get(url);
-            out.append("\n页面内容对比：").append(after.title).append('\n').append(url).append('\n')
-                    .append(UnifiedDiff.create(before.content, after.content));
+            out.append("\n[修改] ").append(plainTitle(after.title)).append('\n').append(url).append('\n')
+                    .append(UnifiedDiff.create(comparisonContent(before), comparisonContent(after)));
         }
+        appendChanges(out, "删除", changes.removed, oldPages);
         return out.toString().stripTrailing() + "\n";
     }
 
-    private static int appendChanges(StringBuilder out, int number, String type, List<String> urls,
+    private static void appendChanges(StringBuilder out, String type, List<String> urls,
                                      Map<String, PageSnapshot> pages) {
         for (String url : urls) {
             PageSnapshot page = pages.get(url);
-            out.append(number++).append(". [").append(type).append("] ")
-                    .append(page == null ? url : page.title).append('\n').append(url).append('\n');
+            out.append("\n[").append(type).append("] ")
+                    .append(page == null ? url : plainTitle(page.title)).append('\n').append(url).append('\n');
         }
-        return number;
     }
 
-//    private static void notifyOfficialDebugGroup(String report) {
-//        Config config = Config.getInstance();
-//        String groupOpenId = config.getDebugGroupOpenId();
-//        String superAdminId = config.getSuperAdminId();
-//        if (isMissingConfig(groupOpenId) || isMissingConfig(superAdminId)) {
-//            log.warn("QQ 开放平台文档已有变化，但 qq.debug-group-openId 或 qq.super_admin_id 未配置；报告保存在 {}",
-//                    REPORT_FILE);
-//            return;
-//        }
-//
-//        String markdown = Markdown.at(superAdminId) + "\n\n" + report;
-//        String messageId = GroupChat.sendMessage(groupOpenId, TC.md(markdown));
-//        if (messageId == null || messageId.isBlank()) {
-//            log.warn("QQ 开放平台文档更新通知发送失败；完整报告保存在 {}", REPORT_FILE);
-//        }
-//    }
+    private static String plainTitle(String title) {
+        return title.strip().replaceFirst("^# +", "");
+    }
 
     private static Map<String, PageSnapshot> loadSnapshot() throws IOException {
         if (!Files.isRegularFile(SNAPSHOT_FILE)) return Map.of();
@@ -422,7 +407,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
             int[][] lcs = new int[a.length + 1][b.length + 1];
             for (int i = a.length - 1; i >= 0; i--) {
                 for (int j = b.length - 1; j >= 0; j--) {
-                    lcs[i][j] = a[i].equals(b[j]) ? lcs[i + 1][j + 1]
+                    lcs[i][j] = a[i].equals(b[j]) ? 1 + lcs[i + 1][j + 1]
                             : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
                 }
             }
@@ -433,18 +418,18 @@ public final class QqBotDocsMonitor implements ScheduledTask {
                     diff.append(' ').append(a[i]).append('\n');
                     i++;
                     j++;
-                } else if (j < b.length && (i == a.length || lcs[i][j + 1] >= lcs[i + 1][j])) {
+                } else if (j < b.length && (i == a.length || lcs[i][j + 1] > lcs[i + 1][j])) {
                     diff.append('+').append(b[j++]).append('\n');
                 } else {
                     diff.append('-').append(a[i++]).append('\n');
                 }
             }
-            return compact(diff.toString(), 3);
+            return compact(diff.toString(), 2);
         }
 
         private static String compact(String raw, int context) {
             String[] lines = raw.split("\n", -1);
-            StringBuilder out = new StringBuilder(lines[0]).append('\n').append(lines[1]).append('\n');
+            StringBuilder out = new StringBuilder();
             boolean[] keep = new boolean[lines.length];
             keep[0] = keep[1] = true;
             for (int i = 2; i < lines.length; i++) {
@@ -455,8 +440,11 @@ public final class QqBotDocsMonitor implements ScheduledTask {
             boolean gap = false;
             for (int i = 2; i < lines.length; i++) {
                 if (keep[i]) {
-                    if (gap) out.append("@@ ... @@\n");
-                    out.append(lines[i]).append('\n');
+                    if (gap && !out.isEmpty()) out.append("  ……\n");
+                    if (lines[i].startsWith("-")) out.append("原文：").append(lines[i].substring(1));
+                    else if (lines[i].startsWith("+")) out.append("现文：").append(lines[i].substring(1));
+                    else out.append("  ").append(lines[i].stripLeading());
+                    out.append('\n');
                     gap = false;
                 } else if (!lines[i].isEmpty()) {
                     gap = true;

@@ -94,9 +94,6 @@ commands:
     description: 用户场景信息
   test-whoami:
     description: 测试用 - 用户场景信息
-  mc:
-    description: Minecraft相关
-    usage: "/mc <子命令> [参数]"
   mcv:
     description: 查询最新的 Minecraft 版本
     usage: /mcv
@@ -117,9 +114,6 @@ commands:
         type: 3
         description: 时间范围，单位为m/h/d/w/mo
         required: false
-  weather:
-    description: 生成最近一天的群聊天气
-    usage: /weather
   test:
     description: 测试命令
   feedback:
@@ -159,6 +153,12 @@ commands:
     description: 白名单管理
   tufe:
     description: Tufe Command
+  教师课表:
+    description: 官机按教师姓名查询整周课程安排
+    usage: /教师课表 <姓名> [周次数字|本周|上周|下周]（默认本周，例如 /教师课表 宋丽红 5）
+    aliases:
+      - 老师课表
+      - teacher
   today:
     description: 每日日历
   help:
@@ -203,6 +203,9 @@ commands:
   webui:
     description: WebUI相关功能
     usage: /webui
+  ita-qrcode:
+    description: 管理 ITA 二维码的群状态和问卷状态
+    usage: /ita-qrcode [set <1|2> <url>]
   login:
     description: 确认外部 API 登录授权
     usage: /login <六位验证码>
@@ -233,6 +236,8 @@ commands:
     description: 调试
   check-hyp:
     description: 检查Hypixel最新公告
+  check-hyp-skyblock:
+    description: 检查Hypixel SkyBlock最新公告
   games:
     aliases:
       - 游戏
@@ -304,6 +309,7 @@ commands:
       - recoverjoin
       - recoverbefriend
       - recoverguild
+      - getmygolds
   refresh:
     description: 刷新全部官方机器人端群资料
     usage: /refresh
@@ -371,12 +377,13 @@ commands:
     aliases:
       - hypixel
   mctool:
-    description: Mc工具二级指令
+    description: MC工具二级指令
     usage: /mctool <子命令> [参数]
     aliases:
       - mctools
       - minecrafttool
       - minecrafttools
+      - mc
 # TUFE 系列专用查询指令
   查询帮助:
     description: 查询 Tufe 系列相关指令帮助信息
@@ -390,3 +397,6 @@ commands:
   空调电表:
     description: 查询空调电表信息
     usage: /空调电表
+  sharebot:
+    description: 分享机器人
+    usage: /sharebot

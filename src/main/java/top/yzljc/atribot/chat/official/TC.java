@@ -71,7 +71,12 @@ public class TC {
 
                 Map<String, Object> button = new HashMap<>();
                 button.put("id", btn.getButtonId());
-                button.put("group_id", btn.getButtonGroupId());
+
+                // 发现于2026年9月17日和Shizoukia聊天时，我给所有东西都塞null了实际上不用的话这里应该不带这个字段
+                if (btn.getButtonId() != null) {
+                    button.put("group_id", btn.getButtonGroupId());
+                }
+
                 button.put("render_data", renderData);
                 button.put("action", action);
 

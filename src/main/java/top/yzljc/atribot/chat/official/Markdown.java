@@ -1,7 +1,10 @@
 package top.yzljc.atribot.chat.official;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.With;
 import top.yzljc.atribot.chat.official.media.HexColor;
 
 /**
@@ -12,9 +15,22 @@ import top.yzljc.atribot.chat.official.media.HexColor;
  * @Package top.yzljc.atribot.chat.official
  */
 @Getter
+@With
 @AllArgsConstructor
 public class Markdown {
+    @JsonProperty("content")
     private final String text;
+
+    /**
+     * 为 true 时，图片转存失败会导致整条消息发送失败；未设置时使用平台默认值。
+     */
+    @JsonProperty("force_verify_image_resource")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final Boolean forceVerifyImageResource;
+
+    public Markdown(String text) {
+        this(text, null);
+    }
 
     public static String img(String url, int width, int height) {
         return String.format("![img #%dpx #%dpx](%s)", width, height, url);

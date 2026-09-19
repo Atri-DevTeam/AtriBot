@@ -34,8 +34,9 @@ public class PushTaskCommand implements CommandExecutor {
             new MinecraftVersionTask(),
             new CalendarTask(),
             new HypixelNewsTask(),
+            HypixelBanWaveAlertTask.TASK_INSTANCE,
             new MemerAddWelcomeTask(),
-            new SkyblockResourcePackTask(),
+//            new SkyblockResourcePackTask(),
             new HypixelAlphaTask(),
             new OpenPlatformDocTask().setPrivateFunction(true)
     );

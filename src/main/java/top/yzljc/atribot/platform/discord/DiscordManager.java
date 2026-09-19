@@ -352,6 +352,7 @@ public class DiscordManager {
             try {
                 reconnect(requestedMode);
             } catch (Exception e) {
+                if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                 log.error("Discord reconnect failed", e);
                 ConnectionMode retryMode;
                 synchronized (DiscordManager.this) {
@@ -401,7 +402,7 @@ public class DiscordManager {
     private URI fetchGatewayUrl() throws Exception {
         String gatewayApi = apiBaseUrl + "/gateway/bot";
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest request = HttpService.newRequestBuilder()
                 .uri(URI.create(gatewayApi))
                 .header("Authorization", "Bot " + botToken)
                 .GET()
@@ -433,7 +434,7 @@ public class DiscordManager {
     private String fetchApplicationId() throws Exception {
         String api = apiBaseUrl + "/oauth2/applications/@me";
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest request = HttpService.newRequestBuilder()
                 .uri(URI.create(api))
                 .header("Authorization", "Bot " + botToken)
                 .GET()
@@ -474,7 +475,7 @@ public class DiscordManager {
 
         String commandUrl = apiBaseUrl + "/applications/" + applicationId + "/commands";
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest request = HttpService.newRequestBuilder()
                 .uri(URI.create(commandUrl))
                 .header("Authorization", "Bot " + botToken)
                 .header("Content-Type", "application/json")

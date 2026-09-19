@@ -16,11 +16,12 @@ public class ProcessClassTable {
     public static final int RESULT_FOUND = 0;
     public static final int RESULT_NOT_FOUND = -1;
     public static final int RESULT_REQUEST_FAILED = 404;
+    public static final String SEMESTER = "2026-2027-1";
+    public static final LocalDate SEMESTER_START = LocalDate.parse("2026-08-31");
+    public static final LocalDate SEMESTER_END = LocalDate.parse("2026-12-27");
     private static final String CLASS_TABLE_URL =
-            "https://ita.moentg.cn/api/class_table/get_raw_class_table?semester=2025-2026-2&major=%E8%BD%AF%E4%BB%B62501";
-    private static final String MAJOR_KEY = "2025-2026-2_软件2501";
-    private static final LocalDate SEMESTER_START = LocalDate.parse("2026-03-02");
-    private static final LocalDate SEMESTER_END = LocalDate.parse("2026-06-28");
+            "https://ita.moentg.cn/api/class_table/get_raw_class_table?semester=" + SEMESTER + "&major=%E8%BD%AF%E4%BB%B62501";
+    private static final String MAJOR_KEY = SEMESTER + "_软件2501";
 
     public static void getClassTableJson(int sessionId) {
         getClassTableJson(sessionId, "1065552660");

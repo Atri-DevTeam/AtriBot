@@ -9,6 +9,7 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -343,7 +344,7 @@ public class ConnectFourGame implements CommandExecutor {
         String md = buildBoardMarkdown(game, statusMsg);
         String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
         Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
-        String messageId = GroupChat.replyMessage(sessionId, cmdMsgId, TC.md(md), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(md), keyboard);
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = cmdMsgId;
@@ -543,7 +544,7 @@ public class ConnectFourGame implements CommandExecutor {
 
             if (targetOpenId != null && current.lastCmdMsgId != null) {
                 try {
-                    GroupChat.replyMessage(current.groupOpenId, targetOpenId, current.lastCmdMsgId,
+                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
                             TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
                 } catch (Exception e) {
                     log.warn("发送加入超时通知失败: ", e);
@@ -587,7 +588,7 @@ public class ConnectFourGame implements CommandExecutor {
                         true, ButtonStyle.BLUE, ButtonType.COMMAND)));
                 Object keyboard = TC.keyboard(layout);
 
-                GroupChat.replyMessage(current.groupOpenId, loserId, current.lastCmdMsgId,
+                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), loserId,
                         TC.md(markdown), keyboard);
             } catch (Exception e) {
                 log.warn("发送落子超时结算面板失败: ", e);
@@ -623,7 +624,7 @@ public class ConnectFourGame implements CommandExecutor {
                         true, ButtonStyle.BLUE, ButtonType.COMMAND)));
                 Object keyboard = TC.keyboard(layout);
 
-                GroupChat.replyMessage(current.groupOpenId, playerAId, current.lastCmdMsgId,
+                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), playerAId,
                         TC.md(markdown), keyboard);
             } catch (Exception e) {
                 log.warn("发送对局超时结算面板失败: ", e);

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -129,19 +130,23 @@ public class LootRepository {
     // ==================== 金粒 ====================
 
     public static int getCoins(String userId) {
-        String sql = "SELECT `coins` FROM `user_loots` WHERE `user_id` = ?";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userId);
-            try (var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("coins");
-                }
-            }
+        try (var con = DatabaseManager.getConnection()) {
+            return getCoins(con, userId);
         } catch (Exception e) {
             log.error("查询金粒余额失败: userId={}", userId, e);
         }
         return 0;
+    }
+
+    /** 使用调用方连接查询余额，查询失败交由调用方回滚事务。 */
+    static int getCoins(Connection con, String userId) throws SQLException {
+        String sql = "SELECT `coins` FROM `user_loots` WHERE `user_id` = ?";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            try (var rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt("coins") : 0;
+            }
+        }
     }
 
     /**
@@ -158,45 +163,46 @@ public class LootRepository {
      */
     public static int addCoins(String userId, int amount) {
         if (amount <= 0) return -1;
-        String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', ?) " +
-                "ON DUPLICATE KEY UPDATE `coins` = `coins` + ?";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userId);
-            ps.setInt(2, amount);
-            ps.setInt(3, amount);
-            ps.executeUpdate();
-            return amount;
+        try (var con = DatabaseManager.getConnection()) {
+            return addCoins(con, userId, amount);
         } catch (Exception e) {
             log.error("增加金粒失败: userId={}, amount={}", userId, amount, e);
             return -1;
         }
     }
 
+    /** 使用调用方连接发放金粒，不独立提交事务。 */
+    static int addCoins(Connection con, String userId, int amount) throws SQLException {
+        if (amount <= 0) throw new IllegalArgumentException("金粒数量必须大于零");
+        String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', ?) " +
+                "ON DUPLICATE KEY UPDATE `coins` = `coins` + ?";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            ps.setInt(2, amount);
+            ps.setInt(3, amount);
+            if (ps.executeUpdate() == 0) throw new SQLException("金粒余额未更新");
+            return amount;
+        }
+    }
+
     public static boolean removeCoins(String userId, int amount) {
         if (amount <= 0) return false;
         try (var con = DatabaseManager.getConnection()) {
-            int balance;
-            String querySql = "SELECT `coins` FROM `user_loots` WHERE `user_id` = ?";
-            try (var ps = con.prepareStatement(querySql)) {
-                ps.setString(1, userId);
-                try (var rs = ps.executeQuery()) {
-                    if (!rs.next()) return false;
-                    balance = rs.getInt("coins");
-                }
-            }
-            if (balance < amount) return false;
-
-            String updateSql = "UPDATE `user_loots` SET `coins` = `coins` - ? WHERE `user_id` = ?";
-            try (var ps = con.prepareStatement(updateSql)) {
-                ps.setInt(1, amount);
-                ps.setString(2, userId);
-                ps.executeUpdate();
-            }
-            return true;
+            return removeCoins(con, userId, amount);
         } catch (Exception e) {
             log.error("扣除金粒失败: userId={}, amount={}", userId, amount, e);
             return false;
+        }
+    }
+
+    private static boolean removeCoins(Connection con, String userId, int amount) throws SQLException {
+        // 余额校验与扣减由同一条语句完成，避免并发请求透支余额。
+        String sql = "UPDATE `user_loots` SET `coins` = `coins` - ? WHERE `user_id` = ? AND `coins` >= ?";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setInt(1, amount);
+            ps.setString(2, userId);
+            ps.setInt(3, amount);
+            return ps.executeUpdate() == 1;
         }
     }
 
@@ -243,113 +249,125 @@ public class LootRepository {
     }
 
     public static LootRecord appendLoot(String userId, String itemId, String displayName, String way, boolean special) {
-        String safeItemId = itemId == null || itemId.isBlank() ? UUID.randomUUID().toString() : itemId;
-        String safeDisplayName = displayName == null ? "" : displayName;
-        String safeWay = way == null || way.isBlank() ? "未知" : way;
-        long now = Instant.now().getEpochSecond();
-        LootRecord record = new LootRecord(safeItemId, safeDisplayName, now, safeWay, 1, special);
-
         try (var con = DatabaseManager.getConnection()) {
-            List<LootRecord> current;
-            String querySql = "SELECT `loots` FROM `user_loots` WHERE `user_id` = ? FOR UPDATE";
-            try (var ps = con.prepareStatement(querySql)) {
-                ps.setString(1, userId);
-                try (var rs = ps.executeQuery()) {
-                    current = rs.next() ? parseLoots(rs.getString("loots")) : new ArrayList<>();
-                }
+            con.setAutoCommit(false);
+            try {
+                LootRecord record = appendLoot(con, userId, itemId, displayName, way, special);
+                con.commit();
+                return record;
+            } catch (Exception e) {
+                rollback(con, e);
+                throw e;
             }
-            boolean found = false;
-            for (int i = 0; i < current.size(); i++) {
-                LootRecord existing = current.get(i);
-                if (existing.itemId().equals(safeItemId)) {
-                    long firstReceiveTimestamp = existing.receiveTimestamp() > 0 ? existing.receiveTimestamp() : now;
-                    record = new LootRecord(safeItemId, safeDisplayName, firstReceiveTimestamp, existing.way(), existing.count() + 1,
-                            existing.special() || special);
-                    current.set(i, record);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                current.add(record);
-            }
-            String json = writeLoots(current);
-
-            String upsertSql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, ?, 0) " +
-                    "ON DUPLICATE KEY UPDATE `loots` = ?";
-            try (var ps = con.prepareStatement(upsertSql)) {
-                ps.setString(1, userId);
-                ps.setString(2, json);
-                ps.setString(3, json);
-                ps.executeUpdate();
-            }
-
-            String upsertItemSql = "INSERT INTO `user_loot_items` " +
-                    "(`user_id`, `item_id`, `display_name`, `count`, `first_receive_timestamp`, `last_receive_timestamp`, `way`) " +
-                    "VALUES (?, ?, ?, 1, ?, ?, ?) " +
-                    "ON DUPLICATE KEY UPDATE `display_name` = VALUES(`display_name`), `count` = `count` + 1, " +
-                    "`last_receive_timestamp` = VALUES(`last_receive_timestamp`), `way` = VALUES(`way`)";
-            try (var ps = con.prepareStatement(upsertItemSql)) {
-                ps.setString(1, userId);
-                ps.setString(2, safeItemId);
-                ps.setString(3, safeDisplayName);
-                ps.setLong(4, now);
-                ps.setLong(5, now);
-                ps.setString(6, safeWay);
-                ps.executeUpdate();
-            }
-            return record;
         } catch (Exception e) {
             log.error("追加物品卡失败: userId={}, itemId={}", userId, itemId, e);
             return null;
         }
     }
 
+    /** 扣款、库存与重复奖励在同一事务中结算，调用前应完成远程资源准备。 */
+    public static LootDrawResult drawLoot(String userId, String itemId, String displayName, String way,
+                                          boolean special, int costCoins, int duplicateReward) {
+        if (costCoins < 0 || duplicateReward < 0) throw new IllegalArgumentException("抽卡金粒数量不能为负数");
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                if (costCoins > 0 && !removeCoins(con, userId, costCoins)) {
+                    con.rollback();
+                    return new LootDrawResult(null, 0, true);
+                }
+                LootRecord record = appendLoot(con, userId, itemId, displayName, way, special);
+                int refundCoins = record.count() > 1 ? duplicateReward : 0;
+                if (refundCoins > 0) addCoins(con, userId, refundCoins);
+                con.commit();
+                return new LootDrawResult(record, refundCoins, false);
+            } catch (Exception e) {
+                rollback(con, e);
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("结算抽卡失败: userId={}, itemId={}", userId, itemId, e);
+            return new LootDrawResult(null, 0, false);
+        }
+    }
+
+    private static LootRecord appendLoot(Connection con, String userId, String itemId, String displayName,
+                                          String way, boolean special) throws Exception {
+        String safeItemId = itemId == null || itemId.isBlank() ? UUID.randomUUID().toString() : itemId;
+        String safeDisplayName = displayName == null ? "" : displayName;
+        String safeWay = way == null || way.isBlank() ? "未知" : way;
+        long now = Instant.now().getEpochSecond();
+        LootRecord record = new LootRecord(safeItemId, safeDisplayName, now, safeWay, 1, special);
+
+        // 先创建或锁定用户行，使首次并发发卡也按同一用户串行更新。
+        ensureLootUser(con, userId);
+        List<LootRecord> current = lockLoots(con, userId);
+        boolean found = false;
+        for (int i = 0; i < current.size(); i++) {
+            LootRecord existing = current.get(i);
+            if (existing.itemId().equals(safeItemId)) {
+                long firstReceiveTimestamp = existing.receiveTimestamp() > 0 ? existing.receiveTimestamp() : now;
+                record = new LootRecord(safeItemId, safeDisplayName, firstReceiveTimestamp, existing.way(), existing.count() + 1,
+                        existing.special() || special);
+                current.set(i, record);
+                found = true;
+                break;
+            }
+        }
+        if (!found) current.add(record);
+        updateLoots(con, userId, current);
+        upsertLootItemCount(con, userId, record, now, safeWay);
+        return record;
+    }
+
     public static boolean adminRemoveLoot(String userId, String itemId) {
         try (var con = DatabaseManager.getConnection()) {
-            List<LootRecord> current;
-            String querySql = "SELECT `loots` FROM `user_loots` WHERE `user_id` = ? FOR UPDATE";
-            try (var ps = con.prepareStatement(querySql)) {
-                ps.setString(1, userId);
-                try (var rs = ps.executeQuery()) {
-                    if (!rs.next()) return false;
-                    current = parseLoots(rs.getString("loots"));
+            con.setAutoCommit(false);
+            try {
+                List<LootRecord> current = lockLoots(con, userId);
+                if (current == null) {
+                    con.rollback();
+                    return false;
                 }
-            }
-            boolean removed = false;
-            boolean removeWholeItem = false;
-            for (int i = 0; i < current.size(); i++) {
-                LootRecord existing = current.get(i);
-                if (existing.itemId().equals(itemId)) {
-                    if (existing.count() > 1) {
-                        current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(), existing.way(), existing.count() - 1,
-                                existing.special()));
-                    } else {
-                        current.remove(i);
-                        removeWholeItem = true;
+                int remainingCount = -1;
+                for (int i = 0; i < current.size(); i++) {
+                    LootRecord existing = current.get(i);
+                    if (existing.itemId().equals(itemId)) {
+                        remainingCount = existing.count() - 1;
+                        if (remainingCount > 0) {
+                            current.set(i, new LootRecord(existing.itemId(), existing.displayName(), existing.receiveTimestamp(), existing.way(), remainingCount,
+                                    existing.special()));
+                        } else {
+                            current.remove(i);
+                        }
+                        break;
                     }
-                    removed = true;
-                    break;
                 }
+                if (remainingCount < 0) {
+                    con.rollback();
+                    return false;
+                }
+                updateLoots(con, userId, current);
+                if (remainingCount == 0) {
+                    try (var ps = con.prepareStatement("DELETE FROM `user_loot_items` WHERE `user_id` = ? AND `item_id` = ?")) {
+                        ps.setString(1, userId);
+                        ps.setString(2, itemId);
+                        ps.executeUpdate();
+                    }
+                } else {
+                    try (var ps = con.prepareStatement("UPDATE `user_loot_items` SET `count` = ? WHERE `user_id` = ? AND `item_id` = ?")) {
+                        ps.setInt(1, remainingCount);
+                        ps.setString(2, userId);
+                        ps.setString(3, itemId);
+                        if (ps.executeUpdate() != 1) throw new SQLException("物品卡计数记录缺失");
+                    }
+                }
+                con.commit();
+                return true;
+            } catch (Exception e) {
+                rollback(con, e);
+                throw e;
             }
-            if (!removed) return false;
-
-            String updateSql = "UPDATE `user_loots` SET `loots` = ? WHERE `user_id` = ?";
-            try (var ps = con.prepareStatement(updateSql)) {
-                ps.setString(1, writeLoots(current));
-                ps.setString(2, userId);
-                ps.executeUpdate();
-            }
-
-            String updateItemSql = removeWholeItem
-                    ? "DELETE FROM `user_loot_items` WHERE `user_id` = ? AND `item_id` = ?"
-                    : "UPDATE `user_loot_items` SET `count` = `count` - 1 WHERE `user_id` = ? AND `item_id` = ? AND `count` > 1";
-            try (var ps = con.prepareStatement(updateItemSql)) {
-                ps.setString(1, userId);
-                ps.setString(2, itemId);
-                ps.executeUpdate();
-            }
-            return true;
         } catch (Exception e) {
             log.error("撤销物品卡失败: userId={}, itemId={}", userId, itemId, e);
             return false;
@@ -668,6 +686,14 @@ public class LootRepository {
 
     // ==================== 内部工具 ====================
 
+    static void rollback(Connection con, Exception failure) {
+        try {
+            con.rollback();
+        } catch (SQLException rollbackFailure) {
+            failure.addSuppressed(rollbackFailure);
+        }
+    }
+
     private static void ensureLootUser(Connection con, String userId) throws Exception {
         String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', 0) " +
                 "ON DUPLICATE KEY UPDATE `user_id` = VALUES(`user_id`)";
@@ -704,6 +730,10 @@ public class LootRepository {
     }
 
     private static void upsertLootItemCount(Connection con, String userId, LootRecord loot, long now) throws Exception {
+        upsertLootItemCount(con, userId, loot, now, loot.way());
+    }
+
+    private static void upsertLootItemCount(Connection con, String userId, LootRecord loot, long now, String way) throws Exception {
         String sql = "INSERT INTO `user_loot_items` " +
                 "(`user_id`, `item_id`, `display_name`, `count`, `first_receive_timestamp`, `last_receive_timestamp`, `way`) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?) " +
@@ -717,7 +747,7 @@ public class LootRepository {
             ps.setInt(4, loot.count());
             ps.setLong(5, loot.receiveTimestamp());
             ps.setLong(6, now);
-            ps.setString(7, loot.way());
+            ps.setString(7, way);
             ps.executeUpdate();
         }
     }
@@ -784,6 +814,9 @@ public class LootRepository {
     }
 
     public record LootGrant(String itemId, String displayName) {
+    }
+
+    public record LootDrawResult(LootRecord loot, int refundCoins, boolean insufficientCoins) {
     }
 
     public record LootRecord(String itemId, String displayName, long receiveTimestamp, String way, int count,

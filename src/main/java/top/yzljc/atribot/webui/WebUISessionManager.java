@@ -9,7 +9,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -18,22 +19,32 @@ public class WebUISessionManager {
     public static final String SESSION_COOKIE = "webui_session_yzljc_" + System.currentTimeMillis() + "_d";
     public static final int SESSION_TTL_SECONDS = 24 * 60 * 60;
     private static final long CHALLENGE_TTL_MILLIS = 2 * 60 * 1000L;
+    private static final long CHALLENGE_TTL_NANOS = TimeUnit.MILLISECONDS.toNanos(CHALLENGE_TTL_MILLIS);
+    private static final long SESSION_TTL_NANOS = TimeUnit.SECONDS.toNanos(SESSION_TTL_SECONDS);
+    private static final int MAX_CHALLENGES = 1024;
+    private static final int MAX_SESSIONS = 256;
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private static final Object AUTH_LOCK = new Object();
     private static final AtomicBoolean active = new AtomicBoolean(false);
-    private static final ConcurrentHashMap<String, Long> challenges = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, Long> sessions = new ConcurrentHashMap<>();
+    // 固定有效期与插入顺序一致，清理只需删除队首已过期记录。
+    private static final LinkedHashMap<String, Long> challenges = new LinkedHashMap<>();
+    private static final LinkedHashMap<String, Long> sessions = new LinkedHashMap<>();
 
     public static void start() {
-        active.set(true);
-        clearAuthState();
+        synchronized (AUTH_LOCK) {
+            active.set(false);
+            clearAuthState();
+            active.set(true);
+        }
         log.info("WebUI 服务已开启");
     }
 
     public static void stop() {
-        active.set(false);
-        clearAuthState();
-        SseBroadcaster.closeAll();
+        synchronized (AUTH_LOCK) {
+            active.set(false);
+            clearAuthState();
+        }
         log.info("WebUI 服务已关闭，所有连接已断开");
     }
 
@@ -42,57 +53,62 @@ public class WebUISessionManager {
     }
 
     public static String createChallenge() {
-        cleanupExpired();
-        String nonce = randomToken(32);
-        challenges.put(nonce, System.currentTimeMillis() + CHALLENGE_TTL_MILLIS);
-        return nonce;
+        synchronized (AUTH_LOCK) {
+            if (!active.get()) return null;
+            long now = System.nanoTime();
+            cleanupExpiredChallenges(now);
+            if (challenges.size() >= MAX_CHALLENGES) return null;
+            String nonce = randomToken(32);
+            challenges.put(nonce, now + CHALLENGE_TTL_NANOS);
+            return nonce;
+        }
     }
 
-    public static boolean verifyChallenge(String nonce, String proof, String token) {
-        if (!isActive() || isBlank(nonce) || isBlank(proof) || isBlank(token)) {
-            return false;
+    /** 挑战消费与会话签发共用生命周期锁，关闭或重新开启后不能沿用旧认证结果。 */
+    public static LoginResult login(String nonce, String proof, String token) {
+        synchronized (AUTH_LOCK) {
+            if (!active.get()) return new LoginResult(LoginStatus.UNAVAILABLE, null);
+            if (nonce == null || nonce.length() != 43 || proof == null || proof.length() != 43 || isBlank(token)) {
+                return new LoginResult(LoginStatus.INVALID, null);
+            }
+            long now = System.nanoTime();
+            Long expiresAt = challenges.remove(nonce);
+            if (expiresAt == null || now - expiresAt >= 0) {
+                return new LoginResult(LoginStatus.INVALID, null);
+            }
+            String expected = hmacSha256Base64Url(token, nonce);
+            if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), proof.getBytes(StandardCharsets.UTF_8))) {
+                return new LoginResult(LoginStatus.INVALID, null);
+            }
+            cleanupExpiredSessions(now);
+            if (sessions.size() >= MAX_SESSIONS) return new LoginResult(LoginStatus.UNAVAILABLE, null);
+            String sessionId = randomToken(32);
+            sessions.put(sessionId, now + SESSION_TTL_NANOS);
+            return new LoginResult(LoginStatus.SUCCESS, sessionId);
         }
-
-        Long expiresAt = challenges.remove(nonce);
-        if (expiresAt == null || expiresAt < System.currentTimeMillis()) {
-            return false;
-        }
-
-        String expected = hmacSha256Base64Url(token, nonce);
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                proof.getBytes(StandardCharsets.UTF_8)
-        );
-    }
-
-    public static String createSession() {
-        cleanupExpired();
-        String sessionId = randomToken(32);
-        sessions.put(sessionId, System.currentTimeMillis() + SESSION_TTL_SECONDS * 1000L);
-        return sessionId;
     }
 
     public static boolean verifySession(String sessionId) {
-        if (!isActive() || isBlank(sessionId)) {
-            return false;
+        if (sessionId == null || sessionId.length() != 43) return false;
+        synchronized (AUTH_LOCK) {
+            if (!active.get()) return false;
+            Long expiresAt = sessions.get(sessionId);
+            if (expiresAt == null) return false;
+            if (System.nanoTime() - expiresAt >= 0) {
+                sessions.remove(sessionId);
+                SseBroadcaster.closeSession(sessionId);
+                return false;
+            }
+            // 普通请求及 SSE 心跳均不续期，服务端与浏览器 Cookie 使用同一最长有效期。
+            return true;
         }
-
-        Long expiresAt = sessions.get(sessionId);
-        if (expiresAt == null) {
-            return false;
-        }
-        if (expiresAt < System.currentTimeMillis()) {
-            sessions.remove(sessionId);
-            return false;
-        }
-
-        sessions.put(sessionId, System.currentTimeMillis() + SESSION_TTL_SECONDS * 1000L);
-        return true;
     }
 
     public static void removeSession(String sessionId) {
-        if (!isBlank(sessionId)) {
+        if (isBlank(sessionId)) return;
+        synchronized (AUTH_LOCK) {
             sessions.remove(sessionId);
+            SseBroadcaster.closeSession(sessionId);
         }
     }
 
@@ -103,12 +119,26 @@ public class WebUISessionManager {
     private static void clearAuthState() {
         challenges.clear();
         sessions.clear();
+        // 只标记并唤醒旧连接，不在生命周期锁中执行网络写入。
+        SseBroadcaster.closeAll();
     }
 
-    private static void cleanupExpired() {
-        long now = System.currentTimeMillis();
-        challenges.entrySet().removeIf(entry -> entry.getValue() < now);
-        sessions.entrySet().removeIf(entry -> entry.getValue() < now);
+    private static void cleanupExpiredChallenges(long now) {
+        var iterator = challenges.entrySet().iterator();
+        while (iterator.hasNext()) {
+            if (now - iterator.next().getValue() < 0) break;
+            iterator.remove();
+        }
+    }
+
+    private static void cleanupExpiredSessions(long now) {
+        var iterator = sessions.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (now - entry.getValue() < 0) break;
+            iterator.remove();
+            SseBroadcaster.closeSession(entry.getKey());
+        }
     }
 
     private static String hmacSha256Base64Url(String token, String nonce) {
@@ -130,5 +160,12 @@ public class WebUISessionManager {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    public enum LoginStatus {
+        SUCCESS, INVALID, UNAVAILABLE
+    }
+
+    public record LoginResult(LoginStatus status, String sessionId) {
     }
 }

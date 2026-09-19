@@ -6,8 +6,10 @@ import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.Ark23;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
+import static top.yzljc.atribot.webui.WebUiSupport.parseArk23;
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseLong;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -198,7 +201,7 @@ public class C2CController {
         String userOpenId = ctx.pathParam("userOpenId");
         String msgIdx = firstNonBlank(ctx.queryParam("msgIdx"), ctx.queryParam("refIdx"));
         String refAuthor = ctx.queryParam("refAuthor");
-        String refContent = ctx.queryParam("refContent");
+        String refContent = ctx.queryParam("content");
         String refAttachments = ctx.queryParam("refAttachments");
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
@@ -215,6 +218,24 @@ public class C2CController {
         ctx.json(Result.success(result));
     }
 
+    /**
+     * 发送持续 60 秒的单聊正在输入通知
+     *
+     * @param ctx 请求上下文，路径参数 userOpenId 指定通知接收者
+     */
+    public static void sendC2CInputNotify(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        if (isBlank(userOpenId)) {
+            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
+            return;
+        }
+        if (C2CChat.sendInputNotify(userOpenId)) {
+            ctx.json(Result.success(true));
+        } else {
+            ctx.status(502).json(Result.fail(502, "输入状态通知发送失败，请检查暂停状态或发送日志"));
+        }
+    }
+
     public static void sendC2CMessage(Context ctx) {
         SendC2CMessageDTO dto = ctx.bodyAsClass(SendC2CMessageDTO.class);
         if (isBlank(dto.getUserOpenId())) {
@@ -224,20 +245,49 @@ public class C2CController {
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
         String refId = dto.getRefMessageId();
-        if (!isBlank(refId) && !"text".equals(msgType)) {
-            ctx.status(400).json(Result.fail(400, "当前仅文本消息支持引用"));
-            return;
-        }
-        if (!isBlank(refId) && !isBlank(replyId)) {
-            ctx.status(400).json(Result.fail(400, "私聊暂不支持同时发送被动消息和引用"));
+        if (dto.isWakeup() && (!isBlank(replyId) || !isBlank(refId))) {
+            ctx.status(400).json(Result.fail(400, "召回消息不能同时指定被动回复来源或引用"));
             return;
         }
         String messageId;
         try {
-            if (refId != null && !refId.isBlank()) {
-                // 引用回复：发送带 message_reference 的主动消息，与群聊同逻辑
-                if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
-                messageId = C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent());
+            if ("ark".equals(msgType)) {
+                if (!isBlank(replyId) || !isBlank(refId)) {
+                    ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
+                }
+                Ark23 ark;
+                try {
+                    ark = parseArk23(dto.getArk());
+                } catch (IllegalArgumentException e) {
+                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                }
+                messageId = dto.isWakeup()
+                        ? C2CChat.wakeupMessage(dto.getUserOpenId(), ark)
+                        : C2CChat.sendMessage(dto.getUserOpenId(), ark);
+            } else if (refId != null && !refId.isBlank()) {
+                if ("image".equals(msgType)) {
+                    if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                    }
+                    ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                    ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                    if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                    messageId = isBlank(replyId)
+                            ? C2CChat.refMessage(dto.getUserOpenId(), refId, image)
+                            : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), image, refId);
+                } else {
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
+                    if ("markdown".equals(msgType)) {
+                        Markdown markdown = new Markdown(dto.getContent());
+                        messageId = isBlank(replyId)
+                                ? C2CChat.refMessage(dto.getUserOpenId(), refId, markdown)
+                                : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), markdown, null, refId);
+                    } else {
+                        messageId = isBlank(replyId)
+                                ? C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent())
+                                : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), dto.getContent(), refId);
+                    }
+                }
                 if (messageId != null) {
                     QQChatContentRecord.patchC2CRefDisplayData(messageId,
                             dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
@@ -250,18 +300,20 @@ public class C2CController {
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
-                    messageId = C2CChat.replyMessage(dto.getUserOpenId(), replyId, image);
+                    messageId = C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
                     messageId = "markdown".equals(msgType)
-                            ? C2CChat.replyMessage(dto.getUserOpenId(), replyId, new Markdown(dto.getContent()))
-                            : C2CChat.replyMessage(dto.getUserOpenId(), replyId, dto.getContent());
+                            ? C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), new Markdown(dto.getContent()))
+                            : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
                         if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
-                        yield C2CChat.sendMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
+                        yield dto.isWakeup()
+                                ? C2CChat.wakeupMessage(dto.getUserOpenId(), new Markdown(dto.getContent()))
+                                : C2CChat.sendMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
@@ -270,11 +322,15 @@ public class C2CController {
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                         ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                         if (!isBlank(dto.getContent())) image.setText(dto.getContent());
-                        yield C2CChat.sendMessage(dto.getUserOpenId(), image);
+                        yield dto.isWakeup()
+                                ? C2CChat.wakeupMessage(dto.getUserOpenId(), image)
+                                : C2CChat.sendMessage(dto.getUserOpenId(), image);
                     }
                     default -> {
                         if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
-                        yield C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent());
+                        yield dto.isWakeup()
+                                ? C2CChat.wakeupMessage(dto.getUserOpenId(), dto.getContent())
+                                : C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent());
                     }
                 };
             }
@@ -302,8 +358,12 @@ public class C2CController {
             ctx.status(400).json(Result.fail(400, "流式消息暂不支持引用"));
             return;
         }
-        if (isBlank(dto.getReplyMessageId())) {
-            ctx.status(400).json(Result.fail(400, "流式消息需要指定被动回复的来源消息"));
+        if (dto.isWakeup() && !isBlank(dto.getReplyMessageId())) {
+            ctx.status(400).json(Result.fail(400, "召回消息不能同时指定被动回复来源"));
+            return;
+        }
+        if (!dto.isWakeup() && isBlank(dto.getReplyMessageId())) {
+            ctx.status(400).json(Result.fail(400, "流式消息需要指定被动回复的来源消息，或开启召回"));
             return;
         }
         if (isBlank(dto.getContent())) {
@@ -320,7 +380,9 @@ public class C2CController {
         }
         String messageId;
         try {
-            messageId = C2CChat.replyStreamDeltas(dto.getUserOpenId(), dto.getReplyMessageId(), deltas);
+            messageId = dto.isWakeup()
+                    ? C2CChat.wakeupStreamDeltas(dto.getUserOpenId(), deltas)
+                    : C2CChat.replyStreamDeltas(dto.getUserOpenId(), RT.message(dto.getReplyMessageId()), deltas);
         } catch (QQMessageSendException e) {
             ctx.status(502).json(Result.fail(502, e.getMessage()));
             return;
@@ -337,6 +399,7 @@ public class C2CController {
 
     @Data
     public static class SendC2CStreamDTO {
+        private boolean wakeup;
         private String userOpenId;
         private String content;
         private String replyMessageId;
@@ -348,6 +411,8 @@ public class C2CController {
 
     @Data
     public static class SendC2CMessageDTO {
+        private boolean wakeup;
+        private JsonNode ark;
         private String userOpenId;
         private String msgType;
         private String content;

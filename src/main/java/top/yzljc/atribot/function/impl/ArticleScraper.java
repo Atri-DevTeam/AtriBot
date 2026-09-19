@@ -18,7 +18,7 @@ public class ArticleScraper {
         if (articleUrl == null || articleUrl.isEmpty()) return "";
 
         try {
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+            java.net.http.HttpRequest request = HttpService.newRequestBuilder()
                     .uri(URI.create(articleUrl))
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                     .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -43,6 +43,7 @@ public class ArticleScraper {
             return pureText.trim();
 
         } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             log.warn("ArticleScraper抓取文章纯文本失败: {}", articleUrl, e);
             return "";
         }

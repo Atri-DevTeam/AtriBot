@@ -4,6 +4,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 
 /**
  * @Author YZ_Ljc_
@@ -21,23 +22,26 @@ public final class AsyncGuildChannelChat {
     /**
      * 异步发送文字子频道纯文本被动消息
      *
-     * @param channelId   子频道 ID
-     * @param text        消息内容
+     * @param channelId 子频道 ID
+     * @param rt        消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param text      消息内容
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String channelId, String msgId, String text) {
-        return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().replyText(msgId, text));
+    public static CompletableFuture<String> replyMessage(String channelId, RT rt, String text) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().replyText(rt, text));
     }
 
     /**
      * 异步发送文字子频道图片被动消息
      *
-     * @param channelId  子频道 ID
-     * @param msgId   回复的消息 ID
-     * @param image       图片组件
+     * @param channelId 子频道 ID
+     * @param rt        消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image     图片组件
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String channelId, String msgId, ImageComponent image) {
-        return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().guildImage(image.getData(), msgId, image.getText()));
+    public static CompletableFuture<String> replyMessage(String channelId, RT rt, ImageComponent image) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().guildImage(image.getData(), rt, image.getText()));
     }
 }

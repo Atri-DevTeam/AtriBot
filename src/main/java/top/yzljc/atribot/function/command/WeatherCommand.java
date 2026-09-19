@@ -12,6 +12,7 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
 
 @Slf4j
+@Deprecated(since = "3.2.3", forRemoval = true)
 public final class WeatherCommand implements CommandExecutor {
 
     @Override

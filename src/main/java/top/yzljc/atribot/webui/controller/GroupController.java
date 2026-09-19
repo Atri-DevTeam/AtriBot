@@ -6,11 +6,13 @@ import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.Ark23;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
 import top.yzljc.atribot.chat.official.management.GroupMember;
 import top.yzljc.atribot.chat.official.management.GroupMemberBlacklist;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
@@ -30,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
+import static top.yzljc.atribot.webui.WebUiSupport.parseArk23;
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseLong;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -281,7 +284,7 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         String msgIdx = firstNonBlank(ctx.queryParam("msgIdx"), ctx.queryParam("refIdx"));
         String refAuthor = ctx.queryParam("refAuthor");
-        String refContent = ctx.queryParam("refContent");
+        String refContent = ctx.queryParam("content");
         String refAttachments = ctx.queryParam("refAttachments");
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
@@ -308,19 +311,44 @@ public class GroupController {
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
         String refId = dto.getRefMessageId();
-        if (!isBlank(refId) && !"text".equals(msgType)) {
-            ctx.status(400).json(Result.fail(400, "当前仅文本消息支持引用"));
-            return;
-        }
         String messageId;
 
         try {
-            if (refId != null && !refId.isBlank()) {
-                // 群聊文本支持独立引用，也支持在被动回复中附带引用。
-                if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
-                messageId = isBlank(replyId)
-                        ? GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent())
-                        : GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent(), refId);
+            if ("ark".equals(msgType)) {
+                if (!isBlank(replyId) || !isBlank(refId)) {
+                    ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
+                }
+                Ark23 ark;
+                try {
+                    ark = parseArk23(dto.getArk());
+                } catch (IllegalArgumentException e) {
+                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                }
+                messageId = GroupChat.sendMessage(dto.getGroupOpenId(), ark);
+            } else if (refId != null && !refId.isBlank()) {
+                if ("image".equals(msgType)) {
+                    if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
+                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                    }
+                    ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
+                    ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
+                    if (!isBlank(dto.getContent())) image.setText(dto.getContent());
+                    messageId = isBlank(replyId)
+                            ? GroupChat.refMessage(dto.getGroupOpenId(), refId, image)
+                            : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), image, refId);
+                } else {
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
+                    if ("markdown".equals(msgType)) {
+                        Markdown markdown = new Markdown(dto.getContent());
+                        messageId = isBlank(replyId)
+                                ? GroupChat.refMessage(dto.getGroupOpenId(), refId, markdown)
+                                : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), markdown, null, refId);
+                    } else {
+                        messageId = isBlank(replyId)
+                                ? GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent())
+                                : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), dto.getContent(), refId);
+                    }
+                }
                 if (messageId != null) {
                     QQChatContentRecord.patchRefDisplayData(messageId,
                             dto.getRefAuthor(), dto.getRefContent(), dto.getRefAttachments(), refId);
@@ -334,12 +362,12 @@ public class GroupController {
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
-                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), replyId, image);
+                    messageId = GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), image);
                 } else {
                     if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
                     messageId = "markdown".equals(msgType)
-                            ? GroupChat.replyMessage(dto.getGroupOpenId(), replyId, new Markdown(dto.getContent()))
-                            : GroupChat.replyMessage(dto.getGroupOpenId(), replyId, dto.getContent());
+                            ? GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), new Markdown(dto.getContent()))
+                            : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), dto.getContent());
                 }
             } else {
                 messageId = switch (msgType) {
@@ -517,6 +545,7 @@ public class GroupController {
 
     @Data
     public static class SendGroupMessageDTO {
+        private JsonNode ark;
         private String groupOpenId;
         private String msgType;   // "text" | "markdown" | "image"
         private String content;

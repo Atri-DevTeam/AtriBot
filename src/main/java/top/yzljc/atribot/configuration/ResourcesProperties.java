@@ -98,6 +98,9 @@ public final class ResourcesProperties {
     // @ClassName BanTracker
     public static final String BAN_TRACKER = UGC_API + "/v2/atrimeow/bantracker-chart";
 
+    // @ClassName HypixelBanWaveAlertTask
+    public static final String HYPIXEL_BANWAVE_API = "https://api.yzljc.top/v1/bantracker/stats/banwave";
+
     // @ClassName PlayerProfile
     public static final String PLAYER_CARD_API = UGC_API + "/v2/atrimeow/player-game-stats";
 
@@ -216,6 +219,8 @@ public final class ResourcesProperties {
     public static final String ICON_PARKOUR = request("resource.image.icon-parkour");
 
     public static final String ICON_DROPPER = request("resource.image.icon-dropper");
+
+    public static final String MAINTENANCE_IMG = request("resource.image.maintenance");
 
     private static Map<String, String> loadRequestProperties() {
         Path path = Path.of(Properties.REQUEST);

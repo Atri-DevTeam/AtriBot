@@ -147,27 +147,27 @@ public class SignCommand implements CommandExecutor, Listener {
 
             if (banned) {
                 if (label == 1) {
-                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
+                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), userOpenId, TC.md("> 由于内容调整，开发者暂时禁用了打卡！"));
                 }
                 return;
             }
 
             if (SignRepository.isInSettlementWindow()) {
                 if (label == 1) {
-                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
+                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), TC.md("打卡结算中，暂时无法打卡哦！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
+                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), userOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
                 }
                 return;
             }
 
             if (SignRepository.hasCheckedInToday(userOpenId)) {
                 if (label == 1) {
-                    C2CChat.replyMessage(userOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
+                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), TC.md("你今天已经打过卡了哦！"));
                 } else {
-                    GroupChat.replyMessage(groupOpenId, userOpenId, messageOpenId, TC.md("你今天已经打过卡了哦！"));
+                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), userOpenId, TC.md("你今天已经打过卡了哦！"));
                 }
                 return;
             }
@@ -191,13 +191,13 @@ public class SignCommand implements CommandExecutor, Listener {
 
             Object buttons = TC.keyboard(List.of(
                     List.of(new Button("c1", "我也要打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                            new Button("c2", "抽MC物品", "/drawitem", true, ButtonStyle.BLUE, ButtonType.COMMAND)))
+                            new Button("c2", "抽MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND)))
             );
 
             if (label == 1) {
-                C2CChat.replyMessage(userOpenId, messageOpenId, md, buttons);
+                C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), md, buttons);
             } else {
-                GroupChat.replyMessage(groupOpenId, messageOpenId, md, buttons);
+                GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), md, buttons);
             }
         });
     }

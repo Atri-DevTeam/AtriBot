@@ -11,6 +11,7 @@ import top.yzljc.atribot.platform.Platform;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official.pushtask
  */
+@Deprecated(since = "3.2.3")
 public class SkyblockResourcePackTask extends PushTask {
     public SkyblockResourcePackTask() {
         super("skyblock_resource_pack", "Skyblock 材质包更新", true);

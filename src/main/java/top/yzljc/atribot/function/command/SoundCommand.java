@@ -10,8 +10,11 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.function.games.sound.SoundCatalog;
 import top.yzljc.atribot.function.games.sound.SoundRound;
 import top.yzljc.atribot.platform.Platform;
@@ -21,10 +24,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ToIntBiFunction;
 
 /** Official QQ group and private sound quiz; the first valid command answer ends the round. */
 public final class SoundCommand implements CommandExecutor, AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(SoundCommand.class);
+    private static final int CORRECT_REWARD = 15;
     private final Map<String, SoundRound> rounds = new ConcurrentHashMap<>();
     private volatile boolean closed;
     private SoundCatalog catalog;
@@ -93,8 +98,8 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
                     round.id, session, cardId, round.audioUrl);
             stage = "音频上传或发送";
             String audioId = qq.getPlatform() == Platform.OFFICIAL_C2C
-                    ? C2CChat.replyAudioMessage(qq.getUserId(), qq.getMessage().getMessageId(), round.audioUrl)
-                    : GroupChat.replyAudioMessage(qq.getGroupId(), qq.getMessage().getMessageId(), round.audioUrl);
+                    ? C2CChat.replyAudioMessage(qq.getUserId(), RT.message(qq.getMessage().getMessageId()), round.audioUrl)
+                    : GroupChat.replyAudioMessage(qq.getGroupId(), RT.message(qq.getMessage().getMessageId()), round.audioUrl);
             if (audioId == null) throw new IllegalStateException("Audio upload/send failed");
             log.info("听声辨物音频已发送: round={}, session={}, cardMsg={}, audioMsg={}",
                     round.id, session, cardId, audioId);
@@ -171,13 +176,25 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
             int correct = round.question.answer();
             String ending = result.winner() != null ? "判断正确！该声音出现的场景为："
                     : result.answers().isEmpty() ? "时间到，无人回答，正确答案是：" : "❌回答错误，正确答案是：";
-            String sent = qq.sendMessage(TC.md(ending + (char) ('A' + correct) + ". " + round.question.options().get(correct).name() + "\n\n" + Markdown.enterCommand("/sound", "♻ 再来一次")));
+            // The round atomically returns a settlement result only once. Credit before sending the result.
+            String reward = rewardText(result, LootRepository::addCoins);
+            String sent = qq.sendMessage(TC.md(ending + (char) ('A' + correct) + ". " + round.question.options().get(correct).name()
+                    + reward + "\n\n" + Markdown.enterCommand("/sound", "♻ 再来一次")));
             if (sent == null) logFailure(round, "答案发送", null);
         } catch (Exception e) {
             logFailure(round, "答案发送", e);
         } finally {
             rounds.remove(sessionKey(qq), round);
         }
+    }
+
+    static String rewardText(SoundRound.Result result, ToIntBiFunction<String, Integer> credit) {
+        if (result.winner() == null) return "";
+        if (credit.applyAsInt(result.winner(), CORRECT_REWARD) == CORRECT_REWARD) {
+            return "（+" + CORRECT_REWARD + " 金粒）";
+        }
+        log.warn("听声辨物金粒奖励发放失败: winner={}, amount={}", result.winner(), CORRECT_REWARD);
+        return "\n\n金粒奖励发放失败，请向开发者报告此问题";
     }
 
     private static void logFailure(SoundRound round, String stage, Exception error) {

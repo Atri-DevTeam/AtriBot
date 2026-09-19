@@ -33,6 +33,8 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof QQCommandSender)) return true;
+
         if (!sender.hasPermission()) {
             sender.sendMessage(Identifier.NO_PERMISSION);
             return true;

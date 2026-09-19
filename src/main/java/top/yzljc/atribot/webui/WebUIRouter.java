@@ -167,6 +167,7 @@ public class WebUIRouter {
         server.delete("/webui/api/c2c/{userOpenId}/messages", C2CController::clearC2CMessages);
         server.get("/webui/api/c2c/{userOpenId}/messages/ref", C2CController::locateC2CMessageByRefIdx);
         server.post("/webui/api/c2c/send", C2CController::sendC2CMessage);
+        server.post("/webui/api/c2c/{userOpenId}/input-notify", C2CController::sendC2CInputNotify);
         server.post("/webui/api/c2c/recall", C2CController::recallC2CMessage);
         server.post("/webui/api/c2c/stream", C2CController::sendC2CStreamMessage);
 

@@ -4,6 +4,21 @@ export function parseArkMessage(raw) {
 
   const ark = Array.isArray(value) ? value.find(item => item && typeof item === 'object') : value
   if (!ark || typeof ark !== 'object') return null
+  if (Number(ark.template_id) === 23 && Array.isArray(ark.kv)) {
+    const entry = key => ark.kv.find(item => item?.key === key)
+    const title = firstText(entry('#DESC#')?.value)
+    const prompt = firstText(entry('#PROMPT#')?.value)
+    const rows = entry('#LIST#')?.obj
+    const items = (Array.isArray(rows) ? rows : []).map(row => {
+      const fields = Array.isArray(row?.obj_kv) ? row.obj_kv : []
+      return {
+        description: firstText(fields.find(field => field?.key === 'desc')?.value),
+        link: firstUrl(fields.find(field => field?.key === 'link')?.value)
+      }
+    }).filter(item => item.description)
+    if (!title && !prompt && !items.length) return null
+    return { type: '23', typeName: 'Ark', title: title || prompt || 'Ark', prompt, items, targetUrl: '' }
+  }
 
   const fields = ark.fields && typeof ark.fields === 'object' ? ark.fields : {}
   const typeName = firstText(ark.ark_name, ark.arkName, ark.ark_type, ark.arkType, fields.type) || '卡片消息'

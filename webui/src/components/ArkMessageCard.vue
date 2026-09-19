@@ -27,6 +27,12 @@
       </div>
       <div class="ark-title">{{ card.title }}</div>
       <div v-if="card.prompt && card.prompt !== card.title" class="ark-prompt">{{ card.prompt }}</div>
+      <ul v-if="card.items?.length" class="ark-items">
+        <li v-for="(item, index) in card.items" :key="index">
+          <a v-if="item.link" :href="item.link" target="_blank" rel="noopener noreferrer">{{ item.description }}</a>
+          <span v-else>{{ item.description }}</span>
+        </li>
+      </ul>
     </div>
   </component>
 </template>
@@ -156,6 +162,9 @@ watch(card, () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.ark-items { margin: 2px 0 0; padding-left: 16px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.ark-items a { color: #0086e6; }
 
 .ark-prompt {
   color: #64748b;

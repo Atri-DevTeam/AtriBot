@@ -26,10 +26,10 @@ public class QQMessage extends Message implements Recallable {
     private final String refIdx;
     private final JsonNode attachments;
     private final JsonNode ark;
-    private final JsonNode reference;
+    private final MessageReference reference;
     private final EventType messageEventType;
 
-    public QQMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, int type, String refIdx, JsonNode attachments, JsonNode ark, JsonNode reference, EventType messageEventType) {
+    public QQMessage(Platform platform, String messageId, String content, String timestamp, List<User> mentionedUsers, int type, String refIdx, JsonNode attachments, JsonNode ark, MessageReference reference, EventType messageEventType) {
         super(platform, messageId, content, timestamp, mentionedUsers);
         this.type = type;
         this.refIdx = refIdx;

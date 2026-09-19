@@ -67,8 +67,7 @@ public final class PluginManager implements AutoCloseable {
             for (Entry entry : entries.values().stream().sorted(Comparator.comparing(item -> item.description.name())).toList()) {
                 enable(entry, new HashSet<>());
             }
-            log.info("插件加载完成: {} 个已启用，{} 个失败，目录 {}", enabledOrder.size(),
-                    entries.size() - enabledOrder.size(), directory);
+            log.info("插件加载完成: {} 个已启用，{} 个失败", enabledOrder.size(), entries.size() - enabledOrder.size());
         } catch (IOException | SecurityException failure) {
             log.error("无法读取插件目录 {}，原有功能继续运行", directory, failure);
         }

@@ -9,6 +9,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Cancellable;
@@ -88,11 +89,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     public String replyMessage(Markdown markdown, boolean at) {
         if (this.chatType == 1) {
             if (at) {
-                return GroupChat.replyEventMessage(this.groupOpenId, this.userOpenId, this.eventId, markdown);
+                return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), this.userOpenId, markdown);
             }
-            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown);
+            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, markdown);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -107,11 +108,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     public String replyMessage(Markdown markdown, Object keyboard, boolean at) {
         if (this.chatType == 1) {
             if (at) {
-                return GroupChat.replyEventMessage(this.groupOpenId, this.userOpenId, this.eventId, markdown, keyboard);
+                return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), this.userOpenId, markdown, keyboard);
             }
-            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown, keyboard);
+            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown, keyboard);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, markdown, keyboard);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown, keyboard);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -120,9 +121,9 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(String text) {
         if (this.chatType == 1) {
-            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, text);
+            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), text);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, text);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), text);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -131,9 +132,9 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(ImageComponent image) {
         if (this.chatType == 1) {
-            return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, image);
+            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), image);
         } else if (this.chatType == 2) {
-            return C2CChat.replyEventMessage(this.userOpenId, this.eventId, image);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), image);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }

@@ -451,9 +451,9 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         switch (session.platform) {
                             case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, "⚠️ 领奖操作超时，请重新获取!");
                             case OFFICIAL_GROUP ->
-                                    GroupChat.replyMessage(session.groupId, session.messageId, "⚠️ 领奖操作超时，请重新获取!");
+                                    GroupChat.replyMessage(session.groupId, RT.message(session.messageId), "⚠️ 领奖操作超时，请重新获取!");
                             case OFFICIAL_C2C ->
-                                    C2CChat.replyMessage(session.userId, session.messageId, "⚠️ 领奖操作超时，请重新获取!");
+                                    C2CChat.replyMessage(session.userId, RT.message(session.messageId), "⚠️ 领奖操作超时，请重新获取!");
                         }
                         activeRewardIds.remove(session.claimId, entry.getKey());
                         return true;
@@ -541,10 +541,10 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                             sb.append("\n").append(Markdown.enterCommand("/全量消息", "/全量消息")).append("授权后可直接解析链接");
                         }
                             if (isAutoClaimEnabled) {
-                            GroupChat.replyMessage(session.groupId, session.userId, session.messageId, TC.md(sb.toString()));
+                            GroupChat.replyMessage(session.groupId, RT.message(session.messageId), session.userId, TC.md(sb.toString()));
                         } else {
-                            GroupChat.replyMessage(session.groupId, session.userId,
-                                    session.messageId,
+                            GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
+                                    session.userId,
                                     TC.md(sb.toString()),
                                     TC.keyboard(List.of(
                                             List.of(
@@ -561,9 +561,9 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         }
                         sb.append("> ").append(Markdown.enterCommand("/preferences hypixel_reward", "设置自动领取规则"));
                         if (isAutoClaimEnabled) {
-                            C2CChat.replyMessage(session.userId, session.messageId, TC.md(sb.toString()));
+                            C2CChat.replyMessage(session.userId, RT.message(session.messageId), TC.md(sb.toString()));
                         } else {
-                            C2CChat.replyMessage(session.userId, session.messageId,
+                            C2CChat.replyMessage(session.userId, RT.message(session.messageId),
                                     TC.md(sb.toString()),
                                     TC.keyboard(List.of(
                                             List.of(
@@ -612,21 +612,21 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, prefix + msg);
                         case OFFICIAL_GROUP -> {
                             if (finalUrl != null) {
-                                GroupChat.replyMessage(session.groupId, session.userId,
-                                        session.messageId,
+                                GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
+                                        session.userId,
                                         TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                GroupChat.replyMessage(session.groupId, session.userId,
-                                        session.messageId,
+                                GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
+                                        session.userId,
                                         TC.md(prefix + msg), keyboard);
                             }
                         }
                         case OFFICIAL_C2C -> {
                             if (finalUrl != null) {
-                                C2CChat.replyMessage(session.userId, session.messageId,
+                                C2CChat.replyMessage(session.userId, RT.message(session.messageId),
                                         TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
                             } else {
-                                C2CChat.replyMessage(session.userId, session.messageId,
+                                C2CChat.replyMessage(session.userId, RT.message(session.messageId),
                                         TC.md(prefix + msg), keyboard);
                             }
                         }
@@ -637,8 +637,8 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                     String text = "执行操作时出现错误: " + response.path("msg").asText();
                     switch (session.platform) {
                         case NAPCAT_GROUP -> GroupMessage.chatMessage(session.groupId, text);
-                        case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, session.messageId, text);
-                        case OFFICIAL_C2C -> C2CChat.replyMessage(session.userId, session.messageId, text);
+                        case OFFICIAL_GROUP -> GroupChat.replyMessage(session.groupId, RT.message(session.messageId), text);
+                        case OFFICIAL_C2C -> C2CChat.replyMessage(session.userId, RT.message(session.messageId), text);
                     }
                     removeSession(sessionId);
                 }

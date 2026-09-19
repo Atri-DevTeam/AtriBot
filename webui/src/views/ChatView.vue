@@ -264,11 +264,12 @@
           </div>
 
           <form class="chatnt-composer" @submit.prevent="sendMessage">
-            <div class="chatnt-tools">
+            <div class="chatnt-tools" tabindex="0" aria-label="消息类型与发送方式，可左右滑动">
               <div class="chatnt-type">
                 <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
                 <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType" value="markdown" />MD</label>
                 <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image" />图片</label>
+                <label :class="{ active: msgType === 'ark' }"><input type="radio" v-model="msgType" value="ark" />Ark</label>
                 <label v-if="active.type === 'c2c'" :class="{ active: msgType === 'stream' }"><input type="radio" v-model="msgType" value="stream" />流式</label>
               </div>
               <button v-if="msgType === 'image'" type="button" class="chatnt-tool-btn" title="上传图片" aria-label="上传图片" @click="$refs.fileInputRef.click()">
@@ -294,14 +295,47 @@
                   </span>
                   引用
                 </button>
+                <button v-if="active.type === 'c2c'" type="button" class="chatnt-mode-toggle"
+                        :class="{ active: wakeupMode }" :aria-pressed="wakeupMode"
+                        title="发送召回消息，无需选择来源消息" @click="toggleWakeupMode">
+                  <span class="chatnt-mode-check" aria-hidden="true">
+                    <svg v-if="wakeupMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                  </span>
+                  召回
+                </button>
+                <button v-if="active.type === 'c2c'" type="button" class="chatnt-tool-btn chatnt-typing-btn"
+                        :disabled="sendingInputNotify" :aria-busy="sendingInputNotify"
+                        title="发送正在输入提示（60 秒）" aria-label="发送正在输入提示（60 秒）" @click="sendInputNotify">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 4.5h14a2.5 2.5 0 0 1 2.5 2.5v9a2.5 2.5 0 0 1-2.5 2.5h-9L5 22v-3.5A2.5 2.5 0 0 1 2.5 16V7A2.5 2.5 0 0 1 5 4.5Z"
+                          stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                    <g fill="currentColor">
+                      <circle class="chatnt-typing-dot" cx="7.5" cy="11.5" r="1.25" />
+                      <circle class="chatnt-typing-dot" cx="12" cy="11.5" r="1.25" />
+                      <circle class="chatnt-typing-dot" cx="16.5" cy="11.5" r="1.25" />
+                    </g>
+                  </svg>
+                </button>
               </div>
             </div>
             <img v-if="pastePreview" :src="pastePreview" class="chatnt-paste-preview" title="点击清除" @click="clearSelectedImage" />
             <div class="chatnt-resize-handle" :class="{ dragging: resizingComposer }"
-                 title="拖拽调整输入框高度"
+                 title="拖拽调整输入区高度"
                  @mousedown="startComposerResize" @touchstart="startComposerResize"></div>
-            <textarea ref="composerRef" v-model="draft" :disabled="sending"
-                      :style="{ height: composerHeight + 'px' }"
+            <fieldset v-if="msgType === 'ark'" class="chatnt-ark-editor" :disabled="sending" aria-label="Ark 卡片内容"
+                      :style="{ height: activeComposerHeight + 'px' }">
+              <label>卡片描述<input v-model="arkDraft.description" placeholder="卡片描述" /></label>
+              <label>通知预览<input v-model="arkDraft.prompt" placeholder="消息列表和通知中显示的文字" /></label>
+              <div v-for="(item, index) in arkDraft.items" :key="index" class="chatnt-ark-item">
+                <label>条目 {{ index + 1 }}<input v-model="item.description" placeholder="条目内容" /></label>
+                <label>链接（可选）<input v-model="item.link" placeholder="https://…" inputmode="url" /></label>
+                <button type="button" class="nt-mini-btn" :disabled="arkDraft.items.length === 1"
+                        :aria-label="`删除条目 ${index + 1}`" @click="arkDraft.items.splice(index, 1)">删除</button>
+              </div>
+              <button type="button" class="nt-mini-btn" @click="arkDraft.items.push({ description: '', link: '' })">添加条目</button>
+            </fieldset>
+            <textarea v-if="msgType !== 'ark'" ref="composerRef" v-model="draft" :disabled="sending"
+                      :style="{ height: activeComposerHeight + 'px' }"
                       :placeholder="composerPlaceholder"
                       @paste="onPaste"
                       @keydown.enter.exact.prevent="sendMessage"></textarea>
@@ -529,8 +563,8 @@
 
               <!-- 私聊：信息面板直接就是对端的用户设置 -->
               <template v-else>
-                <UserProfileForm :profile="profile" :role-options="ROLE_OPTIONS"
-                                 :saving="profileSaving" :error="profileError"
+                <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
+                                 :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady" :error="profileError"
                                  @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
               </template>
 
@@ -588,8 +622,8 @@
 
             <!-- ═══ 单用户设置 ═══ -->
             <div v-else-if="panel === 'user'" class="chatnt-members-list chatnt-info">
-              <UserProfileForm :profile="profile" :role-options="ROLE_OPTIONS"
-                               :saving="profileSaving" :error="profileError"
+              <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
+                               :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady" :error="profileError"
                                @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
             </div>
           </aside>
@@ -608,7 +642,7 @@
               @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言</button>
       <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
               @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言</button>
-      <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">引用</button>
+      <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">选择</button>
       <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
       <!-- 别人的消息也给撤回入口，能不能撤由官方接口判定，前端不预判权限 -->
       <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
@@ -678,7 +712,7 @@ import { hasArkMessage } from '../lib/ark.js'
 import { parseForwardContent } from '../lib/forward.js'
 import { vChatImageLayout } from '../lib/chatImageLayout.js'
 import { countNewMessages, latestMessageId } from '../lib/chatUnread.js'
-import { createChatBottomScroller, prefersReducedMotion } from '../lib/chatMotion.js'
+import { createChatBottomScroller, createChatPositionKeeper, prefersReducedMotion } from '../lib/chatMotion.js'
 import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
 import GroupAvatarRenderer from '../lib/GroupAvatarRenderer.js'
 import AppSidebar from '../components/AppSidebar.vue'
@@ -725,16 +759,28 @@ let viewingHistoryPage = false
 let followingLatest = true
 
 const sending = ref(false)
+const sendingInputNotify = ref(false)
 const draft = ref('')
+const arkDraft = reactive({ description: '', prompt: '', items: [{ description: '', link: '' }] })
 const msgType = ref('text')
 const imageData = ref(null)
 const pastePreview = ref(null)
 const replyTo = ref(null)
 const passiveMode = ref(false)
 const refMode = ref(false)
+const wakeupMode = ref(false)
 
 const COMPOSER_MIN_HEIGHT = 36
 const composerHeight = ref(COMPOSER_MIN_HEIGHT)
+const ARK_COMPOSER_MIN_HEIGHT = 120
+const arkComposerHeight = ref(220)
+const activeComposerHeight = computed({
+  get: () => msgType.value === 'ark' ? arkComposerHeight.value : composerHeight.value,
+  set: height => {
+    if (msgType.value === 'ark') arkComposerHeight.value = height
+    else composerHeight.value = height
+  }
+})
 const resizingComposer = ref(false)
 
 const DEFAULT_LIST_WIDTH = 296
@@ -781,7 +827,11 @@ const profileTarget = ref('')
 const profileName = ref('')
 const profile = reactive({ role: 'USER', permissions: [], blocked: false, ignored: false, c2cPush: true })
 const profileSaving = ref(false)
+const profileLoading = ref(false)
+const profileReady = ref(false)
 const profileError = ref('')
+let profileLoadSeq = 0
+let profileLoadController = null
 const ROLE_OPTIONS = [
   { key: 'USER', label: '普通' },
   { key: 'ADMIN', label: '管理员' },
@@ -812,6 +862,7 @@ const messageListRef = ref(null)
 const messageContentRef = ref(null)
 const arrivingMessageIds = reactive(new Set())
 const messageScroller = createChatBottomScroller(() => messageListRef.value)
+const messagePosition = createChatPositionKeeper(() => messageListRef.value, () => messageContentRef.value)
 watch([messageListRef, messageContentRef], ([viewport, content], _, onCleanup) => {
   if (!viewport || !content) return
   // load 事件早于图片排版完成，也覆盖不到视频、字体和输入框引起的尺寸变化。
@@ -825,8 +876,17 @@ const fileInputRef = ref(null)
 const composerRef = ref(null)
 
 let eventSource = null
+let disposed = false
+let sseStopped = false
+let sseReconnectTimer = null
+let sseVerifyTimer = null
+let sseVerifyController = null
 let convRefreshTimer = null
-let messageRefreshSeq = 0
+let convRefreshPending = false
+let convRefreshController = null
+let messageRefreshTimer = null
+let messageRefreshPending = false
+let messageRefreshController = null
 
 const activeConv = computed(() =>
   active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
@@ -901,41 +961,57 @@ const hasMore = computed(() => messages.value.length < totalMessages.value)
 
 const canSend = computed(() => {
   if (!active.value || sending.value) return false
+  if (msgType.value === 'ark') return !!arkDraft.description.trim() && !!arkDraft.prompt.trim()
+    && arkDraft.items.length > 0 && arkDraft.items.every(item => !!item.description.trim())
   if (msgType.value === 'image') return !!imageData.value
   return !!draft.value.trim()
 })
 
-// 只开放 GroupChat / C2CChat 现有方法支持的组合。
+// 被动回复来源与引用独立，只检查所选消息是否具备对应 ID。
 const passiveDisabledReason = computed(() => {
+  if (wakeupMode.value) return '召回消息不使用被动回复来源'
+  if (msgType.value === 'ark') return 'Ark 仅支持主动发送'
   if (replyTo.value && (isMe(replyTo.value) || !replyTo.value.messageOpenId)) return '该消息不能作为被动回复的来源'
-  if (active.value?.type === 'c2c' && refMode.value) return '私聊暂不支持同时发送被动消息和引用'
   return ''
 })
 
 const referenceDisabledReason = computed(() => {
-  if (msgType.value !== 'text') return '当前仅文本消息支持引用'
+  if (wakeupMode.value) return '召回消息不附带引用'
+  if (msgType.value === 'ark') return 'Ark 暂不支持引用'
+  if (msgType.value === 'stream') return '流式消息暂不支持引用'
   if (replyTo.value && !replyTo.value.refIdx) return '所选消息缺少引用索引，无法附带引用'
-  if (active.value?.type === 'c2c' && passiveMode.value) return '私聊暂不支持同时发送被动消息和引用'
   return ''
 })
 
 const sendModeHint = computed(() => {
-  if (msgType.value === 'stream' && !passiveMode.value) return '流式消息需开启被动消息，并选择来源消息'
-  if ((passiveMode.value || refMode.value) && !replyTo.value) return '请右键消息，选择「引用」指定来源'
+  if (wakeupMode.value) return '发送召回消息'
+  if (msgType.value === 'ark') return 'Ark 主动发送 · 填写描述、通知预览和条目内容'
+  if (msgType.value === 'stream' && !passiveMode.value) return '流式消息需开启被动消息并选择来源，或开启召回'
+  if ((passiveMode.value || refMode.value) && !replyTo.value) return '请右键消息，点击「选择」指定来源'
   if (replyTo.value && !passiveMode.value && !refMode.value) return '未开启被动消息或引用，将按普通消息发送'
   return ''
 })
 
-watch([msgType, () => active.value?.type, replyTo], () => {
-  if (msgType.value !== 'text' || (replyTo.value && !replyTo.value.refIdx)) refMode.value = false
+watch([msgType, () => active.value?.type, replyTo, wakeupMode], () => {
+  if (active.value?.type !== 'c2c') wakeupMode.value = false
+  if (wakeupMode.value) {
+    passiveMode.value = false
+    refMode.value = false
+    return
+  }
+  if (msgType.value === 'ark') {
+    passiveMode.value = false
+    refMode.value = false
+    return
+  }
+  if (msgType.value === 'stream' || (replyTo.value && !replyTo.value.refIdx)) refMode.value = false
   if (replyTo.value && (isMe(replyTo.value) || !replyTo.value.messageOpenId)) passiveMode.value = false
-  if (active.value?.type === 'c2c' && passiveMode.value) refMode.value = false
 })
 
 const composerPlaceholder = computed(() => {
   if (msgType.value === 'image') return '图片说明文字（可选），粘贴或上传图片'
   if (msgType.value === 'markdown') return 'Markdown 内容'
-  if (msgType.value === 'stream') return '每行一个 delta'
+  if (msgType.value === 'stream') return '发送消息 · 单行为一个切片'
   return '发送消息'
 })
 
@@ -950,17 +1026,28 @@ onMounted(async () => {
   window.addEventListener('resize', clampListWidth)
   loadLayout()
   await loadConfig()
+  if (disposed || sseStopped) return
   await Promise.all([loadConversations(), loadPinned()])
+  if (disposed || sseStopped) return
   connectSse()
   applyDeepLink()
 })
 
 onBeforeUnmount(() => {
+  // 先失效异步回调，再释放连接和定时器，避免请求完成后重新调度。
+  disposed = true
+  convLoadSeq++
+  resetProfile()
+  cancelMessageRefresh()
+  convRefreshController?.abort()
   messageScroller.cancel()
+  messagePosition.clear()
   document.removeEventListener('click', onDocumentClick)
   window.removeEventListener('resize', clampListWidth)
-  if (eventSource) eventSource.close()
+  stopSse()
   if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  convRefreshTimer = null
+  convRefreshPending = false
   if (highlightTimer) clearTimeout(highlightTimer)
   if (noticeTimer) clearTimeout(noticeTimer)
   stopComposerResize()
@@ -987,7 +1074,7 @@ function startComposerResize(e) {
   e.preventDefault()
   const point = e.touches ? e.touches[0] : e
   composerResizeStartY = point.clientY
-  composerResizeStartHeight = composerHeight.value
+  composerResizeStartHeight = Math.min(activeComposerHeight.value, window.innerHeight * 0.32)
   resizingComposer.value = true
   document.addEventListener('mousemove', onComposerResizeMove)
   document.addEventListener('mouseup', stopComposerResize)
@@ -1003,7 +1090,8 @@ function onComposerResizeMove(e) {
   // 手柄在输入框上方：往上拖 = 变高，往下拖 = 变矮
   const delta = composerResizeStartY - point.clientY
   const maxHeight = window.innerHeight * 0.32
-  composerHeight.value = Math.min(maxHeight, Math.max(COMPOSER_MIN_HEIGHT, composerResizeStartHeight + delta))
+  const minHeight = msgType.value === 'ark' ? ARK_COMPOSER_MIN_HEIGHT : COMPOSER_MIN_HEIGHT
+  activeComposerHeight.value = Math.min(maxHeight, Math.max(minHeight, composerResizeStartHeight + delta))
 }
 
 function stopComposerResize() {
@@ -1074,6 +1162,9 @@ function loadLayout() {
     if (Number.isFinite(saved.composerHeight)) {
       composerHeight.value = Math.max(COMPOSER_MIN_HEIGHT, saved.composerHeight)
     }
+    if (Number.isFinite(saved.arkComposerHeight)) {
+      arkComposerHeight.value = Math.max(ARK_COMPOSER_MIN_HEIGHT, saved.arkComposerHeight)
+    }
   } catch { /* 存的值坏了就用默认布局 */ }
   clampListWidth()
 }
@@ -1082,7 +1173,8 @@ function saveLayout() {
   try {
     localStorage.setItem(CHAT_LAYOUT_KEY, JSON.stringify({
       listWidth: Math.round(listWidth.value),
-      composerHeight: Math.round(composerHeight.value)
+      composerHeight: Math.round(composerHeight.value),
+      arkComposerHeight: Math.round(arkComposerHeight.value)
     }))
   } catch { /* 隐私模式下 localStorage 可能不可写，忽略 */ }
 }
@@ -1090,33 +1182,38 @@ function saveLayout() {
 // ═══════════════ API 基础 ═══════════════
 
 async function api(path, options) {
+  if (disposed || sseStopped) throw new Error('会话已结束')
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
     ...options
   })
-  if (res.status === 503) {
-    logout()
-    throw new Error('WebUI 已关闭')
+  if (disposed || sseStopped) throw new Error('会话已结束')
+  if (res.status === 401 || res.status === 503) {
+    expireSession()
+    throw new Error(res.status === 401 ? '未授权' : 'WebUI 暂不可用')
   }
   const text = await res.text()
+  if (disposed || sseStopped) throw new Error('会话已结束')
   let payload
   try {
     payload = JSON.parse(text)
   } catch {
     throw new Error(text || `HTTP ${res.status}`)
   }
-  if (res.status === 401) { logout(); throw new Error('未授权') }
   if (payload.status !== 200) throw new Error(payload.message || '请求失败')
   return payload.data
 }
 
 async function logout() {
+  if (disposed || sseStopped) return
+  stopSse()
   try {
     await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' })
   } catch { /* ignore */ }
-  localStorage.removeItem(LEGACY_TOKEN_KEY)
-  router.replace('/login')
+  if (disposed) return
+  try { localStorage.removeItem(LEGACY_TOKEN_KEY) } catch { /* 存储不可用不影响退出。 */ }
+  window.location.replace(router.resolve('/login').href)
 }
 
 async function loadConfig() {
@@ -1131,32 +1228,50 @@ async function loadConfig() {
 // ═══════════════ 会话列表 ═══════════════
 
 async function loadConversations() {
-  if (loadingConvs.value) return
+  if (disposed) return
+  if (loadingConvs.value || loadingMoreConvs.value) {
+    scheduleConvRefresh()
+    return
+  }
+  if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  convRefreshTimer = null
+  convRefreshPending = false
   loadingConvs.value = true
+  const controller = new AbortController()
+  convRefreshController = controller
   try {
     // 按「当前已加载的非置顶会话数」重取：首屏 100，SSE 刷新时保持已加载深度，
     // 新消息让某个会话实时跳到顶部、其余整体重排（QQ 式）
     const depth = Math.min(Math.max(nonPinnedLoadedCount.value, CONV_LIST_PAGE_SIZE), 1000)
-    const data = await api(`/chat/conversations?limit=${depth}&offset=0`) || { items: [], hasMore: true }
+    const data = await api(`/chat/conversations?limit=${depth}&offset=0`, { signal: controller.signal }) || { items: [], hasMore: true }
+    if (disposed) return
     conversations.value = data.items || []
     hasMoreConvs.value = data.hasMore !== false
   } catch { /* 静默失败，保留旧列表 */ }
-  finally { loadingConvs.value = false }
+  finally {
+    convRefreshController = null
+    loadingConvs.value = false
+    if (convRefreshPending) scheduleConvRefresh()
+  }
 }
 
 async function loadMoreConversations() {
-  if (loadingMoreConvs.value || !hasMoreConvs.value || loadingConvs.value || search.value.trim()) return
+  if (disposed || loadingMoreConvs.value || !hasMoreConvs.value || loadingConvs.value || search.value.trim()) return
   loadingMoreConvs.value = true
   // offset 只统计非置顶会话：置顶的由后端单独前置，不计入分页偏移
   const offset = nonPinnedLoadedCount.value
   try {
     const data = await api(`/chat/conversations?limit=${CONV_LIST_PAGE_SIZE}&offset=${offset}`) || { items: [], hasMore: false }
+    if (disposed) return
     const existing = new Set(conversations.value.map(c => convKey(c)))
     const fresh = (data.items || []).filter(c => !existing.has(convKey(c)))
     conversations.value = [...conversations.value, ...fresh]
     hasMoreConvs.value = data.hasMore !== false
   } catch { /* ignore */ }
-  finally { loadingMoreConvs.value = false }
+  finally {
+    loadingMoreConvs.value = false
+    if (convRefreshPending) scheduleConvRefresh()
+  }
 }
 
 function onConvListScroll(e) {
@@ -1167,8 +1282,14 @@ function onConvListScroll(e) {
 }
 
 function scheduleConvRefresh() {
-  if (convRefreshTimer) clearTimeout(convRefreshTimer)
-  convRefreshTimer = setTimeout(() => { loadConversations() }, 800)
+  if (disposed || sseStopped) return
+  convRefreshPending = true
+  if (convRefreshTimer || loadingConvs.value || loadingMoreConvs.value) return
+  // 固定刷新窗口；持续到来的事件只标记补刷，不推迟已排队的请求。
+  convRefreshTimer = setTimeout(() => {
+    convRefreshTimer = null
+    if (convRefreshPending) loadConversations()
+  }, 800)
 }
 
 function convKey(c) {
@@ -1315,7 +1436,9 @@ async function selectConv(c) {
     return
   }
   active.value = { type: c.type, openId: c.openId }
+  resetProfile()
   messageScroller.cancel()
+  clearReferencePosition()
   arrivingMessageIds.clear()
   mobileChatOpen.value = true
   messages.value = []
@@ -1327,6 +1450,7 @@ async function selectConv(c) {
   followingLatest = true
   cancelReply()
   ctxMenu.visible = false
+  wakeupMode.value = false
   mutePanel.visible = false
   memberInfoTarget.value = null
   closePanel()
@@ -1339,6 +1463,7 @@ async function selectConv(c) {
   muteState.value = null
   muteStateError.value = ''
   draft.value = ''
+  resetArkDraft()
   imageData.value = null
   pastePreview.value = null
   if (msgType.value === 'stream' && c.type !== 'c2c') msgType.value = 'text'
@@ -1360,10 +1485,12 @@ function applyDeepLink() {
 watch(() => router.currentRoute.value.query, applyDeepLink)
 
 async function loadLatestMessages({ animate = false } = {}) {
-  if (!active.value) return
+  if (disposed || !active.value) return
+  cancelMessageRefresh()
   const targetKey = currentConvKey()
   const seq = ++convLoadSeq
   loadingMessages.value = true
+  loadingMore.value = false
   currentPage.value = 1
   try {
     const data = await api(messagesPath(1))
@@ -1380,7 +1507,12 @@ async function loadLatestMessages({ animate = false } = {}) {
     if (seq !== convLoadSeq || currentConvKey() !== targetKey) return
     scrollToBottom(animate ? 'smooth' : 'auto')
   } catch { /* ignore */ }
-  finally { if (seq === convLoadSeq) loadingMessages.value = false }
+  finally {
+    if (seq === convLoadSeq) {
+      loadingMessages.value = false
+      if (messageRefreshPending) scheduleMessageRefresh()
+    }
+  }
 }
 
 async function loadMore() {
@@ -1389,25 +1521,29 @@ async function loadMore() {
   const seq = convLoadSeq
   loadingMore.value = true
   const el = messageListRef.value
-  currentPage.value++
+  const nextPage = currentPage.value + 1
   try {
-    const data = await api(messagesPath(currentPage.value))
+    const data = await api(messagesPath(nextPage))
     if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     const viewportTop = el?.getBoundingClientRect().top || 0
     const anchor = el && [...el.querySelectorAll('.qm')].find(node => node.getBoundingClientRect().bottom > viewportTop)
     const anchorTop = anchor?.getBoundingClientRect().top
+    if (anchor) messagePosition.hold(anchor, anchorTop - viewportTop - el.clientTop)
     const seen = new Set(messages.value.map(message => message.id))
+    currentPage.value = nextPage
     messages.value = [...messages.value, ...(data.records || []).filter(message => !seen.has(message.id))]
+    // 加载提示与历史记录在同一次布局更新中处理，避免提示消失后再次推移内容。
+    loadingMore.value = false
     await nextTick()
     if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
-    if (el && anchor?.isConnected) el.scrollTop += anchor.getBoundingClientRect().top - anchorTop
-  } catch { if (currentConvKey() === targetKey && seq === convLoadSeq) currentPage.value-- }
-  finally { loadingMore.value = false }
+    messagePosition.sync()
+  } catch { /* 保留当前页，下次向上滚动时重试。 */ }
+  finally { if (currentConvKey() === targetKey && seq === convLoadSeq) loadingMore.value = false }
 }
 
 function onScroll() {
   const el = messageListRef.value
-  if (!el || loadingMessages.value || messageScroller.running) return
+  if (!el || loadingMessages.value || messageScroller.running || messagePosition.active) return
   // 布局变化和程序定位也会发出 scroll，不能因此误判用户离开了底部。
   // 用户滚轮、触摸或拖动滚动条时会先由 interruptMessageScroll 解除跟随。
   if (followingLatest && !viewingHistoryPage) {
@@ -1421,6 +1557,10 @@ function onScroll() {
 }
 
 function syncMessageLayout() {
+  if (messagePosition.active) {
+    messagePosition.sync()
+    return
+  }
   if (!followingLatest || viewingHistoryPage || loadingMessages.value || loadingMore.value || messageScroller.running) return
   const el = messageListRef.value
   if (!el || !el.clientHeight) return
@@ -1431,6 +1571,7 @@ function syncMessageLayout() {
 function scrollToBottom(behavior = 'auto') {
   const el = messageListRef.value
   if (!el) return
+  clearReferencePosition()
   followingLatest = true
   newMessageCount.value = 0
   messageScroller.scroll(behavior)
@@ -1438,6 +1579,7 @@ function scrollToBottom(behavior = 'auto') {
 
 function interruptMessageScroll() {
   messageScroller.cancel()
+  messagePosition.cancel()
   followingLatest = false
 }
 
@@ -1721,41 +1863,64 @@ async function clearCurrentConversation() {
 
 // ── 用户档案（群成员和私聊对端共用一套 /c2c/{id}/profile）──
 
+function resetProfile() {
+  profileLoadSeq++
+  profileLoadController?.abort()
+  profileLoadController = null
+  profileTarget.value = ''
+  profileName.value = ''
+  profileLoading.value = false
+  profileReady.value = false
+  profileError.value = ''
+  Object.assign(profile, { role: 'USER', permissions: [], blocked: false, ignored: false, c2cPush: true })
+}
+
 async function openProfile(userOpenId, displayName, switchPanel = true) {
+  if (disposed || !userOpenId) return
+  resetProfile()
+  const seq = profileLoadSeq
+  const controller = new AbortController()
+  profileLoadController = controller
   profileTarget.value = userOpenId
   profileName.value = displayName || ''
-  profileError.value = ''
+  profileLoading.value = true
   if (switchPanel) panel.value = 'user'
   try {
-    const data = await api(`/c2c/${encodeURIComponent(userOpenId)}/permissions`)
+    const data = await api(`/c2c/${encodeURIComponent(userOpenId)}/permissions`, { signal: controller.signal })
+    // 目标相同也可能已重新打开，必须同时校验本次读取的版本。
+    if (disposed || seq !== profileLoadSeq || profileTarget.value !== userOpenId) return
     profile.role = data?.role || 'USER'
     profile.permissions = [...(data?.permissions || [])]
     profile.blocked = data?.isBlocked || false
     profile.ignored = data?.isIgnored || false
     profile.c2cPush = data?.c2cPush !== false
-  } catch {
-    // 档案还不存在是正常情况，按默认值让用户直接建
-    profile.role = 'USER'
-    profile.permissions = []
-    profile.blocked = false
-    profile.ignored = false
-    profile.c2cPush = true
+    profileReady.value = true
+  } catch (error) {
+    if (disposed || seq !== profileLoadSeq || profileTarget.value !== userOpenId) return
+    profileError.value = error.message || '加载用户档案失败，请重新打开用户设置'
+  } finally {
+    if (seq === profileLoadSeq) {
+      profileLoading.value = false
+      profileLoadController = null
+    }
   }
 }
 
 function addPermNode(value) {
-  if (!value || profile.permissions.includes(value)) return
+  if (!profileReady.value || profileLoading.value || profileSaving.value || !value || profile.permissions.includes(value)) return
   profile.permissions = [...profile.permissions, value]
 }
 
 function removePerm(perm) {
+  if (!profileReady.value || profileLoading.value || profileSaving.value) return
   profile.permissions = profile.permissions.filter(p => p !== perm)
 }
 
 async function saveProfile() {
-  if (!profileTarget.value) return
+  if (disposed || !profileTarget.value || !profileReady.value || profileLoading.value || profileSaving.value) return
   const savedUserId = profileTarget.value
   const savedRole = profile.role
+  const seq = profileLoadSeq
   profileSaving.value = true
   profileError.value = ''
   try {
@@ -1769,13 +1934,16 @@ async function saveProfile() {
         c2cPush: profile.c2cPush
       })
     })
+    if (disposed) return
     const applyRole = user => user.unionOpenId === savedUserId && !user.senderIsBot
       ? { ...user, userRole: savedRole } : user
     messages.value = messages.value.map(applyRole)
     members.value = members.value.map(applyRole)
-    showNotice('已保存')
+    if (seq === profileLoadSeq && profileTarget.value === savedUserId) showNotice('已保存')
   } catch (error) {
-    profileError.value = error.message || '保存失败'
+    if (!disposed && seq === profileLoadSeq && profileTarget.value === savedUserId) {
+      profileError.value = error.message || '保存失败'
+    }
   } finally {
     profileSaving.value = false
   }
@@ -1823,12 +1991,24 @@ function showNotice(text) {
   noticeTimer = setTimeout(() => { notice.value = '' }, 2400)
 }
 
-function highlightMessage(id) {
-  highlightedMessageId.value = id
-  const el = messageListRef.value?.querySelector(`[data-message-id="${id}"]`)
-  if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+function clearReferencePosition() {
+  messagePosition.clear()
+  highlightedMessageId.value = null
   if (highlightTimer) clearTimeout(highlightTimer)
-  highlightTimer = setTimeout(() => { highlightedMessageId.value = null }, 1800)
+  highlightTimer = null
+}
+
+function highlightMessage(id) {
+  clearReferencePosition()
+  messageScroller.cancel()
+  followingLatest = false
+  highlightedMessageId.value = id
+  const viewport = messageListRef.value
+  const el = viewport?.querySelector(`[data-message-id="${id}"]`)
+  if (el && viewport.clientHeight) messagePosition.scrollTo(el)
+  highlightTimer = setTimeout(() => {
+    highlightedMessageId.value = null
+  }, 1800)
 }
 
 // 引用数据里指向来源的那个 id，键名各版本不一，逐层深搜
@@ -1870,8 +2050,17 @@ async function jumpToReference(message) {
   }
   const targetKey = currentConvKey()
   const seq = ++convLoadSeq
+  loadingMore.value = false
+  loadingMessages.value = false
+  const loaded = messages.value.find(record => record.refIdx === msgIdx && record.id !== message.id)
+  if (loaded) {
+    highlightMessage(loaded.id)
+    if (messageRefreshPending) scheduleMessageRefresh()
+    return
+  }
+  loadingMessages.value = true
   try {
-    // 定位统一走后端按 refIdx 定位，前端不再做内容/附件匹配（那套容易跳错）
+    // 来源不在已加载列表时，由后端按 refIdx 定位所在页。
     const params = new URLSearchParams({
       msgIdx,
       pageSize: String(pageSize),
@@ -1889,16 +2078,157 @@ async function jumpToReference(message) {
     viewingHistoryPage = page > 1
     followingLatest = false
     await nextTick()
+    if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     highlightMessage(location.record.id)
   } catch (error) {
     showNotice(error.message || '定位引用来源失败')
+  } finally {
+    if (currentConvKey() === targetKey && seq === convLoadSeq) {
+      loadingMessages.value = false
+      if (messageRefreshPending) scheduleMessageRefresh()
+    }
+  }
+}
+
+function cancelMessageRefresh() {
+  if (messageRefreshTimer) clearTimeout(messageRefreshTimer)
+  messageRefreshTimer = null
+  messageRefreshPending = false
+  messageRefreshController?.abort()
+}
+
+function scheduleMessageRefresh() {
+  if (disposed || sseStopped || !active.value) return
+  messageRefreshPending = true
+  if (messageRefreshTimer || messageRefreshController || loadingMessages.value) return
+  // 每个窗口最多发起一次刷新；请求期间的事件在完成后合并补刷。
+  messageRefreshTimer = setTimeout(() => {
+    messageRefreshTimer = null
+    refreshActiveMessages()
+  }, 200)
+}
+
+async function refreshActiveMessages() {
+  if (disposed || sseStopped || !active.value || !messageRefreshPending || messageRefreshController || loadingMessages.value) return
+  messageRefreshPending = false
+  const targetKey = currentConvKey()
+  const seq = convLoadSeq
+  const controller = new AbortController()
+  messageRefreshController = controller
+  try {
+    const data = await api(messagesPath(1), { signal: controller.signal })
+    if (disposed || controller.signal.aborted || seq !== convLoadSeq || currentConvKey() !== targetKey) return
+    const latest = data.records || []
+    const count = countNewMessages(latest, knownLatestMessageId, totalMessages.value, data.total || 0)
+    const follow = !messagePosition.active && !viewingHistoryPage && (messageScroller.running || isNearBottom())
+    const seen = new Set(messages.value.map(m => m.id))
+    const fresh = latest.filter(m => !seen.has(m.id))
+    if (follow) markArrivingMessages(fresh)
+    const latestId = latestMessageId(latest)
+    if (latestId > knownLatestMessageId) knownLatestMessageId = latestId
+    totalMessages.value = data.total ?? totalMessages.value
+    if (viewingHistoryPage) {
+      newMessageCount.value += count
+      return
+    }
+    if (fresh.length > 0) {
+      followingLatest = follow
+      messages.value = [...fresh, ...messages.value]
+      if (!follow) newMessageCount.value += count
+      await nextTick()
+      if (disposed || controller.signal.aborted || currentConvKey() !== targetKey || seq !== convLoadSeq) return
+      if (follow && followingLatest) scrollToBottom('smooth')
+    }
+  } catch { /* 保留当前消息，后续事件可再次触发刷新。 */ }
+  finally {
+    messageRefreshController = null
+    if (messageRefreshPending) scheduleMessageRefresh()
+  }
+}
+
+function stopSse() {
+  sseStopped = true
+  if (sseReconnectTimer) clearTimeout(sseReconnectTimer)
+  if (sseVerifyTimer) clearTimeout(sseVerifyTimer)
+  sseReconnectTimer = null
+  sseVerifyTimer = null
+  sseVerifyController?.abort()
+  sseVerifyController = null
+  if (eventSource) eventSource.close()
+  eventSource = null
+}
+
+function expireSession() {
+  if (disposed || sseStopped) return
+  stopSse()
+  convLoadSeq++
+  resetProfile()
+  cancelMessageRefresh()
+  convRefreshController?.abort()
+  if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  convRefreshTimer = null
+  convRefreshPending = false
+  // 失效通知只结束本页，不能清除其他标签页可能已更新的会话 Cookie。
+  try { localStorage.removeItem(LEGACY_TOKEN_KEY) } catch { /* 存储不可用不影响退出。 */ }
+  window.location.replace(router.resolve('/login').href)
+}
+
+function scheduleSseReconnect() {
+  if (disposed || sseStopped || sseReconnectTimer) return
+  sseReconnectTimer = setTimeout(() => {
+    sseReconnectTimer = null
+    reconnectSse()
+  }, 5000)
+}
+
+async function reconnectSse() {
+  if (disposed || sseStopped || sseVerifyController) return
+  const controller = new AbortController()
+  sseVerifyController = controller
+  sseVerifyTimer = setTimeout(() => controller.abort(), 5000)
+  try {
+    const response = await fetch(`${API_BASE}/auth/verify`, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal: controller.signal
+    })
+    if (disposed || sseStopped || sseVerifyController !== controller) return
+    if (response.status === 401 || response.status === 503) {
+      expireSession()
+    } else if (response.status === 200) {
+      connectSse()
+    } else {
+      scheduleSseReconnect()
+    }
+  } catch {
+    if (!disposed && !sseStopped && sseVerifyController === controller) scheduleSseReconnect()
+  } finally {
+    if (sseVerifyController === controller) {
+      if (sseVerifyTimer) clearTimeout(sseVerifyTimer)
+      sseVerifyTimer = null
+      sseVerifyController = null
+    }
   }
 }
 
 function connectSse() {
+  if (disposed || sseStopped) return
+  if (sseReconnectTimer) clearTimeout(sseReconnectTimer)
+  sseReconnectTimer = null
   if (eventSource) eventSource.close()
-  eventSource = new EventSource(`${API_BASE}/events`, { withCredentials: true })
-  eventSource.onmessage = async (e) => {
+  const source = new EventSource(`${API_BASE}/events`, { withCredentials: true })
+  eventSource = source
+  source.addEventListener('session-expired', () => {
+    if (disposed || sseStopped || eventSource !== source) return
+    expireSession()
+  })
+  source.onopen = () => {
+    if (disposed || eventSource !== source) return
+    scheduleConvRefresh()
+    scheduleMessageRefresh()
+  }
+  source.onmessage = (e) => {
+    if (disposed || eventSource !== source) return
     try {
       const payload = JSON.parse(e.data)
       if (payload.type !== 'refresh' && payload.type !== 'c2c_refresh') return
@@ -1907,61 +2237,51 @@ function connectSse() {
       const matchesActive =
         (payload.type === 'refresh' && active.value.type === 'group' && payload.groupOpenId === active.value.openId) ||
         (payload.type === 'c2c_refresh' && active.value.type === 'c2c' && payload.userOpenId === active.value.openId)
-      if (!matchesActive) return
-      if (loadingMessages.value) return
-      const targetKey = currentConvKey()
-      const seq = convLoadSeq
-      const refreshSeq = ++messageRefreshSeq
-      const data = await api(messagesPath(1))
-      // 这段等待期间会话被切换，或又发起了更新的一次加载：这次响应已经过期，丢弃
-      if (seq !== convLoadSeq || refreshSeq !== messageRefreshSeq || currentConvKey() !== targetKey) return
-      const latest = data.records || []
-      const count = countNewMessages(latest, knownLatestMessageId, totalMessages.value, data.total || 0)
-      const follow = !viewingHistoryPage && (messageScroller.running || isNearBottom())
-      const seen = new Set(messages.value.map(m => m.id))
-      const fresh = latest.filter(m => !seen.has(m.id))
-      if (follow) markArrivingMessages(fresh)
-      const latestId = latestMessageId(latest)
-      if (latestId > knownLatestMessageId) knownLatestMessageId = latestId
-      totalMessages.value = data.total ?? totalMessages.value
-      if (viewingHistoryPage) {
-        newMessageCount.value += count
-        return
-      }
-      if (fresh.length > 0) {
-        followingLatest = follow
-        messages.value = [...fresh, ...messages.value]
-        if (!follow) newMessageCount.value += count
-        await nextTick()
-        if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
-        if (follow && followingLatest) scrollToBottom('smooth')
-      }
+      if (matchesActive) scheduleMessageRefresh()
     } catch { /* ignore */ }
   }
-  eventSource.onerror = () => {
-    eventSource.close()
-    setTimeout(connectSse, 5000)
+  source.onerror = () => {
+    if (disposed || sseStopped || eventSource !== source) return
+    source.close()
+    eventSource = null
+    scheduleSseReconnect()
   }
 }
 
 // ═══════════════ 发送 ═══════════════
 
+async function sendInputNotify() {
+  if (active.value?.type !== 'c2c' || sendingInputNotify.value) return
+  const targetKey = currentConvKey()
+  const openId = active.value.openId
+  sendingInputNotify.value = true
+  try {
+    await api(`/c2c/${encodeURIComponent(openId)}/input-notify`, { method: 'POST' })
+    if (currentConvKey() === targetKey) showNotice('已发送正在输入提示（60 秒）')
+  } catch (error) {
+    if (currentConvKey() === targetKey) showNotice(error.message || '发送输入状态失败')
+  } finally {
+    sendingInputNotify.value = false
+  }
+}
+
 async function sendMessage() {
   if (!canSend.value) return
-  if ((passiveMode.value || refMode.value) && !replyTo.value) {
-    showNotice('请先右键消息，选择「引用」指定来源')
+  const useWakeup = active.value.type === 'c2c' && wakeupMode.value
+  if (!useWakeup && (passiveMode.value || refMode.value) && !replyTo.value) {
+    showNotice('请先右键消息，点击「选择」指定来源')
     return
   }
-  if (passiveMode.value && passiveDisabledReason.value) {
+  if (!useWakeup && passiveMode.value && passiveDisabledReason.value) {
     showNotice(passiveDisabledReason.value)
     return
   }
-  if (refMode.value && referenceDisabledReason.value) {
+  if (!useWakeup && refMode.value && referenceDisabledReason.value) {
     showNotice(referenceDisabledReason.value)
     return
   }
-  if (msgType.value === 'stream' && !passiveMode.value) {
-    showNotice('流式消息需要开启被动消息')
+  if (msgType.value === 'stream' && !passiveMode.value && !useWakeup) {
+    showNotice('流式消息需要开启被动消息或召回')
     return
   }
   sending.value = true
@@ -1970,12 +2290,22 @@ async function sendMessage() {
   try {
     if (msgType.value === 'stream' && type === 'c2c') {
       const body = { userOpenId: active.value.openId, content: draft.value }
-      if (passiveMode.value) body.replyMessageId = replyTo.value.messageOpenId
+      if (useWakeup) body.wakeup = true
+      else if (passiveMode.value) body.replyMessageId = replyTo.value.messageOpenId
       await api('/c2c/stream', { method: 'POST', body: JSON.stringify(body) })
     } else {
       const body = { msgType: msgType.value, content: draft.value.trim() }
       if (type === 'group') body.groupOpenId = active.value.openId
       else body.userOpenId = active.value.openId
+      if (useWakeup) body.wakeup = true
+      if (msgType.value === 'ark') {
+        delete body.content
+        body.ark = {
+          description: arkDraft.description.trim(),
+          prompt: arkDraft.prompt.trim(),
+          items: arkDraft.items.map(item => ({ description: item.description.trim(), link: item.link.trim() || null }))
+        }
+      }
       if (msgType.value === 'markdown') {
         body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
       }
@@ -1983,9 +2313,9 @@ async function sendMessage() {
         body.imageType = 'base64'
         body.imageValue = imageData.value
       }
-      if (replyTo.value) {
+      if (!useWakeup && replyTo.value) {
         if (refMode.value) {
-          // 引用展示信息与被动回复 ID 分别传递，群聊文本允许同时启用。
+          // 群聊和私聊的文本、Markdown、图片均可独立引用或同时被动回复。
           body.refMessageId = replyTo.value.refIdx
           body.refAuthor = replyTo.value.username || ''
           body.refContent = replyTo.value.content || ''
@@ -1999,9 +2329,11 @@ async function sendMessage() {
     }
     if (currentConvKey() !== targetKey) { scheduleConvRefresh(); return }
     draft.value = ''
+    resetArkDraft()
     imageData.value = null
     pastePreview.value = null
     cancelReply()
+    wakeupMode.value = false
     await loadLatestMessages({ animate: true })
     scheduleConvRefresh()
   } catch (error) {
@@ -2013,6 +2345,12 @@ async function sendMessage() {
     await nextTick()
     composerRef.value?.focus()
   }
+}
+
+function resetArkDraft() {
+  arkDraft.description = ''
+  arkDraft.prompt = ''
+  arkDraft.items = [{ description: '', link: '' }]
 }
 
 function onPaste(e) {
@@ -2060,8 +2398,15 @@ function onContextMenu(e, message) {
 }
 
 function selectReplyTarget(message) {
+  wakeupMode.value = false
   replyTo.value = message
   nextTick(() => composerRef.value?.focus())
+}
+
+function toggleWakeupMode() {
+  if (active.value?.type !== 'c2c') return
+  wakeupMode.value = !wakeupMode.value
+  if (wakeupMode.value) cancelReply()
 }
 
 function cancelReply() {
@@ -2324,10 +2669,20 @@ function msgRef(message) {
     const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
     const ref = Array.isArray(arr) ? arr[0] : arr
     if (!ref) return null
+    // 新引用对象优先展示预览，完整内容保存在 content；旧记录继续使用 content。
+    const preview = typeof ref.preview === 'string' ? ref.preview : ''
+    const fullContent = typeof ref.content === 'string' ? ref.content : ''
+    // 自发消息带 WebUI 快照；平台接收消息仍只使用 preview / content。
+    const display = ref.webui && typeof ref.webui === 'object' ? ref.webui : null
+    let content = preview.trim() ? preview + '...' : fullContent
+    const attachments = Array.isArray(display?.attachments) ? display.attachments
+      : Array.isArray(ref.attachments) ? ref.attachments : []
+    if (display && !content.trim() && !attachments.length && findRefIdxValue(ref)) content = '[引用消息]'
+    if (!content.trim() && !attachments.length) return null
     return {
-      author: ref.author?.username || '',
-      content: ref.content || '',
-      attachments: Array.isArray(ref.attachments) ? ref.attachments : []
+      author: display?.author || ref.author?.username || '',
+      content,
+      attachments
     }
   } catch { return null }
 }
@@ -2341,14 +2696,21 @@ function renderRefContent(ref) {
     if (t.trim()) parts.push(`<p>${escapeHtml(t)}</p>`)
   }
   for (const a of ref.attachments || []) {
+    if (!a || typeof a !== 'object') continue
     const type = a.content_type || ''
-    if (type.startsWith('image/') && a.url) {
-      parts.push(`<img src="${escapeHtml(absUrl(a.url))}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" alt="图片">`)
-    } else if (type.startsWith('video/')) {
+    if (type === 'image' || type.startsWith('image/')) {
+      if (a.url) {
+        parts.push(`<img src="${escapeHtml(absUrl(a.url))}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" alt="图片">`)
+      } else {
+        parts.push(`<span>[图片] ${escapeHtml(a.filename || '')}</span>`)
+      }
+    } else if (type === 'video' || type.startsWith('video/')) {
       // 引用块只有 120×80，塞播放器没意义，标一下类型就够
       parts.push(`<span>[视频] ${escapeHtml(a.filename || '')}</span>`)
-    } else if (type === 'voice' || type.startsWith('audio/')) {
-      parts.push(`<span>${escapeHtml(a.asr_refer_text || a.filename || '语音消息')}</span>`)
+    } else if (type === 'voice' || type === 'audio' || type.startsWith('audio/')) {
+      parts.push(`<span>[语音] ${escapeHtml(a.asr_refer_text || a.filename || '')}</span>`)
+    } else {
+      parts.push(`<span>[文件] ${escapeHtml(a.filename || '')}</span>`)
     }
   }
   if (!parts.length) return '&#8203;'

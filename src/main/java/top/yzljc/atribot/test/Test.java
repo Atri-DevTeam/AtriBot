@@ -12,6 +12,7 @@ import top.yzljc.atribot.chat.official.button.ButtonSize;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.media.HexColor;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -74,7 +75,7 @@ public class Test implements CommandExecutor, Listener {
 //        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 //        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
 //        String url = ResourcesProperties.A_SILENT_MIRROR_MP3;
-//        GroupChat.replyMessage(sender.getGroupId(), sender.getMessageId(), 3, url);
+//        GroupChat.replyMessage(sender.getGroupId(), RT.message(sender.getMessageId()), 3, url);
 //        String url = ResourcesProperties.WELCOME_IMG;
 //        Markdown md = TC.md(
 //                "欢迎新人喵~\n\n" +
@@ -82,14 +83,15 @@ public class Test implements CommandExecutor, Listener {
 //        );
 //        ChannelPosts.sendMessage("82565391648687862", "739210805", "Minecraft News!", md);
 //        ChannelPosts.sendMessage("82565391648687862", "739210805", ImageComponent.imageOf("https://api.yzljc.top/v2/atrimeow/image-dump/d5411a16-bfdd-3e5d-93da-5fb43b923ef2"));
-//        Object buttons = TC.keyboard(
-//                List.of(
-//                        List.of(new Button("c1", "打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-//                                new Button("c2", "功能", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-//                                new Button("c3", "提建议", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
-//                )
-//        );
-//        sender.sendMessage(md, buttons);
+        Markdown md = TC.md("111");
+        Object buttons = TC.promptKeyboard(
+                List.of(
+                        List.of(new Button("c1", "打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c2", "功能", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c3", "提建议", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+                )
+        );
+        ((QQCommandSender)sender).sendMessage(md, buttons);
 //        for (int i = 0; i < 25; i++) {
 //            GroupChat.sendMessage("38884BB0281B0641BBFCAE0BD12832CA", String.valueOf(i));
 //        }
@@ -126,7 +128,7 @@ public class Test implements CommandExecutor, Listener {
 //        Object buttons = TC.keyboard(List.of(
 //                List.of(new Button("c1", "我也要打卡", "/打卡", true, ButtonStyle.BLUE, ButtonType.COMMAND))
 //        ));
-//        String streamMessageId = C2CChat.replyStreamDeltas(sender.getUserId(), sender.getMessageId(), List.of(
+//        String streamMessageId = C2CChat.replyStreamDeltas(sender.getUserId(), RT.message(sender.getMessageId()), List.of(
 //                TC.md("正在生成回答..."),
 //                TC.md("\n已完成标题部分"),
 //                TC.md("\n这是最终内容")
@@ -176,7 +178,7 @@ public class Test implements CommandExecutor, Listener {
 //        ));
 //
 //        var user = (QQCommandSender) sender;
-//        GroupChat.replyMessage(user.getGroupId(), user.getMessage().getMessageId(), art);
+//        GroupChat.replyMessage(user.getGroupId(), RT.message(user.getMessage().getMessageId()), art);
 
         return true;
     }

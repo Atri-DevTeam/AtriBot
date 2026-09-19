@@ -13,6 +13,7 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -371,9 +372,9 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 String markdown = endGame(current, false);
                 try {
                     if (current.platform == Platform.OFFICIAL_C2C) {
-                        C2CChat.replyMessage(current.sessionId, current.lastCmdMsgId, TC.md(markdown));
+                        C2CChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown));
                     } else {
-                        GroupChat.replyMessage(current.sessionId, current.lastCmdMsgId, TC.md(markdown));
+                        GroupChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown));
                     }
                 } catch (Exception e) {
                     log.warn("反应力测试结算面板失败: ", e);

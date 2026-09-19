@@ -21,6 +21,112 @@ import java.util.concurrent.ExecutionException;
 public final class GroupChat {
 
     /**
+     * 主动发送群聊图片并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param image       图片组件
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static String sendMessage(String groupOpenId, ImageComponent image, String refIdx) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, image, refIdx));
+    }
+
+    /**
+     * 主动发送带键盘的群聊 Markdown 并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param markdown    Markdown 消息内容
+     * @param keyboard    键盘按钮对象，无键盘时传入 null
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String sendMessage(String groupOpenId, Markdown markdown, Object keyboard, String refIdx) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown, keyboard, refIdx));
+    }
+
+    /**
+     * 主动发送群聊图片并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param image       图片组件
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static String refMessage(String groupOpenId, String refIdx, ImageComponent image) {
+        return await(AsyncGroupChat.refMessage(groupOpenId, refIdx, image));
+    }
+
+    /**
+     * 主动发送群聊 Markdown并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param markdown    Markdown 消息内容
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String refMessage(String groupOpenId, String refIdx, Markdown markdown) {
+        return await(AsyncGroupChat.refMessage(groupOpenId, refIdx, markdown));
+    }
+
+    /**
+     * 主动发送带键盘的群聊 Markdown 并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param markdown    Markdown 消息内容
+     * @param keyboard    键盘按钮对象，无键盘时传入 null
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String refMessage(String groupOpenId, String refIdx, Markdown markdown, Object keyboard) {
+        return await(AsyncGroupChat.refMessage(groupOpenId, refIdx, markdown, keyboard));
+    }
+
+
+    /**
+     * 回复群聊 Markdown 消息并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown    Markdown 回复内容
+     * @param keyboard    键盘按钮对象，无键盘时传入 null
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown, keyboard, refIdx));
+    }
+
+    /**
+     * 回复群聊 Markdown 消息并引用指定消息，同时 @ 用户
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param userOpenId  被 @ 的用户 openId
+     * @param markdown    Markdown 回复内容
+     * @param keyboard    键盘按钮对象，无键盘时传入 null
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard, refIdx));
+    }
+
+    /**
+     * 回复群聊图片消息并引用指定消息
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image       图片组件
+     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static String replyMessage(String groupOpenId, RT rt, ImageComponent image, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, image, refIdx));
+    }
+
+
+    /**
      * 发送群聊纯文本主动消息
      *
      * @param groupOpenId 群 openId
@@ -32,6 +138,13 @@ public final class GroupChat {
         return await(AsyncGroupChat.sendMessage(groupOpenId, text));
     }
 
+    /**
+     * 发送群聊 Ark23 主动消息
+     *
+     * @param groupOpenId 群 openId
+     * @param ark         Ark23 消息体
+     * @return 消息 ID，发送失败返回 null
+     */
     @SuppressWarnings("UnusedReturnValue")
     public static String sendMessage(String groupOpenId, Ark23 ark) {
         return await(AsyncGroupChat.sendMessage(groupOpenId, ark));
@@ -78,211 +191,139 @@ public final class GroupChat {
      * 回复群聊纯文本消息
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param replyText   回复内容
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, String replyText) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, replyText));
+    public static String replyMessage(String groupOpenId, RT rt, String replyText) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, replyText));
     }
 
+    /**
+     * 回复群聊 Ark23 消息
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param ark         Ark23 消息体
+     * @return 消息 ID，发送失败返回 null
+     */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, Ark23 ark) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, ark));
+    public static String replyMessage(String groupOpenId, RT rt, Ark23 ark) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, ark));
     }
 
     /**
      * 引用回复群聊纯文本消息
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param replyText   回复内容
-     * @param refIdx    被引用消息的索引 ID
+     * @param refIdx      被引用消息的索引 ID
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, String replyText, String refIdx) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, replyText, refIdx));
+    public static String replyMessage(String groupOpenId, RT rt, String replyText, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, replyText, refIdx));
     }
 
     /**
      * 回复群聊 Markdown 消息并 @ 用户
      *
      * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param userOpenId  被 @ 的用户 openId
-     * @param msgId       被回复的消息 ID
      * @param markdown    Markdown 回复内容
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, userOpenId, msgId, markdown));
+    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown));
     }
 
     /**
      * 回复群聊 Markdown 消息（不 @）
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown    Markdown 回复内容
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, Markdown markdown) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, markdown));
+    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown));
     }
 
     /**
      * 回复带键盘的群聊 Markdown 消息并 @ 用户
      *
      * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param userOpenId  被 @ 的用户 openId
-     * @param msgId       被回复的消息 ID
      * @param markdown    Markdown 回复内容
      * @param keyboard    键盘按钮对象
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String userOpenId, String msgId, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, userOpenId, msgId, markdown, keyboard));
+    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard));
     }
 
     /**
      * 回复带键盘的群聊 Markdown 消息（不 @）
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown    Markdown 回复内容
      * @param keyboard    键盘按钮对象
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, markdown, keyboard));
+    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown, keyboard));
     }
 
     /**
      * 回复群聊图片消息
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param image       图片组件
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, ImageComponent image) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, image));
+    public static String replyMessage(String groupOpenId, RT rt, ImageComponent image) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, image));
     }
 
     /**
      * 回复群聊文件消息
      *
      * @param groupOpenId 群 openId
-     * @param msgId       被回复的消息 ID
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param fileType    文件类型
      * @param value       文件 URL
      * @return 消息 ID，上传或发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, String msgId, FileType fileType, String value) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, msgId, fileType, value));
-    }
-
-    /** Returns null if audio upload fails; does not send the ordinary upload-limit text fallback. */
-    public static String replyAudioMessage(String groupOpenId, String msgId, String url) {
-        return await(AsyncGroupChat.replyAudioMessage(groupOpenId, msgId, url));
+    public static String replyMessage(String groupOpenId, RT rt, FileType fileType, String value) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, fileType, value));
     }
 
     /**
-     * 回复群聊事件（Markdown，自动 @ 消息发送者）
-     *
-     * @param groupOpenId  群 openId
-     * @param memberOpenId 事件发送者 openId
-     * @param eventId      事件 ID
-     * @param markdown     Markdown 内容
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown));
-    }
-
-    /**
-     * 回复带键盘的群聊事件（Markdown，自动 @ 消息发送者）
-     *
-     * @param groupOpenId  群 openId
-     * @param memberOpenId 事件发送者 openId
-     * @param eventId      事件 ID
-     * @param markdown     Markdown 内容
-     * @param buttons      键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String memberOpenId, String eventId, Markdown markdown, Object buttons) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, markdown, buttons));
-    }
-
-    /**
-     * 回复群聊事件（Markdown，不 @）
+     * 回复群聊语音消息，上传失败时不发送文本回退
      *
      * @param groupOpenId 群 openId
-     * @param eventId     事件 ID
-     * @param markdown    Markdown 内容
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, Markdown markdown) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, markdown));
-    }
-
-    /**
-     * 回复带键盘的群聊事件（Markdown，不 @）
-     *
-     * @param groupOpenId 群 openId
-     * @param eventId     事件 ID
-     * @param markdown    Markdown 内容
-     * @param buttons     键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, Markdown markdown, Object buttons) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, markdown, buttons));
-    }
-
-    /**
-     * 回复群聊事件（纯文本）
-     *
-     * @param groupOpenId 群 openId
-     * @param eventId     事件 ID
-     * @param text        文本内容
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, String text) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, text));
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, Ark23 ark) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, ark));
-    }
-
-    /**
-     * 回复群聊事件（图片）
-     *
-     * @param groupOpenId 群 openId
-     * @param eventId     事件 ID
-     * @param image       图片组件
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param url         语音文件 URL
      * @return 消息 ID，上传或发送失败返回 null
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyEventMessage(String groupOpenId, String eventId, ImageComponent image) {
-        return await(AsyncGroupChat.replyEventMessage(groupOpenId, eventId, image));
+    public static String replyAudioMessage(String groupOpenId, RT rt, String url) {
+        return await(AsyncGroupChat.replyAudioMessage(groupOpenId, rt, url));
     }
 
     /**
-     * 引用回复群聊纯文本消息
+     * 主动发送群聊纯文本并引用消息（不携带被动回复来源）
      *
      * @param groupOpenId 群 openId
      * @param refIdx      被引用消息的索引 ID
@@ -299,6 +340,7 @@ public final class GroupChat {
      *
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
+     * @return 是否撤回成功
      */
     public static boolean recallMessage(String groupOpenId, String messageId) {
         return Atri.getInstance().getChatService().recallGroupMessage(groupOpenId, messageId);

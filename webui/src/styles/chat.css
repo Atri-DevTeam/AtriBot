@@ -1750,11 +1750,18 @@
 
 .chatnt-tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
   align-items: center;
   gap: 6px;
   padding: 8px 16px 0;
 }
+
+.chatnt-tools > * { flex-shrink: 0; }
+.chatnt-tools:focus-visible { outline: 2px solid #0099ff; outline-offset: -2px; }
 
 .chatnt-type {
   display: flex;
@@ -1762,6 +1769,7 @@
 }
 
 .chatnt-type label {
+  white-space: nowrap;
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -1790,6 +1798,24 @@
 
 .chatnt-tool-btn:hover { color: #0099ff; background: #e8eaee; }
 .chatnt-tool-btn svg { display: block; }
+
+.chatnt-typing-btn:disabled { opacity: 0.5; cursor: wait; }
+.chatnt-typing-btn:focus-visible { outline: 2px solid #0099ff; outline-offset: 1px; }
+.chatnt-typing-btn:is(:hover, :focus-visible, [aria-busy="true"]) .chatnt-typing-dot {
+  animation-name: chatnt-typing-bounce;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.chatnt-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.chatnt-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes chatnt-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chatnt-typing-btn .chatnt-typing-dot { animation: none !important; }
+}
 
 .chatnt-send-options {
   display: flex;
@@ -1829,6 +1855,27 @@
 }
 
 .chatnt-mode-toggle.active .chatnt-mode-check { border-color: #0099ff; background: #0099ff; color: #fff; }
+
+.chatnt-ark-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  max-height: 32vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+}
+.chatnt-ark-editor label { display: grid; gap: 4px; min-width: 0; color: #6b7686; font-size: 12px; }
+.chatnt-ark-editor input { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px 9px; border: 1px solid #dfe3e8; border-radius: 6px; font: inherit; color: #1f2329; background: #fff; }
+.chatnt-ark-editor input:focus { outline: 2px solid #0099ff; outline-offset: -1px; }
+.chatnt-ark-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.chatnt-ark-editor > button { align-self: flex-start; }
+.chatnt-ark-editor > * { flex-shrink: 0; }
 
 /* 自定义拖拽手柄：替代原生 textarea 右下角 resize 角（不好抓、只能斜向拖） */
 .chatnt-resize-handle {

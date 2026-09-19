@@ -33,6 +33,8 @@ public final class ChatStatsSnapshotRepo {
     private static final String SNAPSHOT_TABLE = "official_chat_stats_snapshot";
     private static final String BOT_SEND = "BOT_SEND";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final Object PERSIST_LOCK = new Object();
+    private static final Set<ScopeKey> dirtyScopes = new LinkedHashSet<>();
     private static Snapshot snapshot;
 
     private ChatStatsSnapshotRepo() {
@@ -43,15 +45,24 @@ public final class ChatStatsSnapshotRepo {
         ensureTable();
         if (loadFromDatabase()) return;
         snapshot = new Snapshot();
-        rebuildFromDatabase();
-        persistAll();
+        try {
+            rebuildFromDatabase();
+            if (!persistAll()) {
+                throw new IllegalStateException("初始化聊天统计快照失败");
+            }
+        } catch (RuntimeException e) {
+            snapshot = null;
+            throw e;
+        }
     }
 
     /** 在批量删除消息前，将当前完整统计快照强制落库。 */
-    public static synchronized void archiveCurrentSnapshot() {
+    public static void archiveCurrentSnapshot() {
         ensureInitialized();
-        if (!persistAll()) {
-            throw new IllegalStateException("统计快照归档失败，已中止聊天记录清理");
+        synchronized (PERSIST_LOCK) {
+            if (!persistAll()) {
+                throw new IllegalStateException("统计快照归档失败，已中止聊天记录清理");
+            }
         }
     }
 
@@ -95,8 +106,7 @@ public final class ChatStatsSnapshotRepo {
                 }
             }
         } catch (SQLException e) {
-            log.warn("读取聊天统计数据库快照失败，将从消息表重建: {}", e.getMessage());
-            return false;
+            throw new IllegalStateException("读取聊天统计数据库快照失败", e);
         }
         if (!found) return false;
         normalize(loaded);
@@ -104,20 +114,28 @@ public final class ChatStatsSnapshotRepo {
         return true;
     }
 
-    public static synchronized void recordGroupMessage(String groupOpenId, String unionOpenId,
+    public static void recordGroupMessage(String groupOpenId, String unionOpenId,
                                                         String username, boolean senderIsBot,
                                                         String eventTimestamp) {
         ensureInitialized();
-        addGroupMessage(snapshot, groupOpenId, unionOpenId, username, senderIsBot, eventTimestamp);
-        persistIncremental(groupOpenId, unionOpenId, dayOf(eventTimestamp));
+        String timestamp = normalizeTime(eventTimestamp);
+        synchronized (ChatStatsSnapshotRepo.class) {
+            addGroupMessage(snapshot, groupOpenId, unionOpenId, username, senderIsBot, timestamp);
+            markDirty(groupOpenId, unionOpenId, dayOf(timestamp));
+        }
+        persistPending();
     }
 
-    public static synchronized void recordC2CMessage(String userOpenId, String username,
+    public static void recordC2CMessage(String userOpenId, String username,
                                                       boolean senderIsBot, String source,
                                                       String eventTimestamp) {
         ensureInitialized();
-        addC2CMessage(snapshot, userOpenId, username, senderIsBot || BOT_SEND.equals(source), eventTimestamp);
-        persistIncremental(null, userOpenId, dayOf(eventTimestamp));
+        String timestamp = normalizeTime(eventTimestamp);
+        synchronized (ChatStatsSnapshotRepo.class) {
+            addC2CMessage(snapshot, userOpenId, username, senderIsBot || BOT_SEND.equals(source), timestamp);
+            markDirty(null, userOpenId, dayOf(timestamp));
+        }
+        persistPending();
     }
 
     public static synchronized long countGroupMessages(boolean botSent, LocalDateTime start,
@@ -235,7 +253,7 @@ public final class ChatStatsSnapshotRepo {
                 }
             }
         } catch (SQLException e) {
-            log.error("建立聊天统计快照失败: {}", e.getMessage(), e);
+            throw new IllegalStateException("建立聊天统计快照失败", e);
         }
     }
 
@@ -366,93 +384,149 @@ public final class ChatStatsSnapshotRepo {
         try (var conn = DatabaseManager.getConnection(); var stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            log.error("初始化聊天统计快照表失败: {}", e.getMessage(), e);
+            throw new IllegalStateException("初始化聊天统计快照表失败", e);
         }
     }
 
     private static boolean persistAll() {
-        ensureTable();
-        String sql = "INSERT INTO `" + SNAPSHOT_TABLE + "` " +
-                "(scope_key, scope_type, scope_id, stat_date, n1, n2, n3, n4, n5, json_a, json_b, json_c, json_d, first_seen_at, last_seen_at, last_username) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                "ON DUPLICATE KEY UPDATE scope_type=VALUES(scope_type), scope_id=VALUES(scope_id), stat_date=VALUES(stat_date), " +
-                "n1=VALUES(n1), n2=VALUES(n2), n3=VALUES(n3), n4=VALUES(n4), n5=VALUES(n5), " +
-                "json_a=VALUES(json_a), json_b=VALUES(json_b), json_c=VALUES(json_c), json_d=VALUES(json_d), " +
-                "first_seen_at=VALUES(first_seen_at), last_seen_at=VALUES(last_seen_at), last_username=VALUES(last_username)";
-        try (var conn = DatabaseManager.getConnection(); var delete = conn.createStatement(); var stmt = conn.prepareStatement(sql)) {
+        Set<ScopeKey> keys;
+        List<SnapshotRow> rows;
+        synchronized (ChatStatsSnapshotRepo.class) {
+            keys = allScopeKeys();
+            rows = captureRows(keys);
+            dirtyScopes.clear();
+        }
+        if (persistRows(rows, true)) return true;
+        synchronized (ChatStatsSnapshotRepo.class) {
+            dirtyScopes.addAll(keys);
+        }
+        return false;
+    }
+
+    private static void markDirty(String groupOpenId, String userOpenId, String day) {
+        dirtyScopes.add(new ScopeKey("global", null, day));
+        if (!isBlank(groupOpenId)) {
+            dirtyScopes.add(new ScopeKey("group", groupOpenId, null));
+            dirtyScopes.add(new ScopeKey("group", groupOpenId, day));
+        }
+        if (!isBlank(userOpenId)) {
+            dirtyScopes.add(new ScopeKey("user", userOpenId, null));
+            dirtyScopes.add(new ScopeKey("user", userOpenId, day));
+        }
+    }
+
+    /**
+     * 写库按顺序执行，避免旧快照覆盖新快照；内存锁只用于复制本批数据。
+     * 等待期间产生的修改合并到下一批，失败的键保留供后续写入重试。
+     */
+    private static void persistPending() {
+        synchronized (PERSIST_LOCK) {
+            Set<ScopeKey> keys;
+            List<SnapshotRow> rows;
+            synchronized (ChatStatsSnapshotRepo.class) {
+                if (dirtyScopes.isEmpty()) return;
+                keys = new LinkedHashSet<>(dirtyScopes);
+                rows = captureRows(keys);
+                dirtyScopes.clear();
+            }
+            if (!persistRows(rows, false)) {
+                synchronized (ChatStatsSnapshotRepo.class) {
+                    dirtyScopes.addAll(keys);
+                }
+            }
+        }
+    }
+
+    private static Set<ScopeKey> allScopeKeys() {
+        Set<ScopeKey> keys = new LinkedHashSet<>();
+        snapshot.days.keySet().forEach(day -> keys.add(new ScopeKey("global", null, day)));
+        snapshot.groups.forEach((id, stats) -> addScopeKeys(keys, "group", id, stats));
+        snapshot.users.forEach((id, stats) -> addScopeKeys(keys, "user", id, stats));
+        return keys;
+    }
+
+    private static void addScopeKeys(Set<ScopeKey> keys, String type, String id, ScopeStats stats) {
+        keys.add(new ScopeKey(type, id, null));
+        stats.daily.keySet().forEach(day -> keys.add(new ScopeKey(type, id, day)));
+    }
+
+    private static List<SnapshotRow> captureRows(Set<ScopeKey> keys) {
+        List<SnapshotRow> rows = new ArrayList<>(keys.size());
+        for (ScopeKey key : keys) {
+            if ("global".equals(key.type())) {
+                DailyStats stats = snapshot.days.get(key.day());
+                if (stats != null) {
+                    rows.add(new SnapshotRow(key, stats.groupReceived, stats.groupSent,
+                            stats.c2cReceived, stats.c2cSent, 0,
+                            copySet(stats.receiveUsers), copySet(stats.sendGroups),
+                            copySet(stats.c2cReceiveUsers), copySet(stats.c2cSendUsers), null, null, null));
+                }
+                continue;
+            }
+            ScopeStats stats = ("group".equals(key.type()) ? snapshot.groups : snapshot.users).get(key.id());
+            if (stats == null) continue;
+            if (key.day() == null) {
+                rows.add(new SnapshotRow(key, stats.received, stats.sent, stats.c2cReceived,
+                        stats.c2cSent, stats.groupReceived, copySet(stats.activeUsers),
+                        null, null, null, stats.firstSeenAt, stats.lastSeenAt, stats.lastUsername));
+            } else {
+                long[] counts = stats.daily.get(key.day());
+                if (counts != null) {
+                    rows.add(new SnapshotRow(key, counts[0], counts[1], 0, 0, 0,
+                            null, null, null, null, null, null, null));
+                }
+            }
+        }
+        return rows;
+    }
+
+    private static Set<String> copySet(Set<String> values) {
+        return values == null || values.isEmpty() ? Set.of() : new LinkedHashSet<>(values);
+    }
+
+    private static boolean persistRows(List<SnapshotRow> rows, boolean replaceAll) {
+        if (rows.isEmpty() && !replaceAll) return true;
+        try (var conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
-            delete.executeUpdate("DELETE FROM `" + SNAPSHOT_TABLE + "`");
-            for (Map.Entry<String, DailyStats> entry : snapshot.days.entrySet()) {
-                DailyStats d = entry.getValue();
-                bind(stmt, "global:" + entry.getKey(), "global", null, entry.getKey(), d.groupReceived, d.groupSent,
-                        d.c2cReceived, d.c2cSent, 0, d.receiveUsers, d.sendGroups, d.c2cReceiveUsers, d.c2cSendUsers, null, null, null);
-                stmt.addBatch();
+            try (var stmt = conn.prepareStatement(upsertSql())) {
+                if (replaceAll) {
+                    try (var delete = conn.createStatement()) {
+                        delete.executeUpdate("DELETE FROM `" + SNAPSHOT_TABLE + "`");
+                    }
+                }
+                for (SnapshotRow row : rows) {
+                    ScopeKey key = row.key();
+                    String scopeKey = "global".equals(key.type())
+                            ? "global:" + key.day()
+                            : key.type() + ":" + key.id() + ":" + (key.day() == null ? "summary" : key.day());
+                    bind(stmt, scopeKey, key.type(), key.id(), key.day(),
+                            row.n1(), row.n2(), row.n3(), row.n4(), row.n5(),
+                            row.a(), row.b(), row.c(), row.d(), row.first(), row.last(), row.username());
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+                conn.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackFailure) {
+                    e.addSuppressed(rollbackFailure);
+                }
+                throw e;
             }
-            for (Map.Entry<String, ScopeStats> entry : snapshot.groups.entrySet()) {
-                persistScope(stmt, "group", entry.getKey(), entry.getValue());
-            }
-            for (Map.Entry<String, ScopeStats> entry : snapshot.users.entrySet()) {
-                persistScope(stmt, "user", entry.getKey(), entry.getValue());
-            }
-            stmt.executeBatch();
-            conn.commit();
-            return true;
-        } catch (SQLException e) {
-            log.error("保存聊天统计数据库快照失败: {}", e.getMessage(), e);
+        } catch (SQLException | RuntimeException e) {
+            log.error("保存聊天统计快照失败，将保留未持久化的统计: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private static void persistScope(java.sql.PreparedStatement stmt, String type, String id, ScopeStats s) throws SQLException {
-        bind(stmt, type + ":" + id + ":summary", type, id, null, s.received, s.sent, s.c2cReceived, s.c2cSent,
-                s.groupReceived, s.activeUsers, null, null, null, s.firstSeenAt, s.lastSeenAt, s.lastUsername);
-        stmt.addBatch();
-        for (Map.Entry<String, long[]> daily : s.daily.entrySet()) {
-            long[] counts = daily.getValue();
-            bind(stmt, type + ":" + id + ":" + daily.getKey(), type, id, daily.getKey(), counts[0], counts[1], 0, 0, 0,
-                    null, null, null, null, null, null, null);
-            stmt.addBatch();
-        }
+    private record ScopeKey(String type, String id, String day) {
     }
 
-    private static void persistIncremental(String groupOpenId, String userOpenId, String day) {
-        String sql = upsertSql();
-        try (var conn = DatabaseManager.getConnection(); var stmt = conn.prepareStatement(sql)) {
-            conn.setAutoCommit(false);
-            DailyStats global = snapshot.days.get(day);
-            if (global != null) {
-                bind(stmt, "global:" + day, "global", null, day, global.groupReceived, global.groupSent,
-                        global.c2cReceived, global.c2cSent, 0, global.receiveUsers, global.sendGroups,
-                        global.c2cReceiveUsers, global.c2cSendUsers, null, null, null);
-                stmt.addBatch();
-            }
-            if (!isBlank(groupOpenId)) {
-                ScopeStats group = snapshot.groups.get(groupOpenId);
-                if (group != null) persistScopeRows(stmt, "group", groupOpenId, group, day);
-            }
-            if (!isBlank(userOpenId)) {
-                ScopeStats user = snapshot.users.get(userOpenId);
-                if (user != null) persistScopeRows(stmt, "user", userOpenId, user, day);
-            }
-            stmt.executeBatch();
-            conn.commit();
-        } catch (SQLException e) {
-            log.error("增量保存聊天统计失败: {}", e.getMessage(), e);
-        }
-    }
-
-    private static void persistScopeRows(java.sql.PreparedStatement stmt, String type, String id,
-                                          ScopeStats s, String day) throws SQLException {
-        bind(stmt, type + ":" + id + ":summary", type, id, null, s.received, s.sent, s.c2cReceived,
-                s.c2cSent, s.groupReceived, s.activeUsers, null, null, null, s.firstSeenAt,
-                s.lastSeenAt, s.lastUsername);
-        stmt.addBatch();
-        long[] counts = s.daily.get(day);
-        if (counts != null) {
-            bind(stmt, type + ":" + id + ":" + day, type, id, day, counts[0], counts[1], 0, 0, 0,
-                    null, null, null, null, null, null, null);
-            stmt.addBatch();
-        }
+    private record SnapshotRow(ScopeKey key, long n1, long n2, long n3, long n4, long n5,
+                               Set<String> a, Set<String> b, Set<String> c, Set<String> d,
+                               String first, String last, String username) {
     }
 
     private static String upsertSql() {

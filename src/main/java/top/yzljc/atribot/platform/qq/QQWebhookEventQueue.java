@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -72,8 +73,26 @@ final class QQWebhookEventQueue implements AutoCloseable {
                 return;
             }
             try {
-                // ThreadManager.execute 可能阻塞，必须只在后台调用。
-                executor.execute(() -> process(event));
+                // 已向上游应答的事件不能因工作队列拥塞丢失。
+                boolean logged = false;
+                while (!closed) {
+                    try {
+                        executor.execute(() -> process(event));
+                        break;
+                    } catch (RejectedExecutionException full) {
+                        if (!logged) {
+                            log.warn("工作队列暂不可用，保留 QQ Webhook 事件等待执行: type={}, id={}",
+                                    event.type(), event.id());
+                            logged = true;
+                        }
+                        TimeUnit.MILLISECONDS.sleep(100);
+                    }
+                }
+                if (closed) forget(event);
+            } catch (InterruptedException interrupted) {
+                forget(event);
+                Thread.currentThread().interrupt();
+                return;
             } catch (RuntimeException e) {
                 forget(event);
                 if (!closed) {
@@ -84,6 +103,10 @@ final class QQWebhookEventQueue implements AutoCloseable {
     }
 
     private void process(Event event) {
+        if (closed) {
+            log.warn("QQ Webhook 队列已关闭，取消尚未开始的事件: type={}, id={}", event.type(), event.id());
+            return;
+        }
         try {
             processor.accept(event);
         } catch (Exception e) {

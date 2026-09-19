@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.tasks;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -16,6 +17,7 @@ import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.MessageReference;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.SseBroadcaster;
 import top.yzljc.atribot.webui.repo.ChatStatsSnapshotRepo;
@@ -141,7 +143,7 @@ public class QQChatContentRecord implements Listener {
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
                 toJsonOrNull(event.getMessage().getArk()),
-                toJson(event.getMessage().getReference()),
+                toJsonOrNull(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
         );
     }
@@ -171,7 +173,7 @@ public class QQChatContentRecord implements Listener {
                 toJson(event.getMessage().getAttachments()),
                 toJsonOrNull(event.getMessage().getArk()),
                 null,
-                toJson(event.getMessage().getReference()),
+                toJsonOrNull(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
         );
     }
@@ -194,7 +196,7 @@ public class QQChatContentRecord implements Listener {
                 toJson(event.getMessage().getAttachments()),
                 toJsonOrNull(event.getMessage().getArk()),
                 toJson(event.getMessage().getMentionedUsers()),
-                toJson(event.getMessage().getReference()),
+                toJsonOrNull(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
         );
     }
@@ -210,25 +212,20 @@ public class QQChatContentRecord implements Listener {
 
     private static void patchRefDisplayData(String table, String messageOpenId, String refAuthor, String refContent,
                                             String refAttachments, String refMsgIdx) {
-        if (refAuthor == null && refContent == null && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
-        try {
-            var refObj = objectMapper.createObjectNode();
-            var authorNode = refObj.putObject("author");
-            authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
-            refObj.put("content", refContent != null ? refContent : "");
-            if (!isBlank(refMsgIdx)) {
-                refObj.put("msg_idx", refMsgIdx);
-            }
-            if (refAttachments != null && !refAttachments.isBlank()) {
-                try {
-                    refObj.set("attachments", objectMapper.readTree(refAttachments));
-                } catch (Exception ignored) {
+        if (isBlank(refAuthor) && isBlank(refContent) && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
+        try (var conn = DatabaseManager.getConnection()) {
+            String rawReference = null;
+            try (var stmt = conn.prepareStatement("SELECT message_reference FROM `" + table + "` WHERE message_openId = ?")) {
+                stmt.setString(1, messageOpenId);
+                try (var rs = stmt.executeQuery()) {
+                    if (!rs.next()) return;
+                    rawReference = rs.getString("message_reference");
                 }
             }
-            String messageReference = objectMapper.writeValueAsString(List.of(refObj));
+            String messageReference = objectMapper.writeValueAsString(
+                    mergeWebUiReferenceDisplayData(rawReference, refAuthor, refContent, refAttachments, refMsgIdx));
             String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE message_openId = ?";
-            try (var conn = DatabaseManager.getConnection();
-                 var stmt = conn.prepareStatement(sql)) {
+            try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, messageReference);
                 stmt.setString(2, messageOpenId);
                 stmt.executeUpdate();
@@ -238,8 +235,70 @@ public class QQChatContentRecord implements Listener {
         }
     }
 
+    private static JsonNode readReferenceNode(String rawReference) {
+        if (!isBlank(rawReference)) {
+            try {
+                JsonNode root = objectMapper.readTree(rawReference);
+                if (root != null) {
+                    return root.isArray() && !root.isEmpty() ? root.get(0) : root;
+                }
+            } catch (Exception e) {
+                log.debug("解析原引用数据失败，将使用补写数据: {}", e.getMessage());
+            }
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    private static MessageReference mergeReferenceDisplayData(String rawReference, String refContent, String refMsgIdx) {
+        JsonNode existing = readReferenceNode(rawReference);
+        String existingIdx = findRefIdxValue(existing);
+        // 索引变化时不沿用另一条消息的预览、类型和正文。
+        boolean sameSource = isBlank(refMsgIdx) || isBlank(existingIdx) || refMsgIdx.equals(existingIdx);
+        return new MessageReference(
+                firstNonBlank(refMsgIdx, existingIdx),
+                sameSource ? existing.path("preview").asText(null) : null,
+                sameSource ? existing.path("messageType").asInt(-1) : -1,
+                firstNonBlank(refContent, sameSource ? findReferenceContent(existing) : null)
+        );
+    }
+
+    /** 自发消息保留统一引用字段，另用 webui 保存作者、附件快照，不改变平台接收对象。 */
+    private static ObjectNode webUiReference(MessageReference reference, String author, JsonNode attachments) {
+        ObjectNode node = objectMapper.valueToTree(reference);
+        ObjectNode display = node.putObject("webui");
+        display.put("author", author);
+        display.set("attachments", attachments != null && attachments.isArray()
+                ? attachments : objectMapper.createArrayNode());
+        return node;
+    }
+
+    private static JsonNode readReferenceAttachments(String rawAttachments) {
+        if (isBlank(rawAttachments)) return null;
+        try {
+            JsonNode attachments = objectMapper.readTree(rawAttachments);
+            return attachments != null && attachments.isArray() ? attachments : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static ObjectNode mergeWebUiReferenceDisplayData(String rawReference, String refAuthor, String refContent,
+                                                            String refAttachments, String refMsgIdx) {
+        JsonNode existing = readReferenceNode(rawReference);
+        String existingIdx = findRefIdxValue(existing);
+        boolean sameSource = isBlank(refMsgIdx) || isBlank(existingIdx) || refMsgIdx.equals(existingIdx);
+        String author = firstNonBlank(refAuthor, sameSource
+                ? firstNonBlank(existing.path("webui").path("author").asText(null), findReferenceAuthor(existing)) : null);
+        JsonNode attachments = readReferenceAttachments(refAttachments);
+        if (attachments == null && sameSource) {
+            JsonNode saved = existing.path("webui").path("attachments");
+            attachments = saved.isArray() ? saved : existing.path("attachments");
+        }
+        return webUiReference(mergeReferenceDisplayData(rawReference, refContent, refMsgIdx), author, attachments);
+    }
+
     public static void recordSentGroupMessage(String groupOpenId, MessageBody request, String messageOpenId, String refIdx, String timestamp) {
-        String messageReference = buildReferenceDisplayJson(true, extractReferenceMessageId(request));
+        String messageReference = buildReferenceDisplayJson(true, groupOpenId, extractReferenceMessageId(request));
         recordGroupMessage(
                 groupOpenId,
                 BOT_UNION_OPEN_ID,
@@ -260,60 +319,45 @@ public class QQChatContentRecord implements Listener {
     }
 
     /**
-     * 前端传了引用消息的展示数据时拼成数组格式，供 WebUI 渲染引用块和定位来源
+     * 发送记录沿用 MessageReference 字段，并附加 WebUI 作者及附件快照。
+     * 没有平台预览时保留 null，前端回退到完整正文或附件展示。
      */
-    private static String buildReferenceDisplayJson(boolean group, String refIdx) {
+    private static String buildReferenceDisplayJson(boolean group, String conversationId, String refIdx) {
         if (refIdx == null || isBlank(refIdx)) {
             return null;
         }
-        ReferenceSource dbSource = findReferenceDisplaySource(group, refIdx);
-        String refAuthor = null;
-        String refContent = null;
-        String refAttachments = null;
-        if (dbSource != null) {
-            refAuthor = dbSource.username();
-            refContent = dbSource.content();
-            refAttachments = dbSource.attachments();
-        }
+        ObjectNode reference = findReferenceDisplaySource(group, conversationId, refIdx);
+        if (reference == null) reference = webUiReference(new MessageReference(refIdx, null, -1, null), null, null);
         try {
-            var refObj = objectMapper.createObjectNode();
-            var authorNode = refObj.putObject("author");
-            authorNode.put("username", refAuthor != null ? refAuthor : "Unknown");
-            refObj.put("content", refContent != null ? refContent : "");
-            if (!isBlank(refIdx)) {
-                refObj.put("msg_idx", refIdx);
-            }
-            if (refAttachments != null && !refAttachments.isBlank()) {
-                try {
-                    refObj.set("attachments", objectMapper.readTree(refAttachments));
-                } catch (Exception ignored) {
-                }
-            }
-            return objectMapper.writeValueAsString(List.of(refObj));
+            return objectMapper.writeValueAsString(reference);
         } catch (Exception e) {
             log.error("构建引用消息展示数据失败", e);
             return null;
         }
     }
 
-    private static ReferenceSource findReferenceDisplaySource(boolean group, String refMsgIdx) {
+    private static ObjectNode findReferenceDisplaySource(boolean group, String conversationId, String refMsgIdx) {
         String table = group ? GROUP_TABLE : C2C_TABLE;
-        if (refMsgIdx == null || isBlank(refMsgIdx)) {
+        String keyColumn = group ? "group_openId" : "union_openId";
+        if (isBlank(conversationId) || isBlank(refMsgIdx)) {
             return null;
         }
-        String sql = "SELECT username, content, attachments, ref_idx FROM `" + table + "` " +
-                "WHERE ref_idx = ? ORDER BY id DESC LIMIT 1";
+        String sql = "SELECT username, content, attachments, message_type, ref_idx FROM `" + table + "` " +
+                "WHERE `" + keyColumn + "` = ? AND ref_idx = ? ORDER BY id DESC LIMIT 1";
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, refMsgIdx);
+            stmt.setString(1, conversationId);
+            stmt.setString(2, refMsgIdx);
             var rs = stmt.executeQuery();
             if (rs.next()) {
-                return new ReferenceSource(
-                        rs.getString("username"),
-                        rs.getString("content"),
-                        rs.getString("attachments"),
-                        rs.getString("ref_idx")
-                );
+                int messageType = rs.getInt("message_type");
+                if (rs.wasNull()) messageType = -1;
+                return webUiReference(new MessageReference(
+                        rs.getString("ref_idx"),
+                        null,
+                        messageType,
+                        rs.getString("content")
+                ), rs.getString("username"), readReferenceAttachments(rs.getString("attachments")));
             }
         } catch (SQLException e) {
             log.error("按 ref_idx 查询引用展示数据失败, table={}, refIdx={}: {}", table, refMsgIdx, e.getMessage(), e);
@@ -334,7 +378,7 @@ public class QQChatContentRecord implements Listener {
                 timestamp,
                 request.getRecordAttachments(),
                 toJsonOrNull(request.getArk()),
-                buildReferenceDisplayJson(false, extractReferenceMessageId(request)),
+                buildReferenceDisplayJson(false, userOpenId, extractReferenceMessageId(request)),
                 refIdx
         );
     }
@@ -414,7 +458,7 @@ public class QQChatContentRecord implements Listener {
             params.add(end.plusDays(1).atStartOfDay());
         }
 
-        ChatStatsSnapshotRepo.ensureInitialized();
+        ChatStatsSnapshotRepo.archiveCurrentSnapshot();
         try (var conn = DatabaseManager.getConnection(); var stmt = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object value = params.get(i);
@@ -653,8 +697,8 @@ public class QQChatContentRecord implements Listener {
     }
 
     /**
-     * 原始引用数据里往往只有一个 msg_idx，缺发送者和正文，渲染出来是空引用块。
-     * 这里回查同会话的历史记录补全展示字段，群聊和私聊只差表名和会话键列。
+     * 新引用保留平台的 preview/content，仅按同会话的 msgIdx 补全作者。
+     * 旧格式引用继续回查历史记录补全正文及附件。
      */
     private static String enrichMessageReference(java.sql.Connection conn, String table, String keyColumn,
                                                  String keyValue, String rawReference) {
@@ -663,6 +707,9 @@ public class QQChatContentRecord implements Listener {
         }
         try {
             JsonNode root = objectMapper.readTree(rawReference);
+            if (root != null && root.isObject() && root.has("preview") && root.has("messageType")) {
+                return enrichReferenceAuthor(conn, table, keyColumn, keyValue, (ObjectNode) root, rawReference);
+            }
             JsonNode refNode = root.isArray() && !root.isEmpty() ? root.get(0) : root;
             if (refNode == null || refNode.isMissingNode() || refNode.isNull()) {
                 return rawReference;
@@ -709,6 +756,28 @@ public class QQChatContentRecord implements Listener {
         } catch (Exception e) {
             log.debug("补全引用消息展示数据失败: {}", e.getMessage());
             return rawReference;
+        }
+    }
+
+    private static String enrichReferenceAuthor(java.sql.Connection conn, String table, String keyColumn,
+                                                String keyValue, ObjectNode reference, String rawReference) throws SQLException {
+        if (!isBlank(reference.path("webui").path("author").asText(null))
+                || !isBlank(findReferenceAuthor(reference))) {
+            return rawReference;
+        }
+        String msgIdx = findRefIdxValue(reference);
+        if (isBlank(msgIdx)) return rawReference;
+        String sql = "SELECT username FROM `" + table + "` WHERE `" + keyColumn
+                + "` = ? AND ref_idx = ? ORDER BY id DESC LIMIT 1";
+        try (var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, keyValue);
+            stmt.setString(2, msgIdx);
+            try (var rs = stmt.executeQuery()) {
+                if (!rs.next() || isBlank(rs.getString("username"))) return rawReference;
+                ObjectNode enriched = reference.deepCopy();
+                enriched.putObject("author").put("username", rs.getString("username"));
+                return toJson(enriched);
+            }
         }
     }
 
@@ -926,6 +995,7 @@ public class QQChatContentRecord implements Listener {
                 "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
                 "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
 
+        int affected;
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, groupOpenId);
@@ -946,24 +1016,24 @@ public class QQChatContentRecord implements Listener {
             stmt.setString(12, emptyToNull(ark));
             stmt.setString(13, emptyToNull(mentions));
             stmt.setString(14, emptyToNull(messageReference));
-             stmt.setString(15, emptyToNull(refIdx));
-             int affected = stmt.executeUpdate();
-
-             if (affected == 1) {
-                 ChatStatsSnapshotRepo.recordGroupMessage(groupOpenId, unionOpenId, username, senderIsBot, eventTimestamp);
-             }
-
-            // SSE 实时推送 — 只发刷新信号，前端自己拉数据
-            try {
-                var payload = objectMapper.createObjectNode();
-                payload.put("type", "refresh");
-                payload.put("groupOpenId", groupOpenId);
-                SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
-            } catch (Exception ignored) {
-                // SSE 发送失败不影响主流程
-            }
+            stmt.setString(15, emptyToNull(refIdx));
+            affected = stmt.executeUpdate();
         } catch (SQLException e) {
             log.error("记录官方群消息失败, groupOpenId={}, messageOpenId={}: {}", groupOpenId, messageOpenId, e.getMessage(), e);
+            return;
+        }
+
+        // 消息连接归还后再保存统计，避免同一任务嵌套占用连接池。
+        if (affected == 1) {
+            ChatStatsSnapshotRepo.recordGroupMessage(groupOpenId, unionOpenId, username, senderIsBot, eventTimestamp);
+        }
+        try {
+            var payload = objectMapper.createObjectNode();
+            payload.put("type", "refresh");
+            payload.put("groupOpenId", groupOpenId);
+            SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.warn("发送官方群消息刷新通知失败: groupOpenId={}", groupOpenId, e);
         }
     }
 
@@ -1013,6 +1083,7 @@ public class QQChatContentRecord implements Listener {
                 "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
                 "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
 
+        int affected;
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, conversationOpenId);
@@ -1030,24 +1101,24 @@ public class QQChatContentRecord implements Listener {
             stmt.setString(9, emptyToNull(attachments));
             stmt.setString(10, emptyToNull(ark));
             stmt.setString(11, emptyToNull(messageReference));
-             stmt.setString(12, emptyToNull(refIdx));
-             int affected = stmt.executeUpdate();
-
-             if (affected == 1) {
-                 ChatStatsSnapshotRepo.recordC2CMessage(conversationOpenId, username, senderIsBot, source, eventTimestamp);
-             }
-
-            // SSE — C2C 刷新信号
-            try {
-                var payload = objectMapper.createObjectNode();
-                payload.put("type", "c2c_refresh");
-                payload.put("userOpenId", conversationOpenId);
-                SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
-            } catch (Exception ignored) {
-            }
+            stmt.setString(12, emptyToNull(refIdx));
+            affected = stmt.executeUpdate();
         } catch (SQLException e) {
             log.error("记录官方 C2C 消息失败, userOpenId={}, unionOpenId={}, messageOpenId={}: {}",
                     userOpenId, unionOpenId, messageOpenId, e.getMessage(), e);
+            return;
+        }
+
+        if (affected == 1) {
+            ChatStatsSnapshotRepo.recordC2CMessage(conversationOpenId, username, senderIsBot, source, eventTimestamp);
+        }
+        try {
+            var payload = objectMapper.createObjectNode();
+            payload.put("type", "c2c_refresh");
+            payload.put("userOpenId", conversationOpenId);
+            SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.warn("发送官方 C2C 消息刷新通知失败: userOpenId={}", conversationOpenId, e);
         }
     }
 

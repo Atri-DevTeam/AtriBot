@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.utils.official;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -40,7 +41,7 @@ public class MusicCommand implements CommandExecutor {
             qq.sendMessage("无效音乐");
             return true;
         }
-        GroupChat.replyMessage(qq.getGroupId(), qq.getMessage().getMessageId(), FileType.AUDIO, url);
+        GroupChat.replyMessage(qq.getGroupId(), RT.message(qq.getMessage().getMessageId()), FileType.AUDIO, url);
         return true;
     }
 }

@@ -107,7 +107,8 @@ public class LootService {
         if (cost <= 0) {
             return LootDao.fail("消耗数量必须大于 0 - 开发错误，请联系开发者处理");
         }
-        if (!LootRepository.removeCoins(userId, cost)) {
+        // 提前拒绝余额不足的请求，实际扣费仍由结算事务原子校验。
+        if (LootRepository.getCoins(userId) < cost) {
             return LootDao.fail("金粒不足，先去获得更多金粒再来尝试吧！");
         }
         return performDraw(userId, "抽奖-消耗金粒", true, false, cost);
@@ -257,24 +258,30 @@ public class LootService {
         }
 
         LootCatalogItem picked = pickByOwnedWeight(drawable, ownedItemIds);
-        boolean duplicated = ownedItemIds.contains(picked.itemId());
-        LootRepository.LootRecord record = LootRepository.appendLoot(userId, picked.itemId(), picked.displayName(), way, picked.special());
-
-        int refundCoins = 0;
-        if (duplicated && refundDuplicated) {
-            refundCoins = RANDOM.nextInt(16) + 5;
-            LootRepository.addCoins(userId, refundCoins);
+        // 先准备远程图片，避免渲染失败后仍扣款或发放库存。
+        ImageDTO card;
+        try {
+            card = requestDrawCard(picked.itemId());
+        } catch (Exception e) {
+            log.error("准备抽卡图片失败: itemId={}", picked.itemId(), e);
+            return LootDao.fail("渲染抽卡图失败，请稍后再试");
         }
-
-        ImageDTO card = requestDrawCard(picked.itemId());
         if (card.isError() || card.url() == null) {
             return LootDao.fail("渲染抽卡图失败 - 开发错误，请联系开发者处理");
         }
 
-        int currentCount = record != null ? record.count() : 0;
-        boolean currentSpecial = record != null && record.special();
-        return LootDao.success(card, duplicated, refundCoins, freeDraw, costCoins,
-                picked.itemId(), picked.displayName(), currentCount, currentSpecial);
+        int duplicateReward = refundDuplicated ? RANDOM.nextInt(16) + 5 : 0;
+        LootRepository.LootDrawResult result = LootRepository.drawLoot(userId, picked.itemId(), picked.displayName(),
+                way, picked.special(), costCoins, duplicateReward);
+        if (result.insufficientCoins()) {
+            return LootDao.fail("金粒不足，先去获得更多金粒再来尝试吧！");
+        }
+        LootRepository.LootRecord record = result.loot();
+        if (record == null) {
+            return LootDao.fail("保存抽卡结果失败，请稍后再试");
+        }
+        return LootDao.success(card, record.count() > 1, result.refundCoins(), freeDraw, costCoins,
+                picked.itemId(), picked.displayName(), record.count(), record.special());
     }
 
     private static LootCatalogItem pickByOwnedWeight(List<LootCatalogItem> drawable, Set<String> ownedItemIds) {

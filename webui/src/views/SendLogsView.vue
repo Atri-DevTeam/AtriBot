@@ -140,7 +140,7 @@
           <template v-else>
             <div v-if="contextAnchor" class="sendlogs-context-bar">
               <button class="ghost-button" @click="closeContext">{{ keyword ? '返回搜索结果' : '返回列表' }}</button>
-              <span>日志 #{{ contextAnchor }} 的临近事件：前后各最多 10 条，包含全部类型，不受搜索条件限制，最新在前。</span>
+              <span>日志 #{{ contextAnchor }} 的临近事件：前后各最多 10 条</span>
             </div>
             <div v-if="listLoading" class="empty-state">加载中...</div>
             <div v-else-if="listError" class="empty-state error">{{ listError }}</div>

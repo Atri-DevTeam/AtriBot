@@ -3,6 +3,7 @@ package top.yzljc.atribot.event.events;
 import lombok.Getter;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.QQMessage;
@@ -42,11 +43,11 @@ public class OfficialC2CMessageCreateEvent extends Event {
     }
 
     public String sendStreamMarkdownMessageD(List<Markdown> markdownDeltas) {
-        return C2CChat.replyStreamDeltas(this.user.getUserId(), this.message.getMessageId(), markdownDeltas);
+        return C2CChat.replyStreamDeltas(this.user.getUserId(), RT.message(this.message.getMessageId()), markdownDeltas);
     }
 
     public String sendStreamTextMessageD(List<String> textDeltas) {
-        return C2CChat.replyTextStreamDeltas(this.user.getUserId(), this.message.getMessageId(), textDeltas);
+        return C2CChat.replyTextStreamDeltas(this.user.getUserId(), RT.message(this.message.getMessageId()), textDeltas);
     }
 
     public boolean shouldIgnore() {

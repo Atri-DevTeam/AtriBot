@@ -14,11 +14,11 @@ import top.yzljc.atribot.platform.Platform;
 public class HypixelAlphaTask extends PushTask {
 
     public HypixelAlphaTask() {
-        super("hyp_alpha_news", "Hypixel Alpha公告推送", true);
+        super("hyp_alpha_news", "Skyblock 更新动态", true);
     }
 
     @Override
     public Markdown getDescription(Platform platform, String platformIdentifyId) {
-        return TC.md("**Hypixel Alpha公告推送**\n\nHypixel Alpha 子论坛公告内容，主要内容为测试服Skyblock相关的更新内容，由于订阅数据源问题，部分管理员的更新内容可能被遗漏\n\n" + getStatus(platform, platformIdentifyId));
+        return TC.md("**Hypixel Skyblock更新动态**\n\n主要包括以下内容：Hypixel主论坛Skyblock版块公告，Hypixel Alpha 子论坛公告内容（主要内容为测试服Skyblock相关的更新内容）和Skyblock材质包更新情况，检查周期为每小时一次\n\n" + getStatus(platform, platformIdentifyId));
     }
 }

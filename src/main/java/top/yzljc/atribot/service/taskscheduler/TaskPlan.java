@@ -8,6 +8,7 @@ public class TaskPlan implements TaskSchedule {
     private static final Duration HOURLY_LIMIT = Duration.ofHours(1);
     private static final Duration HALF_HOUR_LIMIT = Duration.ofMinutes(30);
     private static final Duration QUARTER_LIMIT = Duration.ofMinutes(15);
+    private static final Duration MINUTELY_LIMIT = Duration.ofMinutes(1);
 
     private ScheduleMode mode;
     private LocalTime time = LocalTime.MIDNIGHT;
@@ -64,6 +65,9 @@ public class TaskPlan implements TaskSchedule {
         }
         if (mode == ScheduleMode.a_quarter && offsetNanos >= QUARTER_LIMIT.toNanos()) {
             throw new IllegalArgumentException("a_quarter mode requires time before 00:15:00");
+        }
+        if (mode == ScheduleMode.minutely && offsetNanos >= MINUTELY_LIMIT.toNanos()) {
+            throw new IllegalArgumentException("minutely mode requires time before 00:01:00");
         }
     }
 }

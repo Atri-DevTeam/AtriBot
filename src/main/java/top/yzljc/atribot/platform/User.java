@@ -62,7 +62,7 @@ public class User {
     public String sendMessage(String messageId, String text) {
         switch (this.platform) {
             case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, text);
+                return C2CChat.replyMessage(this.userId, RT.message(messageId), text);
             }
             case NAPCAT_PRIVATE -> {
                 return PrivateMessage.replyMessage(this.userId, messageId, text);
@@ -71,21 +71,37 @@ public class User {
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String text)");
     }
 
+    /**
+     * 被动回复 QQ 官方单聊纯文本消息并引用指定消息
+     *
+     * @param rt     消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param text   回复内容
+     * @param refIdx 被引用消息的索引 ID，不改变消息或事件回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(RT rt, String text, String refIdx) {
+        if (this.platform == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyMessage(this.userId, rt, text, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, String text, String refIdx)");
+    }
+
     /** QQ官机频道中，{@code groupId}字段请传入所在文字子频道的{@code channelId}，频道私信中，{@code grouId}字段请传入所在频道的{@code guildId} */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String text) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, messageId, text);
+                return GroupChat.replyMessage(groupId, RT.message(messageId), text);
             }
             case NAPCAT_GROUP -> {
                 return GroupMessage.replyMessage(this.userId, groupId, messageId, false, text);
             }
             case OFFICIAL_GUILD_CHANNEL -> {
-                return GuildChannelChat.replyMessage(groupId, messageId, text);
+                return GuildChannelChat.replyMessage(groupId, RT.message(messageId), text);
             }
             case OFFICIAL_GUILD_DM -> {
-                return GuildDirectChat.replyMessage(groupId, messageId, text);
+                return GuildDirectChat.replyMessage(groupId, RT.message(messageId), text);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text)");
@@ -94,7 +110,7 @@ public class User {
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, String messageId, String text, String refIdx) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
-            return GroupChat.replyMessage(groupId, messageId, text, refIdx);
+            return GroupChat.replyMessage(groupId, RT.message(messageId), text, refIdx);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, String text, String refIdx)");
     }
@@ -108,8 +124,8 @@ public class User {
     public String sendMessage(String groupId, String messageId, Markdown md, boolean at) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
             return at
-                    ? GroupChat.replyMessage(groupId, this.userId, messageId, md)
-                    : GroupChat.replyMessage(groupId, messageId, md);
+                    ? GroupChat.replyMessage(groupId, RT.message(messageId), this.userId, md)
+                    : GroupChat.replyMessage(groupId, RT.message(messageId), md);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md)");
     }
@@ -117,7 +133,7 @@ public class User {
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, Markdown md) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, messageId, md);
+            return C2CChat.replyMessage(this.userId, RT.message(messageId), md);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md)");
     }
@@ -131,8 +147,8 @@ public class User {
     public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard, boolean at) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
             return at
-                    ? GroupChat.replyMessage(groupId, this.userId, messageId, md, keyboard)
-                    : GroupChat.replyMessage(groupId, messageId, md, keyboard);
+                    ? GroupChat.replyMessage(groupId, RT.message(messageId), this.userId, md, keyboard)
+                    : GroupChat.replyMessage(groupId, RT.message(messageId), md, keyboard);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md, Object keyboard)");
     }
@@ -140,7 +156,7 @@ public class User {
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, Markdown md, Object keyboard) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, messageId, md, keyboard);
+            return C2CChat.replyMessage(this.userId, RT.message(messageId), md, keyboard);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
     }
@@ -150,16 +166,16 @@ public class User {
     public String sendMessage(String groupId, String messageId, ImageComponent image) {
         switch (this.platform) {
             case OFFICIAL_GROUP -> {
-                return GroupChat.replyMessage(groupId, messageId, image);
+                return GroupChat.replyMessage(groupId, RT.message(messageId), image);
             }
             case NAPCAT_GROUP -> {
                 return GroupMessage.replyMessage(groupId, messageId, image);
             }
             case OFFICIAL_GUILD_CHANNEL -> {
-                return GuildChannelChat.replyImageMessage(groupId, messageId, image);
+                return GuildChannelChat.replyMessage(groupId, RT.message(messageId), image);
             }
             case OFFICIAL_GUILD_DM -> {
-                return GuildDirectChat.replyImageMessage(groupId, messageId, image);
+                return GuildDirectChat.replyMessage(groupId, RT.message(messageId), image);
             }
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, ImageComponent image)");
@@ -169,7 +185,7 @@ public class User {
     public String sendMessage(String messageId, ImageComponent image) {
         switch (this.platform) {
             case OFFICIAL_C2C -> {
-                return C2CChat.replyMessage(this.userId, messageId, image);
+                return C2CChat.replyMessage(this.userId, RT.message(messageId), image);
             }
             case NAPCAT_PRIVATE -> {
                 return PrivateMessage.replyMessage(this.userId, messageId, image);
@@ -202,6 +218,134 @@ public class User {
             }
         }
         throw new UnsupportedPlatform(this.platform, "recall(String messageId)");
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊图片消息并引用指定消息
+     *
+     * @param rt     消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image  图片组件
+     * @param refIdx 被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(RT rt, ImageComponent image, String refIdx) {
+        if (this.platform == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyMessage(this.userId, rt, image, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, ImageComponent image, String refIdx)");
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊 Markdown 消息并引用指定消息
+     *
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(RT rt, Markdown markdown, String refIdx) {
+        return sendMessage(rt, markdown, null, refIdx);
+    }
+
+    /**
+     * 被动回复带键盘的 QQ 官方单聊 Markdown 并引用指定消息
+     *
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(RT rt, Markdown markdown, Object keyboard, String refIdx) {
+        if (this.platform == Platform.OFFICIAL_C2C) {
+            return C2CChat.replyMessage(this.userId, rt, markdown, keyboard, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, Markdown markdown, Object keyboard, String refIdx)");
+    }
+
+    /**
+     * 被动回复 QQ 官方群聊图片消息并引用指定消息
+     *
+     * @param groupId 群 openId
+     * @param rt      消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image   图片组件
+     * @param refIdx  被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, RT rt, ImageComponent image, String refIdx) {
+        if (this.platform == Platform.OFFICIAL_GROUP) {
+            return GroupChat.replyMessage(groupId, rt, image, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, RT rt, ImageComponent image, String refIdx)");
+    }
+
+    /**
+     * 被动回复 QQ 官方群聊 Markdown 消息并引用指定消息，默认 @ 当前用户
+     *
+     * @param groupId  群 openId
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, RT rt, Markdown markdown, String refIdx) {
+        return sendMessage(groupId, rt, markdown, null, true, refIdx);
+    }
+
+    /**
+     * 被动回复 QQ 官方群聊 Markdown 消息并引用指定消息，可控制 @
+     *
+     * @param groupId  群 openId
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param at       是否 @ 当前用户
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, RT rt, Markdown markdown, boolean at, String refIdx) {
+        return sendMessage(groupId, rt, markdown, null, at, refIdx);
+    }
+
+    /**
+     * 被动回复带键盘的 QQ 官方群聊 Markdown 并引用指定消息，默认 @ 当前用户
+     *
+     * @param groupId  群 openId
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
+        return sendMessage(groupId, rt, markdown, keyboard, true, refIdx);
+    }
+
+    /**
+     * 被动回复带键盘的 QQ 官方群聊 Markdown 并引用指定消息
+     *
+     * @param groupId  群 openId
+     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown Markdown 回复内容
+     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param at       是否 @ 当前用户
+     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, boolean at, String refIdx) {
+        if (this.platform == Platform.OFFICIAL_GROUP) {
+            return at
+                    ? GroupChat.replyMessage(groupId, rt, this.userId, markdown, keyboard, refIdx)
+                    : GroupChat.replyMessage(groupId, rt, markdown, keyboard, refIdx);
+        }
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, boolean at, String refIdx)");
     }
 
     public boolean hasPermission() {

@@ -55,7 +55,7 @@ public class OfficialManager {
     private String getGateway(String accessToken) throws Exception {
         String gatewayApi = apiBaseUrl + "/gateway";
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest request = HttpService.newRequestBuilder()
                 .uri(URI.create(gatewayApi))
                 .header("Authorization", "QQBot " + accessToken)
                 .GET()

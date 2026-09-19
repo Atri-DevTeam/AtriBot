@@ -35,6 +35,7 @@ dependencies {
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
+    implementation("com.google.zxing:core:3.5.4")
     api("com.fasterxml.jackson.core:jackson-databind:2.22.2")
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")

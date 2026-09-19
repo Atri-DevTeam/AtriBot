@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.event.Event;
 
 /**
@@ -22,14 +23,14 @@ public class OfficialGroupAddRobotEvent extends Event {
     private final String timestamp;
 
     public String sendOpeningMessage(String text) {
-        return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, text);
+        return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), text);
     }
 
     public String sendOpeningMessage(Markdown markdown) {
-        return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown);
+        return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown);
     }
 
     public String sendOpeningMessage(Markdown markdown, Object keyboard) {
-        return GroupChat.replyEventMessage(this.groupOpenId, this.eventId, markdown, keyboard);
+        return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown, keyboard);
     }
 }

@@ -9,6 +9,7 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -365,7 +366,7 @@ public class LuckyRouletteGame implements CommandExecutor {
         layout.add(row);
         Object keyboard = TC.keyboard(layout);
 
-        String messageId = GroupChat.replyMessage(sessionId, cmdMsgId, TC.md(sb.toString()), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()), keyboard);
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = cmdMsgId;
@@ -404,7 +405,7 @@ public class LuckyRouletteGame implements CommandExecutor {
                 true, ButtonStyle.BLUE, ButtonType.COMMAND)));
         Object keyboard = TC.keyboard(layout);
 
-        String messageId = GroupChat.replyMessage(sessionId, cmdMsgId, TC.md(sb.toString()), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()), keyboard);
         recallOldMessage(game);
         game.lastMessageId = messageId;
     }
@@ -436,7 +437,7 @@ public class LuckyRouletteGame implements CommandExecutor {
 
             if (targetOpenId != null && current.lastCmdMsgId != null) {
                 try {
-                    GroupChat.replyMessage(current.groupOpenId, targetOpenId, current.lastCmdMsgId,
+                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
                             TC.md("⏰ 幸运轮盘因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
                 } catch (Exception e) {
                     log.warn("发送加入超时通知失败: ", e);

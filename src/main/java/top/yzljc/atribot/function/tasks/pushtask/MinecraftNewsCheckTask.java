@@ -14,7 +14,7 @@ import top.yzljc.atribot.platform.Platform;
 public final class MinecraftNewsCheckTask extends PushTask {
 
     public MinecraftNewsCheckTask() {
-        super("mc_news", "MC新闻与版本更新动态", true);
+        super("mc_news", "Minecraft 官网咨询", true);
     }
 
     @Override

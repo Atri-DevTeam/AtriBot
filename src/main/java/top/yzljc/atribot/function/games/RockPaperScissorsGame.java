@@ -8,6 +8,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -289,7 +290,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
                         + "⏰ 超时未完成，游戏已取消\n\n"
                         + Markdown.enterCommand("/rsp", "再来一局");
 
-                GroupChat.replyMessage(current.groupOpenId, notifyId, current.lastCmdMsgId,
+                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), notifyId,
                         TC.md(markdown));
             } catch (Exception e) {
                 log.warn("发送出拳超时取消面板失败: ", e);

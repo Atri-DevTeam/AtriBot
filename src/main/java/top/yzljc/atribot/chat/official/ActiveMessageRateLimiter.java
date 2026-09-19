@@ -4,9 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 final class ActiveMessageRateLimiter {
@@ -16,55 +18,51 @@ final class ActiveMessageRateLimiter {
     private static final int PER_GROUP_ACTIVE_LIMIT = 5;
     private static final long PER_GROUP_WINDOW_MS = 60_000;
 
-    private final Deque<Long> activeTimestamps = new ConcurrentLinkedDeque<>();
+    private final Deque<Long> activeTimestamps = new ArrayDeque<>();
     private final Map<String, Deque<Long>> groupActiveTimestamps = new ConcurrentHashMap<>();
 
     void checkPerGroupActiveRate(String groupOpenId) {
-        Deque<Long> timestamps = groupActiveTimestamps.computeIfAbsent(groupOpenId, ignored -> new ConcurrentLinkedDeque<>());
-        long now = System.currentTimeMillis();
-        long cutoff = now - PER_GROUP_WINDOW_MS;
-        while (true) {
-            Long oldest = timestamps.peekFirst();
-            if (oldest == null || oldest >= cutoff) break;
-            timestamps.pollFirst();
+        Deque<Long> timestamps = groupActiveTimestamps.computeIfAbsent(groupOpenId, ignored -> new ArrayDeque<>());
+        int count;
+        synchronized (timestamps) {
+            long now = System.nanoTime();
+            long cutoff = now - TimeUnit.MILLISECONDS.toNanos(PER_GROUP_WINDOW_MS);
+            while (!timestamps.isEmpty() && timestamps.peekFirst() <= cutoff) timestamps.pollFirst();
+            timestamps.offerLast(now);
+            count = timestamps.size();
         }
-        timestamps.offerLast(now);
-        if (timestamps.size() >= PER_GROUP_ACTIVE_LIMIT) {
-            Alert.notify("群聊主动消息频控异常：群 " + groupOpenId + " 在 1 分钟内发送了 " + timestamps.size() + " 条主动消息");
+        if (count >= PER_GROUP_ACTIVE_LIMIT) {
+            Alert.notify("群聊主动消息频控异常：群 " + groupOpenId + " 在 1 分钟内发送了 " + count + " 条主动消息");
         }
     }
 
-    void waitForActiveRateLimit() {
-        long now = System.currentTimeMillis();
-        long cutoff = now - WINDOW_MS;
+    synchronized void waitForActiveRateLimit() {
+        long windowNanos = TimeUnit.MILLISECONDS.toNanos(WINDOW_MS);
         while (true) {
-            Long oldest = activeTimestamps.peekFirst();
-            if (oldest == null || oldest >= cutoff) break;
-            activeTimestamps.pollFirst();
-        }
-
-        if (activeTimestamps.size() >= ACTIVE_QPM_LIMIT) {
-            Long oldest = activeTimestamps.peekFirst();
-            if (oldest != null) {
-                long waitMs = oldest + WINDOW_MS - now + 50;
-                if (waitMs > 0) {
-                    log.info("主动消息已达 {} QPM 限制，等待 {}ms", ACTIVE_QPM_LIMIT, waitMs);
-                    try {
-                        Thread.sleep(waitMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    pruneExpired(System.currentTimeMillis() - WINDOW_MS);
-                }
+            if (Thread.currentThread().isInterrupted()) {
+                throw new CancellationException("主动消息频控等待已中断");
+            }
+            long now = System.nanoTime();
+            pruneExpired(now - windowNanos);
+            // 清理、检查与占用名额必须原子完成，唤醒后重新检查窗口。
+            if (activeTimestamps.size() < ACTIVE_QPM_LIMIT) {
+                activeTimestamps.offerLast(now);
+                return;
+            }
+            long remaining = activeTimestamps.peekFirst() + windowNanos - now;
+            try {
+                TimeUnit.NANOSECONDS.timedWait(this, Math.max(1, remaining));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("主动消息频控等待已中断");
             }
         }
-        activeTimestamps.offerLast(System.currentTimeMillis());
     }
 
     private void pruneExpired(long cutoff) {
         while (true) {
             Long oldest = activeTimestamps.peekFirst();
-            if (oldest == null || oldest >= cutoff) break;
+            if (oldest == null || oldest > cutoff) break;
             activeTimestamps.pollFirst();
         }
     }

@@ -3,6 +3,7 @@ package top.yzljc.atribot.service.taskscheduler;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.function.task.QqBotDocsMonitor;
 import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
+import top.yzljc.atribot.function.tasks.pushtask.HypixelBanWaveAlertTask;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,8 @@ public final class TaskSchedulerRegistry {
             Atri.getInstance().getMinecraftVersionCheck(),
             Atri.getInstance().getMinecraftNews(),
             Atri.getInstance().getHypixelAnnouncements(),
+            Atri.getInstance().getHypixelSkyblockAnnouncements(),
+            HypixelBanWaveAlertTask.TASK_INSTANCE,
             Atri.getInstance().getSkyblockPackCheck(),
             Atri.getInstance().getHypixelAlphaForums(),
             RefreshGroupProfilesTask.INSTANCE,

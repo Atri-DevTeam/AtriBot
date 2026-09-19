@@ -14,6 +14,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
 
@@ -152,11 +153,11 @@ public abstract class PushTask {
                     messageId = null;
                 }
                 if (messageId == null) {
-                    GroupChat.replyMessage(groupOpenId, operatorOpenId, commandMessageId, FullMessageAuth.a());
+                    GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), operatorOpenId, FullMessageAuth.a());
                     return;
                 }
             } else {
-                GroupChat.replyMessage(groupOpenId, commandMessageId, md, keys);
+                GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), md, keys);
             }
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), true, operatorOpenId);
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
@@ -169,11 +170,11 @@ public abstract class PushTask {
                     messageId = null;
                 }
                 if (messageId == null) {
-                    C2CChat.replyMessage(operatorOpenId, commandMessageId, FullMessageAuth.a());
+                    C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), FullMessageAuth.a());
                     return;
                 }
             } else {
-                C2CChat.replyMessage(operatorOpenId, commandMessageId, md, keys);
+                C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md, keys);
             }
             OfficialUsers.setFunctionEnabled(operatorOpenId, this.getFunctionId(), true, operatorOpenId);
         } else {
@@ -191,10 +192,10 @@ public abstract class PushTask {
         );
         if (platform.equals(Platform.OFFICIAL_GROUP)) {
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), false, operatorOpenId);
-            GroupChat.replyMessage(groupOpenId, operatorOpenId, commandMessageId, md, keys);
+            GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), operatorOpenId, md, keys);
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
             OfficialUsers.setFunctionEnabled(operatorOpenId, this.getFunctionId(), false, operatorOpenId);
-            C2CChat.replyMessage(operatorOpenId, commandMessageId, md, keys);
+            C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md, keys);
         } else {
             throw new UnsupportedPlatform(platform, "推送任务在该平台不支持");
         }

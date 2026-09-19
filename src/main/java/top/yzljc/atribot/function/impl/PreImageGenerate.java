@@ -32,12 +32,13 @@ public class PreImageGenerate {
     }
 
     public static int create(String url) {
-        HttpRequest preWarmRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        HttpRequest preWarmRequest = HttpService.newRequestBuilder().uri(URI.create(url)).GET().build();
         try {
             HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
             HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
             return response.statusCode();
         } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             return 500;
         }
     }

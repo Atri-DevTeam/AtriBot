@@ -22,11 +22,17 @@ public class HttpService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int MAX_LOG_BODY_LENGTH = 4096;
+    private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final String DEFAULT_USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     public static final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(60)).build();
 
     public static final HttpClient redirectHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).followRedirects(HttpClient.Redirect.ALWAYS).build();
+
+    /** 每个请求都设置响应时限，调用方可以为较慢的接口单独覆盖。 */
+    public static Builder newRequestBuilder() {
+        return HttpRequest.newBuilder().timeout(DEFAULT_REQUEST_TIMEOUT);
+    }
 
     private static void logHttpFailure(String method, String url, int statusCode, String responseBody) {
         log.warn("{} Request failed! URL: {}, HTTP code: {}, Response body: {}",
@@ -34,6 +40,9 @@ public class HttpService {
     }
 
     private static void logRequestError(String method, String url, Exception e) {
+        if (e instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
         log.warn("{} Request Error! URL: {}, Error type: {}, Error message: {}",
                 method, url, e.getClass().getName(), e.getMessage(), e);
     }
@@ -62,7 +71,7 @@ public class HttpService {
 
     public static JsonNode sendGetRequest(String url) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest request = newRequestBuilder()
                     .uri(URI.create(url))
                     .GET()
                     .build();
@@ -84,7 +93,7 @@ public class HttpService {
 
     public static JsonNode sendGetRequest(String url, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .GET();
             applyHeaders(builder, headers);
@@ -107,7 +116,7 @@ public class HttpService {
 
     public static String getRequestStr(String url) {
         try {
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+            java.net.http.HttpRequest request = newRequestBuilder()
                     .uri(URI.create(url))
                     .GET()
                     .build();
@@ -125,9 +134,8 @@ public class HttpService {
 
     public static JsonNode sendPostRequestFollowRedirect(String url) {
         try {
-            Builder requestBuilder = java.net.http.HttpRequest.newBuilder()
+            Builder requestBuilder = newRequestBuilder()
                     .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
                     .POST(java.net.http.HttpRequest.BodyPublishers.noBody());
 
@@ -173,9 +181,8 @@ public class HttpService {
 
     public static JsonNode postJson(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
@@ -220,8 +227,7 @@ public class HttpService {
 
     public static PostResult postJsonDetailed(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
+            Builder builder = newRequestBuilder().uri(URI.create(url))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
@@ -239,8 +245,7 @@ public class HttpService {
     /** PATCH 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
     public static PostResult patchJsonDetailed(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
+            Builder builder = newRequestBuilder().uri(URI.create(url))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody));
@@ -258,8 +263,7 @@ public class HttpService {
     /** PUT 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
     public static PostResult putJsonDetailed(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder().uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
+            Builder builder = newRequestBuilder().uri(URI.create(url))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.method("PUT", HttpRequest.BodyPublishers.ofString(jsonBody));
@@ -276,7 +280,7 @@ public class HttpService {
 
     public static GetResult sendGetRequestDetailed(String url, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .GET();
             applyHeaders(builder, headers);
@@ -298,9 +302,9 @@ public class HttpService {
 
     public static String postJsonForString(String url, String jsonBody, Duration duration, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
-                    .timeout(duration != null ? duration : Duration.ofSeconds(30))
+                    .timeout(duration != null ? duration : DEFAULT_REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
                     .header("User-Agent", DEFAULT_USER_AGENT);
             applyHeaders(builder, headers);
@@ -349,9 +353,8 @@ public class HttpService {
 
             bodyParts.add(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
 
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
-                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .header("User-Agent", DEFAULT_USER_AGENT);
             applyHeaders(builder, headers);
@@ -391,7 +394,7 @@ public class HttpService {
 
     public static JsonNode putJson(String url, String jsonBody, String... headers) {
         try {
-            Builder builder = HttpRequest.newBuilder()
+            Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
@@ -416,7 +419,7 @@ public class HttpService {
 
     public static JsonNode sendDeleteRequest(String url) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest request = newRequestBuilder()
                     .uri(URI.create(url))
                     .DELETE()
                     .build();
@@ -438,7 +441,7 @@ public class HttpService {
 
     public static JsonNode sendDeleteRequest(String url, String... headers) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .DELETE();
             applyHeaders(builder, headers);
@@ -462,7 +465,7 @@ public class HttpService {
     /** DELETE 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
     public static GetResult deleteRequestDetailed(String url, String... headers) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .DELETE();
             applyHeaders(builder, headers);
@@ -480,7 +483,7 @@ public class HttpService {
 
     public static String deleteRequestStr(String url, String... headers) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = newRequestBuilder()
                     .uri(URI.create(url))
                     .DELETE();
             applyHeaders(builder, headers);

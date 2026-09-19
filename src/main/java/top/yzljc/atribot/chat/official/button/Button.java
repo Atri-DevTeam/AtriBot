@@ -64,8 +64,16 @@ public class Button {
         return this;
     }
 
+    /**
+     * 使用此方法默认将 permissionType 设置为 SPECIFIC_USER
+     */
     public Button setAllowedOpenIds(List<String> allowedOpenIds) {
         this.allowedOpenIds = allowedOpenIds;
+
+        if (this.permissionType != PermissionType.SPECIFIC_USER) {
+            this.permissionType = PermissionType.SPECIFIC_USER;
+        }
+
         return this;
     }
 
@@ -83,7 +91,7 @@ public class Button {
      * @param content 提示文本
      * @param confirmText 确认按钮文本，最多4个字
      * @param cancelText 取消按钮文本，最多4个字
-     * @return
+     * @return Button 对象
      */
     public Button setModal(String content, String confirmText, String cancelText) {
         if (confirmText.length() > 4 || cancelText.length() > 4) {

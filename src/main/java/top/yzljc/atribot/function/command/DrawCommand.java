@@ -61,8 +61,8 @@ public class DrawCommand implements CommandExecutor {
         Object keyboards = TC.keyboard(
                 List.of(
                         List.of(
-                                new Button("c1", "再抽一次", "/drawitem", ButtonStyle.BLUE, ButtonType.COMMAND),
-                                new Button("c2", "查看收集进度", "/drawitem bag", ButtonStyle.BLUE, ButtonType.COMMAND)
+                                new Button("c1", "再抽一次", "/item", ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("c2", "查看收集进度", "/item bag", ButtonStyle.BLUE, ButtonType.COMMAND)
                         )
                 )
         );

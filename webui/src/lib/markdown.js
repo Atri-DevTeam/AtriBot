@@ -1,3 +1,5 @@
+import katex from 'katex'
+
 const TOKEN_OPEN = '\uE000'
 const TOKEN_CLOSE = '\uE001'
 
@@ -48,6 +50,24 @@ function renderInline(value) {
   text = text.replace(/<(https?:\/\/[^>\s]+)>/g, (_, rawUrl) => {
     const url = safeUrl(rawUrl)
     return url ? store(`<a href="${url}" target="_blank" rel="noreferrer noopener">${url}</a>`) : escapeHtml(rawUrl)
+  })
+
+  // Protect formulas before Markdown emphasis/HTML escaping. Code and URLs have
+  // already been tokenized; escaped dollars and $$ blocks are left untouched.
+  text = text.replace(/\\[^\n]|\$\$[^\n]*?\$\$|\$(?!\s)((?:\\[^\n]|[^\\$\n])+?)(?<!\s)\$(?!\d)/g, (raw, formula) => {
+    if (formula === undefined) return raw
+    try {
+      return store(katex.renderToString(formula, {
+        throwOnError: true,
+        trust: false,
+        strict: 'ignore',
+        maxSize: 20,
+        maxExpand: 1000,
+      }))
+    } catch {
+      // Incomplete/unsupported LaTeX must not break the rest of the message.
+      return store(escapeHtml(raw))
+    }
   })
 
   text = escapeHtml(text)

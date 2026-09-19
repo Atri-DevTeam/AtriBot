@@ -10,14 +10,17 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
+import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -40,7 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class ChatService {
 
-    private static final String EMERGENCY_PAUSED_MESSAGE = "机器人因暂时重启维护或出现问题已被开发者暂停响应，请稍后重试！";
+    private static final String EMERGENCY_PAUSED_MESSAGE = "开发者暂且维护中，马上回来！";
+    private static final ImageComponent MAINTENANCE = ImageComponent.imageOf(ResourcesProperties.MAINTENANCE_IMG).setText(EMERGENCY_PAUSED_MESSAGE);
     @Getter
     @Setter
     private static volatile boolean emergencyPaused = false;
@@ -63,39 +67,75 @@ public class ChatService {
         this.bodyFactory = new MessageBodyFactory(this::getNextMsgSeq);
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
-        this.privateStreamHelper = new C2CStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory, this::getNextMsgSeq);
+        this.privateStreamHelper = new C2CStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory,
+                this::getNextMsgSeq, this::sendPrivateMaintenanceMessageAsync);
     }
 
-    static String emergencyPausedMessage() {
-        return EMERGENCY_PAUSED_MESSAGE;
+    /**
+     * 获取暂停状态的维护图片组件
+     *
+     * @return 维护图片及其附带文字
+     */
+    static ImageComponent emergencyPausedMessage() {
+        return MAINTENANCE;
     }
 
-    /** 获取单聊消息 API URL */
+    /**
+     * 获取单聊消息 API URL
+     *
+     * @param openId 用户 openId
+     * @return 单聊消息 API URL
+     */
     public String privateMessageUrl(String openId) {
         return apiBaseUrl + "/v2/users/" + openId + "/messages";
     }
 
-    /** 获取单聊文件上传 API URL */
+    /**
+     * 获取单聊文件上传 API URL
+     *
+     * @param openId 用户 openId
+     * @return 单聊文件上传 API URL
+     */
     public String privateFileUrl(String openId) {
         return apiBaseUrl + "/v2/users/" + openId + "/files";
     }
 
-    /** 获取群聊消息 API URL */
+    /**
+     * 获取群聊消息 API URL
+     *
+     * @param groupOpenId 群 openId
+     * @return 群聊消息 API URL
+     */
     public String groupMessageUrl(String groupOpenId) {
         return apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages";
     }
 
-    /** 获取群聊文件上传 API URL */
+    /**
+     * 获取群聊文件上传 API URL
+     *
+     * @param groupOpenId 群 openId
+     * @return 群聊文件上传 API URL
+     */
     public String groupFileUrl(String groupOpenId) {
         return apiBaseUrl + "/v2/groups/" + groupOpenId + "/files";
     }
 
-    /** 频道文字子频道消息 API URL */
+    /**
+     * 频道文字子频道消息 API URL
+     *
+     * @param channelId 子频道 ID
+     * @return 频道文字子频道消息 API URL
+     */
     public String guildChannelMessageUrl(String channelId) {
         return apiBaseUrl + "/channels/" + channelId + "/messages";
     }
 
-    /** 频道私聊消息 API URL */
+    /**
+     * 频道私聊消息 API URL
+     *
+     * @param guildId 频道 ID
+     * @return 频道私聊消息 API URL
+     */
     public String guildDirectMessageUrl(String guildId) {
         return apiBaseUrl + "/dms/" + guildId + "/messages";
     }
@@ -108,21 +148,79 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendPrivateMessageAsync(String openId, MessageBody request) {
-        MessageBody effectiveRequest = emergencyPauseRequestOrNull(request, "单聊");
-        if (effectiveRequest == null) {
-            return CompletableFuture.completedFuture(null);
+        return prepareMessageAsync(request, privateFileUrl(openId), "单聊").thenCompose(effectiveRequest -> {
+            if (effectiveRequest == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            return sendMessageAsync(privateMessageUrl(openId), effectiveRequest, "单聊")
+                    .thenApply(response -> {
+                        if (response != null) {
+                            QQChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                        }
+                        if (response != null) {
+                            return response.id() ;
+                        } else {
+                            return null;
+                        }
+                    });
+        });
+    }
+
+    /**
+     * 异步发送单聊召回消息，设置 is_wakeup 并清除被动回复来源及引用
+     *
+     * @param openId  用户 openId
+     * @param request 消息体，可为 null；不会修改原始消息体
+     * @return 消息 ID 的 Future，消息为空、暂停发送或发送失败返回 null
+     */
+    public CompletableFuture<String> sendPrivateWakeupMessageAsync(String openId, MessageBody request) {
+        return sendPrivateMessageAsync(openId, bodyFactory.wakeup(request));
+    }
+
+    /**
+     * 异步发送单聊正在输入通知，单独处理空 JSON 对象响应，不记录为聊天消息
+     *
+     * @param openId      用户 openId
+     * @param inputSecond 输入状态持续秒数，必须大于 0
+     * @return HTTP 成功且返回空 JSON 对象时为 true；参数无效、暂停或发送失败时为 false
+     */
+    public CompletableFuture<Boolean> sendPrivateInputNotifyAsync(String openId, int inputSecond) {
+        if (openId == null || openId.isBlank() || inputSecond <= 0 || emergencyPaused) {
+            return CompletableFuture.completedFuture(false);
         }
-        return sendMessageAsync(privateMessageUrl(openId), effectiveRequest, "单聊")
-                .thenApply(response -> {
-                    if (response != null) {
-                        QQChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+        return ThreadManager.supplyAsync(() -> {
+            if (emergencyPaused) return false;
+            String url = privateMessageUrl(openId);
+            String logType = "单聊输入状态";
+            String json = null;
+            String traceId = null;
+            Integer status = null;
+            String responseBody = null;
+            try {
+                json = objectMapper.writeValueAsString(bodyFactory.inputNotify(inputSecond));
+                traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
+                var res = HttpService.postJsonDetailed(url, json,
+                        "Authorization", "QQBot " + tokenManager.getAccessToken());
+                status = res.status();
+                responseBody = res.body();
+                if (status >= 200 && status < 300 && responseBody != null && !responseBody.isBlank()) {
+                    JsonNode result = objectMapper.readTree(responseBody);
+                    if (result != null && result.isObject() && result.isEmpty()) {
+                        OfficialSendLogRepository.recordResponse(traceId, logType, "POST", url, json,
+                                status, responseBody);
+                        return true;
                     }
-                    if (response != null) {
-                        return response.id() ;
-                    } else {
-                        return null;
-                    }
-                });
+                }
+                OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                        status, responseBody, "输入状态通知响应异常");
+                log.warn("单聊输入状态通知失败, status: {}, body: {}", status, responseBody);
+            } catch (Exception e) {
+                OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                        status, responseBody, "输入状态通知失败: " + e.getMessage());
+                log.warn("单聊输入状态通知失败", e);
+            }
+            return false;
+        });
     }
 
     /**
@@ -133,27 +231,28 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGroupMessageAsync(String groupOpenId, MessageBody request) {
-        MessageBody effectiveRequest = emergencyPauseRequestOrNull(request, "群聊");
-        if (effectiveRequest == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null) {
-            activeRateLimiter.checkPerGroupActiveRate(groupOpenId);
-        }
-        return sendMessageAsync(groupMessageUrl(groupOpenId), effectiveRequest, "群聊")
-                .thenApply(response -> {
-                    if (response != null) {
-                        QQChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
-                        if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
-                            OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
+        return prepareMessageAsync(request, groupFileUrl(groupOpenId), "群聊").thenCompose(effectiveRequest -> {
+            if (effectiveRequest == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null) {
+                activeRateLimiter.checkPerGroupActiveRate(groupOpenId);
+            }
+            return sendMessageAsync(groupMessageUrl(groupOpenId), effectiveRequest, "群聊")
+                    .thenApply(response -> {
+                        if (response != null) {
+                            QQChatContentRecord.recordSentGroupMessage(groupOpenId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
+                            if (effectiveRequest.getMsgId() == null && effectiveRequest.getEventId() == null && !OfficialGroups.allowProactiveMsg(groupOpenId)) {
+                                OfficialGroups.setAllowProactiveMsg(groupOpenId, true);
+                            }
                         }
-                    }
-                    if (response != null) {
-                        return response.id() ;
-                    } else {
-                        return null;
-                    }
-                });
+                        if (response != null) {
+                            return response.id() ;
+                        } else {
+                            return null;
+                        }
+                    });
+        });
     }
 
     /**
@@ -164,18 +263,19 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGuildChannelMessageAsync(String channelId, MessageBody request) {
-        MessageBody pendingRequest = emergencyPauseRequestOrNull(request, "文字子频道");
-        if (pendingRequest == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return sendMessageAsync(guildChannelMessageUrl(channelId), pendingRequest, "文字子频道")
-                .thenApply(response -> {
-                    if (response != null) {
-                        return response.id();
-                    } else {
-                        return null;
-                    }
-                });
+        return prepareMessageAsync(request, null, "文字子频道").thenCompose(pendingRequest -> {
+            if (pendingRequest == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            return sendMessageAsync(guildChannelMessageUrl(channelId), pendingRequest, "文字子频道")
+                    .thenApply(response -> {
+                        if (response != null) {
+                            return response.id();
+                        } else {
+                            return null;
+                        }
+                    });
+        });
     }
 
     /**
@@ -186,18 +286,19 @@ public class ChatService {
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGuildDirectMessageAsync(String guildId, MessageBody request) {
-        MessageBody pendingRequest = emergencyPauseRequestOrNull(request, "频道私信");
-        if (pendingRequest == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return sendMessageAsync(guildDirectMessageUrl(guildId), pendingRequest, "频道私信")
-                .thenApply(response -> {
-                    if (response != null) {
-                        return response.id();
-                    } else {
-                        return null;
-                    }
-                });
+        return prepareMessageAsync(request, null, "频道私信").thenCompose(pendingRequest -> {
+            if (pendingRequest == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            return sendMessageAsync(guildDirectMessageUrl(guildId), pendingRequest, "频道私信")
+                    .thenApply(response -> {
+                        if (response != null) {
+                            return response.id();
+                        } else {
+                            return null;
+                        }
+                    });
+        });
     }
 
     /**
@@ -218,18 +319,56 @@ public class ChatService {
         return ok;
     }
 
-    private MessageBody emergencyPauseRequestOrNull(MessageBody request, String logType) {
-        if (!emergencyPaused) {
+    /**
+     * 异步准备发送消息，暂停时将被动回复替换为维护图片
+     *
+     * @param request   原始消息体
+     * @param uploadUrl 图片上传地址，频道使用图片 URL 时传入 null
+     * @param logType   日志场景
+     * @return 待发送消息体，主动消息被拦截或维护图片上传失败时结果为 null
+     */
+    private CompletableFuture<MessageBody> prepareMessageAsync(MessageBody request, String uploadUrl, String logType) {
+        if (!emergencyPaused || (request != null && request.isMaintenanceReply())) {
+            return CompletableFuture.completedFuture(request);
+        }
+        return ThreadManager.supplyAsync(() -> emergencyPauseRequestOrNull(request, uploadUrl, logType));
+    }
+
+    /**
+     * 将暂停状态下的被动回复替换为维护图片，保留消息或事件来源
+     *
+     * @param request   原始消息体
+     * @param uploadUrl 图片上传地址，频道使用图片 URL 时传入 null
+     * @param logType   日志场景
+     * @return 原始消息或维护图片消息，主动消息被拦截或图片上传失败时返回 null
+     */
+    private MessageBody emergencyPauseRequestOrNull(MessageBody request, String uploadUrl, String logType) {
+        if (!emergencyPaused || (request != null && request.isMaintenanceReply())) {
             return request;
         }
         if (request == null || isActiveRequest(request)) {
             log.warn("{}主动消息已被应急暂停拦截", logType);
             return null;
         }
-        if (request.getMsgId() != null && !request.getMsgId().isBlank()) {
-            return bodyFactory.replyText(request.getMsgId(), EMERGENCY_PAUSED_MESSAGE);
+        RT rt = MessageBodyFactory.sourceOf(request.getMsgId(), request.getEventId());
+        if (uploadUrl == null) {
+            return bodyFactory.guildImage(MAINTENANCE.getData(), rt, MAINTENANCE.getText())
+                    .toBuilder().maintenanceReply(true).build();
         }
-        return bodyFactory.eventText(request.getEventId(), EMERGENCY_PAUSED_MESSAGE);
+        return mediaUploader.buildMaintenanceImageRequest(uploadUrl, rt, logType);
+    }
+
+    /**
+     * 将单聊流式回复的暂停提示改为普通图片消息
+     *
+     * @param openId 用户 openId
+     * @param rt     消息或事件回复来源
+     * @return 维护图片消息 ID 的 Future，上传或发送失败时结果为 null
+     */
+    CompletableFuture<String> sendPrivateMaintenanceMessageAsync(String openId, RT rt) {
+        return ThreadManager.supplyAsync(() -> mediaUploader.buildMaintenanceImageRequest(privateFileUrl(openId), rt, "单聊维护"))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null)
+                        : sendPrivateMessageAsync(openId, request));
     }
 
     private static boolean isActiveRequest(MessageBody request) {

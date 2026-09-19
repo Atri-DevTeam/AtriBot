@@ -156,7 +156,7 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
 //                C2CChat.sendMessage(uid, ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
 //            }
 
-            PushTask.push("skyblock_resource_pack", ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
+            PushTask.push("hyp_alpha_news", ImageComponent.imageOf(r.url()).setText(lastUpdatedTime));
 
             Markdown md = TC.md(
                     lastUpdatedTime + "\n\n" + Markdown.img(r.url(), r.width(), r.height())

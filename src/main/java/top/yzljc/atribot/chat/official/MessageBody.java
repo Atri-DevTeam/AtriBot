@@ -36,6 +36,10 @@ public class MessageBody {
     private Object ark;
     
     private Object media;
+
+    /** 单聊输入状态通知 */
+    @JsonProperty("input_notify")
+    private Object inputNotify;
     
     @JsonProperty("message_reference")
     private Object messageReference;
@@ -58,4 +62,10 @@ public class MessageBody {
 
     @JsonIgnore
     private String recordAttachments;
+
+    /**
+     * 维护消息提示用字段
+     */
+    @JsonIgnore
+    private boolean maintenanceReply;
 }

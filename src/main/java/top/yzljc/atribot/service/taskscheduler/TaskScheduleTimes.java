@@ -25,6 +25,7 @@ public final class TaskScheduleTimes {
             case hourly -> nextHourly(now, time);
             case half_hour -> nextHalfHour(now, time);
             case a_quarter -> nextQuarter(now, time);
+            case minutely -> nextMinutely(now, time);
         };
     }
 
@@ -37,6 +38,14 @@ public final class TaskScheduleTimes {
         LocalDateTime next = now.toLocalDate().atTime(time);
         if (!now.isBefore(next)) {
             next = next.plusDays(1);
+        }
+        return next;
+    }
+
+    private static LocalDateTime nextMinutely(LocalDateTime now, LocalTime time) {
+        LocalDateTime next = now.truncatedTo(ChronoUnit.MINUTES).plusNanos(time.toNanoOfDay());
+        if (!now.isBefore(next)) {
+            next = next.plusMinutes(1);
         }
         return next;
     }

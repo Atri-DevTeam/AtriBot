@@ -73,7 +73,7 @@ public class PostRequest {
             Map<String, Object> requestBody = params != null ? params : new HashMap<>();
 
             String json = mapper.writeValueAsString(requestBody);
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpService.newRequestBuilder()
                     .uri(URI.create(postUrl))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + auth_token)
@@ -95,6 +95,7 @@ public class PostRequest {
                 log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), response.statusCode());
             }
         } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
         }
         return null;

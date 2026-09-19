@@ -17,24 +17,25 @@ public final class GuildChannelChat {
     /**
      * 发送文字子频道纯文本被动消息
      *
-     * @param channelId   子频道 ID
-     * @param text        消息内容
+     * @param channelId 子频道 ID
+     * @param rt        消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param text      消息内容
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyMessage(String channelId, String msgId, String text) {
-        return await(AsyncGuildChannelChat.replyMessage(channelId, msgId, text));
+    public static String replyMessage(String channelId, RT rt, String text) {
+        return await(AsyncGuildChannelChat.replyMessage(channelId, rt, text));
     }
 
     /**
      * 发送图片子频道被动消息
      *
-     * @param channelId  子频道 ID
-     * @param msgId   回复的消息 ID
-     * @param image       图片组件
+     * @param channelId 子频道 ID
+     * @param rt        消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image     图片组件
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyImageMessage(String channelId, String msgId, ImageComponent image) {
-        return await(AsyncGuildChannelChat.replyMessage(channelId, msgId, image));
+    public static String replyMessage(String channelId, RT rt, ImageComponent image) {
+        return await(AsyncGuildChannelChat.replyMessage(channelId, rt, image));
     }
 
     private static String await(CompletableFuture<String> future) {

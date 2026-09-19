@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Slf4j
@@ -38,14 +39,17 @@ final class C2CStreamMessage {
     private final ObjectMapper objectMapper;
     private final MessageBodyFactory bodyFactory;
     private final Function<String, Integer> msgSeqProvider;
+    private final BiFunction<String, RT, CompletableFuture<String>> maintenanceReply;
 
     C2CStreamMessage(String apiBaseUrl, TokenManager tokenManager, ObjectMapper objectMapper,
-                     MessageBodyFactory bodyFactory, Function<String, Integer> msgSeqProvider) {
+                     MessageBodyFactory bodyFactory, Function<String, Integer> msgSeqProvider,
+                     BiFunction<String, RT, CompletableFuture<String>> maintenanceReply) {
         this.apiBaseUrl = apiBaseUrl;
         this.tokenManager = tokenManager;
         this.objectMapper = objectMapper;
         this.bodyFactory = bodyFactory;
         this.msgSeqProvider = msgSeqProvider;
+        this.maintenanceReply = maintenanceReply;
     }
 
     String send(String openId, Map<String, Object> request) {
@@ -53,17 +57,32 @@ final class C2CStreamMessage {
     }
 
     CompletableFuture<String> sendAsync(String openId, Map<String, Object> request) {
-        if (!hasStreamReplyTarget(request)) {
-            log.error("单聊流式消息发送失败：msg_id/event_id 不能同时为空, openId: {}", openId);
+        Map<String, Object> effectiveRequest = request;
+        if (request != null && Boolean.TRUE.equals(request.get("is_wakeup"))) {
+            effectiveRequest = new HashMap<>(request);
+            effectiveRequest.remove("msg_id");
+            effectiveRequest.remove("event_id");
+            effectiveRequest.remove("msg_seq");
+            effectiveRequest.remove("message_reference");
+        }
+        if (!hasStreamReplyTarget(effectiveRequest)) {
+            log.error("单聊流式消息发送失败：普通流式消息必须提供 msg_id/event_id，召回消息需设置 is_wakeup, openId: {}", openId);
             return CompletableFuture.completedFuture(null);
         }
-        return ThreadManager.supplyAsync(() -> doSend(openId, request));
+        Map<String, Object> pendingRequest = effectiveRequest;
+        return ThreadManager.supplyAsync(() -> {
+            if (ChatService.isEmergencyPaused()) {
+                RT rt = sourceOf(pendingRequest);
+                return rt == null ? null : maintenanceReply.apply(openId, rt).join();
+            }
+            return doSend(openId, pendingRequest);
+        });
     }
 
-    CompletableFuture<String> sendBatchAsync(String openId, String msgId, String eventId,
+    CompletableFuture<String> sendBatchAsync(String openId, RT rt,
                                              String contentType, String inputMode, List<String> contents,
                                              Boolean isWakeup) {
-        return ThreadManager.supplyAsync(() -> sendBatch(openId, msgId, eventId, contentType, inputMode, contents, isWakeup));
+        return ThreadManager.supplyAsync(() -> sendBatch(openId, rt, contentType, inputMode, contents, isWakeup));
     }
 
     List<String> toSnapshots(List<String> deltas) {
@@ -82,19 +101,21 @@ final class C2CStreamMessage {
         return snapshots;
     }
 
-    private String sendBatch(String openId, String msgId, String eventId,
+    private String sendBatch(String openId, RT rt,
                              String contentType, String inputMode, List<String> contents,
                              Boolean isWakeup) {
+        if (Boolean.TRUE.equals(isWakeup)) {
+            rt = null;
+        }
         if (ChatService.isEmergencyPaused()) {
-            if (isBlank(msgId) && isBlank(eventId)) {
+            if (rt == null) {
                 log.warn("单聊主动流式消息已被应急暂停拦截, openId: {}", openId);
                 return null;
             }
-            Map<String, Object> pausedRequest = streamPausedFallbackRequest(eventId, msgId, isWakeup);
-            return doSend(openId, pausedRequest);
+            return maintenanceReply.apply(openId, rt).join();
         }
-        if (isBlank(msgId) && isBlank(eventId)) {
-            log.error("单聊流式消息发送失败：msg_id/event_id 不能同时为空, openId: {}", openId);
+        if (rt == null && !Boolean.TRUE.equals(isWakeup)) {
+            log.error("单聊流式消息发送失败：普通流式消息必须提供 msg_id/event_id，召回消息需设置 is_wakeup, openId: {}", openId);
             return null;
         }
         List<String> snapshots = cleanSnapshots(contents);
@@ -106,11 +127,14 @@ final class C2CStreamMessage {
         long avgSendMs = STREAM_MIN_EST_SEND_MS;
         String streamMsgId = null;
         String lastMessageId = null;
-        Integer msgSeq = msgId == null ? null : msgSeqProvider.apply(msgId);
+        Integer msgSeq = rt instanceof RT.Message message ? msgSeqProvider.apply(message.id()) : null;
         int sentIndex = 0;
         int sourceIndex = 0;
 
         while (sourceIndex < snapshots.size()) {
+            if (ChatService.isEmergencyPaused()) {
+                return rt == null ? lastMessageId : maintenanceReply.apply(openId, rt).join();
+            }
             boolean finalContent = sourceIndex == snapshots.size() - 1;
             if (!finalContent && sentIndex > 0
                     && System.currentTimeMillis() + avgSendMs + STREAM_FINAL_GUARD_MS >= deadline) {
@@ -124,8 +148,7 @@ final class C2CStreamMessage {
                     sentIndex,
                     contentType,
                     snapshots.get(sourceIndex),
-                    eventId,
-                    msgId,
+                    rt,
                     streamMsgId,
                     msgSeq,
                     isWakeup
@@ -155,33 +178,8 @@ final class C2CStreamMessage {
         return lastMessageId;
     }
 
-    private Map<String, Object> streamPausedFallbackRequest(String eventId, String msgId, Boolean isWakeup) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("content_type", CONTENT_TYPE_TEXT);
-        request.put("content_raw", ChatService.emergencyPausedMessage());
-        request.put("input_mode", INPUT_MODE_REPLACE);
-        request.put("input_state", STREAM_STATE_END);
-        request.put("index", 0);
-        if (eventId != null) request.put("event_id", eventId);
-        if (msgId != null) {
-            request.put("msg_id", msgId);
-            request.put("msg_seq", msgSeqProvider.apply(msgId));
-        }
-        if (isWakeup != null) request.put("is_wakeup", isWakeup);
-        return request;
-    }
-
     private String doSend(String openId, Map<String, Object> request) {
         String url = privateStreamMessageUrl(openId);
-        if (ChatService.isEmergencyPaused() && !isPausedFallbackRequest(request)) {
-            String msgId = stringValue(request.get("msg_id"));
-            String eventId = stringValue(request.get("event_id"));
-            if (isBlank(msgId) && isBlank(eventId)) {
-                log.warn("单聊主动流式消息已被应急暂停拦截, openId: {}", openId);
-                return null;
-            }
-            request = streamPausedFallbackRequest(eventId, msgId, booleanValue(request.get("is_wakeup")));
-        }
         String json;
         try {
             json = objectMapper.writeValueAsString(request);
@@ -227,7 +225,7 @@ final class C2CStreamMessage {
     }
 
     private Map<String, Object> streamRequest(String inputMode, int inputState, int index, String contentType,
-                                              String contentRaw, String eventId, String msgId, String streamMsgId,
+                                              String contentRaw, RT rt, String streamMsgId,
                                               Integer msgSeq, Boolean isWakeup) {
         Map<String, Object> request = new HashMap<>();
         request.put("input_mode", inputMode);
@@ -235,24 +233,29 @@ final class C2CStreamMessage {
         request.put("index", index);
         request.put("content_type", contentType);
         request.put("content_raw", contentRaw);
-        if (eventId != null) request.put("event_id", eventId);
-        if (msgId != null) request.put("msg_id", msgId);
+        if (!Boolean.TRUE.equals(isWakeup)) {
+            putSource(request, rt);
+            if (msgSeq != null) request.put("msg_seq", msgSeq);
+        }
         if (streamMsgId != null) request.put("stream_msg_id", streamMsgId);
-        if (msgSeq != null) request.put("msg_seq", msgSeq);
         if (isWakeup != null) request.put("is_wakeup", isWakeup);
         return request;
     }
 
-    private boolean isPausedFallbackRequest(Map<String, Object> request) {
-        return request != null
-                && ChatService.emergencyPausedMessage().equals(stringValue(request.get("content_raw")))
-                && CONTENT_TYPE_TEXT.equals(stringValue(request.get("content_type")));
+    private boolean hasStreamReplyTarget(Map<String, Object> request) {
+        return request != null && (Boolean.TRUE.equals(request.get("is_wakeup")) || sourceOf(request) != null);
     }
 
-    private boolean hasStreamReplyTarget(Map<String, Object> request) {
-        return request != null
-                && (!isBlank(stringValue(request.get("msg_id")))
-                || !isBlank(stringValue(request.get("event_id"))));
+    private RT sourceOf(Map<String, Object> request) {
+        return MessageBodyFactory.sourceOf(stringValue(request.get("msg_id")), stringValue(request.get("event_id")));
+    }
+
+    private void putSource(Map<String, Object> request, RT rt) {
+        switch (rt) {
+            case null -> { }
+            case RT.Message message -> request.put("msg_id", message.id());
+            case RT.Event event -> request.put("event_id", event.id());
+        }
     }
 
     private String extractMessageId(JsonNode response) {
@@ -331,20 +334,6 @@ final class C2CStreamMessage {
 
     private String stringValue(Object value) {
         return value == null ? null : String.valueOf(value);
-    }
-
-    private Boolean booleanValue(Object value) {
-        if (value instanceof Boolean b) {
-            return b;
-        }
-        if (value instanceof String s && !s.isBlank()) {
-            return Boolean.parseBoolean(s);
-        }
-        return null;
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     private String await(CompletableFuture<String> future, String logType) {

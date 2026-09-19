@@ -5,6 +5,7 @@ import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
@@ -91,10 +92,14 @@ public class QQSenderImpl implements QQCommandSender {
     public String sendMessage(String text, boolean ref) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
-                return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, this.message.getRefIdx());
+                return ref
+                        ? this.user.sendMessage(this.groupId, this.message.getMessageId(), text, this.message.getRefIdx())
+                        : this.user.sendMessage(this.groupId, this.message.getMessageId(), text);
             }
             case OFFICIAL_C2C -> {
-                return C2CChat.refMessage(this.user.getUserId(), this.message.getRefIdx(), text);
+                return ref
+                        ? this.user.sendMessage(RT.message(this.message.getMessageId()), text, this.message.getRefIdx())
+                        : this.user.sendMessage(this.message.getMessageId(), text);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(String text, boolean ref)");
@@ -166,9 +171,40 @@ public class QQSenderImpl implements QQCommandSender {
     }
 
     @Override
+    public String sendMessage(ImageComponent image, boolean ref) {
+        if (!ref) {
+            return sendMessage(image);
+        }
+        RT rt = RT.message(this.message.getMessageId());
+        return switch (this.user.getPlatform()) {
+            case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, image, this.message.getRefIdx());
+            case OFFICIAL_C2C -> this.user.sendMessage(rt, image, this.message.getRefIdx());
+            default -> throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image, boolean ref)");
+        };
+    }
+
+    @Override
+    public String sendMessage(Markdown markdown, boolean at, boolean ref) {
+        return sendMessage(markdown, null, at, ref);
+    }
+
+    @Override
+    public String sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref) {
+        if (!ref) {
+            return sendMessage(markdown, buttons, at);
+        }
+        RT rt = RT.message(this.message.getMessageId());
+        return switch (this.user.getPlatform()) {
+            case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, markdown, buttons, at, this.message.getRefIdx());
+            case OFFICIAL_C2C -> this.user.sendMessage(rt, markdown, buttons, this.message.getRefIdx());
+            default -> throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref)");
+        };
+    }
+
+    @Override
     public String sendStreamTextMessage(List<String> textDeltas) {
         if (Objects.requireNonNull(this.user.getPlatform()) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyTextStreamDeltas(this.user.getUserId(), this.message.getMessageId(), textDeltas);
+            return C2CChat.replyTextStreamDeltas(this.user.getUserId(), RT.message(this.message.getMessageId()), textDeltas);
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendStreamTextMessage(List<String> textDeltas)");
     }
@@ -176,7 +212,7 @@ public class QQSenderImpl implements QQCommandSender {
     @Override
     public String sendStreamMarkdownMessage(List<Markdown> markdownDeltas) {
         if (Objects.requireNonNull(this.user.getPlatform()) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyStreamDeltas(this.user.getUserId(), this.message.getMessageId(), markdownDeltas);
+            return C2CChat.replyStreamDeltas(this.user.getUserId(), RT.message(this.message.getMessageId()), markdownDeltas);
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendStreamMarkdownMessage(List<Markdown> markdownDeltas)");
     }

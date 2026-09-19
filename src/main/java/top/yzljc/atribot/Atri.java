@@ -49,6 +49,8 @@ import top.yzljc.atribot.function.tasks.*;
 import top.yzljc.atribot.function.utils.*;
 import top.yzljc.atribot.function.utils.general.*;
 import top.yzljc.atribot.function.utils.napcat.*;
+import top.yzljc.atribot.function.utils.napcat.classtable.TeacherClassTableCommand;
+import top.yzljc.atribot.function.utils.napcat.classtable.TeacherClassTableService;
 import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.command.PicStatsCommand;
 import top.yzljc.atribot.function.command.PicSubmitCommand;
@@ -67,7 +69,7 @@ import top.yzljc.atribot.function.impl.tufe.TufeCheckHelp;
 import top.yzljc.atribot.function.command.TufeElectricBindCommand;
 import top.yzljc.atribot.function.command.TufeElectricQueryCommand;
 import top.yzljc.atribot.function.task.*;
-import top.yzljc.atribot.platform.napcat.RequestReceiver;
+import top.yzljc.atribot.platform.napcat.NapcatEventQueue;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
@@ -101,6 +103,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class Atri {
     private final SoundCommand soundCommand = new SoundCommand();
+    private final ItaQrcode itaQrcode = new ItaQrcode();
 
     @Getter
     private static Atri instance;
@@ -132,6 +135,8 @@ public class Atri {
     @Getter
     private final HypixelAnnouncements hypixelAnnouncements;
     @Getter
+    private final SkyblockAnnouncements hypixelSkyblockAnnouncements;
+    @Getter
     private final HypixelAlphaForums hypixelAlphaForums;
     @Getter
     private final SkyblockPackCheckImpl skyblockPackCheck;
@@ -143,6 +148,7 @@ public class Atri {
     private final Javalin server;
     private final OfficialManager qqBotManagerService;
     private final QQWebhookHandler qqWebhookHandler;
+    private final NapcatEventQueue napcatEventQueue = new NapcatEventQueue();
     private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
@@ -169,6 +175,7 @@ public class Atri {
         this.minecraftVersionCheck = new McVersionImpl();
         this.minecraftNews = new MinecraftNews();
         this.hypixelAnnouncements = new HypixelAnnouncements();
+        this.hypixelSkyblockAnnouncements = new SkyblockAnnouncements();
         this.hypixelAlphaForums = new HypixelAlphaForums();
         this.skyblockPackCheck = new SkyblockPackCheckImpl();
         this.tencentChannelCliClient = new ChannelCliClient(
@@ -210,8 +217,14 @@ public class Atri {
 
         server.post("/", ctx -> {
             JsonNode body = ctx.bodyAsClass(JsonNode.class);
-            String result = RequestReceiver.handle(body);
-            ctx.result(result).contentType("application/json");
+            if (body == null || !body.isObject()) {
+                ctx.status(400).json(java.util.Map.of("status", "invalid_payload"));
+            } else if (napcatEventQueue.offer(body, ctx.bodyAsBytes().length)) {
+                ctx.result("{\"status\":\"ok\"}").contentType("application/json");
+            } else {
+                ctx.header("Retry-After", "1").status(503)
+                        .json(java.util.Map.of("status", "busy"));
+            }
         });
 
         if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
@@ -220,6 +233,7 @@ public class Atri {
         }
 
         WebUIRouter.register(server);
+        itaQrcode.registerRoutes(server);
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
 
@@ -253,6 +267,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new FeedbackCommand());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
+        EventManager.getInstance().registerEvents(itaQrcode);
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         ClickTrainGame clickTrainGame = new ClickTrainGame();
         EventManager.getInstance().registerEvents(clickTrainGame);
@@ -269,6 +284,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new GroupJoinReviewListener());
         EventManager.getInstance().registerEvents(new WhatFuckingPing());
         EventManager.getInstance().registerEvents(new GroupJoinWelcome());
+        EventManager.getInstance().registerEvents(new ShareBotCommand());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -294,13 +310,14 @@ public class Atri {
         CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
         CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
+        CommandManager.getCommand("教师课表").setExecutor(new TeacherClassTableCommand());
 //        CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
         CommandManager.getCommand("info").setExecutor(new SizeNtUid());
 
 //        CommandManager.getCommand("stats").setExecutor(new PlayerProfile());
 //        CommandManager.getCommand("rc").setExecutor(new RconHandler());
         CommandManager.getCommand("test-whoami").setExecutor(new DebugWhoAmI());
-        CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
+//        CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new FeedbackCommand());
         CommandManager.getCommand("ogroup").setExecutor(new GroupManagementCommand());
@@ -314,6 +331,7 @@ public class Atri {
         CommandManager.getCommand("hitokoto").setExecutor(new HitokotoCommand());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
         CommandManager.getCommand("webui").setExecutor(new WebUICommand());
+        CommandManager.getCommand("ita-qrcode").setExecutor(itaQrcode);
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
         CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
@@ -327,6 +345,7 @@ public class Atri {
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("ema").setExecutor(new EmaCommand());
         CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
+        CommandManager.getCommand("check-hyp-skyblock").setExecutor(this.hypixelSkyblockAnnouncements);
         CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
@@ -352,7 +371,7 @@ public class Atri {
         CommandManager.getCommand("zs").setExecutor(new HypixelZombiesCommand());
         CommandManager.getCommand("time").setExecutor(new TimezoneCommand());
         CommandManager.getCommand("bantrack").setExecutor(new BanTrackCommand());
-        CommandManager.getCommand("weather").setExecutor(new WeatherCommand());
+//        CommandManager.getCommand("weather").setExecutor(new WeatherCommand());
         CommandManager.getCommand("mcv").setExecutor(new MinecraftVersionCommand());
         CommandManager.getCommand("mccape").setExecutor(new MinecraftCapeCommand());
         CommandManager.getCommand("skbpack").setExecutor(new SkyblockPackCommand());
@@ -361,6 +380,7 @@ public class Atri {
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());
         CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
+        CommandManager.getCommand("sharebot").setExecutor(new ShareBotCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -471,6 +491,8 @@ public class Atri {
         }
 
         qqWebhookHandler.close();
+        napcatEventQueue.close();
+        TeacherClassTableService.shutdown();
         soundCommand.close();
         groupProfileRefreshBatcher.close();
         pluginManager.close();

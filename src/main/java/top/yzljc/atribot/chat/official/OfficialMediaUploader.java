@@ -29,46 +29,58 @@ final class OfficialMediaUploader {
         this.bodyFactory = bodyFactory;
     }
 
-    MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId) {
-        return buildImageRequest(uploadUrl, type, value, logLabel, msgId, null);
-    }
-
-    MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel, String msgId, String eventId) {
-        return buildImageRequest(uploadUrl, type, value, logLabel, msgId, eventId, null);
-    }
-
     MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
-                                  String msgId, String eventId, String content) {
-        MessageBody paused = pausedMediaFallback(logLabel, msgId, eventId);
-        if (paused != null || ChatService.isEmergencyPaused()) {
-            return paused;
+                                  RT rt, String content) {
+        if (ChatService.isEmergencyPaused()) {
+            return pausedMediaFallback(uploadUrl, logLabel, rt);
         }
         String fileInfo = uploadImageFile(uploadUrl, type, value, logLabel);
         if (fileInfo == null) {
             return bodyFactory.text(UPLOAD_LIMIT_MESSAGE);
         }
-        MessageBody request = bodyFactory.media(fileInfo, msgId, eventId, content);
+        MessageBody request = bodyFactory.media(fileInfo, rt, content);
         request.setRecordAttachments(buildImageRecordAttachments(type, value));
         return request;
     }
 
-    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, String msgId) {
-        return buildFileRequest(uploadUrl, fileType, value, logLabel, msgId, false);
+    /**
+     * 上传并组装可引用指定消息的图片，主动和被动发送均可使用
+     *
+     * @param uploadUrl 图片上传地址
+     * @param type      图片数据类型
+     * @param value     图片 URL 或 Base64 数据
+     * @param logLabel  日志场景
+     * @param rt        消息或事件回复来源，主动消息传入 null
+     * @param content   图片附带文字
+     * @param refIdx    被引用消息的索引 ID，null 表示不引用
+     * @return 图片消息体；上传失败时保留原有文字回退，维护图片上传失败返回 null
+     */
+    MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
+                                  RT rt, String content, String refIdx) {
+        MessageBody request = buildImageRequest(uploadUrl, type, value, logLabel, rt, content);
+        if (request != null && refIdx != null && rt != null
+                && request.getMsgId() == null && request.getEventId() == null) {
+            request = bodyFactory.replyText(rt, request.getContent());
+        }
+        return bodyFactory.withReference(request, refIdx);
     }
 
-    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, String msgId,
+    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt) {
+        return buildFileRequest(uploadUrl, fileType, value, logLabel, rt, false);
+    }
+
+    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt,
                                  boolean requireMedia) {
         if (requireMedia && ChatService.isEmergencyPaused()) return null;
-        MessageBody paused = pausedMediaFallback(logLabel, msgId, null);
-        if (paused != null || ChatService.isEmergencyPaused()) {
-            return requireMedia ? null : paused;
+        if (ChatService.isEmergencyPaused()) {
+            return requireMedia ? null : pausedMediaFallback(uploadUrl, logLabel, rt);
         }
         String fileInfo = uploadFile(uploadUrl, fileType, value, logLabel, requireMedia);
         if (fileInfo == null) {
             if (requireMedia) return null;
             return bodyFactory.text(UPLOAD_LIMIT_MESSAGE);
         }
-        MessageBody request = bodyFactory.media(fileInfo, msgId);
+        MessageBody request = bodyFactory.media(fileInfo, rt);
         if (fileType == FileType.AUDIO) {
             var attachments = objectMapper.createArrayNode();
             var attachment = attachments.addObject();
@@ -80,18 +92,41 @@ final class OfficialMediaUploader {
         return request;
     }
 
-    private MessageBody pausedMediaFallback(String logLabel, String msgId, String eventId) {
-        if (!ChatService.isEmergencyPaused()) {
-            return null;
-        }
-        if (ChatService.isBlank(msgId) && ChatService.isBlank(eventId)) {
+    /**
+     * 处理暂停状态下的媒体回复，主动发送仍被拦截
+     *
+     * @param uploadUrl 图片上传地址
+     * @param logLabel  日志场景
+     * @param rt        消息或事件回复来源，主动消息为 null
+     * @return 维护图片消息，主动消息或上传失败时返回 null
+     */
+    private MessageBody pausedMediaFallback(String uploadUrl, String logLabel, RT rt) {
+        if (rt == null) {
             log.warn("{}媒体主动消息已被应急暂停拦截", logLabel);
             return null;
         }
-        if (!ChatService.isBlank(msgId)) {
-            return bodyFactory.replyText(msgId, ChatService.emergencyPausedMessage());
+        return buildMaintenanceImageRequest(uploadUrl, rt, logLabel);
+    }
+
+    /**
+     * 上传并组装维护图片，绕过普通媒体的暂停检查，避免重复替换
+     *
+     * @param uploadUrl 图片上传地址
+     * @param rt        消息或事件回复来源
+     * @param logLabel  日志场景
+     * @return 维护图片消息，上传失败时返回 null，不回退为纯文本
+     */
+    MessageBody buildMaintenanceImageRequest(String uploadUrl, RT rt, String logLabel) {
+        java.util.Objects.requireNonNull(rt, "维护图片必须携带被动回复来源");
+        var image = ChatService.emergencyPausedMessage();
+        String fileInfo = uploadImageFile(uploadUrl, image.getType(), image.getData(), logLabel + "维护图片");
+        if (fileInfo == null) {
+            return null;
         }
-        return bodyFactory.eventText(eventId, ChatService.emergencyPausedMessage());
+        MessageBody request = bodyFactory.media(fileInfo, rt, image.getText());
+        request.setRecordAttachments(buildImageRecordAttachments(image.getType(), image.getData()));
+        request.setMaintenanceReply(true);
+        return request;
     }
 
     private String uploadImageFile(String uploadUrl, ImageType type, String value, String logLabel) {

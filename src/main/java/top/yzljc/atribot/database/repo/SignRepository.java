@@ -90,63 +90,65 @@ public class SignRepository {
         long now = System.currentTimeMillis();
 
         try (var con = DatabaseManager.getConnection()) {
-
-            // 查询今日打卡人数，用于计算排名
-            int rank;
-            String countSql = "SELECT COUNT(*) FROM `check_in_daily` WHERE `check_in_date` = ?";
-            try (var ps = con.prepareStatement(countSql)) {
-                ps.setDate(1, Date.valueOf(today));
-                try (var rs = ps.executeQuery()) {
-                    rs.next();
-                    rank = rs.getInt(1) + 1;
+            con.setAutoCommit(false);
+            try {
+                // 排名按查询时已提交的记录计算，不串行锁定全体用户。
+                int rank;
+                String countSql = "SELECT COUNT(*) FROM `check_in_daily` WHERE `check_in_date` = ?";
+                try (var ps = con.prepareStatement(countSql)) {
+                    ps.setDate(1, Date.valueOf(today));
+                    try (var rs = ps.executeQuery()) {
+                        rs.next();
+                        rank = rs.getInt(1) + 1;
+                    }
                 }
-            }
 
-            // 根据排名计算硬币奖励
-            int coins = calculateCoins(rank);
+                int coins = calculateCoins(rank);
 
-            // 插入日表记录（唯一键约束防止重复打卡）
-            String insertDaily = "INSERT INTO `check_in_daily` (`user_open_id`, `check_in_time`, `check_in_date`, `coins`) VALUES (?, ?, ?, ?)";
-            try (var ps = con.prepareStatement(insertDaily)) {
-                ps.setString(1, userOpenId);
-                ps.setLong(2, now);
-                ps.setDate(3, Date.valueOf(today));
-                ps.setInt(4, coins);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                if (e.getMessage() != null && e.getMessage().contains("Duplicate")) {
-                    return null; // 今日已打卡
+                // 日记录的唯一键负责阻止重复签到，累计次数与奖励随其一并提交。
+                String insertDaily = "INSERT INTO `check_in_daily` (`user_open_id`, `check_in_time`, `check_in_date`, `coins`) VALUES (?, ?, ?, ?)";
+                try (var ps = con.prepareStatement(insertDaily)) {
+                    ps.setString(1, userOpenId);
+                    ps.setLong(2, now);
+                    ps.setDate(3, Date.valueOf(today));
+                    ps.setInt(4, coins);
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    if (e.getErrorCode() == 1062) {
+                        con.rollback();
+                        return null;
+                    }
+                    throw e;
                 }
+
+                String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`) " +
+                        "VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?";
+                try (var ps = con.prepareStatement(upsertTotal)) {
+                    ps.setString(1, userOpenId);
+                    ps.setDate(2, Date.valueOf(today));
+                    ps.setDate(3, Date.valueOf(today));
+                    ps.executeUpdate();
+                }
+
+                int totalCount;
+                String totalSql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
+                try (var ps = con.prepareStatement(totalSql)) {
+                    ps.setString(1, userOpenId);
+                    try (var rs = ps.executeQuery()) {
+                        rs.next();
+                        totalCount = rs.getInt("total_count");
+                    }
+                }
+
+                // 复用当前事务连接，保证签到记录与权威余额同时生效。
+                LootRepository.addCoins(con, userOpenId, coins);
+                int totalCoins = LootRepository.getCoins(con, userOpenId);
+                con.commit();
+                return new CheckInResult(rank, totalCount, coins, totalCoins);
+            } catch (Exception e) {
+                LootRepository.rollback(con, e);
                 throw e;
             }
-
-            // 更新总表累计打卡次数（金粒余额的权威数据源已迁移至 user_loots，见下方 LootRepository.addCoins）
-            String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`) " +
-                    "VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?";
-            try (var ps = con.prepareStatement(upsertTotal)) {
-                ps.setString(1, userOpenId);
-                ps.setDate(2, Date.valueOf(today));
-                ps.setDate(3, Date.valueOf(today));
-                ps.executeUpdate();
-            }
-
-            // 获取累计打卡次数
-            int totalCount;
-            String totalSql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
-            try (var ps = con.prepareStatement(totalSql)) {
-                ps.setString(1, userOpenId);
-                try (var rs = ps.executeQuery()) {
-                    rs.next();
-                    totalCount = rs.getInt("total_count");
-                }
-            }
-
-            // 金粒改为写入 user_loots（抽卡系统的权威数据源），不再累加 check_in_total.total_coins
-            LootRepository.addCoins(userOpenId, coins);
-            int totalCoins = LootRepository.getCoins(userOpenId);
-
-            return new CheckInResult(rank, totalCount, coins, totalCoins);
-
         } catch (Exception e) {
             log.error("打卡失败，userOpenId: {}", userOpenId, e);
             return null;

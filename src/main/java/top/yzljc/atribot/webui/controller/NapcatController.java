@@ -123,7 +123,7 @@ public class NapcatController {
 
         long start = System.currentTimeMillis();
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpService.newRequestBuilder()
                     .uri(URI.create(targetUrl))
                     .header("Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
 
@@ -158,6 +158,7 @@ public class NapcatController {
                     System.currentTimeMillis() - start
             )));
         } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             ctx.json(Result.fail(500, e.getClass().getSimpleName() + ": " + e.getMessage()));
         }
     }

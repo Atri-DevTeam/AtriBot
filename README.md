@@ -370,6 +370,17 @@ Napcat 使用 `MessageSegment(String type, Map<String, Object> data)` 表示消�
 
 #### 群聊消息
 
+被动回复统一使用 `RT`（Reply Trigger，被动回复来源），放在目标 ID 后面：
+
+- `RT.message(msgId)`：收到的消息驱动，写入 `msg_id`，沿用原有序号分配机制。
+- `RT.event(eventId)`：事件驱动，写入 `event_id`，不自动分配消息回复序号。
+- 主动发送使用 `sendMessage(...)`，没有 RT；`refIdx` 只控制引用，不改变发送来源。
+
+消息 ID 和事件 ID 必须非空，两者通过 RT 的不同类型互斥。`RT` 不会自动推断 ID 类型。
+原 `replyEventMessage(...)` 已合并为 `replyMessage(target, RT.event(eventId), ...)`；
+原消息回复的字符串 ID 改为 `RT.message(msgId)`。指定 `@` 用户时，参数顺序统一为 `target, rt, userOpenId, markdown`。
+`User`、`QQCommandSender` 的已有便捷方法继续可用，内部已接入 RT。
+
 ```java
 // 发送纯文本
 GroupChat.sendMessage(groupOpenId, "你好世界");
@@ -406,27 +417,43 @@ GroupChat.sendMessage(groupOpenId, ImageComponent.imageOf("https://example.com/i
 GroupChat.sendMessage(groupOpenId, new ImageComponent("base64...", ImageType.BASE64));
 
 // 回复文本消息
-GroupChat.replyMessage(groupOpenId, msgId, "回复文本");
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), "回复文本");
 
 // 回复 Markdown（会自动 @ 原消息发送者）
-GroupChat.replyMessage(groupOpenId, userOpenId, msgId, TC.md("回复的 **Markdown**"));
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), userOpenId, TC.md("回复的 **Markdown**"));
 
 // 回复 Markdown 带键盘
-GroupChat.replyMessage(groupOpenId, userOpenId, msgId, TC.md("选一个："), keyboard);
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), userOpenId, TC.md("选一个："), keyboard);
 
 // 回复图片
-GroupChat.replyMessage(groupOpenId, msgId, ImageComponent.imageOf("https://example.com/img.png"));
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"));
 
 // 回复文件（FileType.IMAGE / VIDEO / AUDIO / FILE）
-GroupChat.replyMessage(groupOpenId, msgId, FileType.FILE, "fileUrl");
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), FileType.FILE, "fileUrl");
 
-// 引用回复（refMessage，传入 ref_idx）
+// 主动发送并引用（没有 RT，不属于被动回复）
 GroupChat.refMessage(groupOpenId, refIdx, "引用内容");
+GroupChat.refMessage(groupOpenId, refIdx, ImageComponent.imageOf("https://example.com/img.png"));
+GroupChat.refMessage(groupOpenId, refIdx, TC.md("主动 Markdown 引用"));
+GroupChat.refMessage(groupOpenId, refIdx, TC.md("主动引用 + 键盘"), keyboard);
+
+// sendMessage 也支持主动引用，Markdown 无键盘时传 null
+GroupChat.sendMessage(groupOpenId, ImageComponent.imageOf("https://example.com/img.png"), refIdx);
+GroupChat.sendMessage(groupOpenId, TC.md("主动引用"), null, refIdx);
+
+// 被动回复并引用：RT 与 refIdx 独立，可引用当前消息或其他消息
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), "引用内容", refIdx);
+GroupChat.replyMessage(groupOpenId, RT.event(eventId), "事件回复并引用", refIdx);
+
+// 图片 / Markdown 被动回复并引用；Markdown 无键盘时传 null
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"), refIdx);
+GroupChat.replyMessage(groupOpenId, RT.message(msgId), TC.md("引用回复"), null, refIdx);
+GroupChat.replyMessage(groupOpenId, RT.event(eventId), userOpenId, TC.md("@ + 键盘 + 引用"), keyboard, refIdx);
 
 // 群事件回复（Markdown / 文本 / 图片 / 键盘）
-GroupChat.replyEventMessage(groupOpenId, eventId, TC.md("event reply"));
-GroupChat.replyEventMessage(groupOpenId, memberOpenId, eventId, TC.md("event reply with @"));
-GroupChat.replyEventMessage(groupOpenId, eventId, TC.md("event reply"), keyboard);
+GroupChat.replyMessage(groupOpenId, RT.event(eventId), TC.md("event reply"));
+GroupChat.replyMessage(groupOpenId, RT.event(eventId), memberOpenId, TC.md("event reply with @"));
+GroupChat.replyMessage(groupOpenId, RT.event(eventId), TC.md("event reply"), keyboard);
 
 // 撤回消息
 GroupChat.recallMessage(groupOpenId, messageId);
@@ -438,6 +465,11 @@ GroupChat.recallMessage(groupOpenId, messageId);
 // 发送文本
 C2CChat.sendMessage(openId, "你好");
 
+// 正在输入提示：正常返回 {} 即为成功，不需要 RT 或 refIdx
+boolean notified = C2CChat.sendInputNotify(openId); // 默认 60 秒
+C2CChat.sendInputNotify(openId, 30);               // 指定持续秒数
+AsyncC2CChat.sendInputNotify(openId, 60);          // CompletableFuture<Boolean>
+
 // 发送 Markdown
 C2CChat.sendMessage(openId, TC.md("**你好**，这是 Markdown"));
 
@@ -448,22 +480,54 @@ C2CChat.sendMessage(openId, TC.md("请选择："), keyboard);
 C2CChat.sendMessage(openId, ImageComponent.imageOf("https://example.com/img.png"));
 
 // 回复消息（文本/Markdown/图片/键盘）
-C2CChat.replyMessage(openId, msgId, "回复文本");
-C2CChat.replyMessage(openId, msgId, TC.md("**回复** Markdown"));
-C2CChat.replyMessage(openId, msgId, ImageComponent.imageOf("https://example.com/img.png"));
-C2CChat.replyMessage(openId, msgId, TC.md("选一个："), keyboard);
+C2CChat.replyMessage(openId, RT.message(msgId), "回复文本");
+C2CChat.replyMessage(openId, RT.message(msgId), TC.md("**回复** Markdown"));
+C2CChat.replyMessage(openId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"));
+C2CChat.replyMessage(openId, RT.message(msgId), TC.md("选一个："), keyboard);
 
-// 引用回复
+// 主动发送并引用
 C2CChat.refMessage(openId, refIdx, "引用内容");
+C2CChat.refMessage(openId, refIdx, ImageComponent.imageOf("https://example.com/img.png"));
+C2CChat.refMessage(openId, refIdx, TC.md("主动 Markdown 引用"));
+C2CChat.refMessage(openId, refIdx, TC.md("主动引用 + 键盘"), keyboard);
+
+// 仅携带 message_reference，不携带 msg_id、event_id 或 msg_seq
+C2CChat.sendMessage(openId, ImageComponent.imageOf("https://example.com/img.png"), refIdx);
+C2CChat.sendMessage(openId, TC.md("主动引用"), null, refIdx);
+
+// 被动回复并引用
+C2CChat.replyMessage(openId, RT.message(msgId), "引用内容", refIdx);
+C2CChat.replyMessage(openId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"), refIdx);
+C2CChat.replyMessage(openId, RT.message(msgId), TC.md("引用回复"), null, refIdx);
+C2CChat.replyMessage(openId, RT.event(eventId), TC.md("键盘 + 引用"), keyboard, refIdx);
+
+// AsyncGroupChat / AsyncC2CChat 提供相同参数的异步入口
+// QQCommandSender 中群聊和私聊均可使用；Markdown 的 at、ref 分别控制 @ 和引用
+sender.sendMessage(ImageComponent.imageOf("https://example.com/img.png"), true);
+sender.sendMessage(TC.md("引用回复"), true, true);
+sender.sendMessage(TC.md("键盘 + 引用"), keyboard, false, true);
 
 // 私聊事件回复
-C2CChat.replyEventMessage(openId, eventId, TC.md("event reply"));
+C2CChat.replyMessage(openId, RT.event(eventId), TC.md("event reply"));
 
-// 流式消息（增量更新）
-C2CChat.streamDeltas(openId, List.of(TC.md("第一段"), TC.md("第二段")));
-C2CChat.replyStreamDeltas(openId, msgId, List.of(TC.md("增量1"), TC.md("增量2")));
-C2CChat.streamTextDeltas(openId, List.of("文本1", "文本2"));
-C2CChat.replyTextStreamDeltas(openId, msgId, List.of("增量1", "增量2"));
+// 私聊召回消息：is_wakeup=true，不传 RT、msg_id、event_id、refIdx，也不分配 msg_seq
+C2CChat.wakeupMessage(openId, "召回文本");
+C2CChat.wakeupMessage(openId, ark23);
+C2CChat.wakeupMessage(openId, TC.md("召回 **Markdown**"));
+C2CChat.wakeupMessage(openId, TC.md("召回 + 键盘"), keyboard);
+C2CChat.wakeupMessage(openId, ImageComponent.imageOf("https://example.com/img.png").setText("图片附文"));
+C2CChat.wakeupAudioMessage(openId, "https://example.com/audio.mp3");
+C2CChat.wakeupMessage(openId, FileType.VIDEO, "https://example.com/video.mp4");
+C2CChat.wakeupMessage(openId, FileType.FILE, "https://example.com/file.zip");
+
+// 流式召回同样不需要回复来源；AsyncC2CChat 提供上述各类型的同名异步入口
+C2CChat.wakeupTextStreamDeltas(openId, List.of("第一段", "第二段"));
+C2CChat.wakeupStreamDeltas(openId, List.of(TC.md("第一段"), TC.md("第二段")));
+
+// 流式回复（增量更新，需要消息或事件来源）
+C2CChat.replyStreamDeltas(openId, RT.message(msgId), List.of(TC.md("增量1"), TC.md("增量2")));
+C2CChat.replyTextStreamDeltas(openId, RT.message(msgId), List.of("增量1", "增量2"));
+C2CChat.replyStreamDeltas(openId, RT.event(eventId), List.of(TC.md("增量1"), TC.md("增量2")));
 
 // 撤回
 C2CChat.recallMessage(openId, messageId);
@@ -473,12 +537,12 @@ C2CChat.recallMessage(openId, messageId);
 
 ```java
 // 文字子频道被动回复
-GuildChannelChat.replyMessage(channelId, msgId, "回复内容");
-GuildChannelChat.replyMessage(channelId, msgId, ImageComponent.imageOf("https://example.com/img.png"));
+GuildChannelChat.replyMessage(channelId, RT.message(msgId), "回复内容");
+GuildChannelChat.replyMessage(channelId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"));
 
 // 频道私信被动回复
-GuildDirectChat.replyMessage(guildId, msgId, "回复内容");
-GuildDirectChat.replyImageMessage(guildId, msgId, ImageComponent.imageOf("https://example.com/img.png"));
+GuildDirectChat.replyMessage(guildId, RT.message(msgId), "回复内容");
+GuildDirectChat.replyMessage(guildId, RT.message(msgId), ImageComponent.imageOf("https://example.com/img.png"));
 ```
 
 > 频道第二账号的调用由 `top.yzljc.sakuraba_ema.ChannelCliClient` 统一执行，业务层通过 `ChannelPosts`、`ChannelComments`、`ChannelPrivateChat` 等静态类使用。完整分类、64 个命令入口和发送示例见 [频道第二账号静态调用索引](docs/sakuraba-ema-calls.md)。
@@ -1061,6 +1125,10 @@ String reply = aiService.askWithSystemPrompt("你好", "你是一个助手");
 | `personal/AutoSendPtt` | 自动语音 | 定时发送语音消息 |
 | `impl/MojiraIssueSummarizer` | Mojira 描述 AI 翻译 | 调用 AI 把英文 issue 翻成中文 |
 | `classtable/` | 课表查询 | `ClassTableQueryUtil` + `ProcessClassTable` |
+
+教师跨班课表仅响应官方 QQ 群聊和单聊，可使用 `/教师课表 <姓名> [周次数字|本周|上周|下周]`，别名为 `/老师课表`、`/teacher`。默认查询本周周一至周日，例如 `/教师课表 宋丽红`、`/老师课表 宋丽红 下周`、`/teacher 宋丽红 5`（第 5 周）。结果使用 Markdown 展示日期、节次、课程、教室和班级；提供上一周、下一周、回到本周、指定周次和换老师按钮。“指定周次”会把指令填入输入框，修改数字后发送即可。合班课程会合并，课程过多时可翻页查看同一周的其余课程，未完整同步的数据会明确提示。
+
+该指令汇总课表接口当前学期提供的全部班级，不依赖 `/tufe` 的群提醒开关。首次查询会低频同步，可点击“查看进度 / 结果”按钮再次查询，不保留延迟回复；完整数据缓存 6 小时，保存至 `data/teacher-class-table-cache.json`，重启后可继续使用。缓存过期时先返回已有数据并在后台更新，同步失败后至少等待 5 分钟再重试。学期及日期范围沿用 `ProcessClassTable` 的 `SEMESTER`、`SEMESTER_START`、`SEMESTER_END`。
 
 ### 官方机器人功能（`function/official/`）
 

@@ -32,21 +32,56 @@ public class BotEvents {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    private record ParsedMessageReference(String msgIdx, MessageReference reference) {}
+
+    // 群聊、私聊和群 @ 共用解析，当前消息索引与引用来源索引分别保存。
+    private static ParsedMessageReference parseMessageReference(JsonNode eventData) {
+        String msgIdx = null;
+        String refMsgIdx = null;
+        JsonNode ext = eventData.path("message_scene").path("ext");
+        if (ext.isArray()) {
+            for (JsonNode item : ext) {
+                if (!item.isTextual()) continue;
+                String value = item.textValue();
+                if (value.startsWith("msg_idx=")) {
+                    msgIdx = value.substring("msg_idx=".length());
+                } else if (value.startsWith("ref_msg_idx=")) {
+                    refMsgIdx = value.substring("ref_msg_idx=".length());
+                }
+                if (msgIdx != null && refMsgIdx != null) break;
+            }
+        }
+
+        JsonNode previewNode = eventData.path("parallel_message").path("msg_nodes").path(0);
+        JsonNode elements = eventData.path("msg_elements");
+        // path(0) 对空数组返回 MissingNode，也兼容旧的单对象格式。
+        JsonNode referenceNode = elements.isArray() ? elements.path(0) : elements;
+        if (refMsgIdx == null) {
+            refMsgIdx = referenceNode.path("msg_idx").asText(null);
+        }
+        MessageReference reference = new MessageReference(
+                refMsgIdx,
+                previewNode.path("content").asText(null),
+                previewNode.path("message_type").asInt(-1),
+                referenceNode.path("content").asText(null));
+        return new ParsedMessageReference(msgIdx, reference);
+    }
+
     public static void handleGroupChatEvent(JsonNode eventData) {
         try {
             boolean isBot = eventData.path("author").get("bot").asBoolean(false);
             String content = eventData.get("content").asText();
             String groupOpenId = eventData.get("group_openid").asText(null);
             String username = eventData.path("author").get("username").asText();
-            String unionOpenId = eventData.path("author").get("member_openid").asText(null);
+            String userOpenId = eventData.path("author").get("member_openid").asText(null);
             String messageId = eventData.path("id").asText(null);
             String timestamp = eventData.get("timestamp").asText();
             int messageType = eventData.path("message_type").asInt(-1);
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
-            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
-            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
-            String refIdx = extValue.substring(8);
+            var parsedReference = parseMessageReference(eventData);
+            String msgIdx = parsedReference.msgIdx();
+            MessageReference refMsgObj = parsedReference.reference();
 
             PlatformRole role = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
 
@@ -69,8 +104,8 @@ public class BotEvents {
                 }
             }
 
-            User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_GROUP_MESSAGE);
+            User sender = new User(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, mapper.createObjectNode());
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_MESSAGE);
             OfficialGroupMessageCreateEvent event = new OfficialGroupMessageCreateEvent(sender, groupOpenId, msg, timestamp, isAtBot);
             EventManager.getInstance().callEvent(event);
 
@@ -84,18 +119,18 @@ public class BotEvents {
             boolean isBot = eventData.path("author").get("bot").asBoolean(false);
             String content = eventData.get("content").asText();
             String username = eventData.path("author").get("username").asText();
-            String unionOpenId = eventData.path("author").get("user_openid").asText(null);
+            String userOpenId = eventData.path("author").get("user_openid").asText(null);
             String messageId = eventData.path("id").asText(null);
             int messageType = eventData.path("message_type").asInt(-1);
             String timestamp = eventData.get("timestamp").asText();
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
-            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
-            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
-            String refIdx = extValue.substring(8);
+            var parsedReference = parseMessageReference(eventData);
+            String msgIdx = parsedReference.msgIdx();
+            MessageReference refMsgObj = parsedReference.reference();
 
-            User sender = new User(Platform.OFFICIAL_C2C, isBot, unionOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_C2C_MESSAGE);
+            User sender = new User(Platform.OFFICIAL_C2C, isBot, userOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_C2C_MESSAGE);
             OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
@@ -109,15 +144,15 @@ public class BotEvents {
             String content = eventData.get("content").asText();
             String groupOpenId = eventData.get("group_openid").asText(null);
             String username = eventData.path("author").get("username").asText();
-            String unionOpenId = eventData.path("author").get("member_openid").asText(null);
+            String userOpenId = eventData.path("author").get("member_openid").asText(null);
             String messageId = eventData.path("id").asText(null);
             int messageType = eventData.path("message_type").asInt(-1);
             String timestamp = eventData.get("timestamp").asText();
             JsonNode attachment = eventData.has("attachments") ? eventData.get("attachments") : null;
-            JsonNode msgRef = eventData.has("msg_elements") ? eventData.get("msg_elements") : null;
             JsonNode ark = eventData.path("ark_data").isMissingNode() ? null : eventData.path("ark_data");
-            String extValue = eventData.path("message_scene").path("ext").get(0).asText();
-            String refIdx = extValue.substring(8);
+            var parsedReference = parseMessageReference(eventData);
+            String msgIdx = parsedReference.msgIdx();
+            MessageReference refMsgObj = parsedReference.reference();
 
             PlatformRole role = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
 
@@ -134,8 +169,8 @@ public class BotEvents {
                 }
             }
 
-            User sender = new User(Platform.OFFICIAL_GROUP, isBot, unionOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, refIdx, attachment, ark, msgRef, EventType.OFFICIAL_GROUP_AT_MESSAGE);
+            User sender = new User(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, mapper.createObjectNode());
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_AT_MESSAGE);
             OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(sender, msg, groupOpenId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {

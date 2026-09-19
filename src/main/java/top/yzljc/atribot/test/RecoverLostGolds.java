@@ -42,6 +42,13 @@ public class RecoverLostGolds implements CommandExecutor {
                         return true;
                     }
                 }
+                case "getmygolds" -> {
+                    if (CoinGainLogRepository.countCoinGains(userId, "read_doc") < 1) {
+                        LootRepository.addCoins(userId, 100, "read_doc");
+                        qq.sendMessage("领取成功！");
+                        return true;
+                    }
+                }
             }
             return true;
         }
