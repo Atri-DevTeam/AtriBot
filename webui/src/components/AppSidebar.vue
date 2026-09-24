@@ -109,13 +109,6 @@
         </svg>
         <span class="side-nav-label">群管系统</span>
       </button>
-      <button class="side-nav-item" :class="{ active: route.path === '/join-welcome' }" title="入群欢迎" @click="go('/join-welcome')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 11.5a8.5 8.5 0 0 1-12 7.7L3 21l1.8-6A8.5 8.5 0 1 1 21 11.5Z" />
-          <path d="M8 12h8M12 8v8" />
-        </svg>
-        <span class="side-nav-label">入群欢迎</span>
-      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/menu-panel' }" title="菜单与面板" @click="go('/menu-panel')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6" />
@@ -124,6 +117,7 @@
         </svg>
         <span class="side-nav-label">菜单与面板</span>
       </button>
+      <!-- ErrorReport 暂时停用：保留入口源码，恢复时同步取消 router.js 中路由的注释。
       <button class="side-nav-item" :class="{ active: route.path === '/errors' }" @click="go('/errors')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -132,6 +126,7 @@
         </svg>
         <span class="side-nav-label">错误报告</span>
       </button>
+      -->
       <button class="side-nav-item" :class="{ active: route.path === '/send-logs' }" @click="go('/send-logs')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 5.5h9" />

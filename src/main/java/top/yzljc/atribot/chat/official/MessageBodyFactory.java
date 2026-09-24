@@ -1,5 +1,6 @@
 package top.yzljc.atribot.chat.official;
 
+import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.chat.official.media.GroupMessageType;
 
 import java.util.HashMap;
@@ -45,22 +46,50 @@ final class MessageBodyFactory {
     }
 
     public MessageBody markdown(Markdown markdown) {
+
+        // 2026/9/20 新增：兼容新的 Keyboard 对象类型输入
+        if (markdown.getKeyboard() != null) {
+            return markdown(markdown, markdown.getKeyboard(), null);
+        }
+
         return markdown(markdown, null, null);
     }
 
     public MessageBody markdown(Markdown markdown, Object keyboard) {
+
+        // 2026/9/20 新增：兼容新的 Keyboard 对象类型输入
+        if (keyboard == null) {
+            keyboard = markdown.getKeyboard();
+        }
+
         return markdown(markdown, keyboard, null);
     }
 
     public MessageBody markdown(Markdown markdown, Object keyboard, RT rt) {
+
+        // 2026/9/20 新增：兼容新的 Keyboard 对象类型输入
+        if (keyboard == null) {
+            keyboard = markdown.getKeyboard();
+        }
+
         MessageBody.MessageBodyBuilder builder = builder(rt, true)
                 .msgType(GroupMessageType.MARKDOWN.getValue())
                 .markdown(markdown);
         if (keyboard != null) {
-            if (hasField(keyboard, "keyboard")) {
-                builder.promptKeyboard(keyboard);
+
+            // 2026/9/20 新增：兼容新的 Keyboard 对象类型输入
+            if (keyboard instanceof Keyboard k) {
+                if (k.isPromptStyle()) {
+                    builder.promptKeyboard(k.toKeyboardObject());
+                } else {
+                    builder.keyboard(k.toKeyboardObject());
+                }
             } else {
-                builder.keyboard(keyboard);
+                if (hasField(keyboard, "keyboard")) {
+                    builder.promptKeyboard(keyboard);
+                } else {
+                    builder.keyboard(keyboard);
+                }
             }
         }
         return builder.build();
@@ -198,6 +227,13 @@ final class MessageBodyFactory {
         return builder(rt, false)
                 .image(imageUrl)
                 .content(text)
+                .build();
+    }
+
+    public MessageBody embeds(RT rt, Embed embed) {
+        return MessageBody.builder().msgType(GroupMessageType.EMBED.getValue())
+                .embed(embed.toPayload())
+                .msgId(rt.id())
                 .build();
     }
 

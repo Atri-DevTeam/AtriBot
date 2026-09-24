@@ -44,4 +44,17 @@ public final class AsyncGuildChannelChat {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
         return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().guildImage(image.getData(), rt, image.getText()));
     }
+
+    /**
+     * 异步发送频道文字子频道 Embed 被动消息
+     *
+     * @param channelId 私聊状态下获取到的频道 ID
+     * @param rt      消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param embed   Embed 消息
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String channelId, RT rt, Embed embed) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().embeds(rt, embed));
+    }
 }

@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.2.2-Release"
+version = "3.2.3-Release"
 description = "AtriBot"
 
 repositories {
@@ -35,7 +35,6 @@ dependencies {
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
-    implementation("com.google.zxing:core:3.5.4")
     api("com.fasterxml.jackson.core:jackson-databind:2.22.2")
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
@@ -114,7 +113,7 @@ tasks.processResources {
     filesMatching("**/*") {
         val isBinary = nonFilteredExtensions.any { name.endsWith(".$it", ignoreCase = true) }
         val isGitProps = name == "git.properties"
-        val isOfficialWebuiAsset = path.startsWith("official-webui/")
+        val isOfficialWebuiAsset = path.startsWith("official-webui/") || path.startsWith("miniapp/")
 
         if (!isBinary && !isGitProps && !isOfficialWebuiAsset) {
             expand(

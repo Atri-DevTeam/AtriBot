@@ -235,61 +235,61 @@ public class AdminController {
 
     // ============ 错误报告 ============
 
-    public static void listErrorReports(Context ctx) {
-        int page = parseInt(ctx.queryParam("page"), 1);
-        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
-        if (pageSize > 200) {
-            pageSize = 200;
-        }
-        String keyword = ctx.queryParam("keyword");
-        String exceptionType = ctx.queryParam("exceptionType");
-
-        int total = ErrorReportRepository.count(keyword, exceptionType);
-        List<ErrorItemDTO> items = ErrorReportRepository.findPaginated(page, pageSize, keyword, exceptionType)
-                .stream()
-                .map(AdminController::toErrorItem)
-                .toList();
-
-        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
-    }
+//    public static void listErrorReports(Context ctx) {
+//        int page = parseInt(ctx.queryParam("page"), 1);
+//        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+//        if (pageSize > 200) {
+//            pageSize = 200;
+//        }
+//        String keyword = ctx.queryParam("keyword");
+//        String exceptionType = ctx.queryParam("exceptionType");
+//
+//        int total = ErrorReportRepository.count(keyword, exceptionType);
+//        List<ErrorItemDTO> items = ErrorReportRepository.findPaginated(page, pageSize, keyword, exceptionType)
+//                .stream()
+//                .map(AdminController::toErrorItem)
+//                .toList();
+//
+//        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
+//    }
 
     /**
      * 按 traceId 查询单条错误详情，含完整堆栈
      */
-    public static void getErrorReport(Context ctx) {
-        String traceId = ctx.pathParam("traceId");
-        if (isBlank(traceId)) {
-            ctx.json(Result.fail(400, "traceId 不能为空"));
-            return;
-        }
+//    public static void getErrorReport(Context ctx) {
+//        String traceId = ctx.pathParam("traceId");
+//        if (isBlank(traceId)) {
+//            ctx.json(Result.fail(400, "traceId 不能为空"));
+//            return;
+//        }
+//
+//        ErrorReportDTO report = ErrorReportRepository.findByTraceId(traceId.trim());
+//        if (report == null) {
+//            ctx.json(Result.fail(404, "未找到该 traceId 对应的错误报告"));
+//            return;
+//        }
+//
+//        ctx.json(Result.success(new ErrorDetailDTO(
+//                report.getTraceId(),
+//                report.getClassName(),
+//                report.getExceptionType(),
+//                report.getExceptionMessage(),
+//                report.getStackTrace() != null ? report.getStackTrace() : List.of(),
+//                report.getCauseType(),
+//                report.getCauseMessage(),
+//                report.getCauseStackTrace() != null ? report.getCauseStackTrace() : List.of(),
+//                formatFeedbackTime(report.getCreateTime())
+//        )));
+//    }
 
-        ErrorReportDTO report = ErrorReportRepository.findByTraceId(traceId.trim());
-        if (report == null) {
-            ctx.json(Result.fail(404, "未找到该 traceId 对应的错误报告"));
-            return;
-        }
-
-        ctx.json(Result.success(new ErrorDetailDTO(
-                report.getTraceId(),
-                report.getClassName(),
-                report.getExceptionType(),
-                report.getExceptionMessage(),
-                report.getStackTrace() != null ? report.getStackTrace() : List.of(),
-                report.getCauseType(),
-                report.getCauseMessage(),
-                report.getCauseStackTrace() != null ? report.getCauseStackTrace() : List.of(),
-                formatFeedbackTime(report.getCreateTime())
-        )));
-    }
-
-    public static void errorReportStats(Context ctx) {
-        ctx.json(Result.success(new ErrorStatsDTO(
-                ErrorReportRepository.count(null, null),
-                ErrorReportRepository.countSince(24),
-                ErrorReportRepository.countSince(24 * 7),
-                ErrorReportRepository.topExceptionTypes(8)
-        )));
-    }
+//    public static void errorReportStats(Context ctx) {
+//        ctx.json(Result.success(new ErrorStatsDTO(
+//                ErrorReportRepository.count(null, null),
+//                ErrorReportRepository.countSince(24),
+//                ErrorReportRepository.countSince(24 * 7),
+//                ErrorReportRepository.topExceptionTypes(8)
+//        )));
+//    }
 
     private static ErrorItemDTO toErrorItem(ErrorReportDTO report) {
         return new ErrorItemDTO(

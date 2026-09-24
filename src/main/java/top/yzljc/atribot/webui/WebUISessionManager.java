@@ -96,10 +96,9 @@ public class WebUISessionManager {
             if (expiresAt == null) return false;
             if (System.nanoTime() - expiresAt >= 0) {
                 sessions.remove(sessionId);
-                SseBroadcaster.closeSession(sessionId);
                 return false;
             }
-            // 普通请求及 SSE 心跳均不续期，服务端与浏览器 Cookie 使用同一最长有效期。
+            // 普通请求不续期，服务端与浏览器 Cookie 使用同一最长有效期
             return true;
         }
     }
@@ -108,7 +107,6 @@ public class WebUISessionManager {
         if (isBlank(sessionId)) return;
         synchronized (AUTH_LOCK) {
             sessions.remove(sessionId);
-            SseBroadcaster.closeSession(sessionId);
         }
     }
 
@@ -119,7 +117,7 @@ public class WebUISessionManager {
     private static void clearAuthState() {
         challenges.clear();
         sessions.clear();
-        // 只标记并唤醒旧连接，不在生命周期锁中执行网络写入。
+        // 只标记并唤醒旧连接，不在生命周期锁中执行网络写入
         SseBroadcaster.closeAll();
     }
 
@@ -137,7 +135,6 @@ public class WebUISessionManager {
             var entry = iterator.next();
             if (now - entry.getValue() < 0) break;
             iterator.remove();
-            SseBroadcaster.closeSession(entry.getKey());
         }
     }
 

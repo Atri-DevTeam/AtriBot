@@ -24,6 +24,9 @@ import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atribot.service.textreview.TextReviewException;
+import top.yzljc.atribot.service.textreview.TextReviewResult;
+import top.yzljc.atribot.service.textreview.TextReviewService;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.tools.Alert;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
@@ -40,6 +43,14 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName MinecraftNews
+ * @Created_at 2026/09/23
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.tasks
+ * @Description 抓取并总结 Minecraft 新闻，审查文本后生成图片推送
+ */
 public final class MinecraftNews implements CommandExecutor, ScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
@@ -57,16 +68,16 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!(sender instanceof QQCommandSender nc)) return true;
-//        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
-
-        if (!nc.hasPermission()) {
-            nc.sendMessage(Identifier.NO_PERMISSION);
-            return true;
-        }
+//        if (!(sender instanceof QQCommandSender nc)) return true;
+////        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
+//
+//        if (!nc.hasPermission()) {
+//            nc.sendMessage(Identifier.NO_PERMISSION);
+//            return true;
+//        }
 
         ThreadManager.execute(() -> checkNews(true));
-        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
+//        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
         return true;
     }
 
@@ -116,9 +127,14 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             }
 
             for (UnifiedArticle article : newArticlesFound) {
-                log.info("发现新文章：[{}] {}", article.tag, article.title);
+                log.info("发现新文章：[{}] {}", article.tag, article.id);
+                try {
+                    summaryNews(article);
+                } catch (TextReviewException e) {
+                    log.warn("新闻文本审核失败，跳过本次推送并在后续检查时重试: {}", article.id, e);
+                    continue;
+                }
                 pushedArticleIds.add(article.id);
-                summaryNews(article);
                 newCount++;
             }
 
@@ -126,7 +142,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
                 saveHistory();
             }
 
-            if (isManualTrigger && newCount == 0) {
+            if (isManualTrigger && newArticlesFound.isEmpty()) {
                 log.info("手动检查完成，未发现新文章");
             }
 
@@ -254,13 +270,18 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         String aiMessages = AtriNewsSummarizer.summarize(article.title, articleText);
         log.info(">>> [成功] AI 总结完毕");
 
+        log.info(">>> 3. 开始审查新闻标题、作者和摘要...");
+        String reviewedTitle = reviewNewsText(article.id, "标题", article.title);
+        String reviewedAuthor = reviewNewsText(article.id, "作者", article.author);
+        String reviewedContent = reviewNewsText(article.id, "摘要", aiMessages);
+
         String apiUrl = ResourcesProperties.MC_NEWS_API;
         Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("title", article.title);
-        requestBody.put("author", article.author);
+        requestBody.put("title", reviewedTitle);
+        requestBody.put("author", reviewedAuthor);
         requestBody.put("time", article.dateDisplay);
         requestBody.put("headerImageUrl", article.imageUrl);
-        requestBody.put("content", aiMessages);
+        requestBody.put("content", reviewedContent);
 
         ImageDTO data = PreImageGenerate.dump(apiUrl, requestBody);
         if (data.isError()) {
@@ -268,7 +289,28 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
             log.warn(">>> [失败] 新闻图片生成失败: {}", errMsg);
             return;
         }
-        pushNews(data, article.dateDisplay, article.title);
+        pushNews(data, article.dateDisplay, reviewedTitle);
+    }
+
+    /**
+     * @param articleId 文章标识，用于关联同一篇新闻的审核日志
+     * @param field 待审核字段名称，用于定位标题、作者或摘要
+     * @param content 该字段的完整原文，仅实际替换的片段会写入日志
+     * @return 审核后的字段文本，未命中部分保持原样
+     * @throws TextReviewException 审核失败，不返回未经审核的文本
+     */
+    private static String reviewNewsText(String articleId, String field, String content) {
+        TextReviewResult result = TextReviewService.reviewDetailed(content);
+        if (result.replacements().isEmpty()) {
+            log.info("新闻文本审核结果 [{}]：字段={}，未处理任何片段", articleId, field);
+        }
+        for (TextReviewResult.Replacement replacement : result.replacements()) {
+            log.info("新闻文本审核处理 [{}]：字段={}，原文位置=[{}, {})，原文={}，处理后={}",
+                    articleId, field, replacement.start(), replacement.end(),
+                    objectMapper.getNodeFactory().textNode(replacement.original()),
+                    objectMapper.getNodeFactory().textNode(replacement.replacement()));
+        }
+        return result.content();
     }
 
     private static void pushNews(ImageDTO data, String t, String title) {

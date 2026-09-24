@@ -49,7 +49,7 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
         var data = response.path("data");
         if (data.path("is_banwave").asBoolean(false) && tryAcquireAlert()) {
             String alert = data.path("alert").asText("");
-            PushTask.push("hyp_banwave_alert", TC.md("Hypixel BanWave告警\n\n" + "> " + alert));
+            PushTask.push("hyp_banwave_alert", TC.md("Hypixel BanWave告警\n\n" + "> " + alert + "\n> " + Markdown.enterCommand("/bantrack 6h", "查看近期趋势")));
         }
     }
 
@@ -58,7 +58,7 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
         if (lastAlertNanos != null && now - lastAlertNanos < ALERT_COOLDOWN_NANOS) {
             return false;
         }
-        // 在推送前记录，避免并发检测重复告警；被抑制的检测不延长冷却。
+        // 在推送前记录，避免并发检测重复告警；被抑制的检测不延长冷却
         lastAlertNanos = now;
         return true;
     }

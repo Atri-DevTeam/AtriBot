@@ -23,6 +23,7 @@
 - [功能模块](#功能模块)
 - [Napcat 群组功能开关](#napcat-群组功能开关)
 - [WebUI](#webui)
+- [Miniapp 个人空间](#miniapp-个人空间)
 - [公开 API](#公开-api)
 - [构建与运行](#构建与运行)
 - [CI/CD](#cicd)
@@ -150,6 +151,8 @@ qq:
   debug-group-openId: ""                      # Debug 群 OpenId
   super_admin_id: "null"                      # 超级管理员用户 OpenId
 ```
+
+Webhook 模式会先预留事件处理容量，在 Jetty 完整写出 HTTP 200 ACK 后立即分发事件，不增加固定等待。容量不足时返回 503，回包失败的事件允许重新投递。
 
 ### QQ 频道 CLI
 
@@ -1226,6 +1229,14 @@ Napcat 平台支持按群组独立开关功能，通过 `GroupConfigManager` 管
 通过 WebUI `/webui/api/napcat/groups/{groupId}/features` 接口，或 Napcat 控制台指令 `/groupinfo`，可查看和修改群组配置。
 
 ---
+
+## Miniapp 个人空间
+
+`miniapp/` 是独立的 Vue 用户端，访问路径为 `/atrimeow/profile/`。提供浅色毛玻璃风格的响应式个人档案，展示头像、用户 ID、已记录用户名，以及消息、签到、金粒和收藏概览，并使用独立的一次性链接鉴权。
+
+在配置中设置 `miniapp.base-url`（公网 HTTPS 地址，允许带页面路径；仅填域名时默认 `/atrimeow/profile/`），然后通过官方机器人私聊发送 `/profile` 获取带 `_nav_alpha=0`、`userId` 和一次性 `ticket` 的入口。凭证仅能兑换一次，刷新或退出后需要重新获取链接。此流程独立于管理后台登录和开关。
+
+构建、接口与会话失效规则见 [Miniapp 文档](docs/miniapp.md)。
 
 ## WebUI
 

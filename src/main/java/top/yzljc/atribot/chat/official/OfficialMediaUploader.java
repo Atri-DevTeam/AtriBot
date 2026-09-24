@@ -23,13 +23,13 @@ final class OfficialMediaUploader {
     private final ObjectMapper objectMapper;
     private final MessageBodyFactory bodyFactory;
 
-    OfficialMediaUploader(TokenManager tokenManager, ObjectMapper objectMapper, MessageBodyFactory bodyFactory) {
+    public OfficialMediaUploader(TokenManager tokenManager, ObjectMapper objectMapper, MessageBodyFactory bodyFactory) {
         this.tokenManager = tokenManager;
         this.objectMapper = objectMapper;
         this.bodyFactory = bodyFactory;
     }
 
-    MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
+    public MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
                                   RT rt, String content) {
         if (ChatService.isEmergencyPaused()) {
             return pausedMediaFallback(uploadUrl, logLabel, rt);
@@ -55,7 +55,7 @@ final class OfficialMediaUploader {
      * @param refIdx    被引用消息的索引 ID，null 表示不引用
      * @return 图片消息体；上传失败时保留原有文字回退，维护图片上传失败返回 null
      */
-    MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
+    public MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
                                   RT rt, String content, String refIdx) {
         MessageBody request = buildImageRequest(uploadUrl, type, value, logLabel, rt, content);
         if (request != null && refIdx != null && rt != null
@@ -65,11 +65,11 @@ final class OfficialMediaUploader {
         return bodyFactory.withReference(request, refIdx);
     }
 
-    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt) {
+    public MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt) {
         return buildFileRequest(uploadUrl, fileType, value, logLabel, rt, false);
     }
 
-    MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt,
+    public MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt,
                                  boolean requireMedia) {
         if (requireMedia && ChatService.isEmergencyPaused()) return null;
         if (ChatService.isEmergencyPaused()) {
@@ -116,7 +116,7 @@ final class OfficialMediaUploader {
      * @param logLabel  日志场景
      * @return 维护图片消息，上传失败时返回 null，不回退为纯文本
      */
-    MessageBody buildMaintenanceImageRequest(String uploadUrl, RT rt, String logLabel) {
+    public MessageBody buildMaintenanceImageRequest(String uploadUrl, RT rt, String logLabel) {
         java.util.Objects.requireNonNull(rt, "维护图片必须携带被动回复来源");
         var image = ChatService.emergencyPausedMessage();
         String fileInfo = uploadImageFile(uploadUrl, image.getType(), image.getData(), logLabel + "维护图片");

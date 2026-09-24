@@ -13,6 +13,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.platform.Platform;
 
@@ -147,6 +148,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         game.operations.merge(sender.getUserId(), 1, Integer::sum);
+        recordOperation(game, sender.getUserId());
         game.revealed[r][c] = true;
 
         if (game.board[r][c] == -1) {
@@ -173,8 +175,14 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         game.operations.merge(sender.getUserId(), 1, Integer::sum);
+        recordOperation(game, sender.getUserId());
         game.flagged[r][c] = !game.flagged[r][c];
         sendOrUpdateGameBoard(game, sessionId, sender, game.flagged[r][c] ? "成功插旗 🚩" : "已拔除旗帜 🔲");
+    }
+
+    private void recordOperation(GameState game, String userId) {
+        UserGameDataRepository.record(UserGameDataRepository.Game.minesweeper, game.statisticsId + ":" + ++game.operationSequence,
+                List.of(UserGameDataRepository.Delta.operation(userId, false)));
     }
 
     private void floodFill(GameState game, int r, int c) {
@@ -430,6 +438,8 @@ public class MinesweeperGame implements Listener, CommandExecutor {
     }
 
     private static class GameState {
+        final String statisticsId = UUID.randomUUID().toString();
+        long operationSequence;
         int[][] board = new int[ROWS][COLS];
         boolean[][] revealed = new boolean[ROWS][COLS];
         boolean[][] flagged = new boolean[ROWS][COLS];

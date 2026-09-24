@@ -139,6 +139,7 @@ public class C2CRepository {
                 "  `is_ignored` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `c2c_push` BOOLEAN NOT NULL DEFAULT TRUE," +
                 "  `user_settings` JSON NULL," +
+                "  `game_data` JSON NULL," +
                 "  PRIMARY KEY (`user_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -158,9 +159,18 @@ public class C2CRepository {
         } catch (Exception e) {
             log.error("初始化 official_users/c2c_function_list 表失败: {}", e.getMessage());
         }
-//
-//        migrateUserSettingsColumn();
+//        migrateGameDataColumn();
     }
+
+//    private static void migrateGameDataColumn() {
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement("ALTER TABLE `official_users` ADD COLUMN `game_data` JSON NULL")) {
+//            ps.executeUpdate();
+//            log.info("official_users 表已扩列 game_data");
+//        } catch (SQLException e) {
+//            if (e.getErrorCode() != 1060) throw new IllegalStateException("扩列 game_data 失败", e);
+//        }
+//    }
 
 //    /**
 //     * 旧表迁移：为 official_users 补充 user_settings 列（JSON，存个人偏好设置），列已存在则忽略

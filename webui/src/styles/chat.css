@@ -478,6 +478,11 @@
   box-shadow: -6px 0 18px rgba(16, 20, 28, 0.1);
 }
 
+.chatnt-members.chatnt-members--welcome {
+  width: 400px;
+  max-width: calc(100% - 16px);
+}
+
 /* 成员列表、群信息和用户设置共用抽屉动效，只动画合成属性，避免列表布局抖动。 */
 .chatnt-panel-enter-active {
   transform-origin: right center;
@@ -805,6 +810,16 @@
 
 .nt-row.clickable { cursor: pointer; }
 .nt-row.clickable:hover { background: #eceef1; }
+
+.chatnt-settings-link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: #9aa3b2;
+}
+.chatnt-settings-link svg { flex-shrink: 0; }
+.chatnt-settings-link:focus-visible { outline: 2px solid #0099ff; outline-offset: -2px; }
 
 .nt-empty {
   padding: 14px 12px;

@@ -15,6 +15,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.RandomGolds;
 
@@ -417,6 +418,8 @@ public class LuckyRouletteGame implements CommandExecutor {
     private Map<String, Integer> grantRewards(GameState game) {
         if (game.rewardsGranted) return game.goldRewards;
         game.rewardsGranted = true;
+        UserGameDataRepository.record(UserGameDataRepository.Game.roulette, game.statisticsId,
+                game.players.stream().map(uid -> UserGameDataRepository.Delta.match(uid, !uid.equals(game.loserOpenId))).toList());
 
         for (String uid : game.players) {
             int golds = uid.equals(game.loserOpenId) ? RandomGolds.get(1, 6) : RandomGolds.get(7, 15);
@@ -428,22 +431,24 @@ public class LuckyRouletteGame implements CommandExecutor {
 
     private void scheduleJoinTimeout(String sessionId, GameState game) {
         Atri.getInstance().getScheduler().runTaskLater(() -> {
-            GameState current = activeGames.get(sessionId);
-            if (current != game) return;
-            if (current.phase != Phase.WAITING) return;
+            synchronized (game) {
+                GameState current = activeGames.get(sessionId);
+                if (current != game) return;
+                if (current.phase != Phase.WAITING) return;
 
-            String targetOpenId = current.players.isEmpty() ? null : current.players.getFirst();
-            activeGames.remove(sessionId);
+                String targetOpenId = current.players.isEmpty() ? null : current.players.getFirst();
+                activeGames.remove(sessionId);
 
-            if (targetOpenId != null && current.lastCmdMsgId != null) {
-                try {
-                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
-                            TC.md("⏰ 幸运轮盘因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
-                } catch (Exception e) {
-                    log.warn("发送加入超时通知失败: ", e);
+                if (targetOpenId != null && current.lastCmdMsgId != null) {
+                    try {
+                        GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
+                        TC.md("⏰ 幸运轮盘因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
+                    } catch (Exception e) {
+                        log.warn("发送加入超时通知失败: ", e);
+                    }
                 }
+                log.info("幸运轮盘在群 {} 因超时未满员而自动取消", sessionId);
             }
-            log.info("幸运轮盘在群 {} 因超时未满员而自动取消", sessionId);
         }, JOIN_TIMEOUT_MS);
     }
 
@@ -479,6 +484,7 @@ public class LuckyRouletteGame implements CommandExecutor {
     }
 
     private static class GameState {
+        final String statisticsId = java.util.UUID.randomUUID().toString();
         Phase phase = Phase.WAITING;
 
         String groupOpenId;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.C2CRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 
 import java.time.LocalDateTime;
@@ -25,13 +26,17 @@ public class OfficialUsers {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     public static final String BILIBILI_UID_SETTING = "bv_uid";
+    private static final String UNSUPPORTED_KEYBOARD_SETTING = "unsupported_keyboard";
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> unsupportedKeyboardCache = new ConcurrentHashMap<>();
 
     public static void init() {
-        // 建表（含旧表迁移）
+        unsupportedKeyboardCache.clear();
+        // 建表
         C2CRepository.initTable();
+        UserGameDataRepository.init();
 
         // 加载缓存
         List<C2CRepository.PermissionRow> rows = C2CRepository.loadAll();
@@ -218,6 +223,7 @@ public class OfficialUsers {
         }
         if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
+            unsupportedKeyboardCache.remove(userOpenId);
             return true;
         }
         return false;
@@ -346,19 +352,50 @@ public class OfficialUsers {
 
     /**
      * 设置用户个人偏好设置中的某个字段，data 可为任意可被 Jackson 序列化的类型
-     * （字符串、数字、布尔、对象、数组等）。原有其他字段不受影响。
+     * （字符串、数字、布尔、对象、数组等）。原有其他字段不受影响
      */
     public static boolean setUserSetting(String userOpenId, String setting, Object data) {
         try {
-            return C2CRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
+            boolean saved = C2CRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
                     BILIBILI_UID_SETTING.equals(setting)) == C2CRepository.SettingWriteResult.SAVED;
+            if (saved && UNSUPPORTED_KEYBOARD_SETTING.equals(setting)) {
+                // 写入成功后失效，下一次查询重新加载，兼容通用设置入口及并发写入
+                unsupportedKeyboardCache.remove(userOpenId);
+            }
+            return saved;
         } catch (Exception e) {
             log.error("保存用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
             return false;
         }
     }
 
-    /** 关注校验通过后调用；一个用户只能首次绑定，同一个 UID 只能绑定一个用户。 */
+    /**
+     * 从 game_data 读取某个游戏的 JSON；不存在返回 null，读取失败抛出异常
+     */
+    public static JsonNode getGameData(String userOpenId, String game) throws java.sql.SQLException {
+        return UserGameDataRepository.instance().read(userOpenId).get(game);
+    }
+
+    /**
+     * 按用户懒加载键盘兼容设置，默认为 {@code false}
+     */
+    public static boolean isUserUnsupportedKeyboard(String userOpenId) {
+        if (userOpenId == null || userOpenId.isBlank()) {
+            return false;
+        }
+        return unsupportedKeyboardCache.computeIfAbsent(userOpenId, id -> {
+            var d = getUserSetting(id, UNSUPPORTED_KEYBOARD_SETTING);
+            return d != null && d.asBoolean(false);
+        });
+    }
+
+    public static boolean setUserUnsupportedKeyboard(String userOpenId, boolean unsupported) {
+        return setUserSetting(userOpenId, UNSUPPORTED_KEYBOARD_SETTING, unsupported);
+    }
+
+    /**
+     * 关注校验通过后调用；一个用户只能首次绑定，同一个 UID 只能绑定一个用户。
+     */
     public static C2CRepository.SettingWriteResult bindBilibiliUid(String userOpenId, long uid) {
         if (uid <= 0) return C2CRepository.SettingWriteResult.FAILED;
         return C2CRepository.setUserSetting(userOpenId, BILIBILI_UID_SETTING, Long.toString(uid), true);

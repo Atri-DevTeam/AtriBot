@@ -60,6 +60,9 @@ public class MessageBody {
     @JsonProperty("image")
     private String image;
 
+    @JsonProperty("embed")
+    private Object embed;
+
     @JsonIgnore
     private String recordAttachments;
 

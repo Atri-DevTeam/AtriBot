@@ -1,8 +1,6 @@
 package top.yzljc.atribot.function.games;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.C2CChat;
@@ -18,7 +16,8 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -26,7 +25,6 @@ import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.platform.Platform;
 
-import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName ClickTrainGame
+ * @Created_at 2026/09/19
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.games
+ */
 @Slf4j
 public class ClickTrainGame implements Listener, CommandExecutor {
 
@@ -49,8 +54,6 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     private static final int MAX_REWARD = 40;
     private static final int MISS_PENALTY = 2;
     private static final int MIN_REWARD = 10;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final File RECORD_FILE = new File(Properties.CLICK_TRAIN_RECORD);
 
     enum Phase {
         PLAYING,
@@ -230,7 +233,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         long elapsedMs = game.startTime == 0 ? 0 : System.currentTimeMillis() - game.startTime;
         int intervalCount = Math.max(0, game.completedCount - 1);
         long avgInterval = intervalCount == 0 ? 0 : game.totalIntervalMs / intervalCount;
-        boolean newBest = updatePersonalRecord(game.ownerOpenId, completed, elapsedMs, game.missCount);
+        boolean newBest = updatePersonalRecord(game, completed, elapsedMs, game.missCount);
 
         StringBuilder markdown = new StringBuilder();
         markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
@@ -271,94 +274,40 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         return markdown.toString();
     }
 
-    private static synchronized ObjectNode loadRecords() {
+    /** 完成时刷新个人最好记录，失败只累计场次；数据统一存入用户 JSON。 */
+    private static boolean updatePersonalRecord(GameState game, boolean completed, long elapsedMs, int missCount) {
         try {
-            if (RECORD_FILE.exists()) {
-                JsonNode root = MAPPER.readTree(RECORD_FILE);
-                if (root instanceof ObjectNode objectNode) return objectNode;
-            }
-        } catch (Exception e) {
-            log.warn("读取反应力测试记录失败，将重建记录: {}", RECORD_FILE.getPath(), e);
-        }
-        return MAPPER.createObjectNode();
-    }
-
-    private static boolean saveRecords(ObjectNode root) {
-        try {
-            File parent = RECORD_FILE.getParentFile();
-            if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                log.warn("创建反应力测试记录目录失败: {}", parent.getPath());
-                return false;
-            }
-            MAPPER.writerWithDefaultPrettyPrinter().writeValue(RECORD_FILE, root);
-            return true;
+            return UserGameDataRepository.instance().recordReaction(game.ownerOpenId, game.statisticsId,
+                    completed, elapsedMs, missCount, LocalDate.now());
         } catch (Exception e) {
             log.error("保存反应力测试记录失败", e);
             return false;
         }
     }
 
-    /**
-     * 完成时刷新个人最好记录，失败只累计场次
-     */
-    private static boolean updatePersonalRecord(String ownerId, boolean completed, long elapsedMs, int missCount) {
-        ObjectNode root = loadRecords();
-        ObjectNode user = userNode(root, ownerId);
-        user.put("plays", user.path("plays").asInt(0) + 1);
-        boolean newBest = false;
-        if (completed) {
-            user.put("wins", user.path("wins").asInt(0) + 1);
-            long bestMs = user.path("bestMs").asLong(0);
-            if (bestMs <= 0 || elapsedMs < bestMs) {
-                user.put("bestMs", elapsedMs);
-                user.put("bestMisses", missCount);
-                user.put("bestDate", LocalDate.now().toString());
-                newBest = true;
-            }
-        }
-        saveRecords(root);
-        return newBest;
-    }
-
-    private static ObjectNode userNode(ObjectNode root, String ownerId) {
-        JsonNode node = root.get(ownerId);
-        if (node instanceof ObjectNode objectNode) return objectNode;
-        ObjectNode created = root.putObject(ownerId);
-        created.put("bestMs", 0);
-        created.put("bestMisses", 0);
-        created.put("bestDate", "");
-        created.put("plays", 0);
-        created.put("wins", 0);
-        return created;
-    }
-
     private static String formatBest(String ownerId) {
-        JsonNode user = loadRecords().path(ownerId);
-        long bestMs = user.path("bestMs").asLong(0);
-        if (bestMs <= 0) return "暂无";
-        return String.format("%.1f 秒（%d 失误，%s）#%s", bestMs / 1000.0, user.path("bestMisses").asInt(0), user.path("bestDate").asText(""), getUserRank(ownerId) != 0 ? String.valueOf(getUserRank(ownerId)) : "-");
+        try {
+            JsonNode user = OfficialUsers.getGameData(ownerId, "reaction");
+            if (user == null || user.path("bestMs").asLong(0) <= 0) return "暂无";
+            int rank = UserGameDataRepository.instance().reactionRank(user.path("bestMs").asLong());
+            return String.format("%.1f 秒（%d 失误，%s）#%s", user.path("bestMs").asLong() / 1000.0,
+                    user.path("bestMisses").asInt(0), user.path("bestDate").asText(""), rank > 0 ? String.valueOf(rank) : "-");
+        } catch (Exception e) {
+            log.warn("读取反应力测试记录失败", e);
+            return "暂时无法读取";
+        }
     }
 
-    /**
-     * 获取用户在所有完成过测试的用户中的用时排名。
-     *
-     * @return 从 1 开始的排名；用户没有有效完成记录时返回 0。用时相同的用户并列。
-     */
+    /** 用户没有完成记录时返回 0，用时相同的用户并列。 */
     public static int getUserRank(String ownerId) {
         if (ownerId == null || ownerId.isBlank()) return 0;
-
-        ObjectNode root = loadRecords();
-        long userBestMs = root.path(ownerId).path("bestMs").asLong(0);
-        if (userBestMs <= 0) return 0;
-
-        int rank = 1;
-        var fields = root.fields();
-        while (fields.hasNext()) {
-            JsonNode record = fields.next().getValue();
-            long bestMs = record.path("bestMs").asLong(0);
-            if (bestMs > 0 && bestMs < userBestMs) rank++;
+        try {
+            JsonNode user = OfficialUsers.getGameData(ownerId, "reaction");
+            return user == null ? 0 : UserGameDataRepository.instance().reactionRank(user.path("bestMs").asLong(0));
+        } catch (Exception e) {
+            log.warn("读取反应力测试排名失败", e);
+            return 0;
         }
-        return rank;
     }
 
     private void scheduleGameTimeout(String sessionId, GameState game) {
@@ -385,6 +334,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     }
 
     private static class GameState {
+        final String statisticsId = java.util.UUID.randomUUID().toString();
         final String sessionId;
         final Platform platform;
         final String ownerOpenId;

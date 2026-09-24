@@ -3,6 +3,10 @@ package top.yzljc.atribot.command.impl;
 import lombok.AllArgsConstructor;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.Embed;
+import top.yzljc.atribot.chat.official.GuildChannelChat;
+import top.yzljc.atribot.chat.official.GuildDirectChat;
+import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
@@ -95,6 +99,15 @@ public class QQGuildSenderImpl implements QQGuildCommandSender {
             return this.user.sendMessage(this.channelId, this.message.getMessageId(), image);
         } else {
             return this.user.sendMessage(this.guildId, this.message.getMessageId(), image);
+        }
+    }
+
+    @Override
+    public String sendMessage(Embed embed) {
+        if (this.user.getPlatform() == Platform.OFFICIAL_GUILD_CHANNEL) {
+            return GuildChannelChat.replyMessage(this.channelId, RT.message(this.message.getMessageId()), embed);
+        } else {
+            return GuildDirectChat.replyMessage(this.guildId, RT.message(this.message.getMessageId()), embed);
         }
     }
 }

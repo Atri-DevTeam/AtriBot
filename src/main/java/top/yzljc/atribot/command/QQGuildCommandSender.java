@@ -1,6 +1,7 @@
 package top.yzljc.atribot.command;
 
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.Embed;
 import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
@@ -29,4 +30,6 @@ public interface QQGuildCommandSender extends CommandSender {
     Message getMessage();
 
     String sendMessage(ImageComponent image);
+
+    String sendMessage(Embed embed);
 }

@@ -102,16 +102,23 @@ public class SignCommand implements CommandExecutor, Listener {
                 return;
             }
 
-            String text = "打卡成功\n" +
-                    "你已累计打卡 " + result.totalCount() + " 次！\n" +
-                    "今天已有 " + result.rank() + " 人参与了打卡！\n" +
-                    "+ " + result.coins() + " 金粒";
             var image = ImageSourceClient.getRandomImage();
             if (image == null || image.url() == null || image.url().isBlank()) {
+                String text = "打卡成功\n" +
+                        "你已累计打卡 " + result.totalCount() + " 次！\n" +
+                        "今天已有 " + result.rank() + " 人参与了打卡！\n" +
+                        "+ " + result.coins() + " 金粒";
                 sender.sendMessage(text);
                 return;
             }
-            sender.sendMessage(ImageComponent.imageOf(image.url()).setText(text));
+
+            Embed embed = new Embed("打卡成功", "每日签到打卡", image.url(), List.of(
+                    "你已累计打卡 " + result.totalCount() + " 次！",
+                    "今天已有 " + result.rank() + " 人参与了打卡！",
+                    "+ " + result.coins() + " 金粒"
+            ));
+
+            sender.sendMessage(embed);
         });
     }
 

@@ -53,11 +53,16 @@ bin/
 /data.json
 /webui/dist/
 /webui/node_modules/
+/miniapp/node_modules/
+/miniapp/test-results/
+/miniapp/.env.local
+/miniapp/.env.*.local
 /logs/
 /tmp/
 /minecraft_version.json
 /news_history.json
 /data/
+/src/main/resources/text-review/
 /plugins/
 /errorlogs/
 /sign_data/

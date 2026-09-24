@@ -3,6 +3,16 @@ version: ${version}
 main: top.yzljc.atribot.Atri
 
 commands:
+  groupsystemverify:
+    description: 群主验证网页群绑定请求（仅官机群聊）
+    usage: /群绑定 <验证码>
+    aliases:
+      - 群绑定
+      - 群验证
+      - 群主验证
+  profile:
+    description: 获取个人空间一次性入口（仅官机私聊）
+    usage: /profile
   ema:
     description: 频道第二账号管理（仅机器人管理员）
     usage: '/ema help；/ema <分类> <动作> [可选项] <参数> [正文...]'
@@ -203,9 +213,6 @@ commands:
   webui:
     description: WebUI相关功能
     usage: /webui
-  ita-qrcode:
-    description: 管理 ITA 二维码的群状态和问卷状态
-    usage: /ita-qrcode [set <1|2> <url>]
   login:
     description: 确认外部 API 登录授权
     usage: /login <六位验证码>

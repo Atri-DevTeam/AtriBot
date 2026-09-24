@@ -1,10 +1,13 @@
 package top.yzljc.atribot.chat.official;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.With;
+import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.chat.official.media.HexColor;
 
 /**
@@ -16,17 +19,21 @@ import top.yzljc.atribot.chat.official.media.HexColor;
  */
 @Getter
 @With
+@RequiredArgsConstructor
 @AllArgsConstructor
 public class Markdown {
     @JsonProperty("content")
     private final String text;
 
     /**
-     * 为 true 时，图片转存失败会导致整条消息发送失败；未设置时使用平台默认值。
+     * 为 true 时，图片转存失败会导致整条消息发送失败；未设置时使用平台默认值
      */
     @JsonProperty("force_verify_image_resource")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Boolean forceVerifyImageResource;
+
+    @JsonIgnore
+    private Keyboard keyboard;
 
     public Markdown(String text) {
         this(text, null);
@@ -76,5 +83,33 @@ public class Markdown {
     @Override
     public String toString() {
         return text;
+    }
+
+    public Markdown append(String text) {
+        return new Markdown(this.text + text, this.forceVerifyImageResource, this.keyboard);
+    }
+
+    public Markdown append(Markdown markdown) {
+
+        if (markdown.getKeyboard() != null) {
+            throw new UnsupportedOperationException("不能拼接带有键盘的 Markdown 消息！");
+        }
+
+        return new Markdown(this.text + markdown.text, this.forceVerifyImageResource, this.getKeyboard());
+    }
+
+    public Markdown setKeyboard(Keyboard keyboard) {
+        this.keyboard = keyboard;
+        return this;
+    }
+
+    public Markdown setKeyboard(Keyboard keyboard, boolean toMarkdown) {
+        this.keyboard = keyboard;
+
+        if (toMarkdown) {
+            return append(keyboard.toMarkdownString());
+        }
+
+        return this;
     }
 }

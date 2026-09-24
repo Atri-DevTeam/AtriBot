@@ -90,18 +90,14 @@ const router = createRouter({
       component: () => import('./views/MenuPanelView.vue'),
       meta: { requiresAuth: true }
     },
-    {
-      path: '/join-welcome',
-      name: 'joinWelcome',
-      component: () => import('./views/JoinWelcomeView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/errors',
-      name: 'errors',
-      component: () => import('./views/ErrorsView.vue'),
-      meta: { requiresAuth: true }
-    },
+    // ErrorReport 暂时停用：保留页面源码，旧地址由兜底路由重定向到首页。
+    // 恢复时同步取消 AppSidebar.vue 中入口的注释。
+    // {
+    //   path: '/errors',
+    //   name: 'errors',
+    //   component: () => import('./views/ErrorsView.vue'),
+    //   meta: { requiresAuth: true }
+    // },
     {
       path: '/send-logs',
       name: 'sendLogs',

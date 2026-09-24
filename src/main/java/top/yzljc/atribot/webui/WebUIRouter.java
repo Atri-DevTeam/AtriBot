@@ -118,9 +118,7 @@ public class WebUIRouter {
         server.get("/webui/api/function-settings", AdminController::listFunctionSettings);
         server.post("/webui/api/function-settings/{functionId}", AdminController::saveFunctionSetting);
         server.delete("/webui/api/function-settings/{functionId}", AdminController::deleteFunctionSetting);
-        server.get("/webui/api/errors/list", AdminController::listErrorReports);
-        server.get("/webui/api/errors/stats", AdminController::errorReportStats);
-        server.get("/webui/api/errors/{traceId}", AdminController::getErrorReport);
+        // Error report handlers in AdminController are currently disabled.
         server.get("/webui/api/send-logs/list", AdminController::listOfficialSendLogs);
         server.get("/webui/api/send-logs/stats", AdminController::officialSendLogStats);
         server.get("/webui/api/send-logs/{id}/context", AdminController::getOfficialSendLogContext);

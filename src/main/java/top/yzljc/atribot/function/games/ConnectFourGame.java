@@ -15,6 +15,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.RandomGolds;
 
@@ -90,7 +91,7 @@ public class ConnectFourGame implements CommandExecutor {
         }
 
         if (action.equals("drop")) {
-            handleDrop(game, sessionId, qq, args);
+            synchronized (game) { handleDrop(game, sessionId, qq, args); }
         }
 
         return true;
@@ -138,54 +139,56 @@ public class ConnectFourGame implements CommandExecutor {
             sender.sendMessage("请先发送 /四子棋 创建游戏！");
             return;
         }
-        if (game.phase != Phase.WAITING) {
-            sender.sendMessage("游戏已经开始，无法加入喵！");
-            return;
-        }
-        if (args.length < 2) {
-            sender.sendMessage("请指定加入阵营：A 或 B");
-            return;
-        }
+        synchronized (game) {
+            if (game.phase != Phase.WAITING) {
+                sender.sendMessage("游戏已经开始，无法加入喵！");
+                return;
+            }
+            if (args.length < 2) {
+                sender.sendMessage("请指定加入阵营：A 或 B");
+                return;
+            }
 
-        String side = args[1].toUpperCase();
-        String playerId = sender.getUserId();
+            String side = args[1].toUpperCase();
+            String playerId = sender.getUserId();
 
-        if (side.equals("A")) {
-            if (game.playerAOpenId != null) {
-                if (game.playerAOpenId.equals(playerId)) {
-                    return; // Already joined — no-op
+            if (side.equals("A")) {
+                if (game.playerAOpenId != null) {
+                    if (game.playerAOpenId.equals(playerId)) {
+                        return; // Already joined — no-op
+                    }
+                    sender.sendMessage("玩家A已经被占用了喵！");
+                    return;
                 }
-                sender.sendMessage("玩家A已经被占用了喵！");
-                return;
-            }
-            if (playerId.equals(game.playerBOpenId)) {
-                sender.sendMessage("你已经加入了玩家B，不能同时加入两个阵营喵！");
-                return;
-            }
-            game.playerAOpenId = playerId;
-        } else if (side.equals("B")) {
-            if (game.playerBOpenId != null) {
-                if (game.playerBOpenId.equals(playerId)) {
-                    return; // Already joined — no-op
+                if (playerId.equals(game.playerBOpenId)) {
+                    sender.sendMessage("你已经加入了玩家B，不能同时加入两个阵营喵！");
+                    return;
                 }
-                sender.sendMessage("玩家B已经被占用了喵！");
+                game.playerAOpenId = playerId;
+            } else if (side.equals("B")) {
+                if (game.playerBOpenId != null) {
+                    if (game.playerBOpenId.equals(playerId)) {
+                        return; // Already joined — no-op
+                    }
+                    sender.sendMessage("玩家B已经被占用了喵！");
+                    return;
+                }
+                if (playerId.equals(game.playerAOpenId)) {
+                    sender.sendMessage("你已经加入了玩家A，不能同时加入两个阵营喵！");
+                    return;
+                }
+                game.playerBOpenId = playerId;
+            } else {
                 return;
             }
-            if (playerId.equals(game.playerAOpenId)) {
-                sender.sendMessage("你已经加入了玩家A，不能同时加入两个阵营喵！");
-                return;
+
+            // Send updated waiting message
+            sendWaitingUpdate(game, sessionId, sender);
+
+            // Both players joined → start game
+            if (game.playerAOpenId != null && game.playerBOpenId != null) {
+                startGame(game, sessionId, sender);
             }
-            game.playerBOpenId = playerId;
-        } else {
-            return;
-        }
-
-        // Send updated waiting message
-        sendWaitingUpdate(game, sessionId, sender);
-
-        // Both players joined → start game
-        if (game.playerAOpenId != null && game.playerBOpenId != null) {
-            startGame(game, sessionId, sender);
         }
     }
 
@@ -414,6 +417,9 @@ public class ConnectFourGame implements CommandExecutor {
     private void grantRewards(GameState game) {
         if (game.rewardsGranted) return;
         game.rewardsGranted = true;
+        UserGameDataRepository.record(UserGameDataRepository.Game.connect4, game.statisticsId, List.of(
+                UserGameDataRepository.Delta.match(game.playerAOpenId, game.winner == PLAYER_A),
+                UserGameDataRepository.Delta.match(game.playerBOpenId, game.winner == PLAYER_B)));
 
         if (game.winner == PLAYER_A) {
             game.playerAGolds = RandomGolds.get(31, 45);
@@ -535,22 +541,24 @@ public class ConnectFourGame implements CommandExecutor {
 
     private void scheduleJoinTimeout(String sessionId, GameState game) {
         Atri.getInstance().getScheduler().runTaskLater(() -> {
-            GameState current = activeGames.get(sessionId);
-            if (current != game) return;
-            if (current.phase != Phase.WAITING) return;
+            synchronized (game) {
+                GameState current = activeGames.get(sessionId);
+                if (current != game) return;
+                if (current.phase != Phase.WAITING) return;
 
-            String targetOpenId = current.playerAOpenId != null ? current.playerAOpenId : current.playerBOpenId;
-            activeGames.remove(sessionId);
+                String targetOpenId = current.playerAOpenId != null ? current.playerAOpenId : current.playerBOpenId;
+                activeGames.remove(sessionId);
 
-            if (targetOpenId != null && current.lastCmdMsgId != null) {
-                try {
-                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
-                            TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
-                } catch (Exception e) {
-                    log.warn("发送加入超时通知失败: ", e);
+                if (targetOpenId != null && current.lastCmdMsgId != null) {
+                    try {
+                        GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
+                        TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
+                    } catch (Exception e) {
+                        log.warn("发送加入超时通知失败: ", e);
+                    }
                 }
+                log.info("四子棋游戏在群 {} 因超时未满员而自动取消", sessionId);
             }
-            log.info("四子棋游戏在群 {} 因超时未满员而自动取消", sessionId);
         }, JOIN_TIMEOUT_MS);
     }
 
@@ -558,78 +566,82 @@ public class ConnectFourGame implements CommandExecutor {
         final int expectedGeneration = ++game.timeoutGeneration;
 
         Atri.getInstance().getScheduler().runTaskLater(() -> {
-            GameState current = activeGames.get(sessionId);
-            if (current != game) return;
-            if (current.phase != Phase.PLAYING) return;
-            if (current.timeoutGeneration != expectedGeneration) return;
+            synchronized (game) {
+                GameState current = activeGames.get(sessionId);
+                if (current != game) return;
+                if (current.phase != Phase.PLAYING) return;
+                if (current.timeoutGeneration != expectedGeneration) return;
 
-            // Timeout — current player loses, opponent wins
-            current.phase = Phase.FINISHED;
-            current.winner = (current.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
+                // Timeout — current player loses, opponent wins
+                current.phase = Phase.FINISHED;
+                current.winner = (current.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
 
-            grantRewards(current);
+                grantRewards(current);
 
-            String loserId = current.currentPlayer == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
-            String winnerId = current.winner == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
-            String loserName = current.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
-            String winnerName = current.winner == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
-            int loserGolds = current.winner == PLAYER_A ? current.playerBGolds : current.playerAGolds;
-            int winnerGolds = current.winner == PLAYER_A ? current.playerAGolds : current.playerBGolds;
+                String loserId = current.currentPlayer == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
+                String winnerId = current.winner == PLAYER_A ? current.playerAOpenId : current.playerBOpenId;
+                String loserName = current.currentPlayer == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
+                String winnerName = current.winner == PLAYER_A ? "⚫ 玩家A" : "⚪ 玩家B";
+                int loserGolds = current.winner == PLAYER_A ? current.playerBGolds : current.playerAGolds;
+                int winnerGolds = current.winner == PLAYER_A ? current.playerAGolds : current.playerBGolds;
 
-            activeGames.remove(sessionId);
+                activeGames.remove(sessionId);
 
-            try {
-                String resultMsg = "⏰ " + Markdown.at(loserId) + "(+" + loserGolds + "金粒) (" + loserName
-                        + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！";
-                String markdown = buildSettlementMarkdown(current, resultMsg);
+                try {
+                    String resultMsg = "⏰ " + Markdown.at(loserId) + "(+" + loserGolds + "金粒) (" + loserName
+                    + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！";
+                    String markdown = buildSettlementMarkdown(current, resultMsg);
 
-                List<List<Button>> layout = new ArrayList<>();
-                layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
-                        true, ButtonStyle.BLUE, ButtonType.COMMAND)));
-                Object keyboard = TC.keyboard(layout);
+                    List<List<Button>> layout = new ArrayList<>();
+                    layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
+                    true, ButtonStyle.BLUE, ButtonType.COMMAND)));
+                    Object keyboard = TC.keyboard(layout);
 
-                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), loserId,
-                        TC.md(markdown), keyboard);
-            } catch (Exception e) {
-                log.warn("发送落子超时结算面板失败: ", e);
+                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), loserId,
+                    TC.md(markdown), keyboard);
+                } catch (Exception e) {
+                    log.warn("发送落子超时结算面板失败: ", e);
+                }
+                log.info("四子棋游戏在群 {} 因玩家 {} 超时未落子而自动结束",
+                sessionId, loserId);
             }
-            log.info("四子棋游戏在群 {} 因玩家 {} 超时未落子而自动结束",
-                    sessionId, loserId);
         }, MOVE_TIMEOUT_MS);
     }
 
     private void scheduleGameTimeout(String sessionId, GameState game) {
         Atri.getInstance().getScheduler().runTaskLater(() -> {
-            GameState current = activeGames.get(sessionId);
-            if (current != game) return;
-            if (current.phase != Phase.PLAYING) return;
+            synchronized (game) {
+                GameState current = activeGames.get(sessionId);
+                if (current != game) return;
+                if (current.phase != Phase.PLAYING) return;
 
-            // Game exceeded 15 minutes — auto tie
-            current.phase = Phase.FINISHED;
-            grantRewards(current);
+                // Game exceeded 15 minutes — auto tie
+                current.phase = Phase.FINISHED;
+                grantRewards(current);
 
-            String playerAId = current.playerAOpenId;
-            String playerBId = current.playerBOpenId;
-            activeGames.remove(sessionId);
+                String playerAId = current.playerAOpenId;
+                String playerBId = current.playerBOpenId;
+                activeGames.remove(sessionId);
 
-            try {
-                String resultMsg = "⏰ 对局已超过 15 分钟，"
-                        + Markdown.at(playerAId) + "(+" + current.playerAGolds + "金粒) "
-                        + Markdown.at(playerBId) + "(+" + current.playerBGolds + "金粒) "
-                        + "自动判为平局！";
-                String markdown = buildSettlementMarkdown(current, resultMsg);
+                try {
+                    String resultMsg = "⏰ 对局已超过 15 分钟，"
+                    + Markdown.at(playerAId) + "(+" + current.playerAGolds + "金粒) "
+                    + Markdown.at(playerBId) + "(+" + current.playerBGolds + "金粒) "
+                    + "自动判为平局！";
+                    String markdown = buildSettlementMarkdown(current, resultMsg);
 
-                List<List<Button>> layout = new ArrayList<>();
-                layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
-                        true, ButtonStyle.BLUE, ButtonType.COMMAND)));
-                Object keyboard = TC.keyboard(layout);
+                    List<List<Button>> layout = new ArrayList<>();
+                    layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
+                    true, ButtonStyle.BLUE, ButtonType.COMMAND)));
+                    Object keyboard = TC.keyboard(layout);
 
-                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), playerAId,
-                        TC.md(markdown), keyboard);
-            } catch (Exception e) {
-                log.warn("发送对局超时结算面板失败: ", e);
+                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), playerAId,
+                    TC.md(markdown), keyboard);
+                } catch (Exception e) {
+                    log.warn("发送对局超时结算面板失败: ", e);
+                }
+                log.info("四子棋游戏在群 {} 因超过15分钟对局时长而自动平局", sessionId);
             }
-            log.info("四子棋游戏在群 {} 因超过15分钟对局时长而自动平局", sessionId);
         }, GAME_TIMEOUT_MS);
     }
 
@@ -647,6 +659,7 @@ public class ConnectFourGame implements CommandExecutor {
     }
 
     private static class GameState {
+        final String statisticsId = java.util.UUID.randomUUID().toString();
         Phase phase = Phase.WAITING;
 
         String groupOpenId;

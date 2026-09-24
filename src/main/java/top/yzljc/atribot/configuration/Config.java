@@ -52,6 +52,10 @@ public class Config {
     @Getter
     private String apiUrl;
     @Getter
+    private boolean miniappEnabled;
+    @Getter
+    private String miniappBaseUrl;
+    @Getter
     private String ugcApiUrl;
     @Getter
     private String ossDumpBaseUrl;
@@ -258,6 +262,8 @@ public class Config {
             this.listenPort = yaml.getInt("listen-port", 1234);
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
+            this.miniappEnabled = yaml.getBoolean("miniapp.enabled", true);
+            this.miniappBaseUrl = yaml.getString("miniapp.base-url", "");
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
             this.soundResourceBaseUrl = yaml.getString("sound.resource-base-url", "");

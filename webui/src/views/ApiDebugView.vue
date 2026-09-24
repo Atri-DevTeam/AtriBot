@@ -629,7 +629,7 @@ const groupedPresets = computed(() => {
 })
 
 const additionalTemplateNames = computed(() => {
-  const text = `${path.value}\n${headers.value}\n${body.value}`
+  const text = path.value
   return [...text.matchAll(/\{([a-z][a-z0-9_]*)\}/gi)]
     .map(match => match[1])
     .filter((name, index, names) => !['group_openid', 'user_openid'].includes(name) && names.indexOf(name) === index)
@@ -804,21 +804,20 @@ async function sendRequest() {
   error.value = ''
   responseTab.value = 'body'
   try {
-    const missing = missingTemplateValues(`${path.value}\n${headers.value}\n${body.value}`)
+    const missing = missingTemplateValues(path.value)
     if (missing.length > 0) {
       error.value = `缺少模板值：${missing.join('、')}`
       return
     }
     const resolvedPath = applyTemplateVariables(path.value.trim())
-    const resolvedHeaders = applyTemplateVariables(headers.value)
-    const resolvedBody = body.value ? applyTemplateVariables(body.value) : body.value
+    // 占位符仅用于 URL，Headers 和 Body 中的花括号内容是用户输入的原文。
     result.value = await api('/debug/official/request', {
       method: 'POST',
       body: JSON.stringify({
         method: method.value,
         path: resolvedPath,
-        headers: parseHeaders(resolvedHeaders),
-        body: resolvedBody
+        headers: parseHeaders(headers.value),
+        body: body.value
       })
     })
   } catch (e) {

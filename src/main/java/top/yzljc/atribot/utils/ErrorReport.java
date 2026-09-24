@@ -2,7 +2,6 @@ package top.yzljc.atribot.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.ErrorReportDTO;
-import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.sql.Timestamp;
@@ -51,11 +50,11 @@ public class ErrorReport {
             dto.setCauseStackTrace(toStackLines(cause.getStackTrace()));
         }
 
-        if (ErrorReportRepository.insert(dto)) {
-            log.info("错误报告已入库: traceId={} (类: {}, 异常: {})", traceId, className, e.getClass().getSimpleName());
-        } else {
-            log.error("错误报告入库失败，原始异常如下 (traceId={}, 类: {})", traceId, className, e);
-        }
+//        if (ErrorReportRepository.insert(dto)) {
+//            log.info("错误报告已入库: traceId={} (类: {}, 异常: {})", traceId, className, e.getClass().getSimpleName());
+//        } else {
+//            log.error("错误报告入库失败，原始异常如下 (traceId={}, 类: {})", traceId, className, e);
+//        }
 
         Alert.notify("发生异常: " + e.getClass().getSimpleName() + " (traceId=" + traceId + ")");
         return traceId;

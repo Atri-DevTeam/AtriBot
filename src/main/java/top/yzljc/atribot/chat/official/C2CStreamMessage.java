@@ -190,6 +190,7 @@ final class C2CStreamMessage {
             return null;
         }
 
+        if (!OfficialMessageSendNotifier.allowSend("POST", url, json)) return null;
         String traceId = OfficialSendLogRepository.recordSend("单聊流式", "POST", url, json);
         var res = HttpService.postJsonDetailed(url, json,
                 "Authorization", "QQBot " + tokenManager.getAccessToken());

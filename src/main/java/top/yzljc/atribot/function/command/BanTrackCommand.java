@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -7,6 +8,7 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.ImageDTO;
@@ -76,10 +78,11 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
                 Markdown.img(data.url(), data.width(), data.height())
         );
 
-        Object buttons = TC.keyboard(
+//        Object buttons = TC.keyboard(
+//        );
+        Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(new Button("c1", "30m", "/bantrack 30min", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-//                                new Button("c2", "1h", "/bantracker 1h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "3h", "/bantrack 3h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c3", "24h", "/bantrack 24h", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c5", "7d", "/bantrack 7d", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -91,7 +94,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
                 )
         );
 
-        sender.sendMessage(md, buttons);
+        sender.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
 
         return true;
     }

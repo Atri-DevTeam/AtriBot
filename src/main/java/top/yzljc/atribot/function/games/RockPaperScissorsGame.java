@@ -14,6 +14,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
@@ -108,59 +109,66 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
             return;
         }
 
-        String userId = event.getUserOpenId();
-        boolean isPlayerA = userId.equals(game.playerAOpenId);
+        synchronized (game) {
+            if (game.phase != Phase.CHOOSING) { event.answer(AnswerCode.FAIL); return; }
+            String userId = event.getUserOpenId();
+            boolean isPlayerA = userId.equals(game.playerAOpenId);
 
-        // 玩家A不能选两次
-        if (isPlayerA && game.playerAChoice != null) {
-            event.answer(AnswerCode.REPEAT);
-            return;
-        }
+            // 玩家A不能选两次
+            if (isPlayerA && game.playerAChoice != null) {
+                event.answer(AnswerCode.REPEAT);
+                return;
+            }
 
-        // 如果既不是玩家A也不是已确定的玩家B → 自动成为玩家B
-        if (!isPlayerA && game.playerBOpenId == null) {
-            // 不允许玩家A之外的同一个人用两个号
-            game.playerBOpenId = userId;
-        }
+            // 如果既不是玩家A也不是已确定的玩家B → 自动成为玩家B
+            if (!isPlayerA && game.playerBOpenId == null) {
+                // 不允许玩家A之外的同一个人用两个号
+                game.playerBOpenId = userId;
+            }
 
-        boolean isPlayerB = userId.equals(game.playerBOpenId);
+            boolean isPlayerB = userId.equals(game.playerBOpenId);
 
-        // 不是参与者 → 拒绝
-        if (!isPlayerA && !isPlayerB) {
-            event.answer(AnswerCode.FAIL);
-            return;
-        }
+            // 不是参与者 → 拒绝
+            if (!isPlayerA && !isPlayerB) {
+                event.answer(AnswerCode.FAIL);
+                return;
+            }
 
-        // 玩家B不能选两次
-        if (isPlayerB && game.playerBChoice != null) {
-            event.answer(AnswerCode.REPEAT);
-            return;
-        }
+            // 玩家B不能选两次
+            if (isPlayerB && game.playerBChoice != null) {
+                event.answer(AnswerCode.REPEAT);
+                return;
+            }
 
-        // 记录选择
-        String buttonId = event.getButtonId();
-        String choice = buttonIdToChoice(buttonId);
-        if (choice == null) {
-            event.answer(AnswerCode.FAIL);
-            return;
-        }
+            // 记录选择
+            String buttonId = event.getButtonId();
+            String choice = buttonIdToChoice(buttonId);
+            if (choice == null) {
+                event.answer(AnswerCode.FAIL);
+                return;
+            }
 
-        if (isPlayerA) {
-            game.playerAChoice = choice;
-        } else {
-            game.playerBChoice = choice;
-        }
+            if (isPlayerA) {
+                game.playerAChoice = choice;
+            } else {
+                game.playerBChoice = choice;
+            }
 
-        event.answer(AnswerCode.SUCCESS);
-
-        // 双方都选了 → 结果
-        if (game.playerAChoice != null && game.playerBChoice != null) {
-            game.phase = Phase.FINISHED;
-            activeGames.remove(sessionId);
-            sendResult(game, event);
-        } else {
-            // 第一个人选了 → 只发 @谁选了
-            sendWaitingForOther(game, event);
+            // 双方都选了 → 结果
+            if (game.playerAChoice != null && game.playerBChoice != null) {
+                game.phase = Phase.FINISHED;
+                activeGames.remove(sessionId);
+                int winner = determineWinner(game.playerAChoice, game.playerBChoice);
+                UserGameDataRepository.record(UserGameDataRepository.Game.rsp, game.statisticsId, List.of(
+                        UserGameDataRepository.Delta.match(game.playerAOpenId, winner == 1),
+                        UserGameDataRepository.Delta.match(game.playerBOpenId, winner == 2)));
+                event.answer(AnswerCode.SUCCESS);
+                sendResult(game, event);
+            } else {
+                event.answer(AnswerCode.SUCCESS);
+                // 第一个人选了 → 只发 @谁选了
+                sendWaitingForOther(game, event);
+            }
         }
     }
 
@@ -274,28 +282,30 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         final int expectedGeneration = ++game.timeoutGeneration;
 
         Atri.getInstance().getScheduler().runTaskLater(() -> {
-            GameState current = activeGames.get(sessionId);
-            if (current != game) return;
-            if (current.phase != Phase.CHOOSING) return;
-            if (current.timeoutGeneration != expectedGeneration) return;
+            synchronized (game) {
+                GameState current = activeGames.get(sessionId);
+                if (current != game) return;
+                if (current.phase != Phase.CHOOSING) return;
+                if (current.timeoutGeneration != expectedGeneration) return;
 
-            // 超时 — 取消游戏
-            current.phase = Phase.FINISHED;
-            activeGames.remove(sessionId);
+                // 超时 — 取消游戏
+                current.phase = Phase.FINISHED;
+                activeGames.remove(sessionId);
 
-            String notifyId = current.playerBOpenId != null ? current.playerBOpenId : current.playerAOpenId;
+                String notifyId = current.playerBOpenId != null ? current.playerBOpenId : current.playerAOpenId;
 
-            try {
-                String markdown = "**石头剪刀布**\n\n"
-                        + "⏰ 超时未完成，游戏已取消\n\n"
-                        + Markdown.enterCommand("/rsp", "再来一局");
+                try {
+                    String markdown = "**石头剪刀布**\n\n"
+                            + "⏰ 超时未完成，游戏已取消\n\n"
+                            + Markdown.enterCommand("/rsp", "再来一局");
 
-                GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), notifyId,
-                        TC.md(markdown));
-            } catch (Exception e) {
-                log.warn("发送出拳超时取消面板失败: ", e);
+                    GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), notifyId,
+                            TC.md(markdown));
+                } catch (Exception e) {
+                    log.warn("发送出拳超时取消面板失败: ", e);
+                }
+                log.info("石头剪刀布游戏在群 {} 因超时未完成而自动取消", sessionId);
             }
-            log.info("石头剪刀布游戏在群 {} 因超时未完成而自动取消", sessionId);
         }, CHOICE_TIMEOUT_MS);
     }
 
@@ -313,6 +323,7 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
     }
 
     private static class GameState {
+        final String statisticsId = java.util.UUID.randomUUID().toString();
         Phase phase = Phase.CHOOSING;
         String groupOpenId;
         // 玩家A = 发指令的人

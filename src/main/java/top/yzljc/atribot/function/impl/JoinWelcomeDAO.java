@@ -32,7 +32,7 @@ public final class JoinWelcomeDAO {
         Set<String> ids = new HashSet<>();
         int count = 0;
         for (JsonNode row : keyboard) {
-            require(row.isArray() && !row.isEmpty() && row.size() <= 5, "每行必须包含 1 至 5 个按钮");
+            require(row.isArray() && !row.isEmpty() && row.size() <= 10, "每行必须包含 1 至 10 个按钮");
             for (JsonNode button : row) {
                 require(button.isObject(), "按钮配置必须是对象");
                 String id = string(button, "button_id", "", 64);

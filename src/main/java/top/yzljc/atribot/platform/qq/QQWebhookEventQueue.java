@@ -6,12 +6,16 @@ import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -25,11 +29,13 @@ import java.util.function.Consumer;
 final class QQWebhookEventQueue implements AutoCloseable {
     record Event(String type, String id, JsonNode data, String rawPayload) { }
 
-    private final ArrayBlockingQueue<Event> queue;
+    private final ArrayBlockingQueue<PendingEvent> queue;
+    private final Semaphore capacity;
     private final Executor executor;
     private final Consumer<Event> processor;
-    // 排队、等待线程池空位和正在执行的事件均不按时间过期。
-    private final Set<String> pendingIds = new HashSet<>();
+    // 预留位置、等待 ACK、排队及执行中的事件均不按时间过期。
+    private final Map<String, PendingEvent> pendingIds = new HashMap<>();
+    private final Set<PendingEvent> pendingEvents = new HashSet<>();
     private final Cache<String, Boolean> completedIds = CacheBuilder.newBuilder()
             .maximumSize(20_000)
             .expireAfterWrite(Duration.ofMinutes(10))
@@ -39,45 +45,95 @@ final class QQWebhookEventQueue implements AutoCloseable {
 
     public QQWebhookEventQueue(int capacity, Executor executor, Consumer<Event> processor) {
         this.queue = new ArrayBlockingQueue<>(capacity);
+        this.capacity = new Semaphore(capacity);
         this.executor = executor;
         this.processor = processor;
         this.dispatcher = Thread.ofVirtual().name("qq-webhook-dispatcher").start(this::dispatch);
     }
 
-    /** 非阻塞入队；重复事件视为已接收，拒收的事件不写入去重记录。 */
-    synchronized boolean offer(Event event) {
+    /** 只预留容量，不分发；每次 HTTP 投递都必须报告它自己的 ACK 结果。 */
+    synchronized Receipt reserve(Event event) {
         if (closed) {
-            return false;
+            return null;
         }
         String id = event.id();
         boolean hasId = id != null && !id.isBlank();
-        if (hasId && (pendingIds.contains(id) || completedIds.getIfPresent(id) != null)) {
-            return true;
+        if (hasId && completedIds.getIfPresent(id) != null) {
+            return new Receipt(null);
         }
-        if (!queue.offer(event)) {
-            return false;
+        PendingEvent pending = hasId ? pendingIds.get(id) : null;
+        if (pending != null) {
+            pending.receipts++;
+            return new Receipt(pending);
         }
+        if (!capacity.tryAcquire()) return null;
+
+        pending = new PendingEvent(event);
+        pendingEvents.add(pending);
         if (hasId) {
-            pendingIds.add(id);
+            pendingIds.put(id, pending);
         }
-        return true;
+        return new Receipt(pending);
+    }
+
+    final class Receipt {
+        private final PendingEvent pending;
+        private final AtomicBoolean resolved = new AtomicBoolean();
+
+        private Receipt(PendingEvent pending) {
+            this.pending = pending;
+        }
+
+        void acknowledge() {
+            if (pending != null && resolved.compareAndSet(false, true)) resolve(pending, true);
+        }
+
+        void fail() {
+            if (pending != null && resolved.compareAndSet(false, true)) resolve(pending, false);
+        }
+    }
+
+    private static final class PendingEvent {
+        private final Event event;
+        private int receipts = 1;
+        private boolean acknowledged;
+        private boolean capacityReleased;
+
+        private PendingEvent(Event event) {
+            this.event = event;
+        }
+    }
+
+    private synchronized void resolve(PendingEvent pending, boolean acknowledged) {
+        if (closed) return;
+        pending.receipts--;
+        if (pending.acknowledged) return;
+        if (acknowledged) {
+            pending.acknowledged = true;
+            // 预留容量覆盖所有尚未交给工作线程的事件，此处必定有空间。
+            queue.add(pending);
+        } else if (pending.receipts == 0) {
+            forget(pending);
+        }
     }
 
     private void dispatch() {
         while (!closed) {
-            Event event;
+            PendingEvent pending;
             try {
-                event = queue.take();
+                pending = queue.take();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
             }
+            Event event = pending.event;
             try {
                 // 已向上游应答的事件不能因工作队列拥塞丢失。
                 boolean logged = false;
                 while (!closed) {
                     try {
-                        executor.execute(() -> process(event));
+                        executor.execute(() -> process(pending));
+                        releaseCapacity(pending);
                         break;
                     } catch (RejectedExecutionException full) {
                         if (!logged) {
@@ -88,13 +144,13 @@ final class QQWebhookEventQueue implements AutoCloseable {
                         TimeUnit.MILLISECONDS.sleep(100);
                     }
                 }
-                if (closed) forget(event);
+                if (closed) forget(pending);
             } catch (InterruptedException interrupted) {
-                forget(event);
+                forget(pending);
                 Thread.currentThread().interrupt();
                 return;
             } catch (RuntimeException e) {
-                forget(event);
+                forget(pending);
                 if (!closed) {
                     log.error("QQ Webhook 事件提交失败: type={}, id={}", event.type(), event.id(), e);
                 }
@@ -102,7 +158,8 @@ final class QQWebhookEventQueue implements AutoCloseable {
         }
     }
 
-    private void process(Event event) {
+    private void process(PendingEvent pending) {
+        Event event = pending.event;
         if (closed) {
             log.warn("QQ Webhook 队列已关闭，取消尚未开始的事件: type={}, id={}", event.type(), event.id());
             return;
@@ -112,21 +169,31 @@ final class QQWebhookEventQueue implements AutoCloseable {
         } catch (Exception e) {
             log.error("QQ Webhook 事件处理失败: type={}, id={}", event.type(), event.id(), e);
         } finally {
-            complete(event);
+            complete(pending);
         }
     }
 
-    private synchronized void complete(Event event) {
+    private synchronized void complete(PendingEvent pending) {
+        Event event = pending.event;
         if (event.id() != null && !event.id().isBlank()) {
             if (!closed) {
                 completedIds.put(event.id(), Boolean.TRUE);
             }
-            pendingIds.remove(event.id());
         }
+        forget(pending);
     }
 
-    private synchronized void forget(Event event) {
-        pendingIds.remove(event.id());
+    private synchronized void forget(PendingEvent pending) {
+        pendingIds.remove(pending.event.id(), pending);
+        pendingEvents.remove(pending);
+        releaseCapacity(pending);
+    }
+
+    private synchronized void releaseCapacity(PendingEvent pending) {
+        if (!pending.capacityReleased) {
+            pending.capacityReleased = true;
+            capacity.release();
+        }
     }
 
     @Override
@@ -136,9 +203,14 @@ final class QQWebhookEventQueue implements AutoCloseable {
         }
         closed = true;
         dispatcher.interrupt();
-        int discarded = queue.size();
+        int discarded = 0;
+        for (PendingEvent pending : pendingEvents) {
+            if (!pending.capacityReleased) discarded++;
+            releaseCapacity(pending);
+        }
         queue.clear();
         pendingIds.clear();
+        pendingEvents.clear();
         completedIds.invalidateAll();
         if (discarded > 0) {
             log.warn("QQ Webhook 内存队列关闭，丢弃 {} 条尚未提交的事件", discarded);

@@ -117,7 +117,7 @@
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
             </button>
-            <button class="chatnt-members-btn" :class="{ active: panel === 'info' || panel === 'user' }"
+            <button class="chatnt-members-btn" :class="{ active: panel === 'info' || panel === 'user' || panel === 'welcome' }"
                     title="信息与设置" aria-label="信息与设置" @click="togglePanel('info')">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>
@@ -345,26 +345,27 @@
             </div>
           </form>
 
-          <!-- ── 右侧栏：成员 / 信息 / 单用户设置 ── -->
+          <!-- ── 右侧栏：成员 / 信息 / 单用户设置 / 入群欢迎 ── -->
           <Transition name="chatnt-panel-backdrop">
             <div v-if="panel" class="chatnt-members-backdrop" @click="closePanel" />
           </Transition>
           <Transition name="chatnt-panel" mode="out-in">
-          <aside v-if="panel" :key="panel" class="chatnt-members">
+          <aside v-if="panel" :key="panel" class="chatnt-members" :class="{ 'chatnt-members--welcome': panel === 'welcome' }">
             <div class="chatnt-members-head">
-              <button v-if="panel === 'user'" class="chatnt-members-close" aria-label="返回"
-                      @click="panel = active.type === 'group' ? 'members' : 'info'">
+              <button v-if="panel === 'user' || panel === 'welcome'" class="chatnt-members-close"
+                      :aria-label="panel === 'welcome' ? '返回群聊信息' : '返回'" @click="backPanel">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="15 18 9 12 15 6"/>
                 </svg>
               </button>
               <div>
                 <div class="chatnt-members-title">
-                  {{ panel === 'members' ? '群成员' : panel === 'user' ? '用户设置' : (active.type === 'group' ? '群聊信息' : '用户信息') }}
+                  {{ panel === 'members' ? '群成员' : panel === 'user' ? '用户设置' : panel === 'welcome' ? '入群欢迎' : (active.type === 'group' ? '群聊信息' : '用户信息') }}
                 </div>
                 <div class="chatnt-members-sub">
                   <template v-if="panel === 'members'">{{ members.length }} 人发过言</template>
                   <template v-else-if="panel === 'user'">{{ profileName || profileTarget }}</template>
+                  <template v-else-if="panel === 'welcome'">{{ groupDisplayName(groupMeta) }}</template>
                   <template v-else>{{ active.openId }}</template>
                 </div>
               </div>
@@ -484,6 +485,10 @@
                       <span class="nt-row-label">邀请人</span>
                       <span class="nt-row-value">{{ groupMeta?.opMemberOpenId || '-' }}</span>
                     </div>
+                    <button type="button" class="nt-row clickable chatnt-settings-link" @click="togglePanel('welcome')">
+                      <span class="nt-row-label">入群欢迎<span class="nt-row-note">欢迎内容与按钮设置</span></span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -620,6 +625,12 @@
               </div>
             </div>
 
+            <JoinWelcomePanel v-else-if="panel === 'welcome' && active.type === 'group'"
+                              :key="active.openId" ref="welcomePanelRef" :group-open-id="active.openId"
+                              :bot-name="botName" :bot-avatar-url="userAvatarUrl(botOpenId) || ''"
+                              :debug-group-id="debugGroupId" :request="api"
+                              @enabled-change="syncWelcomeEnabled" />
+
             <!-- ═══ 单用户设置 ═══ -->
             <div v-else-if="panel === 'user'" class="chatnt-members-list chatnt-info">
               <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
@@ -704,7 +715,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
@@ -722,6 +733,7 @@ import ChatBackground from '../components/ChatBackground.vue'
 import UserProfileForm from '../components/UserProfileForm.vue'
 import GroupMemberDialog from '../components/GroupMemberDialog.vue'
 import GroupBlacklistPanel from '../components/GroupBlacklistPanel.vue'
+import JoinWelcomePanel from '../components/JoinWelcomePanel.vue'
 
 const router = useRouter()
 
@@ -730,6 +742,7 @@ const atriImg = import.meta.env.BASE_URL + 'img/atri-main.png'
 const appId = ref('')
 const botOpenId = ref('')
 const botName = ref('AtriBot')
+const debugGroupId = ref('')
 const groupAvatarUrls = reactive({})
 
 const groupAvatarRenderer = new GroupAvatarRenderer({
@@ -788,8 +801,9 @@ const LIST_MIN_WIDTH = 200
 const listWidth = ref(DEFAULT_LIST_WIDTH)
 const resizingList = ref(false)
 
-// 右侧栏：null | 'members' | 'info' | 'user'，三个视图共用一个抽屉
+// 右侧栏：用户设置和入群欢迎是二级页面，共用抽屉的返回与关闭行为。
 const panel = ref(null)
+const welcomePanelRef = ref(null)
 const members = ref([])
 const loadingMembers = ref(false)
 const memberSearch = ref('')
@@ -879,8 +893,6 @@ let eventSource = null
 let disposed = false
 let sseStopped = false
 let sseReconnectTimer = null
-let sseVerifyTimer = null
-let sseVerifyController = null
 let convRefreshTimer = null
 let convRefreshPending = false
 let convRefreshController = null
@@ -1207,6 +1219,8 @@ async function api(path, options) {
 
 async function logout() {
   if (disposed || sseStopped) return
+  if (!mayLeaveWelcome()) return
+  welcomePanelRef.value?.releaseLeaveGuard()
   stopSse()
   try {
     await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' })
@@ -1222,6 +1236,7 @@ async function loadConfig() {
     appId.value = data.appId || ''
     botOpenId.value = data.botOpenId || ''
     botName.value = data.botName || 'AtriBot'
+    debugGroupId.value = data.debugGroupId && data.debugGroupId !== 'null' ? String(data.debugGroupId) : ''
   } catch { /* ignore */ }
 }
 
@@ -1435,6 +1450,7 @@ async function selectConv(c) {
     mobileChatOpen.value = true
     return
   }
+  if (!mayLeaveWelcome()) return
   active.value = { type: c.type, openId: c.openId }
   resetProfile()
   messageScroller.cancel()
@@ -1453,7 +1469,7 @@ async function selectConv(c) {
   wakeupMode.value = false
   mutePanel.visible = false
   memberInfoTarget.value = null
-  closePanel()
+  panel.value = null
   members.value = []
   memberSearch.value = ''
   groupMeta.value = null
@@ -1473,16 +1489,28 @@ async function selectConv(c) {
 // 深链：/?group=xxx 或 /?user=xxx 直接打开对应会话（群/用户列表页「进入聊天」跳转用）
 // 需要 watch query：/?group=A → /?group=B 不会重挂载组件，只能靠路由变化触发
 function applyDeepLink() {
-  const q = router.currentRoute.value.query
-  const target = q.group
+  const target = deepLinkTarget(router.currentRoute.value.query)
+  if (target && !isActive(target)) selectConv(target)
+}
+
+function deepLinkTarget(q) {
+  return q.group
     ? { type: 'group', openId: String(q.group) }
     : q.user
       ? { type: 'c2c', openId: String(q.user) }
       : null
-  if (target && !isActive(target)) selectConv(target)
 }
 
 watch(() => router.currentRoute.value.query, applyDeepLink)
+onBeforeRouteLeave(() => disposed || sseStopped || mayLeaveWelcome())
+onBeforeRouteUpdate(to => {
+  const target = deepLinkTarget(to.query)
+  if (!target || isActive(target)) return true
+  if (!mayLeaveWelcome()) return false
+  // 已确认切换时先关闭编辑器，query watcher 选择新群时无需再次询问。
+  if (panel.value === 'welcome') panel.value = null
+  return true
+})
 
 async function loadLatestMessages({ animate = false } = {}) {
   if (disposed || !active.value) return
@@ -1609,12 +1637,28 @@ function isNearBottom() {
 
 // ═══════════════ 右侧栏：成员 / 信息 / 单用户设置 ═══════════════
 
+function mayLeaveWelcome() {
+  return panel.value !== 'welcome' || !welcomePanelRef.value || welcomePanelRef.value.mayLeave()
+}
+
 function closePanel() {
+  if (!mayLeaveWelcome()) return
   panel.value = null
+}
+
+function backPanel() {
+  togglePanel(panel.value === 'welcome' || active.value?.type !== 'group' ? 'info' : 'members')
+}
+
+function syncWelcomeEnabled(enabled) {
+  const entry = funcEntries.value.find(([key]) => key === 'member_add_welcome')
+  if (entry) entry[1] = { ...entry[1], enabled }
+  else funcEntries.value = [...funcEntries.value, ['member_add_welcome', { enabled }]]
 }
 
 async function togglePanel(name) {
   if (panel.value === name) { closePanel(); return }
+  if (!mayLeaveWelcome()) return
   panel.value = name
   if (name === 'members') await loadMembers()
   if (name === 'info') await loadInfoPanel()
@@ -1877,6 +1921,7 @@ function resetProfile() {
 
 async function openProfile(userOpenId, displayName, switchPanel = true) {
   if (disposed || !userOpenId) return
+  if (switchPanel && !mayLeaveWelcome()) return
   resetProfile()
   const seq = profileLoadSeq
   const controller = new AbortController()
@@ -2149,17 +2194,14 @@ async function refreshActiveMessages() {
 function stopSse() {
   sseStopped = true
   if (sseReconnectTimer) clearTimeout(sseReconnectTimer)
-  if (sseVerifyTimer) clearTimeout(sseVerifyTimer)
   sseReconnectTimer = null
-  sseVerifyTimer = null
-  sseVerifyController?.abort()
-  sseVerifyController = null
   if (eventSource) eventSource.close()
   eventSource = null
 }
 
 function expireSession() {
   if (disposed || sseStopped) return
+  welcomePanelRef.value?.releaseLeaveGuard()
   stopSse()
   convLoadSeq++
   resetProfile()
@@ -2177,38 +2219,8 @@ function scheduleSseReconnect() {
   if (disposed || sseStopped || sseReconnectTimer) return
   sseReconnectTimer = setTimeout(() => {
     sseReconnectTimer = null
-    reconnectSse()
+    connectSse()
   }, 5000)
-}
-
-async function reconnectSse() {
-  if (disposed || sseStopped || sseVerifyController) return
-  const controller = new AbortController()
-  sseVerifyController = controller
-  sseVerifyTimer = setTimeout(() => controller.abort(), 5000)
-  try {
-    const response = await fetch(`${API_BASE}/auth/verify`, {
-      credentials: 'same-origin',
-      cache: 'no-store',
-      signal: controller.signal
-    })
-    if (disposed || sseStopped || sseVerifyController !== controller) return
-    if (response.status === 401 || response.status === 503) {
-      expireSession()
-    } else if (response.status === 200) {
-      connectSse()
-    } else {
-      scheduleSseReconnect()
-    }
-  } catch {
-    if (!disposed && !sseStopped && sseVerifyController === controller) scheduleSseReconnect()
-  } finally {
-    if (sseVerifyController === controller) {
-      if (sseVerifyTimer) clearTimeout(sseVerifyTimer)
-      sseVerifyTimer = null
-      sseVerifyController = null
-    }
-  }
 }
 
 function connectSse() {
@@ -2218,15 +2230,6 @@ function connectSse() {
   if (eventSource) eventSource.close()
   const source = new EventSource(`${API_BASE}/events`, { withCredentials: true })
   eventSource = source
-  source.addEventListener('session-expired', () => {
-    if (disposed || sseStopped || eventSource !== source) return
-    expireSession()
-  })
-  source.onopen = () => {
-    if (disposed || eventSource !== source) return
-    scheduleConvRefresh()
-    scheduleMessageRefresh()
-  }
   source.onmessage = (e) => {
     if (disposed || eventSource !== source) return
     try {

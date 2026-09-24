@@ -1,0 +1,32 @@
+.intro-pending .topbar, .intro-pending .dashboard { visibility: hidden; }
+.intro-pending { height: 100svh; overflow: hidden; }
+.intro-screen { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 28px; background: #f4f5f0f5; }
+.intro-content { text-align: center; transform: translateY(-12px); }
+.intro-art { position: relative; width: min(188px,46vw,23svh); margin: 0 auto 26px; }
+.intro-portrait { animation: intro-float 2.6s ease-in-out infinite alternate; }
+.intro-portrait img { display: block; width: 100%; height: auto; }
+.intro-title { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: 3px; color: #53634d; }
+.intro-caption { margin: 12px 0 22px; font-size: 11px; letter-spacing: 1px; color: #929b88; }
+.intro-track { display: block; width: 88px; height: 2px; margin: 0 auto; border-radius: 3px; overflow: hidden; background: #c5cfbb40; }
+.intro-track>i { display: block; width: 38px; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#b0c19f00,#9caf8c,#b0c19f00); animation: intro-track 1.65s cubic-bezier(.45,0,.3,1) infinite; }
+.intro-screen-leave-active { transition: opacity .38s ease; pointer-events: none; }
+.intro-screen-leave-active .intro-content { transition: transform .38s cubic-bezier(.22,1,.36,1); }
+.intro-screen-leave-to { opacity: 0; }
+.intro-screen-leave-to .intro-content { transform: translateY(-22px) scale(1.035); }
+.intro-revealed .topbar { animation: nav-reveal .65s cubic-bezier(.22,1,.36,1) .04s backwards; }
+.intro-revealed .profile-card { animation: profile-reveal .75s cubic-bezier(.22,1,.36,1) .08s backwards; }
+.intro-revealed .avatar-frame { animation: avatar-reveal .8s cubic-bezier(.22,1,.36,1) .14s backwards; }
+.intro-revealed .activity-panel { animation: profile-reveal .8s cubic-bezier(.22,1,.36,1) .3s backwards; }
+.intro-revealed .sync-line { animation: profile-reveal .8s cubic-bezier(.22,1,.36,1) .4s backwards; }
+@keyframes intro-float { to { transform: translateY(-5px); } }
+@keyframes intro-track { from { transform: translateX(-40px); } to { transform: translateX(92px); } }
+@keyframes nav-reveal { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes profile-reveal { from { opacity: 0; transform: translate3d(0,18px,0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+@keyframes avatar-reveal { from { opacity: 0; transform: scale(.93); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen, .intro-content, .intro-art *, .intro-track>i,
+  .intro-revealed .topbar, .intro-revealed .dashboard * { animation: none!important; transition: none!important; }
+  .intro-track>i { width: 100%; opacity: .5; }
+}
+
+.intro-revealed .profile-details { animation: profile-reveal .72s cubic-bezier(.22,1,.36,1) .17s backwards; }

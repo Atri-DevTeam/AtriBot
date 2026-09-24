@@ -20,6 +20,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.database.repo
  */
 @Slf4j
+@Deprecated(since = "3.2.3", forRemoval = true)
 public class ErrorReportRepository {
 
     /**

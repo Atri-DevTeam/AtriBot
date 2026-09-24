@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.ImageComponent;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -36,6 +37,18 @@ public final class GuildChannelChat {
      */
     public static String replyMessage(String channelId, RT rt, ImageComponent image) {
         return await(AsyncGuildChannelChat.replyMessage(channelId, rt, image));
+    }
+
+    /**
+     * 发送频道文字子频道 Embed 被动消息
+     *
+     * @param channelId 私聊状态下获取到的频道 ID
+     * @param rt      消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param embed   Embed 消息
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String channelId, RT rt, Embed embed) {
+        return await(AsyncGuildChannelChat.replyMessage(channelId, rt, embed));
     }
 
     private static String await(CompletableFuture<String> future) {

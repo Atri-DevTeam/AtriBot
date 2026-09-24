@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.UACommand;
 import top.yzljc.atribot.auth.LoginCommand;
 import top.yzljc.atribot.auth.LoginService;
+import top.yzljc.atribot.miniapp.MiniappCommand;
+import top.yzljc.atribot.miniapp.MiniappRouter;
+import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -21,7 +24,6 @@ import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
-import top.yzljc.atribot.database.repo.ErrorReportRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
@@ -103,7 +105,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class Atri {
     private final SoundCommand soundCommand = new SoundCommand();
-    private final ItaQrcode itaQrcode = new ItaQrcode();
 
     @Getter
     private static Atri instance;
@@ -153,6 +154,7 @@ public class Atri {
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean disabled = new AtomicBoolean(false);
+    private final MiniappSessions miniappSessions = new MiniappSessions();
     @Getter
     private final PluginManager pluginManager = new PluginManager(Path.of("plugins"));
     /** 记录已访问过 webui api 的 IP */
@@ -195,12 +197,20 @@ public class Atri {
         QQBot.fetchBotInfo();
 
         server = Javalin.create(cfg -> {
+            if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
+                QQWebhookHandler.configureResponseCompletion(cfg);
+            }
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
             cfg.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/webui";
                 staticFiles.directory = "/official-webui";
                 staticFiles.location = Location.CLASSPATH;
                 staticFiles.headers.put("X-Frame-Options", "DENY");
+            });
+            cfg.staticFiles.add(staticFiles -> {
+                staticFiles.hostedPath = "/atrimeow/profile";
+                staticFiles.directory = "/miniapp";
+                staticFiles.location = Location.CLASSPATH;
             });
             cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
@@ -233,7 +243,7 @@ public class Atri {
         }
 
         WebUIRouter.register(server);
-        itaQrcode.registerRoutes(server);
+        MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
 
@@ -267,7 +277,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new FeedbackCommand());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
-        EventManager.getInstance().registerEvents(itaQrcode);
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
         ClickTrainGame clickTrainGame = new ClickTrainGame();
         EventManager.getInstance().registerEvents(clickTrainGame);
@@ -331,7 +340,6 @@ public class Atri {
         CommandManager.getCommand("hitokoto").setExecutor(new HitokotoCommand());
         CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
         CommandManager.getCommand("webui").setExecutor(new WebUICommand());
-        CommandManager.getCommand("ita-qrcode").setExecutor(itaQrcode);
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
         CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
@@ -365,6 +373,7 @@ public class Atri {
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
         CommandManager.getCommand("login").setExecutor(new LoginCommand());
+        CommandManager.getCommand("profile").setExecutor(new MiniappCommand(miniappSessions));
         CommandManager.getCommand("bind").setExecutor(new McBindCommand());
         CommandManager.getCommand("bvbind").setExecutor(new BilibiliBindCommand());
         CommandManager.getCommand("wz").setExecutor(new HypixelTNTWizardsCommand());
@@ -381,6 +390,7 @@ public class Atri {
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());
         CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
         CommandManager.getCommand("sharebot").setExecutor(new ShareBotCommand());
+        CommandManager.getCommand("groupsystemverify").setExecutor(new GroupSystemCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -407,7 +417,7 @@ public class Atri {
         LootRepository.init();
         CoinGainLogRepository.init();
         FeedbackRepository.init();
-        ErrorReportRepository.init();
+//        ErrorReportRepository.init();
         OfficialSendLogRepository.init();
         EventLogRepository.init();
         ModerationLogRepository.init();
@@ -491,6 +501,7 @@ public class Atri {
         }
 
         qqWebhookHandler.close();
+        miniappSessions.close();
         napcatEventQueue.close();
         TeacherClassTableService.shutdown();
         soundCommand.close();

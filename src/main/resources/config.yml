@@ -17,6 +17,12 @@ listen-port: 1234
 # API
 api-url: null
 
+# 个人空间：独立于管理后台。公网地址允许带页面路径；仅填域名时默认 /atrimeow/profile/。
+# 未配置 base-url 时不会签发链接；本地开发允许 http://localhost:1234。
+miniapp:
+  enabled: true
+  base-url: ""
+
 # Minecraft 名字与皮肤远端审核（审核密钥同时具备读取权限）
 minecraft-moderation:
   review-key: ""

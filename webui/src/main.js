@@ -16,6 +16,7 @@ import './styles/stats.css'
 import './styles/function-settings.css'
 import './styles/group-strategy.css'
 import './styles/menu-panel.css'
+// ErrorReport 停用后仍需保留：发送日志、事件记录和机器人设置等页面复用这些样式。
 import './styles/errors.css'
 import './styles/send-logs.css'
 import './styles/event-logs.css'

@@ -18,4 +18,6 @@ public class Identifier {
     public static final String NO_PERMISSION = "你是谁？";
 
     public static final String UNSUPPORTED_PLATFORM = "在执行指令时出现错误: 不支持的平台！";
+
+    public static final String UNSUPPORTED_SCENE = "该指令在当前场景下不支持！";
 }

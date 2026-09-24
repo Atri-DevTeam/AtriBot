@@ -5,6 +5,7 @@ import lombok.Data;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.official.OfficialMessageSendNotifier;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
@@ -121,7 +122,13 @@ public class NapcatController {
             return;
         }
 
+        if (!OfficialMessageSendNotifier.allowSend(method, targetUrl, dto.getBody())) {
+            ctx.json(Result.fail(403, "消息发送已被取消"));
+            return;
+        }
+
         long start = System.currentTimeMillis();
+        HttpResponse<String> response;
         try {
             HttpRequest.Builder builder = HttpService.newRequestBuilder()
                     .uri(URI.create(targetUrl))
@@ -148,19 +155,20 @@ public class NapcatController {
                 builder.method(method, HttpRequest.BodyPublishers.noBody());
             }
 
-            HttpResponse<String> response = HttpService.httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            ctx.json(Result.success(new OfficialApiDebugResponseDTO(
-                    method,
-                    targetUrl,
-                    response.statusCode(),
-                    response.headers().map(),
-                    response.body(),
-                    System.currentTimeMillis() - start
-            )));
+            response = HttpService.httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             ctx.json(Result.fail(500, e.getClass().getSimpleName() + ": " + e.getMessage()));
+            return;
         }
+        ctx.json(Result.success(new OfficialApiDebugResponseDTO(
+                method,
+                targetUrl,
+                response.statusCode(),
+                response.headers().map(),
+                response.body(),
+                System.currentTimeMillis() - start
+        )));
     }
 
     private static String normalizeHttpMethod(String method) {

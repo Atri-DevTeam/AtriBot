@@ -2,7 +2,11 @@ package top.yzljc.atribot.platform.qq;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.config.JavalinConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.LifeCycle;
 import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -48,6 +52,17 @@ public final class QQWebhookHandler implements AutoCloseable {
         this.appId = appId == null ? "" : appId;
         this.clientSecret = clientSecret == null ? "" : clientSecret;
         this.eventQueue = eventQueue;
+    }
+
+    /** 在 Javalin 启动前启用每个请求的响应完成回调。 */
+    public static void configureResponseCompletion(JavalinConfig config) {
+        config.jetty.modifyServer(server -> server.addEventListener(new LifeCycle.Listener() {
+            @Override
+            public void lifeCycleStarting(LifeCycle event) {
+                // 此时 Javalin 已创建 Connector，Jetty 尚未开始接收请求。
+                server.addBeanToAllConnectors(new HttpChannel.TransientListeners());
+            }
+        }));
     }
 
     public void handle(Context ctx) {
@@ -115,9 +130,41 @@ public final class QQWebhookHandler implements AutoCloseable {
 
         String eventId = payload.path("id").asText(null);
         String rawPayload = payload.toString();
-        boolean accepted = eventQueue.offer(new QQWebhookEventQueue.Event(
+        QQWebhookEventQueue.Receipt receipt = eventQueue.reserve(new QQWebhookEventQueue.Event(
                 eventType, eventId, eventData, rawPayload));
-        writeEventAck(ctx, accepted ? 200 : 503, accepted);
+        if (receipt == null) {
+            writeEventAck(ctx, 503, false);
+            return;
+        }
+
+        try {
+            // ctx.result() 仅设置待发送的响应。等 Jetty 完整写出 ACK 后才允许分发事件。
+            Request.getBaseRequest(ctx.req()).getHttpChannel().addListener(new HttpChannel.Listener() {
+                @Override
+                public void onResponseEnd(Request request) {
+                    if (request.getResponse().getStatus() == 200) {
+                        receipt.acknowledge();
+                    } else {
+                        receipt.fail();
+                    }
+                }
+
+                @Override
+                public void onResponseFailure(Request request, Throwable failure) {
+                    receipt.fail();
+                }
+
+                @Override
+                public void onComplete(Request request) {
+                    // 未正常写完响应时释放预留位置，允许腾讯重新投递。
+                    receipt.fail();
+                }
+            });
+            writeEventAck(ctx, 200, true);
+        } catch (RuntimeException e) {
+            receipt.fail();
+            throw e;
+        }
     }
 
     private static void writeEventAck(Context ctx, int status, boolean accepted) {

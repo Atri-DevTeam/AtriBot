@@ -103,7 +103,8 @@ public class DiceImpl {
         long[] results = new long[8];
         System.arraycopy(calculatedPulls, 0, results, 1, 7);
         StringBuilder sb = new StringBuilder();
-        sb.append("![skb #20px #20px](").append(ResourcesProperties.DICE_RENDER_RESULT_7_IMG).append(") **连续投掷").append(times).append("次High Class Archfiend Dice结果：**\n\n");
+        // 2026/9/19 删除数字显示，防止出现奇怪的东西
+        sb.append("![skb #20px #20px](").append(ResourcesProperties.DICE_RENDER_RESULT_7_IMG).append(") **投掷").append("High Class Archfiend Dice结果：**\n\n");
         sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "1"), 16, 16)).append("**1点** (-300❤)：").append(results[1]).append(" 次\n");
         sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "2"), 16, 16)).append("**2点** (-200❤)：").append(results[2]).append(" 次\n");
         sb.append("> ").append(Markdown.img(ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "3"), 16, 16)).append("**3点** (-100❤)：").append(results[3]).append(" 次\n");

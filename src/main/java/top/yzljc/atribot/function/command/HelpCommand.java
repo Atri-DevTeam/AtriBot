@@ -1,13 +1,12 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.*;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -52,20 +51,24 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
                     "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABHypixel Ban Track") + "\n" +
                     "> " + Markdown.enterCommand("/games", "\uD83E\uDDE9游玩更多经典小游戏"));
 
-            Object keyboard = TC.keyboard(
+//            Object keyboard = TC.keyboard(
+//            );
+
+            Keyboard keyboard = new Keyboard(
                     List.of(
                             List.of(
                                     new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
                                     new Button("s6", "全量消息", "/全量消息", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                             ),
                             List.of(
-//                                    new Button("l1", "社区交流", "https://qm.qq.com/q/UXrrpLsICG", true, ButtonStyle.BLUE, ButtonType.LINK),
                                     new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
                                     new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + Config.getInstance().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
                             )
                     )
             );
-            user.sendMessage(md, keyboard);
+
+            user.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())));
+
             return true;
         }
 

@@ -452,10 +452,6 @@ public class ChatService {
     }
 
     private ChatResponse doSendMessage(String url, MessageBody request, String logType) {
-        if (request.getMsgId() == null && request.getEventId() == null && logType.equals("群聊")) {
-            activeRateLimiter.waitForActiveRateLimit();
-        }
-
         String json;
         try {
             json = objectMapper.writeValueAsString(request);
@@ -464,6 +460,11 @@ public class ChatService {
                     null, null, "消息序列化失败: " + e.getMessage());
             log.error("{}消息序列化失败: ", logType, e);
             return null;
+        }
+
+        if (!OfficialMessageSendNotifier.allowSend("POST", url, json)) return null;
+        if (request.getMsgId() == null && request.getEventId() == null && logType.equals("群聊")) {
+            activeRateLimiter.waitForActiveRateLimit();
         }
 
         var res = HttpService.postJsonDetailed(url, json,

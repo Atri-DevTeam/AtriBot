@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -11,9 +12,11 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.RT;
+import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.function.games.sound.SoundCatalog;
 import top.yzljc.atribot.function.games.sound.SoundRound;
@@ -26,7 +29,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ToIntBiFunction;
 
-/** Official QQ group and private sound quiz; the first valid command answer ends the round. */
+/**
+ * @Author YZ_Ljc_
+ * @ClassName SoundCommand
+ * @Created_at 2026/09/17
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.command
+ */
 public final class SoundCommand implements CommandExecutor, AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(SoundCommand.class);
     private static final int CORRECT_REWARD = 15;
@@ -46,8 +55,9 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
             return true;
         }
         ThreadManager.execute(() -> {
-            try { handle(qq, args); }
-            catch (Exception e) {
+            try {
+                handle(qq, args);
+            } catch (Exception e) {
                 log.warn("听声辨物指令失败", e);
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                 qq.sendMessage(TC.md("听声辨物资源或消息暂时不可用，请稍后再试。"));
@@ -92,7 +102,9 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
                     question.options().get(question.answer()).id(), question.audio().path(), question.audio().sha1(),
                     question.options().stream().map(option -> option.id() + "=" + option.name()).toList());
             int seconds = Math.clamp(Config.getInstance().getSoundAnswerSeconds(), 15, 120);
-            String cardId = qq.sendMessage(TC.md(questionText(round)), answerKeyboard(round, commandPrefix()), false);
+
+            String cardId = qq.sendMessage(TC.md(questionText(round)).setKeyboard(answerKeyboard(round, commandPrefix()), OfficialUsers.isUserUnsupportedKeyboard(qq.getUserId())), false);
+
             if (cardId == null || cardId.isBlank()) throw new IllegalStateException("Question card send failed");
             log.info("听声辨物题面已发送: round={}, session={}, cardMsg={}, audioUrl={}",
                     round.id, session, cardId, round.audioUrl);
@@ -126,7 +138,8 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
         return catalog;
     }
 
-    public record AnswerInput(String token, int choice) {}
+    public record AnswerInput(String token, int choice) {
+    }
 
     public static AnswerInput parseAnswer(String[] args) {
         String token = null;
@@ -157,7 +170,11 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
         SoundRound.Answer result = round.answer(input.token() == null ? round.id : input.token(),
                 qq.getUserId(), input.choice(), System.currentTimeMillis());
         switch (result.status()) {
-            case CORRECT, WRONG -> reveal(qq, round, result.result());
+            case CORRECT, WRONG -> {
+                UserGameDataRepository.record(UserGameDataRepository.Game.sound, round.id,
+                        List.of(UserGameDataRepository.Delta.operation(qq.getUserId(), result.status() == SoundRound.Vote.CORRECT)));
+                reveal(qq, round, result.result());
+            }
             case EXPIRED -> qq.sendMessage(TC.md("这道题尚未开始或已经结束，请使用当前题目的按钮作答。"));
         }
     }
@@ -210,19 +227,23 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
     private String questionText(SoundRound round) {
         var q = round.question;
         StringBuilder text = new StringBuilder("**Minecraft 听声辨物**\n\n下述声音可能出现在什么场景？\n\n");
-        for (int i = 0; i < 4; i++) text.append("> ").append((char) ('A' + i)).append(". ").append(escape(q.options().get(i).name())).append("\n");
+        for (int i = 0; i < 4; i++)
+            text.append("> ").append((char) ('A' + i)).append(". ").append(escape(q.options().get(i).name())).append("\n");
         return text.append("\n\uD83D\uDD0D 请点击下方按键做出判断").toString();
     }
 
-    public static Object answerKeyboard(SoundRound round, String prefix) {
+    public static Keyboard answerKeyboard(SoundRound round, String prefix) {
         List<Button> buttons = new ArrayList<>();
         for (int i = 0; i < 4; i++)
             buttons.add(new Button("sound_" + i, String.valueOf((char) ('A' + i)),
                     prefix + "sound answer " + round.id + " " + (char) ('A' + i), true, ButtonStyle.BLUE, ButtonType.COMMAND));
-        return TC.keyboard(List.of(buttons));
+        return new Keyboard(List.of(buttons));
     }
 
-    private String commandPrefix() { return Config.getInstance().getCommandPrefix(); }
+    private String commandPrefix() {
+        return Config.getInstance().getCommandPrefix();
+    }
+
     private static String sessionKey(QQCommandSender qq) {
         return sessionKey(qq.getPlatform(), qq.getGroupId(), qq.getUserId());
     }
@@ -236,7 +257,10 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("Missing sound conversation ID");
         return platform.name() + ":" + id;
     }
-    private static String escape(String text) { return text.replaceAll("[\\\\`*_{}\\[\\]()<>#|!\\r\\n]", " "); }
+
+    private static String escape(String text) {
+        return text.replaceAll("[\\\\`*_{}\\[\\]()<>#|!\\r\\n]", " ");
+    }
 
     @Override
     public void close() {
