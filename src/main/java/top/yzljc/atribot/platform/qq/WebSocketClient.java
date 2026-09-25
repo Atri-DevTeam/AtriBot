@@ -7,7 +7,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -46,6 +46,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     @Override
     public void onMessage(String message) {
+        long receivedNanos = System.nanoTime();
         try {
             JsonNode payload = objectMapper.readTree(message);
             int op = payload.get("op").asInt();
@@ -70,6 +71,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                     String eventType = payload.get("t").asText();
                     String eventId = payload.path("id").asText(null);
                     JsonNode eventData = payload.get("d");
+                    QQConnectionLatency.received(eventType, eventData, "WebSocket", receivedNanos);
                     if ("READY".equals(eventType)) {
                         handleEvent(eventType, eventId, eventData, payload);
                     } else {
@@ -236,6 +238,8 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             return;
         }
 
+        QQConnectionLatency.dispatched(eventType, eventData);
+
         switch (eventType) {
             case "READY":
                 return;
@@ -296,7 +300,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             }
             log.debug(eventData.toString());
             if (DebugCommand.type == DebugCommand.DebugDisplayType.DEBUG_GROUP) {
-                GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "事件类型: " + eventType + "\n事件数据: " + eventData);
+                NapcatDebugGroup.sendAsync("事件类型: " + eventType + "\n事件数据: " + eventData);
             }
         }
 

@@ -11,6 +11,7 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -359,7 +360,10 @@ public class HypixelCommand implements CommandExecutor {
             return new Result(false, "数据查询失败，服务器未响应，请稍后重试！", null, null);
         }
 
-        var url = ResourcesProperties.DUMP + "/" + d.path("uuid").asText();
+        var url = ImageDelivery.resolve(d);
+        if (url == null || url.isBlank()) {
+            return new Result(false, "图片地址无效，请稍后重试！", d, null);
+        }
         var w = d.path("width").asInt(0);
         var h = d.path("height").asInt(0);
         return new Result(true, "ok", d, new ImageDTO(url, w, h));

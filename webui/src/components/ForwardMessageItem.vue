@@ -23,15 +23,15 @@
 
         <div v-if="item.attachments?.length" class="forward-attachments">
           <template v-for="(attachment, index) in item.attachments" :key="index">
-            <a v-if="isImage(attachment) && attachment.url" class="forward-image-link"
+            <a v-if="isImage(attachment) && absoluteUrl(attachment.url)" class="forward-image-link"
                :href="absoluteUrl(attachment.url)" target="_blank" rel="noreferrer">
               <img :src="absoluteUrl(attachment.url)" :alt="attachment.filename || '图片'" loading="lazy" />
             </a>
-            <video v-else-if="attachment.type === '视频' && attachment.url"
+            <video v-else-if="attachment.type === '视频' && absoluteUrl(attachment.url)"
                    :src="absoluteUrl(attachment.url)" controls playsinline preload="metadata" />
-            <audio v-else-if="attachment.type === '语音' && attachment.url"
+            <audio v-else-if="attachment.type === '语音' && absoluteUrl(attachment.url)"
                    :src="absoluteUrl(attachment.url)" controls preload="none" />
-            <a v-else-if="attachment.url" class="forward-file" :href="absoluteUrl(attachment.url)"
+            <a v-else-if="absoluteUrl(attachment.url)" class="forward-file" :href="absoluteUrl(attachment.url)"
                target="_blank" rel="noreferrer">
               {{ attachment.filename || attachment.type || '附件' }}
               <small v-if="attachment.size">{{ formatSize(attachment.size) }}</small>
@@ -55,6 +55,7 @@
 <script setup>
 import { computed } from 'vue'
 import ForwardRecordPreview from './ForwardRecordPreview.vue'
+import { mediaUrl } from '../lib/mediaUrl.js'
 
 const props = defineProps({
   item: { type: Object, required: true }
@@ -67,10 +68,7 @@ function isImage(attachment) {
 }
 
 function absoluteUrl(url) {
-  if (!url) return ''
-  if (/^(https?:)?\/\//i.test(url)) return url.startsWith('//') ? 'https:' + url : url
-  if (url.startsWith('data:')) return url
-  return 'https://' + url
+  return mediaUrl(url)
 }
 
 function formatSize(value) {

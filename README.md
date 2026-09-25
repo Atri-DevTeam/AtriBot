@@ -280,6 +280,14 @@ loots:
   admin-token: "atri-loots-admin@2026"
 ```
 
+### COS 图片投递协议
+
+COS 上传、对象生命周期和签名配置由远端 `atrimeow-ugc` 生图服务负责；本仓库是调用该服务的 Bot。远端返回 `data.way: "cos"` 时，Bot 直接将本次响应的 `data.url` 交给 QQ 平台，`api_url` 仅供旧取图逻辑或排障使用。即时图片和抽卡图都按此处理；COS URL 缺失时本次图片发送失败，不回退到服务端取图。
+
+抽卡图的签名 URL 会过期。Bot 每次抽卡都重新请求 `POST /v2/atrimeow/loots/draw-card` 获取地址，不保存该 URL。远端关闭 COS 时，原有 `way: "api"` 的 `uuid` 或相对 `url` 仍可使用。
+
+WebUI 不加载 `cos.ap-guangzhou.myqcloud.com` 及其存储桶子域名下的媒体。聊天记录中的相关图片和链接只显示占位内容，不向 COS 发起浏览器请求；Bot 发送到 QQ 的图片投递仍按上述协议执行。
+
 ---
 
 ## 消息发送
@@ -1091,8 +1099,10 @@ String reply = aiService.askWithSystemPrompt("你好", "你是一个助手");
 | `HypixelTNTWizardsStats` | Hypixel TNT Wizards 数据 | `/wizard` |
 | `HypixelZombies` | Hypixel Zombies 数据 | `/zombies` |
 | `EarthOnline` | 地球 ONLINE | `/地球online` |
-| `DebugCommand` | 控制台/QQ/Napcat Debug 模式开关 | 控制台 `/debug` |
+| `DebugCommand` | 控制台/QQ/Napcat Debug 模式开关 | `/debug -t` 开关官方 QQ 延迟调试 |
 | `LootsCommand` | 抽卡（每日免费 + 付费） | `/随机物品` |
+
+官方 QQ 延迟调试默认关闭，可由控制台或有权限的官方群聊、私聊、Napcat 群执行 `/debug -t` 切换。`/boop` 指令始终可用；调试启用时，在官方 QQ 群聊或私聊发送 `/boop`，服务会在 QQ 发送接口成功返回消息 ID 后把延迟明细写入服务日志并发送到 Napcat 调试群。总耗时从本机收到 WebSocket 帧或 Webhook 请求开始，到 QQ 发送接口确认结束；明细区分接收至分发、分发至开始发送和 QQ 接口耗时。该值不包含 QQ 将回复投递或显示到客户端的时间。调试启用时，其他群聊、私聊消息的首条成功回复仅写入 debug 日志。计时样本最多保留 5 分钟、10,000 条。
 
 ### Napcat 功能（`function/napcat/`）
 

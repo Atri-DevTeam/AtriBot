@@ -11,8 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
@@ -20,11 +19,10 @@ import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
 import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
 import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atribot.platform.qq.QQConnectionLatency;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.test.WhatFuckingPing;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -467,14 +465,10 @@ public class ChatService {
             activeRateLimiter.waitForActiveRateLimit();
         }
 
-        var res = HttpService.postJsonDetailed(url, json,
-                "Authorization", "QQBot " + tokenManager.getAccessToken());
-
-        if (request.getContent() != null && !request.getContent().isBlank() && request.getContent().equalsIgnoreCase("Boop!")) {
-            long ms2 = System.currentTimeMillis();
-            long ms = ms2 - WhatFuckingPing.getAccessMs().get(request.getMsgId());
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "消息发送耗时: " + ms + "ms, 链路: onCommand -> doMessageSend");
-        }
+        String authorization = "QQBot " + tokenManager.getAccessToken();
+        long sendStartedNanos = System.nanoTime();
+        var res = HttpService.postJsonDetailed(url, json, "Authorization", authorization);
+        long confirmedNanos = System.nanoTime();
 
         try {
             String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
@@ -489,6 +483,17 @@ public class ChatService {
                     id = idNode.asText();
                     OfficialSendLogRepository.recordResponse(traceId, logType, "POST", url, json,
                             res.status(), res.body());
+                    QQConnectionLatency.Result latency = QQConnectionLatency.sent(
+                            logType, request.getMsgId(), sendStartedNanos, confirmedNanos);
+                    if (latency != null) {
+                        String report = latency.describe();
+                        if (latency.isBoop()) {
+                            log.info(report);
+                            NapcatDebugGroup.sendAsync(report);
+                        } else {
+                            log.debug(report);
+                        }
+                    }
                     return new ChatResponse(id, timestamp, refIdx);
                 }
                 OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,

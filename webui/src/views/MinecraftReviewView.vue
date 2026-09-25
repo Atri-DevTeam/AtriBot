@@ -44,7 +44,7 @@
       </section>
     </main>
 
-    <Teleport to="body"><div v-if="reviewDialog" class="mc-dialog-backdrop" @mousedown.self="reviewDialog=null"><section class="mc-dialog"><header><div><h3>{{ reviewDialog.status==='APPROVED'?'通过审核':'设为不通过' }}</h3><p>{{ type==='names' ? (reviewDialog.item.name || reviewDialog.item.originalName) : shortSkin(reviewDialog.item.skinId) }}</p></div><button @click="reviewDialog=null">×</button></header><p v-if="reviewDialog.status==='APPROVED'" class="mc-approve-confirm">确认将该内容设为已通过？</p><label v-else><span>不通过原因</span><textarea v-model.trim="reason" rows="4" placeholder="请输入不通过原因"/></label><p v-if="dialogError" class="mc-dialog-error">{{ dialogError }}</p><footer><button class="ghost-button" @click="reviewDialog=null">取消</button><button class="primary-button" :disabled="busy!==''" @click="review">确认</button></footer></section></div></Teleport>
+    <Teleport to="body"><div v-if="reviewDialog" class="mc-dialog-backdrop" @mousedown.self="reviewDialog=null"><section class="mc-dialog"><header><div><h3>{{ reviewDialog.status==='APPROVED'?'通过审核':'设为不通过' }}</h3><p>{{ type==='names' ? (reviewDialog.item.name || reviewDialog.item.originalName) : shortSkin(reviewDialog.item.skinId) }}</p></div><button @click="reviewDialog=null">×</button></header><p v-if="reviewDialog.status==='APPROVED'" class="mc-approve-confirm">确认将该内容设为通过？</p><label v-else><span>不通过原因</span><textarea v-model.trim="reason" rows="4" placeholder="请输入不通过原因"/></label><p v-if="dialogError" class="mc-dialog-error">{{ dialogError }}</p><footer><button class="ghost-button" @click="reviewDialog=null">取消</button><button class="primary-button" :disabled="busy!==''" @click="review">确认</button></footer></section></div></Teleport>
     <Teleport to="body"><div v-if="largePreview" class="mc-preview-backdrop" @mousedown.self="largePreview=null"><button class="mc-preview-close" aria-label="关闭预览" @click="largePreview=null">×</button><img :src="largePreview.url" :alt="largePreview.alt"/></div></Teleport>
   </div>
 </template>
@@ -59,7 +59,7 @@ const router=useRouter(), sidebarOpen=ref(false), botName=ref('AtriBot'), appId=
 const type=ref('names'), status=ref('PENDING'), page=ref(1), size=20, total=ref(0), items=ref([]), loading=ref(false), error=ref('')
 const searchInput=ref(''), searchTerm=ref(''), searchUuid=ref(''), searchResults=ref(null)
 const player=ref(''), submitting=ref(false), submitMessage=ref(''), submitError=ref(false), busy=ref(''), reviewDialog=ref(null), reason=ref(''), dialogError=ref(''), largePreview=ref(null)
-const statuses=[{value:'PENDING',label:'待审核'},{value:'APPROVED',label:'已通过'},{value:'BLACKLISTED',label:'未通过'},{value:'ALL',label:'全部'}]
+const statuses=[{value:'PENDING',label:'待审'},{value:'APPROVED',label:'通过'},{value:'BLACKLISTED',label:'违规'},{value:'ALL',label:'全部'}]
 
 async function api(path,options={}){const res=await fetch(`${API_BASE}${path}`,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(options.headers||{})},...options});let payload;try{payload=await res.json()}catch{throw new Error(`HTTP ${res.status}`)}if(res.status===401){router.replace('/login');throw new Error('未授权')}if(payload.status!==200)throw new Error(payload.message||'请求失败');return payload.data}
 async function fetchAllRecords(kind){
@@ -129,7 +129,7 @@ function previewUrl(item,previewType){return `${API_BASE}/minecraft-moderation/s
 function openPreview(item,previewType){largePreview.value={url:previewUrl(item,previewType),alt:previewType==='AVATAR'?'头像大图':'皮肤 3D 大图'}}
 function shortSkin(id){return id ? `皮肤 ${id.slice(0,8)}` : '未知皮肤'}
 function stateClass(value){return String(value||'').toLowerCase()}
-function stateText(value){return value==='APPROVED'?'已通过':value==='BLACKLISTED'?'未通过':'待审核'}
+function stateText(value){return value==='APPROVED'?'通过':value==='BLACKLISTED'?'违规':'待审'}
 function logout(){fetch(`${API_BASE}/auth/logout`,{method:'POST',credentials:'same-origin'}).finally(()=>router.replace('/login'))}
 onMounted(async()=>{try{const c=await api('/config');botName.value=c.botName||'AtriBot';appId.value=c.appId||'';botOpenId.value=c.botOpenId||''}catch{}await load()})
 </script>

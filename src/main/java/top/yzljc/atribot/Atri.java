@@ -51,8 +51,6 @@ import top.yzljc.atribot.function.tasks.*;
 import top.yzljc.atribot.function.utils.*;
 import top.yzljc.atribot.function.utils.general.*;
 import top.yzljc.atribot.function.utils.napcat.*;
-import top.yzljc.atribot.function.utils.napcat.classtable.TeacherClassTableCommand;
-import top.yzljc.atribot.function.utils.napcat.classtable.TeacherClassTableService;
 import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.command.PicStatsCommand;
 import top.yzljc.atribot.function.command.PicSubmitCommand;
@@ -63,13 +61,9 @@ import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.test.*;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
-import top.yzljc.atribot.database.repo.TufeElecRepository;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.function.utils.like.AutoLikeCommand;
 import top.yzljc.atribot.function.utils.like.CardLike;
-import top.yzljc.atribot.function.impl.tufe.TufeCheckHelp;
-import top.yzljc.atribot.function.command.TufeElectricBindCommand;
-import top.yzljc.atribot.function.command.TufeElectricQueryCommand;
 import top.yzljc.atribot.function.task.*;
 import top.yzljc.atribot.platform.napcat.NapcatEventQueue;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
@@ -318,8 +312,6 @@ public class Atri {
         CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
         CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
-        CommandManager.getCommand("tufe").setExecutor(new TufeClassAlert());
-        CommandManager.getCommand("教师课表").setExecutor(new TeacherClassTableCommand());
 //        CommandManager.getCommand("verify").setExecutor(new VerifyMinecraftCommand());
         CommandManager.getCommand("info").setExecutor(new SizeNtUid());
 
@@ -345,10 +337,6 @@ public class Atri {
         CommandManager.getCommand("四子棋").setExecutor(new ConnectFourGame());
         CommandManager.getCommand("rsp").setExecutor(rockPaperScissorsGame);
 
-        CommandManager.getCommand("查询帮助").setExecutor(new TufeCheckHelp());
-        CommandManager.getCommand("绑定").setExecutor(new TufeElectricBindCommand());
-        CommandManager.getCommand("宿舍电表").setExecutor(new TufeElectricQueryCommand(0, "宿舍电表", "宿舍电表"));
-        CommandManager.getCommand("空调电表").setExecutor(new TufeElectricQueryCommand(1, "空调电表", "空调电表"));
         CommandManager.getCommand("sign").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("ema").setExecutor(new EmaCommand());
@@ -412,7 +400,6 @@ public class Atri {
 
         OfficialGroups.init();
         OfficialUsers.init();
-        TufeElecRepository.init();
         SignRepository.init();
         LootRepository.init();
         CoinGainLogRepository.init();
@@ -503,7 +490,6 @@ public class Atri {
         qqWebhookHandler.close();
         miniappSessions.close();
         napcatEventQueue.close();
-        TeacherClassTableService.shutdown();
         soundCommand.close();
         groupProfileRefreshBatcher.close();
         pluginManager.close();

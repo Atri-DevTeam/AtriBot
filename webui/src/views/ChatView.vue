@@ -180,7 +180,7 @@
                       </div>
                       <div v-if="message.attachments" class="qm-attach">
                         <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
-                          <img v-if="att.type === 'image' && !attachFailed[att.url]"
+                          <img v-if="att.type === 'image' && att.url && !attachFailed[att.url]"
                                :src="att.url" :alt="att.filename"
                                referrerpolicy="no-referrer"
                                @error="attachFailed[att.url] = true"
@@ -214,7 +214,7 @@
                               <a v-if="att.url || att.voiceUrl" class="attach-fail" :href="att.url || att.voiceUrl" target="_blank" rel="noreferrer">打开原始音频</a>
                             </template>
                           </div>
-                          <a v-else-if="att.type === 'file'" class="qm-file"
+                          <a v-else-if="att.type === 'file' && att.url" class="qm-file"
                              :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
                             <span class="qm-file-icon">
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -719,6 +719,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
 import { renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
+import { mediaUrl } from '../lib/mediaUrl.js'
 import { hasArkMessage } from '../lib/ark.js'
 import { parseForwardContent } from '../lib/forward.js'
 import { vChatImageLayout } from '../lib/chatImageLayout.js'
@@ -2702,8 +2703,9 @@ function renderRefContent(ref) {
     if (!a || typeof a !== 'object') continue
     const type = a.content_type || ''
     if (type === 'image' || type.startsWith('image/')) {
-      if (a.url) {
-        parts.push(`<img src="${escapeHtml(absUrl(a.url))}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" alt="图片">`)
+      const url = mediaUrl(a.url)
+      if (url) {
+        parts.push(`<img src="${escapeHtml(url)}" referrerpolicy="no-referrer" style="max-width:120px;max-height:80px;border-radius:4px;display:block" alt="图片">`)
       } else {
         parts.push(`<span>[图片] ${escapeHtml(a.filename || '')}</span>`)
       }
@@ -2732,34 +2734,27 @@ function parseAttach(raw) {
  * 官方 Bot 的附件 url 不带协议头（形如 multimedia.nt.qq.com.cn/download?...&rkey=...），
  * 直接塞进 src 会被当成站内相对路径。后端 CommandSender#getImageUrls 也是这么补的。
  */
-function absUrl(url) {
-  if (!url) return ''
-  if (/^(https?:)?\/\//i.test(url)) return url.startsWith('//') ? 'https:' + url : url
-  if (url.startsWith('data:')) return url
-  return 'https://' + url
-}
-
 function normalizeAttachment(att) {
   const contentType = att?.content_type || ''
   if (att?.url && contentType.startsWith('image/')) {
-    return { ...att, type: 'image', url: absUrl(att.url) }
+    return { ...att, type: 'image', url: mediaUrl(att.url) }
   }
   if (contentType.startsWith('video/')) {
-    return { ...att, type: 'video', url: absUrl(att.url) }
+    return { ...att, type: 'video', url: mediaUrl(att.url) }
   }
   if (contentType === 'voice' || contentType.startsWith('audio/')) {
     return {
       ...att,
       type: 'voice',
-      url: absUrl(att.url),
+      url: mediaUrl(att.url),
       asrText: att.asr_refer_text || '',
-      voiceUrl: absUrl(att.voice_wav_url || att.url)
+      voiceUrl: mediaUrl(att.voice_wav_url || att.url)
     }
   }
   // content_type 为 file，以及任何有 url 但类型不认识的附件，都按文件卡片兜底，
   // 免得像之前那样被静默丢掉、消息看起来是空的
   if (att?.url) {
-    return { ...att, type: 'file', url: absUrl(att.url) }
+    return { ...att, type: 'file', url: mediaUrl(att.url) }
   }
   return null
 }

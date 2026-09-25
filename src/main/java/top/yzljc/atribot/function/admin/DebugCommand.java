@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.admin;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.qq.QQConnectionLatency;
 import top.yzljc.atribot.utils.debug.NapcatPacket;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,9 +23,25 @@ public class DebugCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
+        if (args.length == 1 && "-t".equalsIgnoreCase(args[0])) {
+            boolean allowed = sender instanceof ConsoleCommandSender
+                    || sender instanceof QQCommandSender qq
+                    && (qq.getPlatform() == Platform.OFFICIAL_GROUP || qq.getPlatform() == Platform.OFFICIAL_C2C)
+                    && qq.hasPermission()
+                    || sender instanceof NapcatCommandSender nc
+                    && nc.getPlatform() == Platform.NAPCAT_GROUP && nc.hasPermission();
+            if (!allowed) {
+                sender.sendMessage("你没有权限执行此操作！");
+                return true;
+            }
+            boolean enabled = QQConnectionLatency.toggle();
+            sender.sendMessage("官方 QQ 延迟调试已" + (enabled ? "启用" : "关闭") + "，/boop 指令仍可正常使用。");
+            return true;
+        }
+
         if (sender instanceof ConsoleCommandSender console) {
             if (args.length < 1) {
-                console.sendMessage("无效的平台参数，可选参数: -n, -o");
+                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t");
                 return true;
             }
             if (args.length >1 && args[0].equals("-o")) {
@@ -49,7 +66,7 @@ public class DebugCommand implements CommandExecutor {
                 }
                 return true;
             } else {
-                console.sendMessage("无效的平台参数，可选参数: -n, -o");
+                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t");
                 return true;
             }
 

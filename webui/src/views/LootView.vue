@@ -80,7 +80,7 @@
                   <div class="loot-card-body">
                     <input v-model="it.displayName" class="loot-inline-input" aria-label="物品名称" placeholder="物品名称" />
                     <textarea v-model="it.description" class="loot-inline-textarea" rows="2" aria-label="介绍文案" placeholder="添加介绍文案"></textarea>
-                    <div class="loot-card-meta" :title="it.itemId">ID · {{ it.itemId }}</div>
+                    <div class="loot-card-meta" :title="it.itemId">{{ it.itemId }}</div>
                     <div class="loot-card-actions">
                       <button class="ghost-button small loot-save" type="button" :disabled="savingId === it.itemId"
                               @click="saveItem(it)">{{ savingId === it.itemId ? '保存中…' : '保存' }}</button>
@@ -371,6 +371,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE } from '../router.js'
 import { prepareLootImage } from '../lib/lootImage.js'
+import { isBlockedCosUrl } from '../lib/mediaUrl.js'
 import AppSidebar from '../components/AppSidebar.vue'
 
 const router = useRouter()
@@ -463,7 +464,7 @@ const brokenThumbs = reactive(new Set())
 
 function thumbUrl(itemId) {
   // 目录还没回来时不能返回空串：<img src=""> 会让浏览器把当前页面地址再请求一遍
-  if (!imageBaseUrl.value) return ''
+  if (!imageBaseUrl.value || isBlockedCosUrl(imageBaseUrl.value)) return ''
   return `${imageBaseUrl.value}/${itemId}`
 }
 
@@ -825,12 +826,12 @@ function normalizeCatalogItem(item) {
 
 function lootThumbUrl(itemId) {
   const base = userDetail.value?.imageBaseUrl || ''
-  return base ? `${base}/${itemId}` : ''
+  return base && !isBlockedCosUrl(base) ? `${base}/${itemId}` : ''
 }
 
 function catalogThumbUrl(itemId) {
   const base = userDetail.value?.imageBaseUrl || imageBaseUrl.value
-  return base ? `${base}/${itemId}` : ''
+  return base && !isBlockedCosUrl(base) ? `${base}/${itemId}` : ''
 }
 
 function resetUserSelections() {

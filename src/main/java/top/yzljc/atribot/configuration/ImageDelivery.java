@@ -28,6 +28,11 @@ public final class ImageDelivery {
         if (url != null && !url.isBlank()) {
             return url;
         }
+        // A COS response needs its freshly signed URL. Falling back to the API
+        // would hide a failed upload and send image bytes through this service.
+        if ("cos".equalsIgnoreCase(data.path("way").asText())) {
+            return null;
+        }
         String uuid = data.path("uuid").asText(null);
         if (uuid == null || uuid.isBlank()) {
             return null;

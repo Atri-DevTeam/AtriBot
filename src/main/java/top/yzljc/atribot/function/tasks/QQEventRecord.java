@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -106,7 +106,8 @@ public class QQEventRecord implements Listener {
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
         String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
-            if (event.getMessage().getContent().contains("签到") || event.getMessage().getContent().contains("hypixel.net")) return;
+            if (event.getMessage().getContent().contains("签到") || event.getMessage().getContent().contains("hypixel.net"))
+                return;
             if (!c2cNotifiedUsers.contains(userId)) {
                 c2cNotifiedUsers.add(userId);
                 event.sendMessage(TC.md("你好喵~\n\n你发送的消息不是指令，亚托莉喵无法理解喵，我们暂且不支持角色扮演等聊天功能，请您理解~\n\n> 您可以发送" + Markdown.enterCommand("/help") + "来查看可用的指令列表喵~"));
@@ -191,7 +192,7 @@ public class QQEventRecord implements Listener {
                 event.getData().getType()
         );
         log.info(eventInfo);
-        GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), eventInfo);
+        NapcatDebugGroup.sendAsync(eventInfo);
     }
 
     @EventHandler
@@ -211,7 +212,7 @@ public class QQEventRecord implements Listener {
                     String.join(" ", event.getArgs()),
                     scene
             );
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), info);
+            NapcatDebugGroup.sendAsync(info);
             log.info(info);
             return;
         }
@@ -288,7 +289,7 @@ public class QQEventRecord implements Listener {
                         String.join(" ", event.getArgs())
                 );
             }
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), info);
+            NapcatDebugGroup.sendAsync(info);
             log.info(info);
         }
     }

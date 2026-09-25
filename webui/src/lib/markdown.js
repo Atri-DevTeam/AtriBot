@@ -1,4 +1,5 @@
 import katex from 'katex'
+import { isBlockedCosUrl } from './mediaUrl.js'
 
 const TOKEN_OPEN = '\uE000'
 const TOKEN_CLOSE = '\uE001'
@@ -14,6 +15,7 @@ export function escapeHtml(value) {
 
 function safeUrl(value, allowImageData = false) {
   const url = String(value || '').trim()
+  if (isBlockedCosUrl(url)) return ''
   if (/^https?:\/\//i.test(url)) return escapeHtml(url)
   if (allowImageData && /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) return escapeHtml(url)
   return ''

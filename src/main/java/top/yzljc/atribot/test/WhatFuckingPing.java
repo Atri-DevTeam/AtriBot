@@ -1,13 +1,12 @@
 package top.yzljc.atribot.test;
 
-import lombok.Getter;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 
-import java.util.HashMap;
-import java.util.Map;
+import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.qq.QQConnectionLatency;
 
 /**
  * @Author YZ_Ljc_
@@ -18,14 +17,14 @@ import java.util.Map;
  */
 public class WhatFuckingPing implements Listener {
 
-    @Getter
-    private static final Map<String, Long> accessMs = new HashMap<>();
-
     @EventHandler
     public void onCommandSend(UserRunCommandEvent event) {
-        if (event.getCommandHeader().equals("boop") && event.getSender() instanceof QQCommandSender) {
-            long currentTime = System.currentTimeMillis();
-            accessMs.put(((QQCommandSender)event.getSender()).getMessage().getMessageId(), currentTime);
+        if ("boop".equals(event.getCommandHeader()) && event.getSender() instanceof QQCommandSender sender) {
+            Platform platform = sender.getPlatform();
+            if (platform == Platform.OFFICIAL_GROUP || platform == Platform.OFFICIAL_C2C) {
+                QQConnectionLatency.commandStarted(platform == Platform.OFFICIAL_GROUP ? "群聊" : "单聊",
+                        sender.getMessage().getMessageId());
+            }
         }
     }
 }

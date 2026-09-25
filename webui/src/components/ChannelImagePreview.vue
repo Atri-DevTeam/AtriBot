@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { isBlockedCosUrl } from '../lib/mediaUrl.js'
 
 /**
  * @Author YZ_Ljc_
@@ -8,7 +9,8 @@ import { onMounted, ref } from 'vue'
  * @Project AtriMeow
  * @Package webui.src.components
  */
-defineProps({ src: { type: String, required: true } })
+const props = defineProps({ src: { type: String, required: true } })
+const visibleSrc = computed(() => isBlockedCosUrl(props.src) ? '' : props.src)
 const emit = defineEmits(['close'])
 const dialog = ref(null)
 const original = ref(false)
@@ -23,12 +25,13 @@ onMounted(() => dialog.value.showModal())
       <header>
         <span>图片预览</span>
         <button type="button" :aria-pressed="original" @click="original = !original">{{ original ? '适应窗口' : '原始尺寸' }}</button>
-        <a :href="src" target="_blank" rel="noopener noreferrer">打开原图 ↗</a>
+        <a v-if="visibleSrc" :href="visibleSrc" target="_blank" rel="noopener noreferrer">打开原图 ↗</a>
         <button type="button" autofocus aria-label="关闭图片预览" @click="emit('close')">关闭 ×</button>
       </header>
       <div class="channel-image-preview-body" :class="{ original }">
         <p v-if="failed" role="alert">图片加载失败，可尝试打开原图。</p>
-        <img v-else :src="src" alt="放大预览" referrerpolicy="no-referrer" @error="failed = true">
+        <img v-else-if="visibleSrc" :src="visibleSrc" alt="放大预览" referrerpolicy="no-referrer" @error="failed = true">
+        <p v-else>该图片已禁止在 WebUI 中加载。</p>
       </div>
     </dialog>
   </Teleport>

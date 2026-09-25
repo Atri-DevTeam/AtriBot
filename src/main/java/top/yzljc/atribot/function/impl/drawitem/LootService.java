@@ -309,19 +309,36 @@ public class LootService {
         }
 
         JsonNode data = response.path("data");
-        String url = data.path("url").asText(null);
-        if (url == null || url.isBlank()) {
-            String uuid = data.path("uuid").asText(null);
-            if (uuid == null || uuid.isBlank()) {
-                return new ImageDTO(null, 0, 0, "远程抽卡图响应缺少图片地址", null);
-            }
-            url = ResourcesProperties.LOOTS_DRAW_CARD_API + "/" + uuid;
-        } else if (url.startsWith("/")) {
-            String origin = URI.create(ResourcesProperties.LOOTS_DRAW_CARD_API).resolve("/").toString();
-            url = URI.create(origin).resolve(url).toString();
+        String url = resolveDrawCardUrl(data, ResourcesProperties.LOOTS_DRAW_CARD_API);
+        if (url == null) {
+            return new ImageDTO(null, 0, 0, "远程抽卡图响应缺少图片地址", null);
         }
 
         return new ImageDTO(url, data.path("width").asInt(), data.path("height").asInt());
+    }
+
+    static String resolveDrawCardUrl(JsonNode data, String endpoint) {
+        String url = data.path("url").asText(null);
+        if ("cos".equalsIgnoreCase(data.path("way").asText())) {
+            // A signed URL is valid only for this request; never fall back to
+            // api_url or retain it for another draw.
+            return url == null || url.isBlank() ? null : url;
+        }
+        if (url == null || url.isBlank()) {
+            url = data.path("api_url").asText(null);
+        }
+        if (url == null || url.isBlank()) {
+            String uuid = data.path("uuid").asText(null);
+            if (uuid == null || uuid.isBlank()) {
+                return null;
+            }
+            url = endpoint + "/" + uuid;
+        }
+        if (url.startsWith("/")) {
+            String origin = URI.create(endpoint).resolve("/").toString();
+            return URI.create(origin).resolve(url).toString();
+        }
+        return url;
     }
 
     /**

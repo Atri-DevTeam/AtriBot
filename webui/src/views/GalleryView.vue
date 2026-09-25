@@ -95,7 +95,7 @@
               <figure v-for="item in items" :key="item.id" class="gallery-card"
                       :class="[`gallery-card--${item.reviewStatus.toLowerCase()}`, { selected: selection.has(item.id) }]">
                 <div class="gallery-thumb" @click="openViewer(item)">
-                  <img v-if="item.displayUrl && !failed.has(item.id)" :src="item.displayUrl"
+                  <img v-if="visibleUrl(item.displayUrl) && !failed.has(item.id)" :src="visibleUrl(item.displayUrl)"
                        :alt="item.fileName || '投稿图片'"
                        loading="lazy" decoding="async" @error="failed.add(item.id)"/>
                   <div v-else class="gallery-broken">
@@ -190,7 +190,7 @@
       </button>
 
       <figure class="gallery-viewer-stage" @click.self="closeViewer">
-        <img v-if="viewer.displayUrl && !failed.has(viewer.id)" :src="viewer.displayUrl" :alt="viewer.fileName || ''"/>
+        <img v-if="visibleUrl(viewer.displayUrl) && !failed.has(viewer.id)" :src="visibleUrl(viewer.displayUrl)" :alt="viewer.fileName || ''"/>
         <div v-else class="gallery-broken large">
           <span>图片不可用（原始链接可能已过期）</span>
         </div>
@@ -276,7 +276,7 @@
             </button>
           </template>
           <button class="ghost-button danger" :disabled="busy === viewer.id" @click="deleteImage(viewer)">删除</button>
-          <a v-if="viewer.displayUrl" class="ghost-button" :href="viewer.displayUrl" target="_blank"
+          <a v-if="visibleUrl(viewer.displayUrl)" class="ghost-button" :href="visibleUrl(viewer.displayUrl)" target="_blank"
              rel="noopener noreferrer">原图</a>
         </div>
       </aside>
@@ -322,6 +322,11 @@ import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import {formatTime} from '../lib/time.js'
+import { isBlockedCosUrl } from '../lib/mediaUrl.js'
+
+function visibleUrl(url) {
+  return url && !isBlockedCosUrl(url) ? url : ''
+}
 
 const denyReasons = [
   '图片内容与图源主题无关',

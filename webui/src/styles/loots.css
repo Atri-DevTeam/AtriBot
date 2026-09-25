@@ -70,7 +70,7 @@
 .loot-inline-textarea:hover { background: var(--color-surface-alt); }
 .loot-inline-input:focus,
 .loot-inline-textarea:focus { border-color: var(--color-accent-border); outline: none; background: var(--color-surface-alt); }
-.loot-card-meta { min-width: 0; overflow: hidden; padding: 0 6px; color: var(--color-text-subtle); font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.loot-card-meta { min-width: 0; padding: 0 6px; color: var(--color-text-subtle); font-family: var(--font-mono); font-size: 8px; white-space: nowrap; }
 .loot-card-actions { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-hairline); }
 .ghost-button.small { min-height: 26px; height: auto; padding: 2px 8px; font-size: 12px; }
 .loot-shell .ghost-button.small { min-height: 32px; }
@@ -279,7 +279,7 @@
   .loot-inline-input { padding: 4px; font-size: 13px; }
   .loot-inline-textarea { min-height: 46px; padding: 4px; font-size: 12px; }
   .loot-card-actions { gap: 6px; padding-top: 8px; }
-  .loot-card-meta { padding-inline: 4px; }
+  .loot-card-meta { padding-inline: 4px; font-size: 7.5px; }
   .loot-skeleton { display: grid; grid-template-columns: 96px minmax(0, 1fr); min-height: 170px; padding: 0; }
   .loot-skeleton > div { grid-row: 1 / 3; height: 100%; margin: 0; aspect-ratio: auto; }
   .loot-skeleton > span { align-self: center; }

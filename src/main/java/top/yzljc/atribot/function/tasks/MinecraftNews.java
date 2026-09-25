@@ -68,16 +68,16 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-//        if (!(sender instanceof QQCommandSender nc)) return true;
-////        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
-//
-//        if (!nc.hasPermission()) {
-//            nc.sendMessage(Identifier.NO_PERMISSION);
-//            return true;
-//        }
+        if (!(sender instanceof QQCommandSender nc)) return true;
+//        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
+
+        if (!nc.hasPermission()) {
+            nc.sendMessage(Identifier.NO_PERMISSION);
+            return true;
+        }
 
         ThreadManager.execute(() -> checkNews(true));
-//        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
+        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
         return true;
     }
 

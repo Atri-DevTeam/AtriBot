@@ -278,8 +278,8 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
             // Guided by GordonHim
             String url = ResourcesProperties.WELCOME_IMG;
             String welStr = "欢迎新人喵~";
-            int width = 836;
-            int height = 406;
+            int width = 125;
+            int height = 130;
             if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.OWNER) {
                 welStr = "欢迎" + QQBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
                 url = ResourcesProperties.WELCOME_DEV_IMG;
@@ -313,7 +313,7 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String text = "**设置个性化欢迎**\n\n" +
                 "群主或群管理员可以申请为本群设置个性化欢迎文本，包括图片，markdown文本，按钮等bot拥有的能力，如有相关需求请点击" +
-                Markdown.enterCommand("/feedback 申请自定义欢迎文本", "申请获取") + "联系开发者制作！";
+                Markdown.enterCommand("/feedback 申请自定义欢迎文本，联系方式为：", "申请获取") + "并填写任意你的联系方式，开发者在收到请求后将会主动联系您！";
         if (sender instanceof QQCommandSender user) {
             user.sendMessage(TC.md(text));
         }

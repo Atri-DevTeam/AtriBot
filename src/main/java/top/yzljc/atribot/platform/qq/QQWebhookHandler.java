@@ -66,6 +66,7 @@ public final class QQWebhookHandler implements AutoCloseable {
     }
 
     public void handle(Context ctx) {
+        long receivedNanos = System.nanoTime();
         String callbackAppId = ctx.header("X-Bot-Appid");
         if (callbackAppId != null && !callbackAppId.isBlank() && !appId.equals(callbackAppId)) {
             ctx.status(403).result("forbidden");
@@ -80,7 +81,7 @@ public final class QQWebhookHandler implements AutoCloseable {
                 return;
             }
             if (op == 0) {
-                handleEvent(ctx, payload);
+                handleEvent(ctx, payload, receivedNanos);
                 return;
             } else {
                 log.debug("[!] 未被处理的官机Webhook操作码: {}", op);
@@ -119,7 +120,7 @@ public final class QQWebhookHandler implements AutoCloseable {
                 .contentType("application/json");
     }
 
-    private void handleEvent(Context ctx, JsonNode payload) {
+    private void handleEvent(Context ctx, JsonNode payload, long receivedNanos) {
         String eventType = payload.path("t").asText(null);
         JsonNode eventData = payload.path("d");
         if (eventType == null || eventType.isBlank() || eventData.isMissingNode() || eventData.isNull()) {
@@ -143,6 +144,7 @@ public final class QQWebhookHandler implements AutoCloseable {
                 @Override
                 public void onResponseEnd(Request request) {
                     if (request.getResponse().getStatus() == 200) {
+                        QQConnectionLatency.received(eventType, eventData, "Webhook", receivedNanos);
                         receipt.acknowledge();
                     } else {
                         receipt.fail();

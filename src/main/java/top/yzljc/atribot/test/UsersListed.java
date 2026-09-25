@@ -43,7 +43,7 @@ public final class UsersListed {
     /** 判断用户 ID 是否已被记录 */
     public static synchronized boolean isUserRecorded(String userId) {
         boolean isQixi = LocalDate.now(ZoneId.of("Asia/Shanghai"))
-                .equals(LocalDate.of(2026, 8, 28));
+                .equals(LocalDate.of(2026, 9, 25));
         if (!isQixi) return true; // 不在七夕时段，不触发
         String normalizedUserId = normalize(userId);
         return normalizedUserId != null && loadUserIds() && USER_IDS.contains(normalizedUserId);

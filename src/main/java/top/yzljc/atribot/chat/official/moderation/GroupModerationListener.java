@@ -1,10 +1,9 @@
 package top.yzljc.atribot.chat.official.moderation;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.management.Mute;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.ModerationLogRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -97,7 +96,7 @@ public final class GroupModerationListener implements Listener {
         }
 
         if (action.isNotifyDebugGroup()) {
-            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), "[群管] 群 " + groupOpenId + " 触发 " + category + "：" + detail);
+            NapcatDebugGroup.sendAsync("[群管] 群 " + groupOpenId + " 触发 " + category + "：" + detail);
         }
     }
 }

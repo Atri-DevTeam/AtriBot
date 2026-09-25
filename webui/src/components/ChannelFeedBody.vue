@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { renderMarkdown } from '../lib/markdown.js'
+import { isBlockedCosUrl } from '../lib/mediaUrl.js'
 import ChannelImagePreview from './ChannelImagePreview.vue'
 
 /**
@@ -33,7 +34,7 @@ const images = computed(() => {
   const items = candidates.find(value => Array.isArray(value) && value.length) || []
   return items.map(item => {
     const url = typeof item === 'string' ? item : item?.picUrl || item?.url || item?.pic_url || ''
-    return typeof url === 'string' && /^https?:\/\//i.test(url) ? url : ''
+    return typeof url === 'string' && /^https?:\/\//i.test(url) && !isBlockedCosUrl(url) ? url : ''
   })
 })
 const source = computed(() => {
