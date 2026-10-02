@@ -6,13 +6,15 @@ import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.Ark23;
+import top.yzljc.atribot.chat.official.ark.Ark;
+import top.yzljc.atribot.chat.official.Card;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.ImageType;
 import top.yzljc.atribot.function.tasks.QQChatContentRecord;
+import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.SseBroadcaster;
 import top.yzljc.atribot.webui.repo.OrphanedFriendRecordCleanup;
@@ -24,7 +26,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
-import static top.yzljc.atribot.webui.WebUiSupport.parseArk23;
+import static top.yzljc.atribot.webui.WebUiSupport.parseArk;
+import static top.yzljc.atribot.webui.WebUiSupport.parseCard;
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseLong;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -74,6 +77,38 @@ public class C2CController {
         ctx.json(Result.success(toC2CUserDTO(data, username)));
     }
 
+    public static void getC2CUserPushTasks(Context ctx) {
+        var config = OfficialUsers.getRawFunctionConfig(ctx.pathParam("userOpenId"));
+        ctx.json(Result.success(validC2CPushTasks(config)));
+    }
+
+    private static List<C2CPushTaskDTO> validC2CPushTasks(JsonNode config) {
+        // 以当前注册且支持私聊的任务为准，忽略数据库中已删除任务的残留 key。
+        return PushTaskCommand.getTasks().stream()
+                .filter(task -> task.isC2cEnable())
+                .map(task -> {
+                    JsonNode enabled = config.path(task.getFunctionId()).path("enabled");
+                    return new C2CPushTaskDTO(task.getFunctionId(), task.getDisplayName(),
+                            enabled.isBoolean() && enabled.asBoolean(), enabled.isBoolean());
+                })
+                .toList();
+    }
+
+    public static void setC2CUserFunction(Context ctx) {
+        String userOpenId = ctx.pathParam("userOpenId");
+        String functionKey = ctx.pathParam("functionKey");
+        if (PushTaskCommand.getTasks().stream().noneMatch(task -> task.isC2cEnable() && task.getFunctionId().equals(functionKey))) {
+            ctx.status(400).json(Result.fail(400, "无效的私聊推送任务"));
+            return;
+        }
+        boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
+        if (!OfficialUsers.setFunctionEnabled(userOpenId, functionKey, enabled, "webui")) {
+            ctx.status(500).json(Result.fail(500, "保存功能配置失败"));
+            return;
+        }
+        ctx.json(Result.success("ok"));
+    }
+
     private static C2CUserDTO toC2CUserDTO(OfficialUsers.UserData data, String username) {
         return new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions(),
                 data.isBlocked(), data.isIgnored(), data.c2cPush(), username);
@@ -84,7 +119,10 @@ public class C2CController {
         String role = ctx.queryParam("role");
         try {
             var r = role != null ? UnifiedRole.valueOf(role.toUpperCase()) : data.role();
-            OfficialUsers.setPermissionGroup(ctx.pathParam("userOpenId"), r, data.permissions());
+            if (!OfficialUsers.setPermissionGroup(ctx.pathParam("userOpenId"), r, data.permissions())) {
+                ctx.status(500).json(Result.fail(500, "保存用户权限失败，请检查数据库日志"));
+                return;
+            }
             ctx.json(Result.success("ok"));
         } catch (IllegalArgumentException e) {
             ctx.json(Result.fail(400, "无效的角色: " + role));
@@ -95,10 +133,11 @@ public class C2CController {
         String userOpenId = ctx.pathParam("userOpenId");
         String perm = ctx.pathParam("permission");
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
-        if (enabled) {
-            OfficialUsers.addPermission(userOpenId, perm);
-        } else {
-            OfficialUsers.removePermission(userOpenId, perm);
+        boolean saved = enabled ? OfficialUsers.addPermission(userOpenId, perm)
+                : OfficialUsers.removePermission(userOpenId, perm);
+        if (!saved) {
+            ctx.status(500).json(Result.fail(500, "保存用户权限失败，请检查数据库日志"));
+            return;
         }
         ctx.json(Result.success("ok"));
     }
@@ -160,10 +199,10 @@ public class C2CController {
         boolean c2cPush = dto.isC2cPush();
         boolean pushChanged = OfficialUsers.getData(userOpenId).c2cPush() != c2cPush;
 
-        OfficialUsers.setPermissionGroup(userOpenId, role, permissions);
-        OfficialUsers.setBlocked(userOpenId, blocked);
-        OfficialUsers.setIgnored(userOpenId, ignored);
-        OfficialUsers.setC2CPush(userOpenId, c2cPush);
+        if (!OfficialUsers.setProfile(userOpenId, role, permissions, blocked, ignored, c2cPush)) {
+            ctx.status(500).json(Result.fail(500, "保存用户档案失败，请检查数据库日志"));
+            return;
+        }
         if (pushChanged) {
             SseBroadcaster.broadcastC2CPushStatus(userOpenId, c2cPush);
         }
@@ -255,15 +294,30 @@ public class C2CController {
                 if (!isBlank(replyId) || !isBlank(refId)) {
                     ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
                 }
-                Ark23 ark;
+                Ark ark;
                 try {
-                    ark = parseArk23(dto.getArk());
+                    ark = parseArk(dto.getArk());
                 } catch (IllegalArgumentException e) {
                     ctx.status(400).json(Result.fail(400, e.getMessage())); return;
                 }
                 messageId = dto.isWakeup()
                         ? C2CChat.wakeupMessage(dto.getUserOpenId(), ark)
                         : C2CChat.sendMessage(dto.getUserOpenId(), ark);
+            } else if ("card".equals(msgType)) {
+                if (!isBlank(refId)) {
+                    ctx.status(400).json(Result.fail(400, "卡片暂不支持引用，请关闭引用")); return;
+                }
+                Card card;
+                try {
+                    card = parseCard(dto.getCard());
+                } catch (IllegalArgumentException e) {
+                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                }
+                messageId = dto.isWakeup()
+                        ? C2CChat.wakeupMessage(dto.getUserOpenId(), card)
+                        : isBlank(replyId)
+                        ? C2CChat.sendMessage(dto.getUserOpenId(), card)
+                        : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), card);
             } else if (refId != null && !refId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
@@ -409,10 +463,13 @@ public class C2CController {
     public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,
                              boolean isBlocked, boolean isIgnored, boolean c2cPush, String username) {}
 
+    public record C2CPushTaskDTO(String functionId, String displayName, boolean enabled, boolean configured) {}
+
     @Data
     public static class SendC2CMessageDTO {
         private boolean wakeup;
         private JsonNode ark;
+        private JsonNode card;
         private String userOpenId;
         private String msgType;
         private String content;

@@ -17,7 +17,8 @@ public enum GroupMessageType {
     MARKDOWN(2, "Markdown"),
     ARK(3, "Ark"),
     EMBED(4, "Embed"),
-    MEDIA(7, "富媒体");
+    MEDIA(7, "富媒体"),
+    CARD(8, "新卡片"),;
 
     private final int value;
     private final String desc;

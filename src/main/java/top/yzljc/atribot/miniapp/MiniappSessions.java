@@ -33,7 +33,8 @@ public final class MiniappSessions implements AutoCloseable {
     public record Identity(String userId, String displayName) {}
     public record Issued(String ticket, long expiresAt) {}
     public record Access(String token, Identity user, long expiresAt, long idleTimeoutMillis) {}
-    private record Ticket(Identity user, long expiresAt) {}
+    private record Client(String ip, String userAgent) {}
+    private record Ticket(Identity user, long expiresAt, Client client) {}
     private record Session(Identity user, long expiresAt, long lastSeen) {}
 
     public MiniappSessions() { this(Clock.systemUTC(), true); }
@@ -51,26 +52,27 @@ public final class MiniappSessions implements AutoCloseable {
         if (closed || userId == null || userId.isBlank() || userId.length() > 256) return null;
         if (issueCooldowns.containsKey(userId) || issueCooldowns.size() >= CAPACITY) return null;
         if (tickets.size() >= CAPACITY) return null;
-        // A newly requested link replaces this user's still-unused links, not active pages.
-        tickets.values().removeIf(ticket -> ticket.user().userId().equals(userId));
         String token = token();
         long expiresAt = now + TICKET_TTL.toMillis();
-        tickets.put(token, new Ticket(new Identity(userId, displayName == null ? "" : displayName), expiresAt));
+        tickets.put(token, new Ticket(new Identity(userId, displayName == null ? "" : displayName), expiresAt, null));
         issueCooldowns.put(userId, now + 10_000);
         return new Issued(token, expiresAt);
     }
 
-    /** Validation, consumption and creation share one lock: only one exchange can win. */
-    public synchronized Access exchange(String ticketToken, String userId) {
+    /** The first successful exchange pins a link to one client environment until its expiry. */
+    public synchronized Access exchange(String ticketToken, String userId, String ip, String userAgent) {
         cleanup();
-        if (closed || !validToken(ticketToken) || userId == null) return null;
+        if (closed || !validToken(ticketToken) || userId == null || ip == null || ip.isBlank()
+                || ip.length() > 128 || userAgent == null || userAgent.length() > 512) return null;
         Ticket ticket = tickets.get(ticketToken);
-        if (ticket == null || !ticket.user().userId().equals(userId) || sessions.size() >= CAPACITY) return null;
-        tickets.remove(ticketToken);
+        Client client = new Client(ip, userAgent);
+        if (ticket == null || !ticket.user().userId().equals(userId) || sessions.size() >= CAPACITY
+                || ticket.client() != null && !ticket.client().equals(client)) return null;
         long now = clock.millis();
         String sessionToken = token();
         long expiresAt = now + SESSION_TTL.toMillis();
         sessions.put(sessionToken, new Session(ticket.user(), expiresAt, now));
+        if (ticket.client() == null) tickets.put(ticketToken, new Ticket(ticket.user(), ticket.expiresAt(), client));
         return new Access(sessionToken, ticket.user(), expiresAt, IDLE_TTL.toMillis());
     }
 

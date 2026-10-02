@@ -17,7 +17,6 @@ import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.repo.UserGameDataRepository;
-import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.function.games.sound.SoundCatalog;
 import top.yzljc.atribot.function.games.sound.SoundRound;
 import top.yzljc.atribot.platform.Platform;
@@ -97,24 +96,24 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
         }
         String stage = "题面发送";
         try {
-            log.info("听声辨物开题: round={}, session={}, sourceMsg={}, answer={}, event={}, playback={}, sha1={}, options={}",
-                    round.id, session, qq.getMessage().getMessageId(), (char) ('A' + question.answer()),
-                    question.options().get(question.answer()).id(), question.audio().path(), question.audio().sha1(),
+            log.info("听声辨物开题: round={}, session={}, answer={}, event={}, playback={}, options={}",
+                    round.id, session, (char) ('A' + question.answer()),
+                    question.options().get(question.answer()).id(), question.audio().path(),
                     question.options().stream().map(option -> option.id() + "=" + option.name()).toList());
             int seconds = Math.clamp(Config.getInstance().getSoundAnswerSeconds(), 15, 120);
 
-            String cardId = qq.sendMessage(TC.md(questionText(round)).setKeyboard(answerKeyboard(round, commandPrefix()), OfficialUsers.isUserUnsupportedKeyboard(qq.getUserId())), false);
+            String cardId = qq.sendMessage(TC.md(questionText(round)).setKeyboard(answerKeyboard(round, commandPrefix()), OfficialUsers.isUserUnsupportedKeyboard(qq.getUserId())));
 
             if (cardId == null || cardId.isBlank()) throw new IllegalStateException("Question card send failed");
-            log.info("听声辨物题面已发送: round={}, session={}, cardMsg={}, audioUrl={}",
-                    round.id, session, cardId, round.audioUrl);
+//            log.info("听声辨物题面已发送: round={}, session={}, cardMsg={}, audioUrl={}",
+//                    round.id, session, cardId, round.audioUrl);
             stage = "音频上传或发送";
             String audioId = qq.getPlatform() == Platform.OFFICIAL_C2C
                     ? C2CChat.replyAudioMessage(qq.getUserId(), RT.message(qq.getMessage().getMessageId()), round.audioUrl)
                     : GroupChat.replyAudioMessage(qq.getGroupId(), RT.message(qq.getMessage().getMessageId()), round.audioUrl);
             if (audioId == null) throw new IllegalStateException("Audio upload/send failed");
-            log.info("听声辨物音频已发送: round={}, session={}, cardMsg={}, audioMsg={}",
-                    round.id, session, cardId, audioId);
+//            log.info("听声辨物音频已发送: round={}, session={}, cardMsg={}, audioMsg={}",
+//                    round.id, session, cardId, audioId);
             round.start(System.currentTimeMillis(), seconds * 1000L);
             ThreadManager.schedule(() -> expire(qq, round), seconds, TimeUnit.SECONDS);
         } catch (Exception e) {

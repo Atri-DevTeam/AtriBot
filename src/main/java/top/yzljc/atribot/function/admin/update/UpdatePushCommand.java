@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.admin.update;
 
-import top.yzljc.atribot.chat.official.Ark23;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
@@ -11,14 +9,12 @@ import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * @Author YZ_Ljc_

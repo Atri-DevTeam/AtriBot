@@ -1,10 +1,10 @@
 # Miniapp 个人空间
 
-前端位于 `miniapp/`，后端位于 `top.yzljc.atribot.miniapp`，构建资源位于 `src/main/resources/miniapp/`。页面使用 `#F4F5F0` 背景、半透明毛玻璃卡片和手机/桌面响应式布局，提供个人档案与机器人记录概览。未引入 WASM。
+前端位于 `miniapp/`，后端位于 `top.yzljc.atribot.miniapp`，构建资源位于 `src/main/resources/miniapp/`。页面使用 `#F4F5F0` 背景、半透明毛玻璃卡片和手机/桌面响应式布局，提供个人档案、群管理与关于页面。未引入 WASM。
 
 首次进入展示 `atri-main.png` 插画的轻浮动加载动画，在后台并行读取资料与小游戏记录；就绪后按顶栏、头像、卡片顺序淡入。插画复用现有源文件，由 Vite 打包至 `/atrimeow/profile/assets/`，仅反代 `/atrimeow/profile` 即可访问。快速响应时保留约 650ms 的过渡，认证成功后最长等待约 2.8 秒，远端背包图片不阻塞首屏。普通更新不重播动画，退出会清除延迟任务；系统开启“减少动态效果”时关闭位移和循环动画。
 
-底部悬浮 Dock 左侧为“群管理”，右侧为“我的档案”，默认打开档案。图标复用 atriwebsite 的红石中继器与纸张资源。切换栏目保留会话、档案数据、背包缓存及滚动位置。群管理首页为单列群列表，仅显示群名、群号、添加时间；点击后读取该群详情，可返回列表或解除绑定。绑定信息保存在 official_users.user_settings.bound_groups，以群开放平台 ID 为键，值中保存 group_name、group_number、bound_at；无需新表或新列。
+底部悬浮 Dock 从左到右为“我的档案”“群管理”“关于”，默认打开档案。前两个图标复用 atriwebsite 的资源，关于使用信息图标。切换栏目保留会话、档案数据、背包缓存及滚动位置。关于页面展示动态构建版本、开发者头像、联系方式、帮助文档和开源仓库；首次打开时通过页面会话读取版本信息。群管理首页为单列群列表，仅显示群名、群号、添加时间；点击后读取该群详情，可返回列表或解除绑定。绑定信息保存在 official_users.user_settings.bound_groups，以群开放平台 ID 为键，值中保存 group_name、group_number、bound_at；无需新表或新列。
 
 ## 档案数据
 
@@ -33,7 +33,7 @@ miniapp:
 官方机器人 **C2C 私聊**发送 `/profile` 获取链接：
 
 ```text
-https://bot.example.com/atrimeow/profile/?_nav_alpha=0&userId=官方用户ID&ticket=一次性凭证
+https://bot.example.com/atrimeow/profile/?_nav_alpha=0&userId=官方用户ID&ticket=短期凭证
 ```
 
 `_nav_alpha=0` 按约定保留，具体 QQ 客户端展示效果需真机确认。其他来源（官机群聊、Napcat、Discord、控制台等）不能签发。没有额外 QQ 身份验证：首次持有完整有效链接的人可以兑换。
@@ -41,15 +41,15 @@ https://bot.example.com/atrimeow/profile/?_nav_alpha=0&userId=官方用户ID&tic
 ## 生命周期
 
 - 凭证使用 256 位安全随机数，与官机事件的用户 ID 绑定，有效期 5 分钟。
-- 每位用户 10 秒内仅可申请一次；重新申请会替换该用户尚未使用的链接，不关闭已经进入的页面。
-- 普通 GET / HEAD 只加载无用户数据的外壳，不消费凭证。前端 POST `/atrimeow/profile/api/auth/exchange` 原子兑换；成功后链接立即失效，并发仅一个请求成功。
-- 链接预览只做 GET 时不会误消费；执行页面 JavaScript 的扫描器仍可能兑换。兑换结果丢失或加载失败时，需重新获取链接，不恢复旧凭证。
+- 每位用户 10 秒内仅可申请一次；重新申请不会撤销旧链接或已进入的页面，各链接按各自的有效期失效。
+- 普通 GET / HEAD 只加载无用户数据的外壳。前端 POST `/atrimeow/profile/api/auth/exchange` 首次成功时将链接绑定到客户端 IP 和 User-Agent；在 5 分钟有效期内，同一环境可重复兑换，每次生成独立页面会话。不同环境不能复用已绑定的链接。
+- 链接预览只做 GET 时不会绑定访问环境；执行页面 JavaScript 的扫描器仍可能先绑定。兑换结果丢失或加载失败时，可从原环境重新打开仍有效的链接。
 - 前端提取参数后立即从地址栏移除 `userId`、`ticket`，保留 `_nav_alpha`。源站和反代访问日志须避免记录此入口的查询参数；HTTPS 不能阻止服务端访问日志记录 URL。
 - 独立页面会话凭证仅在 JS 私有内存中保存。无 Cookie、localStorage、sessionStorage。接口通过 Bearer 会话确定用户，不能通过请求参数切换用户。
-- 心跳间隔 20 秒，90 秒无活动失效，最长 2 小时。退出、刷新、离开页面、前进后退恢复缓存均失效；页面内部组件切换可继续使用。
+- 心跳间隔 20 秒，90 秒无活动失效，最长 2 小时。退出、刷新、离开页面、前进后退恢复缓存均结束当前页面会话；有效链接可从原环境重新打开。页面内部组件切换可继续使用。
 - 切后台和锁屏不立即退出，但浏览器挂起心跳超过空闲期限后必须重新进入。
 - `pagehide` 清理内存和界面并尝试 Beacon 撤销；失败、强杀、断网由空闲超时兜底。无法保证服务器在客户端退出瞬间就收到通知。
-- 重启会撤销全部凭证和会话；单进程部署，若未来多实例需要共享存储和原子消费。
+- 重启会撤销全部凭证和会话；单进程部署，若未来多实例需要共享存储和原子环境绑定。
 
 ## 接口
 
@@ -57,6 +57,7 @@ https://bot.example.com/atrimeow/profile/?_nav_alpha=0&userId=官方用户ID&tic
 | --- | --- |
 | `POST /atrimeow/profile/api/auth/exchange` | JSON `{userId,ticket}` 兑换，返回 `{token,user,expiresAt,idleTimeoutMillis}` |
 | `GET /atrimeow/profile/api/me` | Bearer 会话对应的最小身份信息 |
+| `GET /atrimeow/profile/api/about` | Bearer 会话读取 `GetProjectInfo` 构建版本、时间、分支、提交号，以及由 `qq.super_admin_id` 生成的开发者头像地址 |
 | `GET /atrimeow/profile/api/profile` | Bearer 会话对应的只读档案与消息、签到、金粒、收藏概览 |
 | `POST /atrimeow/profile/api/session/heartbeat` | Bearer 会话保活，过期返回 401 |
 | `POST /atrimeow/profile/api/session/close` | Bearer 或 Beacon text/plain 凭证，仅撤销会话，幂等 |
@@ -77,7 +78,7 @@ cd ..
 
 使用 Node.js 24、JDK 25。`npm run dev` 启动 5174 端口并代理 API 至 `localhost:1234`，可用 `VITE_API_TARGET` 调整。开发时在私聊获取链接，将源站替换为本地 Vite 地址并保留参数；不提供绕过私聊签发的开发接口。
 
-`npm run test:browser` 使用本机 Edge，测试手机尺寸和桌面尺寸（并非真实 QQ WebView）。可通过 `MINIAPP_BROWSER_CHANNEL` 改为 `chrome`。测试使用模拟接口，不连接真实 QQ。真实 Java HTTP 路由和原子兑换由 JUnit 验证。Java 测试放在 `src/miniappTest/java`，由 Gradle 的 test 源集加载，避免本仓库本地 `/src/test/` 忽略规则遗漏这些回归测试。
+`npm run test:browser` 使用本机 Edge，测试手机尺寸和桌面尺寸（并非真实 QQ WebView）。可通过 `MINIAPP_BROWSER_CHANNEL` 改为 `chrome`。测试使用模拟接口，不连接真实 QQ。Java 会话规则由 `src/test/java` 中的 JUnit 测试验证。
 
 前端输出独立目录，随 JAR 打包。Gradle 对 miniapp 静态资源跳过模板展开，后续添加 `.wasm` 也按原字节复制。CI 构建两个前端并运行 miniapp 单元测试和 Java 鉴权测试。
 
@@ -136,7 +137,7 @@ miniapp 的环境配置独立于其他前端：
 - 本地覆盖写入 `miniapp/.env.development.local` 或 `miniapp/.env.production.local`，不会提交仓库。前端环境变量不应放密码或密钥。
 - 将 `miniapp/deploy/nginx-profile.conf` 中的两个 location 放入已有 HTTPS server 中。它只转发 `/atrimeow/profile` 与 `/atrimeow/profile/...`，包括静态资源和 API，不代理其他路径。按实际情况修改上游 `127.0.0.1:1234`。
 - 机器人运行目录的 `config.yml` 中，`miniapp.base-url` 填入该反代的公网地址，如 `https://bot.example.com`（默认 `/atrimeow/profile/`），也可以直接填写 `https://bot.example.com/atrimeow/profile/` 或其他页面路径。它负责生成登录链接；自定义外部路径时还需匹配反代映射及前端 `VITE_BASE`、`VITE_API_BASE`。前端的 .env 由 Vite 读取，Java 不读取这些前端 .env 文件。
-- 转发时保留完整路径、查询参数和 Authorization；一次性兑换不缓存、不向其他后端自动重试。票据和会话保存在机器人进程内，这些路径须转发到同一实例。
+- 转发时保留完整路径、查询参数和 Authorization，并确保客户端 IP 信息一致；兑换请求不缓存。票据和会话保存在机器人进程内，这些路径须转发到同一实例。
 
 ## 群绑定
 

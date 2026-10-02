@@ -3,7 +3,7 @@
     :is="targetUrl ? 'a' : 'div'"
     v-if="card"
     class="ark-card"
-    :class="{ 'ark-card--clickable': targetUrl }"
+    :class="{ 'ark-card--clickable': targetUrl, 'ark-card--large': card.type === '37' || card.type === 'tuwen' }"
     :href="targetUrl || undefined"
     :target="targetUrl ? '_blank' : undefined"
     :rel="targetUrl ? 'noreferrer' : undefined"
@@ -26,7 +26,8 @@
         <span v-if="metaTail" class="ark-type">{{ metaTail }}</span>
       </div>
       <div class="ark-title">{{ card.title }}</div>
-      <div v-if="card.prompt && card.prompt !== card.title" class="ark-prompt">{{ card.prompt }}</div>
+      <div v-if="card.description" class="ark-prompt">{{ card.description }}</div>
+      <div v-if="card.prompt && card.prompt !== card.title && card.prompt !== card.description" class="ark-prompt">{{ card.prompt }}</div>
       <ul v-if="card.items?.length" class="ark-items">
         <li v-for="(item, index) in card.items" :key="index">
           <a v-if="item.link" :href="item.link" target="_blank" rel="noopener noreferrer">{{ item.description }}</a>
@@ -111,6 +112,12 @@ watch(card, () => {
   width: 34px;
   height: 34px;
 }
+
+.ark-card.ark-card--large { width: 360px; max-width: 100%; box-sizing: border-box; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.ark-card--large .ark-preview { width: 100%; height: auto; aspect-ratio: 975 / 540; }
+.ark-card--large .ark-preview img { width: 100%; height: 100%; }
+.ark-card--large .ark-preview--empty { display: none; }
+.ark-card--large .ark-body { padding: 10px 12px; }
 
 .ark-body {
   min-width: 0;

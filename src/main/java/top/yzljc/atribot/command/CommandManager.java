@@ -12,6 +12,7 @@ import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atribot.i18n.I18N;
 import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.plugin.PluginCommand;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
@@ -161,7 +162,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+            senderUser.sendMessage(I18N.text("command.unknown"));
         }
     }
 
@@ -183,7 +184,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+            senderUser.sendMessage(I18N.text("command.unknown"));
         }
     }
 
@@ -211,7 +212,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed && event.isAtBot() && commandContent.startsWith(COMMAND_PREFIX)) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+            senderUser.sendMessage(I18N.text("command.unknown"));
         }
     }
     @EventHandler
@@ -231,7 +232,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+            senderUser.sendMessage(I18N.text("command.unknown"));
         }
     }
 
@@ -252,7 +253,7 @@ public class CommandManager implements Listener {
         BotRuntimeData.callCommandExecuted();
 
         if (!executed) {
-            senderUser.sendMessage("未知的命令，请使用 /help 查看可用指令列表，如有任何问题，请使用 /feedback 命令反馈给开发者");
+            senderUser.sendMessage(I18N.text("command.unknown"));
         }
     }
 

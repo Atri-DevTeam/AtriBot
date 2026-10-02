@@ -298,7 +298,7 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
     public static boolean dispatchReply(String feedbackId) {
         try {
             FeedbackDTO feedback = FeedbackRepository.findById(feedbackId);
-            if (feedback == null || feedback.getReplyContent() == null) {
+            if (feedback == null || feedback.getReplyContent() == null || feedback.isRead()) {
                 return false;
             }
             if (!isOfficialPlatform(feedback.getPlatform())) {

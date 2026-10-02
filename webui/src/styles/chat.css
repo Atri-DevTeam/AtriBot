@@ -1871,7 +1871,7 @@
 
 .chatnt-mode-toggle.active .chatnt-mode-check { border-color: #0099ff; background: #0099ff; color: #fff; }
 
-.chatnt-ark-editor {
+.chatnt-structured-editor {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1885,12 +1885,14 @@
   padding: 12px 16px;
   border: 0;
 }
-.chatnt-ark-editor label { display: grid; gap: 4px; min-width: 0; color: #6b7686; font-size: 12px; }
-.chatnt-ark-editor input { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px 9px; border: 1px solid #dfe3e8; border-radius: 6px; font: inherit; color: #1f2329; background: #fff; }
-.chatnt-ark-editor input:focus { outline: 2px solid #0099ff; outline-offset: -1px; }
+.chatnt-structured-editor label { display: grid; gap: 4px; min-width: 0; color: #6b7686; font-size: 12px; }
+.chatnt-structured-editor input,
+.chatnt-structured-editor select { width: 100%; min-width: 0; box-sizing: border-box; padding: 7px 9px; border: 1px solid #dfe3e8; border-radius: 6px; font: inherit; color: #1f2329; background: #fff; }
+.chatnt-structured-editor input:focus,
+.chatnt-structured-editor select:focus { outline: 2px solid #0099ff; outline-offset: -1px; }
 .chatnt-ark-item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 8px; }
-.chatnt-ark-editor > button { align-self: flex-start; }
-.chatnt-ark-editor > * { flex-shrink: 0; }
+.chatnt-structured-editor > button { align-self: flex-start; }
+.chatnt-structured-editor > * { flex-shrink: 0; }
 
 /* 自定义拖拽手柄：替代原生 textarea 右下角 resize 角（不好抓、只能斜向拖） */
 .chatnt-resize-handle {
@@ -1938,6 +1940,13 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 0 16px 12px;
+}
+
+.chatnt-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .chatnt-composer-foot .chatnt-hint {

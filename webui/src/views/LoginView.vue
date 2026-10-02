@@ -3,14 +3,16 @@
     <div class="login-hero">
       <img :src="atriImg" alt="Atri" class="login-char" />
     </div>
-    <form class="login-panel" @submit.prevent="login">
+    <form class="login-panel" :aria-busy="loading" @submit.prevent="login">
+      <h1 class="login-title">登录到 WebUI</h1>
       <label>
-        <span>登录到WebUI</span>
+        <span>访问 Token</span>
         <input
           v-model="tokenInput"
           type="password"
           autocomplete="current-password"
-          placeholder="输入 Token 以登录…"
+          placeholder="请输入 Token"
+          :aria-describedby="notice ? 'login-notice' : undefined"
         />
       </label>
       <button class="login-btn" :disabled="!tokenInput.trim() || loading || retrySeconds > 0">
@@ -19,7 +21,7 @@
         </svg>
         {{ loading ? '验证中…' : retrySeconds > 0 ? `${retrySeconds} 秒后重试` : '登录' }}
       </button>
-      <p class="login-notice" v-if="notice">{{ notice }}</p>
+      <p id="login-notice" class="login-notice" v-if="notice" role="status">{{ notice }}</p>
     </form>
   </div>
 </template>

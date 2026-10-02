@@ -23,6 +23,7 @@ import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.function.command.PushTaskCommand;
+import top.yzljc.atribot.function.command.ReminderCommand;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.tools.Alert;
@@ -104,6 +105,7 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
+        if (ReminderCommand.isReminderRequest(event.getMessage().getContent())) return;
         String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
             if (event.getMessage().getContent().contains("签到") || event.getMessage().getContent().contains("hypixel.net"))
@@ -192,7 +194,7 @@ public class QQEventRecord implements Listener {
                 event.getData().getType()
         );
         log.info(eventInfo);
-        NapcatDebugGroup.sendAsync(eventInfo);
+//        NapcatDebugGroup.sendAsync(eventInfo); // 太吵了，草飞
     }
 
     @EventHandler

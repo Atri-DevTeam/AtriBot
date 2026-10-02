@@ -154,16 +154,9 @@
                 <div class="qm-main">
                   <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
                     <span class="qm-name-text" :class="{ 'bot-staff-name': !isMe(message) && isBotStaff(message) }">{{ displayName(message) }}</span>
-                    <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。
-                         图案沿用旧页面，配色改走 currentColor 交给 CSS 管 -->
-                    <svg v-if="isMe(message) || message.senderIsBot" class="qm-bot"
-                         width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
-                      <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
-                      <circle cx="32" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                      <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                      <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                      <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                    </svg>
+                    <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。 -->
+                    <img v-if="isMe(message) || message.senderIsBot" class="qm-bot"
+                         :src="botBlue" width="13" height="13" alt="机器人" />
                     <!-- 只标群主/管理员，普通成员不标 -->
                     <span v-if="!isMe(message) && active.type === 'group' && isSpecialRole(message.memberRole)"
                           class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
@@ -235,8 +228,9 @@
                       </div>
                       <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
                       <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
-                      <pre v-if="!forwardRecord(message) && !hasArk(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                      <div v-if="!forwardRecord(message) && !hasArk(message) && message.messageType === 2" class="md-body"
+                      <CardMessageCard v-if="hasCard(message)" :card="cardPayload(message)" />
+                      <pre v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
+                      <div v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType === 2" class="md-body"
                            v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
                     </template>
                   </div>
@@ -270,6 +264,7 @@
                 <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType" value="markdown" />MD</label>
                 <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image" />图片</label>
                 <label :class="{ active: msgType === 'ark' }"><input type="radio" v-model="msgType" value="ark" />Ark</label>
+                <label :class="{ active: msgType === 'card' }"><input type="radio" v-model="msgType" value="card" />卡片</label>
                 <label v-if="active.type === 'c2c'" :class="{ active: msgType === 'stream' }"><input type="radio" v-model="msgType" value="stream" />流式</label>
               </div>
               <button v-if="msgType === 'image'" type="button" class="chatnt-tool-btn" title="上传图片" aria-label="上传图片" @click="$refs.fileInputRef.click()">
@@ -322,26 +317,45 @@
             <div class="chatnt-resize-handle" :class="{ dragging: resizingComposer }"
                  title="拖拽调整输入区高度"
                  @mousedown="startComposerResize" @touchstart="startComposerResize"></div>
-            <fieldset v-if="msgType === 'ark'" class="chatnt-ark-editor" :disabled="sending" aria-label="Ark 卡片内容"
+            <fieldset v-if="msgType === 'ark'" class="chatnt-structured-editor chatnt-ark-editor" :disabled="sending" aria-label="Ark 内容"
                       :style="{ height: activeComposerHeight + 'px' }">
-              <label>卡片描述<input v-model="arkDraft.description" placeholder="卡片描述" /></label>
-              <label>通知预览<input v-model="arkDraft.prompt" placeholder="消息列表和通知中显示的文字" /></label>
-              <div v-for="(item, index) in arkDraft.items" :key="index" class="chatnt-ark-item">
-                <label>条目 {{ index + 1 }}<input v-model="item.description" placeholder="条目内容" /></label>
-                <label>链接（可选）<input v-model="item.link" placeholder="https://…" inputmode="url" /></label>
-                <button type="button" class="nt-mini-btn" :disabled="arkDraft.items.length === 1"
-                        :aria-label="`删除条目 ${index + 1}`" @click="arkDraft.items.splice(index, 1)">删除</button>
-              </div>
-              <button type="button" class="nt-mini-btn" @click="arkDraft.items.push({ description: '', link: '' })">添加条目</button>
+              <label>模板<select v-model.number="arkDraft.templateId" aria-label="Ark 模板">
+                <option v-for="template in ARK_TEMPLATES" :key="template.id" :value="template.id">{{ template.label }}</option>
+              </select></label>
+              <label v-for="field in selectedArkFields" :key="field.key">
+                {{ field.label }}{{ field.required ? '' : '（可选）' }}
+                <input v-model="arkDraft[field.key]" :placeholder="field.placeholder" :required="field.required"
+                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined" />
+              </label>
+              <template v-if="arkDraft.templateId === 23">
+                <div v-for="(item, index) in arkDraft.items" :key="index" class="chatnt-ark-item">
+                  <label>条目 {{ index + 1 }}<input v-model="item.description" placeholder="条目内容" required /></label>
+                  <label>链接（可选）<input v-model="item.link" placeholder="https://…" inputmode="url" /></label>
+                  <button type="button" class="nt-mini-btn" :disabled="arkDraft.items.length === 1"
+                          :aria-label="`删除条目 ${index + 1}`" @click="arkDraft.items.splice(index, 1)">删除</button>
+                </div>
+                <button type="button" class="nt-mini-btn" @click="arkDraft.items.push({ description: '', link: '' })">添加条目</button>
+              </template>
             </fieldset>
-            <textarea v-if="msgType !== 'ark'" ref="composerRef" v-model="draft" :disabled="sending"
+            <fieldset v-else-if="msgType === 'card'" class="chatnt-structured-editor chatnt-card-editor" :disabled="sending" aria-label="卡片内容"
+                      :style="{ height: activeComposerHeight + 'px' }">
+              <label v-for="field in CARD_FIELDS" :key="field.key">
+                {{ field.label }}
+                <input v-model="cardDraft[field.key]" :placeholder="field.placeholder" required
+                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined" />
+              </label>
+            </fieldset>
+            <textarea v-if="!isStructuredMessage" ref="composerRef" v-model="draft" :disabled="sending"
                       :style="{ height: activeComposerHeight + 'px' }"
                       :placeholder="composerPlaceholder"
                       @paste="onPaste"
                       @keydown.enter.exact.prevent="sendMessage"></textarea>
             <div class="chatnt-composer-foot">
               <span class="chatnt-hint">{{ sendModeHint || 'Enter 发送 · Shift+Enter 换行' }}</span>
-              <button class="chatnt-send" :disabled="!canSend">{{ sending ? '发送中…' : '发送' }}</button>
+              <div class="chatnt-composer-actions">
+                <button class="chatnt-send" :disabled="!canSend">{{ sending ? '发送中…' : '发送' }}</button>
+                <GroupLeaveMessages v-if="active.type === 'group'" :key="active.openId" :group-id="active.openId" :request="api" />
+              </div>
             </div>
           </form>
 
@@ -402,14 +416,8 @@
                     <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
                       <span class="mbr-top">
                         <span class="mbr-name" :class="{ 'bot-staff-name': isBotStaff(m) }">{{ m.username || 'Unknown' }}</span>
-                        <svg v-if="m.senderIsBot" class="qm-bot"
-                             width="13" height="13" viewBox="0 0 64 64" role="img" aria-label="机器人">
-                          <line x1="32" y1="10" x2="32" y2="18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
-                          <circle cx="32" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                          <rect x="16" y="18" width="32" height="28" rx="10" fill="none" stroke="currentColor" stroke-width="3.5"/>
-                          <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                          <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor"/>
-                        </svg>
+                        <img v-if="m.senderIsBot" class="qm-bot"
+                             :src="botBlue" width="13" height="13" alt="机器人" />
                         <span v-if="isSpecialRole(m.memberRole)" class="qm-role"
                               :class="'role-' + m.memberRole.toLowerCase()">{{ roleLabel(m.memberRole) }}</span>
                       </span>
@@ -545,25 +553,9 @@
                 <GroupBlacklistPanel :group-open-id="active.openId" :can-manage="canQueryMuteState"
                                      :request="api" :format-time="fmtGroupTime" @notice="showNotice" />
 
-                <div class="chatnt-info-section">
-                  <div class="chatnt-info-label">功能开关</div>
-                  <div class="nt-card">
-                    <div v-if="funcEntries.length === 0" class="nt-empty">暂无功能配置</div>
-                    <div v-for="[key, cfg] in funcEntries" :key="key" class="nt-row">
-                      <span class="nt-row-label">{{ key }}</span>
-                      <button class="nt-switch" :class="{ on: cfg.enabled }" role="switch"
-                              :aria-checked="!!cfg.enabled"
-                              @click="toggleFunction(key, !cfg.enabled)"><span class="nt-switch-knob" /></button>
-                    </div>
-                  </div>
-                  <div v-if="addableFunctionKeys.length" class="nt-add">
-                    <select class="nt-select" v-model="newFunctionKey">
-                      <option value="">选择功能</option>
-                      <option v-for="k in addableFunctionKeys" :key="k" :value="k">{{ k }}</option>
-                    </select>
-                    <button class="nt-btn" :disabled="!newFunctionKey" @click="addFunctionKey">添加</button>
-                  </div>
-                </div>
+                <PushTaskSettings :key="currentConvKey()" :entries="funcEntries" :function-keys="knownFunctionKeys"
+                                  :loading="groupFunctionsLoading" :error="groupFunctionsError" :saving-key="functionSavingKey"
+                                  @toggle="toggleFunction" />
               </template>
 
               <!-- 私聊：信息面板直接就是对端的用户设置 -->
@@ -571,6 +563,9 @@
                 <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
                                  :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady" :error="profileError"
                                  @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
+                <PushTaskSettings :key="currentConvKey()" :entries="userFunctionEntries" :function-keys="userFunctionKeys"
+                                  :loading="userPushTasksLoading" :error="userPushTasksError" :saving-key="functionSavingKey"
+                                  @toggle="toggleFunction" />
               </template>
 
               <div class="chatnt-info-section">
@@ -619,7 +614,7 @@
                           @click="clearCurrentConversation">
                     {{ clearForm.loading ? '清除中…' : '清除记录' }}
                   </button>
-                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>
+<!--                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>-->
 
                 </div>
               </div>
@@ -717,24 +712,31 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { LEGACY_TOKEN_KEY, API_BASE } from '../router.js'
-import { renderFaceTags } from '../messageRender.js'
+import { renderCommandInputTags, renderFaceTags } from '../messageRender.js'
 import { escapeHtml, renderMarkdown as renderMd } from '../lib/markdown.js'
 import { mediaUrl } from '../lib/mediaUrl.js'
-import { hasArkMessage } from '../lib/ark.js'
+import { hasArkMessage, renderArkSummary } from '../lib/ark.js'
+import { parseCardMessage, renderCardSummary } from '../lib/card.js'
+import { ARK_TEMPLATES, CARD_FIELDS, createArkDraft, createCardDraft, getArkFields,
+  isArkDraftValid, isCardDraftValid, buildArkPayload, buildCardPayload } from '../lib/messageDrafts.js'
 import { parseForwardContent } from '../lib/forward.js'
 import { vChatImageLayout } from '../lib/chatImageLayout.js'
 import { countNewMessages, latestMessageId } from '../lib/chatUnread.js'
 import { createChatBottomScroller, createChatPositionKeeper, prefersReducedMotion } from '../lib/chatMotion.js'
 import { CHAT_LAYOUT_KEY } from '../lib/panelLayout.js'
+import botBlue from '../assets/bot-blue.svg'
 import GroupAvatarRenderer from '../lib/GroupAvatarRenderer.js'
 import AppSidebar from '../components/AppSidebar.vue'
 import ArkMessageCard from '../components/ArkMessageCard.vue'
+import CardMessageCard from '../components/CardMessageCard.vue'
 import ForwardMessageCard from '../components/ForwardMessageCard.vue'
 import ChatBackground from '../components/ChatBackground.vue'
 import UserProfileForm from '../components/UserProfileForm.vue'
+import PushTaskSettings from '../components/PushTaskSettings.vue'
 import GroupMemberDialog from '../components/GroupMemberDialog.vue'
 import GroupBlacklistPanel from '../components/GroupBlacklistPanel.vue'
 import JoinWelcomePanel from '../components/JoinWelcomePanel.vue'
+import GroupLeaveMessages from '../components/GroupLeaveMessages.vue'
 
 const router = useRouter()
 
@@ -775,8 +777,11 @@ let followingLatest = true
 const sending = ref(false)
 const sendingInputNotify = ref(false)
 const draft = ref('')
-const arkDraft = reactive({ description: '', prompt: '', items: [{ description: '', link: '' }] })
+const arkDraft = reactive(createArkDraft())
+const cardDraft = reactive(createCardDraft())
+const selectedArkFields = computed(() => getArkFields(arkDraft.templateId))
 const msgType = ref('text')
+const isStructuredMessage = computed(() => msgType.value === 'ark' || msgType.value === 'card')
 const imageData = ref(null)
 const pastePreview = ref(null)
 const replyTo = ref(null)
@@ -789,9 +794,9 @@ const composerHeight = ref(COMPOSER_MIN_HEIGHT)
 const ARK_COMPOSER_MIN_HEIGHT = 120
 const arkComposerHeight = ref(220)
 const activeComposerHeight = computed({
-  get: () => msgType.value === 'ark' ? arkComposerHeight.value : composerHeight.value,
+  get: () => isStructuredMessage.value ? arkComposerHeight.value : composerHeight.value,
   set: height => {
-    if (msgType.value === 'ark') arkComposerHeight.value = height
+    if (isStructuredMessage.value) arkComposerHeight.value = height
     else composerHeight.value = height
   }
 })
@@ -815,7 +820,11 @@ const realGroupInput = ref('')
 const syncingGroupProfile = ref(false)
 const funcEntries = ref([])
 const knownFunctionKeys = ref([])
-const newFunctionKey = ref('')
+const groupFunctionsLoading = ref(false)
+const groupFunctionsError = ref('')
+const functionSavingKey = ref('')
+let functionSaveSeq = 0
+let groupFunctionsLoadSeq = 0
 const convStats = ref(null)
 const convStatsError = ref('')
 const clearForm = reactive({ mode: 'all', count: 100, start: '', end: '', loading: false })
@@ -845,6 +854,12 @@ const profileSaving = ref(false)
 const profileLoading = ref(false)
 const profileReady = ref(false)
 const profileError = ref('')
+const userPushTasks = ref([])
+const userPushTasksLoading = ref(false)
+const userPushTasksError = ref('')
+const userFunctionEntries = computed(() => userPushTasks.value.filter(task => task.configured)
+  .map(task => [task.functionId, task]))
+const userFunctionKeys = computed(() => userPushTasks.value.map(task => task.functionId))
 let profileLoadSeq = 0
 let profileLoadController = null
 const ROLE_OPTIONS = [
@@ -877,7 +892,7 @@ const messageListRef = ref(null)
 const messageContentRef = ref(null)
 const arrivingMessageIds = reactive(new Set())
 const messageScroller = createChatBottomScroller(() => messageListRef.value)
-const messagePosition = createChatPositionKeeper(() => messageListRef.value, () => messageContentRef.value)
+const messagePosition = createChatPositionKeeper(() => messageListRef.value)
 watch([messageListRef, messageContentRef], ([viewport, content], _, onCleanup) => {
   if (!viewport || !content) return
   // load 事件早于图片排版完成，也覆盖不到视频、字体和输入框引起的尺寸变化。
@@ -974,8 +989,8 @@ const hasMore = computed(() => messages.value.length < totalMessages.value)
 
 const canSend = computed(() => {
   if (!active.value || sending.value) return false
-  if (msgType.value === 'ark') return !!arkDraft.description.trim() && !!arkDraft.prompt.trim()
-    && arkDraft.items.length > 0 && arkDraft.items.every(item => !!item.description.trim())
+  if (msgType.value === 'ark') return isArkDraftValid(arkDraft)
+  if (msgType.value === 'card') return isCardDraftValid(cardDraft)
   if (msgType.value === 'image') return !!imageData.value
   return !!draft.value.trim()
 })
@@ -991,6 +1006,7 @@ const passiveDisabledReason = computed(() => {
 const referenceDisabledReason = computed(() => {
   if (wakeupMode.value) return '召回消息不附带引用'
   if (msgType.value === 'ark') return 'Ark 暂不支持引用'
+  if (msgType.value === 'card') return '卡片暂不支持引用'
   if (msgType.value === 'stream') return '流式消息暂不支持引用'
   if (replyTo.value && !replyTo.value.refIdx) return '所选消息缺少引用索引，无法附带引用'
   return ''
@@ -998,10 +1014,11 @@ const referenceDisabledReason = computed(() => {
 
 const sendModeHint = computed(() => {
   if (wakeupMode.value) return '发送召回消息'
-  if (msgType.value === 'ark') return 'Ark 主动发送 · 填写描述、通知预览和条目内容'
+  if (msgType.value === 'ark') return 'Ark 主动发送 · 填写所选模板的内容'
   if (msgType.value === 'stream' && !passiveMode.value) return '流式消息需开启被动消息并选择来源，或开启召回'
   if ((passiveMode.value || refMode.value) && !replyTo.value) return '请右键消息，点击「选择」指定来源'
   if (replyTo.value && !passiveMode.value && !refMode.value) return '未开启被动消息或引用，将按普通消息发送'
+  if (msgType.value === 'card') return '填写标题、描述、图片和跳转链接'
   return ''
 })
 
@@ -1017,7 +1034,7 @@ watch([msgType, () => active.value?.type, replyTo, wakeupMode], () => {
     refMode.value = false
     return
   }
-  if (msgType.value === 'stream' || (replyTo.value && !replyTo.value.refIdx)) refMode.value = false
+  if (msgType.value === 'stream' || msgType.value === 'card' || (replyTo.value && !replyTo.value.refIdx)) refMode.value = false
   if (replyTo.value && (isMe(replyTo.value) || !replyTo.value.messageOpenId)) passiveMode.value = false
 })
 
@@ -1103,7 +1120,7 @@ function onComposerResizeMove(e) {
   // 手柄在输入框上方：往上拖 = 变高，往下拖 = 变矮
   const delta = composerResizeStartY - point.clientY
   const maxHeight = window.innerHeight * 0.32
-  const minHeight = msgType.value === 'ark' ? ARK_COMPOSER_MIN_HEIGHT : COMPOSER_MIN_HEIGHT
+  const minHeight = isStructuredMessage.value ? ARK_COMPOSER_MIN_HEIGHT : COMPOSER_MIN_HEIGHT
   activeComposerHeight.value = Math.min(maxHeight, Math.max(minHeight, composerResizeStartHeight + delta))
 }
 
@@ -1371,7 +1388,7 @@ function shortId(id) {
 function stripPreviewTags(text) {
   let t = renderFaceTags(text || '')
   t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@…')
-  t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  t = renderCommandInputTags(t)
   t = t.replace(/<@[A-F0-9]+>/g, '@…')
   return t.replace(/\s+/g, ' ').trim()
 }
@@ -1379,7 +1396,9 @@ function stripPreviewTags(text) {
 function convPreview(c) {
   let body = ''
   if (c.lastArk) {
-    body = '[卡片消息]'
+    body = renderArkSummary(c.lastArk) || '[Ark]'
+  } else if (renderCardSummary(c.lastContent)) {
+    body = renderCardSummary(c.lastContent)
   } else if (c.lastAttachments) {
     const atts = parseAttach(c.lastAttachments)
     if (atts.some(a => a.type === 'image')) body = '[图片]'
@@ -1475,12 +1494,19 @@ async function selectConv(c) {
   memberSearch.value = ''
   groupMeta.value = null
   funcEntries.value = []
+  knownFunctionKeys.value = []
+  groupFunctionsLoadSeq++
+  groupFunctionsLoading.value = false
+  groupFunctionsError.value = ''
+  functionSaveSeq++
+  functionSavingKey.value = ''
   convStats.value = null
   convStatsError.value = ''
   muteState.value = null
   muteStateError.value = ''
   draft.value = ''
   resetArkDraft()
+  resetCardDraft()
   imageData.value = null
   pastePreview.value = null
   if (msgType.value === 'stream' && c.type !== 'c2c') msgType.value = 'text'
@@ -1654,7 +1680,9 @@ function backPanel() {
 function syncWelcomeEnabled(enabled) {
   const entry = funcEntries.value.find(([key]) => key === 'member_add_welcome')
   if (entry) entry[1] = { ...entry[1], enabled }
-  else funcEntries.value = [...funcEntries.value, ['member_add_welcome', { enabled }]]
+  else if (knownFunctionKeys.value.includes('member_add_welcome')) {
+    funcEntries.value = [...funcEntries.value, ['member_add_welcome', { enabled, displayName: '新成员入群欢迎语' }]]
+  }
 }
 
 async function togglePanel(name) {
@@ -1672,7 +1700,26 @@ async function loadInfoPanel() {
   if (active.value.type === 'group') {
     await Promise.all([loadGroupMeta(), loadGroupFunctions(), loadConvStats()])
   } else {
-    await Promise.all([openProfile(active.value.openId, activeConv.value?.name, false), loadConvStats()])
+    await Promise.all([openProfile(active.value.openId, activeConv.value?.name, false), loadUserPushTasks(), loadConvStats()])
+  }
+}
+
+async function loadUserPushTasks() {
+  if (disposed || active.value?.type !== 'c2c') return
+  const userOpenId = active.value.openId
+  const seq = profileLoadSeq
+  userPushTasks.value = []
+  userPushTasksLoading.value = true
+  userPushTasksError.value = ''
+  try {
+    const tasks = await api(`/c2c/${encodeURIComponent(userOpenId)}/push-tasks`)
+    if (disposed || seq !== profileLoadSeq || active.value?.type !== 'c2c' || active.value.openId !== userOpenId) return
+    userPushTasks.value = tasks || []
+  } catch (error) {
+    if (disposed || seq !== profileLoadSeq || active.value?.type !== 'c2c' || active.value.openId !== userOpenId) return
+    userPushTasksError.value = error.message || '加载推送订阅失败'
+  } finally {
+    if (seq === profileLoadSeq) userPushTasksLoading.value = false
   }
 }
 
@@ -1813,35 +1860,53 @@ async function saveRealGroup() {
 }
 
 async function loadGroupFunctions() {
+  if (disposed || active.value?.type !== 'group') return
+  const targetKey = currentConvKey()
+  const groupOpenId = active.value.openId
+  const seq = ++groupFunctionsLoadSeq
+  funcEntries.value = []
+  knownFunctionKeys.value = []
+  groupFunctionsLoading.value = true
+  groupFunctionsError.value = ''
   try {
     const [config, keys] = await Promise.all([
-      api(`/groups/${encodeURIComponent(active.value.openId)}/functions`),
-      knownFunctionKeys.value.length ? Promise.resolve(knownFunctionKeys.value) : api('/groups/functions/keys')
+      api(`/groups/${encodeURIComponent(groupOpenId)}/functions`),
+      api('/groups/functions/keys')
     ])
-    funcEntries.value = Object.entries(config || {})
+    if (disposed || seq !== groupFunctionsLoadSeq || currentConvKey() !== targetKey) return
     knownFunctionKeys.value = keys || []
-  } catch (error) { showNotice(error.message || '加载功能配置失败') }
+    const validKeys = new Set(knownFunctionKeys.value)
+    funcEntries.value = Object.entries(config || {}).filter(([key]) => validKeys.has(key))
+  } catch (error) {
+    if (!disposed && seq === groupFunctionsLoadSeq && currentConvKey() === targetKey) {
+      groupFunctionsError.value = error.message || '加载功能配置失败'
+    }
+  } finally {
+    if (seq === groupFunctionsLoadSeq) groupFunctionsLoading.value = false
+  }
 }
-
-const addableFunctionKeys = computed(() => {
-  const owned = new Set(funcEntries.value.map(([k]) => k))
-  return knownFunctionKeys.value.filter(k => !owned.has(k))
-})
 
 async function toggleFunction(key, enabled) {
+  if (disposed || !active.value || functionSavingKey.value) return
+  const isGroup = active.value.type === 'group'
+  const validKeys = isGroup ? knownFunctionKeys.value : userFunctionKeys.value
+  if (!validKeys.includes(key)) return
+  const targetKey = currentConvKey()
+  const openId = active.value.openId
+  const seq = ++functionSaveSeq
+  functionSavingKey.value = key
   try {
-    await api(`/groups/${encodeURIComponent(active.value.openId)}/functions/${encodeURIComponent(key)}?enabled=${enabled}`, { method: 'POST' })
-    const hit = funcEntries.value.find(([k]) => k === key)
-    if (hit) hit[1] = { ...hit[1], enabled }
-    else funcEntries.value = [...funcEntries.value, [key, { enabled }]]
-  } catch (error) { showNotice(error.message || '切换失败') }
-}
-
-async function addFunctionKey() {
-  const key = newFunctionKey.value
-  if (!key) return
-  await toggleFunction(key, true)
-  newFunctionKey.value = ''
+    const scope = isGroup ? 'groups' : 'c2c'
+    await api(`/${scope}/${encodeURIComponent(openId)}/functions/${encodeURIComponent(key)}?enabled=${enabled}`, { method: 'POST' })
+    if (disposed || seq !== functionSaveSeq || currentConvKey() !== targetKey) return
+    // 重新读取，保证新增任务也有名称，并与服务端当前有效的 key 保持一致。
+    if (isGroup) await loadGroupFunctions()
+    else await loadUserPushTasks()
+  } catch (error) {
+    if (!disposed && seq === functionSaveSeq && currentConvKey() === targetKey) showNotice(error.message || '切换失败')
+  } finally {
+    if (seq === functionSaveSeq) functionSavingKey.value = ''
+  }
 }
 
 // ── 统计 ──
@@ -1909,6 +1974,9 @@ async function clearCurrentConversation() {
 // ── 用户档案（群成员和私聊对端共用一套 /c2c/{id}/profile）──
 
 function resetProfile() {
+  userPushTasks.value = []
+  userPushTasksLoading.value = false
+  userPushTasksError.value = ''
   profileLoadSeq++
   profileLoadController?.abort()
   profileLoadController = null
@@ -1970,7 +2038,7 @@ async function saveProfile() {
   profileSaving.value = true
   profileError.value = ''
   try {
-    await api(`/c2c/${encodeURIComponent(savedUserId)}/profile`, {
+    const saved = await api(`/c2c/${encodeURIComponent(savedUserId)}/profile`, {
       method: 'POST',
       body: JSON.stringify({
         role: savedRole,
@@ -1982,10 +2050,17 @@ async function saveProfile() {
     })
     if (disposed) return
     const applyRole = user => user.unionOpenId === savedUserId && !user.senderIsBot
-      ? { ...user, userRole: savedRole } : user
+      ? { ...user, userRole: saved.role } : user
     messages.value = messages.value.map(applyRole)
     members.value = members.value.map(applyRole)
-    if (seq === profileLoadSeq && profileTarget.value === savedUserId) showNotice('已保存')
+    if (seq === profileLoadSeq && profileTarget.value === savedUserId) {
+      profile.role = saved.role
+      profile.permissions = [...saved.permissions]
+      profile.blocked = saved.isBlocked
+      profile.ignored = saved.isIgnored
+      profile.c2cPush = saved.c2cPush
+      showNotice('已保存')
+    }
   } catch (error) {
     if (!disposed && seq === profileLoadSeq && profileTarget.value === savedUserId) {
       profileError.value = error.message || '保存失败'
@@ -2304,11 +2379,11 @@ async function sendMessage() {
       if (useWakeup) body.wakeup = true
       if (msgType.value === 'ark') {
         delete body.content
-        body.ark = {
-          description: arkDraft.description.trim(),
-          prompt: arkDraft.prompt.trim(),
-          items: arkDraft.items.map(item => ({ description: item.description.trim(), link: item.link.trim() || null }))
-        }
+        body.ark = buildArkPayload(arkDraft)
+      }
+      if (msgType.value === 'card') {
+        delete body.content
+        body.card = buildCardPayload(cardDraft)
       }
       if (msgType.value === 'markdown') {
         body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
@@ -2334,6 +2409,7 @@ async function sendMessage() {
     if (currentConvKey() !== targetKey) { scheduleConvRefresh(); return }
     draft.value = ''
     resetArkDraft()
+    resetCardDraft()
     imageData.value = null
     pastePreview.value = null
     cancelReply()
@@ -2352,9 +2428,11 @@ async function sendMessage() {
 }
 
 function resetArkDraft() {
-  arkDraft.description = ''
-  arkDraft.prompt = ''
-  arkDraft.items = [{ description: '', link: '' }]
+  Object.assign(arkDraft, createArkDraft(arkDraft.templateId))
+}
+
+function resetCardDraft() {
+  Object.assign(cardDraft, createCardDraft())
 }
 
 function onPaste(e) {
@@ -2611,7 +2689,7 @@ function renderContent(message) {
   let text = message.content || ''
   text = renderFaceTags(text)
   text = text.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
-  text = text.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+  text = renderCommandInputTags(text)
   text = text.replace(/(<@[A-F0-9]+>)\s+\1/g, '$1')
   if (message.eventType === 'GROUP_MESSAGE_CREATE' && message.mentions) {
     try {
@@ -2643,6 +2721,14 @@ function legacyMedia(message) {
 
 function hasArk(message) {
   return hasArkMessage(message?.ark)
+}
+
+function cardPayload(message) {
+  return message?.card || (Number(message?.messageType) === 8 ? message?.content : null)
+}
+
+function hasCard(message) {
+  return !!parseCardMessage(cardPayload(message))
 }
 
 function forwardRecord(message) {
@@ -2696,7 +2782,7 @@ function renderRefContent(ref) {
   if (ref.content) {
     let t = parseLegacyMedia(ref.content) ? '[媒体消息]' : renderFaceTags(ref.content)
     t = t.replace(/<qqbot-at-user id="([A-F0-9]+)"\s*\/>/g, '@$1')
-    t = t.replace(/<qqbot-cmd-input[^>]*show="([^"]*)"[^>]*\/>/g, '$1')
+    t = renderCommandInputTags(t)
     if (t.trim()) parts.push(`<p>${escapeHtml(t)}</p>`)
   }
   for (const a of ref.attachments || []) {

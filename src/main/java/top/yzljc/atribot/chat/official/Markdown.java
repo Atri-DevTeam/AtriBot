@@ -48,14 +48,29 @@ public class Markdown {
     }
 
     public static String enterCommand(String command) {
+        if (isOutOfLimit(command)) {
+            throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
+        }
         return "<qqbot-cmd-enter text=\"" + command + "\" />";
     }
 
     public static String enterCommand(String command, String display) {
+        if (isOutOfLimit(display)) {
+            throw new IllegalArgumentException("enterCommand 的 display 参数长度不能超过 100 个字符");
+        }
+        if (isOutOfLimit(command)) {
+            throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
+        }
         return "<qqbot-cmd-input text=\"" + command + "\" show=\"" + display + "\" reference=\"false\" />";
     }
 
     public static String enterCommand(String command, String display, boolean reference) {
+        if (isOutOfLimit(display)) {
+            throw new IllegalArgumentException("enterCommand 的 display 参数长度不能超过 100 个字符");
+        }
+        if (isOutOfLimit(command)) {
+            throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
+        }
         return "<qqbot-cmd-input text=\"" + command + "\" show=\"" + display + "\" reference=\"" + reference + "\" />";
     }
 
@@ -107,9 +122,15 @@ public class Markdown {
         this.keyboard = keyboard;
 
         if (toMarkdown) {
-            return append(keyboard.toMarkdownString());
+            var k = keyboard.toMarkdownString();
+            this.keyboard = null;
+            return append(k);
         }
 
         return this;
+    }
+
+    private static boolean isOutOfLimit(String str) {
+        return str.length() > 100;
     }
 }

@@ -1,7 +1,9 @@
 package top.yzljc.atribot.webui;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.atribot.chat.official.Ark23;
+import top.yzljc.atribot.chat.official.ark.Ark;
+import top.yzljc.atribot.chat.official.ark.Ark23;
+import top.yzljc.atribot.chat.official.Card;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +21,72 @@ public final class WebUiSupport {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /** 按模板解析 Ark，未指定模板时兼容原有的模板 23 请求。 */
+    public static Ark parseArk(JsonNode body) {
+        if (body == null || !body.isObject()) {
+            throw new IllegalArgumentException("请填写 Ark 内容");
+        }
+        JsonNode template = body.get("templateId");
+        if (template != null && (!template.isIntegralNumber() || !template.canConvertToInt())) {
+            throw new IllegalArgumentException("Ark 模板编号无效");
+        }
+        int templateId = template == null ? 23 : template.intValue();
+        return switch (templateId) {
+            case 23 -> parseArk23(body);
+            case 24 -> Ark.ark24(
+                    requiredText(body, "description", "Ark 描述"),
+                    requiredText(body, "prompt", "Ark 通知预览"),
+                    requiredText(body, "title", "Ark 标题"),
+                    optionalText(body, "metaDescription", "Ark 详情描述"),
+                    requiredText(body, "picUrl", "Ark 图片链接"),
+                    requiredText(body, "jumpUrl", "Ark 跳转链接"),
+                    optionalText(body, "subTitle", "Ark 来源")
+            );
+            case 37 -> Ark.ark37(
+                    requiredText(body, "prompt", "Ark 通知预览"),
+                    requiredText(body, "title", "Ark 标题"),
+                    optionalText(body, "subTitle", "Ark 子标题"),
+                    requiredText(body, "picUrl", "Ark 图片链接"),
+                    requiredText(body, "jumpUrl", "Ark 跳转链接")
+            );
+            default -> throw new IllegalArgumentException("不支持的 Ark 模板");
+        };
+    }
+
+    /** 解析图文卡片。 */
+    public static Card parseCard(JsonNode body) {
+        if (body == null || !body.isObject()) {
+            throw new IllegalArgumentException("请填写卡片内容");
+        }
+        String type = optionalText(body, "type", "卡片类型");
+        if (!type.isEmpty() && !"tuwen".equals(type)) {
+            throw new IllegalArgumentException("不支持的卡片类型");
+        }
+        return Card.tuWen(
+                requiredText(body, "title", "卡片标题"),
+                requiredText(body, "description", "卡片描述"),
+                requiredText(body, "picUrl", "卡片图片链接"),
+                requiredText(body, "jumpUrl", "卡片跳转链接")
+        );
+    }
+
+    private static String requiredText(JsonNode body, String field, String label) {
+        String value = optionalText(body, field, label);
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException(label + "不能为空");
+        }
+        return value;
+    }
+
+    private static String optionalText(JsonNode body, String field, String label) {
+        JsonNode value = body.get(field);
+        if (value == null || value.isNull()) return "";
+        if (!value.isTextual()) {
+            throw new IllegalArgumentException(label + "必须为文本");
+        }
+        return value.asText().trim();
+    }
+
     /**
      * 校验并解析 WebUI 提交的 Ark 卡片内容
      *
@@ -26,7 +94,7 @@ public final class WebUiSupport {
      * @return 可用于主动发送的 Ark23 卡片
      * @throws IllegalArgumentException 卡片结构或必填内容无效时抛出
      */
-    public static Ark23 parseArk23(JsonNode body) {
+    public static Ark parseArk23(JsonNode body) {
         if (body == null || !body.isObject()) {
             throw new IllegalArgumentException("请填写 Ark 卡片内容");
         }
@@ -52,7 +120,7 @@ public final class WebUiSupport {
             parsed.add(new Ark23.Item(item.path("description").asText().trim(),
                     link == null ? null : trimToNull(link.asText(null))));
         }
-        return new Ark23(body.path("description").asText().trim(), body.path("prompt").asText().trim(), parsed);
+        return Ark.ark23(body.path("description").asText().trim(), body.path("prompt").asText().trim(), parsed);
     }
 
     public static boolean isBlank(String s) {

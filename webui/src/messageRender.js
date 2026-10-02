@@ -1,4 +1,19 @@
 const FACE_TAG_RE = /<faceType=\d+,faceId=\\?"[^"\\]*\\?",ext=\\?"([^"\\]*)\\?">/g
+const CMD_INPUT_RE = /<qqbot-cmd-input\b[^>]*\/>/g
+
+export function renderCommandInputTags(text) {
+  return String(text ?? '').replace(CMD_INPUT_RE, tag => {
+    const show = tag.match(/\bshow\s*=\s*(["'])(.*?)\1/s)?.[2]
+    if (show === undefined) return tag
+    const command = tag.match(/\btext\s*=\s*(["'])(.*?)\1/s)?.[2] || ''
+    if (!/%[\da-f]{2}/i.test(show) && !/%[\da-f]{2}/i.test(command)) return show
+    try {
+      return decodeURIComponent(show.replace(/\+/g, ' '))
+    } catch {
+      return show
+    }
+  })
+}
 
 export function renderFaceTags(text) {
   if (!text) return ''

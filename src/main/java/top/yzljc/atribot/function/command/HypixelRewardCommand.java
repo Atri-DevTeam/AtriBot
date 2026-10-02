@@ -92,7 +92,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
     private static String getRewardIdLockedMessage(RewardSession session) {
         long remainingMillis = Math.max(0, SESSION_TIMEOUT_MILLIS - (System.currentTimeMillis() - session.timestamp));
         long remainingSeconds = Math.max(1, (remainingMillis + 999) / 1000);
-        return "⚠️ 这个领奖ID已经被其他用户使用中，请等待 " + remainingSeconds + " 秒后再试喵！";
+        return "⚠️ 该会话ID正在使用中，请等待 " + remainingSeconds + " 秒后再试喵！";
     }
 
     private static void removeSession(String sessionId) {
@@ -271,6 +271,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void onOfficialC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
+        if (ReminderCommand.isReminderRequest(event.getMessage().getContent())) return;
         if (event.shouldIgnore()) return;
         String content = event.getMessage().getContent();
         if (content.contains("/cl ")) return;

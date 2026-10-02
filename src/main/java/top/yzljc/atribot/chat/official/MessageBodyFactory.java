@@ -1,5 +1,6 @@
 package top.yzljc.atribot.chat.official;
 
+import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.chat.official.media.GroupMessageType;
 
@@ -25,15 +26,15 @@ final class MessageBodyFactory {
                 .build();
     }
 
-    public MessageBody ark23(Ark23 ark) {
-        return ark23(ark, null);
+    public MessageBody ark(Ark ark) {
+        return ark(ark, null);
     }
 
-    public MessageBody ark23(Ark23 ark, RT rt) {
-        if (ark == null) throw new IllegalArgumentException("Ark23 must not be null");
+    public MessageBody ark(Ark ark, RT rt) {
+        if (ark == null) throw new IllegalArgumentException("Ark must not be null");
         return builder(rt, true)
                 .msgType(GroupMessageType.ARK.getValue())
-                .ark(ark.toPayload())
+                .ark(ark.toObject())
                 .build();
     }
 
@@ -234,6 +235,14 @@ final class MessageBodyFactory {
         return MessageBody.builder().msgType(GroupMessageType.EMBED.getValue())
                 .embed(embed.toPayload())
                 .msgId(rt.id())
+                .build();
+    }
+
+    public MessageBody card(RT rt, Card card) {
+        Objects.requireNonNull(card, "Card must not be null");
+        return builder(rt, true)
+                .msgType(GroupMessageType.CARD.getValue())
+                .card(card.toObject())
                 .build();
     }
 

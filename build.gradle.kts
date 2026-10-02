@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.2.3-Release"
+version = "3.3.0-SNAPSHOT"
 description = "AtriBot"
 
 repositories {
@@ -49,6 +49,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.h2database:h2:2.3.232")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -115,7 +116,8 @@ tasks.processResources {
         val isGitProps = name == "git.properties"
         val isOfficialWebuiAsset = path.startsWith("official-webui/") || path.startsWith("miniapp/")
 
-        if (!isBinary && !isGitProps && !isOfficialWebuiAsset) {
+        // 人设 JSON 中的换行等转义字符必须原样保留。
+        if (!isBinary && !isGitProps && !isOfficialWebuiAsset && !path.startsWith("atri-chat/")) {
             expand(
                 "version" to projVersion
             )

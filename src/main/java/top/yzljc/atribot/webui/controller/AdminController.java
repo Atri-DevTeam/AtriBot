@@ -207,10 +207,12 @@ public class AdminController {
             ctx.json(Result.fail(400, "NapCat 来源反馈已停止回复接入"));
             return;
         }
-        boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden());
+        boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden(), dto.isSilent());
         if (success) {
-            // 主动推送涉及网络，别阻塞 WebUI 请求线程
-            ThreadManager.execute(() -> FeedbackCommand.dispatchReply(dto.getId()));
+            if (!dto.isSilent()) {
+                // 主动推送涉及网络，别阻塞 WebUI 请求线程
+                ThreadManager.execute(() -> FeedbackCommand.dispatchReply(dto.getId()));
+            }
             ctx.json(Result.success("ok"));
         } else {
             ctx.json(Result.fail(500, "回复失败，可能该反馈不存在"));
@@ -231,6 +233,7 @@ public class AdminController {
         private String replyContent;
         @JsonProperty("isHidden")
         private boolean isHidden;
+        private boolean silent;
     }
 
     // ============ 错误报告 ============

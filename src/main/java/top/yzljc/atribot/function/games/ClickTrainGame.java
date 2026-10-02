@@ -46,7 +46,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     private static final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
 
     private static final int ROWS = 5;
-    private static final int COLS = 6;
+    private static final int COLS = 5;
     private static final int TOTAL_CELLS = ROWS * COLS;
     private static final String CALLBACK_VALUE = "click_train";
     private static final long GAME_TIMEOUT_MS = 120_000;
@@ -67,6 +67,23 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         boolean isC2C = qq.getPlatform() == Platform.OFFICIAL_C2C;
         String sessionId = isC2C ? qq.getUserId() : qq.getGroupId();
         String ownerId = qq.getUserId();
+
+        if (args.length > 0 && "放弃".equals(args[0])) {
+            GameState game = activeGames.get(ownerId);
+            if (game == null || !game.sessionId.equals(sessionId)) {
+                qq.sendMessage("当前会话没有正在进行的反应力测试喵！");
+                return true;
+            }
+            boolean abandoned;
+            synchronized (game) {
+                abandoned = game.phase == Phase.PLAYING && activeGames.remove(ownerId, game);
+                if (abandoned) game.phase = Phase.FINISHED;
+            }
+            qq.sendMessage(abandoned
+                    ? "已放弃本局反应力测试喵！可以重新开始啦。"
+                    : "这局反应力测试已经结束了喵！");
+            return true;
+        }
 
         if (activeGames.containsKey(ownerId)) {
             qq.sendMessage("你已经有一个正在进行的反应力测试了喵！请先完成或等它结束后再开！");
@@ -150,7 +167,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
             game.hits.merge(userId, 1, Integer::sum);
             game.lastClickTime = now;
 
-            // 点完 1~30 → 只发一次结算
+            // 点完 1~25 → 只发一次结算
             if (game.nextNumber > TOTAL_CELLS) {
                 String markdown = endGame(game, true);
                 event.answer(AnswerCode.SUCCESS);
@@ -207,10 +224,11 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         return """
                 **反应力测试**
                 
-                > 请按照从1点到30的顺序点击，首次点击后开始计时
+                > 请按照从1点到25的顺序点击，首次点击后开始计时
                 > 手机端由于点击间隔无法快速完成，建议使用PC端测试
                 > 开始后限时 2 分钟，未完成自动取消
-                > 你的最好记录: """ + formatBest(ownerId);
+                > 你的最好记录: """ + formatBest(ownerId)
+                + "\n\n> " + Markdown.enterCommand("/反应力测试 放弃", "放弃本局");
     }
 
     /**
@@ -239,7 +257,8 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
         markdown.append("**反应力测试 - 结算**\n\n");
         if (completed) {
-            markdown.append("🎉 完成测验，排名 #").append(getUserRank(game.ownerOpenId) != 0 ? getUserRank(game.ownerOpenId) : "-").append("\n\n");
+            int roundRank = getRoundRank(game.ownerOpenId, elapsedMs);
+            markdown.append("🎉 完成测验，本局排名 #").append(roundRank > 0 ? roundRank : "-").append("\n\n");
         } else {
             markdown.append("❌ 未在规定时间内完成，进度 ").append(game.completedCount).append("/").append(TOTAL_CELLS).append("\n\n");
         }
@@ -295,6 +314,16 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         } catch (Exception e) {
             log.warn("读取反应力测试记录失败", e);
             return "暂时无法读取";
+        }
+    }
+
+    /** 本局用时相对于所有玩家最好用时的排名，不替换个人最好记录。 */
+    private static int getRoundRank(String ownerId, long elapsedMs) {
+        try {
+            return UserGameDataRepository.instance().reactionRank(elapsedMs, ownerId);
+        } catch (Exception e) {
+            log.warn("读取反应力测试本局排名失败", e);
+            return 0;
         }
     }
 

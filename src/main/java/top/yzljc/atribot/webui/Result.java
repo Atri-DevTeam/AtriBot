@@ -11,6 +11,9 @@ import lombok.Data;
  */
 @Data
 public class Result<T> {
+    public static final int ERROR_STATUS = 432;
+    private static final String DEFAULT_ERROR_MESSAGE = "请求处理失败，请稍后重试。";
+
     private int status;
     private String message;
     private T data;
@@ -29,10 +32,11 @@ public class Result<T> {
         return resultData;
     }
 
-    public static <T> Result<T> fail(int code, String message) {
+    /** 保留原错误码参数以兼容现有调用；响应体中的错误状态统一为 432。 */
+    public static <T> Result<T> fail(int ignoredCode, String message) {
         Result<T> resultData = new Result<>();
-        resultData.setStatus(code);
-        resultData.setMessage(message);
+        resultData.setStatus(ERROR_STATUS);
+        resultData.setMessage(message == null || message.isBlank() ? DEFAULT_ERROR_MESSAGE : message.trim());
         return resultData;
     }
 

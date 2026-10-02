@@ -75,6 +75,9 @@ public class WebUIRouter {
         server.post("/webui/api/chat/cleanup/orphaned-friends", C2CController::startOrphanedFriendRecordCleanup);
         server.get("/webui/api/chat/cleanup/orphaned-friends", C2CController::getOrphanedFriendRecordCleanupStatus);
         server.get("/webui/api/groups", GroupController::listGroups);
+        server.get("/webui/api/groups/{groupOpenId}/leave-messages", GroupLeaveMessageController::list);
+        server.post("/webui/api/groups/{groupOpenId}/leave-messages", GroupLeaveMessageController::add);
+        server.delete("/webui/api/groups/{groupOpenId}/leave-messages/{id}", GroupLeaveMessageController::delete);
         server.get("/webui/api/groups/{groupOpenId}/join-welcome", JoinWelcomeController::get);
         server.put("/webui/api/groups/{groupOpenId}/join-welcome", JoinWelcomeController::save);
         server.delete("/webui/api/groups/{groupOpenId}/join-welcome", JoinWelcomeController::clear);
@@ -155,6 +158,8 @@ public class WebUIRouter {
         // C2C 私聊
         server.get("/webui/api/c2c/users", C2CController::listC2CUsers);
         server.get("/webui/api/c2c/{userOpenId}/permissions", C2CController::getC2CUserPermissions);
+        server.get("/webui/api/c2c/{userOpenId}/push-tasks", C2CController::getC2CUserPushTasks);
+        server.post("/webui/api/c2c/{userOpenId}/functions/{functionKey}", C2CController::setC2CUserFunction);
         server.post("/webui/api/c2c/{userOpenId}/profile", C2CController::updateC2CUserProfile);
         server.post("/webui/api/c2c/{userOpenId}/role", C2CController::setC2CUserRole);
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", C2CController::toggleC2CUserPermission);

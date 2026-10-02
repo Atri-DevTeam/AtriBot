@@ -14,7 +14,7 @@ import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 /**
  * 被动队列排空器：目标下一次与 Bot 交互时补发欠他的通知。
  *
- * <p>每次交互只补发一条，避免一次性刷屏；剩余的通知会在后续交互里继续补发。
+ * <p>普通通知每次交互只补发一条；WebUI 群留言由独立队列依次发送，失败时保留剩余留言。
  *
  * @Author YZ_Ljc_
  * @ClassName PendingNoticeDispatcher
@@ -36,12 +36,16 @@ public class PendingNoticeDispatcher implements Listener {
     @EventHandler
     public void onGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
+        if (!event.shouldIgnore()) GroupLeaveMessageService.deliver(event.getGroupId(),
+                markdown -> event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), markdown, false));
         deliverToGroup(event.getGroupId(), event.getUser().getUserId(), event::sendMessage);
     }
 
     @EventHandler
     public void onGroupMessage(OfficialGroupMessageCreateEvent event) {
         if (event.getUser().isBot()) return;
+        if (!event.shouldIgnore()) GroupLeaveMessageService.deliver(event.getGroupId(),
+                markdown -> event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), markdown, false));
         deliverToGroup(event.getGroupId(), event.getUser().getUserId(), event::sendMessage);
     }
 

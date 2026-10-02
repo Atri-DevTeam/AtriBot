@@ -1,6 +1,10 @@
 <script setup lang="ts">
 defineProps<{ name: string }>()
 const paths: Record<string, string> = {
+  info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 10v7M12 7h.01',
+  mail: 'M3 5h18v14H3zM3 7l9 7 9-7',
+  book: 'M12 6a8 8 0 0 0-9-1v15a8 8 0 0 1 9 1 8 8 0 0 1 9-1V5a8 8 0 0 0-9 1ZM12 6v15',
+  code: 'm8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
   'shield-check': 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM8.5 12l2.5 2.5 4.5-5',
   tag: 'M3 3h8l10 10-8 8L3 11ZM7 7h.01',
   broadcast: 'M4 10h4l11-5v14L8 14H4ZM8 14l2 6h3l-2-5M22 9v6',

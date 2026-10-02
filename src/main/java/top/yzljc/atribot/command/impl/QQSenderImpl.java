@@ -161,6 +161,12 @@ public class QQSenderImpl implements QQCommandSender {
     public String sendMessage(ImageComponent image) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
+
+                if (this.message.getMessageEventType() == EventType.OFFICIAL_GROUP_MESSAGE) {
+                    RT rt = RT.message(this.message.getMessageId());
+                    return this.user.sendMessage(this.groupId, rt, image, this.message.getRefIdx());
+                }
+
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
             }
             case OFFICIAL_C2C -> {

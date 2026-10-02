@@ -13,7 +13,7 @@ import top.yzljc.atribot.event.Event;
  */
 @Getter
 @AllArgsConstructor
-public class OfficialInteractionEvents extends Event {
+public abstract class OfficialInteractionEvents extends Event {
     protected final String applicationId;
     protected final String eventId;
     protected final String id;

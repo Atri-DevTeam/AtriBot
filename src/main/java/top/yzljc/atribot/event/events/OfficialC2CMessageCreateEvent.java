@@ -1,6 +1,7 @@
 package top.yzljc.atribot.event.events;
 
 import lombok.Getter;
+import lombok.Setter;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.RT;
@@ -9,6 +10,7 @@ import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
@@ -23,6 +25,8 @@ public class OfficialC2CMessageCreateEvent extends Event {
     private final User user;
     private final QQMessage message;
     private final String timestamp;
+    @Setter
+    private SwitchButtons switchButtons;
 
     public OfficialC2CMessageCreateEvent(User user, QQMessage message, String timestamp) {
         this.user = user;
@@ -52,5 +56,18 @@ public class OfficialC2CMessageCreateEvent extends Event {
 
     public boolean shouldIgnore() {
         return this.user.isBlocked();
+    }
+
+    public record SwitchButtons(List<SwitchButton> switchButtons) {
+        public record SwitchButton(String k, boolean v) {}
+
+        public boolean isEnabled(String k) {
+            for (SwitchButton button : switchButtons) {
+                if (button.k().equals(k)) {
+                    return button.v();
+                }
+            }
+            return false;
+        }
     }
 }

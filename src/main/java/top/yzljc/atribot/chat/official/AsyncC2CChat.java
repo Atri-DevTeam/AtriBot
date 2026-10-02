@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.platform.qq.FileType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -56,14 +57,19 @@ public final class AsyncC2CChat {
     }
 
     /**
-     * 异步发送单聊 Ark23 召回消息，不携带回复来源或引用
+     * 异步发送单聊 Ark 召回消息，不携带回复来源或引用
      *
      * @param openId 用户 openId
-     * @param ark    Ark23 消息内容
+     * @param ark    Ark 消息内容
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
-    public static CompletableFuture<String> wakeupMessage(String openId, Ark23 ark) {
-        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().ark23(ark));
+    public static CompletableFuture<String> wakeupMessage(String openId, Ark ark) {
+        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().ark(ark));
+    }
+
+    /** 异步发送单聊卡片召回消息，不携带回复来源或引用。 */
+    public static CompletableFuture<String> wakeupMessage(String openId, Card card) {
+        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().card(null, card));
     }
 
     /**
@@ -305,14 +311,25 @@ public final class AsyncC2CChat {
     }
 
     /**
-     * 异步发送单聊 Ark23 主动消息
+     * 异步发送单聊 Ark 主动消息
      *
      * @param openId 用户 openId
-     * @param ark    Ark23 消息体
+     * @param ark    Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String openId, Ark23 ark) {
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark23(ark));
+    public static CompletableFuture<String> sendMessage(String openId, Ark ark) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark(ark));
+    }
+
+    /**
+     * 异步发送单聊卡片主动消息
+     *
+     * @param openId 用户 openId
+     * @param card   卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> sendMessage(String openId, Card card) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().card(null, card));
     }
 
     /**
@@ -382,16 +399,29 @@ public final class AsyncC2CChat {
     }
 
     /**
-     * 异步回复单聊 Ark23 消息
+     * 异步回复单聊 Ark 消息
      *
      * @param openId 用户 openId
      * @param rt     消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param ark    Ark23 消息体
+     * @param ark    Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String openId, RT rt, Ark23 ark) {
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, Ark ark) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark23(ark, rt));
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().ark(ark, rt));
+    }
+
+    /**
+     * 异步回复单聊卡片消息
+     *
+     * @param openId 用户 openId
+     * @param rt     消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param card   卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, Card card) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().card(rt, card));
     }
 
     /**

@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.platform.qq.FileType;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
@@ -162,14 +163,25 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步发送群聊 Ark23 主动消息
+     * 异步发送群聊 Ark 主动消息
      *
      * @param groupOpenId 群 openId
-     * @param ark         Ark23 消息体
+     * @param ark         Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String groupOpenId, Ark23 ark) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark));
+    public static CompletableFuture<String> sendMessage(String groupOpenId, Ark ark) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark(ark));
+    }
+
+    /**
+     * 异步发送群聊卡片主动消息
+     *
+     * @param groupOpenId 群 openId
+     * @param card        卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> sendMessage(String groupOpenId, Card card) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().card(null, card));
     }
 
     /**
@@ -225,16 +237,29 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步回复群聊 Ark23 消息
+     * 异步回复群聊 Ark 消息
      *
      * @param groupOpenId 群 openId
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param ark         Ark23 消息体
+     * @param ark         Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Ark23 ark) {
+    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Ark ark) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark23(ark, rt));
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().ark(ark, rt));
+    }
+
+    /**
+     * 异步回复群聊卡片消息
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param card        卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Card card) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().card(rt, card));
     }
 
     /**

@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 
 /**
  * @Author YZ_Ljc_
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @Project AtriData
  * @Package top.yzljc.atribot.chat.official
  */
+@Getter
 public class QQMessageSendException extends RuntimeException {
     private final Integer code;
     private final String traceId;
@@ -20,10 +22,7 @@ public class QQMessageSendException extends RuntimeException {
         this.traceId = traceId;
     }
 
-    public Integer getCode() { return code; }
-    public String getTraceId() { return traceId; }
-
-    static QQMessageSendException fromResponse(ObjectMapper objectMapper, String responseBody, String fallbackMessage) {
+    public static QQMessageSendException fromResponse(ObjectMapper objectMapper, String responseBody, String fallbackMessage) {
         String message = extractMessage(objectMapper, responseBody);
         Integer code = null;
         String traceId = null;

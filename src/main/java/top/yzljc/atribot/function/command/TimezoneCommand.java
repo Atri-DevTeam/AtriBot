@@ -1,21 +1,26 @@
 package top.yzljc.atribot.function.command;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
+import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.service.ai.AiService;
+import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @Author YZ_Ljc_
@@ -30,8 +35,9 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
     /** 默认时区，北京时间 */
     private static final String DEFAULT_ZONE_ID = "Asia/Shanghai";
     private static final String DEFAULT_DISPLAY_NAME = "北京时间";
+    private static final String SKYBLOCK_ZONE_ID = "Hypixel/Skyblock";
 
-    /** 常见国家/地区简写与 IANA 时区的直接映射，避免无意义的 AI 调用 */
+    /** 常见国家/地区简写与 IANA 时区的直接映射 */
     private static final Map<String, String> QUICK_ALIASES = buildQuickAliases();
 
     private static final String SYSTEM_PROMPT =
@@ -41,8 +47,9 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
             "1. 只输出一行结果：IANA 时区 ID 与显示名称用英文竖线 '|' 分隔，左侧是 IANA 时区 ID，右侧是用户视角下的友好中文显示名（例如：北京|Asia/Shanghai 这种格式是错误的，正确输出形如 Asia/Shanghai|中国北京 或 Europe/London|英国伦敦）。\n" +
             "2. 优先取该国/该地区的代表性时区，例如美国输出 America/New_York，俄罗斯输出 Europe/Moscow。\n" +
             "3. 如果用户输入已经是合法 IANA 时区 ID（例如 Asia/Tokyo、UTC、Europe/Paris），右侧显示名尽量按原意翻译为中文。\n" +
-            "4. 如果无法识别任何合理的时区，仅输出 UNKNOWN。\n" +
-            "5. 禁止输出任何解释、代码块、标点前缀、空格或换行。";
+            "4. 支持 Hypixel SkyBlock 游戏时间：用户输入 skb、sb、skyblock、天空方块、空岛等名称，或天空方快、天空方塊、skyblok 等错别字、模糊描述时，自动纠正并输出 Hypixel/Skyblock|Hypixel SkyBlock。只有明确指向该游戏的描述才使用此特殊 ID，其他虚构世界不要编造时区。\n" +
+            "5. 如果无法识别任何合理的时区或上述游戏时间，仅输出 UNKNOWN。\n" +
+            "6. 禁止输出任何解释、代码块、标点前缀、额外空格或换行，显示名称内部可保留空格。";
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss EEE", Locale.SIMPLIFIED_CHINESE);
@@ -59,11 +66,7 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
                     return;
                 }
 
-                ZonedDateTime now = ZonedDateTime.now(zone.zoneId);
-                String text = "**" + "目标地区时间" + "**\n" +
-                        "> 当前时间：" + now.format(DATE_FORMATTER) + "\n" +
-                        "> 时区偏移：UTC" + now.getOffset().getId() + "\n\n" +
-                        "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
+                String text = buildTimeReply(zone);
 
                 switch (sender) {
                     case QQCommandSender qq -> qq.sendMessage(TC.md(text));
@@ -94,11 +97,7 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
                     return;
                 }
 
-                ZonedDateTime now = ZonedDateTime.now(zone.zoneId);
-                String text = "**" + "目标地区时间" + "**\n" +
-                        "> 当前时间：" + now.format(DATE_FORMATTER) + "\n" +
-                        "> 时区偏移：UTC" + now.getOffset().getId() + "\n\n" +
-                        "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
+                String text = buildTimeReply(zone);
 
                 sender.sendMessage(text);
 
@@ -116,6 +115,9 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
         }
 
         String normalized = query.trim();
+        if (SKYBLOCK_ZONE_ID.equalsIgnoreCase(normalized)) {
+            return ResolvedZone.of(SKYBLOCK_ZONE_ID, "Hypixel SkyBlock");
+        }
         String quick = QUICK_ALIASES.get(normalized.toLowerCase(Locale.ROOT));
         if (quick != null) {
             String[] parts = splitQuick(quick);
@@ -170,13 +172,74 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
         }
 
         try {
-            ZoneId zoneId = ZoneId.of(zoneIdStr);
-            return ResolvedZone.of(zoneId.getId(),
-                    displayName.isBlank() ? zoneId.getId() : displayName);
+            return ResolvedZone.of(zoneIdStr,
+                    displayName.isBlank() ? zoneIdStr : displayName);
         } catch (Exception e) {
             log.warn("AI 返回的时区无法解析: '{}'", response);
             return null;
         }
+    }
+
+    private static String buildTimeReply(ResolvedZone zone) {
+        if (SKYBLOCK_ZONE_ID.equals(zone.zoneId)) {
+            JsonNode response = HttpService.sendGetRequest(ResourcesProperties.SKYBLOCK_TIME_API);
+            return buildSkyblockReply(response);
+        }
+
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(zone.zoneId));
+        return "**" + "目标地区时间" + "**\n" +
+                "> 当前时间：" + now.format(DATE_FORMATTER) + "\n" +
+                "> 时区偏移：UTC" + now.getOffset().getId() + "\n\n" +
+                "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
+    }
+
+    private static String buildSkyblockReply(JsonNode response) {
+        String time = formatSkyblockTime(response);
+        if (time == null) {
+            log.warn("SkyBlock 时间接口请求失败或返回无效时间数据");
+            return "亚托莉暂时没能获取 SkyBlock 时间，请稍后再试～";
+        }
+        return "**" + "目标地区时间" + "**\n" +
+                "> 当前时间：" + time + "\n" +
+                "> 正在进行：" + formatSkyblockEvents(response) + "\n\n" +
+                "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
+    }
+
+    private static String formatSkyblockEvents(JsonNode response) {
+        JsonNode events = response.path("data").path("activeEvents");
+        if (!events.isArray()) {
+            return "暂未获取到活动或事件信息";
+        }
+        Set<String> names = new LinkedHashSet<>();
+        for (JsonNode event : events) {
+            String name = event.path("name").asText("").trim();
+            if (!name.isBlank()) {
+                names.add(name);
+            }
+        }
+        return names.isEmpty() ? "暂无正在进行的活动或事件" : String.join("、", names);
+    }
+
+    private static String formatSkyblockTime(JsonNode response) {
+        if (response == null || response.path("status").asInt() != 200) {
+            return null;
+        }
+        JsonNode time = response.path("data").path("skyblockTime");
+        if (!time.path("year").canConvertToInt() || !time.path("day").canConvertToInt()
+                || !time.path("hour").canConvertToInt() || !time.path("minute").canConvertToInt()
+                || !time.path("monthName").isTextual()) {
+            return null;
+        }
+        int year = time.path("year").asInt();
+        String monthName = time.path("monthName").asText();
+        int day = time.path("day").asInt();
+        int hour = time.path("hour").asInt();
+        int minute = time.path("minute").asInt();
+        if (year < 1 || monthName.isBlank() || day < 1 || day > 31
+                || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            return null;
+        }
+        return String.format(Locale.ROOT, "Year %d, %s %d, %02d:%02d", year, monthName, day, hour, minute);
     }
 
     private static String[] splitQuick(String value) {
@@ -349,12 +412,25 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
         map.put("东九区", "Asia/Tokyo|东九区东京时间");
         map.put("seattle", "America/Los_Angeles|美国洛杉矶");
         map.put("andy", "America/Los_Angeles|美国洛杉矶");
+        map.put("skb", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("sb", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("skyblock", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("sky block", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("hypixel skyblock", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("hypixel sky block", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("天空方块", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("空岛", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("空岛生存", "Hypixel/Skyblock|Hypixel SkyBlock");
+        map.put("hypixel空岛", "Hypixel/Skyblock|Hypixel SkyBlock");
         return map;
     }
 
-    private record ResolvedZone(ZoneId zoneId, String displayName) {
+    private record ResolvedZone(String zoneId, String displayName) {
         static ResolvedZone of(String zoneId, String displayName) {
-            return new ResolvedZone(ZoneId.of(zoneId), displayName);
+            // SkyBlock 大日历
+            String resolvedId = SKYBLOCK_ZONE_ID.equalsIgnoreCase(zoneId)
+                    ? SKYBLOCK_ZONE_ID : ZoneId.of(zoneId).getId();
+            return new ResolvedZone(resolvedId, displayName);
         }
     }
 }

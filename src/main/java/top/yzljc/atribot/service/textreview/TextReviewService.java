@@ -37,7 +37,7 @@ public final class TextReviewService {
     /**
      * @param content 待推送的原始文本，不允许为 null；空白文本原样返回
      * @param allowedDomains 允许保留链接的完整域名或 HTTP(S) URL，只比较域名，子域名须单独列出；null 或空集合表示屏蔽全部链接
-     * @return 违规片段和非白名单链接按原文 Unicode 码点数替换为等量的 *，未命中字符保持不变
+     * @return 违规片段和非白名单 HTTP(S) 链接按原文 Unicode 码点数替换为等量的 *，未命中字符保持不变
      * @throws IllegalArgumentException 白名单包含空值或无法解析的域名
      * @throws TextReviewException 词库加载失败、AI 不可用或审核结果无效，不返回未经完整审核的文本
      */
@@ -47,7 +47,7 @@ public final class TextReviewService {
 
     /**
      * @param content 待推送的原始文本，不允许为 null
-     * @return 两轮审查后的文本，所有识别到的链接均按 Unicode 码点数替换为等量的 *
+     * @return 两轮审查后的文本，仅将带 http:// 或 https:// 前缀的链接按 Unicode 码点数替换为等量的 *
      * @throws TextReviewException 词库加载失败、AI 不可用或审核结果无效
      */
     public static String review(String content) {
@@ -69,7 +69,7 @@ public final class TextReviewService {
 
     /**
      * @param content 待审核原文，不允许为 null
-     * @return 审核后的文本及实际替换片段，全部识别到的链接均按 Unicode 码点数替换为等量的 *
+     * @return 审核后的文本及实际替换片段，仅将带 http:// 或 https:// 前缀的链接按 Unicode 码点数替换为等量的 *
      * @throws TextReviewException 规则加载失败、AI 不可用或审核结果无效
      */
     public static TextReviewResult reviewDetailed(String content) {
@@ -101,7 +101,7 @@ public final class TextReviewService {
     /**
      * @param content 待审查原文，不允许为 null；保留原有空格、换行及格式
      * @param allowedDomains 链接域名白名单，精确匹配且不自动允许子域名；null 或空集合表示全部屏蔽
-     * @return 违规片段和非白名单链接按原文 Unicode 码点数替换为等量的 *，白名单链接原样保留
+     * @return 违规片段和非白名单 HTTP(S) 链接按原文 Unicode 码点数替换为等量的 *，白名单链接原样保留
      * @throws IllegalArgumentException 白名单包含空值或无法解析的域名
      * @throws TextReviewException AI 未完成审核或返回无法定位的片段
      */

@@ -164,7 +164,8 @@ public final class MiniappProfileService {
     }
 
     public static String avatarUrl(String appId, String userId) {
-        if (clean(appId) == null || "null".equalsIgnoreCase(appId)) return null;
+        if (clean(appId) == null || "null".equalsIgnoreCase(appId)
+                || clean(userId) == null || "null".equalsIgnoreCase(userId)) return null;
         return "https://thirdqq.qlogo.cn/qqapp/" + URLEncoder.encode(appId, StandardCharsets.UTF_8)
                 + "/" + URLEncoder.encode(userId, StandardCharsets.UTF_8) + "/100";
     }

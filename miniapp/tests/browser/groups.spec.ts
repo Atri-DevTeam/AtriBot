@@ -186,7 +186,7 @@ test('welcome retries independently, renders images and math, and discards respo
         return
       }
       if (++secondCalls === 1) return route.fulfill({ status: 502, json: { error: 'WELCOME_UNAVAILABLE' } })
-      return route.fulfill({ json: { enabled: false, custom: true, text: '**第二个群欢迎**\n\n$x^2$\n\n![欢迎图片 #320px #180px](https://images.example.test/welcome.png)', buttonSize: 'SMALL', keyboard: [[{ label: '只读按钮', style: 'RED' }]] } })
+      return route.fulfill({ json: { enabled: false, custom: true, text: '**第二个群欢迎**\n\n$x^2$\n\n![欢迎图片 #320px #180px](https://images.example.test/welcome.png)\n\n![大图预览 #1858px #846px](https://images.example.test/welcome.png)', buttonSize: 'SMALL', keyboard: [[{ label: '只读按钮', style: 'RED' }]] } })
     }
     if (path.includes('/groups/')) return route.fulfill({ json: path.endsWith(group.groupId) ? group : secondGroup })
     return route.fulfill({ status: 204 })
@@ -206,6 +206,11 @@ test('welcome retries independently, renders images and math, and discards respo
   const picture = panel.getByRole('img', { name: '欢迎图片' })
   await expect(picture).toBeVisible()
   await expect(picture).toHaveAttribute('referrerpolicy', 'no-referrer')
+  const largePicture = panel.getByRole('img', { name: '大图预览' })
+  await expect(largePicture).toBeVisible()
+  const previewSize = await largePicture.boundingBox()
+  expect(previewSize?.width).toBeLessThanOrEqual(480)
+  expect(previewSize?.height).toBeLessThanOrEqual(300)
   await expect(panel.locator('.welcome-qq-button')).toHaveClass(/RED/)
   await panel.locator('.welcome-qq-button').click()
   releaseFirst()

@@ -1,0 +1,9 @@
+{
+  "command.unknown": "未知的命令，请使用 /help 查看可用指令，如有任何问题，请使用 /feedback 命令向开发者反馈",
+  "command.no_permission": "你没有权限这样做！",
+  "command.no_permission.template": "你没有权限这样做，缺少：{permission}",
+  "command.test.no_permission": "你是谁？",
+  "command.unsupported": "当前场景下暂不支持该指令！",
+  "command.error": "执行指令时出现错误，请向开发者报告此问题！",
+  "command.error.template": "执行指令时出现错误：{error_message}，请向开发者报告此问题！"
+}

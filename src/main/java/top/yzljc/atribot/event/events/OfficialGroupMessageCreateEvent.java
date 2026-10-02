@@ -52,4 +52,12 @@ public class OfficialGroupMessageCreateEvent extends Event {
         if (OfficialGroups.isGroupBlacklisted(this.groupId))  return true;
         return this.user.isBlocked();
     }
+
+    public boolean isEmptyMessage() {
+        if (isAtBot) {
+            String replaced = this.message.getContent().replaceFirst("^<@[^>]+>\\s*", "").trim();
+            return replaced.isBlank() || replaced.equals(" ");
+        }
+        return false;
+    }
 }

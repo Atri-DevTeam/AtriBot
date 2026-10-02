@@ -1,5 +1,5 @@
 <template>
-  <div class="shell">
+  <div class="shell menu-panel-page">
     <AppSidebar v-model:open="sidebarOpen" :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName">
       <template #toolbar>
         <button class="ghost-button" @click="logout">退出</button>
@@ -75,34 +75,7 @@
             <div v-else-if="menuError" class="empty-state error">{{ menuError }}</div>
             <div v-else class="mp-menu-layout">
               <div class="mp-menu-preview">
-                <div class="config-preview-phone">
-                  <div class="config-preview-phone-body">
-                    <div class="config-preview-phone-body-info mp-phone-info-menu">
-                      <div class="config-preview-phone-body-info-head mp-phone-head-menu"></div>
-                      <div class="mp-menu-dock">
-                        <div v-if="menuItems.length" class="mp-menu-bar" @wheel.prevent="onMenuBarWheel">
-                          <div v-for="(item, idx) in menuItems" :key="idx" class="mp-menu-btn">
-                            <svg v-if="item.type === 'send_message'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                            <svg v-else-if="item.type === 'link'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            <svg v-else-if="item.type === 'menu'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                            <span class="mp-menu-btn-label">{{ item.name || '未命名' }}</span>
-                            <span v-if="item.type === 'switch'" class="mp-switch" :class="{ 'mp-switch--on': item.defaultOn }"><span class="mp-switch-knob"/></span>
-                            <div v-if="item.type === 'menu' && item.subMenuItems.length" class="mp-sub-popup">
-                              <div v-for="(sub, si) in item.subMenuItems" :key="si" class="mp-sub-item">{{ sub.name || '子项' }}</div>
-                            </div>
-                          </div>
-                        </div>
-                        <div v-else class="mp-menu-bar mp-menu-bar--empty">
-                          <span class="mp-phone-hint">暂无菜单</span>
-                        </div>
-                        <div class="mp-menu-keyboard"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="config-preview-phone-text">
-                    <span>手机预览</span>
-                  </div>
-                </div>
+                <MenuPreview :items="menuItems" :bot-name="botName"/>
               </div>
               <div class="mp-menu-editor">
               <div v-if="menuItems.length === 0" class="mp-hint">
@@ -215,48 +188,7 @@
             <div v-else-if="panels.length === 0" class="empty-state">还没有指令面板，点右上角「新建面板」创建</div>
             <div v-else class="mp-panel-layout">
               <div class="mp-panel-preview">
-                <div class="config-preview-phone">
-                  <div class="config-preview-phone-body">
-                    <div class="config-preview-phone-body-info">
-                      <div class="config-preview-phone-body-info-head"></div>
-                      <div class="config-preview-phone-body-info-screen">
-                        <div class="config-preview-phone-body-info-screen-bar">
-                          <div class="bar"></div>
-                        </div>
-                        <div class="config-preview-phone-body-info-screen-bot">
-                          <img v-if="botAvatar" class="bot-logo" :src="botAvatar" referrerpolicy="no-referrer"/>
-                          <div v-else class="bot-logo bot-logo--placeholder"></div>
-                          <div class="bot-name">{{ botName }}</div>
-                        </div>
-                        <div class="config-preview-phone-body-info-screen-config">
-                          <div v-if="previewItems.length === 0" class="config-preview-phone-body-info-screen-none">
-                            <span>暂无指令</span>
-                          </div>
-                          <div v-for="(it, i) in previewItems" :key="i" class="config-preview-phone-body-info-screen-config-item">
-                            <div v-if="it.type === 'link'" class="config-preview-phone-body-info-screen-config-item-server">
-                              <span>{{ it.name || '链接' }}</span>
-                              <svg class="chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                            </div>
-                            <div v-else class="config-preview-phone-body-info-screen-config-item-command">
-                              <span class="command-name">/{{ it.name || '指令' }}</span>
-                              <span class="command-desc">{{ it.desc || '' }}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="config-preview-phone-body-info-screen-bothead">
-                          <div class="bot-head">
-                            <img v-if="botAvatar" class="bot-logo" :src="botAvatar" referrerpolicy="no-referrer"/>
-                            <div v-else class="bot-logo bot-logo--placeholder"></div>
-                          </div>
-                        </div>
-                        <div class="config-preview-phone-body-info-screen-board"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="config-preview-phone-text">
-                    <span>手机预览</span>
-                  </div>
-                </div>
+                <PanelPreview :scope="selectedPanel?.scope" :items="previewItems" :bot-name="botName" :bot-avatar="botAvatar"/>
               </div>
               <div class="mp-panel-grid">
               <article v-for="p in panels" :key="p.panelId" class="mp-panel-card"
@@ -482,6 +414,9 @@ import {ref, reactive, computed, watch, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../router.js'
 import AppSidebar from '../components/AppSidebar.vue'
+import MenuPreview from '../components/MenuPreview.vue'
+import PanelPreview from '../components/PanelPreview.vue'
+import '../styles/menu-panel-theme.css'
 import {createTransferDocument, parseTransferDocument} from '../lib/menuPanelTransfer.js'
 
 const router = useRouter()
@@ -826,12 +761,6 @@ function addSubItem(item) {
   if (!item.subMenuItems) item.subMenuItems = []
   if (item.subMenuItems.length >= 5) return
   item.subMenuItems.push(newMenuDraftSub())
-}
-
-function onMenuBarWheel(e) {
-  const el = e.currentTarget
-  const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
-  el.scrollLeft += delta
 }
 
 // ============ 菜单拖拽排序 ============

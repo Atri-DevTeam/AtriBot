@@ -3,16 +3,21 @@ package top.yzljc.atribot.function.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
+import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.event.EventHandler;
+import top.yzljc.atribot.event.Listener;
+import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
@@ -30,7 +35,7 @@ import java.util.function.Supplier;
  * @Package top.yzljc.atribot.function.command
  * @Description Hypixel -> 综合查询二级菜单
  */
-public class HypixelCommand implements CommandExecutor {
+public class HypixelCommand implements CommandExecutor, Listener {
 
     private static final Map<String, String> GAME_IDS_BY_ALIAS = Map.ofEntries(
             Map.entry("sb", "SKYBLOCK"),
@@ -65,17 +70,22 @@ public class HypixelCommand implements CommandExecutor {
 
     private static Map<String, SubCommand> createSubCommands() {
         Map<String, SubCommand> commands = new LinkedHashMap<>();
-        register(commands, new SubCommand("wz", "查询玩家法师掘战详细数据", ResourcesProperties.ICON_TNT, HypixelCommand::handleWizards));
-        register(commands, new SubCommand("zs", "查询玩家僵尸末日详细数据", ResourcesProperties.ICON_ZOMBIE_HEAD, HypixelCommand::handleZombies));
-        register(commands, new SubCommand("gs", "全服小游戏在线情况", ResourcesProperties.HYPIXEL_HEADER_IMG, HypixelCommand::handleGameStatus));
-        register(commands, new SubCommand("pack", "查询Skyblock资源包版本信息", ResourcesProperties.ICON_KNOWLEDGE_BOOK, HypixelCommand::handlePack));
-        register(commands, new SubCommand("dice", "随机Skyblock Dice(鉴定你的欧气)", ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6"), HypixelCommand::handleDice));
-        register(commands, new SubCommand("coop", "查询玩家Skyblock Coop在线情况", ResourcesProperties.ICON_DIAMOND_PICKAXE, HypixelCommand::handleCoop));
-        register(commands, new SubCommand("dungeon", "查询玩家最近地牢游玩场次", ResourcesProperties.ICON_SKYBLOCK_DUNGEON, HypixelCommand::handleDungeon));
-        register(commands, new SubCommand("lf", "查询玩家大厅钓鱼数据", ResourcesProperties.ICON_FISHING_ROD, HypixelCommand::handleLobbyFishing));
-        register(commands, new SubCommand("hotf", "查看玩家Skyblock树心数据", ResourcesProperties.ICON_HOTF, HypixelCommand::handleHotf));
-        register(commands, new SubCommand("pr", "查询玩家大厅跑酷详细数据", ResourcesProperties.ICON_PARKOUR, HypixelCommand::handleParkour));
-        register(commands, new SubCommand("dpr", "查询玩家街机心跳水立方详细数据", ResourcesProperties.ICON_DROPPER, HypixelCommand::handleArcadeDropper));
+        register(commands, new SubCommand("wz", Category.GENERAL, "查询玩家法师掘战详细数据", ResourcesProperties.ICON_TNT, HypixelCommand::handleWizards));
+        register(commands, new SubCommand("zs", Category.GENERAL, "查询玩家僵尸末日详细数据", ResourcesProperties.ICON_ZOMBIE_HEAD, HypixelCommand::handleZombies));
+        register(commands, new SubCommand("gs", Category.GENERAL, "全服小游戏在线情况", ResourcesProperties.HYPIXEL_HEADER_IMG, HypixelCommand::handleGameStatus));
+        register(commands, new SubCommand("pack", Category.SKYBLOCK, "查询Skyblock资源包版本信息", ResourcesProperties.ICON_KNOWLEDGE_BOOK, HypixelCommand::handlePack));
+        register(commands, new SubCommand("dice", Category.SKYBLOCK, "随机Skyblock Dice(鉴定你的欧气)", ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6"), HypixelCommand::handleDice));
+        register(commands, new SubCommand("coop", Category.SKYBLOCK, "查询玩家Skyblock Coop在线情况", ResourcesProperties.ICON_DIAMOND_PICKAXE, HypixelCommand::handleCoop));
+        register(commands, new SubCommand("dungeon", Category.SKYBLOCK, "查询玩家最近地牢游玩场次", ResourcesProperties.ICON_SKYBLOCK_DUNGEON, HypixelCommand::handleDungeon));
+        register(commands, new SubCommand("lf", Category.GENERAL, "查询玩家大厅钓鱼数据", ResourcesProperties.ICON_FISHING_ROD, HypixelCommand::handleLobbyFishing));
+        register(commands, new SubCommand("hotf", Category.SKYBLOCK, "查看玩家Skyblock树心数据", ResourcesProperties.ICON_HOTF, HypixelCommand::handleHotf));
+        register(commands, new SubCommand("pr", Category.GENERAL, "查询玩家大厅跑酷详细数据", ResourcesProperties.ICON_PARKOUR, HypixelCommand::handleParkour));
+        register(commands, new SubCommand("dpr", Category.GENERAL, "查询玩家街机心跳水立方详细数据", ResourcesProperties.ICON_DROPPER, HypixelCommand::handleArcadeDropper));
+        register(commands, new SubCommand("bw", Category.GENERAL, "查询玩家起床战争详细数据", ResourcesProperties.ICON_BEDWARS, HypixelCommand::handleBedwars));
+        register(commands, new SubCommand("sh", Category.GENERAL, "查询玩家起床战争入梦酒店任务树", ResourcesProperties.ICON_SLUMBER_HOTEL, HypixelCommand::handleSlumberHotel));
+        register(commands, new SubCommand("cr", Category.SKYBLOCK, "查询Skyblock日历", ResourcesProperties.ICON_SKYBLOCK_CALENDAR, HypixelCommand::handleSkyblockCalendar));
+        register(commands, new SubCommand("ip", Category.SKYBLOCK, "查询Skyblock物品价格信息", ResourcesProperties.SKB_BANK_LOGO_IMG, HypixelCommand::handleSearchSkyblockItemPrice));
+        register(commands, new SubCommand("hotm", Category.SKYBLOCK, "查询玩家Skyblock山之心数据", ResourcesProperties.ICON_SKYBLOCK_HOTM, HypixelCommand::handleHotm));
         return Collections.unmodifiableMap(commands);
     }
 
@@ -95,13 +105,25 @@ public class HypixelCommand implements CommandExecutor {
     );
 
     private static Markdown getSubCommands() {
+        return getSubCommands(Category.GENERAL);
+    }
+
+    private static Markdown getSubCommands(Category category) {
         StringBuilder s = new StringBuilder();
-        String title = "**Hypixel 综合查询二级菜单**\n\n";
+        String title = category == Category.GENERAL ? "**Hypixel 综合查询菜单**\n\n" : "**Hypixel " + category.title + " 指令菜单**\n\n";
         String cmdPrefix = "/hyp ";
         s.append(title);
         s.append("> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n");
         s.append("---\n\n");
+        if (category == Category.GENERAL) {
+            for (Category entry : Category.values()) {
+                if (entry.command.isEmpty()) continue;
+                s.append("> ").append(Markdown.img(entry.icon, 16, 16)).append(Markdown.enterCommand(cmdPrefix + entry.command,
+                        entry.title + " 指令二级菜单")).append("\n");
+            }
+        }
         for (var cmd : SUB_COMMANDS.values()) {
+            if (cmd.category() != category) continue;
             s.append("> ").append(Markdown.img(cmd.icon(), 16, 16)).append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmd.description())).append("\n");
         }
         return new Markdown(s.toString());
@@ -116,7 +138,18 @@ public class HypixelCommand implements CommandExecutor {
                 return true;
             }
 
-            var sub = SUB_COMMANDS.get(args[0].toLowerCase(Locale.ROOT));
+            String prefix = args[0].toLowerCase(Locale.ROOT);
+            Category category = Category.fromCommand(prefix);
+            if (category != null) {
+                if (args.length != 1) {
+                    user.sendMessage("用法: /hyp " + category.command + "\n查看分类后，请使用菜单中显示的原有指令。");
+                } else {
+                    user.sendMessage(getSubCommands(category), keyboard);
+                }
+                return true;
+            }
+
+            var sub = SUB_COMMANDS.get(prefix);
             if (sub == null) {
                 user.sendMessage("未知的子命令，请使用 /hyp 查看可用的子命令列表");
                 return true;
@@ -162,7 +195,11 @@ public class HypixelCommand implements CommandExecutor {
 
         var result = withQueryProgress(user, "正在查询目标数据，请稍等片刻...",
                 () -> PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, request));
-        sendImageResult(user, result, "你可以使用 /hyp gs [小游戏] 来查询指定小游戏的在线情况。 ");
+        if (OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())) {
+            user.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
+        } else {
+            user.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
+        }
         return true;
     }
 
@@ -187,24 +224,52 @@ public class HypixelCommand implements CommandExecutor {
         return queryPlayer(user, args, ResourcesProperties.HYPIXEL_PLAYER_LOBBY_FISHING_API, "lf");
     }
 
+    private static boolean handleSlumberHotel(QQCommandSender user, String[] args) {
+        return queryPlayer(user, args, ResourcesProperties.SLUMBER_HOTEL_API, "sh");
+    }
+
+    private static boolean handleBedwars(QQCommandSender user, String[] args) {
+        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_BEDWARS_API, "bw");
+    }
+
+    private static boolean handleSkyblockCalendar(QQCommandSender user, String[] args) {
+
+        var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
+                () -> customQueryRequest(ResourcesProperties.SKYBLOCK_CALENDAR_API, Map.of(), "Authorization", bearer()));
+
+        if (!result.success()) {
+            user.sendMessage(result.message());
+            return true;
+        }
+
+        user.sendMessage(ImageComponent.imageOf(result.i.url()));
+        return true;
+    }
+
     private static boolean handleHotf(QQCommandSender user, String[] args) {
+        return handleHeartTasks(user, args, ResourcesProperties.SKYBLOCK_HOTF_API, "hotf");
+    }
+
+    private static boolean handleHotm(QQCommandSender user, String[] args) {
+        return handleHeartTasks(user, args, ResourcesProperties.SKYBLOCK_HOTM_API, "hotm");
+    }
+
+    private static boolean handleHeartTasks(QQCommandSender user, String[] args, String api, String subCommand) {
         String player = getPlayer(user.getUserId(), args);
         if (player == null) {
             user.sendMessage("笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
             return true;
         }
 
-        String profile = null;
         Map<String, String> requestBody;
         if (args.length == 2) {
-            profile = args[1];
-            requestBody = Map.of("player", player, "profile", profile);
+            requestBody = Map.of("player", player, "profile", args[1]);
         } else {
             requestBody = Map.of("player", player);
         }
 
         var result = withQueryProgress(user, "正在查询目标玩家数据，请稍等片刻...",
-                () -> customQueryRequest(ResourcesProperties.SKYBLOCK_HOTF_API, requestBody, "Authorization", bearer()));
+                () -> customQueryRequest(api, requestBody, "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
@@ -223,9 +288,9 @@ public class HypixelCommand implements CommandExecutor {
         List<List<Button>> buttons = new ArrayList<>();
         for (int i = 0; i < profiles.size(); i += 2) {
             List<Button> pair = new ArrayList<>();
-            pair.add(new Button("btn_" + System.currentTimeMillis(), profiles.get(i), "/hyp hotf " + player + " " + profiles.get(i), true, ButtonStyle.BLUE, ButtonType.COMMAND));
+            pair.add(new Button("btn_" + System.currentTimeMillis(), profiles.get(i), "/hyp " + subCommand + " " + player + " " + profiles.get(i), true, ButtonStyle.BLUE, ButtonType.COMMAND));
             if (i + 1 < profiles.size()) {
-                pair.add(new Button("btn_" + System.currentTimeMillis(), profiles.get(i + 1), "/hyp hotf " + player + " " + profiles.get(i + 1), true, ButtonStyle.BLUE, ButtonType.COMMAND));
+                pair.add(new Button("btn_" + System.currentTimeMillis(), profiles.get(i + 1), "/hyp " + subCommand + " " + player + " " + profiles.get(i + 1), true, ButtonStyle.BLUE, ButtonType.COMMAND));
             }
             buttons.add(pair);
         }
@@ -243,7 +308,101 @@ public class HypixelCommand implements CommandExecutor {
         return queryPlayer(sender, args, ResourcesProperties.HYPIXEL_ARCADE_DROPPER_API, "dpr");
     }
 
-    // 现有图片查询的可选复用方法；需要不同数据或 Markdown + 按钮的 handler 可自行查询、展示。
+    private static boolean handleSearchSkyblockItemPrice(QQCommandSender user, String[] args) {
+        if (args.length < 1) {
+            user.sendMessage("未指定查询物品，请指定查询目标。");
+            return true;
+        }
+
+        var search = String.join(" ", args);
+        var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
+                () -> customQueryRequest(ResourcesProperties.SKYBLOCK_ITEM_PRICE_API, Map.of("q", search), "Authorization", bearer()));
+
+        if (!result.success()) {
+            user.sendMessage(result.message());
+            return true;
+        }
+
+        var next_cursor = result.d().path("next_cursor").asText(null);
+        int type = next_cursor == null ? 0 : 1;
+
+        user.sendMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), user.getUserId()).setKeyboard(getSkyblockPriceKeyboard(type, next_cursor, null, search)), false);
+
+        return true;
+    }
+
+    @EventHandler
+    public void onButtonInteractionEvent(OfficialButtonInteractionEvent event) {
+        if (!event.getButtonId().equals("skyblock_search")) return;
+
+        String d = event.getButtonValue();
+        int offsetSeparator = d.lastIndexOf(':');
+        int querySeparator = offsetSeparator < 0
+                ? -1
+                : d.lastIndexOf(':', offsetSeparator - 1);
+
+        if (querySeparator <= 0) {
+            event.sendMessage("分页参数无效，请重新查询。");
+            return;
+        }
+
+        String itemId = d.substring(0, querySeparator);
+        String cursor = d.substring(querySeparator + 1);
+
+        var result = customQueryRequest(ResourcesProperties.SKYBLOCK_ITEM_PRICE_API, Map.of("q", itemId, "cursor", cursor), "Authorization", bearer());
+
+        if (!result.success()) {
+            event.sendMessage(result.message());
+            return;
+        }
+
+        var next_cursor = result.d().path("next_cursor").asText(null);
+        var pre_cursor = result.d().path("pre_cursor").asText(null);
+
+        int type = 0;
+        if (next_cursor == null && pre_cursor != null) type = 3;
+        else if (next_cursor != null && pre_cursor == null) type = 1;
+        else if (next_cursor != null) type = 2;
+
+        event.replyMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), event.getUserOpenId()).setKeyboard(getSkyblockPriceKeyboard(type, next_cursor, pre_cursor, itemId)), false);
+    }
+
+    private static Keyboard getSkyblockPriceKeyboard(int type, String var1, String var2, String itemId) {
+        return switch (type) {
+            case 1 -> new Keyboard(
+                    List.of(
+                            List.of(new Button("skyblock_search", "下一页", itemId + ":" + var1, ButtonStyle.GRAY, ButtonType.CALLBACK)),
+                            List.of(new Button("c1", "查询其他物品", "/hyp ip ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    )
+            );
+            case 2 -> new Keyboard(
+                    List.of(
+                            List.of(new Button("skyblock_search", "上一页", itemId + ":" + var2, ButtonStyle.GRAY, ButtonType.CALLBACK),
+                                    new Button("skyblock_search", "下一页", itemId + ":" + var1, ButtonStyle.GRAY, ButtonType.CALLBACK)),
+                            List.of(new Button("c1", "查询其他物品", "/hyp ip ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    )
+            );
+            case 3 -> new Keyboard(
+                    List.of(
+                            List.of(new Button("skyblock_search", "上一页", itemId + ":" + var2, ButtonStyle.GRAY, ButtonType.CALLBACK)),
+                            List.of(new Button("c1", "查询其他物品", "/hyp ip ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    )
+            );
+            default -> new Keyboard(
+                    List.of(
+                            List.of(new Button("c1", "查询其他物品", "/hyp ip ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                            )
+                    ));
+        };
+    }
+
+    private static Markdown getSkyblockPriceMarkdown(String url, int w, int h, String userOpenId) {
+        return TC.md(
+                Markdown.img("atri_bot_pic", url, w, h) + "\n\n" + Markdown.at(userOpenId)
+        );
+    }
+
+    @Deprecated(forRemoval = true)
     private static boolean queryPlayerImage(QQCommandSender user, String[] args, String api) {
         String player = getPlayer(user.getUserId(), args);
         if (player == null) {
@@ -267,7 +426,11 @@ public class HypixelCommand implements CommandExecutor {
 
     // 提交等待并执行撤回任务
     private static <T> T withQueryProgress(QQCommandSender user, String message, Supplier<T> query) {
-        String messageId = user.sendMessage(message);
+        String messageId = null;
+        // 允许不发消息
+        if (message != null && !message.isBlank()) {
+            messageId = user.sendMessage(message);
+        }
         try {
             return query.get();
         } finally {
@@ -305,24 +468,21 @@ public class HypixelCommand implements CommandExecutor {
         }
 
         var result = withQueryProgress(sender, "正在查询目标玩家数据，请稍等片刻...",
-                () -> PreImageGenerate.dump(api, Map.of("player", player)));
+                () -> customQueryRequest(api, Map.of("player", player), "Authorization", bearer()));
 
-        if (result == null) {
-            sender.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
-        } else if (result.isError()) {
-            sender.sendMessage(result.errorMessage());
-        } else if (result.url() == null || result.url().isBlank()) {
-            sender.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
-        } else {
-            sender.sendMessage(TC.md(getTemplate(result.url(), result.width(), result.height(), sender.getUserId())), getKeyboard(subCommand, getPlayer(sender.getUserId(), args)), false);
+        if (!result.success()) {
+            sender.sendMessage(result.message());
+            return true;
         }
+
+        sender.sendMessage(TC.md(getTemplate(result.i().url(), result.i().width(), result.i().height(), sender.getUserId())), getKeyboard(subCommand, player), false);
 
         return true;
     }
 
     private static String getTemplate(String url, int w, int h, String userOpenId) {
         return (
-                Markdown.img("player-query-img", url, w, h) + "\n\n" +
+                Markdown.img("atri_bot_pic", url, w, h) + "\n\n" +
                         Markdown.at(userOpenId) + " 根据开放平台要求，用户提交的自定义内容须经过审查后才能显示，请使用 `/反馈 玩家名` 提交审核。\n\n" +
                         "> " + Markdown.link("https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", "\uD83D\uDD17邀我进群")
         );
@@ -369,11 +529,66 @@ public class HypixelCommand implements CommandExecutor {
         return new Result(true, "ok", d, new ImageDTO(url, w, h));
     }
 
-    private record SubCommand(String prefix, String description, String icon, SubCommandHandler handler) {}
+    private enum Category {
+        GENERAL("", "通用", ResourcesProperties.HYPIXEL_HEADER_IMG),
+        SKYBLOCK("skb", "SkyBlock", ResourcesProperties.SKB_LOGO_IMG);
+
+        private final String command;
+        private final String title;
+        private final String icon;
+
+        Category(String command, String title, String icon) {
+            this.command = command;
+            this.title = title;
+            this.icon = icon;
+        }
+
+        static Category fromCommand(String command) {
+            for (Category category : values()) {
+                if (!category.command.isEmpty() && category.command.equalsIgnoreCase(command)) {
+                    return category;
+                }
+            }
+            return null;
+        }
+    }
+
+    private record SubCommand(String prefix, Category category, String description, String icon, SubCommandHandler handler) {}
 
     private record Result(boolean success, String message, JsonNode d, ImageDTO i) {}
 
     private static String bearer() {
         return "Bearer " + Config.getInstance().getAtribotKeySecret();
+    }
+
+    private static Keyboard getMiniGames() {
+        return new Keyboard(
+                List.of(
+                        List.of(
+                                new Button("bw", "起床", "/hyp gs bw", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("sw", "空岛", "/hyp gs sw", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("arc", "街机", "/hyp gs arc", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("pit", "决斗", "/hyp gs duel", ButtonStyle.GRAY, ButtonType.COMMAND)
+                        ),
+                        List.of(
+                                new Button("skb", "Skyblock", "/hyp gs skb", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("mm", "密室杀手", "/hyp gs mm", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("bb", "建筑大师", "/hyp gs bb", ButtonStyle.GRAY, ButtonType.COMMAND)
+                        ),
+                        List.of(
+                                new Button("wool", "羊毛游戏", "/hyp gs wool", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("tnt", "TNT游戏", "/hyp gs tnt", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("classic", "经典游戏", "/hyp gs classic", ButtonStyle.GRAY, ButtonType.COMMAND)
+                        ),
+                        List.of(
+                                new Button("bsg", "饥饿游戏", "/hyp gs bsg", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("ptl", "实验大厅", "/hyp gs ptl", ButtonStyle.GRAY, ButtonType.COMMAND),
+                                new Button("mw", "超级战墙", "/hyp gs mw", ButtonStyle.GRAY, ButtonType.COMMAND)
+                        ),
+                        List.of(
+                                new Button("global", "全部小游戏", "/hyp gs", ButtonStyle.BLUE, ButtonType.COMMAND)
+                        )
+                )
+        );
     }
 }

@@ -16,16 +16,12 @@ import java.util.regex.Pattern;
  * @Created_at 2026/09/23
  * @Project AtriMeow
  * @Package top.yzljc.atribot.service.textreview
- * @Description 提取文本链接，以解析后的完整域名匹配白名单
+ * @Description 仅提取带 HTTP(S) 前缀的文本链接，以解析后的完整域名匹配白名单
  */
 final class LinkMatcher {
     private static final String TAIL = "[^\\s<>\"'\\[\\]{}，。；！？、（）【】]";
     private static final Pattern LINKS = Pattern.compile(
-            "(?i)(?:[a-z][a-z0-9+.-]*://|(?<![:/])//)(?:\\[[0-9a-f:.%]+\\]" + TAIL + "*|" + TAIL + "+)"
-                    + "|(?:mailto:|javascript:|data:|tel:)" + TAIL + "+"
-                    + "|(?<![a-z0-9_@.-])(?:[a-z0-9_-]+\\.)+(?:xn--[a-z0-9-]{2,59}|[a-z]{2,63})"
-                    + "(?::[0-9]+)?(?:@" + TAIL + "+)?(?:[/?#]" + TAIL + "*)?"
-                    + "|(?<![a-z0-9_.])(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?::[0-9]+)?(?:[/?#]" + TAIL + "*)?");
+            "(?i)https?://(?:\\[[0-9a-f:.%]+\\]" + TAIL + "*|" + TAIL + "+)");
 
     private LinkMatcher() {}
 

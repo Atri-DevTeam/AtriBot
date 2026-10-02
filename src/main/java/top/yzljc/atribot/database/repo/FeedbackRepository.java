@@ -249,14 +249,20 @@ public class FeedbackRepository {
      * 管理员回复反馈
      */
     public static boolean reply(String id, String replyContent, boolean isHidden) {
-        String sql = "UPDATE `feedback` SET `reply_content` = ?, `reply_time` = ?, `is_hidden` = ?, `is_read` = FALSE WHERE `id` = ?";
+        return reply(id, replyContent, isHidden, false);
+    }
+
+    /** 静默回复在保存时一并标记为已处理，避免被用户后续交互补发。 */
+    public static boolean reply(String id, String replyContent, boolean isHidden, boolean silent) {
+        String sql = "UPDATE `feedback` SET `reply_content` = ?, `reply_time` = ?, `is_hidden` = ?, `is_read` = ? WHERE `id` = ?";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, replyContent);
             ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
             ps.setBoolean(3, isHidden);
-            ps.setString(4, id);
+            ps.setBoolean(4, silent);
+            ps.setString(5, id);
             int affected = ps.executeUpdate();
             if (affected > 0) {
                 log.info("反馈回复成功: id={}", id);

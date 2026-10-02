@@ -20,6 +20,19 @@ export function parseArkMessage(raw) {
     return { type: '23', typeName: 'Ark', title: title || prompt || 'Ark', prompt, items, targetUrl: '' }
   }
 
+  const templateId = Number(ark.template_id)
+  if ((templateId === 24 || templateId === 37) && Array.isArray(ark.kv)) {
+    const entry = key => firstText(ark.kv.find(item => item?.key === key)?.value)
+    const title = entry(templateId === 24 ? '#TITLE#' : '#METATITLE#')
+    const prompt = entry('#PROMPT#')
+    const description = entry(templateId === 24 ? '#METADESC#' : '#METASUBTITLE#')
+    const preview = entry(templateId === 24 ? '#IMG#' : '#METACOVER#')
+    if (!title && !prompt && !description && !preview) return null
+    return { type: String(templateId), typeName: 'Ark', title: title || prompt || 'Ark', prompt,
+      description, preview, source: templateId === 24 ? entry('#SUBTITLE#') : '',
+      targetUrl: firstUrl(entry(templateId === 24 ? '#LINK#' : '#METAURL#')) }
+  }
+
   const fields = ark.fields && typeof ark.fields === 'object' ? ark.fields : {}
   const typeName = firstText(ark.ark_name, ark.arkName, ark.ark_type, ark.arkType, fields.type) || '卡片消息'
   const type = firstText(ark.ark_type, ark.arkType)

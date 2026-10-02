@@ -30,4 +30,8 @@ public class OfficialGuildAtMessageCreateEvent extends Event {
     public String replyMessage(ImageComponent image) {
         return user.sendMessage(this.channelId, this.message.getMessageId(), image);
     }
+
+    public boolean isEmptyMessage() {
+        return this.message.getContent().isBlank();
+    }
 }

@@ -1132,6 +1132,9 @@ public class QQChatContentRecord implements Listener {
         if (request.getArk() != null) {
             return toJson(request.getArk());
         }
+        if (request.getCard() != null) {
+            return toJson(request.getCard());
+        }
         if (request.getMedia() != null) {
             if (!isBlank(request.getRecordAttachments())) {
                 return "";

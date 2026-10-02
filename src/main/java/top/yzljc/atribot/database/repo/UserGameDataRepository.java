@@ -211,13 +211,20 @@ public final class UserGameDataRepository {
     }
 
     public int reactionRank(long bestMs) throws SQLException {
-        if (bestMs <= 0) return 0;
-        try (var con = connections.open(); var ps = con.prepareStatement("""
+        return reactionRank(bestMs, null);
+    }
+
+    /** 按本局用时计算名次时，排除玩家自己的历史最好成绩。 */
+    public int reactionRank(long elapsedMs, String excludedUserId) throws SQLException {
+        if (elapsedMs <= 0) return 0;
+        String query = """
                 SELECT COUNT(*) AS faster FROM official_users
                 WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(game_data, '$.reaction.bestMs')) AS UNSIGNED) BETWEEN 1 AND ?
-                """)) {
+                """ + (excludedUserId == null ? "" : " AND user_openId <> ?");
+        try (var con = connections.open(); var ps = con.prepareStatement(query)) {
             ps.setQueryTimeout(5);
-            ps.setLong(1, bestMs - 1);
+            ps.setLong(1, elapsedMs - 1);
+            if (excludedUserId != null) ps.setString(2, excludedUserId);
             try (var rows = ps.executeQuery()) {
                 rows.next();
                 return Math.toIntExact(rows.getLong("faster") + 1);

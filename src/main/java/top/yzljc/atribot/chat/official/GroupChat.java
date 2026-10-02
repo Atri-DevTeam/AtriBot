@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.platform.qq.FileType;
 
 import java.util.concurrent.CompletableFuture;
@@ -139,15 +140,27 @@ public final class GroupChat {
     }
 
     /**
-     * 发送群聊 Ark23 主动消息
+     * 发送群聊 Ark 主动消息
      *
      * @param groupOpenId 群 openId
-     * @param ark         Ark23 消息体
+     * @param ark         Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String groupOpenId, Ark23 ark) {
+    public static String sendMessage(String groupOpenId, Ark ark) {
         return await(AsyncGroupChat.sendMessage(groupOpenId, ark));
+    }
+
+    /**
+     * 发送群聊卡片主动消息
+     *
+     * @param groupOpenId 群 openId
+     * @param card        卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public static String sendMessage(String groupOpenId, Card card) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, card));
     }
 
     /**
@@ -201,16 +214,29 @@ public final class GroupChat {
     }
 
     /**
-     * 回复群聊 Ark23 消息
+     * 回复群聊 Ark 消息
      *
      * @param groupOpenId 群 openId
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param ark         Ark23 消息体
+     * @param ark         Ark 消息体
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, RT rt, Ark23 ark) {
+    public static String replyMessage(String groupOpenId, RT rt, Ark ark) {
         return await(AsyncGroupChat.replyMessage(groupOpenId, rt, ark));
+    }
+
+    /**
+     * 回复群聊卡片消息
+     *
+     * @param groupOpenId 群 openId
+     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param card        卡片消息体
+     * @return 消息 ID，发送失败返回 null
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public static String replyMessage(String groupOpenId, RT rt, Card card) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, card));
     }
 
     /**

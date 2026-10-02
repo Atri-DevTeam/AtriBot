@@ -1,0 +1,174 @@
+.menu-panel-page > .workspace,
+.menu-panel-page > .modal-backdrop {
+  --color-bg: #f7f8fa;
+  --color-surface: #fff;
+  --color-surface-alt: #fafbfc;
+  --color-surface-sunken: #f4f5f7;
+  --color-surface-hover: #f5faff;
+  --color-hairline: #f0f1f3;
+  --color-border: #e9eaed;
+  --color-border-strong: #c5d7e8;
+  --color-border-input: #dedfe3;
+  --color-text: #262626;
+  --color-text-strong: #171717;
+  --color-text-secondary: #51545a;
+  --color-text-muted: #84878e;
+  --color-text-subtle: #95989f;
+  --color-accent: #0099ff;
+  --color-accent-hover: #008bea;
+  --color-accent-active: #007dd4;
+  --color-accent-soft: #edf7ff;
+  --color-accent-border: #cce9ff;
+  --color-accent-text: #0086e6;
+  --color-info: #0086e6;
+  --color-info-soft: #edf7ff;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --focus-ring: 0 0 0 3px rgb(0 153 255 / 12%);
+  color: var(--color-text);
+}
+
+.menu-panel-page .topbar,
+.menu-panel-page .chat-head {
+  background: #fff;
+  border-color: var(--color-hairline);
+}
+
+.menu-panel-page .chat-panel {
+  border-color: var(--color-border);
+  box-shadow: 0 3px 18px rgb(25 40 60 / 3%);
+}
+
+.menu-panel-page .feedback-content { background: #fafbfc; }
+
+.menu-panel-page .feedback-tabs button {
+  border-color: transparent;
+  background: transparent;
+  color: #7b7e85;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.menu-panel-page .feedback-tabs button:hover {
+  background: #f5f8fb;
+  color: var(--color-accent-text);
+}
+
+.menu-panel-page .feedback-tabs button.active {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.menu-panel-page :is(.workspace, .modal) .primary-button {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  box-shadow: 0 2px 6px rgb(0 153 255 / 12%);
+}
+
+.menu-panel-page :is(.workspace, .modal) .primary-button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.menu-panel-page :is(.workspace, .modal) .primary-button:active:not(:disabled) {
+  background: var(--color-accent-active);
+  border-color: var(--color-accent-active);
+  box-shadow: none;
+}
+
+.menu-panel-page :is(.workspace, .modal) :is(.ghost-button, .icon-button) {
+  background: #fff;
+  border-color: var(--color-border-input);
+  color: var(--color-text-secondary);
+}
+
+.menu-panel-page :is(.workspace, .modal) :is(.ghost-button, .icon-button):hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-text);
+}
+
+.menu-panel-page :is(.workspace, .modal) :is(.mp-add, .mp-mini) {
+  color: var(--color-accent-text);
+  border-color: var(--color-accent-border);
+}
+
+.menu-panel-page :is(.workspace, .modal) :is(.gs-input, .gs-textarea):hover:not(:focus):not(:disabled) { border-color: var(--color-border-strong); }
+.menu-panel-page :is(.workspace, .modal) :is(.gs-input, .gs-textarea):focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+.menu-panel-page :is(.gs-input, .gs-textarea)::placeholder { color: #a4a7ae; }
+.menu-panel-page :is(.workspace, .modal) :is(.gs-input, .gs-textarea):disabled { background: #f5f6f8; color: #989ba2; }
+.menu-panel-page input[type="checkbox"] { accent-color: var(--color-accent); }
+
+.menu-panel-page :is(.mp-menu-item, .mp-panel-card, .mp-panel-item) {
+  background: #fff;
+  border-color: var(--color-border);
+  box-shadow: 0 2px 10px rgb(25 40 60 / 3%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 120ms ease;
+}
+
+.menu-panel-page :is(.mp-menu-item, .mp-panel-card):hover {
+  border-color: #d3e5f2;
+  box-shadow: 0 4px 16px rgb(25 40 60 / 5%);
+}
+
+.menu-panel-page .mp-panel-card--selected,
+.menu-panel-page .mp-panel-card--selected:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px rgb(0 153 255 / 12%), 0 4px 16px rgb(0 153 255 / 6%);
+}
+
+.menu-panel-page :is(.mp-menu-item-body, .mp-panel-card-foot) {
+  border-top-style: solid;
+  border-color: var(--color-hairline);
+}
+.menu-panel-page .mp-drag:hover { color: var(--color-accent); }
+.menu-panel-page :is(.mp-hint, .mp-editor-import) {
+  background: #f7faff;
+  border-color: #d9e9f5;
+  color: #79838e;
+}
+.menu-panel-page .mp-item-chip {
+  background: #f7f8fa;
+  border-color: #eef0f3;
+  color: #626770;
+}
+.menu-panel-page .mp-badge {
+  /* 标签保留原有语义配色，不跟随页面的蓝色主题。 */
+  --color-info: #1f5fa8;
+  --color-info-soft: #eaf1fa;
+  --color-accent: #0f766e;
+  --color-accent-soft: #eaf5f3;
+  --color-text-muted: #767f8f;
+  --color-text-secondary: #4a5160;
+  --color-surface-sunken: #f0f2f5;
+  --color-border-input: #d5d9e0;
+}
+.menu-panel-page .mp-panel-actions .icon-button {
+  border-color: transparent;
+  background: #f7f8fa;
+  color: #7c8793;
+}
+.menu-panel-page :is(.workspace, .modal) .mp-danger { color: var(--color-danger); }
+.menu-panel-page :is(.workspace, .modal) .mp-danger:hover:not(:disabled) {
+  border-color: #f4d8d6;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.menu-panel-page .status-pill {
+  border-color: #eceef1;
+  background: #f6f8fa;
+  color: #858a92;
+}
+.menu-panel-page .modal-backdrop { background: rgb(28 37 50 / 30%); }
+.menu-panel-page .modal {
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 48px rgb(22 37 58 / 14%);
+}
+.menu-panel-page :is(.modal-head, .modal-foot) { border-color: var(--color-hairline); }
+.menu-panel-page .config-preview-phone { background: #f6f8fb; border-radius: 12px; }

@@ -6,6 +6,7 @@ import Icon from './components/Icon.vue'
 import ActivityPanel from './components/ActivityPanel.vue'
 import NavigationDock from './components/NavigationDock.vue'
 import GroupManagement from './components/GroupManagement.vue'
+import AboutPage from './components/AboutPage.vue'
 import introIllustration from '../../src/main/resources/official-webui/img/atri-main.png'
 import goldIcon from './assets/gold.png'
 const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
@@ -30,10 +31,11 @@ const bot = shallowRef<Profile['bot']>({ name: '机器人', avatarUrl: null })
 const botAvatarFailed = ref(false)
 const copyNotice = ref('')
 const revealed = ref(false)
-const activePage = ref<'profile' | 'groups'>('profile')
+type Page = 'profile' | 'groups' | 'about'
+const activePage = ref<Page>('profile')
 const groupsOpened = ref(false)
-const scrollPositions = { profile: 0, groups: 0 }
-async function selectPage(page: 'profile' | 'groups') {
+const scrollPositions: Record<Page, number> = { profile: 0, groups: 0, about: 0 }
+async function selectPage(page: Page) {
   if (activePage.value === page || state.value.phase !== 'ready' || !revealed.value) return
   scrollPositions[activePage.value] = window.scrollY
   activePage.value = page
@@ -175,7 +177,7 @@ onBeforeUnmount(() => {
       <div class="topbar-inner">
       <div class="bot-brand">
         <div class="bot-avatar"><img v-if="bot.avatarUrl && !botAvatarFailed" :src="bot.avatarUrl" alt="机器人头像" referrerpolicy="no-referrer" @error="botAvatarFailed = true"><Icon v-else name="bot" /></div>
-        <h1 class="bot-title"><span class="bot-name">{{ bot.name }}</span><span class="bot-subtitle">{{ activePage === 'groups' ? '群管理' : '用户档案' }}</span></h1>
+        <h1 class="bot-title"><span class="bot-name">{{ bot.name }}</span><span class="bot-subtitle">{{ activePage === 'groups' ? '群管理' : activePage === 'about' ? '关于' : '用户档案' }}</span></h1>
       </div>
       </div>
     </header>
@@ -220,6 +222,9 @@ onBeforeUnmount(() => {
 
     <main v-if="state.phase === 'ready'" v-show="activePage === 'groups'" id="groups-page" class="groups-page" :inert="activePage !== 'groups'" :aria-hidden="activePage !== 'groups'">
       <GroupManagement v-if="groupsOpened" :bot="bot" :request="readPrivate" :post="writePrivate" :active="activePage === 'groups'" @copy="copyText($event, '验证指令')" />
+    </main>
+    <main v-if="state.phase === 'ready'" v-show="activePage === 'about'" id="about-page" class="about-page" :inert="activePage !== 'about'" :aria-hidden="activePage !== 'about'">
+      <AboutPage :bot="bot" :request="readPrivate" :active="activePage === 'about'" @copy="copyText" />
     </main>
     <NavigationDock v-if="state.phase === 'ready' && revealed" :active="activePage" @select="selectPage" />
 

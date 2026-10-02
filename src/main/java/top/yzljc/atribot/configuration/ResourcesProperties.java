@@ -202,6 +202,8 @@ public final class ResourcesProperties {
 
     public static final String HYPIXEL_ARCADE_DROPPER_API = UGC_API + "/v2/atrimeow/hypixel-arcade-dropper";
 
+    public static final String HYPIXEL_BEDWARS_API = UGC_API + "/v2/atrimeow/hypixel-bedwars";
+
     public static final String ICON_DIAMOND_PICKAXE = request("resource.image.icon-diamond-pickaxe");
 
     public static final String ICON_KNOWLEDGE_BOOK = request("resource.image.icon-knowledge-book");
@@ -221,6 +223,24 @@ public final class ResourcesProperties {
     public static final String ICON_DROPPER = request("resource.image.icon-dropper");
 
     public static final String MAINTENANCE_IMG = request("resource.image.maintenance");
+
+    public static final String ICON_BEDWARS = request("resource.image.icon-bedwars");
+
+    public static final String ICON_SKYBLOCK_CALENDAR = request("resource.image.icon-skyblock-calendar");
+
+    public static final String SKYBLOCK_TIME_API = UGC_API + "/v4/hypixel/skyblock/calendar"; // GET
+
+    public static final String SKYBLOCK_CALENDAR_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-calendar"; // POST
+
+    public static final String SKYBLOCK_ITEM_PRICE_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-price";
+
+    public static final String ICON_SLUMBER_HOTEL = request("resource.image.icon-slumber-hotel");
+
+    public static final String SLUMBER_HOTEL_API = UGC_API + "/v2/atrimeow/hypixel-slumber-hotel";
+
+    public static final String ICON_SKYBLOCK_HOTM = request("resource.image.icon-skyblock-hotm");
+
+    public static final String SKYBLOCK_HOTM_API = UGC_API + "/v2/atrimeow/hypixel-skyblock-hotm";
 
     private static Map<String, String> loadRequestProperties() {
         Path path = Path.of(Properties.REQUEST);

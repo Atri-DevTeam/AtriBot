@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.tasks;
 
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
+import top.yzljc.atribot.function.command.ReminderCommand;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
@@ -77,7 +78,9 @@ public class BasicReply implements Listener {
 
     @EventHandler
     public void onC2CMessage(OfficialC2CMessageCreateEvent event) {
+        if (ReminderCommand.isReminderRequest(event.getMessage().getContent())) return;
         if (event.getMessage().isCommand()) return;
+        if (event.getUser().isBot()) return;
         if (event.shouldIgnore()) return;
         String content = event.getMessage().getContent().trim();
 
@@ -97,6 +100,7 @@ public class BasicReply implements Listener {
     @EventHandler
     public void onGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
         if (event.getMessage().isCommand()) return;
+        if (event.getUser().isBot()) return;
         if (event.shouldIgnore()) return;
         String content = event.getMessage().getContent().trim();
 

@@ -173,15 +173,22 @@ public class OfficialUsers {
      * 设置权限组
      */
     public static boolean setPermissionGroup(String userOpenId, UnifiedRole role, Set<String> permissions) {
-        String permissionsString = String.join(",", permissions);
-
         UserData existing = cache.get(userOpenId);
         boolean blocked = existing != null && existing.isBlocked();
         boolean ignored = existing != null && existing.isIgnored();
         boolean c2cPush = existing == null || existing.c2cPush();
 
+        return setProfile(userOpenId, role, permissions, blocked, ignored, c2cPush);
+    }
+
+    /** 一次保存完整用户档案；群成员无需先建立私聊关系，首次保存时自动创建用户行。 */
+    public static boolean setProfile(String userOpenId, UnifiedRole role, Set<String> permissions,
+                                     boolean blocked, boolean ignored, boolean c2cPush) {
+        if (userOpenId == null || userOpenId.isBlank()) return false;
+        Set<String> savedPermissions = Set.copyOf(permissions);
+        String permissionsString = String.join(",", savedPermissions);
         if (C2CRepository.upsertFull(userOpenId, role.name(), permissionsString, blocked, ignored, c2cPush)) {
-            cache.put(userOpenId, new UserData(userOpenId, role, permissions, blocked, ignored, c2cPush));
+            cache.put(userOpenId, new UserData(userOpenId, role, savedPermissions, blocked, ignored, c2cPush));
             return true;
         }
         return false;
@@ -242,6 +249,11 @@ public class OfficialUsers {
             }
         }
         return objectMapper.createObjectNode();
+    }
+
+    /** 读取私聊用户的功能配置，用于展示订阅状态。 */
+    public static ObjectNode getRawFunctionConfig(String userOpenId) {
+        return getFunctionConfig(userOpenId);
     }
 
     /**

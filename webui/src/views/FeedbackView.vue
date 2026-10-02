@@ -111,6 +111,10 @@
             <input type="checkbox" v-model="replyHidden"/>
             隐藏用户原始内容
           </label>
+          <label class="checkbox-label" title="仅保存回复，不通知用户">
+            <input type="checkbox" v-model="replySilent" :disabled="submitting"/>
+            静默回复
+          </label>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeReply">取消</button>
@@ -158,6 +162,7 @@ const counts = reactive({unreplied: 0, replied: 0, all: 0})
 const replyTarget = ref(null)
 const replyContent = ref('')
 const replyHidden = ref(false)
+const replySilent = ref(false)
 const submitting = ref(false)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
@@ -246,16 +251,18 @@ function openReply(fb) {
   replyTarget.value = fb
   replyContent.value = ''
   replyHidden.value = fb.isHidden
+  replySilent.value = false
 }
 
 function closeReply() {
   replyTarget.value = null
   replyContent.value = ''
   replyHidden.value = false
+  replySilent.value = false
 }
 
 async function doReply() {
-  if (!replyContent.value.trim()) return
+  if (submitting.value || !replyTarget.value || !replyContent.value.trim()) return
   submitting.value = true
   try {
     await api('/feedback/reply', {
@@ -263,7 +270,8 @@ async function doReply() {
       body: JSON.stringify({
         id: replyTarget.value.id,
         replyContent: replyContent.value.trim(),
-        isHidden: replyHidden.value
+        isHidden: replyHidden.value,
+        silent: replySilent.value
       })
     })
     closeReply()

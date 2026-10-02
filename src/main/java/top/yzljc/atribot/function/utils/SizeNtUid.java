@@ -41,9 +41,9 @@ public class SizeNtUid implements CommandExecutor {
     public static void ntUidController(Context ctx) {
         var checked = UserInformation.getUserNtUid(ctx.bodyAsClass(JsonNode.class).path("uin").asText(null));
         switch (checked) {
-            case "-1" -> ctx.json(Result.custom(201, "非法号段", null));
-            case "-2" -> ctx.json(Result.custom(201, "无结果", null));
-            case "-3" -> ctx.json(Result.custom(201, "获取失败，不是好友关系，请添加好友970717559", null));
+            case "-1" -> ctx.json(Result.fail(400, "QQ 号码号段无效，请检查后重试。"));
+            case "-2" -> ctx.json(Result.fail(404, "未查询到对应的 NT UID。"));
+            case "-3" -> ctx.json(Result.fail(403, "查询 NT UID 失败，请先添加 970717559 为好友后重试。"));
             default -> ctx.json(Result.success(Map.of("ntUid", checked)));
         }
     }

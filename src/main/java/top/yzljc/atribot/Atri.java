@@ -34,6 +34,7 @@ import top.yzljc.atribot.database.repo.EventLogRepository;
 import top.yzljc.atribot.function.admin.*;
 import top.yzljc.atribot.function.admin.ema.EmaCommand;
 import top.yzljc.atribot.function.command.*;
+import top.yzljc.atribot.function.reminder.ReminderService;
 import top.yzljc.atribot.function.command.HelpCommand;
 import top.yzljc.atribot.function.games.ClickTrainGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
@@ -222,12 +223,12 @@ public class Atri {
         server.post("/", ctx -> {
             JsonNode body = ctx.bodyAsClass(JsonNode.class);
             if (body == null || !body.isObject()) {
-                ctx.status(400).json(java.util.Map.of("status", "invalid_payload"));
+                ctx.status(400).json(java.util.Map.of("status", 432, "message", "请求体格式无效。"));
             } else if (napcatEventQueue.offer(body, ctx.bodyAsBytes().length)) {
                 ctx.result("{\"status\":\"ok\"}").contentType("application/json");
             } else {
                 ctx.header("Retry-After", "1").status(503)
-                        .json(java.util.Map.of("status", "busy"));
+                        .json(java.util.Map.of("status", 432, "message", "事件处理队列繁忙，请稍后重试。"));
             }
         });
 
@@ -269,6 +270,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new QQEventRecord());
         EventManager.getInstance().registerEvents(new QQChatContentRecord());
         EventManager.getInstance().registerEvents(new FeedbackCommand());
+        EventManager.getInstance().registerEvents(new ReminderCommand());
         EventManager.getInstance().registerEvents(new AutoSendPtt());
         EventManager.getInstance().registerEvents(new WebUICommand());
         EventManager.getInstance().registerEvents(new FullMessageEnableCommand());
@@ -288,6 +290,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new WhatFuckingPing());
         EventManager.getInstance().registerEvents(new GroupJoinWelcome());
         EventManager.getInstance().registerEvents(new ShareBotCommand());
+        EventManager.getInstance().registerEvents(new HypixelCommand());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -321,6 +324,7 @@ public class Atri {
 //        CommandManager.getCommand("mc").setExecutor(new MinecraftCommand());
         CommandManager.getCommand("test").setExecutor(new Test());
         CommandManager.getCommand("feedback").setExecutor(new FeedbackCommand());
+        CommandManager.getCommand("remind").setExecutor(new ReminderCommand());
         CommandManager.getCommand("ogroup").setExecutor(new GroupManagementCommand());
         CommandManager.getCommand("perm").setExecutor(new UserManagementCommand());
         CommandManager.getCommand("today").setExecutor(this.calendarTask);
@@ -404,6 +408,12 @@ public class Atri {
         LootRepository.init();
         CoinGainLogRepository.init();
         FeedbackRepository.init();
+        try {
+            ReminderService.getInstance().init();
+            ReminderService.getInstance().start(scheduler);
+        } catch (Exception e) {
+            log.warn("提醒功能初始化失败: errorType={}", e.getClass().getSimpleName());
+        }
 //        ErrorReportRepository.init();
         OfficialSendLogRepository.init();
         EventLogRepository.init();

@@ -83,12 +83,11 @@
         <span class="side-nav-label">统计数据</span>
       </button>
       <button class="side-nav-item" :class="{ active: route.path === '/bot-settings' }" @click="go('/bot-settings')">
-        <svg width="18" height="18" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round">
-          <line x1="32" y1="10" x2="32" y2="18" stroke-width="3.5"/>
-          <circle cx="32" cy="8" r="4" stroke-width="3.5"/>
-          <rect x="16" y="18" width="32" height="28" rx="10" stroke-width="3.5"/>
-          <rect x="24" y="28" width="4" height="8" rx="2" fill="currentColor" stroke="none"/>
-          <rect x="36" y="28" width="4" height="8" rx="2" fill="currentColor" stroke="none"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 7a8 8 0 0 1 8 8v2.4a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 17.4V15a8 8 0 0 1 8-8ZM12 4.4V7M9.4 12.2v2.4M14.6 12.2v2.4" />
+          </g>
+          <circle cx="12" cy="3.3" r="1.5" fill="currentColor" />
         </svg>
         <span class="side-nav-label">机器人设置</span>
       </button>

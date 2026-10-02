@@ -138,6 +138,12 @@ commands:
         type: 3
         description: 反馈内容
         required: true
+  remind:
+    description: 私聊设置自然语言提醒任务
+    usage: /提醒 [添加 <时间和事项> | 设置 | 修改 <任务ID> <时间和事项> | 关闭 <任务ID> | 删除 <任务ID>]
+    aliases:
+      - 提醒
+      - reminder
   submit:
     description: 投稿图片到图源
     usage: /submit [图片]
@@ -391,19 +397,6 @@ commands:
       - minecrafttool
       - minecrafttools
       - mc
-# TUFE 系列专用查询指令
-  查询帮助:
-    description: 查询 Tufe 系列相关指令帮助信息
-    usage: /查询帮助
-  绑定:
-    description: 绑定 Tufe 系列账号
-    usage: /绑定
-  宿舍电表:
-    description: 查询宿舍电表信息
-    usage: /宿舍电表
-  空调电表:
-    description: 查询空调电表信息
-    usage: /空调电表
   sharebot:
     description: 分享机器人
     usage: /sharebot

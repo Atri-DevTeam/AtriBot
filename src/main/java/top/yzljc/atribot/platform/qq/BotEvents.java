@@ -19,6 +19,8 @@ import top.yzljc.atribot.utils.tools.Alert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Author YZ_Ljc_
@@ -34,7 +36,7 @@ public class BotEvents {
 
     private record ParsedMessageReference(String msgIdx, MessageReference reference) {}
 
-    // 群聊、私聊和群 @ 共用解析，当前消息索引与引用来源索引分别保存。
+    // 获取引用消息索引
     private static ParsedMessageReference parseMessageReference(JsonNode eventData) {
         String msgIdx = null;
         String refMsgIdx = null;
@@ -129,9 +131,33 @@ public class BotEvents {
             String msgIdx = parsedReference.msgIdx();
             MessageReference refMsgObj = parsedReference.reference();
 
+            var messageExt = eventData.path("message_scene").path("ext");
+            OfficialC2CMessageCreateEvent.SwitchButtons sbs = null;
+            if (messageExt.isArray()) {
+                List<OfficialC2CMessageCreateEvent.SwitchButtons.SwitchButton> btns = new ArrayList<>();
+                for (JsonNode item : messageExt) {
+                    if (!item.isTextual()) continue;
+                    String value = item.textValue();
+                    Pattern pattern = Pattern.compile("(\\w+)=([01])");
+                    Matcher m = pattern.matcher(value);
+
+                    while (m.find()) {
+                        var e = new OfficialC2CMessageCreateEvent.SwitchButtons.SwitchButton(m.group(1), m.group(2).equals("1"));
+                        btns.add(e);
+                    }
+                }
+
+                if  (!btns.isEmpty()) {
+                    sbs = new OfficialC2CMessageCreateEvent.SwitchButtons(btns);
+                }
+            }
+
             User sender = new User(Platform.OFFICIAL_C2C, isBot, userOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
             QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_C2C_MESSAGE);
             OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
+
+            if (sbs != null) event.setSwitchButtons(sbs);
+
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的C2C消息事件时发生错误：", e);

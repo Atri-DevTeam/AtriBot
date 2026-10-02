@@ -6,7 +6,8 @@ import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Ark23;
+import top.yzljc.atribot.chat.official.ark.Ark;
+import top.yzljc.atribot.chat.official.Card;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
@@ -32,7 +33,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
-import static top.yzljc.atribot.webui.WebUiSupport.parseArk23;
+import static top.yzljc.atribot.webui.WebUiSupport.parseArk;
+import static top.yzljc.atribot.webui.WebUiSupport.parseCard;
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseLong;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -318,13 +320,26 @@ public class GroupController {
                 if (!isBlank(replyId) || !isBlank(refId)) {
                     ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
                 }
-                Ark23 ark;
+                Ark ark;
                 try {
-                    ark = parseArk23(dto.getArk());
+                    ark = parseArk(dto.getArk());
                 } catch (IllegalArgumentException e) {
                     ctx.status(400).json(Result.fail(400, e.getMessage())); return;
                 }
                 messageId = GroupChat.sendMessage(dto.getGroupOpenId(), ark);
+            } else if ("card".equals(msgType)) {
+                if (!isBlank(refId)) {
+                    ctx.status(400).json(Result.fail(400, "卡片暂不支持引用，请关闭引用")); return;
+                }
+                Card card;
+                try {
+                    card = parseCard(dto.getCard());
+                } catch (IllegalArgumentException e) {
+                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                }
+                messageId = isBlank(replyId)
+                        ? GroupChat.sendMessage(dto.getGroupOpenId(), card)
+                        : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), card);
             } else if (refId != null && !refId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
@@ -417,21 +432,27 @@ public class GroupController {
 
     public static void getGroupFunctions(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
-        ObjectNode config = OfficialGroups.getRawFunctionConfig(groupOpenId);
+        ctx.json(Result.success(validGroupFunctions(OfficialGroups.getRawFunctionConfig(groupOpenId))));
+    }
+
+    private static ObjectNode validGroupFunctions(ObjectNode config) {
+        ObjectNode valid = config.objectNode();
         for (PushTask task : PushTaskCommand.getTasks()) {
-            if (!task.isDefaultEnabled() || hasExplicitEnabled(config, task.getFunctionId())) continue;
-            config.putObject(task.getFunctionId()).put("enabled", true);
+            if (!task.isGroupEnable()) continue;
+            String key = task.getFunctionId();
+            if (!hasExplicitEnabled(config, key) && !task.isDefaultEnabled()) continue;
+            ObjectNode entry = hasExplicitEnabled(config, key)
+                    ? ((ObjectNode) config.get(key)).deepCopy() : valid.objectNode().put("enabled", true);
+            entry.put("displayName", task.getDisplayName());
+            valid.set(key, entry);
         }
-        ctx.json(Result.success(config));
+        return valid;
     }
 
     public static void listGroupFunctionKeys(Context ctx) {
         TreeSet<String> keys = new TreeSet<>();
-        PushTaskCommand.getTasks().forEach(task -> keys.add(task.getFunctionId()));
-        for (var group : OfficialGroups.listGroups()) {
-            var config = OfficialGroups.getRawFunctionConfig(group.groupOpenId());
-            config.fieldNames().forEachRemaining(keys::add);
-        }
+        PushTaskCommand.getTasks().stream().filter(PushTask::isGroupEnable)
+                .forEach(task -> keys.add(task.getFunctionId()));
         ctx.json(Result.success(List.copyOf(keys)));
     }
 
@@ -474,8 +495,15 @@ public class GroupController {
     public static void setGroupFunction(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         String functionKey = ctx.pathParam("functionKey");
+        if (PushTaskCommand.getTasks().stream().noneMatch(task -> task.isGroupEnable() && task.getFunctionId().equals(functionKey))) {
+            ctx.status(400).json(Result.fail(400, "无效的群聊推送任务"));
+            return;
+        }
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
-        OfficialGroups.setFunctionEnabled(groupOpenId, functionKey, enabled, "webui");
+        if (!OfficialGroups.setFunctionEnabled(groupOpenId, functionKey, enabled, "webui")) {
+            ctx.status(500).json(Result.fail(500, "保存功能配置失败"));
+            return;
+        }
         ctx.json(Result.success("ok"));
     }
 
@@ -509,7 +537,7 @@ public class GroupController {
 
     /** 群已启用的功能键列表（按功能分类筛选用） */
     private static List<String> enabledFunctions(String groupOpenId) {
-        ObjectNode config = OfficialGroups.getRawFunctionConfig(groupOpenId);
+        ObjectNode config = validGroupFunctions(OfficialGroups.getRawFunctionConfig(groupOpenId));
         TreeSet<String> keys = new TreeSet<>();
         config.fieldNames().forEachRemaining(key -> {
             JsonNode funcNode = config.get(key);
@@ -517,11 +545,6 @@ public class GroupController {
                 keys.add(key);
             }
         });
-        for (PushTask task : PushTaskCommand.getTasks()) {
-            if (task.isDefaultEnabled() && !hasExplicitEnabled(config, task.getFunctionId())) {
-                keys.add(task.getFunctionId());
-            }
-        }
         return List.copyOf(keys);
     }
 
@@ -546,8 +569,9 @@ public class GroupController {
     @Data
     public static class SendGroupMessageDTO {
         private JsonNode ark;
+        private JsonNode card;
         private String groupOpenId;
-        private String msgType;   // "text" | "markdown" | "image"
+        private String msgType;   // "text" | "markdown" | "image" | "ark" | "card"
         private String content;
         private String imageType; // "url" | "base64" (仅 image 时)
         private String imageValue;// 图片 URL 或 base64 (仅 image 时)

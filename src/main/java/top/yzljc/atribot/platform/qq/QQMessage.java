@@ -41,7 +41,7 @@ public class QQMessage extends Message implements Recallable {
 
     public boolean isCommand() {
         var content = super.getContent().trim();
-        return content.startsWith("/") || SignCommand.isMatch(content) || content.equals("指令帮助") || content.equals("反馈与建议");
+        return content.startsWith("/") || SignCommand.isMatch(content);
     }
 
     @Override

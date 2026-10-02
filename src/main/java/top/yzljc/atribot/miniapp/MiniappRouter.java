@@ -4,10 +4,12 @@ import io.javalin.Javalin;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.miniapp.service.MiniappActivityService;
 import top.yzljc.atribot.miniapp.service.MiniappInventoryImageService;
 import top.yzljc.atribot.miniapp.service.MiniappProfileService;
 import top.yzljc.atribot.miniapp.service.MiniappGroupService;
+import top.yzljc.atribot.utils.GetProjectInfo;
 
 import java.io.InputStream;
 import java.util.Map;
@@ -29,6 +31,8 @@ public final class MiniappRouter {
     }
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     public record GroupBindingRequest(String groupId) {}
+    public record About(String version, String buildTime, String branch, String commitId,
+                        String developerAvatarUrl) {}
 
     public static void register(Javalin server, MiniappSessions sessions, boolean enabled) {
         register(server, sessions, enabled, new MiniappProfileService()::load);
@@ -68,7 +72,8 @@ public final class MiniappRouter {
             ExchangeRequest request = ctx.bodyAsClass(ExchangeRequest.class);
             if (request == null || request.userId() == null || request.userId().length() > 256
                     || request.ticket() == null || request.ticket().length() > 128) throw new BadRequestResponse();
-            MiniappSessions.Access access = sessions.exchange(request.ticket(), request.userId());
+            MiniappSessions.Access access = sessions.exchange(request.ticket(), request.userId(), ctx.ip(),
+                    Objects.toString(ctx.header("User-Agent"), ""));
             if (access == null) {
                 ctx.status(401).json(Map.of("error", "ENTRY_EXPIRED"));
                 return;
@@ -76,6 +81,13 @@ public final class MiniappRouter {
             ctx.json(access);
         });
         server.get("/atrimeow/profile/api/me", ctx -> ctx.json(requireIdentity(ctx, sessions)));
+        server.get("/atrimeow/profile/api/about", ctx -> {
+            requireIdentity(ctx, sessions);
+            Config config = Config.getInstance();
+            ctx.json(new About(GetProjectInfo.getVersion(), GetProjectInfo.getBuildTime(),
+                    GetProjectInfo.getBranch(), GetProjectInfo.getCommitId(),
+                    MiniappProfileService.avatarUrl(config.getQqAppId(), config.getSuperAdminId())));
+        });
         server.get("/atrimeow/profile/api/profile", ctx -> ctx.json(profiles.apply(requireIdentity(ctx, sessions))));
         server.get("/atrimeow/profile/api/activity", ctx -> ctx.json(activity.load(requireIdentity(ctx, sessions))));
         server.get("/atrimeow/profile/api/groups", ctx -> {

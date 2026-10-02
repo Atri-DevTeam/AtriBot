@@ -36,11 +36,10 @@ export function createChatBottomScroller(getElement) {
 }
 
 // 用消息在视口中的位置作锚点；上方插入历史或图片变高时，只补偿布局位移。
-export function createChatPositionKeeper(getElement, getContent) {
+export function createChatPositionKeeper(getElement) {
   let target = null
   let offset = 0
   let frame = null
-  let padding = 0
   let start = 0
   let previousTop = 0
 
@@ -48,12 +47,6 @@ export function createChatPositionKeeper(getElement, getContent) {
     if (frame !== null) cancelAnimationFrame(frame)
     frame = null
     target = null
-  }
-
-  function clear() {
-    cancel()
-    padding = 0
-    getContent()?.style.removeProperty('padding-bottom')
   }
 
   function geometry() {
@@ -67,14 +60,9 @@ export function createChatPositionKeeper(getElement, getContent) {
     }
   }
 
-  function reserveSpace(el, top) {
-    const content = getContent()
-    if (!content) return
-    const needed = Math.max(0, Math.ceil(top - (el.scrollHeight - padding - el.clientHeight)))
-    if (needed !== padding) {
-      padding = needed
-      content.style.paddingBottom = `${padding}px`
-    }
+  function destination(el, top) {
+    // 页首、页尾按真实滚动范围定位，避免为居中添加消息尾部空白。
+    return Math.min(Math.max(0, top - offset), Math.max(0, el.scrollHeight - el.clientHeight))
   }
 
   function sync() {
@@ -88,9 +76,9 @@ export function createChatPositionKeeper(getElement, getContent) {
       if (Math.abs(shift) > 0.5) el.scrollTop += shift
       previousTop = top
     } else {
-      const destination = Math.max(0, top - offset)
-      reserveSpace(el, destination)
-      if (Math.abs(el.scrollTop - destination) > 0.5) el.scrollTop = destination
+      const end = destination(el, top)
+      if (Math.abs(el.scrollTop - end) > 0.5) el.scrollTop = end
+      offset = top - el.scrollTop
     }
   }
 
@@ -101,22 +89,21 @@ export function createChatPositionKeeper(getElement, getContent) {
   }
 
   function scrollTo(node) {
-    clear()
+    cancel()
     target = node
     const position = geometry()
     if (!position) return
     const { el, top, height } = position
     offset = (el.clientHeight - Math.min(height, el.clientHeight)) / 2
-    const destination = Math.max(0, top - offset)
-    reserveSpace(el, destination)
+    const end = destination(el, top)
     start = el.scrollTop
     previousTop = top
-    if (prefersReducedMotion() || Math.abs(destination - start) <= 1) {
-      el.scrollTop = destination
+    if (prefersReducedMotion() || Math.abs(end - start) <= 1) {
+      el.scrollTop = end
       offset = top - el.scrollTop
       return
     }
-    const duration = Math.min(1200, Math.max(280, Math.abs(destination - start) * 0.18))
+    const duration = Math.min(1200, Math.max(280, Math.abs(end - start) * 0.18))
     const startedAt = performance.now()
     const tick = now => {
       if (getElement() !== el) { cancel(); return }
@@ -124,20 +111,19 @@ export function createChatPositionKeeper(getElement, getContent) {
       const current = geometry()
       if (!current) return
       offset = (el.clientHeight - Math.min(current.height, el.clientHeight)) / 2
-      const end = Math.max(0, current.top - offset)
-      reserveSpace(el, end)
+      const end = destination(el, current.top)
       const progress = Math.min(1, (now - startedAt) / duration)
       const eased = 1 - Math.pow(1 - progress, 3)
       el.scrollTop = start + (end - start) * eased
       if (progress < 1) frame = requestAnimationFrame(tick)
       else {
         frame = null
-        // 页首不能居中时也记住实际位置，后续加载不会把正在看的消息推走。
+        // 页首、页尾不能居中时记住实际位置，后续加载不会推走正在看的消息。
         offset = current.top - el.scrollTop
       }
     }
     frame = requestAnimationFrame(tick)
   }
 
-  return { scrollTo, hold, sync, cancel, clear, get active() { return target !== null } }
+  return { scrollTo, hold, sync, cancel, clear: cancel, get active() { return target !== null } }
 }

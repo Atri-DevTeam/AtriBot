@@ -26,6 +26,7 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,6 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class ChatService {
 
+    private static final int MAX_INVALID_EVENT_ID_RETRIES = 5;
+    private static final long INVALID_EVENT_ID_RETRY_DELAY_MS = 100;
     private static final String EMERGENCY_PAUSED_MESSAGE = "开发者暂且维护中，马上回来！";
     private static final ImageComponent MAINTENANCE = ImageComponent.imageOf(ResourcesProperties.MAINTENANCE_IMG).setText(EMERGENCY_PAUSED_MESSAGE);
     @Getter
@@ -461,13 +464,14 @@ public class ChatService {
         }
 
         if (!OfficialMessageSendNotifier.allowSend("POST", url, json)) return null;
-        if (request.getMsgId() == null && request.getEventId() == null && logType.equals("群聊")) {
+        if (logType.equals("群聊") && request.getMsgId() == null && request.getEventId() == null) {
             activeRateLimiter.waitForActiveRateLimit();
+            activeRateLimiter.waitForGroupActiveRateLimit();
         }
 
         String authorization = "QQBot " + tokenManager.getAccessToken();
         long sendStartedNanos = System.nanoTime();
-        var res = HttpService.postJsonDetailed(url, json, "Authorization", authorization);
+        var res = invalidEventIdRetry(url, json, authorization, logType);
         long confirmedNanos = System.nanoTime();
 
         try {
@@ -531,6 +535,44 @@ public class ChatService {
                     res.status(), res.body(), "响应解析失败: " + e.getMessage());
             log.error("{}消息响应解析失败: ", logType, e);
             return null;
+        }
+    }
+
+    private HttpService.PostResult invalidEventIdRetry(String url, String json, String authorization, String logType) {
+        for (int retry = 0; ; retry++) {
+            HttpService.PostResult response = HttpService.postJsonDetailed(url, json, "Authorization", authorization);
+            if (retry >= MAX_INVALID_EVENT_ID_RETRIES || !isInvalidEventIdResponse(response)) {
+                return response;
+            }
+
+            String traceId = OfficialSendLogRepository.recordSend(logType, "POST", url, json);
+
+            OfficialSendLogRepository.recordError(traceId, logType, "POST", url, json,
+                    response.status(), response.body(),
+                    ErrorCode.INVALID_EVENT_ID.getMessage() + "，准备第 " + (retry + 1) + " 次重试");
+
+            log.warn("{}消息{}，准备第 {}/{} 次重试", logType,
+                    ErrorCode.INVALID_EVENT_ID.getMessage(), retry + 1, MAX_INVALID_EVENT_ID_RETRIES);
+            try {
+                TimeUnit.MILLISECONDS.sleep(INVALID_EVENT_ID_RETRY_DELAY_MS << retry);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return response;
+            }
+        }
+    }
+
+    private boolean isInvalidEventIdResponse(HttpService.PostResult response) {
+        if (response.body() == null || response.body().isBlank()) {
+            return false;
+        }
+        try {
+            JsonNode body = objectMapper.readTree(response.body());
+            int errorCode = ErrorCode.INVALID_EVENT_ID.getErrorCode();
+            return body.path("code").asInt() == errorCode
+                    || body.path("err_code").asInt() == errorCode;
+        } catch (JsonProcessingException e) {
+            return false;
         }
     }
 

@@ -40,49 +40,83 @@ public class PicSubmitCommand implements CommandExecutor {
             return true;
         }
 
-        List<String> imageUrls = getImageUrls(qq.getMessage().getAttachments());
-        if (imageUrls.isEmpty()) {
+        List<ImageAttachment> images = getImageAttachments(qq.getMessage().getAttachments());
+        if (images.isEmpty()) {
             qq.sendMessage("请在发送 /submit 时一并附上图片哦，手机端可以长按聊天框输入！\n用法：/submit [图片]");
             return true;
         }
 
         String uploaderId = qq.getUserId();
         int pendingLimit = Config.getInstance().getImageSourcePendingLimit();
-        if (ImageSourceRepository.countPendingByUploader(uploaderId) >= pendingLimit && !qq.hasPermission()) {
-            qq.sendMessage("你还有 " + pendingLimit + " 张投稿正在等待审核，先等等这批过审再来吧~");
+        int submitCount = qq.hasPermission("atri.submit.multiple") ? images.size() : 1;
+        int pendingCount = ImageSourceRepository.countPendingByUploader(uploaderId);
+        if (!qq.hasPermission("atri.submit.multiple") && pendingCount + submitCount > pendingLimit) {
+            qq.sendMessage("你已有 " + pendingCount + " 张投稿正在等待审核，本次投稿 " + submitCount
+                    + " 张会超过 " + pendingLimit + " 张的待审上限，请减少图片或等审核后再试~");
             return true;
         }
 
-        String imageUrl = imageUrls.getFirst();
-        JsonNode attachment = getFirstImageAttachment(qq.getMessage().getAttachments());
-
-        ImageSourceDTO dto = buildDTO(qq, imageUrl, attachment);
-
-        var t = imageUrls.size();
-        ThreadManager.execute(() -> process(qq, dto, t));
+        List<ImageSourceDTO> submissions = new ArrayList<>(submitCount);
+        for (int i = 0; i < submitCount; i++) {
+            ImageAttachment image = images.get(i);
+            submissions.add(buildDTO(qq, image.url(), image.attachment()));
+        }
+        ThreadManager.execute(() -> process(qq, submissions, images.size()));
         return true;
     }
 
-    private void process(QQCommandSender sender, ImageSourceDTO dto, int size) {
+    private void process(QQCommandSender sender, List<ImageSourceDTO> submissions, int imageCount) {
+        List<String> results = new ArrayList<>(submissions.size());
+        List<ImageSourceDTO> successful = new ArrayList<>();
+        for (int i = 0; i < submissions.size(); i++) {
+            ImageSourceDTO dto = submissions.get(i);
+            SubmissionResult result = processOne(dto);
+            String message = result.message();
+            if (submissions.size() > 1) {
+                message = "第 " + (i + 1) + " 张：" + message.replace("\n", "，");
+            } else if (imageCount > 1 && result.success()) {
+                message += "，单次仅能收录一张图片哦";
+            }
+            results.add(message);
+            if (result.success()) {
+                successful.add(dto);
+            }
+        }
+        try {
+            sender.sendMessage(String.join("\n", results));
+        } catch (Exception e) {
+            log.error("发送图源投稿结果失败: uploader={}", sender.getUserId(), e);
+        }
+        for (ImageSourceDTO dto : successful) {
+            try {
+                Alert.notify("收到图源投稿: 编号 " + shortId(dto.getId()) +
+                        " 来自用户: " + dto.getUploaderName() +
+                        " (" + dto.getPlatform() + ": " + dto.getUploaderId() + ")" +
+                        (dto.getGroupId() != null ? " 群聊: " + dto.getGroupId() : "") +
+                        " 尺寸: " + dto.getWidth() + "x" + dto.getHeight());
+            } catch (Exception e) {
+                log.warn("发送图源投稿提醒失败: id={}", dto.getId(), e);
+            }
+        }
+    }
+
+    private SubmissionResult processOne(ImageSourceDTO dto) {
         try {
             String hash = ImageSourceClient.fetchAndHash(dto.getSourceUrl());
             if (hash == null) {
-                sender.sendMessage("图片读取失败了呢，可能是链接已过期，请重新发送一次 /submit 试试~");
-                return;
+                return new SubmissionResult("图片读取失败了呢，可能是链接已过期，请重新发送一次 /submit 试试~", false);
             }
             dto.setHash(hash);
 
             ImageSourceDTO duplicate = ImageSourceRepository.findByHash(hash);
             if (duplicate != null) {
-                sender.sendMessage("这张图片已经被投过稿啦（编号 " + shortId(duplicate.getId()) + "），换一张试试吧~");
-                return;
+                return new SubmissionResult("这张图片已经被投过稿啦（编号 " + shortId(duplicate.getId()) + "），换一张试试吧~", false);
             }
 
             // uuid 由本端生成，先落库再上报，保证 WebUI 能立即看到这条待审记录
             String id = ImageSourceRepository.insert(dto);
             if (id == null) {
-                sender.sendMessage("投稿保存失败了呢，请稍后再试！");
-                return;
+                return new SubmissionResult("投稿保存失败了呢，请稍后再试！", false);
             }
             dto.setId(id);
 
@@ -90,32 +124,17 @@ public class PicSubmitCommand implements CommandExecutor {
             if (!uploadResult.ok()) {
                 // 远端没收下，本地记录也一并回滚，否则这张图的 hash 会挡住用户重试
                 ImageSourceRepository.delete(id);
-                sender.sendMessage("图片上传失败了呢" + reasonSuffix(uploadResult.message()) + "，请稍后再试一次 /投稿~");
-                return;
+                return new SubmissionResult("图片上传失败了呢" + reasonSuffix(uploadResult.message()) + "，请稍后再试一次 /投稿~", false);
             }
             dto.setProcessedWidth(uploadResult.width());
             dto.setProcessedHeight(uploadResult.height());
             dto.setProcessedFileSize(uploadResult.fileSize());
             ImageSourceRepository.updateProcessedInfo(id, dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize());
 
-            String notify = "投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id);
-            if (size > 1) {
-                notify += "，单次仅能收录一张图片哦";
-            }
-
-            sender.sendMessage(notify);
-
-            Alert.notify("收到图源投稿: 编号 " + shortId(id) +
-                    " 来自用户: " + dto.getUploaderName() +
-                    " (" + dto.getPlatform() + ": " + dto.getUploaderId() + ")" +
-                    (dto.getGroupId() != null ? " 群聊: " + dto.getGroupId() : "") +
-                    " 尺寸: " + dto.getWidth() + "x" + dto.getHeight());
+            return new SubmissionResult("投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id), true);
         } catch (Exception e) {
             log.error("处理图源投稿失败: uploader={}", dto.getUploaderId(), e);
-            try {
-                sender.sendMessage("投稿处理出错了呢，请稍后再试！");
-            } catch (Exception ignored) {
-            }
+            return new SubmissionResult("投稿处理出错了呢，请稍后再试！", false);
         }
     }
 
@@ -140,43 +159,32 @@ public class PicSubmitCommand implements CommandExecutor {
     }
 
     /**
-     * 从消息附件的原始 {@code attachments} 字段中筛出图片直链（命令内联解析）。
+     * 从消息附件的原始 {@code attachments} 字段中筛出图片及对应元信息（命令内联解析）。
      *
      * <p>官方 Bot 的图片附件形如
      * {@code {"content_type":"image/png","filename":"...","url":"multimedia.nt.qq.com.cn/download?...","width":765,"height":160,"size":27783}}，
      * 其中 {@code url} 不带协议头且带有会过期的 rkey，这里统一补全为 https 链接。
      *
-     * @return 按附件顺序排列的图片直链，无图片时返回空列表
+     * @return 按附件顺序排列的图片，无图片时返回空列表
      */
-    private static List<String> getImageUrls(JsonNode attachments) {
+    private static List<ImageAttachment> getImageAttachments(JsonNode attachments) {
         if (attachments == null || !attachments.isArray()) {
             return List.of();
         }
-        List<String> urls = new ArrayList<>();
+        List<ImageAttachment> images = new ArrayList<>();
         for (JsonNode attachment : attachments) {
             String contentType = attachment.path("content_type").asText("");
             if (!contentType.startsWith("image/")) continue;
             String url = attachment.path("url").asText(null);
             if (url == null || url.isBlank()) continue;
-            urls.add(url.startsWith("http") ? url : "https://" + url);
+            images.add(new ImageAttachment(url.startsWith("http") ? url : "https://" + url, attachment));
         }
-        return urls;
+        return images;
     }
 
-    /**
-     * 取第一张图片附件的原始节点，便于读取 filename / size / 宽高等元信息。
-     */
-    private static JsonNode getFirstImageAttachment(JsonNode attachments) {
-        if (attachments == null || !attachments.isArray()) {
-            return null;
-        }
-        for (JsonNode attachment : attachments) {
-            if (attachment.path("content_type").asText("").startsWith("image/")) {
-                return attachment;
-            }
-        }
-        return null;
-    }
+    private record ImageAttachment(String url, JsonNode attachment) {}
+
+    private record SubmissionResult(String message, boolean success) {}
 
     private static String shortId(String id) {
         if (id == null) return "-";

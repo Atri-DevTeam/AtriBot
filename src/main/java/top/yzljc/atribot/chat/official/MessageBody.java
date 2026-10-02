@@ -66,6 +66,9 @@ public class MessageBody {
     @JsonIgnore
     private String recordAttachments;
 
+    @JsonProperty("card")
+    private Object card;
+
     /**
      * 维护消息提示用字段
      */

@@ -85,7 +85,7 @@ onBeforeUnmount(() => { disposed = true; version++ })
 .welcome-markdown :deep(> :last-child) { margin-bottom: 0; }
 .welcome-markdown :deep(p) { margin: 10px 0; }
 .welcome-markdown :deep(h1), .welcome-markdown :deep(h2), .welcome-markdown :deep(h3), .welcome-markdown :deep(h4), .welcome-markdown :deep(h5), .welcome-markdown :deep(h6) { font-size: 14px; font-weight: 600; margin: 14px 0 8px; }
-.welcome-markdown :deep(img) { display: block; max-width: 100%; height: auto; border-radius: 9px; }
+.welcome-markdown :deep(img) { display: block; max-width: min(100%, 480px); max-height: 300px; height: auto; object-fit: contain; border-radius: 9px; }
 .welcome-markdown :deep(img.md-inline-icon) { display: inline-block; vertical-align: middle; border-radius: 0; }
 .welcome-markdown :deep(ul), .welcome-markdown :deep(ol) { padding-left: 20px; }
 .welcome-markdown :deep(pre) { white-space: pre-wrap; background: #eef1e880; padding: 10px; border-radius: 8px; }
