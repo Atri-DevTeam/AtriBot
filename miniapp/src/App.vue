@@ -13,7 +13,6 @@ const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
 const apiBase = (import.meta.env.VITE_API_BASE || '/atrimeow/profile/api').replace(/\/+$/, '')
 const readPrivate = <T,>(path: string) => session.get<T>(path)
 const writePrivate = <T,>(path: string, body: unknown) => session.post<T>(path, body)
-const readImage = (refresh = false) => session.image('inventory/image', refresh)
 const refreshingAll = ref(false)
 async function refreshAll() {
   if (refreshingAll.value) return
@@ -216,7 +215,7 @@ onBeforeUnmount(() => {
           </div>
         </section>
       </div>
-      <ActivityPanel ref="activityPanel" :request="readPrivate" :request-image="readImage" :collection="profile?.collection || null" @ready="recordsSettled = true" @copy="copyText($event, '分享链接')" />
+      <ActivityPanel ref="activityPanel" :request="readPrivate" @ready="recordsSettled = true" @copy="copyText($event, '分享链接')" />
       <div class="sync-line"><span>{{ loading ? '读取中…' : '' }}</span><button class="text-button" :disabled="loading || refreshingAll" :aria-busy="refreshingAll" @click="refreshAll"><Icon name="refresh" :class="{ 'refresh-spinning': loading || refreshingAll }" /> 更新记录</button></div>
     </main>
 

@@ -7,7 +7,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.ark.Ark;
-import top.yzljc.atribot.chat.official.Card;
+import top.yzljc.atribot.chat.official.card.Card;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.RT;

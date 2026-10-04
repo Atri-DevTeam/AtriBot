@@ -8,6 +8,8 @@ import type {Profile} from '../profile'
 import type {BindingChallenge, BoundGroup, GroupOverview, PrivatePost} from '../groups'
 
 const GroupWelcome = defineAsyncComponent(() => import('./GroupWelcome.vue'))
+const GroupModeration = defineAsyncComponent(() => import('./GroupModeration.vue'))
+const moderationPanel = ref<{ mayLeave: () => boolean } | null>(null)
 const welcomeRevision = ref(0)
 
 const props = defineProps<{ bot: Profile['bot']; request: PrivateRequest; post: PrivatePost; active: boolean }>()
@@ -38,7 +40,8 @@ async function openGroup(groupId: string) {
   detailTitle.value?.focus({preventScroll: true})
 }
 
-async function backToList() {
+async function backToList(force = false) {
+  if (!force && moderationPanel.value && !moderationPanel.value.mayLeave()) return
   const previousId = selectedGroupId.value
   selectedGroupId.value = null
   detailVersion++;
@@ -70,6 +73,7 @@ async function loadDetail() {
 }
 
 async function refresh() {
+  if (moderationPanel.value && !moderationPanel.value.mayLeave()) return
   welcomeRevision.value++;
   await load();
   if (selectedGroupId.value) await loadDetail()
@@ -78,6 +82,7 @@ async function refresh() {
 async function unbind() {
   const id = selectedGroupId.value
   if (!id || unbinding.value) return
+  if (moderationPanel.value && !moderationPanel.value.mayLeave()) return
   unbinding.value = true;
   unbindError.value = '';
   listVersion++
@@ -87,7 +92,7 @@ async function unbind() {
     if (overview.value) overview.value = {...overview.value, groups: groups.value.filter(item => item.groupId !== id)}
     if (pending.value?.groupId === id) pending.value = null
     notice.value = '已解除群绑定'
-    await backToList()
+    await backToList(true)
   } catch {
     if (!disposed) unbindError.value = '解绑失败，请重试'
   } finally {
@@ -122,7 +127,7 @@ async function load() {
     const previous = pending.value
     overview.value = result;
     pending.value = result.pending
-    if (selectedGroupId.value && !result.groups.some(item => item.groupId === selectedGroupId.value)) void backToList()
+    if (selectedGroupId.value && !result.groups.some(item => item.groupId === selectedGroupId.value)) void backToList(true)
     if (previous && result.groups.some(group => group.groupId === previous.groupId) && !result.pending) {
       notice.value = '群聊绑定成功';
       formOpen.value = false;
@@ -185,7 +190,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="group-management">
     <header class="group-page-heading">
-      <button v-if="selectedBinding" class="group-back text-button" :disabled="unbinding" @click="backToList">
+      <button v-if="selectedBinding" class="group-back text-button" :disabled="unbinding" @click="backToList()">
         <Icon name="left"/>
         返回群列表
       </button>
@@ -340,6 +345,8 @@ onBeforeUnmount(() => {
     </article>
     <GroupWelcome v-if="selectedBinding" :key="selectedBinding.groupId" :bot="bot" :group-id="selectedBinding.groupId"
                   :request="request" :revision="welcomeRevision"/>
+    <GroupModeration v-if="selectedBinding && group?.canManageModeration === true" :key="selectedBinding.groupId" ref="moderationPanel" :group-id="selectedBinding.groupId"
+                     :request="request" :post="post" :revision="welcomeRevision" @access-denied="group = group ? { ...group, canManageModeration: false } : null"/>
   </div>
 </template>
 

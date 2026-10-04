@@ -1,23 +1,24 @@
 package top.yzljc.atribot.function.command;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.jspecify.annotations.NonNull;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.McLocationBarColorImpl;
 import top.yzljc.atribot.function.minecraft.McPackMetaImpl;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.platform.Identifier;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;
 import top.yzljc.atribot.utils.tools.MinecraftProfile;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * @Author YZ_Ljc_
@@ -154,7 +155,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
     }
 
     private static boolean checkMinecraftCape(CommandSender sender) {
-        var data = PreImageGenerate.dump(ResourcesProperties.MINECRAFT_CAPES_API, Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.capes"), Map.of());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;

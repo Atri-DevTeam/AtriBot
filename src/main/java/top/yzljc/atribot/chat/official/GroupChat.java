@@ -3,6 +3,7 @@ package top.yzljc.atribot.chat.official;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.ark.Ark;
+import top.yzljc.atribot.chat.official.card.Card;
 import top.yzljc.atribot.platform.qq.FileType;
 
 import java.util.concurrent.CompletableFuture;

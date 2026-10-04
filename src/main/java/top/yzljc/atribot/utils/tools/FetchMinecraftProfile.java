@@ -1,16 +1,20 @@
 package top.yzljc.atribot.utils.tools;
 
-import org.jetbrains.annotations.Nullable;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.minecraft.MinecraftModerationClient;
-
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.jetbrains.annotations.Nullable;
+
+import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.service.minecraft.MinecraftModerationClient;
+import top.yzljc.atribot.service.request.BizResponse;
+import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 
 /**
  * @Author YZ_Ljc_
@@ -24,25 +28,20 @@ public final class FetchMinecraftProfile {
 
     public static @Nullable Profile find(String var) {
         if (var == null || var.isBlank()) return null;
-        var d = HttpService.sendGetRequest(ResourcesProperties.PLAYER_PROFILE_API.replace("{uuid}", var));
-        if (var.length() > 16) {
-            if (d != null) {
-                var name = d.path("data").path("inGameName").asText(null);
-                if (name != null) {
-                    String resolvedUuid = d.path("data").path("uuid").asText(var);
-                    return new Profile(parseUuid(resolvedUuid), name);
-                }
-            }
-        } else {
-            if (d != null) {
-                var uuid = d.path("data").path("uuid").asText(null);
-                var name = d.path("data").path("inGameName").asText(null);
-                if (uuid != null) {
-                    return new Profile(UUID.fromString(uuid), name);
-                }
-            }
+        return profile(Requests.get(OpenApi.get("minecraft.profile.resolve", "player", var)));
+    }
+
+    static @Nullable Profile profile(BizResponse<JsonNode> response) {
+        if (!response.isSuccess() || response.data() == null || !response.data().isObject()) return null;
+        JsonNode data = response.data();
+        String name = data.path("inGameName").asText(null);
+        String uuid = data.path("uuid").asText(null);
+        if (name == null || name.isBlank() || uuid == null || uuid.isBlank()) return null;
+        try {
+            return new Profile(parseUuid(uuid), name);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        return null;
     }
 
     private static UUID parseUuid(String value) {
@@ -56,33 +55,30 @@ public final class FetchMinecraftProfile {
 
     public static String getUsernameByUuid(String uuid) {
         if (uuid.length() <= 16) return uuid;
-        var d = HttpService.sendGetRequest(ResourcesProperties.PLAYER_PROFILE_API.replace("{uuid}", uuid));
-        if (d != null) {
-            var name = d.path("data").path("inGameName").asText(null);
-            if (name != null) {
-                return name;
-            }
-        }
-        return uuid;
-    }
-
-    public static String getPlayerHead(String uuid) {
-        String url = ResourcesProperties.PLAYER_AVATAR_API.replace("{uuid}", uuid);
-
-        int code = PreImageGenerate.create(url);
-        if (code != 200) return "-1";
-        return url;
+        Profile profile = find(uuid);
+        return profile == null ? uuid : profile.username();
     }
 
     public static MinecraftProfile getPlayerProfile(String var) {
         if (var == null || var.isBlank()) return null;
-        var t = HttpService.sendGetRequest(ResourcesProperties.PLAYER_REVIEWED_PROFILE.replace("{player}", var), "Authorization", "API: " + Config.getInstance().getMinecraftModerationReviewKey());
-        if (t == null) return null;
-        var d = t.path("data");
+        var response = Requests.get(OpenApi.get("minecraft.profile.reviewed", "player", var),
+                "Authorization", "API: " + Config.getInstance().getMinecraftModerationReviewKey());
+        if (!response.isSuccess() || response.data() == null || !response.data().isObject()) return null;
+        var d = response.data();
         return new MinecraftProfile(d.path("username").asText(null),
                 d.path("uuid").asText(null),
-                ResourcesProperties.MINECRAFT_MODERATION_API + d.path("skin3dUrl").asText(null),
-                ResourcesProperties.MINECRAFT_MODERATION_API + d.path("avatarUrl").asText(null));
+                reviewedImageUrl("minecraft.skin3d", d.path("skin3dUrl").asText(null)),
+                reviewedImageUrl("minecraft.avatar", d.path("avatarUrl").asText(null)));
+    }
+
+    private static String reviewedImageUrl(String key, String value) {
+        if (value == null || value.isBlank()) return null;
+        URI uri = URI.create(value);
+        String path = uri.getPath();
+        String skinId = path.substring(path.lastIndexOf('/') + 1);
+        if (skinId.isBlank()) return null;
+        String url = OpenApi.get(key, "skinId", skinId);
+        return uri.getRawQuery() == null ? url : url + "?" + uri.getRawQuery();
     }
 
     /** 返回远端审核策略处理后的玩家名。 */

@@ -6,8 +6,9 @@ import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.moderation.GroupModerationStore;
 import top.yzljc.atribot.chat.official.ark.Ark;
-import top.yzljc.atribot.chat.official.Card;
+import top.yzljc.atribot.chat.official.card.Card;
 import top.yzljc.atribot.chat.official.QQMessageSendException;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.management.Mute;
@@ -511,7 +512,7 @@ public class GroupController {
                            boolean whitelist, boolean blacklisted, boolean allowProactiveMsg, Long realGroupId,
                            String memberOpenid, String recvMsgSetting, String memberRole, String groupName,
                            String groupFingerMemo, String groupClassText, List<String> groupTags, int groupMemberNum,
-                           List<String> enabledFunctions) {
+                           List<String> enabledFunctions, boolean moderationEnabled) {
     }
 
     private static GroupDTO toGroupDTO(OfficialGroups.GroupData data) {
@@ -531,7 +532,8 @@ public class GroupController {
                 data.groupClassText(),
                 data.groupTags(),
                 data.groupMemberNum(),
-                enabledFunctions(data.groupOpenId())
+                enabledFunctions(data.groupOpenId()),
+                GroupModerationStore.get(data.groupOpenId()).isAnyEnabled()
         );
     }
 

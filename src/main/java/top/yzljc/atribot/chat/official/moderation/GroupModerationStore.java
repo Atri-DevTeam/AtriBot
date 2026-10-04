@@ -6,8 +6,14 @@ import top.yzljc.atribot.configuration.Properties;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
 * @Author AndyOctopus
@@ -30,40 +36,68 @@ public final class GroupModerationStore {
     }
 
     public static synchronized void save(String groupOpenId, GroupModerationSettings settings) {
+        update(groupOpenId, ignored -> settings);
+    }
+
+    public static synchronized GroupModerationSettings snapshot(String groupOpenId) {
         ensureLoaded();
-        CACHE.put(groupOpenId, settings);
-        persist();
+        return copy(CACHE.get(groupOpenId));
+    }
+
+    public static synchronized GroupModerationSettings update(String groupOpenId, UnaryOperator<GroupModerationSettings> edit) {
+        ensureLoaded();
+        GroupModerationSettings next = copy(java.util.Objects.requireNonNull(edit.apply(copy(CACHE.get(groupOpenId)))));
+        Map<String, GroupModerationSettings> candidate = new LinkedHashMap<>(CACHE);
+        candidate.put(groupOpenId, next);
+        persist(candidate);
+        CACHE.put(groupOpenId, next);
+        return copy(next);
+    }
+
+    private static GroupModerationSettings copy(GroupModerationSettings settings) {
+        return settings == null ? null : MAPPER.convertValue(settings, GroupModerationSettings.class);
     }
 
     private static void ensureLoaded() {
         if (loaded) {
             return;
         }
-        loaded = true;
         File file = new File(Properties.GROUP_MODERATION_CONFIG);
         if (!file.exists()) {
+            loaded = true;
             return;
         }
         try {
             Map<String, GroupModerationSettings> data = MAPPER.readValue(file,
                     MAPPER.getTypeFactory().constructMapType(LinkedHashMap.class, String.class, GroupModerationSettings.class));
+            if (data == null) throw new IOException("Expected a moderation settings object");
             CACHE.putAll(data);
+            loaded = true;
             log.info("已加载群管系统配置，共 {} 个群", CACHE.size());
         } catch (IOException e) {
-            log.error("加载群管系统配置失败: {}", e.getMessage(), e);
+            throw new UncheckedIOException("Unable to load moderation settings", e);
         }
     }
 
-    private static void persist() {
+    private static void persist(Map<String, GroupModerationSettings> settings) {
+        persist(Path.of(Properties.GROUP_MODERATION_CONFIG).toAbsolutePath(), settings);
+    }
+
+    static void persist(Path file, Map<String, GroupModerationSettings> settings) {
+        Path temporary = null;
         try {
-            File file = new File(Properties.GROUP_MODERATION_CONFIG);
-            File parent = file.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs();
+            Files.createDirectories(file.getParent());
+            temporary = Files.createTempFile(file.getParent(), ".moderation-", ".tmp");
+            MAPPER.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), settings);
+            try {
+                Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
-            MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, CACHE);
         } catch (IOException e) {
-            log.error("保存群管系统配置失败: {}", e.getMessage(), e);
+            throw new UncheckedIOException("Unable to save moderation settings", e);
+        } finally {
+            if (temporary != null) try { Files.deleteIfExists(temporary); } catch (IOException ignored) { }
         }
     }
 }

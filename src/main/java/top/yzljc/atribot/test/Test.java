@@ -6,6 +6,7 @@ import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.ark.Ark23;
 import top.yzljc.atribot.chat.official.button.*;
+import top.yzljc.atribot.chat.official.card.Card;
 import top.yzljc.atribot.chat.official.media.HexColor;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;

@@ -1,19 +1,6 @@
 package top.yzljc.atribot.function.impl.drawitem;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.function.impl.ImageDTO;
-import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.service.request.HttpService;
-
 import java.io.File;
-import java.net.URI;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,6 +12,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
+
+import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.configuration.ImageDelivery;
+import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 
 /**
  * @Author YZ_Ljc_
@@ -66,15 +67,15 @@ public class LootService {
         }
 
         try {
-            JsonNode resp = HttpService.sendGetRequest(ResourcesProperties.LOOTS_API,
+            var response = Requests.get(OpenApi.get("bot.loots.list"),
                     "Authorization", "Bearer " + Config.getInstance().getAtribotKeySecret());
-            if (resp == null || resp.path("status").asInt() != 200) {
-                log.warn("获取抽卡目录失败: resp={}", resp);
+            if (!response.isSuccess() || response.data() == null || !response.data().path("loots").isArray()) {
+                log.warn("获取抽卡目录失败: {}", response.message());
                 return catalogCache;
             }
 
             List<LootCatalogItem> parsed = new ArrayList<>();
-            for (JsonNode node : resp.path("data").path("loots")) {
+            for (JsonNode node : response.data().path("loots")) {
                 parsed.add(new LootCatalogItem(
                         node.path("item_id").asText(),
                         node.path("display_name").asText(),
@@ -267,7 +268,7 @@ public class LootService {
             return LootDao.fail("渲染抽卡图失败，请稍后再试");
         }
         if (card.isError() || card.url() == null) {
-            return LootDao.fail("渲染抽卡图失败 - 开发错误，请联系开发者处理");
+            return LootDao.fail(card.isError() ? card.errorMessage() : "图片地址无效，请稍后重试");
         }
 
         int duplicateReward = refundDuplicated ? RANDOM.nextInt(16) + 5 : 0;
@@ -302,14 +303,15 @@ public class LootService {
     }
 
     private static ImageDTO requestDrawCard(String itemId) {
-        JsonNode response = HttpService.postJson(ResourcesProperties.LOOTS_DRAW_CARD_API,
+        var response = Requests.post(OpenApi.get("bot.loots.draw"),
                 Map.of("item_id", itemId), "Authorization", "Bearer " + Config.getInstance().getAtribotKeySecret());
-        if (response == null || response.path("status").asInt() != 200) {
-            return new ImageDTO(null, 0, 0, "访问远程数据失败", null);
+        if (!response.isSuccess()) {
+            return new ImageDTO(null, 0, 0, response.message(), response.requestId());
         }
 
-        JsonNode data = response.path("data");
-        String url = resolveDrawCardUrl(data, ResourcesProperties.LOOTS_DRAW_CARD_API);
+        JsonNode data = response.data();
+        if (data == null || !data.isObject()) return new ImageDTO(null, 0, 0, "图片响应数据无效", response.requestId());
+        String url = ImageDelivery.resolveDrawCard(data);
         if (url == null) {
             return new ImageDTO(null, 0, 0, "远程抽卡图响应缺少图片地址", null);
         }
@@ -317,34 +319,18 @@ public class LootService {
         return new ImageDTO(url, data.path("width").asInt(), data.path("height").asInt());
     }
 
-    static String resolveDrawCardUrl(JsonNode data, String endpoint) {
-        String url = data.path("url").asText(null);
-        if ("cos".equalsIgnoreCase(data.path("way").asText())) {
-            // A signed URL is valid only for this request; never fall back to
-            // api_url or retain it for another draw.
-            return url == null || url.isBlank() ? null : url;
-        }
-        if (url == null || url.isBlank()) {
-            url = data.path("api_url").asText(null);
-        }
-        if (url == null || url.isBlank()) {
-            String uuid = data.path("uuid").asText(null);
-            if (uuid == null || uuid.isBlank()) {
-                return null;
-            }
-            url = endpoint + "/" + uuid;
-        }
-        if (url.startsWith("/")) {
-            String origin = URI.create(endpoint).resolve("/").toString();
-            return URI.create(origin).resolve(url).toString();
-        }
-        return url;
-    }
-
     /**
      * 渲染用户持有物品卡的总览图（附带卡片拥有量的全区排名）
      */
     public static LootDao renderOverviewCard(String userId) {
+        return renderOverviewCard(userId, false);
+    }
+
+    public static LootDao renderOverviewCardViaApi(String userId) {
+        return renderOverviewCard(userId, true);
+    }
+
+    private static LootDao renderOverviewCard(String userId, boolean viaApi) {
         List<LootRepository.LootRecord> owned = LootRepository.getLoots(userId);
         List<Map<String, Object>> items = owned.stream()
                 .map(r -> Map.<String, Object>of(
@@ -364,9 +350,10 @@ public class LootService {
             payload.put("total_players", rank.totalPlayers());
         }
 
-        ImageDTO dto = PreImageGenerate.dump(ResourcesProperties.LOOTS_OVERVIEW_CARD_API, payload);
+        String endpoint = OpenApi.get("bot.loots.overview");
+        ImageDTO dto = viaApi ? PreImageGenerate.dumpViaApi(endpoint, payload) : PreImageGenerate.dump(endpoint, payload);
         if (dto.isError() || dto.url() == null) {
-            return LootDao.fail("渲染总览图失败 - 开发错误，请联系开发者处理");
+            return LootDao.fail(dto.isError() ? dto.errorMessage() : "图片地址无效，请稍后重试");
         }
         return LootDao.success(dto);
     }

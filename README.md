@@ -81,7 +81,7 @@ ttf-file-name: "default.ttf"      # 根目录字体文件名（默认鸿蒙开�
 debug-mode: false                  # Debug 模式（部分功能行为变化）
 listen-port: 1234                  # HTTP 服务器监听端口（WebUI、Napcat 回调）
 api-url: null                      # 外部 API 根地址
-ugc-api-url: null                  # UGC/生图端 API 根地址
+ugc-api-url: null                  # 图片服务根地址，通过 /v3/openapi 获取接口目录
 env: "dev"                         # dev / production；dev 才会自动启动 WebUI
 
 mysql:                             # MySQL 数据库连接（必填）
@@ -94,6 +94,8 @@ mysql:                             # MySQL 数据库连接（必填）
 delivery:
   oss-dump-base-url: "null"        # 投递 OSS 转储地址
 ```
+
+图片服务的配置与业务键调用方式见 [图片服务接口目录](docs/image-openapi.md)
 
 ### AI 服务（多提供商）
 

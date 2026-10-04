@@ -6,6 +6,23 @@ const ticket = 'a'.repeat(43)
 const token = 'b'.repeat(43)
 const grant = () => ({ token, user: { userId: 'owner', displayName: '名字' }, expiresAt: Date.now() + 7200000, idleTimeoutMillis: 90000 })
 
+test('moderation permission denial preserves the session while session failures still expire it', async () => {
+  let code = 'MODERATION_FORBIDDEN', phase = '', status = 403
+  const session = new PageSession({
+    request: async url => String(url).endsWith('/exchange') ? Response.json(grant()) : Response.json({ error: code }, { status }),
+    changed: state => { phase = state.phase }, release: () => {}
+  })
+  await session.open('owner', ticket)
+  await assert.rejects(session.get('groups/group/moderation'), { message: code })
+  assert.equal(phase, 'ready')
+  code = 'CUSTOM_PROMPT_FORBIDDEN'
+  await assert.rejects(session.post('groups/group/moderation', {}), { message: code })
+  assert.equal(phase, 'ready')
+  status = 401
+  assert.equal(await session.get('groups/group/moderation'), null)
+  assert.equal(phase, 'expired')
+})
+
 test('private mutations use the session token, preserve structured errors and discard late results', async () => {
   let mode = 'error', phase = '', finish!: (value: Response) => void
   const session = new PageSession({

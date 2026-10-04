@@ -6,11 +6,12 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.Identifier;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.service.ai.AiService;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.request.BizResponse;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.time.ZoneId;
@@ -27,7 +28,7 @@ import java.util.Set;
  * @ClassName TimezoneCommand
  * @Created_at 2026/08/21
  * @Project AtriMeow
- * @Package top.yzljc.atribot.function.official
+ * @Package top.yzljc.atribot.function.command
  */
 @Slf4j
 public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
@@ -182,7 +183,7 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
 
     private static String buildTimeReply(ResolvedZone zone) {
         if (SKYBLOCK_ZONE_ID.equals(zone.zoneId)) {
-            JsonNode response = HttpService.sendGetRequest(ResourcesProperties.SKYBLOCK_TIME_API);
+            BizResponse<JsonNode> response = Requests.get(OpenApi.get("hypixel.skyblock.calendar"));
             return buildSkyblockReply(response);
         }
 
@@ -193,20 +194,24 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
                 "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
     }
 
-    private static String buildSkyblockReply(JsonNode response) {
-        String time = formatSkyblockTime(response);
+    static String buildSkyblockReply(BizResponse<JsonNode> response) {
+        if (!response.isSuccess()) {
+            return response.message();
+        }
+        JsonNode data = response.data();
+        String time = formatSkyblockTime(data);
         if (time == null) {
             log.warn("SkyBlock 时间接口请求失败或返回无效时间数据");
             return "亚托莉暂时没能获取 SkyBlock 时间，请稍后再试～";
         }
         return "**" + "目标地区时间" + "**\n" +
                 "> 当前时间：" + time + "\n" +
-                "> 正在进行：" + formatSkyblockEvents(response) + "\n\n" +
+                "> 正在进行：" + formatSkyblockEvents(data) + "\n\n" +
                 "小提示: " + Markdown.enterCommand("/time ", "/time [位置]") + "可以指定时区查询哦";
     }
 
-    private static String formatSkyblockEvents(JsonNode response) {
-        JsonNode events = response.path("data").path("activeEvents");
+    private static String formatSkyblockEvents(JsonNode data) {
+        JsonNode events = data.path("activeEvents");
         if (!events.isArray()) {
             return "暂未获取到活动或事件信息";
         }
@@ -220,11 +225,11 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
         return names.isEmpty() ? "暂无正在进行的活动或事件" : String.join("、", names);
     }
 
-    private static String formatSkyblockTime(JsonNode response) {
-        if (response == null || response.path("status").asInt() != 200) {
+    private static String formatSkyblockTime(JsonNode data) {
+        if (data == null || !data.isObject()) {
             return null;
         }
-        JsonNode time = response.path("data").path("skyblockTime");
+        JsonNode time = data.path("skyblockTime");
         if (!time.path("year").canConvertToInt() || !time.path("day").canConvertToInt()
                 || !time.path("hour").canConvertToInt() || !time.path("minute").canConvertToInt()
                 || !time.path("monthName").isTextual()) {

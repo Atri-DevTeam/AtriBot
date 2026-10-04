@@ -1,0 +1,1 @@
+import{k as i}from"./index-B8o3lVXe.js";function a(){let e=0,t=null,n=!1;function r(){e++,t==null||t.abort(),t=null}function o(){r();const u=e,s=t=new AbortController;return n&&s.abort(),{signal:s.signal,isCurrent:()=>!n&&u===e&&!s.signal.aborted}}return{begin:o,invalidate:r,dispose(){n=!0,r()}}}function c(){const e=a();return i(e.dispose),e}export{c as u};

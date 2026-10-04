@@ -1,10 +1,14 @@
 package top.yzljc.atribot.test;
 
+import java.net.URI;
+import java.util.*;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.official.GroupChat;
@@ -12,18 +16,15 @@ import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.function.tasks.MinecraftNews;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.MinecraftNews;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
-
-import java.net.URI;
-import java.util.*;
 
 /** 测试类 */
 public class MinecraftNewsDebug implements CommandExecutor {
@@ -125,7 +126,7 @@ public class MinecraftNewsDebug implements CommandExecutor {
             log.info("[DEBUG] >>> AI 总结完毕");
 
             // ── 3. 生成图片 ──
-            String apiUrl = ResourcesProperties.MC_NEWS_API;
+            String apiUrl = OpenApi.get("bot.mcnews");
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("title", article.title);
             requestBody.put("author", article.author);

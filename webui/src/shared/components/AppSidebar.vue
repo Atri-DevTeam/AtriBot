@@ -1,0 +1,249 @@
+<template>
+  <Transition name="sidebar-backdrop">
+    <div v-if="open" class="sidebar-backdrop show" @click="close" />
+  </Transition>
+
+  <aside class="sidebar" :class="{ 'sidebar--open': open }">
+    <div class="sidebar-head">
+      <button class="sidebar-close" aria-label="关闭侧边栏" @click="close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <AppBrand :app-id="appId" :bot-open-id="botOpenId" :bot-name="botName" />
+
+    <nav class="side-nav">
+      <button class="side-nav-item" :class="{ active: route.path === '/' }" title="聊天" @click="go('/')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3c5 0 9 3.4 9 7.6 0 4.2-4 7.6-9 7.6-.9 0-1.8-.1-2.6-.3L5 20.5l.9-3.2C4.1 15.9 3 13.9 3 10.6 3 6.4 7 3 12 3Z" />
+          <circle cx="8.5" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+          <circle cx="15.5" cy="10.6" r="0.9" fill="currentColor" stroke="none" />
+        </svg>
+        <span class="side-nav-label">聊天</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/channels' }" title="频道" @click="go('/channels')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3 7 21M17 3l-2 18M3 9h18M2 15h18" />
+        </svg>
+        <span class="side-nav-label">频道</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/users' }" @click="go('/users')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        <span class="side-nav-label">用户数据</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/minecraft-name-review' }" @click="go('/minecraft-name-review')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M8 9h8M8 13h5" />
+          <path d="m14 17 2 2 4-5" />
+        </svg>
+        <span class="side-nav-label">玩家名审核</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/feedback' }" @click="go('/feedback')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        </svg>
+        <span class="side-nav-label">反馈管理</span>
+        <span v-if="feedbackBadge > 0" class="feedback-nav-badge">{{ feedbackBadge }}</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/gallery' }" @click="go('/gallery')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+        <span class="side-nav-label">图源管理</span>
+        <span v-if="galleryBadge > 0" class="feedback-nav-badge">{{ galleryBadge }}</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/loot' }" @click="go('/loot')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="8" width="18" height="4" rx="1" />
+          <path d="M12 8v13" />
+          <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+          <path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8" />
+          <path d="M16.5 8a2.5 2.5 0 0 0 0-5C13 3 12 8 12 8" />
+        </svg>
+        <span class="side-nav-label">抽卡管理</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/stats' }" @click="go('/stats')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+        <span class="side-nav-label">统计数据</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/bot-settings' }" @click="go('/bot-settings')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 7a8 8 0 0 1 8 8v2.4a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 17.4V15a8 8 0 0 1 8-8ZM12 4.4V7M9.4 12.2v2.4M14.6 12.2v2.4" />
+          </g>
+          <circle cx="12" cy="3.3" r="1.5" fill="currentColor" />
+        </svg>
+        <span class="side-nav-label">机器人设置</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/group-strategy' }" title="加群策略" @click="go('/group-strategy')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M3 3l18 18" />
+        </svg>
+        <span class="side-nav-label">加群策略</span>
+      </button>
+
+      <button class="side-nav-item" :class="{ active: route.path === '/menu-panel' }" title="菜单与面板" @click="go('/menu-panel')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <span class="side-nav-label">菜单与面板</span>
+      </button>
+      <!-- ErrorReport 暂时停用：保留入口源码，恢复时同步取消 router.js 中路由的注释。
+      <button class="side-nav-item" :class="{ active: route.path === '/errors' }" @click="go('/errors')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span class="side-nav-label">错误报告</span>
+      </button>
+      -->
+      <button class="side-nav-item" :class="{ active: route.path === '/send-logs' }" @click="go('/send-logs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5.5h9" />
+          <path d="M4 12h7" />
+          <path d="M4 18.5h9" />
+          <path d="m15 8 5 4-5 4" />
+          <path d="M11 12h9" />
+        </svg>
+        <span class="side-nav-label">发送日志</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/event-logs' }" @click="go('/event-logs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8v4l3 3" />
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+        <span class="side-nav-label">事件记录</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/napcat' }" @click="go('/napcat')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="14" rx="3" />
+          <path d="M8 20h8" />
+          <path d="M12 18v2" />
+        </svg>
+        <span class="side-nav-label">Napcat功能</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/debug' }" @click="go('/debug')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5" />
+          <line x1="12" y1="19" x2="20" y2="19" />
+        </svg>
+        <span class="side-nav-label">调试</span>
+      </button>
+    </nav>
+
+    <div class="side-toolbar">
+      <slot name="toolbar" />
+    </div>
+
+    <!-- 桌面端：收窄/展开导航栏（手机端隐藏，手机端用抽屉模式） -->
+    <button class="nav-collapse-btn" :title="collapsed ? '展开导航栏' : '收窄导航栏'"
+            :aria-label="collapsed ? '展开导航栏' : '收窄导航栏'" :aria-expanded="!collapsed" @click="toggleCollapsed">
+      <svg class="nav-collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 6 9 12 15 18" />
+      </svg>
+      <span class="side-nav-label">收起</span>
+    </button>
+  </aside>
+</template>
+
+<script setup>
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppBrand from './AppBrand.vue'
+import { NAV_COLLAPSED_KEY } from '../lib/panelLayout.js'
+
+const collapsed = ref(false)
+
+onMounted(() => {
+  try {
+    collapsed.value = localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
+  } catch { /* ignore */ }
+  applyCollapsed()
+})
+
+function applyCollapsed() {
+  document.documentElement.classList.toggle('nav-collapsed', collapsed.value)
+}
+
+function toggleCollapsed() {
+  collapsed.value = !collapsed.value
+  try {
+    localStorage.setItem(NAV_COLLAPSED_KEY, collapsed.value ? '1' : '0')
+  } catch { /* ignore */ }
+  applyCollapsed()
+}
+
+/** 供外部「重置布局」调用：导航栏收窄状态归位，键名不外泄 */
+function resetCollapsed() {
+  collapsed.value = false
+  try {
+    localStorage.removeItem(NAV_COLLAPSED_KEY)
+  } catch { /* ignore */ }
+  applyCollapsed()
+}
+
+defineExpose({ resetCollapsed })
+
+defineProps({
+  open: {
+    type: Boolean,
+    default: false
+  },
+  appId: {
+    type: String,
+    default: ''
+  },
+  botOpenId: {
+    type: String,
+    default: ''
+  },
+  botName: {
+    type: String,
+    default: 'AtriBot'
+  },
+  feedbackBadge: {
+    type: Number,
+    default: 0
+  },
+  galleryBadge: {
+    type: Number,
+    default: 0
+  }
+})
+
+const emit = defineEmits(['update:open'])
+const route = useRoute()
+const router = useRouter()
+
+function close() {
+  emit('update:open', false)
+}
+
+function go(path) {
+  router.push(path)
+  close()
+}
+</script>

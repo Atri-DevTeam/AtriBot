@@ -24,11 +24,6 @@ commands:
       - 新年倒计时
       - 过年
     description: 发送新年快乐
-  bc:
-    description: 全服广播
-    usage: /bc <内容>
-    aliases:
-      - broadcast
   golds:
     description: 查看金粒余额
     aliases:
@@ -167,14 +162,6 @@ commands:
       - permission
   ogroup:
     description: 白名单管理
-  tufe:
-    description: Tufe Command
-  教师课表:
-    description: 官机按教师姓名查询整周课程安排
-    usage: /教师课表 <姓名> [周次数字|本周|上周|下周]（默认本周，例如 /教师课表 宋丽红 5）
-    aliases:
-      - 老师课表
-      - teacher
   today:
     description: 每日日历
   help:
@@ -211,8 +198,6 @@ commands:
     description: 石头剪刀布游戏
     aliases:
       - 石头剪刀布
-  贡献名单:
-    description: 查看贡献名单
   info:
     description: 查询账号相关字段信息
     usage: /info @<目标用户>

@@ -363,53 +363,6 @@
     font-size: 11px;
 }
 
-.inventory-section {
-    border-radius: 23px;
-    padding: 26px;
-    min-width: 0;
-    margin: 22px 0;
-}
-
-.inventory-section .module-heading {
-    margin-bottom: 18px;
-}
-
-.inventory-section .module-heading svg {
-    width: 18px;
-    height: 18px;
-}
-
-.inventory-section .module-heading h2 {
-    font-size: 15px;
-}
-
-.inventory-section .section-empty {
-    min-height: 150px;
-    gap: 12px;
-}
-
-.free-draw {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    color: #919984;
-    background: #ffffff60;
-    border: 1px solid #ffffffc0;
-    padding: 7px 11px;
-    border-radius: 20px;
-}
-
-.free-draw.available {
-    color: #779067;
-    background: #e6efdc60;
-}
-
-.free-draw svg {
-    width: 14px;
-    height: 14px;
-}
-
 .section-empty {
     min-height: 90px;
     display: flex;
@@ -432,27 +385,6 @@
         margin-top: 20px;
     }
 
-    .inventory-section {
-        padding: 21px;
-        border-radius: 21px;
-    }
-
-    .inventory-section {
-        margin: 15px 0;
-    }
-
-    .inventory-section .module-heading {
-        gap: 12px;
-    }
-
-    .inventory-section .module-heading > div {
-        gap: 8px;
-    }
-
-    .inventory-section .module-heading h2 {
-        font-size: 14px;
-    }
-
     .module-heading h2 {
         font-size: 14px;
     }
@@ -467,63 +399,3 @@
         transition: none !important;
     }
 }
-
-.inventory-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: -4px 0 14px;
-}
-
-.inventory-status {
-    color: #8d9882;
-    font-size: 11px;
-}
-
-.inventory-toolbar .text-button {
-    margin-left: auto;
-    flex-shrink: 0;
-}
-
-.inventory-image {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 16px;
-    border: 1px solid #ffffffb0;
-    background: #ffffff40;
-}
-
-.inventory-preview {
-    position: relative;
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    border-radius: 16px;
-    cursor: zoom-in;
-}
-
-.inventory-zoom {
-    position: absolute;
-    right: 12px;
-    bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 11px;
-    border-radius: 12px;
-    border: 1px solid #fff;
-    background: #f4f5f0d9;
-    color: #73856a;
-    font-size: 11px;
-    pointer-events: none;
-}
-
-.inventory-zoom svg {
-    width: 15px;
-    height: 15px;
-}
-

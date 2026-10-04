@@ -6,9 +6,9 @@ import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
 import top.yzljc.atribot.command.NapcatCommandSender
 import top.yzljc.atribot.configuration.LoadIllegalWords
-import top.yzljc.atribot.configuration.ResourcesProperties
 import top.yzljc.atribot.function.impl.PreImageGenerate
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
+import top.yzljc.atribot.service.request.OpenApi
 
 /**
  * @Author YZ_Ljc_
@@ -73,7 +73,7 @@ object AnAnGirlEmoji : CommandExecutor {
         }
 
         val data = PreImageGenerate.dump(
-            ResourcesProperties.ANAN_TEXT_IMG,
+            OpenApi.get("bot.emoji.anan"),
             req
         )
         if (data == null) {

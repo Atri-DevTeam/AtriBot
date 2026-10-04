@@ -1,5 +1,10 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
@@ -10,14 +15,9 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -203,7 +203,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
     }
 
     private static ImageDTO requestData(String type) {
-        String url = ResourcesProperties.BAN_TRACKER + "?" + System.currentTimeMillis();
+        String url = OpenApi.get("bot.hypixel.bantracker") + "?" + System.currentTimeMillis();
         return PreImageGenerate.dump(url, Map.of("window", type));
     }
 

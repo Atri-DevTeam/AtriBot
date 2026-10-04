@@ -23,7 +23,7 @@ import java.util.function.Function;
  */
 public final class MiniappInventoryImageService {
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
-            .followRedirects(HttpClient.Redirect.NORMAL).build();
+            .followRedirects(HttpClient.Redirect.NEVER).build();
     private static final int MAX_BYTES = 25 * 1024 * 1024;
     private static final Set<String> TYPES = Set.of("image/png", "image/jpeg", "image/webp", "image/gif");
     private final Function<String, LootDao> renderer;
@@ -33,7 +33,7 @@ public final class MiniappInventoryImageService {
     }
 
     public MiniappInventoryImageService() {
-        this(LootService::renderOverviewCard);
+        this(LootService::renderOverviewCardViaApi);
     }
 
     public MiniappInventoryImageService(Function<String, LootDao> renderer) {

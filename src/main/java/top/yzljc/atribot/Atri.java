@@ -334,7 +334,7 @@ public class Atri {
         CommandManager.getCommand("clicktrain").setExecutor(clickTrainGame);
         CommandManager.getCommand("roulette").setExecutor(new LuckyRouletteGame());
         CommandManager.getCommand("hitokoto").setExecutor(new HitokotoCommand());
-        CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
+//        CommandManager.getCommand("贡献名单").setExecutor(new SponsorCommand());
         CommandManager.getCommand("webui").setExecutor(new WebUICommand());
         CommandManager.getCommand("全量消息").setExecutor(new FullMessageEnableCommand());
         CommandManager.getCommand("推送任务").setExecutor(new PushTaskCommand());
@@ -421,7 +421,7 @@ public class Atri {
         ImageSourceRepository.init();
         PendingNoticeRepository.init();
         UnifiedAuthentication.init();
-        PackVersion.init();
+        PackVersion.initAsync();
 
         RunScheduleTask.runAllTasks();
         this.taskScheduler = new TaskScheduler();

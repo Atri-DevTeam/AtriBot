@@ -66,6 +66,7 @@ public class NapcatPacket {
             String groupid = json.path("group_id").asText("");
             if (Objects.equals(userId, botUid) && Objects.equals(groupid, debugGroupId)) return;
             GroupMessage.chatMessage(debugGroupId, jsonString);
+            log.debug(jsonString);
         } catch (Exception e) {
             log.error("转发失败：{}", e.getMessage());
         }

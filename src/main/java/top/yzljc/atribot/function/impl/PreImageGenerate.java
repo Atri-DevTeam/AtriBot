@@ -1,106 +1,64 @@
 package top.yzljc.atribot.function.impl;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import java.util.Map;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.utils.ErrorReport;
-import top.yzljc.atribot.utils.ServerNoResponseException;
-
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Map;
+import top.yzljc.atribot.service.request.BizResponse;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 
 /**
  * @Author YZ_Ljc_
  * @ClassName PreImageGenerate
  * @Created_at 2026/06/17
  * @Project AtriMeow
- * @Package top.yzljc.atribot.function.general.impl
+ * @Package top.yzljc.atribot.function.impl
  */
 public class PreImageGenerate {
 
     private static final String AUTH_HEADER = "Authorization";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static String bearer() {
         return "Bearer " + Config.getInstance().getAtribotKeySecret();
     }
 
-    public static int create(String url) {
-        HttpRequest preWarmRequest = HttpService.newRequestBuilder().uri(URI.create(url)).GET().build();
-        try {
-            HttpResponse<Void> response = HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
-            HttpService.httpClient.send(preWarmRequest, HttpResponse.BodyHandlers.discarding());
-            return response.statusCode();
-        } catch (Exception e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-            return 500;
-        }
-    }
-
     public static ImageDTO dump(String url) {
-        JsonNode resp = HttpService.postJson(
-                ResourcesProperties.DUMP,
-                Map.of("url", url), AUTH_HEADER, bearer());
-
-        if (resp != null && resp.path("status").asInt() == 200) {
-            String urlTmp = ImageDelivery.resolve(resp.path("data"));
-            int width = resp.path("data").path("width").asInt();
-            int height = resp.path("data").path("height").asInt();
-            return new ImageDTO(urlTmp, width, height);
-        }
-        return null;
+        return dump(Map.of("url", url));
     }
 
     public static ImageDTO dump(Map<String, ?> body) {
-        JsonNode resp = HttpService.postJson(
-                ResourcesProperties.DUMP, body, AUTH_HEADER, bearer());
-
-        if (resp != null && resp.path("status").asInt() == 200) {
-            String urlTmp = ImageDelivery.resolve(resp.path("data"));
-            int width = resp.path("data").path("width").asInt();
-            int height = resp.path("data").path("height").asInt();
-            return new ImageDTO(urlTmp, width, height);
-        }
-        return null;
+        return dump(OpenApi.get("bot.image.dump"), body);
     }
 
     public static ImageDTO dump(String url, Map<String, ?> body) {
-        HttpService.PostResult result = HttpService.postJsonDetailed(url, body, AUTH_HEADER, bearer());
-        JsonNode resp = parseResponseBody(result.body());
-        int responseStatus = resp == null ? 0 : resp.path("status").asInt(0);
-
-        if (resp == null || responseStatus != 200) {
-            if (responseStatus == 432 || result.status() == 432) {
-                String message = resp == null
-                        ? "访问远程数据失败，如持续发生请向开发者报告此问题"
-                        : resp.path("message").asText("访问远程数据失败，如持续发生请向开发者报告此问题");
-                return new ImageDTO(null, 0, 0, message, "100432");
-            }
-            var err = ErrorReport.report(PreImageGenerate.class.getName(), new ServerNoResponseException());
-            return new ImageDTO(null, 0, 0, "访问远程数据失败，如持续发生请向开发者报告此问题，traceId: " + err, err);
-        }
-
-        String urlTmp = ImageDelivery.resolve(resp.path("data"));
-        int width = resp.path("data").path("width").asInt();
-        int height = resp.path("data").path("height").asInt();
-
-        return new ImageDTO(urlTmp, width, height);
+        return image(Requests.post(url, body, AUTH_HEADER, bearer()));
     }
 
-    private static JsonNode parseResponseBody(String body) {
-        if (body == null || body.isBlank()) {
-            return null;
-        }
-        try {
-            return MAPPER.readTree(body);
-        } catch (Exception ignored) {
-            return null;
-        }
+    public static ImageDTO dumpViaApi(String url, Map<String, ?> body) {
+        return image(Requests.post(url, body, AUTH_HEADER, bearer()), data -> ImageDelivery.resolveApi(data, url));
     }
+
+    static ImageDTO image(BizResponse<JsonNode> response) {
+        return image(response, ImageDelivery::resolve);
+    }
+
+    private static ImageDTO image(BizResponse<JsonNode> response, Function<JsonNode, String> resolve) {
+        if (!response.isSuccess()) {
+            return new ImageDTO(null, 0, 0, response.message(), response.requestId());
+        }
+        JsonNode data = response.data();
+        if (data == null || !data.isObject()) {
+            return new ImageDTO(null, 0, 0, "图片服务响应数据无效，请稍后重试", response.requestId());
+        }
+        String imageUrl = resolve.apply(data);
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return new ImageDTO(null, 0, 0, "图片地址无效，请稍后重试", response.requestId());
+        }
+        return new ImageDTO(imageUrl, data.path("width").asInt(), data.path("height").asInt());
+    }
+
 }

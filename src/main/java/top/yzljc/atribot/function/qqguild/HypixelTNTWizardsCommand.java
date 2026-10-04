@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.qqguild;
 
-import top.yzljc.atribot.chat.ImageComponent;
+import java.util.Map;
+
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -42,7 +42,7 @@ public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandEx
             }
             user.sendMessage("正在查询相关数据，请稍等片刻...");
 
-            var d = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player));
+            var d = PreImageGenerate.dump(OpenApi.get("bot.hypixel.tnt-wizards"), Map.of("player", player));
 
             if (!d.isError()) {
                 if (d.url() != null) {
@@ -50,7 +50,7 @@ public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandEx
                     return true;
                 }
             }
-            user.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
+            user.sendMessage(d.isError() ? d.errorMessage() : "图片地址无效，请稍后重试");
         }
 
         return true;
@@ -66,7 +66,7 @@ public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandEx
         }
 
         sender.sendMessage("正在查询相关数据，请稍等片刻...");
-        var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, Map.of("player", player));
+        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.tnt-wizards"), Map.of("player", player));
         if (data.isError() || data.url() == null) {
             sender.sendMessage(data.isError() ? data.errorMessage() : "在执行操作时出现错误，请稍后重试。");
             return true;

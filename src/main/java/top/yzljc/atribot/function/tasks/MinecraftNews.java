@@ -1,37 +1,5 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.function.impl.ArticleScraper;
-import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
-import top.yzljc.atribot.function.impl.ImageDTO;
-import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.function.tasks.pushtask.PushTask;
-import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
-import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
-import top.yzljc.atribot.service.textreview.TextReviewException;
-import top.yzljc.atribot.service.textreview.TextReviewResult;
-import top.yzljc.atribot.service.textreview.TextReviewService;
-import top.yzljc.atribot.utils.FormatTools;
-import top.yzljc.atribot.utils.tools.Alert;
-import top.yzljc.sakuraba_ema.guild.ChannelPosts;
-import top.yzljc.sakuraba_ema.utils.ForumCode;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -42,6 +10,38 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.command.*;
+import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.function.impl.ArticleScraper;
+import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
+import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
+import top.yzljc.atribot.platform.Identifier;
+import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
+import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
+import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atribot.service.textreview.TextReviewException;
+import top.yzljc.atribot.service.textreview.TextReviewResult;
+import top.yzljc.atribot.service.textreview.TextReviewService;
+import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.tools.Alert;
+import top.yzljc.sakuraba_ema.guild.ChannelPosts;
+import top.yzljc.sakuraba_ema.utils.ForumCode;
 
 /**
  * @Author YZ_Ljc_
@@ -275,7 +275,7 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         String reviewedAuthor = reviewNewsText(article.id, "作者", article.author);
         String reviewedContent = reviewNewsText(article.id, "摘要", aiMessages);
 
-        String apiUrl = ResourcesProperties.MC_NEWS_API;
+        String apiUrl = OpenApi.get("bot.mcnews");
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("title", reviewedTitle);
         requestBody.put("author", reviewedAuthor);

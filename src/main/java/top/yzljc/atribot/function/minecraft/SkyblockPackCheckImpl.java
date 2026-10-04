@@ -1,16 +1,21 @@
 package top.yzljc.atribot.function.minecraft;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
@@ -20,17 +25,14 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 /**
  * @Author YZ_Ljc_
@@ -122,7 +124,7 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
             }
         }
 
-        var r = PreImageGenerate.dump(ResourcesProperties.SKB_PACK_VERSION_API, request);
+        var r = PreImageGenerate.dump(OpenApi.get("bot.hypixel.skyblock.resource-pack"), request);
         if (sender != null) {
             if (r.url() == null || r.isError()) {
                 sender.sendMessage(r.errorMessage());

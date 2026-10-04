@@ -10,6 +10,7 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.MessageBody;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.database.repo.OfficialMessageIdSchema;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
@@ -50,7 +51,8 @@ public class QQChatContentRecord implements Listener {
                 "  `union_openId` VARCHAR(256) NULL," +
                 "  `username` VARCHAR(256) NULL," +
                 "  `content` MEDIUMTEXT NULL," +
-                "  `message_openId` VARCHAR(256) NULL," +
+                "  " + OfficialMessageIdSchema.ID_COLUMN + "," +
+                "  " + OfficialMessageIdSchema.HASH_COLUMN + "," +
                 "  `sender_is_bot` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `member_role` VARCHAR(32) NULL," +
                 "  `event_type` VARCHAR(64) NOT NULL," +
@@ -63,7 +65,7 @@ public class QQChatContentRecord implements Listener {
                 "  `ref_idx` VARCHAR(256) NULL," +
                 "  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  PRIMARY KEY (`id`)," +
-                "  UNIQUE KEY `uk_group_message_openId` (`message_openId`)," +
+                "  UNIQUE KEY `uk_group_message_openId` (`message_id_hash`)," +
                 "  KEY `idx_group_openId` (`group_openId`)," +
                 "  KEY `idx_group_union_openId` (`union_openId`)," +
                 "  KEY `idx_group_ref_idx` (`ref_idx`)," +
@@ -81,7 +83,8 @@ public class QQChatContentRecord implements Listener {
                 "  `union_openId` VARCHAR(256) NULL," +
                 "  `username` VARCHAR(256) NULL," +
                 "  `content` MEDIUMTEXT NULL," +
-                "  `message_openId` VARCHAR(256) NULL," +
+                "  " + OfficialMessageIdSchema.ID_COLUMN + "," +
+                "  " + OfficialMessageIdSchema.HASH_COLUMN + "," +
                 "  `sender_is_bot` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `source` VARCHAR(64) NOT NULL," +
                 "  `message_type` INT NULL," +
@@ -92,7 +95,7 @@ public class QQChatContentRecord implements Listener {
                 "  `ref_idx` VARCHAR(256) NULL," +
                 "  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  PRIMARY KEY (`id`)," +
-                "  UNIQUE KEY `uk_c2c_message_openId` (`message_openId`)," +
+                "  UNIQUE KEY `uk_c2c_message_openId` (`message_id_hash`)," +
                 "  KEY `idx_c2c_union_openId` (`union_openId`)," +
                 "  KEY `idx_c2c_ref_idx` (`ref_idx`)," +
                 "  KEY `idx_c2c_created_at` (`created_at`)," +
@@ -107,6 +110,7 @@ public class QQChatContentRecord implements Listener {
              var c2cStmt = conn.prepareStatement(c2cSql)) {
             groupStmt.execute();
             c2cStmt.execute();
+            OfficialMessageIdSchema.migrate(conn);
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
             log.error("初始化官方机器人消息记录表失败: {}", e.getMessage(), e);
@@ -215,8 +219,9 @@ public class QQChatContentRecord implements Listener {
         if (isBlank(refAuthor) && isBlank(refContent) && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
         try (var conn = DatabaseManager.getConnection()) {
             String rawReference = null;
-            try (var stmt = conn.prepareStatement("SELECT message_reference FROM `" + table + "` WHERE message_openId = ?")) {
+            try (var stmt = conn.prepareStatement("SELECT message_reference FROM `" + table + "` WHERE " + OfficialMessageIdSchema.MATCH_ID)) {
                 stmt.setString(1, messageOpenId);
+                stmt.setString(2, messageOpenId);
                 try (var rs = stmt.executeQuery()) {
                     if (!rs.next()) return;
                     rawReference = rs.getString("message_reference");
@@ -224,10 +229,11 @@ public class QQChatContentRecord implements Listener {
             }
             String messageReference = objectMapper.writeValueAsString(
                     mergeWebUiReferenceDisplayData(rawReference, refAuthor, refContent, refAttachments, refMsgIdx));
-            String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE message_openId = ?";
+            String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE " + OfficialMessageIdSchema.MATCH_ID;
             try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, messageReference);
                 stmt.setString(2, messageOpenId);
+                stmt.setString(3, messageOpenId);
                 stmt.executeUpdate();
             }
         } catch (Exception e) {

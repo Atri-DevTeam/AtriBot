@@ -13,6 +13,7 @@ const avatarFailed = ref(false)
 watch(() => props.bot.avatarUrl, () => { avatarFailed.value = false })
 const welcome = shallowRef<GroupWelcome | null>(null)
 const loading = ref(false), error = ref(false)
+const expanded = ref(false)
 let version = 0, disposed = false
 const preview = computed(() => {
   const text = welcome.value?.text || ''
@@ -30,13 +31,21 @@ async function load() {
   } catch { if (!disposed && current === version) error.value = true }
   finally { if (current === version) loading.value = false }
 }
-watch(() => [props.groupId, props.revision], () => { welcome.value = null; error.value = false; void load() }, { immediate: true })
+watch(() => [props.groupId, props.revision], () => {
+  version++; welcome.value = null; error.value = false; loading.value = false
+  if (expanded.value) void load()
+})
+function toggle() {
+  expanded.value = !expanded.value
+  if (expanded.value && !welcome.value && !loading.value) void load()
+}
 onBeforeUnmount(() => { disposed = true; version++ })
 </script>
 
 <template>
   <section class="group-welcome glass" aria-label="加群欢迎" :aria-busy="loading">
-    <header class="welcome-heading"><div><Icon name="message" /><h3>加群欢迎</h3></div><button class="text-button" :disabled="loading" aria-label="刷新加群欢迎" @click="load"><Icon name="refresh" :class="{ 'refresh-spinning': loading }" /></button></header>
+    <header class="welcome-heading"><button class="welcome-toggle" :aria-expanded="expanded" @click="toggle"><Icon name="message" /><h3>加群欢迎</h3><Icon name="chevron" :class="{ expanded }" /></button><button v-if="expanded" class="text-button" :disabled="loading" aria-label="刷新加群欢迎" @click="load"><Icon name="refresh" :class="{ 'refresh-spinning': loading }" /></button></header>
+    <div v-if="expanded" class="welcome-expanded">
     <div v-if="error" class="welcome-empty" role="alert">欢迎内容暂时无法读取<button class="text-button" :disabled="loading" @click="load">重试 <Icon name="refresh" :class="{ 'refresh-spinning': loading }" /></button></div>
     <p v-else-if="!welcome" class="welcome-empty" role="status">正在读取欢迎内容…</p>
     <template v-if="welcome">
@@ -57,6 +66,7 @@ onBeforeUnmount(() => { disposed = true; version++ })
         </div>
       </div>
     </template>
+    </div>
   </section>
 </template>
 
@@ -64,6 +74,12 @@ onBeforeUnmount(() => { disposed = true; version++ })
 .group-welcome { margin-top: 16px; padding: 22px 25px; border-radius: 23px; min-width: 0; }
 .welcome-heading, .welcome-heading>div { display: flex; align-items: center; gap: 9px; }
 .welcome-heading { justify-content: space-between; }
+.welcome-toggle { display: flex; align-items: center; gap: 9px; flex: 1; min-height: 32px; border: 0; padding: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.welcome-toggle svg { width: 16px; height: 16px; color: #8a9a80; }
+.welcome-toggle svg:last-child { margin-left: auto; transition: transform .2s ease; }
+.welcome-toggle svg.expanded { transform: rotate(90deg); }
+.welcome-expanded { animation: arrive .2s ease both; }
+@media (prefers-reduced-motion: reduce) { .welcome-expanded { animation: none; } .welcome-toggle svg { transition: none; } }
 .welcome-heading h3 { margin: 0; font-size: 14px; font-weight: 550; }
 .welcome-heading>div>svg { width: 16px; height: 16px; color: #8a9a80; }
 .welcome-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 18px; }

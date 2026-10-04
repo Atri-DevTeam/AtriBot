@@ -1,19 +1,19 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import lombok.extern.slf4j.Slf4j;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.function.impl.FetchHitokoto;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Identifier;
-
-import java.util.Arrays;
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -30,12 +30,12 @@ public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandE
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API, Map.of());
+        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of());
         if (sender instanceof NapcatCommandSender nc) {
             if (!d.isError()) {
                 nc.sendMessage(ImageComponent.imageOf(d.url()));
             } else {
-                nc.sendMessage(Identifier.HANDLER_ERROR);
+                nc.sendMessage(d.errorMessage());
             }
             return true;
         }
@@ -53,7 +53,7 @@ public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandE
     @Override
     public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
 
-        var d = PreImageGenerate.dump(ResourcesProperties.HITOKOTO_API, Map.of());
+        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of());
         if (d.isError()) {
             sender.sendMessage(d.errorMessage());
             return true;

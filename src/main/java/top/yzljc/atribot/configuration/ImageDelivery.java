@@ -1,7 +1,14 @@
 package top.yzljc.atribot.configuration;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.utils.tools.Alert;
 
 /**
@@ -17,19 +24,17 @@ public final class ImageDelivery {
     private static final String WAY_OSS = "oss";
 
     /**
-     * 从生图端响应的 {@code data} 节点里取出 uuid 与 way，拼出可访问的图片地址
-     * @return 图片地址；data 里没有 uuid 时返回 null
+     * @param data 图片响应数据，签名地址优先于本地图片标识
+     * @return 图片地址，缺少有效地址或图片标识时返回 null
      */
     public static String resolve(JsonNode data) {
         if (data == null) {
             return null;
         }
-        String url = data.path("url").asText(null);
-        if (url != null && !url.isBlank()) {
+        String url = absoluteUrl(data);
+        if (url != null) {
             return url;
         }
-        // A COS response needs its freshly signed URL. Falling back to the API
-        // would hide a failed upload and send image bytes through this service.
         if ("cos".equalsIgnoreCase(data.path("way").asText())) {
             return null;
         }
@@ -53,7 +58,53 @@ public final class ImageDelivery {
             }
             log.warn("生图端要求走 OSS，但本端未配置 delivery.oss-dump-base-url，本次回落到 API 根节点: uuid={}", uuid);
         }
-        return join(ResourcesProperties.DUMP, uuid);
+        return imageUrl(OpenApi.get("bot.image.get"), "uuid", uuid);
+    }
+
+    /** 将生图响应中的 API 路径解析为同源取图地址，不使用对象存储地址。 */
+    public static String resolveApi(JsonNode data, String renderUrl) {
+        if (data == null || !data.path("api_url").isTextual()) return null;
+        String path = data.path("api_url").asText();
+        if (!path.startsWith("/") || path.startsWith("//") || path.contains("\\")) return null;
+        try {
+            URI base = URI.create(renderUrl);
+            URI relative = URI.create(path);
+            if (!("https".equalsIgnoreCase(base.getScheme()) || "http".equalsIgnoreCase(base.getScheme()))
+                    || base.getHost() == null || base.getUserInfo() != null
+                    || relative.getRawAuthority() != null || relative.getRawFragment() != null) return null;
+            return base.resolve(relative).toString();
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            return null;
+        }
+    }
+
+    public static String resolveDrawCard(JsonNode data) {
+        return resolveDrawCard(data, () -> OpenApi.get("bot.loots.draw.image"));
+    }
+
+    static String resolveDrawCard(JsonNode data, Supplier<String> template) {
+        if (data == null) return null;
+        String url = absoluteUrl(data);
+        if (url != null) return url;
+        if ("cos".equalsIgnoreCase(data.path("way").asText())) return null;
+        String itemId = data.path("item_id").asText(data.path("uuid").asText(null));
+        if (itemId == null || itemId.isBlank()) return null;
+        return imageUrl(template.get(), "itemId", itemId);
+    }
+
+    static String imageUrl(String template, String parameter, String value) {
+        return template.replace("{" + parameter + "}", URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20"));
+    }
+
+    private static String absoluteUrl(JsonNode data) {
+        String value = data.path("url").asText("");
+        try {
+            URI uri = URI.create(value);
+            return ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                    && uri.getHost() != null ? value : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static String ossDumpRoot() {

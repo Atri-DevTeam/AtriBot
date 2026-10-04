@@ -9,6 +9,7 @@ import top.yzljc.atribot.miniapp.service.MiniappActivityService;
 import top.yzljc.atribot.miniapp.service.MiniappInventoryImageService;
 import top.yzljc.atribot.miniapp.service.MiniappProfileService;
 import top.yzljc.atribot.miniapp.service.MiniappGroupService;
+import top.yzljc.atribot.miniapp.service.MiniappModerationService;
 import top.yzljc.atribot.utils.GetProjectInfo;
 
 import java.io.InputStream;
@@ -59,6 +60,13 @@ public final class MiniappRouter {
                          Function<MiniappSessions.Identity, MiniappProfileService.Profile> profiles,
                          MiniappActivityService activity, MiniappInventoryImageService inventoryImages,
                          MiniappGroupService groups) {
+        register(server, sessions, enabled, profiles, activity, inventoryImages, groups, new MiniappModerationService());
+    }
+
+    static void register(Javalin server, MiniappSessions sessions, boolean enabled,
+                         Function<MiniappSessions.Identity, MiniappProfileService.Profile> profiles,
+                         MiniappActivityService activity, MiniappInventoryImageService inventoryImages,
+                         MiniappGroupService groups, MiniappModerationService moderation) {
         server.before("/atrimeow/profile", ctx -> guard(ctx, enabled));
         server.before("/atrimeow/profile/*", ctx -> guard(ctx, enabled));
         server.get("/atrimeow/profile", MiniappRouter::index);
@@ -115,7 +123,12 @@ public final class MiniappRouter {
         });
         server.get("/atrimeow/profile/api/groups/{groupId}", ctx -> {
             var identity = requireIdentity(ctx, sessions);
-            try { ctx.json(groups.detail(identity, ctx.pathParam("groupId"))); }
+            try {
+                var detail = groups.detail(identity, ctx.pathParam("groupId"));
+                com.fasterxml.jackson.databind.node.ObjectNode result = new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(detail);
+                result.put("canManageModeration", detail.available() && !detail.restricted() && moderation.canManage(identity));
+                ctx.json(result);
+            }
             catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
             catch (java.sql.SQLException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群详情读取失败", e);
@@ -131,6 +144,8 @@ public final class MiniappRouter {
                 ctx.status(502).json(Map.of("error", "WELCOME_UNAVAILABLE"));
             }
         });
+        server.get("/atrimeow/profile/api/groups/{groupId}/moderation", ctx -> moderation(ctx, sessions, moderation, false));
+        server.post("/atrimeow/profile/api/groups/{groupId}/moderation", ctx -> moderation(ctx, sessions, moderation, true));
         server.post("/atrimeow/profile/api/groups/unbinding", ctx -> {
             var identity = requireIdentity(ctx, sessions);
             if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json"))
@@ -193,6 +208,39 @@ public final class MiniappRouter {
         if (!enabled) {
             ctx.status(503).json(Map.of("error", "MINIAPP_DISABLED"));
             ctx.skipRemainingHandlers();
+        }
+    }
+
+    private static void moderation(Context ctx, MiniappSessions sessions, MiniappModerationService service, boolean save) {
+        var identity = requireIdentity(ctx, sessions);
+        try {
+            String groupId = ctx.pathParam("groupId");
+            Runnable checkSession = () -> requireIdentity(ctx, sessions);
+            if (!save) {
+                ctx.json(service.load(identity, groupId, checkSession));
+                return;
+            }
+            if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json")
+                    || ctx.bodyAsBytes().length > 131072) {
+                ctx.status(400).json(Map.of("error", "INVALID_MODERATION_SETTINGS"));
+                return;
+            }
+            com.fasterxml.jackson.databind.JsonNode request;
+            try {
+                request = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                        .readTree(ctx.body());
+            } catch (java.io.IOException invalid) {
+                ctx.status(400).json(Map.of("error", "INVALID_MODERATION_SETTINGS"));
+                return;
+            }
+            ctx.json(service.save(identity, groupId, request, checkSession));
+        } catch (MiniappGroupService.Problem problem) {
+            ctx.status(problem.status).json(Map.of("error", problem.code));
+        } catch (java.sql.SQLException | java.io.UncheckedIOException failure) {
+            org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("Miniapp 群管配置存取失败: {}", failure.getClass().getSimpleName());
+            ctx.status(502).json(Map.of("error", "MODERATION_UNAVAILABLE"));
         }
     }
 

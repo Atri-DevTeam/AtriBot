@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.Map;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.Command;
@@ -10,10 +12,8 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 public final class MinecraftCapeCommand implements CommandExecutor, SlashCommandExecutor {
 
@@ -45,6 +45,6 @@ public final class MinecraftCapeCommand implements CommandExecutor, SlashCommand
     }
 
     private static top.yzljc.atribot.function.impl.ImageDTO request() {
-        return PreImageGenerate.dump(ResourcesProperties.MINECRAFT_CAPES_API, Map.of());
+        return PreImageGenerate.dump(OpenApi.get("bot.minecraft.capes"), Map.of());
     }
 }

@@ -1,14 +1,13 @@
 package top.yzljc.atribot.function.command;
 
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import java.util.Map;
 
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -29,7 +28,7 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
 
         String messageId = sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
 
-        var data = PreImageGenerate.dump(ResourcesProperties.MOJANG_STATUS_API, Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of());
 
         try {
             if (data.isError()) {
@@ -58,7 +57,7 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
     public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
 
         sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
-        var data = PreImageGenerate.dump(ResourcesProperties.MOJANG_STATUS_API, Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of());
 
         if (data.isError()) {
             String errMsg = data.errorMessage();

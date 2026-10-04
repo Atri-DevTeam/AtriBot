@@ -21,73 +21,73 @@ const router = createRouter({
     {
       path: '/channels',
       name: 'channels',
-      component: () => import('./views/ChannelView.vue'),
+      component: () => import('./features/channels/ChannelView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/',
       name: 'chat',
-      component: () => import('./views/ChatView.vue'),
+      component: () => import('./features/chat/ChatView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/users',
       name: 'users',
-      component: () => import('./views/UserGroupListView.vue'),
+      component: () => import('./features/users/UserGroupListView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/minecraft-name-review',
       name: 'minecraftNameReview',
-      component: () => import('./views/MinecraftReviewView.vue'),
+      component: () => import('./features/minecraft/MinecraftReviewView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/feedback',
       name: 'feedback',
-      component: () => import('./views/FeedbackView.vue'),
+      component: () => import('./features/feedback/FeedbackView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/gallery',
       name: 'gallery',
-      component: () => import('./views/GalleryView.vue'),
+      component: () => import('./features/gallery/GalleryView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/loot',
       name: 'loot',
-      component: () => import('./views/LootView.vue'),
+      component: () => import('./features/loot/LootView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/stats',
       name: 'stats',
-      component: () => import('./views/StatsView.vue'),
+      component: () => import('./features/stats/StatsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/bot-settings',
       name: 'botSettings',
-      component: () => import('./views/BotSettingsView.vue'),
+      component: () => import('./features/settings/BotSettingsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/group-strategy',
       name: 'groupStrategy',
-      component: () => import('./views/GroupStrategyView.vue'),
+      component: () => import('./features/groups/GroupStrategyView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/group-moderation',
       name: 'groupModeration',
-      component: () => import('./views/GroupModerationView.vue'),
+      component: () => import('./features/groups/GroupModerationView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/menu-panel',
       name: 'menuPanel',
-      component: () => import('./views/MenuPanelView.vue'),
+      component: () => import('./features/menu/MenuPanelView.vue'),
       meta: { requiresAuth: true }
     },
     // ErrorReport 暂时停用：保留页面源码，旧地址由兜底路由重定向到首页。
@@ -95,37 +95,37 @@ const router = createRouter({
     // {
     //   path: '/errors',
     //   name: 'errors',
-    //   component: () => import('./views/ErrorsView.vue'),
+    //   component: () => import('./features/logs/ErrorsView.vue'),
     //   meta: { requiresAuth: true }
     // },
     {
       path: '/send-logs',
       name: 'sendLogs',
-      component: () => import('./views/SendLogsView.vue'),
+      component: () => import('./features/logs/SendLogsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/event-logs',
       name: 'eventLogs',
-      component: () => import('./views/EventLogsView.vue'),
+      component: () => import('./features/logs/EventLogsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/napcat',
       name: 'napcat',
-      component: () => import('./views/NapcatView.vue'),
+      component: () => import('./features/napcat/NapcatView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/debug',
       name: 'debug',
-      component: () => import('./views/ApiDebugView.vue'),
+      component: () => import('./features/debug/ApiDebugView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/login',
       name: 'login',
-      component: () => import('./views/LoginView.vue'),
+      component: () => import('./features/auth/LoginView.vue'),
       meta: { guest: true }
     },
     {

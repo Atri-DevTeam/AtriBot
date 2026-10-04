@@ -1,12 +1,21 @@
 package top.yzljc.atribot.function.utils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
@@ -14,22 +23,11 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
 
 public class GithubCommitNotify implements CommandExecutor {
 
@@ -141,19 +139,13 @@ public class GithubCommitNotify implements CommandExecutor {
             Map<String, Object> payload = parseJson(json);
             String repoNameForFilter = getSimpleRepoName(json);
 
-            String apiUrl = ResourcesProperties.COMMIT_DISPLAY_API;
-            JsonNode resp = HttpService.postJson(apiUrl, payload,
-                    "Authorization", "Bearer " + Config.getInstance().getAtribotKeySecret());
-            if (resp == null || resp.path("status").asInt() != 200) {
-                log.error("CommitDisplay API 调用失败, url={}", apiUrl);
+            String apiUrl = OpenApi.get("bot.commit-display");
+            var image = PreImageGenerate.dump(apiUrl, payload);
+            if (image.isError()) {
+                log.error("提交记录图片生成失败: {}", image.errorMessage());
                 return;
             }
-
-            String imageUrl = ImageDelivery.resolve(resp.path("data"));
-            if (imageUrl == null) {
-                log.error("CommitDisplay 响应里没有 uuid, url={}", apiUrl);
-                return;
-            }
+            String imageUrl = image.url();
 
             Collection<String> destinationGroups = new ArrayList<>();
             if (repoNameForFilter != null && repoConfig.containsKey(repoNameForFilter.toLowerCase()))

@@ -29,7 +29,6 @@ public class HttpService {
 
     public static final HttpClient redirectHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).followRedirects(HttpClient.Redirect.ALWAYS).build();
 
-    /** 每个请求都设置响应时限，调用方可以为较慢的接口单独覆盖。 */
     public static Builder newRequestBuilder() {
         return HttpRequest.newBuilder().timeout(DEFAULT_REQUEST_TIMEOUT);
     }
@@ -91,6 +90,11 @@ public class HttpService {
         return null;
     }
 
+    /**
+     * @param url 完整请求地址
+     * @param headers 交替排列的请求头名称和值
+     * @return 成功响应的 JSON，非 2xx 或解析失败时返回 null；需要错误响应时使用 {@link #sendGetRequestDetailed}
+     */
     public static JsonNode sendGetRequest(String url, String... headers) {
         try {
             Builder builder = newRequestBuilder()
@@ -179,6 +183,12 @@ public class HttpService {
         }
     }
 
+    /**
+     * @param url 完整请求地址
+     * @param jsonBody 已序列化的 JSON 请求体
+     * @param headers 交替排列的请求头名称和值
+     * @return 成功响应的 JSON，非 2xx 或解析失败时返回 null；需要错误响应时使用 {@link #postJsonDetailed(String, String, String...)}
+     */
     public static JsonNode postJson(String url, String jsonBody, String... headers) {
         try {
             Builder builder = newRequestBuilder()
@@ -211,9 +221,10 @@ public class HttpService {
     }
 
     /**
-     * POST JSON and preserve both the HTTP status and response body, including
-     * non-2xx responses. This overload mirrors {@link #postJson(String, Object, String...)}
-     * for callers that need to inspect an error response payload.
+     * @param url 完整请求地址
+     * @param bodyObj 待序列化的请求数据
+     * @param headers 交替排列的请求头名称和值
+     * @return 原始 HTTP 状态码与响应体，包含非 2xx 响应；请求未完成时状态码为 0
      */
     public static PostResult postJsonDetailed(String url, Object bodyObj, String... headers) {
         try {

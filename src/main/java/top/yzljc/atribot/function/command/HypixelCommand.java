@@ -1,6 +1,10 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.*;
+import java.util.function.Supplier;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -22,10 +26,8 @@ import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
 import top.yzljc.atribot.platform.qq.QQBot;
-import top.yzljc.atribot.service.request.HttpService;
-
-import java.util.*;
-import java.util.function.Supplier;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 
 /**
  * @Author YZ_Ljc_
@@ -168,11 +170,11 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static boolean handleWizards(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_TNT_WIZARDS_API, "wz");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.tnt-wizards"), "wz");
     }
 
     private static boolean handleZombies(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_ZOMBIES_API, "zs");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.zombies"), "zs");
     }
 
     private static boolean handleGameStatus(QQCommandSender user, String[] args) {
@@ -194,7 +196,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
         }
 
         var result = withQueryProgress(user, "正在查询目标数据，请稍等片刻...",
-                () -> PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, request));
+                () -> PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), request));
         if (OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())) {
             user.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
         } else {
@@ -213,29 +215,29 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static boolean handleCoop(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.SKYBLOCK_COOP_API, "coop");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.skyblock.coop"), "coop");
     }
 
     private static boolean handleDungeon(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.SKYBLOCK_DUNGEON_API, "dungeon");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.skyblock.dungeons"), "dungeon");
     }
 
     private static boolean handleLobbyFishing(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_PLAYER_LOBBY_FISHING_API, "lf");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.fishing"), "lf");
     }
 
     private static boolean handleSlumberHotel(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.SLUMBER_HOTEL_API, "sh");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars.slumber"), "sh");
     }
 
     private static boolean handleBedwars(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_BEDWARS_API, "bw");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars"), "bw");
     }
 
     private static boolean handleSkyblockCalendar(QQCommandSender user, String[] args) {
 
         var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
-                () -> customQueryRequest(ResourcesProperties.SKYBLOCK_CALENDAR_API, Map.of(), "Authorization", bearer()));
+                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.calendar"), Map.of(), "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
@@ -247,11 +249,11 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static boolean handleHotf(QQCommandSender user, String[] args) {
-        return handleHeartTasks(user, args, ResourcesProperties.SKYBLOCK_HOTF_API, "hotf");
+        return handleHeartTasks(user, args, OpenApi.get("bot.hypixel.skyblock.forest"), "hotf");
     }
 
     private static boolean handleHotm(QQCommandSender user, String[] args) {
-        return handleHeartTasks(user, args, ResourcesProperties.SKYBLOCK_HOTM_API, "hotm");
+        return handleHeartTasks(user, args, OpenApi.get("bot.hypixel.skyblock.mountain"), "hotm");
     }
 
     private static boolean handleHeartTasks(QQCommandSender user, String[] args, String api, String subCommand) {
@@ -301,11 +303,11 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static boolean handleParkour(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, ResourcesProperties.HYPIXEL_LOBBY_PARKOUR_API, "pr");
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.parkour"), "pr");
     }
 
     private static boolean handleArcadeDropper(QQCommandSender sender, String[] args) {
-        return queryPlayer(sender, args, ResourcesProperties.HYPIXEL_ARCADE_DROPPER_API, "dpr");
+        return queryPlayer(sender, args, OpenApi.get("bot.hypixel.dropper"), "dpr");
     }
 
     private static boolean handleSearchSkyblockItemPrice(QQCommandSender user, String[] args) {
@@ -316,7 +318,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
 
         var search = String.join(" ", args);
         var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
-                () -> customQueryRequest(ResourcesProperties.SKYBLOCK_ITEM_PRICE_API, Map.of("q", search), "Authorization", bearer()));
+                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), Map.of("q", search), "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
@@ -349,7 +351,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
         String itemId = d.substring(0, querySeparator);
         String cursor = d.substring(querySeparator + 1);
 
-        var result = customQueryRequest(ResourcesProperties.SKYBLOCK_ITEM_PRICE_API, Map.of("q", itemId, "cursor", cursor), "Authorization", bearer());
+        var result = customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), Map.of("q", itemId, "cursor", cursor), "Authorization", bearer());
 
         if (!result.success()) {
             event.sendMessage(result.message());
@@ -504,21 +506,12 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static Result customQueryRequest(String api, Map<?, ?> requestBody, String... headers) {
-        var t = HttpService.postJson(api, requestBody, headers);
-
-        if (t == null) return new Result(false, "数据查询失败，服务器未响应，请稍后重试！", null, null);
-        var status = t.path("status").asInt(-1);
-        if (status != 200) {
-            if (status == 432) {
-                return new Result(false, t.path("message").asText("玩家数据异常"), null, null);
-            }
-            return new Result(false, "数据查询失败，服务器未响应，请稍后重试！", null, null);
+        var response = Requests.post(api, requestBody, headers);
+        if (!response.isSuccess()) {
+            return new Result(false, response.message(), null, null);
         }
-
-        var d = t.path("data");
-        if (d == null || d.isNull()) {
-            return new Result(false, "数据查询失败，服务器未响应，请稍后重试！", null, null);
-        }
+        var d = response.data();
+        if (d == null || !d.isObject()) return new Result(false, "图片响应数据无效", null, null);
 
         var url = ImageDelivery.resolve(d);
         if (url == null || url.isBlank()) {

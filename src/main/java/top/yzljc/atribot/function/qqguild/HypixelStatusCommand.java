@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.qqguild;
 
+import java.util.Map;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Identifier;
-
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -30,7 +30,7 @@ public class HypixelStatusCommand implements CommandExecutor, SlashCommandExecut
         if (sender instanceof QQGuildCommandSender user) {
             sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
 
-            var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, Map.of());
+            var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), Map.of());
             if (data.isError()) {
                 sender.sendMessage(data.errorMessage());
                 return true;
@@ -49,7 +49,7 @@ public class HypixelStatusCommand implements CommandExecutor, SlashCommandExecut
     @Override
     public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
         sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
-        var data = PreImageGenerate.dump(ResourcesProperties.HYPIXEL_STATUS_API, Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), Map.of());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;

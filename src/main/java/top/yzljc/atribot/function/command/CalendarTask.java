@@ -1,28 +1,28 @@
 package top.yzljc.atribot.function.command;
 
+import java.time.LocalTime;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-
-import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.GroupChat;
+import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
+import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.tools.Alert;
-
-import java.time.LocalTime;
-import java.util.Map;
 
 /**
  * @Author YZ_Ljc_
@@ -42,7 +42,7 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
             return true;
         }
 
-        ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
+        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
 
         if (data.isError()) {
             String errMsg = data.errorMessage();
@@ -69,7 +69,7 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
 
     @Override
     public void run() {
-        ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", true));
+        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", true));
 
         if (data.isError()) {
             Alert.notify("日历图片获取失败: " + data.errorMessage());
@@ -93,7 +93,7 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
     @Override
     public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
 
-        ImageDTO data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
+        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
         if (data.isError()) {
             String errMsg = data.errorMessage();
             sender.sendMessage("获取日历图片失败: " + errMsg);

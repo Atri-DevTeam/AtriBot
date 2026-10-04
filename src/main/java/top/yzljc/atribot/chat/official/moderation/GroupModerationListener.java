@@ -71,7 +71,8 @@ public final class GroupModerationListener implements Listener {
         AiModerationVerdict verdict = AiModerationService.reviewMessage(
                 ai.getSystemPrompt(), ai.getCustomOutput(), ai.getAllowedDomains(), ai.getType(), content);
         if (verdict.violation()) {
-            applyAction(event, memberOpenId, ai.getAction(), "AI_RECALL", verdict.reason(), verdict.customMessage());
+            applyAction(event, memberOpenId, ai.getAction(), "AI_RECALL", verdict.reason(),
+                    ai.isUseCustomOutputAsReminder() ? verdict.customMessage() : null);
         }
     }
 
@@ -81,7 +82,8 @@ public final class GroupModerationListener implements Listener {
 
         if (action.isRecall()) {
             GroupChat.recallMessage(groupOpenId, event.getMessage().getMessageId());
-            ModerationLogRepository.log(groupOpenId, category, "recall", memberOpenId, detail);
+            ModerationLogRepository.log(groupOpenId, category, "recall", memberOpenId, detail,
+                    ModerationLogContent.message(event.getMessage()));
         }
 
         String remindMessage = customReminder != null && !customReminder.isBlank()
@@ -92,7 +94,8 @@ public final class GroupModerationListener implements Listener {
 
         if (action.isMute() && action.getMuteSeconds() > 0) {
             Mute.muteMember(groupOpenId, memberOpenId, Duration.ofSeconds(action.getMuteSeconds()));
-            ModerationLogRepository.log(groupOpenId, category, "mute", memberOpenId, detail);
+            ModerationLogRepository.log(groupOpenId, category, "mute", memberOpenId, detail,
+                    ModerationLogContent.message(event.getMessage()));
         }
 
         if (action.isNotifyDebugGroup()) {

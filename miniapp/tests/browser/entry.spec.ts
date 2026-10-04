@@ -36,7 +36,7 @@ test('responsive entry, in-memory session, refresh and replay rejection', async 
   await expect(page.getByRole('img', { name: '用户头像' })).toBeVisible()
   await expect(page.locator('.activity-row').filter({ hasText: '私聊消息' })).toContainText('128 条已记录消息')
   await expect(page.locator('[data-game=reaction]')).toContainText('18.24')
-  await expect(page.getByRole('img', { name: '物品卡背包总览' })).toBeVisible()
+  await expect(page.getByRole('img', { name: '物品卡背包总览' })).toHaveCount(0)
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(244, 245, 240)')
   await expect(page).toHaveURL(/\/atrimeow\/profile\/\?_nav_alpha=0$/)
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0])

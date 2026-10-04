@@ -53,6 +53,7 @@ public final class GroupModerationController {
                         row.action(),
                         row.targetMemberOpenId(),
                         row.detail(),
+                        row.originalContent(),
                         formatFeedbackTime(row.createdAt())
                 ))
                 .toList();
@@ -86,7 +87,7 @@ public final class GroupModerationController {
     }
 
     public record ModerationLogItemDTO(long id, String category, String action, String targetMemberOpenId,
-                                       String detail, String createdAt) {
+                                       String detail, String originalContent, String createdAt) {
     }
 
     public record ModerationLogStatsDTO(int all, int today, int last24h, int keywordRecall, int aiRecall,

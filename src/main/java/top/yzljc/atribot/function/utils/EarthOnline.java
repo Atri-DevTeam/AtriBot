@@ -1,14 +1,14 @@
 package top.yzljc.atribot.function.utils;
 
+import java.util.Map;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-
-import java.util.Map;
+import top.yzljc.atribot.service.request.OpenApi;
 
 /**
  * @Author YZ_Ljc_
@@ -22,7 +22,7 @@ public class EarthOnline implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
         if (sender instanceof QQCommandSender qq) {
-            var d = PreImageGenerate.dump(ResourcesProperties.EARTH_ONLINE_API, Map.of());
+            var d = PreImageGenerate.dump(OpenApi.get("bot.earth-online"), Map.of());
             if (!d.isError()) {
                 qq.sendMessage(ImageComponent.imageOf(d.url()).setText("欢迎来到地球ONLINE!"));
             } else {

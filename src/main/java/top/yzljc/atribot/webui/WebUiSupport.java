@@ -3,7 +3,7 @@ package top.yzljc.atribot.webui;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.ark.Ark23;
-import top.yzljc.atribot.chat.official.Card;
+import top.yzljc.atribot.chat.official.card.Card;
 
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;

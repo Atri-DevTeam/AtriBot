@@ -1,9 +1,12 @@
 package top.yzljc.atribot.function.task;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
@@ -15,14 +18,9 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.command.CalendarTask;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.timer.Schedule;
-import top.yzljc.atribot.service.timer.ScheduleType;
 import top.yzljc.atribot.utils.tools.Alert;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Deprecated(since = "3.2.2")
 public class Calendar implements CommandExecutor {
@@ -44,7 +42,7 @@ public class Calendar implements CommandExecutor {
 
     public static void sendToSingleGroup(String targetGroupId) {
         try {
-            var data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", false));
+            var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
             if (!data.isError() && data.url() != null) {
                 GroupMessage.chatMessage(targetGroupId, ImageComponent.imageOf(data.url()));
             } else {
@@ -65,7 +63,7 @@ public class Calendar implements CommandExecutor {
             }
 
             try {
-                var data = PreImageGenerate.dump(ResourcesProperties.CALENDAR_API, Map.of("system", true));
+                var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", true));
                 if (data.isError() || data.url() == null) {
                     String errMsg = data.errorMessage();
                     log.warn("日历推送失败: {}", errMsg);

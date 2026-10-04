@@ -120,11 +120,7 @@ export class PageSession {
         }
         const response = await this.#request(path, {method: 'GET', headers: {Authorization: `Bearer ${this.#token}`}})
         if (this.#ended) return null
-        if (response.status === 401 || response.status === 403 || response.status === 503) {
-            this.end();
-            return null
-        }
-        if (!response.ok) throw new Error('记录暂时无法读取')
+        if (!response.ok) { await this.#failure(response, path); return null }
         const result = await response.json() as T
         if (this.#ended) return null
         this.#deadline = this.#now() + this.#idleMillis
@@ -144,19 +140,23 @@ export class PageSession {
             body: JSON.stringify(body)
         })
         if (this.#ended) return null
-        if (response.status === 401 || response.status === 403 || response.status === 503) {
-            this.end();
-            return null
-        }
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({})) as { error?: string }
-            if (this.#ended) return null
-            throw new ApiError(error.error || 'REQUEST_FAILED')
-        }
+        if (!response.ok) { await this.#failure(response, path); return null }
         const result = await response.json() as T
         if (this.#ended) return null
         this.#deadline = this.#now() + this.#idleMillis
         return result
+    }
+
+    async #failure(response: Response, path: string) {
+        const error = await response.json().catch(() => ({})) as { error?: string }
+        if (this.#ended) return
+        const permissionDenied = /^groups\/[^/]+\/moderation$/.test(path) &&
+            ['MODERATION_FORBIDDEN', 'CUSTOM_PROMPT_FORBIDDEN'].includes(error.error || '')
+        if (response.status === 401 || response.status === 503 || response.status === 403 && !permissionDenied) {
+            this.end()
+            return
+        }
+        throw new ApiError(error.error || 'REQUEST_FAILED')
     }
 
     /** Keep image bytes in this document, never cache expiring remote URLs or persist private images. */

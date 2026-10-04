@@ -6,9 +6,9 @@ import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
 import top.yzljc.atribot.command.NapcatCommandSender
 import top.yzljc.atribot.configuration.LoadIllegalWords
-import top.yzljc.atribot.configuration.ResourcesProperties
 import top.yzljc.atribot.function.impl.PreImageGenerate
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
+import top.yzljc.atribot.service.request.OpenApi
 
 /**
  * @Author YZ_Ljc_
@@ -46,7 +46,7 @@ object CucumberGirl : CommandExecutor {
         }
         val req = mapOf("text" to text)
         val data = PreImageGenerate.dump(
-            ResourcesProperties.GIRL_TEXT_IMG,
+            OpenApi.get("bot.emoji.girl"),
             req
         )
         if (data == null) {

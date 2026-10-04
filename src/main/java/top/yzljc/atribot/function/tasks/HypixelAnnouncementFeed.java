@@ -77,6 +77,10 @@ public final class HypixelAnnouncementFeed {
             pushed++;
 
             ImageDTO banner = a.headerImage() != null ? PreImageGenerate.dump(a.headerImage()) : null;
+            if (banner != null && banner.isError()) {
+                log.warn("公告图片转存失败: {}", banner.errorMessage());
+                banner = null;
+            }
 
             String headerText = a.source() + " 发布了新的公告";
 

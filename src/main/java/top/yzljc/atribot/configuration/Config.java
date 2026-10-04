@@ -118,6 +118,8 @@ public class Config {
     private String verifyKey;
     @Getter
     private String US_API;
+    @Getter
+    private String backendApi;
     private java.util.Properties emailProperties;
     @Getter
     private String verifyStrategyId;
@@ -299,6 +301,7 @@ public class Config {
             this.keywordsLikeUser = yaml.getStringList("function.keywords-like-user").toArray(new String[0]);
             this.US_API = yaml.getString("function.us-api", "null");
             this.verifyStrategyId = yaml.getString("ua.verify.strategy-id", "default");
+            this.backendApi = yaml.getString("backend.api", "null");
 
             // -------- Email 配置区域 ---------
             this.emailEnabled = yaml.getBoolean("email.enabled", false);

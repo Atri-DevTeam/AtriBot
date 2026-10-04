@@ -1,27 +1,28 @@
 package top.yzljc.atribot.webui.controller;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.javalin.http.Context;
-import io.javalin.http.UploadedFile;
-import lombok.Data;
-import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.database.ImageSourceDTO;
-import top.yzljc.atribot.database.repo.*;
-import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
-import top.yzljc.atribot.function.impl.pic.ImageReviewService;
-import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
-import top.yzljc.atribot.function.impl.drawitem.LootAdminClient;
-import top.yzljc.atribot.webui.PagedResult;
-import top.yzljc.atribot.webui.Result;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.javalin.http.Context;
+import io.javalin.http.UploadedFile;
+import lombok.Data;
+
+import top.yzljc.atribot.database.ImageSourceDTO;
+import top.yzljc.atribot.database.repo.*;
+import top.yzljc.atribot.function.impl.drawitem.LootAdminClient;
+import top.yzljc.atribot.function.impl.pic.ImageReviewService;
+import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
+import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
+import top.yzljc.atribot.service.request.BizResponse;
+import top.yzljc.atribot.webui.PagedResult;
+import top.yzljc.atribot.webui.Result;
 
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -156,14 +157,18 @@ public class ContentController {
     public static void listLootItems(Context ctx) {
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
-        JsonNode resp = LootAdminClient.listItems(page, pageSize);
-        if (resp == null || resp.path("status").asInt() != 200) {
-            ctx.json(Result.fail(502, "抽卡目录服务暂不可用"));
+        BizResponse<JsonNode> resp = LootAdminClient.listItems(page, pageSize);
+        if (!resp.isSuccess()) {
+            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
             return;
         }
-        JsonNode data = resp.path("data");
+        JsonNode data = resp.data();
+        if (data == null || !data.isObject()) {
+            ctx.json(Result.fail(502, "物品列表响应格式无效"));
+            return;
+        }
         if (data instanceof ObjectNode objectNode) {
-            objectNode.put("imageBaseUrl", ResourcesProperties.LOOTS_ITEM_IMAGE_API);
+            objectNode.put("imageBaseUrl", LootAdminClient.imageBaseUrl());
         }
         ctx.json(Result.success(data));
     }
@@ -186,23 +191,23 @@ public class ContentController {
         }
 
         boolean special = "true".equalsIgnoreCase(ctx.formParam("special"));
-        JsonNode resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType(), special);
-        if (resp == null || resp.path("status").asInt() != 200) {
-            ctx.json(Result.fail(502, "创建物品卡失败"));
+        BizResponse<JsonNode> resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType(), special);
+        if (!resp.isSuccess()) {
+            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
             return;
         }
-        ctx.json(Result.success(resp.path("data")));
+        ctx.json(Result.success(resp.data()));
     }
 
     public static void updateLootItem(Context ctx) {
         String itemId = ctx.pathParam("itemId");
         UpdateLootItemDTO dto = ctx.bodyAsClass(UpdateLootItemDTO.class);
-        JsonNode resp = LootAdminClient.updateItem(itemId, dto.getDisplayName(), dto.getDescription());
-        if (resp == null || resp.path("status").asInt() != 200) {
-            ctx.json(Result.fail(502, "更新物品卡失败"));
+        BizResponse<JsonNode> resp = LootAdminClient.updateItem(itemId, dto.getDisplayName(), dto.getDescription());
+        if (!resp.isSuccess()) {
+            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
             return;
         }
-        ctx.json(Result.success(resp.path("data")));
+        ctx.json(Result.success(resp.data()));
     }
 
     public static void replaceLootItemImage(Context ctx) {
@@ -221,19 +226,19 @@ public class ContentController {
             return;
         }
 
-        JsonNode resp = LootAdminClient.replaceItemImage(itemId, bytes, file.filename(), file.contentType());
-        if (resp == null || resp.path("status").asInt() != 200) {
-            ctx.json(Result.fail(502, "更换物品卡图片失败"));
+        BizResponse<JsonNode> resp = LootAdminClient.replaceItemImage(itemId, bytes, file.filename(), file.contentType());
+        if (!resp.isSuccess()) {
+            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
             return;
         }
-        ctx.json(Result.success(resp.path("data")));
+        ctx.json(Result.success(resp.data()));
     }
 
     public static void deleteLootItem(Context ctx) {
         String itemId = ctx.pathParam("itemId");
-        JsonNode resp = LootAdminClient.deleteItem(itemId);
-        if (resp == null || resp.path("status").asInt() != 200) {
-            ctx.json(Result.fail(502, "删除物品卡失败"));
+        BizResponse<JsonNode> resp = LootAdminClient.deleteItem(itemId);
+        if (!resp.isSuccess()) {
+            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -284,7 +289,7 @@ public class ContentController {
         String userId = ctx.pathParam("userId");
         LootRepository.UserLootsSummary summary = LootRepository.getUserSummary(userId);
         ctx.json(Result.success(new UserLootsDetailDTO(
-                summary.userId(), summary.coins(), summary.loots(), ResourcesProperties.LOOTS_ITEM_IMAGE_API
+                summary.userId(), summary.coins(), summary.loots(), LootAdminClient.imageBaseUrl()
         )));
     }
 

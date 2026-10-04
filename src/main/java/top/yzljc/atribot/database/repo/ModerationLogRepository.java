@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.sql.PreparedStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +30,14 @@ public final class ModerationLogRepository {
     public static final String CATEGORY_JOIN_REVIEW = "JOIN_REVIEW";
 
     public static void init() {
+        try (var con = DatabaseManager.getConnection()) {
+            init(con);
+        } catch (Exception e) {
+            log.error("初始化群管系统日志表失败", e);
+        }
+    }
+
+    static void init(Connection con) throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS `" + TABLE + "` (" +
                 "  `id` BIGINT NOT NULL AUTO_INCREMENT," +
                 "  `group_open_id` VARCHAR(256) NOT NULL," +
@@ -35,44 +45,73 @@ public final class ModerationLogRepository {
                 "  `action` VARCHAR(64) NOT NULL," +
                 "  `target_member_open_id` VARCHAR(256) NULL," +
                 "  `detail` TEXT NULL," +
+                "  `original_content` MEDIUMTEXT NULL," +
                 "  `created_at` DATETIME NOT NULL," +
                 "  PRIMARY KEY (`id`)," +
                 "  KEY `idx_group` (`group_open_id`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
+        try (var ps = con.prepareStatement(sql)) {
             ps.execute();
-        } catch (Exception e) {
-            log.error("初始化群管系统日志表失败", e);
+        }
+        boolean hasOriginalContent = false;
+        try (var columns = con.getMetaData().getColumns(con.getCatalog(), null, TABLE, "original_content")) {
+            while (columns.next()) {
+                if (TABLE.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+                        && "original_content".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+                    hasOriginalContent = true;
+                    break;
+                }
+            }
+        }
+        if (!hasOriginalContent) {
+            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` ADD COLUMN `original_content` MEDIUMTEXT NULL")) {
+                ps.execute();
+            }
         }
     }
 
-    public static void log(String groupOpenId, String category, String action, String targetMemberOpenId, String detail) {
-        String sql = "INSERT INTO `" + TABLE + "` (group_open_id, category, action, target_member_open_id, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            ps.setString(2, category);
-            ps.setString(3, action);
-            ps.setString(4, targetMemberOpenId);
-            ps.setString(5, detail);
-            ps.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
-            ps.execute();
+    public static void log(String groupOpenId, String category, String action, String targetMemberOpenId, String detail, String originalContent) {
+        try (var con = DatabaseManager.getConnection()) {
+            log(con, groupOpenId, category, action, targetMemberOpenId, detail, originalContent);
         } catch (Exception e) {
             log.error("写入群管系统日志失败", e);
         }
     }
 
+    static void log(Connection con, String groupOpenId, String category, String action, String targetMemberOpenId,
+                    String detail, String originalContent) throws SQLException {
+        String sql = "INSERT INTO `" + TABLE + "` (group_open_id, category, action, target_member_open_id, detail, original_content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            ps.setString(2, category);
+            ps.setString(3, action);
+            ps.setString(4, targetMemberOpenId);
+            ps.setString(5, detail);
+            ps.setString(6, originalContent);
+            ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
+            ps.execute();
+        }
+    }
+
     public static List<LogRow> findPaginated(String groupOpenId, int page, int pageSize, String category, String keyword) {
+        try (var con = DatabaseManager.getConnection()) {
+            return findPaginated(con, groupOpenId, page, pageSize, category, keyword);
+        } catch (Exception e) {
+            log.error("查询群管系统日志失败", e);
+            return List.of();
+        }
+    }
+
+    static List<LogRow> findPaginated(Connection con, String groupOpenId, int page, int pageSize,
+                                      String category, String keyword) throws SQLException {
         List<Object> params = new ArrayList<>();
-        String sql = "SELECT id, group_open_id, category, action, target_member_open_id, detail, created_at FROM `"
+        String sql = "SELECT id, group_open_id, category, action, target_member_open_id, detail, original_content, created_at FROM `"
                 + TABLE + "`" + buildWhere(groupOpenId, category, keyword, params)
                 + " ORDER BY id DESC LIMIT ? OFFSET ?";
         int size = Math.max(pageSize, 1);
         int offset = Math.max(page - 1, 0) * size;
         List<LogRow> rows = new ArrayList<>();
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
+        try (var ps = con.prepareStatement(sql)) {
             bind(ps, params);
             ps.setInt(params.size() + 1, size);
             ps.setInt(params.size() + 2, offset);
@@ -85,27 +124,31 @@ public final class ModerationLogRepository {
                             rs.getString("action"),
                             rs.getString("target_member_open_id"),
                             rs.getString("detail"),
+                            rs.getString("original_content"),
                             rs.getTimestamp("created_at")));
                 }
             }
-        } catch (Exception e) {
-            log.error("查询群管系统日志失败", e);
         }
         return rows;
     }
 
     public static int count(String groupOpenId, String category, String keyword) {
+        try (var con = DatabaseManager.getConnection()) {
+            return count(con, groupOpenId, category, keyword);
+        } catch (Exception e) {
+            log.error("统计群管系统日志失败", e);
+            return 0;
+        }
+    }
+
+    static int count(Connection con, String groupOpenId, String category, String keyword) throws SQLException {
         List<Object> params = new ArrayList<>();
         String sql = "SELECT COUNT(*) FROM `" + TABLE + "`" + buildWhere(groupOpenId, category, keyword, params);
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
+        try (var ps = con.prepareStatement(sql)) {
             bind(ps, params);
             try (var rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
             }
-        } catch (Exception e) {
-            log.error("统计群管系统日志失败", e);
-            return 0;
         }
     }
 
@@ -150,9 +193,9 @@ public final class ModerationLogRepository {
             params.add(category.toUpperCase());
         }
         if (keyword != null && !keyword.isBlank()) {
-            where.append(" AND (`action` LIKE ? OR `target_member_open_id` LIKE ? OR `detail` LIKE ?)");
+            where.append(" AND (`action` LIKE ? OR `target_member_open_id` LIKE ? OR `detail` LIKE ? OR `original_content` LIKE ?)");
             String like = "%" + keyword + "%";
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 4; i++) {
                 params.add(like);
             }
         }
@@ -166,7 +209,7 @@ public final class ModerationLogRepository {
     }
 
     public record LogRow(long id, String groupOpenId, String category, String action,
-                         String targetMemberOpenId, String detail, Timestamp createdAt) {
+                         String targetMemberOpenId, String detail, String originalContent, Timestamp createdAt) {
     }
 
     public record Stats(int all, int today, int last24h, int keywordRecall, int aiRecall, int joinReview) {

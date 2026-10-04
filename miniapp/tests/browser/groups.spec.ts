@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test'
 import { profile } from './profile-fixture'
 import { activity, inventoryImage } from './activity-fixture'
 import type { BindingChallenge, BoundGroup } from '../../src/groups'
+import { moderation } from './moderation-fixture'
 
 const entry = `/atrimeow/profile/?userId=owner&ticket=${'a'.repeat(43)}`
 const group: BoundGroup = { groupId: 'A'.repeat(32), groupNumber: '123456789', name: '亚托利的小花园',
   description: '一起聊天、搭建，分享 Minecraft 的日常。', category: '游戏', tags: ['Minecraft', '建筑', '生存'],
   memberCount: 328, joinedAt: '2026-06-20T10:00:00+08:00', botRole: 'admin', receiveMode: 'all', proactive: true,
-  restricted: false, boundAt: '2026-09-20T10:00:00Z', available: true }
+  restricted: false, boundAt: '2026-09-20T10:00:00Z', available: true, canManageModeration: true }
 
 test('owner starts binding, copies proof, switches tabs and sees confirmed group data', async ({ page }, testInfo) => {
   let pending: BindingChallenge | null = null, verified = false, requests = 0
@@ -38,6 +39,7 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
     }
     if (path.endsWith('/groups')) return route.fulfill({ json: { groups: verified ? [group, secondGroup].filter(item => !removed.has(item.groupId)).map(({ groupId, name, groupNumber, boundAt }) => ({ groupId, name, groupNumber, boundAt })) : [], pending: verified ? null : pending } })
     if (path.endsWith('/join-welcome')) return route.fulfill({ json: path.includes(group.groupId) ? welcome : { ...welcome, text: '欢迎来到建筑交流小组', enabled: false, custom: false } })
+    if (path.endsWith('/moderation')) return route.fulfill({ json: moderation })
     if (path.includes('/groups/')) {
       detailRequests.push(path)
       return route.fulfill({ json: path.endsWith(group.groupId) ? group : secondGroup })
@@ -47,7 +49,7 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
   await page.goto(entry)
   const dock = page.getByRole('navigation', { name: '栏目导航' })
   await dock.getByRole('button', { name: '群管理' }).click()
-  await page.getByLabel('群号或群开放平台 ID').fill('123456789')
+  await page.getByLabel('群开放平台ID').fill('123456789')
   await page.getByRole('button', { name: '生成验证指令' }).click()
   await expect(page.locator('.group-command')).toContainText('/群绑定 AABBCCDDEEFF')
   await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => { document.documentElement.dataset.copied = value } } }))
@@ -84,11 +86,13 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
   await expect(page.locator('.group-dates')).toContainText('2026.06.20')
   await expect(page.locator('.group-tags')).toContainText('Minecraft')
   const welcomePanel = page.getByRole('region', { name: '加群欢迎', exact: true })
+  await expect(welcomePanel.getByRole('button', { name: '加群欢迎', exact: true })).toHaveAttribute('aria-expanded', 'false')
+  await welcomePanel.getByRole('button', { name: '加群欢迎', exact: true }).click()
   await expect(welcomePanel.locator('strong')).toHaveText('入群须知')
   await expect(welcomePanel.locator('.welcome-mention')).toHaveText('@新成员')
   await expect(welcomePanel.locator('.welcome-qq-button')).toHaveCount(2)
   await expect(welcomePanel.locator('input, textarea, select, a, script')).toHaveCount(0)
-  await expect(welcomePanel.getByRole('button')).toHaveCount(1)
+  await expect(welcomePanel.getByRole('button')).toHaveCount(2)
   await welcomePanel.locator('.welcome-qq-button').first().click()
   await expect(page.getByRole('article', { name: group.name! })).toBeVisible()
   await welcomePanel.screenshot({ path: testInfo.outputPath('welcome.png'), animations: 'disabled' })
@@ -103,6 +107,7 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
   await expect(page.getByRole('article', { name: secondGroup.name })).toBeVisible()
   await expect(page.getByRole('article', { name: group.name! })).toHaveCount(0)
   await expect(page.locator('.group-details')).toContainText('仅接收 @ 消息')
+  await welcomePanel.getByRole('button', { name: '加群欢迎', exact: true }).click()
   await expect(welcomePanel).toContainText('欢迎来到建筑交流小组')
   await expect(welcomePanel).toContainText('已关闭')
   await expect(welcomePanel).not.toContainText('入群须知')
@@ -188,16 +193,19 @@ test('welcome retries independently, renders images and math, and discards respo
       if (++secondCalls === 1) return route.fulfill({ status: 502, json: { error: 'WELCOME_UNAVAILABLE' } })
       return route.fulfill({ json: { enabled: false, custom: true, text: '**第二个群欢迎**\n\n$x^2$\n\n![欢迎图片 #320px #180px](https://images.example.test/welcome.png)\n\n![大图预览 #1858px #846px](https://images.example.test/welcome.png)', buttonSize: 'SMALL', keyboard: [[{ label: '只读按钮', style: 'RED' }]] } })
     }
+    if (path.endsWith('/moderation')) return route.fulfill({ json: moderation })
     if (path.includes('/groups/')) return route.fulfill({ json: path.endsWith(group.groupId) ? group : secondGroup })
     return route.fulfill({ status: 204 })
   })
   await page.goto(entry)
   await page.getByRole('button', { name: '群管理', exact: true }).click()
   await page.getByRole('button', { name: `查看${group.name}详情` }).click()
+  await page.getByRole('button', { name: '加群欢迎', exact: true }).click()
   await expect.poll(() => firstStarted).toBe(true)
   await page.getByRole('button', { name: '返回群列表' }).click()
   await page.getByRole('button', { name: `查看${secondGroup.name}详情` }).click()
   const panel = page.getByRole('region', { name: '加群欢迎', exact: true })
+  await panel.getByRole('button', { name: '加群欢迎', exact: true }).click()
   await expect(panel.getByRole('alert')).toContainText('欢迎内容暂时无法读取')
   await expect(page.getByRole('article', { name: secondGroup.name })).toBeVisible()
   await panel.getByRole('button', { name: '重试', exact: true }).click()

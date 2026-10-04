@@ -13,6 +13,7 @@ export type BoundGroup = {
     restricted: boolean;
     boundAt: string | null;
     available: boolean
+    canManageModeration: boolean
 }
 export type BindingChallenge = { groupId: string; code: string; command: string; expiresAt: number }
 export type GroupBinding = Pick<BoundGroup, 'groupId' | 'groupNumber' | 'name' | 'boundAt'>

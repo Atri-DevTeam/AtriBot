@@ -601,8 +601,10 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                     );
                     ImageDTO dto = PreImageGenerate.dump(body);
                     String finalUrl = null;
-                    if (dto != null) {
+                    if (dto != null && !dto.isError()) {
                         finalUrl = dto.url();
+                    } else if (dto != null) {
+                        log.warn("奖励图片转存失败: {}", dto.errorMessage());
                     }
 
                     Object keyboard = TC.keyboard(List.of(List.of(

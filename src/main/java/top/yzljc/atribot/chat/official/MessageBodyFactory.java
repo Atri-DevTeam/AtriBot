@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.button.Keyboard;
+import top.yzljc.atribot.chat.official.card.Card;
 import top.yzljc.atribot.chat.official.media.GroupMessageType;
 
 import java.util.HashMap;

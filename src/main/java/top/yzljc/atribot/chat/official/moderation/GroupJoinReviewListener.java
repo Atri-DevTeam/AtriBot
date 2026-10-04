@@ -138,7 +138,8 @@ public final class GroupJoinReviewListener implements Listener {
                 ? event.approve()
                 : event.deny(rejectReason);
         ModerationLogRepository.log(event.getGroupOpenId(), "JOIN_REVIEW", decision.name().toLowerCase(),
-                event.getMemberOpenId(), detail + (success ? "" : "（接口调用失败）"));
+                event.getMemberOpenId(), detail + (success ? "" : "（接口调用失败）"),
+                ModerationLogContent.joinRequest(event));
 
         if (config.isNotifyDebugGroup()) {
             // TODO: 通知到Debug群逻辑后续需改动

@@ -1,7 +1,10 @@
 package top.yzljc.atribot.function.task;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.command.Command;
@@ -9,12 +12,10 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.timer.Schedule;
 import top.yzljc.atribot.service.timer.ScheduleType;
-
-import java.util.Map;
 
 public class ManosabaDate implements CommandExecutor {
 
@@ -25,7 +26,7 @@ public class ManosabaDate implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof NapcatCommandSender nc)) return true;
         if (nc.getGroupId().equals(GROUP_ID)) {
-            var data = PreImageGenerate.dump(ResourcesProperties.MANOSABA_DATE_IMG, Map.of());
+            var data = PreImageGenerate.dump(OpenApi.get("bot.manosaba-date"), Map.of());
             if (data.isError() || data.url() == null) {
                 String errMsg = data.errorMessage();
                 nc.sendMessage("开发天数图片获取失败: " + errMsg);
@@ -40,7 +41,7 @@ public class ManosabaDate implements CommandExecutor {
 
     @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
     public static void sendAndNotifyToGroup() {
-        var data = PreImageGenerate.dump(ResourcesProperties.MANOSABA_DATE_IMG, Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.manosaba-date"), Map.of());
         if (data.isError() || data.url() == null) {
             String errMsg = data.errorMessage();
             log.error("ManosabaDate 定时任务失败: {}", errMsg);
