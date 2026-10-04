@@ -27,7 +27,7 @@ dependencies {
     api("io.javalin:javalin:6.6.0")
     api("org.jetbrains.kotlin:kotlin-stdlib:2.1.10")
     api("cn.dev33:sa-token-sign:1.46.0")
-    api("com.google.guava:guava:33.7.1-jre")
+    api("com.google.guava:guava:33.7.2-jre")
     api("net.dankito.readability4j:readability4j:1.0.8")
     api("com.fasterxml.jackson.core:jackson-core:2.22.3")
     api("com.mysql:mysql-connector-j:26.7.0")
@@ -39,17 +39,17 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
-    api("ch.qos.logback:logback-classic:1.6.3")
+    api("ch.qos.logback:logback-classic:1.6.4")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
-    api("org.jline:jline:4.4.5")
+    api("org.jline:jline:4.4.6")
 
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
 
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("com.h2database:h2:2.3.232")
+    testImplementation("com.h2database:h2:2.5.252")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
