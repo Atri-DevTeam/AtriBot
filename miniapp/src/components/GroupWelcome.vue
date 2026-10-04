@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import Icon from './Icon.vue'
 import botBlue from '../assets/bot-blue.svg'
-import { renderMarkdown } from '../../../webui/src/lib/markdown.js'
+import { renderMarkdown } from '../../../webui/src/shared/lib/markdown.js'
 import 'katex/dist/katex.min.css'
 import type { PrivateRequest } from '../activity'
 import type { GroupWelcome } from '../groups'
