@@ -124,6 +124,7 @@ commands:
   feedback:
     description: 提交反馈
     usage: /feedback <反馈内容>
+    prefixless-aliases: [反馈与建议]
     aliases:
       - 反馈
       - 举报
@@ -134,11 +135,10 @@ commands:
         description: 反馈内容
         required: true
   remind:
-    description: 私聊设置自然语言提醒任务
-    usage: /提醒 [添加 <时间和事项> | 设置 | 修改 <任务ID> <时间和事项> | 关闭 <任务ID> | 删除 <任务ID>]
-    aliases:
-      - 提醒
-      - reminder
+    description: 私聊设置提醒，查看并管理提醒任务
+    usage: /提醒 <时间或周期> 或 /提醒列表 [页码]
+    aliases: [提醒, reminder, reminder-list, 提醒列表]
+    prefixless-aliases: [提醒, 提醒列表]
   submit:
     description: 投稿图片到图源
     usage: /submit [图片]
@@ -167,6 +167,7 @@ commands:
   help:
     description: 显示帮助菜单
     usage: /help
+    prefixless-aliases: [指令功能一览♪]
   hitokoto:
     description: 随机一言
     aliases:
@@ -230,6 +231,7 @@ commands:
       - 每日签到
       - 签到
       - 冒泡
+    prefixless-aliases: [今天也要记得签到🌙]
   debug:
     description: 调试
   check-hyp:
@@ -242,6 +244,7 @@ commands:
       - 小游戏
       - game
     description: 小游戏
+    prefixless-aliases: [来玩点有趣的吧🎮]
   music:
     description: Music
     usage: /music <关键词>
@@ -385,3 +388,6 @@ commands:
   sharebot:
     description: 分享机器人
     usage: /sharebot
+  dau:
+    description: 日活跃用户统计
+    usage: /dau

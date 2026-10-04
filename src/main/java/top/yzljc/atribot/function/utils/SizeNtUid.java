@@ -9,6 +9,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atribot.platform.napcat.NapcatUser;
 import top.yzljc.atribot.webui.Result;
 
 import java.util.Map;
@@ -29,10 +30,11 @@ public class SizeNtUid implements CommandExecutor {
             nc.sendMessage("请@目标账号！");
             return true;
         }
+        if (!(nc.getMessage().getMentionedUsers().getFirst() instanceof NapcatUser mentioned)) return true;
         String info = "Target Account Info\n" +
-                "Uin: " + nc.getMessage().getMentionedUsers().getFirst().getUserId() + "\n" +
+                "Uin: " + mentioned.getUserId() + "\n" +
                 "GroupId: " + nc.getGroupId() + "\n" +
-                "Uid: " + nc.getMessage().getMentionedUsers().getFirst().getData().path("ntUid").asText();
+                "Uid: " + mentioned.getData().path("ntUid").asText();
         var msgId = nc.sendMessage(info);
         Atri.getInstance().getScheduler().runTaskLater(() -> GroupMessage.recallMessage(msgId), 30 * 1000);
         return true;

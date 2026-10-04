@@ -6,10 +6,10 @@ import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.notify.NotificationService;
 
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 
 /**
  * @Author YZ_Ljc_
@@ -22,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 public class ImageReviewService {
 
     private static final String SOURCE = "image_source";
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 审核一条投稿
@@ -94,19 +93,14 @@ public class ImageReviewService {
         StringBuilder sb = new StringBuilder();
         sb.append(approved ? "**你的图源投稿已通过审核**" : "**你的图源投稿未通过审核**").append("\n");
         sb.append("投稿编号: ").append(shortId(dto.getId())).append("\n");
-        sb.append("投稿时间: ").append(formatTime(dto.getCreateTime())).append("\n");
-        sb.append("审核时间: ").append(formatTime(dto.getReviewTime())).append("\n");
+        sb.append("投稿时间: ").append(FormatTools.formatTimestamp(dto.getCreateTime(), "-")).append("\n");
+        sb.append("审核时间: ").append(FormatTools.formatTimestamp(dto.getReviewTime(), "-")).append("\n");
         if (dto.getReviewRemark() != null && !dto.getReviewRemark().isBlank()) {
             sb.append("审核说明: ").append(dto.getReviewRemark()).append("\n");
         }
         sb.append("> ").append(Markdown.enterCommand("/submit ", "我也要投稿"));
 
         return sb.toString();
-    }
-
-    private static String formatTime(Timestamp ts) {
-        if (ts == null) return "-";
-        return ts.toLocalDateTime().format(TIME_FMT);
     }
 
     private static String shortId(String id) {

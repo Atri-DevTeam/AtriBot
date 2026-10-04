@@ -8,10 +8,10 @@ import top.yzljc.atribot.chat.official.GuildChannelChat;
 import top.yzljc.atribot.chat.official.GuildDirectChat;
 import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.command.QQGuildCommandSender;
-import top.yzljc.atribot.platform.Message;
+import top.yzljc.atribot.platform.qq.QQGuildMessage;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.QQGuildUser;
 
 /**
  * @Author YZ_Ljc_
@@ -23,8 +23,8 @@ import top.yzljc.atribot.platform.User;
 @AllArgsConstructor
 public class QQGuildSenderImpl implements QQGuildCommandSender {
 
-    private final User user;
-    private final Message message;
+    private final QQGuildUser user;
+    private final QQGuildMessage message;
     private final String guildId;
     private final String channelId;
     private final String userOpenId;
@@ -60,7 +60,7 @@ public class QQGuildSenderImpl implements QQGuildCommandSender {
     }
 
     @Override
-    public Message getMessage() {
+    public QQGuildMessage getMessage() {
         return this.message;
     }
 

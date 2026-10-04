@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName PushTaskGlobalSettings
@@ -226,10 +228,6 @@ public final class PushTaskGlobalSettings {
 
     private static String blankToNull(String value) {
         return isBlank(value) ? null : value.trim();
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     public enum DisableScope {

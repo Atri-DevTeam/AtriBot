@@ -74,7 +74,8 @@ object AnAnGirlEmoji : CommandExecutor {
 
         val data = PreImageGenerate.dump(
             OpenApi.get("bot.emoji.anan"),
-            req
+            req,
+            nc.platform
         )
         if (data == null) {
             nc.sendMessage("图片生成失败，请稍后重试")

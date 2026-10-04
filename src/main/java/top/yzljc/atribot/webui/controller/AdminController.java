@@ -18,7 +18,6 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +149,6 @@ public class AdminController {
 
     // ============ 反馈管理 ============
 
-    private static final DateTimeFormatter FEEDBACK_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void listFeedback(Context ctx) {
         int page = parseInt(ctx.queryParam("page"), 1);
@@ -178,10 +176,10 @@ public class AdminController {
                 fb.getUsername(),
                 fb.getGroupId(),
                 fb.getSubmitContent(),
-                fb.getCreateTime() != null ? fb.getCreateTime().toLocalDateTime().format(FEEDBACK_TIME_FMT) : null,
+                formatFeedbackTime(fb.getCreateTime()),
                 fb.isRead(),
                 fb.getReplyContent(),
-                fb.getReplyTime() != null ? fb.getReplyTime().toLocalDateTime().format(FEEDBACK_TIME_FMT) : null,
+                formatFeedbackTime(fb.getReplyTime()),
                 fb.isHidden()
         )).toList();
 

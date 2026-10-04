@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName ChatPinnedStore
@@ -94,7 +96,4 @@ public class ChatPinnedRepo {
         }
     }
 
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
 }

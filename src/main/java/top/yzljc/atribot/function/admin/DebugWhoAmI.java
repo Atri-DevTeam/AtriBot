@@ -2,7 +2,7 @@ package top.yzljc.atribot.function.admin;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.atribot.auth.UnifiedAccount;
+import top.yzljc.atribot.auth.AtriAccount;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -103,7 +103,7 @@ public class DebugWhoAmI implements CommandExecutor {
         return true;
     }
 
-    private static String getUnifiedUuid(UnifiedAccount account) {
+    private static String getUnifiedUuid(AtriAccount account) {
         return account == null ? "未绑定" : account.uuid().toString();
     }
 }

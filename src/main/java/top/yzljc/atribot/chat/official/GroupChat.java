@@ -1,6 +1,5 @@
 package top.yzljc.atribot.chat.official;
 
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.card.Card;
@@ -363,17 +362,17 @@ public final class GroupChat {
     }
 
     /**
-     * 撤回群聊消息
+     * 同步撤回群聊消息，等待异步任务返回结果
      *
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
      * @return 是否撤回成功
      */
     public static boolean recallMessage(String groupOpenId, String messageId) {
-        return Atri.getInstance().getChatService().recallGroupMessage(groupOpenId, messageId);
+        return Boolean.TRUE.equals(await(AsyncGroupChat.recallMessage(groupOpenId, messageId)));
     }
 
-    private static String await(CompletableFuture<String> future) {
+    private static <T> T await(CompletableFuture<T> future) {
         try {
             return future.get();
         } catch (InterruptedException e) {

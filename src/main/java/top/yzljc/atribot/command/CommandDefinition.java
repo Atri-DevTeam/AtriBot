@@ -4,14 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.LinkedHashSet;
 
 public record CommandDefinition(
         String name,
         String description,
         String usage,
         List<String> aliases,
-        List<CommandOptionDefinition> options
+        List<CommandOptionDefinition> options,
+        List<String> prefixlessAliases
 ) {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -21,6 +24,7 @@ public record CommandDefinition(
         description = description == null ? "" : description;
         usage = usage == null || usage.isBlank() ? "/" + name : usage;
         options = options == null ? List.of() : List.copyOf(options);
+        prefixlessAliases = parsePrefixlessAliases(prefixlessAliases);
     }
 
     /**
@@ -28,6 +32,11 @@ public record CommandDefinition(
      */
     public CommandDefinition(String name, String description, String usage, List<String> aliases) {
         this(name, description, usage, aliases, List.of());
+    }
+
+    public CommandDefinition(String name, String description, String usage, List<String> aliases,
+                             List<CommandOptionDefinition> options) {
+        this(name, description, usage, aliases, options, List.of());
     }
 
     public static CommandDefinition from(String name, Map<String, ?> data) {
@@ -45,7 +54,24 @@ public record CommandDefinition(
 
         List<CommandOptionDefinition> options = parseOptions(data.get("options"));
 
-        return new CommandDefinition(name, description, usage, aliases, options);
+        return new CommandDefinition(name, description, usage, aliases, options,
+                parsePrefixlessAliases(data.get("prefixless-aliases")));
+    }
+
+    private static List<String> parsePrefixlessAliases(Object raw) {
+        if (raw == null) return List.of();
+        if (!(raw instanceof List<?> values)) {
+            throw new IllegalArgumentException("prefixless-aliases 必须是文本列表");
+        }
+        var result = new LinkedHashSet<String>();
+        for (Object value : values) {
+            if (!(value instanceof String alias) || alias.isBlank()
+                    || alias.codePoints().anyMatch(c -> Character.isWhitespace(c) || Character.isSpaceChar(c))) {
+                throw new IllegalArgumentException("prefixless-aliases 中的触发词必须是非空文本，且不能包含空白字符");
+            }
+            result.add(alias.toLowerCase(Locale.ROOT));
+        }
+        return List.copyOf(result);
     }
 
     private static List<CommandOptionDefinition> parseOptions(Object raw) {

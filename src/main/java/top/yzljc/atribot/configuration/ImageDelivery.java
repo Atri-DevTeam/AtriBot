@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
 import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.tools.Alert;
 
 /**
@@ -24,8 +25,23 @@ public final class ImageDelivery {
     private static final String WAY_OSS = "oss";
 
     /**
-     * @param data 图片响应数据，签名地址优先于本地图片标识
+     * @param data 图片响应数据
+     * @param renderUrl 生成图片的接口地址，用于解析同源 API 路径
+     * @param platform 图片接收平台；为 null 时遵循生图服务返回的分发方式
      * @return 图片地址，缺少有效地址或图片标识时返回 null
+     */
+    public static String resolve(JsonNode data, String renderUrl, Platform platform) {
+        if (platform != null && !platform.isOfficialQQPlatform()) {
+            return resolveApi(data, renderUrl);
+        }
+        return resolve(data);
+    }
+
+    /**
+     * 按生图服务返回的分发方式解析图片地址。
+     *
+     * @param data 图片响应数据
+     * @return 图片地址；缺少有效地址或图片标识时返回 null
      */
     public static String resolve(JsonNode data) {
         if (data == null) {
@@ -46,7 +62,7 @@ public final class ImageDelivery {
         return resolve(uuid, way);
     }
 
-    public static String resolve(String uuid, String way) {
+    private static String resolve(String uuid, String way) {
         if (uuid == null || uuid.isBlank()) {
             return null;
         }
@@ -61,7 +77,11 @@ public final class ImageDelivery {
         return imageUrl(OpenApi.get("bot.image.get"), "uuid", uuid);
     }
 
-    /** 将生图响应中的 API 路径解析为同源取图地址，不使用对象存储地址。 */
+    /**
+     * @param data 包含 api_url 的图片响应数据
+     * @param renderUrl 生成图片的接口地址
+     * @return 同源 API 取图地址；路径缺失或无效时返回 null，不回退到对象存储
+     */
     public static String resolveApi(JsonNode data, String renderUrl) {
         if (data == null || !data.path("api_url").isTextual()) return null;
         String path = data.path("api_url").asText();
@@ -76,6 +96,19 @@ public final class ImageDelivery {
         } catch (IllegalArgumentException | NullPointerException invalid) {
             return null;
         }
+    }
+
+    /**
+     * 从服务端响应中获取完整的 COS 图片地址，保留签名参数。
+     *
+     * @param data 图片响应数据，way 必须为 {@code cos}
+     * @return 有效的 HTTP(S) COS 地址；分发方式不匹配或地址缺失、无效时返回 null
+     */
+    public static String resolveCos(JsonNode data) {
+        if (data == null || !"cos".equalsIgnoreCase(data.path("way").asText())) {
+            return null;
+        }
+        return absoluteUrl(data);
     }
 
     public static String resolveDrawCard(JsonNode data) {

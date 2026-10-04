@@ -107,6 +107,9 @@ public class WebUIRouter {
         server.get("/webui/api/bot/profile", BotSettingsController::getProfile);
         server.get("/webui/api/bot/settings", BotSettingsController::getSettings);
         server.put("/webui/api/bot/settings", BotSettingsController::updateSettings);
+        server.get("/webui/api/bot/join-welcome/{role}", DefaultJoinWelcomeController::get);
+        server.put("/webui/api/bot/join-welcome/{role}", DefaultJoinWelcomeController::save);
+        server.delete("/webui/api/bot/join-welcome/{role}", DefaultJoinWelcomeController::reset);
         server.get("/webui/api/command-settings", CommandSettingsController::list);
         server.put("/webui/api/command-settings/{commandName}/global", CommandSettingsController::setGlobal);
         server.delete("/webui/api/command-settings/{commandName}/global", CommandSettingsController::clearGlobal);

@@ -9,6 +9,7 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.SlashCommandSender;
 
 public final class SkyblockPackCommand implements CommandExecutor, SlashCommandExecutor {
 
@@ -24,8 +25,9 @@ public final class SkyblockPackCommand implements CommandExecutor, SlashCommandE
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         return Atri.getInstance().getSkyblockPackCheck().onCommand(sender);
     }
 }

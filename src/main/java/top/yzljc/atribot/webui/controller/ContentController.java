@@ -2,7 +2,7 @@ package top.yzljc.atribot.webui.controller;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.format.DateTimeFormatter;
+import top.yzljc.atribot.utils.FormatTools;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +32,6 @@ public class ContentController {
 
     // ============ 图源管理 ============
 
-    private static final DateTimeFormatter GALLERY_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void listGallery(Context ctx) {
         int page = parseInt(ctx.queryParam("page"), 1);
@@ -109,8 +108,8 @@ public class ContentController {
                 dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize(),
                 dto.getHash(), dto.getReviewStatus(),
                 dto.getReviewer(), dto.getReviewRemark(),
-                dto.getReviewTime() != null ? dto.getReviewTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
-                dto.getCreateTime() != null ? dto.getCreateTime().toLocalDateTime().format(GALLERY_TIME_FMT) : null,
+                FormatTools.formatTimestamp(dto.getReviewTime(), null),
+                FormatTools.formatTimestamp(dto.getCreateTime(), null),
                 dto.isNotified()
         );
     }

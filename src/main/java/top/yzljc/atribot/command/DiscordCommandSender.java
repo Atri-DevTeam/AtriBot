@@ -15,7 +15,7 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.command
  */
-public interface DiscordCommandSender extends CommandSender {
+public interface DiscordCommandSender extends SlashCommandSender {
 
     Platform getPlatform();
 

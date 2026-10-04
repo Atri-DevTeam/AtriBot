@@ -30,7 +30,7 @@ public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandE
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of());
+        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of(), sender.getPlatform());
         if (sender instanceof NapcatCommandSender nc) {
             if (!d.isError()) {
                 nc.sendMessage(ImageComponent.imageOf(d.url()));
@@ -51,9 +51,10 @@ public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandE
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
 
-        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of());
+        var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of(), sender.getPlatform());
         if (d.isError()) {
             sender.sendMessage(d.errorMessage());
             return true;

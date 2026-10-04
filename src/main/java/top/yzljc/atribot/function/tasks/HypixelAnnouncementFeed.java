@@ -17,6 +17,7 @@ import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.utils.AtomicFiles;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
@@ -27,8 +28,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -321,34 +320,11 @@ public final class HypixelAnnouncementFeed {
         File file = new File(historyFile);
 
         try {
-            File parent = file.getParentFile();
-
-            if (parent != null && !parent.exists()) {
-                Files.createDirectories(parent.toPath());
-            }
-
             List<String> sorted = new ArrayList<>(guids);
             sorted.sort(String::compareTo);
-
-            File tempFile = new File(file.getAbsolutePath() + ".tmp");
-
-            objectMapper.writeValue(tempFile, sorted);
-
-            Files.move(tempFile.toPath(),
-                    file.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE
-            );
-
-        } catch (Exception atomicMoveException) {
-            try {
-                List<String> sorted = new ArrayList<>(guids);
-                sorted.sort(String::compareTo);
-
-                objectMapper.writeValue(file, sorted);
-            } catch (IOException e) {
-                log.error("Failed to save Hypixel announcement guids to {}", historyFile, e);
-            }
+            AtomicFiles.write(file.toPath(), objectMapper.writeValueAsBytes(sorted));
+        } catch (IOException e) {
+            log.error("Failed to save Hypixel announcement guids to {}", historyFile, e);
         }
     }
 

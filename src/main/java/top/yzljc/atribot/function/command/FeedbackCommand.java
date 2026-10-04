@@ -10,6 +10,7 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.SlashCommandSender;
 import top.yzljc.atribot.database.FeedbackDTO;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.event.EventHandler;
@@ -20,11 +21,11 @@ import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGuildAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGuildDirectMessageCreateEvent;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.notify.NotificationService;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,7 +43,6 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
     private static final String SOURCE = "feedback";
     private static final int PAGE_SIZE = 10;
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -64,8 +64,9 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         String content = args.getString("content", "").trim();
         if (content.isBlank()) {
             sender.sendEphemeralMessage("请提供反馈或建议的内容。");
@@ -195,7 +196,7 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
             if (fb.getGroupId() != null) {
                 sb.append("群聊: ").append(fb.getGroupId()).append("\n");
             }
-            sb.append("时间: ").append(formatTime(fb.getCreateTime())).append("\n");
+            sb.append("时间: ").append(FormatTools.formatTimestamp(fb.getCreateTime(), "")).append("\n");
             sb.append("内容: ").append(fb.getSubmitContent()).append("\n");
             sb.append("━━━━━━━━━━━━━━\n");
         }
@@ -339,7 +340,7 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
         StringBuilder sb = new StringBuilder();
         sb.append("**您的反馈已被受理**").append("\n\n");
         sb.append("> 反馈编号: ").append(feedback.getId(), 0, 8).append("\n");
-        sb.append("> 时间: ").append(formatTime(feedback.getCreateTime())).append("\n");
+        sb.append("> 时间: ").append(FormatTools.formatTimestamp(feedback.getCreateTime(), "")).append("\n");
 
         if (feedback.isHidden()) {
             sb.append("> 反馈内容：已被隐藏\n");
@@ -347,15 +348,11 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
             sb.append("> 反馈内容：").append(feedback.getSubmitContent()).append("\n");
         }
 
-        sb.append("> 回复时间: ").append(formatTime(feedback.getReplyTime())).append("\n");
+        sb.append("> 回复时间: ").append(FormatTools.formatTimestamp(feedback.getReplyTime(), "")).append("\n");
         sb.append("> 回复内容: ").append(feedback.getReplyContent()).append("\n\n");
         sb.append("如有任何问题欢迎继续联系我们！");
 
         return sb.toString();
     }
 
-    private static String formatTime(Timestamp ts) {
-        if (ts == null) return "";
-        return ts.toLocalDateTime().format(TIME_FMT);
-    }
 }

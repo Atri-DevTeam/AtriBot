@@ -9,6 +9,7 @@ import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.SlashCommandSender;
 
 import java.util.Map;
 
@@ -16,7 +17,7 @@ public class GroupConfigInfo implements CommandExecutor, SlashCommandExecutor {
     private static final Map<String, Boolean> registeredFeatures = GroupConfigManager.getRegisteredFeatures();
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
         return onCommand(sender, command, label, args == null ? new String[0] : args.toArray());
     }
 

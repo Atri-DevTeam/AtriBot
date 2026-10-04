@@ -47,9 +47,10 @@ public class HypixelStatusCommand implements CommandExecutor, SlashCommandExecut
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
-        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), Map.of(), sender.getPlatform());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;

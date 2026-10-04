@@ -15,7 +15,8 @@ import lombok.Getter;
 public enum ButtonType {
     COMMAND(2),
     CALLBACK(1),
-    LINK(0);
+    LINK(0),
+    CUSTOM(999);
 
     private final int code;
 }

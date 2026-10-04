@@ -462,7 +462,7 @@ public class DiscordManager {
         ArrayNode payload = objectMapper.createArrayNode();
         for (CommandDefinition definition : CommandManager.getDefinitions()) {
             CommandFeature command = CommandManager.getCommand(definition.name());
-            if (command == null || !(command.getExecutor() instanceof SlashCommandExecutor)) {
+            if (command == null || command.getSlashExecutor() == null) {
                 continue;
             }
             payload.add(buildCommandNode(definition));

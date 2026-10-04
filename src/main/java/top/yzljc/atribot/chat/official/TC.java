@@ -41,7 +41,7 @@ public class TC {
                 action.put("type", btn.getActionType().getCode());
                 action.put("data", btn.getData());
                 action.put("enter", btn.isEnter());
-                action.put("unsupport_tips", "当前客户端版本不支持此按钮");
+                action.put("unsupport_tips", btn.getUnsupportedTip());
                 if (btn.isReply()) {
                     action.put("reply", true);
                 }

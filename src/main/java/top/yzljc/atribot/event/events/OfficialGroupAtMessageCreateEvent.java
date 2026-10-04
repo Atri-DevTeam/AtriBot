@@ -4,7 +4,7 @@ import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.event.Event;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.QQUser;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 /**
@@ -17,12 +17,12 @@ import top.yzljc.atribot.platform.qq.QQMessage;
  */
 @Getter
 public class OfficialGroupAtMessageCreateEvent extends Event {
-    private final User user;
+    private final QQUser user;
     private final QQMessage message;
     private final String groupId;
     private final String timestamp;
 
-    public OfficialGroupAtMessageCreateEvent(User user, QQMessage message, String groupId, String timestamp) {
+    public OfficialGroupAtMessageCreateEvent(QQUser user, QQMessage message, String groupId, String timestamp) {
         this.user = user;
         this.message = message;
         this.groupId = groupId;

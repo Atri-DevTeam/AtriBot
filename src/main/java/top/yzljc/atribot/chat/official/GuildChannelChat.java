@@ -1,8 +1,8 @@
 package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.thread.GuildThread;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -51,7 +51,22 @@ public final class GuildChannelChat {
         return await(AsyncGuildChannelChat.replyMessage(channelId, rt, embed));
     }
 
-    private static String await(CompletableFuture<String> future) {
+    public static String createThread(String channelId, GuildThread thread) {
+        return await(AsyncGuildChannelChat.createThread(channelId, thread));
+    }
+
+    /**
+     * 同步删除频道帖子，等待异步任务返回结果
+     *
+     * @param channelId 子频道板块 ID
+     * @param threadId 帖子 ID，不是发表帖子返回的任务 ID
+     * @return 平台返回成功状态时返回 true，请求失败或等待中断时返回 false
+     */
+    public static boolean deleteThread(String channelId, String threadId) {
+        return Boolean.TRUE.equals(await(AsyncGuildChannelChat.deleteThread(channelId, threadId)));
+    }
+
+    private static <T> T await(CompletableFuture<T> future) {
         try {
             return future.get();
         } catch (InterruptedException e) {

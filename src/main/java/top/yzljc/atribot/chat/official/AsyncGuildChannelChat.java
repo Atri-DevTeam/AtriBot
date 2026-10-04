@@ -2,6 +2,7 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.official.thread.GuildThread;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.Objects;
@@ -56,5 +57,27 @@ public final class AsyncGuildChannelChat {
     public static CompletableFuture<String> replyMessage(String channelId, RT rt, Embed embed) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
         return service().sendGuildChannelMessageAsync(channelId, service().getBodyFactory().embeds(rt, embed));
+    }
+
+    /**
+     * 异步发表频道帖子到指定板块
+     *
+     * @param channelId 板块 ID
+     * @param thread 帖子内容
+     * @return 帖子任务 ID，发表失败时为 null
+     */
+    public static CompletableFuture<String> createThread(String channelId, GuildThread thread) {
+        return service().createGuildThreadAsync(channelId, thread);
+    }
+
+    /**
+     * 异步删除频道帖子
+     *
+     * @param channelId 子频道板块 ID
+     * @param threadId 帖子 ID，不是发表帖子返回的任务 ID
+     * @return 删除结果，平台返回成功状态时为 true，请求失败时为 false
+     */
+    public static CompletableFuture<Boolean> deleteThread(String channelId, String threadId) {
+        return service().deleteGuildThreadAsync(channelId, threadId);
     }
 }

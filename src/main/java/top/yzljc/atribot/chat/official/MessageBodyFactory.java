@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Map;
 import java.util.function.Function;
 
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
+
 final class MessageBodyFactory {
 
     private static final String STREAM_CONTENT_TYPE_MARKDOWN = "markdown";
@@ -276,8 +278,8 @@ final class MessageBodyFactory {
      * @throws IllegalArgumentException 两种 ID 同时非空时抛出
      */
     static RT sourceOf(String msgId, String eventId) {
-        boolean message = !ChatService.isBlank(msgId);
-        boolean event = !ChatService.isBlank(eventId);
+        boolean message = !isBlank(msgId);
+        boolean event = !isBlank(eventId);
         if (message && event) {
             throw new IllegalArgumentException("msg_id 与 event_id 不能同时设置");
         }

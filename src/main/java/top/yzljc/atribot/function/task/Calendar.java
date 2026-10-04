@@ -17,6 +17,7 @@ import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.command.CalendarTask;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -42,7 +43,7 @@ public class Calendar implements CommandExecutor {
 
     public static void sendToSingleGroup(String targetGroupId) {
         try {
-            var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
+            var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false), Platform.NAPCAT_GROUP);
             if (!data.isError() && data.url() != null) {
                 GroupMessage.chatMessage(targetGroupId, ImageComponent.imageOf(data.url()));
             } else {
@@ -63,7 +64,7 @@ public class Calendar implements CommandExecutor {
             }
 
             try {
-                var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", true));
+                var data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", true), Platform.NAPCAT_GROUP);
                 if (data.isError() || data.url() == null) {
                     String errMsg = data.errorMessage();
                     log.warn("日历推送失败: {}", errMsg);

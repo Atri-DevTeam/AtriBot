@@ -1,5 +1,7 @@
 package top.yzljc.atribot.command;
 
+import top.yzljc.atribot.platform.Platform;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName CommandSender
@@ -8,6 +10,13 @@ package top.yzljc.atribot.command;
  * @Package top.yzljc.atribot.command
  */
 public interface CommandSender {
+
+    /**
+     * @return 发送者所属平台；控制台等没有平台的发送者返回 null
+     */
+    default Platform getPlatform() {
+        return null;
+    }
 
     String getUserId();
 

@@ -26,6 +26,17 @@ import java.util.concurrent.CompletableFuture;
 public final class AsyncC2CChat {
 
     /**
+     * 异步撤回单聊消息
+     *
+     * @param openId 用户 openId
+     * @param messageId 消息 ID
+     * @return 撤回结果，平台返回成功状态时为 true，请求失败时为 false
+     */
+    public static CompletableFuture<Boolean> recallMessage(String openId, String messageId) {
+        return service().recallPrivateMessageAsync(openId, messageId);
+    }
+
+    /**
      * 异步发送单聊正在输入通知，默认持续 60 秒
      *
      * @param openId 用户 openId

@@ -4,13 +4,14 @@ import lombok.AllArgsConstructor;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.chat.official.C2CChat;
+import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.QQUser;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 import java.util.List;
@@ -26,7 +27,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class QQSenderImpl implements QQCommandSender {
 
-    private final User user;
+    private final QQUser user;
     private final String groupId;
     private final QQMessage message;
 
@@ -225,25 +226,17 @@ public class QQSenderImpl implements QQCommandSender {
 
     @Override
     public boolean recall() {
-        switch (this.user.getPlatform()) {
-            case OFFICIAL_GROUP -> {
-                return this.user.recall(this.groupId, this.message.getMessageId());
-            }
-            case OFFICIAL_C2C -> {
-                return this.user.recall(this.message.getMessageId());
-            }
-        }
-        throw new UnsupportedPlatform(this.user.getPlatform(), "recall()");
+        return message.recall();
     }
 
     @Override
     public boolean recall(String messageId) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
-                return this.user.recall(this.groupId, messageId);
+                return GroupChat.recallMessage(this.groupId, messageId);
             }
             case OFFICIAL_C2C -> {
-                return this.user.recall(messageId);
+                return C2CChat.recallMessage(this.user.getUserId(), messageId);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "recall(String messageId)");

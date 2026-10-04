@@ -25,6 +25,17 @@ import java.util.Objects;
 public final class AsyncGroupChat {
 
     /**
+     * 异步撤回群聊消息
+     *
+     * @param groupOpenId 群 openId
+     * @param messageId 消息 ID
+     * @return 撤回结果，平台返回成功状态时为 true，请求失败时为 false
+     */
+    public static CompletableFuture<Boolean> recallMessage(String groupOpenId, String messageId) {
+        return service().recallGroupMessageAsync(groupOpenId, messageId);
+    }
+
+    /**
      * 异步主动发送群聊图片并引用指定消息
      *
      * @param groupOpenId 群 openId

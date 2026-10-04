@@ -8,11 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.plugin.PluginCommand;
+import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
@@ -20,10 +20,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * 群指令停用规则。数据量很小，修改时整体写入 JSON，读取使用内存快照。
- * 对外方法刻意保持静态且与 WebUI 无关，后续机器人指令可直接复用。
- */
 public final class CommandDisableService {
     private static final Logger log = LoggerFactory.getLogger(CommandDisableService.class);
     private static final ObjectMapper MAPPER = new ObjectMapper()
@@ -201,14 +197,6 @@ public final class CommandDisableService {
     }
 
     private static void persist() throws IOException {
-        Path parent = FILE.toAbsolutePath().getParent();
-        if (parent != null) Files.createDirectories(parent);
-        Path temp = FILE.resolveSibling(FILE.getFileName() + ".tmp");
-        MAPPER.writerWithDefaultPrettyPrinter().writeValue(temp.toFile(), rules);
-        try {
-            Files.move(temp, FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException ignored) {
-            Files.move(temp, FILE, StandardCopyOption.REPLACE_EXISTING);
-        }
+        AtomicFiles.write(FILE, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(rules));
     }
 }

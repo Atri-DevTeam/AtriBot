@@ -27,6 +27,7 @@ public class Button {
     private List<String> allowedOpenIds = Collections.emptyList();
     private Modal modal;
     private String buttonGroupId;
+    private String unsupportedTip = "当前客户端版本不支持此按钮";
 
     public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
         this.buttonId = buttonId;
@@ -84,6 +85,11 @@ public class Button {
 
     public Button setModal(String content) {
         this.modal.content = content;
+        return this;
+    }
+
+    public Button setUnsupportedTip(String unsupportedTip) {
+        this.unsupportedTip = unsupportedTip;
         return this;
     }
 

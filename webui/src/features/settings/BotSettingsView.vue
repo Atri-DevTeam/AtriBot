@@ -149,6 +149,16 @@
             </template>
           </div>
 
+          <div class="errors-surface bs-card">
+            <header class="bs-card-head">
+              <h3 class="bs-card-title">默认加群欢迎</h3>
+              <p class="bs-card-desc">按机器人权限身份配置欢迎正文、图片和按钮</p>
+            </header>
+            <DefaultJoinWelcomeSettings ref="welcomePanel" :api="api" :bot-name="profile.botName"
+                                        :bot-avatar-url="profile.avatarUrl"
+                                        :debug-group-id="settingItems.find(item => item.key === 'qq.debug-group-openId')?.value || ''" />
+          </div>
+
           <!-- 面板设置 -->
           <div class="errors-surface bs-card">
             <header class="bs-card-head">
@@ -221,13 +231,14 @@
 <script setup>
 import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
 import {computed, reactive, ref, onMounted} from 'vue'
-import {useRouter} from 'vue-router'
+import {onBeforeRouteLeave, useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
 import { useBotConfig } from '../../shared/lib/botConfig.js'
 import FunctionSettingsPanel from './components/FunctionSettingsPanel.vue'
 import CommandSettingsPanel from './components/CommandSettingsPanel.vue'
 import OrphanedRecordCleanup from './components/OrphanedRecordCleanup.vue'
+import DefaultJoinWelcomeSettings from './components/DefaultJoinWelcomeSettings.vue'
 import {resetPanelLayout} from '../../shared/lib/panelLayout.js'
 import {useChatBackground} from '../chat/lib/chatBackground.js'
 import QRCode from 'qrcode'
@@ -254,6 +265,7 @@ const functionPanel = ref(null)
 const commandPanel = ref(null)
 const cleanupPanel = ref(null)
 const friendCleanupPanel = ref(null)
+const welcomePanel = ref(null)
 
 const loading = computed(() => settingsLoading.value)
 const connectionModeText = computed(() => profile.connectionMode === 'webhook' ? 'Webhook' : 'WebSocket')
@@ -271,9 +283,19 @@ function isEqual(a, b) {
   return String(a ?? '') === String(b ?? '')
 }
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
+const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: endSession })
 
-function logout() { return logoutWebui(API_BASE, router) }
+function endSession() {
+  welcomePanel.value?.releaseLeaveGuard()
+  return logoutWebui(API_BASE, router)
+}
+
+function logout() {
+  if (welcomePanel.value && !welcomePanel.value.mayLeave()) return
+  return endSession()
+}
+
+onBeforeRouteLeave(() => welcomePanel.value?.mayLeave() ?? true)
 
 async function loadProfile() {
   loadBotConfig(api, { force: true }).catch(() => {})
@@ -332,6 +354,8 @@ async function saveSettings() {
 }
 
 function refreshAll() {
+  if (welcomePanel.value && !welcomePanel.value.mayLeave()) return
+  welcomePanel.value?.load()
   cleanupPanel.value?.reload()
   friendCleanupPanel.value?.reload()
   loadProfile()

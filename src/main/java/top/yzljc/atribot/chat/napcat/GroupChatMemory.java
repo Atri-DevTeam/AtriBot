@@ -2,19 +2,15 @@ package top.yzljc.atribot.chat.napcat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.atribot.utils.AtomicFiles;
+import top.yzljc.atribot.utils.HashUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,7 +61,7 @@ final class GroupChatMemory {
 
     Path fileFor(String groupId) {
         String id = normalizeGroupId(groupId);
-        String name = id.matches("[0-9]{1,32}") ? id : hash(id);
+        String name = id.matches("[0-9]{1,32}") ? id : HashUtils.sha256Hex(id);
         return directory.resolve(name + ".json");
     }
 
@@ -102,19 +98,7 @@ final class GroupChatMemory {
     }
 
     static void writeJson(Path file, Object value) throws IOException {
-        Files.createDirectories(file.toAbsolutePath().getParent());
-        Path temporary = Files.createTempFile(file.toAbsolutePath().getParent(), ".atri-chat-", ".json");
-        try {
-            JSON.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), value);
-            try {
-                Files.move(temporary, file.toAbsolutePath(),
-                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException unsupported) {
-                Files.move(temporary, file.toAbsolutePath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
+        AtomicFiles.write(file, JSON.writerWithDefaultPrettyPrinter().writeValueAsBytes(value));
     }
 
     static String normalizeGroupId(String groupId) {
@@ -127,15 +111,6 @@ final class GroupChatMemory {
         if (result.length() <= limit) return result;
         int end = Character.isHighSurrogate(result.charAt(limit - 1)) ? limit - 1 : limit;
         return result.substring(0, end);
-    }
-
-    private static String hash(String value) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException(impossible);
-        }
     }
 
     record Snapshot(int version, String groupId, String summary, List<Entry> messages) {}

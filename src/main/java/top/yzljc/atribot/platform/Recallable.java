@@ -8,11 +8,5 @@ package top.yzljc.atribot.platform;
  * @Package top.yzljc.atribot.platform
  */
 public interface Recallable {
-
-    /** @param id 请根据不同平台的撤回方法的参数约定自行适配 */
-    boolean recall(String id, String messageId);
-
-    default boolean recall(String messageId) {
-        return false;
-    }
+    boolean recall();
 }

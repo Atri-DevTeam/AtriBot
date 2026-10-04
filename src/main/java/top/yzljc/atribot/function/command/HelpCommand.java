@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.chat.kook.KookCard;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -10,12 +11,14 @@ import top.yzljc.atribot.chat.official.button.*;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.SlashCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.qq.QQBot;
@@ -32,6 +35,13 @@ import java.util.List;
 public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof KookCommandSender kook) {
+            String prefix = Config.getInstance().getCommandPrefix();
+            kook.sendCard(new KookCard().header("KOOK 指令帮助")
+                    .markdown("`" + prefix + "help` 查看帮助\n"
+                    + "`" + prefix + "whoami` 查看当前用户与会话信息"));
+            return true;
+        }
 
         if (sender instanceof QQCommandSender user) {
             Markdown md = TC.md("✨ **" + QQBot.BOT_NAME + "帮助菜单**\n\n" +
@@ -109,8 +119,9 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         sender.sendEmbed(new DiscordEmbed()
                 .title(QQBot.BOT_NAME + " Discord 指令帮助")
                 .description("""

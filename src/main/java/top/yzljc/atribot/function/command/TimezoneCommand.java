@@ -87,7 +87,7 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
 
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
         String query = args.getString("zone", "zh").trim();
 
         ThreadManager.execute(() -> {

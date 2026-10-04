@@ -10,8 +10,8 @@ import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
+import top.yzljc.atribot.utils.FormatTools;
 
-import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -98,7 +98,7 @@ public class PicStatsCommand implements CommandExecutor {
             sb.append("`").append(shortId(dto.getId())).append("` ");
             sb.append(dto.getUploaderName() != null ? dto.getUploaderName() : "匿名");
             sb.append(" · ").append(dto.getWidth()).append("x").append(dto.getHeight());
-            sb.append(" · ").append(formatTime(dto.getCreateTime())).append("\n");
+            sb.append(" · ").append(FormatTools.formatTimestamp(dto.getCreateTime(), TIME_FMT, "-")).append("\n");
         }
         sb.append("━━━━━━━━━━━━━━\n");
         sb.append("审核请前往 WebUI 图源管理页");
@@ -111,11 +111,6 @@ public class PicStatsCommand implements CommandExecutor {
         int judged = reviewed + denied;
         if (judged == 0) return "—";
         return String.format("%.1f%%", reviewed * 100.0 / judged);
-    }
-
-    private static String formatTime(Timestamp ts) {
-        if (ts == null) return "-";
-        return ts.toLocalDateTime().format(TIME_FMT);
     }
 
     private static String shortId(String id) {

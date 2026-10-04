@@ -5,35 +5,33 @@ import lombok.Getter;
 
 import java.util.*;
 
+/**
+ * @Author YZ_Ljc_
+ * @ClassName SlashCommandArguments
+ * @Created_at 2026/07/20
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.command
+ */
 public class SlashCommandArguments {
     @Getter
-    private final JsonNode options;
-    @Getter
-    private final JsonNode resolved;
-    @Getter
-    private final JsonNode raw;
+    private final List<String> commandPath;
     @Getter
     private final List<Option> optionList;
     private final Map<String, Option> optionMap;
     private final String[] flatArgs;
 
-    public SlashCommandArguments(JsonNode options, JsonNode resolved, JsonNode raw) {
-        this.options = options;
-        this.resolved = resolved;
-        this.raw = raw;
-
-        List<Option> parsed = new ArrayList<>();
-        List<String> flat = new ArrayList<>();
-        collectOptions(options, parsed, flat);
-
+    public SlashCommandArguments(List<String> commandPath, List<Option> options) {
+        this.commandPath = List.copyOf(commandPath);
+        this.optionList = List.copyOf(options);
         Map<String, Option> byName = new LinkedHashMap<>();
-        for (Option option : parsed) {
+        List<String> flat = new ArrayList<>(commandPath);
+        for (Option option : optionList) {
             byName.put(option.name().toLowerCase(Locale.ROOT), option);
+            JsonNode value = option.value();
+            if (value != null && !value.isMissingNode() && !value.isNull()) flat.add(value.asText());
         }
-
-        this.optionList = Collections.unmodifiableList(parsed);
         this.optionMap = Collections.unmodifiableMap(byName);
-        this.flatArgs = flat.toArray(new String[0]);
+        this.flatArgs = flat.toArray(String[]::new);
     }
 
     public Option getOption(String name) {
@@ -92,6 +90,11 @@ public class SlashCommandArguments {
         return value.asBoolean();
     }
 
+    /**
+     * 将子命令路径和选项值按顺序转换为位置参数，忽略空值，不保留选项名称及类型。
+     *
+     * @return 位置参数数组的副本
+     */
     public String[] toArray() {
         return flatArgs.clone();
     }
@@ -108,33 +111,9 @@ public class SlashCommandArguments {
         return flatArgs[index];
     }
 
-    private static void collectOptions(JsonNode optionsNode, List<Option> parsed, List<String> flat) {
-        if (optionsNode == null || !optionsNode.isArray()) {
-            return;
+    public record Option(String name, JsonNode value) {
+        public Option {
+            if (name == null || name.isBlank()) throw new IllegalArgumentException("参数名称不能为空");
         }
-
-        for (JsonNode optionNode : optionsNode) {
-            String name = optionNode.path("name").asText(null);
-            int type = optionNode.path("type").asInt(-1);
-
-            if (type == 1 || type == 2) {
-                if (name != null && !name.isBlank()) {
-                    flat.add(name);
-                }
-                collectOptions(optionNode.path("options"), parsed, flat);
-                continue;
-            }
-
-            JsonNode value = optionNode.path("value");
-            if (name != null && !name.isBlank()) {
-                parsed.add(new Option(name, type, value, optionNode));
-            }
-            if (!value.isMissingNode() && !value.isNull()) {
-                flat.add(value.asText());
-            }
-        }
-    }
-
-    public record Option(String name, int type, JsonNode value, JsonNode raw) {
     }
 }

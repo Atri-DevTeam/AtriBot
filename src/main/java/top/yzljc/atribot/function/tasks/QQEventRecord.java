@@ -1,7 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.button.ButtonSize;
+import top.yzljc.atribot.chat.official.button.*;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 
@@ -12,9 +12,6 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
@@ -105,6 +102,7 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onC2CMessageButNotCommand(OfficialC2CMessageCreateEvent event) {
+        if (ReminderCommand.isCustomReminderInput(event)) return;
         if (ReminderCommand.isReminderRequest(event.getMessage().getContent())) return;
         String userId = event.getUser().getUserId();
         if (!event.getMessage().isCommand()) {
@@ -119,7 +117,19 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
-        log.info("New friend added: {}", event.getUserOpenId());
+        log.info("[+] 官机数据变动，新增好友: {}", event.getUserOpenId());
+
+        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★");
+        Keyboard keyboard = new Keyboard(
+                List.of(
+                        List.of(new Button("c1", "指令功能一览♪", "/help", true, ButtonStyle.ICON_BUTTON, ButtonType.COMMAND),
+                                new Button("c2", "今天也要记得签到\uD83C\uDF19", "/sign", true, ButtonStyle.ICON_BUTTON, ButtonType.COMMAND),
+                                new Button("c3", "来玩点有趣的吧\uD83C\uDFAE", "/games", true, ButtonStyle.ICON_BUTTON, ButtonType.COMMAND))
+                )
+        ).setPromptStyle(true);
+
+        event.sendOpeningMessage(md.setKeyboard(keyboard));
+
         OfficialUsers.registerUser(event.getUserOpenId());
         log.info("Registered official user data for new friend: {}", event.getUserOpenId());
         if (CoinGainLogRepository.countCoinGains(event.getUserOpenId(), "friend_add") < 1) {

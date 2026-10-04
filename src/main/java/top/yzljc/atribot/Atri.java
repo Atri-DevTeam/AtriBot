@@ -71,6 +71,8 @@ import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
 import top.yzljc.atribot.platform.discord.DiscordManager;
+import top.yzljc.atribot.platform.kook.KookApiClient;
+import top.yzljc.atribot.platform.kook.KookManager;
 import top.yzljc.atribot.platform.qq.OfficialManager;
 import top.yzljc.atribot.platform.qq.QQWebhookHandler;
 import top.yzljc.atribot.platform.qq.TokenManager;
@@ -138,6 +140,8 @@ public class Atri {
     private final SkyblockPackCheckImpl skyblockPackCheck;
     private final DiscordManager discordManager;
     @Getter
+    private final KookManager kookManager;
+    @Getter
     private final ChannelCliClient tencentChannelCliClient;
     @Getter
     private final CalendarTask calendarTask;
@@ -186,6 +190,7 @@ public class Atri {
         this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
                 ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
                 : null;
+        this.kookManager = createKookManager(config);
 
         int qqBotPort = config.getListenPort();
 
@@ -238,6 +243,10 @@ public class Atri {
         }
 
         WebUIRouter.register(server);
+        if (kookManager != null) {
+            server.post(config.getKookWebhookPath(), kookManager.getWebhookHandler()::handle);
+            log.info("KOOK Webhook 回调已启用: POST {}", config.getKookWebhookPath());
+        }
         MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
@@ -383,6 +392,7 @@ public class Atri {
         CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
         CommandManager.getCommand("sharebot").setExecutor(new ShareBotCommand());
         CommandManager.getCommand("groupsystemverify").setExecutor(new GroupSystemCommand());
+        CommandManager.getCommand("dau").setExecutor(new DauCommand());
 
         // ----------- DEBUG COMMANDS -----------
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
@@ -498,6 +508,9 @@ public class Atri {
         }
 
         qqWebhookHandler.close();
+        if (kookManager != null) {
+            kookManager.close();
+        }
         miniappSessions.close();
         napcatEventQueue.close();
         soundCommand.close();
@@ -532,9 +545,31 @@ public class Atri {
         System.out.println("==== AtriBot Disabled ====");
     }
 
+    private static KookManager createKookManager(Config config) {
+        if (!config.isKookEnabled()) return null;
+        try {
+            String path = config.getKookWebhookPath();
+            if (path == null || !path.matches("/kook/[a-zA-Z0-9/_-]+")) {
+                throw new IllegalArgumentException("KOOK 回调路径必须位于 /kook/ 下且不得包含通配符");
+            }
+            if (path.equals(config.getQqWebhookPath()) || path.equals(config.getGithubWebhookPath())) {
+                throw new IllegalArgumentException("KOOK 回调路径与其他 Webhook 路径冲突");
+            }
+            return new KookManager(new KookApiClient(config.getKookApiBaseUrl(), config.getKookBotToken(),
+                    Duration.ofSeconds(20)), config.getKookVerifyToken(), config.getKookEncryptKey(),
+                    new java.util.HashSet<>(config.getKookAdminIds()));
+        } catch (IllegalArgumentException e) {
+            log.error("KOOK 配置无效，适配器未启用，请检查 kook 配置项");
+            return null;
+        }
+    }
+
     public static void main(String[] args) {
         Atri bot = new Atri();
         bot.onEnable();
+        if (bot.kookManager != null) {
+            bot.kookManager.start();
+        }
 
         try {
             bot.qqBotManagerService.start();

@@ -30,6 +30,7 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.utils.AtomicFiles;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
@@ -42,8 +43,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -383,30 +382,11 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         File file = new File(HISTORY_FILE);
 
         try {
-            File parent = file.getParentFile();
-
-            if (parent != null && !parent.exists()) {
-                Files.createDirectories(parent.toPath());
-            }
-
             List<String> sorted = new ArrayList<>(guids);
             sorted.sort(String::compareTo);
-            File tempFile = new File(file.getAbsolutePath() + ".tmp");
-            objectMapper.writeValue(tempFile, sorted);
-            Files.move(tempFile.toPath(),
-                    file.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE
-            );
-
-        } catch (Exception atomicMoveException) {
-            try {
-                List<String> sorted = new ArrayList<>(guids);
-                sorted.sort(String::compareTo);
-                objectMapper.writeValue(file, sorted);
-            } catch (IOException e) {
-                log.error("Failed to save Hypixel announcement guids to {}", HISTORY_FILE, e);
-            }
+            AtomicFiles.write(file.toPath(), objectMapper.writeValueAsBytes(sorted));
+        } catch (IOException e) {
+            log.error("Failed to save Hypixel announcement guids to {}", HISTORY_FILE, e);
         }
     }
 

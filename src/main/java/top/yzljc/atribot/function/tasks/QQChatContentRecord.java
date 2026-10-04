@@ -17,7 +17,6 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.MessageReference;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.SseBroadcaster;
@@ -32,6 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static top.yzljc.atribot.utils.StringUtils.firstNonBlank;
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
 
 @Slf4j
 public class QQChatContentRecord implements Listener {
@@ -132,7 +134,7 @@ public class QQChatContentRecord implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialC2CMessage(OfficialC2CMessageCreateEvent event) {
-        User user = event.getUser();
+        var user = event.getUser();
         String uid = user.getUserId();
         if (uid != null) ensureC2CUserInCache(uid);
         recordC2CMessage(
@@ -162,7 +164,7 @@ public class QQChatContentRecord implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
         ensureGroupInCache(event.getGroupId());
-        User user = event.getUser();
+        var user = event.getUser();
         recordGroupMessage(
                 event.getGroupId(),
                 user.getUserId(),
@@ -185,7 +187,7 @@ public class QQChatContentRecord implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onOfficialGroupMessage(OfficialGroupMessageCreateEvent event) {
         ensureGroupInCache(event.getGroupId());
-        User user = event.getUser();
+        var user = event.getUser();
         recordGroupMessage(
                 event.getGroupId(),
                 user.getUserId(),
@@ -1177,25 +1179,12 @@ public class QQChatContentRecord implements Listener {
         return value == null ? null : toJson(value);
     }
 
-    private static String firstNonBlank(String... values) {
-        for (String value : values) {
-            if (!isBlank(value)) {
-                return value;
-            }
-        }
-        return null;
-    }
-
 //    private static String nowLocalTime() {
 //        return LocalDateTime.now().format(LOCAL_TIME_FORMATTER);
 //    }
 
     private static String emptyToNull(String value) {
         return isBlank(value) ? null : value;
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     public record MessagePage<T>(int page, int pageSize, long total, List<T> records) {

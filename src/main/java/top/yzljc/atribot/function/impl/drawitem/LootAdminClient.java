@@ -11,6 +11,8 @@ import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;
 
+import static top.yzljc.atribot.utils.StringUtils.isBlankOrNullLiteral;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName LootAdminClient
@@ -55,14 +57,10 @@ public class LootAdminClient {
 
     private static String[] authHeaders() {
         String token = Config.getInstance().getLootsAdminToken();
-        if (isBlank(token)) {
+        if (isBlankOrNullLiteral(token)) {
             return new String[0];
         }
         return new String[]{"Authorization", "Bearer " + token};
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim());
     }
 
     public static String imageBaseUrl() {

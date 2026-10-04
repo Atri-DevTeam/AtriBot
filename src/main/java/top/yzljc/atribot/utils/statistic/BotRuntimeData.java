@@ -9,10 +9,9 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.event.events.NapcatPrivateMessageEvent;
 import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -52,26 +51,7 @@ public class BotRuntimeData implements Listener {
 
     public static synchronized void save() {
         try {
-            File target = new File("data.json");
-            File temp = new File("data.json.tmp");
-
-            mapper.writerWithDefaultPrettyPrinter().writeValue(temp, cache);
-
-            try {
-                Files.move(
-                        temp.toPath(),
-                        target.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE
-                );
-            } catch (Exception e) {
-                Files.move(
-                        temp.toPath(),
-                        target.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING
-                );
-            }
-
+            AtomicFiles.write(file.toPath(), mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(cache));
         } catch (Exception e) {
             log.error("保存运行时数据失败: " + e.getMessage());
         }

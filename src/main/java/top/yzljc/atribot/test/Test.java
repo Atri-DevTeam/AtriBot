@@ -3,27 +3,16 @@ package top.yzljc.atribot.test;
 import lombok.extern.slf4j.Slf4j;
 
 import top.yzljc.atribot.chat.official.*;
-import top.yzljc.atribot.chat.official.ark.Ark;
-import top.yzljc.atribot.chat.official.ark.Ark23;
 import top.yzljc.atribot.chat.official.button.*;
 import top.yzljc.atribot.chat.official.card.Card;
-import top.yzljc.atribot.chat.official.media.HexColor;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.function.impl.drawitem.LootService;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * @Author YZ_Ljc_
@@ -143,7 +132,7 @@ public class Test implements CommandExecutor, Listener {
 //        ImageSourceClient.migrateUnreviewedToDirs();
 
 //        var user = (QQCommandSender) sender;
-//        Markdown md = TC.md("1");
+        Markdown md = TC.md("1");
 //        Object btn1 = TC.keyboard(List.of(
 //                List.of(new Button("c1", "按钮1", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND)),
 //                List.of(new Button("c2", "按钮2", "/test -g", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -154,53 +143,65 @@ public class Test implements CommandExecutor, Listener {
 //        ));
 //        user.sendMessage(md, btn1);
 //        user.sendMessage(md, btn2);
-        if (args.length > 0 && args[0].toLowerCase(Locale.ROOT).startsWith("ark")) {
-            if (!(sender instanceof QQCommandSender qq)
-                    || (qq.getPlatform() != Platform.OFFICIAL_GROUP && qq.getPlatform() != Platform.OFFICIAL_C2C)) {
-                sender.sendMessage("Ark 测试仅支持 QQ 官方群聊和私聊");
-                return true;
-            }
-
-            String imageUrl = "https://res.yzljc.top/images/birthday.jpeg";
-            String jumpUrl = "https://www.yzljc.top";
-            Ark ark = switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "ark23" -> Ark.ark23("标题", "内容", List.of(
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        Ark23.Item.text("描述"),
-                        new Ark23.Item("描述2", jumpUrl)
-                ));
-                case "ark24" -> Ark.ark24("描述", "内容", "标题", "描述2", imageUrl, jumpUrl, "子标题");
-                case "ark37" -> Ark.ark37("内容", "标题", "子标题", imageUrl, jumpUrl);
-                default -> null;
-            };
-            if (ark == null) {
-                sender.sendMessage("用法: /test <ark23|ark24|ark37>");
-                return true;
-            }
-
-            // Ark 测试使用主动消息，不携带当前命令的消息 ID。
-            if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
-                GroupChat.sendMessage(qq.getGroupId(), ark);
-            } else {
-                C2CChat.sendMessage(qq.getUserId(), ark);
-            }
-            return true;
-        }
+//        if (args.length > 0 && args[0].toLowerCase(Locale.ROOT).startsWith("ark")) {
+//            if (!(sender instanceof QQCommandSender qq)
+//                    || (qq.getPlatform() != Platform.OFFICIAL_GROUP && qq.getPlatform() != Platform.OFFICIAL_C2C)) {
+//                sender.sendMessage("Ark 测试仅支持 QQ 官方群聊和私聊");
+//                return true;
+//            }
+//
+//            String imageUrl = "https://res.yzljc.top/images/birthday.jpeg";
+//            String jumpUrl = "https://www.yzljc.top";
+//            Ark ark = switch (args[0].toLowerCase(Locale.ROOT)) {
+//                case "ark23" -> Ark.ark23("标题", "内容", List.of(
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        Ark23.Item.text("描述"),
+//                        new Ark23.Item("描述2", jumpUrl)
+//                ));
+//                case "ark24" -> Ark.ark24("描述", "内容", "标题", "描述2", imageUrl, jumpUrl, "子标题");
+//                case "ark37" -> Ark.ark37("内容", "标题", "子标题", imageUrl, jumpUrl);
+//                default -> null;
+//            };
+//            if (ark == null) {
+//                sender.sendMessage("用法: /test <ark23|ark24|ark37>");
+//                return true;
+//            }
+//
+//            // Ark 测试使用主动消息，不携带当前命令的消息 ID。
+//            if (qq.getPlatform() == Platform.OFFICIAL_GROUP) {
+//                GroupChat.sendMessage(qq.getGroupId(), ark);
+//            } else {
+//                C2CChat.sendMessage(qq.getUserId(), ark);
+//            }
+//            return true;
+//        }
         var u = (QQCommandSender) sender;
-        var d = Card.tuWen("被动图文消息", "这是一条被动图文消息测试", "https://res.yzljc.top/images/birthday.jpeg", "https://q.qq.com");
-        GroupChat.replyMessage(u.getGroupId(), RT.message(u.getMessage().getMessageId()), d);
+//        var d = Card.tuWen("被动图文消息", "这是一条被动图文消息测试", "https://res.yzljc.top/images/birthday.jpeg", "https://q.qq.com");
+//        GroupChat.replyMessage(u.getGroupId(), RT.message(u.getMessage().getMessageId()), d);
+//        u.sendMessage(md.setKeyboard(
+//                new Keyboard(                List.of(
+//                        List.of(new Button("c1", "按钮1", "按钮1-data", true, ButtonStyle.RED, ButtonType.COMMAND)),
+//                        List.of(new Button("c2", "按钮2", "按钮2-data", true, ButtonStyle.GRAY, ButtonType.COMMAND)),
+//                        List.of(new Button("c3", "按钮3", "按钮3-data", true, ButtonStyle.ICON_BUTTON, ButtonType.COMMAND)),
+//                        List.of(new Button("c4", "按钮4", "按钮4-data", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND))
+//                        )).setPromptStyle(true)
+//        ));
+//        u.sendMessage(md.setKeyboard(new Keyboard(List.of(List.of(new Button("c1", "按钮1", "按钮1-data", true, ButtonStyle.RED, ButtonType.CUSTOM).setUnsupportedTip("你好老大"))))));
+        GroupChat.sendMessage(u.getGroupId(), Card.tuWen(
+                "标题", "描述，但是我想换行\n单换\n\n双换\r\nrn换", "https://res.yzljc.top/images/birthday.jpeg", "https://q.qq.com"
+        ));
         return true;
     }
 
@@ -243,80 +244,85 @@ public class Test implements CommandExecutor, Listener {
         sender.sendMessage("查询失败: " + result.getError().toString());
     }
 
-    @EventHandler
-    public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
-        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+//    @EventHandler
+//    public void onAt(OfficialAtForumThreadCreateEvent event) {
+//        event.createThread(new GuildThread("1", "2", Format.FORMAT_TEXT));
+//    }
 
-        String useId = event.getUser().getUserId();
-        String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
-
-        var item = LootService.getCatalog(false).stream()
-                .filter(it -> it.itemId().equals(itemId))
-                        .findFirst()
-                                .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
-
-        var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
-
-        if (record == null) {
-            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
-            return;
-        } else {
-            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
-        }
-
-//        event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
-        UsersListed.recordUser(event.getUser().getUserId());
-    }
-
-    @EventHandler
-    public void onGroupMessageCreateButAt(OfficialGroupMessageCreateEvent event) {
-        if (event.isAtBot()) {
-            if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
-
-            String useId = event.getUser().getUserId();
-            String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
-
-            var item = LootService.getCatalog(false).stream()
-                    .filter(it -> it.itemId().equals(itemId))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
-
-            var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
-
-            if (record == null) {
-                event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
-                return;
-            } else {
-                event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
-            }
-
-//            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
-            UsersListed.recordUser(event.getUser().getUserId());
-        }
-    }
-
-    @EventHandler
-    public void onC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
-        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
-
-        String useId = event.getUser().getUserId();
-        String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
-
-        var item = LootService.getCatalog(false).stream()
-                .filter(it -> it.itemId().equals(itemId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
-
-        var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
-
-        if (record == null) {
-            event.getUser().sendMessage(event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
-            return;
-        } else {
-            event.getUser().sendMessage(event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
-        }
-
-//        event.getUser().sendMessage(event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
-        UsersListed.recordUser(event.getUser().getUserId());
-    }
+//    @EventHandler
+//    public void onGroupAtMessageCreate(OfficialGroupAtMessageCreateEvent event) {
+//        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+//
+//        String useId = event.getUser().getUserId();
+//        String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
+//
+//        var item = LootService.getCatalog(false).stream()
+//                .filter(it -> it.itemId().equals(itemId))
+//                        .findFirst()
+//                                .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
+//
+//        var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
+//
+//        if (record == null) {
+//            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
+//            return;
+//        } else {
+//            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
+//        }
+//
+////        event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+//        UsersListed.recordUser(event.getUser().getUserId());
+//    }
+//
+//    @EventHandler
+//    public void onGroupMessageCreateButAt(OfficialGroupMessageCreateEvent event) {
+//        if (event.isAtBot()) {
+//            if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+//
+//            String useId = event.getUser().getUserId();
+//            String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
+//
+//            var item = LootService.getCatalog(false).stream()
+//                    .filter(it -> it.itemId().equals(itemId))
+//                    .findFirst()
+//                    .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
+//
+//            var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
+//
+//            if (record == null) {
+//                event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
+//                return;
+//            } else {
+//                event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
+//            }
+//
+////            event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+//            UsersListed.recordUser(event.getUser().getUserId());
+//        }
+//    }
+//
+//    @EventHandler
+//    public void onC2CMessageCreate(OfficialC2CMessageCreateEvent event) {
+//        if (UsersListed.isUserRecorded(event.getUser().getUserId())) return;
+//
+//        String useId = event.getUser().getUserId();
+//        String itemId = "1bd353b7-932a-400e-aa27-e7849dc6a5c7";
+//
+//        var item = LootService.getCatalog(false).stream()
+//                .filter(it -> it.itemId().equals(itemId))
+//                .findFirst()
+//                .orElseThrow(() -> new IllegalArgumentException("Item with ID " + itemId + " not found in catalog"));
+//
+//        var record = LootRepository.appendLoot(useId, item.itemId(), item.displayName(), "2026中秋节活动", item.special());
+//
+//        if (record == null) {
+//            event.getUser().sendMessage(event.getMessage().getMessageId(), "出现未知错误，请联系开发者处理！");
+//            return;
+//        } else {
+//            event.getUser().sendMessage(event.getMessage().getMessageId(), TC.md("中秋节快乐，获得物品 " + Markdown.colored(HexColor.GOLD, "「" + record.displayName() + "」")));
+//        }
+//
+////        event.getUser().sendMessage(event.getMessage().getMessageId(), ImageComponent.imageOf("https://res.yzljc.top/images/birthday.jpeg").setText("今天是8月28日，是亚托莉的生日，邀请亚托莉喵到5个群，在潜水的时候就会遇到一个躺在机器里的仿生人，我试过了是假的，但是今天真的是亚托莉的生日，亚托莉生日快乐！"));
+//        UsersListed.recordUser(event.getUser().getUserId());
+//    }
 }

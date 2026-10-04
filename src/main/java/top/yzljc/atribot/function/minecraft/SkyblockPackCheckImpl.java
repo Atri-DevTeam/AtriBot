@@ -124,7 +124,10 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
             }
         }
 
-        var r = PreImageGenerate.dump(OpenApi.get("bot.hypixel.skyblock.resource-pack"), request);
+        String renderUrl = OpenApi.get("bot.hypixel.skyblock.resource-pack");
+        var r = sender == null
+                ? PreImageGenerate.dump(renderUrl, request)
+                : PreImageGenerate.dump(renderUrl, request, sender.getPlatform());
         if (sender != null) {
             if (r.url() == null || r.isError()) {
                 sender.sendMessage(r.errorMessage());

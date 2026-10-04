@@ -18,7 +18,7 @@ public class HappyNewYearCommand implements CommandExecutor, SlashCommandExecuto
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var data = PreImageGenerate.dump(OpenApi.get("bot.happy-new-year"), Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.happy-new-year"), Map.of(), sender.getPlatform());
 
         if (data.isError()) {
             String errMsg = data.errorMessage();
@@ -40,9 +40,10 @@ public class HappyNewYearCommand implements CommandExecutor, SlashCommandExecuto
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
-        var data = PreImageGenerate.dump(OpenApi.get("bot.happy-new-year"), Map.of());
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
+        var data = PreImageGenerate.dump(OpenApi.get("bot.happy-new-year"), Map.of(), sender.getPlatform());
         if (data.isError() || data.url() == null) {
             sender.sendMessage(data.isError() ? data.errorMessage() : "新年倒计时数据获取失败，请稍后重试。");
             return true;

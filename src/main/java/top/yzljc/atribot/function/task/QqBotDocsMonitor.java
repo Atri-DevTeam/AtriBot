@@ -12,6 +12,8 @@ import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atribot.utils.AtomicFiles;
+import top.yzljc.atribot.utils.HashUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,8 +23,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -274,7 +274,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         clean.select("p,h1,h2,h3,h4,h5,h6,li,tr,pre,blockquote").before("\n").after("\n");
         String normalized = normalize(clean.wholeText());
         if (normalized.isBlank()) throw new IOException("页面正文为空: " + uri);
-        return new PageSnapshot(title, normalized, sha256(normalized), Instant.now().toString());
+        return new PageSnapshot(title, normalized, HashUtils.sha256Hex(normalized), Instant.now().toString());
     }
 
     private static String normalize(String raw) {
@@ -341,24 +341,7 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     }
 
     private static void saveSnapshot(Map<String, PageSnapshot> pages) throws IOException {
-        Files.createDirectories(DATA_DIR);
-        Path temporary = Files.createTempFile(DATA_DIR, "snapshot-", ".tmp");
-        try {
-            JSON.writeValue(temporary.toFile(), new SnapshotFile(Instant.now().toString(), pages));
-            try {
-                Files.move(temporary, SNAPSHOT_FILE, StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException unsupportedAtomicMove) {
-                Files.move(temporary, SNAPSHOT_FILE, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
-    }
-
-    private static String sha256(String content) throws Exception {
-        byte[] digest = MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8));
-        return java.util.HexFormat.of().formatHex(digest);
+        AtomicFiles.write(SNAPSHOT_FILE, JSON.writeValueAsBytes(new SnapshotFile(Instant.now().toString(), pages)));
     }
 
     public record CheckResult(boolean baselineCreated, int added, int modified, int removed, String report) {

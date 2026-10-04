@@ -28,7 +28,7 @@ public final class CommandSettingsController {
         List<CommandItem> items = new ArrayList<>();
         for (CommandDefinition definition : CommandManager.getDefinitions()) {
             items.add(new CommandItem(definition.name(), definition.description(), definition.usage(),
-                    definition.aliases(), CommandManager.getCommand(definition.name()).getExecutor() != null,
+                    definition.aliases(), (CommandManager.getCommand(definition.name()).getExecutor() != null || CommandManager.getCommand(definition.name()).getSlashExecutor() != null),
                     rules.get(definition.name().toLowerCase())));
         }
         ctx.json(Result.success(items));

@@ -1,0 +1,29 @@
+{
+  "USER": {
+    "text": "欢迎新人喵~\n\n![img #125px #130px](${welcomeImage})\n\n> <qqbot-cmd-input text=\"/tasks disable member_add_welcome\" show=\"关闭欢迎提示\" reference=\"false\" />",
+    "button_size": "SMALL",
+    "keyboard": [[
+      {"button_id": "c1", "display_text": "打卡", "data": "/sign", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c2", "display_text": "帮助", "data": "/help", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c3", "display_text": "自定义欢迎", "data": "/how-to-custom-text ", "enter": false, "style": "BLUE", "type": "COMMAND"}
+    ]]
+  },
+  "ADMIN": {
+    "text": "欢迎${botName}管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~\n\n![img #125px #130px](${welcomeImage})\n\n> <qqbot-cmd-input text=\"/tasks disable member_add_welcome\" show=\"关闭欢迎提示\" reference=\"false\" />",
+    "button_size": "SMALL",
+    "keyboard": [[
+      {"button_id": "c1", "display_text": "打卡", "data": "/sign", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c2", "display_text": "帮助", "data": "/help", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c3", "display_text": "自定义欢迎", "data": "/how-to-custom-text ", "enter": false, "style": "BLUE", "type": "COMMAND"}
+    ]]
+  },
+  "OWNER": {
+    "text": "欢迎${botName}开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~\n\n![img #850px #479px](${developerImage})\n\n> <qqbot-cmd-input text=\"/tasks disable member_add_welcome\" show=\"关闭欢迎提示\" reference=\"false\" />",
+    "button_size": "SMALL",
+    "keyboard": [[
+      {"button_id": "c1", "display_text": "打卡", "data": "/sign", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c2", "display_text": "帮助", "data": "/help", "enter": true, "style": "BLUE", "type": "COMMAND"},
+      {"button_id": "c3", "display_text": "自定义欢迎", "data": "/how-to-custom-text ", "enter": false, "style": "BLUE", "type": "COMMAND"}
+    ]]
+  }
+}

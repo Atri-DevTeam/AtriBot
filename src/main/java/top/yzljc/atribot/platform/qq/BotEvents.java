@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.management.JoinRequestApproval;
+import top.yzljc.atribot.chat.official.thread.ThreadInfo;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.event.events.*;
@@ -11,7 +12,6 @@ import top.yzljc.atribot.event.impl.FriendAddScene;
 import top.yzljc.atribot.event.impl.RequestSource;
 import top.yzljc.atribot.event.impl.InteractionType;
 import top.yzljc.atribot.event.impl.VerifyMethod;
-import top.yzljc.atribot.platform.Message;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.User;
@@ -102,12 +102,12 @@ public class BotEvents {
                         isAtBot = true;
                     }
                     PlatformRole roleMentioned = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
-                    mentions.add(new User(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
+                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
                 }
             }
 
-            User sender = new User(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_MESSAGE);
+            QQUser sender = new QQUser(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, eventData.path("author"));
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_MESSAGE, groupOpenId, eventData);
             OfficialGroupMessageCreateEvent event = new OfficialGroupMessageCreateEvent(sender, groupOpenId, msg, timestamp, isAtBot);
             EventManager.getInstance().callEvent(event);
 
@@ -152,8 +152,8 @@ public class BotEvents {
                 }
             }
 
-            User sender = new User(Platform.OFFICIAL_C2C, isBot, userOpenId, username, PlatformRole.MEMBER, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_C2C_MESSAGE);
+            QQUser sender = new QQUser(Platform.OFFICIAL_C2C, isBot, userOpenId, username, PlatformRole.MEMBER, eventData.path("author"));
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_C2C, messageId, content, timestamp, List.of(), messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_C2C_MESSAGE, userOpenId, eventData);
             OfficialC2CMessageCreateEvent event = new OfficialC2CMessageCreateEvent(sender, msg, timestamp);
 
             if (sbs != null) event.setSwitchButtons(sbs);
@@ -191,12 +191,12 @@ public class BotEvents {
                     var user_id = mentionNode.path("member_openid").asText(null);
                     var user_username = mentionNode.path("username").asText(null);
                     PlatformRole roleMentioned = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
-                    mentions.add(new User(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
+                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
                 }
             }
 
-            User sender = new User(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, mapper.createObjectNode());
-            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_AT_MESSAGE);
+            QQUser sender = new QQUser(Platform.OFFICIAL_GROUP, isBot, userOpenId, username, role, eventData.path("author"));
+            QQMessage msg = new QQMessage(Platform.OFFICIAL_GROUP, messageId, content, timestamp, mentions, messageType, msgIdx, attachment, ark, refMsgObj, EventType.OFFICIAL_GROUP_AT_MESSAGE, groupOpenId, eventData);
             OfficialGroupAtMessageCreateEvent event = new OfficialGroupAtMessageCreateEvent(sender, msg, groupOpenId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
@@ -230,7 +230,7 @@ public class BotEvents {
         }
     }
 
-    public static void handleFriendAddEvent(JsonNode eventData) {
+    public static void handleFriendAddEvent(String eventId, JsonNode eventData) {
         try {
             String userOpenId = eventData.path("openid").asText(null);
             String timestamp = eventData.get("timestamp").asText();
@@ -239,7 +239,7 @@ public class BotEvents {
             String shortCode = eventData.path("short_code").asText(null);
             FriendAddScene sceneEnum = FriendAddScene.fromCode(scene);
 
-            OfficialFriendAddEvent event = new OfficialFriendAddEvent(userOpenId, timestamp, sceneEnum, sceneParam, shortCode);
+            OfficialFriendAddEvent event = new OfficialFriendAddEvent(eventId, userOpenId, timestamp, sceneEnum, sceneParam, shortCode);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的好友添加事件时发生错误：", e);
@@ -419,11 +419,11 @@ public class BotEvents {
                 var userUsername = d.path("username").asText(null);
                 var userChannelId = d.path("id").asText(null);
 
-                mentions.add(new User(Platform.OFFICIAL_GUILD_CHANNEL, userIsBot, userChannelId, userUsername, PlatformRole.MEMBER, mapper.createObjectNode()));
+                mentions.add(new QQGuildUser(Platform.OFFICIAL_GUILD_CHANNEL, userIsBot, userChannelId, userUsername, d.path("union_openid").asText(null), PlatformRole.MEMBER, d));
             }
 
-            var message = new Message(Platform.OFFICIAL_GUILD_CHANNEL, messageId, content, time, mentions);
-            var user = new User(Platform.OFFICIAL_GUILD_CHANNEL, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
+            var message = new QQGuildMessage(Platform.OFFICIAL_GUILD_CHANNEL, messageId, content, time, mentions, guildId, channelId, eventData);
+            var user = new QQGuildUser(Platform.OFFICIAL_GUILD_CHANNEL, isBot, channelUserId, username, unionOpenId, PlatformRole.MEMBER, eventData.path("author"));
             OfficialGuildAtMessageCreateEvent event = new OfficialGuildAtMessageCreateEvent(user, unionOpenId, guildId, channelId, message);
             EventManager.getInstance().callEvent(event);
 
@@ -448,13 +448,34 @@ public class BotEvents {
             String content = eventData.path("content").asText(null);
             String time = eventData.path("timestamp").asText(null);
 
-            var message = new Message(Platform.OFFICIAL_GUILD_DM, messageId, content, time, List.of());
-            var user = new User(Platform.OFFICIAL_GUILD_DM, isBot, channelUserId, username, PlatformRole.MEMBER, mapper.createObjectNode());
+            var message = new QQGuildMessage(Platform.OFFICIAL_GUILD_DM, messageId, content, time, List.of(), guildId, channelId, eventData);
+            var user = new QQGuildUser(Platform.OFFICIAL_GUILD_DM, isBot, channelUserId, username, unionOpenId, PlatformRole.MEMBER, eventData.path("author"));
             OfficialGuildDirectMessageCreateEvent event = new OfficialGuildDirectMessageCreateEvent(user, unionOpenId, guildId, channelId, message);
             EventManager.getInstance().callEvent(event);
 
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的文字子频道私信消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleAtForumThreadCreateEvent(JsonNode eventData) {
+        try {
+            String guildId = eventData.path("guild_id").asText(null);
+            String channelId = eventData.path("channel_id").asText(null);
+            String authorId = eventData.path("author_id").asText(null);
+            JsonNode info = eventData.path("thread_info");
+            if (!info.isObject()) throw new IllegalArgumentException("论坛帖子事件缺少 thread_info 对象");
+            ThreadInfo threadInfo = new ThreadInfo(
+                    info.path("thread_id").asText(null),
+                    info.path("title").asText(null),
+                    info.path("content").asText(null),
+                    info.path("date_time").asText(null));
+            OfficialAtForumThreadCreateEvent event = new OfficialAtForumThreadCreateEvent(
+                    guildId, channelId, authorId, threadInfo);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的论坛帖子At消息事件时发生错误：", e);
         }
     }
 

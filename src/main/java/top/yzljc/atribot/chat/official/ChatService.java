@@ -23,11 +23,14 @@ import top.yzljc.atribot.platform.qq.QQConnectionLatency;
 import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atribot.utils.JsonPayload;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
 
 /**
  * @Author YZ_Ljc_
@@ -139,6 +142,27 @@ public class ChatService {
      */
     public String guildDirectMessageUrl(String guildId) {
         return apiBaseUrl + "/dms/" + guildId + "/messages";
+    }
+
+    /**
+     * 频道创建帖子 API URL， Method: PUT
+     *
+     * @param channelId 子频道板块 ID
+     * @return 频道创建帖子 API URL
+     */
+    public String guildThreadCreateUrl(String channelId) {
+        return apiBaseUrl + "/channels/" + channelId + "/threads";
+    }
+
+    /**
+     * 频道删除帖子 API URL， Method: DELETE
+     *
+     * @param channelId 子频道板块 ID
+     * @param threadId 帖子 ID
+     * @return 频道删除帖子 API URL
+     */
+    public String guildThreadDeleteUrl(String channelId, String threadId) {
+        return apiBaseUrl + "/channels/" + channelId + "/threads/" + threadId;
     }
 
     /**
@@ -302,11 +326,55 @@ public class ChatService {
         });
     }
 
+    public CompletableFuture<String> createGuildThreadAsync(String channelId, JsonPayload thread) {
+        return sendMessageAsync(thread, guildThreadCreateUrl(channelId), "频道帖子发布")
+                .thenApply(response -> {
+                    if (response == null) {
+                        return null;
+                    } else {
+                        return ((JsonNode)response).path("task_id").asText(null);
+                    }
+                });
+    }
+
     /**
-     * 撤回单聊消息
+     * 异步删除频道帖子
+     *
+     * @param channelId 子频道板块 ID
+     * @param threadId 帖子 ID
+     * @return 删除结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
+     */
+    public CompletableFuture<Boolean> deleteGuildThreadAsync(String channelId, String threadId) {
+        return ThreadManager.supplyAsync(() -> {
+            String url = guildThreadDeleteUrl(channelId, threadId);
+            var res = HttpService.deleteRequestDetailed(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            boolean ok = res.status() >= 200 && res.status() < 300;
+            if (!ok) {
+                log.warn("删除频道帖子失败, channelId: {}, threadId: {}, status: {}, body: {}",
+                        channelId, threadId, res.status(), res.body());
+            }
+            recordDeleteLog("频道帖子删除", url, res, ok);
+            return ok;
+        });
+    }
+
+    /**
+     * 异步撤回单聊消息
+     *
+     * @param userOpenId 用户 openId
+     * @param messageId 消息 ID
+     * @return 撤回结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
+     */
+    public CompletableFuture<Boolean> recallPrivateMessageAsync(String userOpenId, String messageId) {
+        return ThreadManager.supplyAsync(() -> recallPrivateMessage(userOpenId, messageId));
+    }
+
+    /**
+     * 同步撤回单聊消息，等待平台响应
      *
      * @param userOpenId 用户 openId
      * @param messageId  消息 ID
+     * @return HTTP 状态为 2xx 时返回 true，请求失败时返回 false
      */
     public boolean recallPrivateMessage(String userOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/users/" + userOpenId + "/messages/" + messageId;
@@ -316,7 +384,7 @@ public class ChatService {
             log.warn("撤回单聊消息失败, userOpenId: {}, messageId: {}, status: {}, body: {}",
                     userOpenId, messageId, res.status(), res.body());
         }
-        recordRecallLog("单聊撤回", url, res, ok);
+        recordDeleteLog("单聊撤回", url, res, ok);
         return ok;
     }
 
@@ -333,6 +401,52 @@ public class ChatService {
             return CompletableFuture.completedFuture(request);
         }
         return ThreadManager.supplyAsync(() -> emergencyPauseRequestOrNull(request, uploadUrl, logType));
+    }
+
+    public CompletableFuture<?> sendMessageAsync(JsonPayload request, String url, String logType) {
+        if (emergencyPaused || url == null) return CompletableFuture.completedFuture(null);
+
+        return ThreadManager.supplyAsync(() -> {
+            String json;
+            try {
+                json = objectMapper.writeValueAsString(request.toObject());
+            } catch (JsonProcessingException e) {
+                OfficialSendLogRepository.recordError(null, logType, "PUT", url, null,
+                        null, null, "消息序列化失败: " + e.getMessage());
+                log.error("{}消息序列化失败: ", logType, e);
+                return null;
+            }
+
+            String traceId = OfficialSendLogRepository.recordSend(logType, "PUT", url, json);
+            HttpService.PostResult result;
+            try {
+                result = HttpService.putJsonDetailed(url, json, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            } catch (RuntimeException e) {
+                OfficialSendLogRepository.recordError(traceId, logType, "PUT", url, json,
+                        null, null, "请求异常: " + e.getMessage());
+                throw e;
+            }
+
+            if (result.status() < 200 || result.status() >= 300) {
+                String reason = result.status() == 0 ? "请求异常: " + result.body() : "接口返回状态异常 " + result.status();
+                OfficialSendLogRepository.recordError(traceId, logType, "PUT", url, json,
+                        result.status(), result.body(), reason);
+                log.error("{} 发送失败, status: {}, body: {}", logType, result.status(), result.body());
+                return null;
+            }
+
+            try {
+                JsonNode response = isBlank(result.body()) ? objectMapper.nullNode() : objectMapper.readTree(result.body());
+                OfficialSendLogRepository.recordResponse(traceId, logType, "PUT", url, json,
+                        result.status(), result.body());
+                return response;
+            } catch (JsonProcessingException e) {
+                OfficialSendLogRepository.recordError(traceId, logType, "PUT", url, json,
+                        result.status(), result.body(), "响应解析失败: " + e.getMessage());
+                log.error("{}消息响应解析失败: ", logType, e);
+                return null;
+            }
+        });
     }
 
     /**
@@ -376,15 +490,23 @@ public class ChatService {
         return isBlank(request.getMsgId()) && isBlank(request.getEventId());
     }
 
-    static boolean isBlank(String value) {
-        return value == null || value.isBlank();
+    /**
+     * 异步撤回群聊消息
+     *
+     * @param groupOpenId 群 openId
+     * @param messageId 消息 ID
+     * @return 撤回结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
+     */
+    public CompletableFuture<Boolean> recallGroupMessageAsync(String groupOpenId, String messageId) {
+        return ThreadManager.supplyAsync(() -> recallGroupMessage(groupOpenId, messageId));
     }
 
     /**
-     * 撤回群聊消息
+     * 同步撤回群聊消息，等待平台响应
      *
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
+     * @return HTTP 状态为 2xx 时返回 true，请求失败时返回 false
      */
     public boolean recallGroupMessage(String groupOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
@@ -394,15 +516,19 @@ public class ChatService {
             log.warn("撤回群聊消息失败, groupOpenId: {}, messageId: {}, status: {}, body: {}",
                     groupOpenId, messageId, res.status(), res.body());
         }
-        recordRecallLog("群聊撤回", url, res, ok);
+        recordDeleteLog("群聊撤回", url, res, ok);
         return ok;
     }
 
     /**
-     * 撤回接口的发送日志：SEND/RESPONSE/ERROR 三态共用一个 traceId。
-     * 撤回本身是同步调用，落库统一丢给调度器异步执行，不阻塞调用线程。
+     * 异步记录 DELETE 请求及其结果，两条记录使用同一 traceId
+     *
+     * @param scene 日志场景
+     * @param url 请求地址
+     * @param result 平台响应
+     * @param ok 请求是否成功
      */
-    private void recordRecallLog(String scene, String url, HttpService.GetResult result, boolean ok) {
+    private void recordDeleteLog(String scene, String url, HttpService.GetResult result, boolean ok) {
         Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
             String traceId = OfficialSendLogRepository.recordSend(scene, "DELETE", url, null);
             if (ok) {

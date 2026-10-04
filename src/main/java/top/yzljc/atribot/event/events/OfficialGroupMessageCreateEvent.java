@@ -5,7 +5,7 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.event.Event;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.QQUser;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 /**
@@ -18,13 +18,13 @@ import top.yzljc.atribot.platform.qq.QQMessage;
  */
 @Getter
 public class OfficialGroupMessageCreateEvent extends Event {
-    private final User user;
+    private final QQUser user;
     private final String groupId;
     private final QQMessage message;
     private final String timestamp;
     private final boolean isAtBot;
 
-    public OfficialGroupMessageCreateEvent(User user, String groupId, QQMessage message, String timestamp, boolean isAtBot) {
+    public OfficialGroupMessageCreateEvent(QQUser user, String groupId, QQMessage message, String timestamp, boolean isAtBot) {
         this.user = user;
         this.groupId = groupId;
         this.message = message;

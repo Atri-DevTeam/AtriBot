@@ -190,6 +190,18 @@ discord:
   # 默认包含 GUILDS / GUILD_MESSAGES / DIRECT_MESSAGES / MESSAGE_CONTENT
   intents: 37377
 
+# ========== KOOK Webhook 配置 ==========
+kook:
+  enabled: false
+  bot-token: ""
+  verify-token: ""
+  # 与 KOOK 开发者后台保持一致，未启用消息加密时留空
+  encrypt-key: ""
+  api-base-url: "https://www.kookapp.cn/api/v3"
+  webhook-path: "/kook/webhook"
+  # 机器人管理员的 KOOK 用户 ID，与服务器角色无关
+  admin-ids: []
+
 # ========== 特殊群专用内容设置区域 ==========
 
 # ManoDate 推送群号（保密项目）

@@ -25,6 +25,7 @@ import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -140,7 +141,7 @@ public class GithubCommitNotify implements CommandExecutor {
             String repoNameForFilter = getSimpleRepoName(json);
 
             String apiUrl = OpenApi.get("bot.commit-display");
-            var image = PreImageGenerate.dump(apiUrl, payload);
+            var image = PreImageGenerate.dump(apiUrl, payload, Platform.NAPCAT_GROUP);
             if (image.isError()) {
                 log.error("提交记录图片生成失败: {}", image.errorMessage());
                 return;

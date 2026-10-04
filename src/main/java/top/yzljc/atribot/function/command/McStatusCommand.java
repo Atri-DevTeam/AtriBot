@@ -54,10 +54,11 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
 
         sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
-        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of(), sender.getPlatform());
 
         if (data.isError()) {
             String errMsg = data.errorMessage();

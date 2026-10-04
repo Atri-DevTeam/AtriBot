@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.3.0-SNAPSHOT"
+version = "3.3.1-SNAPSHOT"
 description = "AtriBot"
 
 repositories {
@@ -116,8 +116,9 @@ tasks.processResources {
         val isGitProps = name == "git.properties"
         val isOfficialWebuiAsset = path.startsWith("official-webui/") || path.startsWith("miniapp/")
 
-        // 人设 JSON 中的换行等转义字符必须原样保留。
-        if (!isBinary && !isGitProps && !isOfficialWebuiAsset && !path.startsWith("atri-chat/")) {
+        // JSON 模板中的占位符和转义字符必须原样保留。
+        val isJsonTemplate = path.startsWith("atri-chat/") || path == "join-welcome-defaults.json"
+        if (!isBinary && !isGitProps && !isOfficialWebuiAsset && !isJsonTemplate) {
             expand(
                 "version" to projVersion
             )

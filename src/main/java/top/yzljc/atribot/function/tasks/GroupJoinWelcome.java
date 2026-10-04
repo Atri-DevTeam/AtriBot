@@ -16,11 +16,11 @@ import top.yzljc.atribot.chat.official.button.ButtonSize;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atribot.chat.official.welcome.DefaultJoinWelcomeStore;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
@@ -28,8 +28,8 @@ import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupMemberAddEvent;
 import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.qq.QQBot;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -275,38 +275,18 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
 
         ObjectNode welcomeConfig = loadWelcomeConfig(event.getGroupOpenId());
         if (!hasCustomWelcome(welcomeConfig)) {
-            // Guided by GordonHim
-            String url = ResourcesProperties.WELCOME_IMG;
-            String welStr = "欢迎新人喵~";
-            int width = 125;
-            int height = 130;
-            if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.OWNER) {
-                welStr = "欢迎" + QQBot.BOT_NAME + "开发者YZ_Ljc_加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
-                url = ResourcesProperties.WELCOME_DEV_IMG;
-                width = 850;
-                height = 479;
-            } else if (OfficialUsers.getRole(event.getMemberOpenId()) == UnifiedRole.ADMIN) {
-                welStr = "欢迎" + QQBot.BOT_NAME + "管理员加入本群，有关机器人的问题可以随时与我联系，感谢各位支持喵~";
+            UnifiedRole role = OfficialUsers.getRole(event.getMemberOpenId());
+            try {
+                welcomeConfig = DefaultJoinWelcomeStore.getInstance().get(role == null ? UnifiedRole.USER : role);
+            } catch (IOException e) {
+                log.error("读取默认加群欢迎配置失败，群ID {}", event.getGroupOpenId(), e);
+                return;
             }
-            Markdown md = TC.md(
-                    Markdown.at(event.getMemberOpenId()) + " " + welStr + "\n\n" +
-                            Markdown.img(url, width, height) + "\n\n" +
-                            "> " + Markdown.enterCommand("/tasks disable member_add_welcome", "关闭欢迎提示")
-            );
-            Object buttons = TC.keyboard(
-                    List.of(
-                            List.of(new Button("c1", "打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                    new Button("c2", "帮助", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                                    new Button("c3", "自定义欢迎", "/how-to-custom-text ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
-                    ), ButtonSize.SMALL
-            );
-            event.sendMessage(md, buttons);
-        } else {
-            String text = welcomeConfig.path("text").asText("");
-            Object keyboard = buildWelcomeKeyboard(welcomeConfig);
-            String message = Markdown.at(event.getMemberOpenId()) + (text.isBlank() ? "" : " " + text);
-            event.sendMessage(TC.md(message), keyboard);
         }
+        String text = welcomeConfig.path("text").asText("");
+        Object keyboard = buildWelcomeKeyboard(welcomeConfig);
+        String message = Markdown.at(event.getMemberOpenId()) + (text.isBlank() ? "" : " " + text);
+        event.sendMessage(TC.md(message), keyboard);
     }
 
     @Override

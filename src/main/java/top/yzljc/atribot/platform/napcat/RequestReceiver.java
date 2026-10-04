@@ -37,17 +37,18 @@ public class RequestReceiver {
                     String userId = root.path("user_id").asText();
                     String rawMessage = root.path("raw_message").asText();
                     String messageType = root.path("message_type").asText();
+                    Platform platform = "private".equals(messageType) ? Platform.NAPCAT_PRIVATE : Platform.NAPCAT_GROUP;
 
                     JsonNode senderNode = root.path("sender");
-                    User senderObj = null;
+                    NapcatUser senderObj = null;
                     if (!senderNode.isMissingNode() && !senderNode.isNull()) {
-                        senderObj = new User(
-                                Platform.NAPCAT_GROUP,
+                        senderObj = new NapcatUser(
+                                platform,
                                 selfId.equals(userId) || UserInformation.isBot(userId),
                                 senderNode.path("user_id").asText(),
                                 senderNode.path("nickname").asText(""),
                                 PlatformRole.getPlatformRole(senderNode.path("role").asText()),
-                                MAPPER.createObjectNode()
+                                senderNode
                         );
                     }
 
@@ -65,7 +66,7 @@ public class RequestReceiver {
                                     String uin = textElement.path("atUid").asText(null);
                                     JsonNode uid = MAPPER.createObjectNode().put("ntUid", atNtUid);
 //                                    String content = textElement.path("content").asText("");
-                                    User mentioned = new User(Platform.NAPCAT_GROUP, selfId.equals(uin), uin, "", PlatformRole.MEMBER, uid);
+                                    User mentioned = new NapcatUser(platform, selfId.equals(uin), uin, "", PlatformRole.MEMBER, uid);
                                     mentionList.add(mentioned);
                                 }
                             }
@@ -77,7 +78,7 @@ public class RequestReceiver {
                             new TypeReference<>() {}
                     );
 
-                    NapcatMessage message = new NapcatMessage(Platform.NAPCAT_GROUP, messageId, rawMessage, time, mentionList, attachments, segmentList);
+                    NapcatMessage message = new NapcatMessage(platform, messageId, rawMessage, time, mentionList, attachments, segmentList, root);
 
                     // 触发对应的事件
                     if ("group".equals(messageType)) {

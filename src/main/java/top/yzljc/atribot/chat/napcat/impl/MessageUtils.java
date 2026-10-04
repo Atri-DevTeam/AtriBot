@@ -331,10 +331,17 @@ public class MessageUtils {
     }
 
     public static boolean recallMessage(String messageId) {
-        PostRequest.sendSimplePost(RequestType.RECALL_MESSAGE, "message_id", messageId);
-        return true;
+        if (messageId == null || messageId.isBlank()) return false;
+        JsonNode response = PostRequest.getSimplePostResult(RequestType.RECALL_MESSAGE, "message_id", messageId);
+        return isRecallSuccessful(response);
     }
 
+
+    static boolean isRecallSuccessful(JsonNode response) {
+        return response != null && "ok".equals(response.path("status").asText())
+                && response.path("retcode").isIntegralNumber()
+                && response.path("retcode").asLong(-1) == 0;
+    }
 
     public static void setEmoji(String msgId, int emojiId, boolean set) {
         try {

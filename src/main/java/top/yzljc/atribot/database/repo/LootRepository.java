@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
+
 /**
  * 抽卡系统数据库访问层：用户金粒余额与已获得的物品卡列表
  *
@@ -761,10 +763,6 @@ public class LootRepository {
         for (LootRecord loot : loots) {
             upsertLootItemCount(con, userId, loot, now);
         }
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     private static List<LootRecord> parseLoots(String json) {

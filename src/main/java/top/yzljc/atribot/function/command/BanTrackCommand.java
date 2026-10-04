@@ -17,6 +17,7 @@ import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.OpenApi;
 
 /**
@@ -28,7 +29,8 @@ import top.yzljc.atribot.service.request.OpenApi;
  */
 public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         return handle(sender, args);
     }
 
@@ -146,7 +148,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
             return true;
         }
 
-        ImageDTO data = requestData(window);
+        ImageDTO data = requestData(window, sender.getPlatform());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;
@@ -203,8 +205,12 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
     }
 
     private static ImageDTO requestData(String type) {
+        return requestData(type, null);
+    }
+
+    private static ImageDTO requestData(String type, Platform platform) {
         String url = OpenApi.get("bot.hypixel.bantracker") + "?" + System.currentTimeMillis();
-        return PreImageGenerate.dump(url, Map.of("window", type));
+        return PreImageGenerate.dump(url, Map.of("window", type), platform);
     }
 
     private static boolean isCoolingDown(CommandSender sender) {

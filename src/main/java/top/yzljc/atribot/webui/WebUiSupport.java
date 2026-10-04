@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.ark.Ark23;
 import top.yzljc.atribot.chat.official.card.Card;
+import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.utils.StringUtils;
 
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,8 +19,6 @@ import java.util.List;
  * @Package top.yzljc.atribot.webui.impl
  */
 public final class WebUiSupport {
-
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /** 按模板解析 Ark，未指定模板时兼容原有的模板 23 请求。 */
     public static Ark parseArk(JsonNode body) {
@@ -124,16 +123,11 @@ public final class WebUiSupport {
     }
 
     public static boolean isBlank(String s) {
-        return s == null || s.isBlank();
+        return StringUtils.isBlank(s);
     }
 
     public static String firstNonBlank(String... values) {
-        for (String value : values) {
-            if (!isBlank(value)) {
-                return value;
-            }
-        }
-        return null;
+        return StringUtils.firstNonBlank(values);
     }
 
     public static int parseInt(String value, int defaultValue) {
@@ -173,7 +167,7 @@ public final class WebUiSupport {
     }
 
     public static String trimToNull(String value) {
-        return isBlank(value) ? null : value.trim();
+        return StringUtils.trimToNull(value);
     }
 
     public static String nullToDash(String value) {
@@ -181,6 +175,6 @@ public final class WebUiSupport {
     }
 
     public static String formatFeedbackTime(Timestamp ts) {
-        return ts != null ? ts.toLocalDateTime().format(TIME_FMT) : null;
+        return FormatTools.formatTimestamp(ts, null);
     }
 }

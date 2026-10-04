@@ -9,6 +9,7 @@ import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
+import top.yzljc.atribot.command.SlashCommandSender;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.utils.FormatTools;
 
@@ -28,8 +29,9 @@ public final class MinecraftVersionCommand implements CommandExecutor, SlashComm
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         Map<String, McVersionImpl.VersionInfo> versions = McVersionImpl.checkCurrentVersion();
         McVersionImpl.VersionInfo release = versions.get("release");
         McVersionImpl.VersionInfo snapshot = versions.get("snapshot");

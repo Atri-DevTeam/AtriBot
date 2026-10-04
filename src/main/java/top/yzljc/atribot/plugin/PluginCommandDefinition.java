@@ -5,6 +5,7 @@ import top.yzljc.atribot.command.CommandDefinition;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -40,8 +41,12 @@ public record PluginCommandDefinition(CommandDefinition command, String permissi
                 if (!labels.add(alias)) throw new IllegalArgumentException("插件内指令或别名重复: " + alias);
                 aliases.add(alias);
             }
-            result.add(new PluginCommandDefinition(new CommandDefinition(name, text(data, "description", ""),
-                    text(data, "usage", "/<command>"), aliases), text(data, "permission", ""),
+            Map<String, Object> definition = new LinkedHashMap<>();
+            definition.put("description", text(data, "description", ""));
+            definition.put("usage", text(data, "usage", "/<command>"));
+            definition.put("aliases", aliases);
+            definition.put("prefixless-aliases", data.get("prefixless-aliases"));
+            result.add(new PluginCommandDefinition(CommandDefinition.from(name, definition), text(data, "permission", ""),
                     text(data, "permission-message", "你没有权限执行此指令")));
         }
         return List.copyOf(result);

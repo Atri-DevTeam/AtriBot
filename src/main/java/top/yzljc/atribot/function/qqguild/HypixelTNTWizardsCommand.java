@@ -57,8 +57,9 @@ public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandEx
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label,
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
                                   SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
         String player = args.getString("player", "").trim();
         if (player.isBlank()) {
             sender.sendEphemeralMessage("请指定要查询的 Minecraft 玩家名或 UUID。");
@@ -66,7 +67,7 @@ public class HypixelTNTWizardsCommand implements CommandExecutor, SlashCommandEx
         }
 
         sender.sendMessage("正在查询相关数据，请稍等片刻...");
-        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.tnt-wizards"), Map.of("player", player));
+        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.tnt-wizards"), Map.of("player", player), sender.getPlatform());
         if (data.isError() || data.url() == null) {
             sender.sendMessage(data.isError() ? data.errorMessage() : "在执行操作时出现错误，请稍后重试。");
             return true;

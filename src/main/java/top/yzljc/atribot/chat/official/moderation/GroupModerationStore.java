@@ -3,14 +3,12 @@ package top.yzljc.atribot.chat.official.moderation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Properties;
+import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -84,20 +82,10 @@ public final class GroupModerationStore {
     }
 
     static void persist(Path file, Map<String, GroupModerationSettings> settings) {
-        Path temporary = null;
         try {
-            Files.createDirectories(file.getParent());
-            temporary = Files.createTempFile(file.getParent(), ".moderation-", ".tmp");
-            MAPPER.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), settings);
-            try {
-                Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException unsupported) {
-                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
-            }
+            AtomicFiles.write(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(settings));
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to save moderation settings", e);
-        } finally {
-            if (temporary != null) try { Files.deleteIfExists(temporary); } catch (IOException ignored) { }
         }
     }
 }

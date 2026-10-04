@@ -261,7 +261,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 BotEvents.handleGroupDelEvent(eventData);
                 break;
             case "FRIEND_ADD":
-                BotEvents.handleFriendAddEvent(eventData);
+                BotEvents.handleFriendAddEvent(eventId, eventData);
                 break;
             case "FRIEND_DEL":
                 BotEvents.handleFriendRemoveEvent(eventData);
@@ -280,6 +280,9 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 break;
             case "AT_MESSAGE_CREATE":
                 BotEvents.handleGuildChannelAtMessageCreateEvent(eventData);
+                break;
+            case "AT_FORUM_THREAD_CREATE":
+                BotEvents.handleAtForumThreadCreateEvent(eventData);
                 break;
             case "GROUP_JOIN_REQUEST":
                 BotEvents.handleGroupJoinRequestEvent(eventId, eventData);

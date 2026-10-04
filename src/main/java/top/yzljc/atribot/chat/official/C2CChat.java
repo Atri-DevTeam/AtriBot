@@ -1,6 +1,5 @@
 package top.yzljc.atribot.chat.official;
 
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.card.Card;
@@ -492,17 +491,17 @@ public final class C2CChat {
     }
 
     /**
-     * 撤回单聊消息
+     * 同步撤回单聊消息，等待异步任务返回结果
      *
      * @param openId    用户 openId
      * @param messageId 消息 ID
      * @return 是否撤回成功
      */
     public static boolean recallMessage(String openId, String messageId) {
-        return Atri.getInstance().getChatService().recallPrivateMessage(openId, messageId);
+        return Boolean.TRUE.equals(await(AsyncC2CChat.recallMessage(openId, messageId)));
     }
 
-    private static String await(CompletableFuture<String> future) {
+    private static <T> T await(CompletableFuture<T> future) {
         try {
             return future.get();
         } catch (InterruptedException e) {

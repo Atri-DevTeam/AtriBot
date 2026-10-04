@@ -3,6 +3,7 @@ package top.yzljc.atribot.webui.repo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.utils.FormatTools;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -16,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
+import static top.yzljc.atribot.utils.StringUtils.isBlank;
 
 /**
  * @Author YZ_Ljc_
@@ -242,14 +245,14 @@ public final class ChatStatsSnapshotRepo {
                 while (rs.next()) {
                     addGroupMessage(snapshot, rs.getString("group_openId"), rs.getString("union_openId"),
                             rs.getString("username"), rs.getBoolean("sender_is_bot") || BOT_SEND.equals(rs.getString("event_type")),
-                            formatTime(rs.getTimestamp("event_time")));
+                            FormatTools.formatTimestamp(rs.getTimestamp("event_time"), null));
                 }
             }
             try (var rs = c2cStmt.executeQuery()) {
                 while (rs.next()) {
                     addC2CMessage(snapshot, rs.getString("union_openId"), rs.getString("username"),
                             rs.getBoolean("sender_is_bot") || BOT_SEND.equals(rs.getString("source")),
-                            formatTime(rs.getTimestamp("event_time")));
+                            FormatTools.formatTimestamp(rs.getTimestamp("event_time"), null));
                 }
             }
         } catch (SQLException e) {
@@ -349,10 +352,6 @@ public final class ChatStatsSnapshotRepo {
     private static String normalizeTime(String timestamp) {
         if (isBlank(timestamp)) return LocalDateTime.now().format(TIME_FORMAT);
         return timestamp.trim().replace('T', ' ');
-    }
-
-    private static String formatTime(java.sql.Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toLocalDateTime().format(TIME_FORMAT);
     }
 
     private static void normalize(Snapshot data) {
@@ -559,10 +558,6 @@ public final class ChatStatsSnapshotRepo {
         if (json == null || json.isBlank()) return new LinkedHashSet<>();
         try { return MAPPER.readValue(json, MAPPER.getTypeFactory().constructCollectionType(LinkedHashSet.class, String.class)); }
         catch (IOException e) { log.warn("解析统计去重集合失败: {}", e.getMessage()); return new LinkedHashSet<>(); }
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 
     public record DauStats(long groupReceiveUsers, long groupSendGroups, long c2cReceiveUsers,

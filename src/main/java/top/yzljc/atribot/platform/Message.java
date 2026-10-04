@@ -1,6 +1,5 @@
 package top.yzljc.atribot.platform;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -15,7 +14,7 @@ import java.util.List;
  */
 @Getter
 @AllArgsConstructor
-public class Message {
+public abstract class Message {
     private final Platform platform;
     private final String messageId;
     private final String content;

@@ -135,8 +135,13 @@ public final class ReminderRepository implements ReminderStore {
     @Override
     public Result save(String userId, String requestId, String refIdx, ReminderSchedule schedule, Instant now,
                        boolean unlimited) throws SQLException {
-        Instant next = schedule.nextAfter(now, null);
-        if (next == null || next.isAfter(now.plus(Duration.ofDays(366)))) {
+        return save(userId, requestId, refIdx, schedule, now, unlimited, schedule.nextAfter(now, null));
+    }
+
+    @Override
+    public Result save(String userId, String requestId, String refIdx, ReminderSchedule schedule, Instant now,
+                       boolean unlimited, Instant next) throws SQLException {
+        if (next == null || !next.isAfter(now) || next.isAfter(now.plus(Duration.ofDays(366)))) {
             reject(userId, requestId, Code.AMBIGUOUS);
             return new Result(Code.AMBIGUOUS, 0);
         }
@@ -198,15 +203,53 @@ public final class ReminderRepository implements ReminderStore {
 
     @Override
     public List<Long> list(String userId, int page) throws SQLException {
-        List<Long> ids = new ArrayList<>();
+        return listTasks(userId, page).stream().map(Task::id).toList();
+    }
+
+    @Override
+    public List<Task> listTasks(String userId, int page) throws SQLException {
+        List<Task> tasks = new ArrayList<>();
         try (Connection con = connections.open();
              PreparedStatement ps = prepare(con,
-                     "SELECT task_id FROM reminder_tasks WHERE user_id=? ORDER BY task_id LIMIT 11 OFFSET ?",
+                     "SELECT task_id,state,next_run_at FROM reminder_tasks WHERE user_id=? ORDER BY task_id LIMIT 11 OFFSET ?",
                      userId, ((long) page - 1) * 10);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) ids.add(rs.getLong(1));
+            while (rs.next()) tasks.add(new Task(rs.getLong(1), "ACTIVE".equals(rs.getString(2)),
+                    Instant.ofEpochMilli(rs.getLong(3))));
         }
-        return List.copyOf(ids);
+        return List.copyOf(tasks);
+    }
+
+    @Override
+    public Result enable(String userId, long taskId, Instant now) throws Exception {
+        try (Connection con = connections.open()) {
+            con.setAutoCommit(false);
+            try {
+                lockUser(con, userId);
+                Code code;
+                try (PreparedStatement ps = prepare(con,
+                        "SELECT state,schedule_json,next_run_at FROM reminder_tasks WHERE user_id=? AND task_id=? FOR UPDATE",
+                        userId, taskId); ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) code = Code.NOT_FOUND;
+                    else if ("ACTIVE".equals(rs.getString(1))) code = Code.SAVED;
+                    else {
+                        ReminderSchedule schedule = ReminderSchedule.fromJson(ReminderAiParser.read(rs.getString(2)));
+                        Instant next = schedule.nextAfter(now, Instant.ofEpochMilli(rs.getLong(3)));
+                        if (next == null) code = Code.EXPIRED;
+                        else {
+                            execute(con, "UPDATE reminder_tasks SET state='ACTIVE',next_run_at=?,delivery_at=?,attempts=0,revision=revision+1 WHERE user_id=? AND task_id=?",
+                                    next.toEpochMilli(), next.toEpochMilli(), userId, taskId);
+                            code = Code.SAVED;
+                        }
+                    }
+                }
+                con.commit();
+                return new Result(code, taskId);
+            } catch (Exception e) {
+                con.rollback();
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -275,7 +318,7 @@ public final class ReminderRepository implements ReminderStore {
                     } else {
                         boolean sent;
                         try {
-                            sent = delivery.send(key.userId(), refIdx, ReminderService.reminderText(key.id()));
+                            sent = delivery.send(key.userId(), refIdx, ReminderService.reminderText(key.id(), now));
                         } catch (Exception e) {
                             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                             sent = false;

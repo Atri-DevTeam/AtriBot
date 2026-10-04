@@ -3,7 +3,7 @@ package top.yzljc.atribot.event.events;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
-import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.platform.discord.DiscordSlashCommandArguments;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.event.Event;
 import top.yzljc.atribot.platform.discord.DiscordUser;
@@ -24,7 +24,7 @@ public class DiscordSlashCommandEvent extends Event {
     private final JsonNode resolved;
     private final String timestamp;
     private final JsonNode raw;
-    private final SlashCommandArguments args;
+    private final DiscordSlashCommandArguments args;
     private boolean responded;
 
     public DiscordSlashCommandEvent(DiscordUser user, String applicationId, String interactionId, String token, String guildId, String channelId, String commandName, JsonNode options, JsonNode resolved, String timestamp, JsonNode raw) {
@@ -39,7 +39,7 @@ public class DiscordSlashCommandEvent extends Event {
         this.resolved = resolved;
         this.timestamp = timestamp;
         this.raw = raw;
-        this.args = new SlashCommandArguments(options, resolved, raw);
+        this.args = new DiscordSlashCommandArguments(options, resolved, raw);
     }
 
     public synchronized String reply(String text) {

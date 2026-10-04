@@ -4,11 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import top.yzljc.atribot.auth.AccountStatus;
-import top.yzljc.atribot.auth.UnifiedAccount;
+import top.yzljc.atribot.auth.AtriAccount;
 import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atribot.utils.FormatTools;
 
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,8 +24,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UnifiedAccountDTO {
 
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private UUID uuid;
     private String username;
     private String qqUserOpenId;
@@ -40,8 +38,8 @@ public class UnifiedAccountDTO {
     /**
      * 转回业务侧 record（role 反查枚举，时间戳转字符串）。
      */
-    public UnifiedAccount toAccount() {
-        return new UnifiedAccount(
+    public AtriAccount toAccount() {
+        return new AtriAccount(
                 uuid,
                 username,
                 qqUserOpenId,
@@ -50,12 +48,9 @@ public class UnifiedAccountDTO {
                 UnifiedRole.fromString(role),
                 permissions,
                 AccountStatus.fromString(status),
-                formatTime(createTime),
-                formatTime(lastUpdateTime)
+                FormatTools.formatTimestamp(createTime, null),
+                FormatTools.formatTimestamp(lastUpdateTime, null)
         );
     }
 
-    private static String formatTime(Timestamp ts) {
-        return ts == null ? null : ts.toLocalDateTime().format(TIME_FMT);
-    }
 }

@@ -78,6 +78,7 @@ public class BasicReply implements Listener {
 
     @EventHandler
     public void onC2CMessage(OfficialC2CMessageCreateEvent event) {
+        if (ReminderCommand.isCustomReminderInput(event)) return;
         if (ReminderCommand.isReminderRequest(event.getMessage().getContent())) return;
         if (event.getMessage().isCommand()) return;
         if (event.getUser().isBot()) return;

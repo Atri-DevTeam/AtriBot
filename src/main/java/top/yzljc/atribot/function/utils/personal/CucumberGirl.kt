@@ -47,7 +47,8 @@ object CucumberGirl : CommandExecutor {
         val req = mapOf("text" to text)
         val data = PreImageGenerate.dump(
             OpenApi.get("bot.emoji.girl"),
-            req
+            req,
+            nc.platform
         )
         if (data == null) {
             nc.sendMessage("图片生成失败，请稍后重试")

@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.event.Event;
-import top.yzljc.atribot.platform.Message;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.qq.QQGuildMessage;
+import top.yzljc.atribot.platform.qq.QQGuildUser;
 
 /**
  * @Author YZ_Ljc_
@@ -17,11 +17,11 @@ import top.yzljc.atribot.platform.User;
 @Getter
 @AllArgsConstructor
 public class OfficialGuildAtMessageCreateEvent extends Event {
-    private final User user;
+    private final QQGuildUser user;
     private final String userOpenId;
     private final String guildId;
     private final String channelId;
-    private final Message message;
+    private final QQGuildMessage message;
 
     public String replyMessage(String content) {
         return user.sendMessage(this.channelId, this.message.getMessageId(), content);

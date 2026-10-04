@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class UnifiedAuthentication {
 
-    private static final Map<UUID, UnifiedAccount> cache = new ConcurrentHashMap<>();
+    private static final Map<UUID, AtriAccount> cache = new ConcurrentHashMap<>();
 
     public static void init() {
         UnifiedAccountRepository.init();
@@ -33,43 +33,43 @@ public class UnifiedAuthentication {
         log.info("[!] 统一账号缓存数据加载完成，共 {} 条", cache.size());
     }
 
-    public static UnifiedAccount register(String qqUserOpenId) {
+    public static AtriAccount register(String qqUserOpenId) {
         return register(null, qqUserOpenId, null, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
     }
 
-    public static UnifiedAccount register(String qqUserOpenId, String username) {
+    public static AtriAccount register(String qqUserOpenId, String username) {
         return register(username, qqUserOpenId, null, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
     }
 
-    public static UnifiedAccount register(String username, String qqUserOpenId, String qqUserUin,
+    public static AtriAccount register(String username, String qqUserOpenId, String qqUserUin,
                                           String minecraftUuid, UnifiedRole role, List<String> permissions,
                                           AccountStatus status) {
         return cachePut(UnifiedAccountRepository.create(username, qqUserOpenId, qqUserUin, minecraftUuid, role, permissions, status));
     }
 
-    public static UnifiedAccount ensureByQqUserOpenId(String openId, String username) {
-        UnifiedAccount account = findByQqUserOpenId(openId);
+    public static AtriAccount ensureByQqUserOpenId(String openId, String username) {
+        AtriAccount account = findByQqUserOpenId(openId);
         return account != null ? account : register(username, openId, null, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
     }
 
-    public static UnifiedAccount ensureByQqUserUin(String uin, String username) {
-        UnifiedAccount account = findByQqUserUin(uin);
+    public static AtriAccount ensureByQqUserUin(String uin, String username) {
+        AtriAccount account = findByQqUserUin(uin);
         return account != null ? account : register(username, null, uin, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
     }
 
-    public static UnifiedAccount get(UUID uuid) {
+    public static AtriAccount get(UUID uuid) {
         if (uuid == null) {
             return null;
         }
-        UnifiedAccount cached = cache.get(uuid);
+        AtriAccount cached = cache.get(uuid);
         return cached != null ? cached : cachePut(UnifiedAccountRepository.findByUuid(uuid));
     }
 
-    public static UnifiedAccount findByQqUserOpenId(String openId) {
+    public static AtriAccount findByQqUserOpenId(String openId) {
         if (openId == null || openId.isBlank()) {
             return null;
         }
-        for (UnifiedAccount account : cache.values()) {
+        for (AtriAccount account : cache.values()) {
             if (openId.equals(account.qqUserOpenId())) {
                 return account;
             }
@@ -77,11 +77,11 @@ public class UnifiedAuthentication {
         return cachePut(UnifiedAccountRepository.findByQqUserOpenId(openId));
     }
 
-    public static UnifiedAccount findByQqUserUin(String uin) {
+    public static AtriAccount findByQqUserUin(String uin) {
         if (uin == null || uin.isBlank()) {
             return null;
         }
-        for (UnifiedAccount account : cache.values()) {
+        for (AtriAccount account : cache.values()) {
             if (uin.equals(account.qqUserUin())) {
                 return account;
             }
@@ -89,11 +89,11 @@ public class UnifiedAuthentication {
         return cachePut(UnifiedAccountRepository.findByQqUserUin(uin));
     }
 
-    public static UnifiedAccount findByMinecraftUuid(String mcUuid) {
+    public static AtriAccount findByMinecraftUuid(String mcUuid) {
         if (mcUuid == null || mcUuid.isBlank()) {
             return null;
         }
-        for (UnifiedAccount account : cache.values()) {
+        for (AtriAccount account : cache.values()) {
             if (mcUuid.equals(account.minecraftUuid())) {
                 return account;
             }
@@ -104,35 +104,35 @@ public class UnifiedAuthentication {
     /**
      * 按用户名查询（可能多个，按创建时间倒序）
      */
-    public static List<UnifiedAccount> findByUsername(String username) {
+    public static List<AtriAccount> findByUsername(String username) {
         if (username == null || username.isBlank()) {
             return List.of();
         }
-        List<UnifiedAccount> cached = cache.values().stream()
+        List<AtriAccount> cached = cache.values().stream()
                 .filter(account -> username.equals(account.username()))
-                .sorted(Comparator.comparing(UnifiedAccount::createTime,
+                .sorted(Comparator.comparing(AtriAccount::createTime,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
         if (!cached.isEmpty()) {
             return cached;
         }
-        List<UnifiedAccount> result = new ArrayList<>();
+        List<AtriAccount> result = new ArrayList<>();
         for (UnifiedAccountDTO dto : UnifiedAccountRepository.findByUsername(username)) {
             result.add(cachePut(dto));
         }
         return result;
     }
 
-    public static List<UnifiedAccount> findAll() {
+    public static List<AtriAccount> findAll() {
         return new ArrayList<>(cache.values());
     }
 
     /** 按统一账号任意字段精确查询，用户名允许命中多个账号。 */
-    public static List<UnifiedAccount> findMatching(String value) {
+    public static List<AtriAccount> findMatching(String value) {
         if (value == null || value.isBlank()) return List.of();
         String query = value.trim();
-        Map<UUID, UnifiedAccount> matches = new LinkedHashMap<>();
-        for (UnifiedAccount account : cache.values()) {
+        Map<UUID, AtriAccount> matches = new LinkedHashMap<>();
+        for (AtriAccount account : cache.values()) {
             if (matches(account, query)) matches.put(account.uuid(), account);
         }
         return new ArrayList<>(matches.values());
@@ -191,16 +191,16 @@ public class UnifiedAuthentication {
         return false;
     }
 
-    private static UnifiedAccount cachePut(UnifiedAccountDTO dto) {
+    private static AtriAccount cachePut(UnifiedAccountDTO dto) {
         if (dto == null) {
             return null;
         }
-        UnifiedAccount account = dto.toAccount();
+        AtriAccount account = dto.toAccount();
         cache.put(account.uuid(), account);
         return account;
     }
 
-    private static boolean matches(UnifiedAccount account, String query) {
+    private static boolean matches(AtriAccount account, String query) {
         return query.equalsIgnoreCase(String.valueOf(account.uuid()))
                 || query.equals(account.username())
                 || query.equals(account.qqUserOpenId())

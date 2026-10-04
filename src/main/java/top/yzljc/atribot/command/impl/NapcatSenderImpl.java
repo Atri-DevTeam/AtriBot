@@ -2,11 +2,13 @@ package top.yzljc.atribot.command.impl;
 
 import lombok.AllArgsConstructor;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.UnsupportedPlatform;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atribot.platform.napcat.NapcatUser;
 import top.yzljc.atribot.platform.napcat.NapcatMessage;
 
 /**
@@ -19,7 +21,7 @@ import top.yzljc.atribot.platform.napcat.NapcatMessage;
 @AllArgsConstructor
 public class NapcatSenderImpl implements NapcatCommandSender {
 
-    private final User user;
+    private final NapcatUser user;
     private final String groupId;
     private final NapcatMessage message;
 
@@ -73,7 +75,7 @@ public class NapcatSenderImpl implements NapcatCommandSender {
         if (this.user.getPlatform().equals(Platform.NAPCAT_GROUP)) {
             return this.user.sendMessage(this.groupId, this.message.getMessageId(), text);
         } else {
-            return this.user.sendMessage(this.user.getUserId(), this.message.getMessageId(), text);
+            return this.user.sendMessage(this.message.getMessageId(), text);
         }
     }
 
@@ -90,16 +92,16 @@ public class NapcatSenderImpl implements NapcatCommandSender {
     }
 
     public boolean recall() {
-        return recall(this.message.getMessageId());
+        return message.recall();
     }
 
     public boolean recall(String messageId) {
         switch (this.user.getPlatform()) {
             case NAPCAT_GROUP -> {
-                return this.user.recall(this.groupId, messageId);
+                return GroupMessage.recallMessage(messageId);
             }
             case NAPCAT_PRIVATE -> {
-                return this.user.recall(messageId);
+                return PrivateMessage.recallMessage(messageId);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "recall(String messageId)");

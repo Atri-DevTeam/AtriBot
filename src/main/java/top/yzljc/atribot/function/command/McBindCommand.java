@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.command;
 
-import top.yzljc.atribot.auth.UnifiedAccount;
+import top.yzljc.atribot.auth.AtriAccount;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
@@ -34,7 +34,7 @@ public class McBindCommand implements CommandExecutor {
                 return true;
             }
 
-            UnifiedAccount account = UnifiedAuthentication.ensureByQqUserOpenId(user.getUserId(), user.getUsername());
+            AtriAccount account = UnifiedAuthentication.ensureByQqUserOpenId(user.getUserId(), user.getUsername());
             if (account == null) {
                 user.sendMessage("[!] 统一身份认证账号创建失败，请稍后再试！");
                 return true;

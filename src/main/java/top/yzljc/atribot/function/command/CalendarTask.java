@@ -91,9 +91,10 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
     }
 
     @Override
-    public boolean onSlashCommand(DiscordCommandSender sender, Command command, String label, SlashCommandArguments args) {
+    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
+        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
 
-        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
+        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false), sender.getPlatform());
         if (data.isError()) {
             String errMsg = data.errorMessage();
             sender.sendMessage("获取日历图片失败: " + errMsg);

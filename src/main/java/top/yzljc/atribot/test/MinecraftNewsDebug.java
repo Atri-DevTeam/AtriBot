@@ -20,6 +20,7 @@ import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.function.tasks.MinecraftNews;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -134,7 +135,7 @@ public class MinecraftNewsDebug implements CommandExecutor {
             requestBody.put("headerImageUrl", article.imageUrl);
             requestBody.put("content", aiMessages);
 
-            ImageDTO data = PreImageGenerate.dump(apiUrl, requestBody);
+            ImageDTO data = PreImageGenerate.dump(apiUrl, requestBody, Platform.NAPCAT_GROUP);
             if (data.isError()) {
                 String errMsg = data.errorMessage();
                 log.warn("[DEBUG] >>> 新闻图片生成失败: {}", errMsg);

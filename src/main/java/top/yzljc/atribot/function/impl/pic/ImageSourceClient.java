@@ -6,16 +6,18 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.utils.HashUtils;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static top.yzljc.atribot.utils.StringUtils.isBlankOrNullLiteral;
 
 /**
  * @Author YZ_Ljc_
@@ -53,7 +55,7 @@ public class ImageSourceClient {
                 log.warn("投稿图片超过大小上限: size={}, url={}", body.length, url);
                 return null;
             }
-            return sha256Hex(body);
+            return HashUtils.sha256Hex(body);
         } catch (Exception e) {
             log.warn("拉取投稿图片异常: url={}", url, e);
             return null;
@@ -74,7 +76,7 @@ public class ImageSourceClient {
     public static UploadResult upload(ImageSourceDTO dto) {
         Config config = Config.getInstance();
         String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlank(base)) {
+        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base)) {
             log.info("图源远端未启用，跳过上报: id={}", dto.getId());
             return UploadResult.success();
         }
@@ -114,7 +116,7 @@ public class ImageSourceClient {
             String message = response.path("message").asText("");
             log.warn("图源上报被远端拒绝: id={}, uuid={}, status={}, message={}",
                     dto.getId(), dto.getImageUuid(), status, message);
-            return UploadResult.fail(isBlank(message) ? "远端拒绝接收图片" : message);
+            return UploadResult.fail(isBlankOrNullLiteral(message) ? "远端拒绝接收图片" : message);
         } catch (Exception e) {
             log.warn("图源上报异常: id={}", dto.getId(), e);
             return UploadResult.fail("远端连接失败");
@@ -138,7 +140,7 @@ public class ImageSourceClient {
     public static RemoteResult delete(ImageSourceDTO dto) {
         Config config = Config.getInstance();
         String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlank(base) || isBlank(dto.getImageUuid())) {
+        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base) || isBlankOrNullLiteral(dto.getImageUuid())) {
             return RemoteResult.success();
         }
 
@@ -157,7 +159,7 @@ public class ImageSourceClient {
             String message = response.path("message").asText("");
             log.warn("远端图源删除失败: id={}, uuid={}, status={}, message={}",
                     dto.getId(), dto.getImageUuid(), status, message);
-            return RemoteResult.fail(isBlank(message) ? "远端拒绝删除图片" : message);
+            return RemoteResult.fail(isBlankOrNullLiteral(message) ? "远端拒绝删除图片" : message);
         } catch (Exception e) {
             log.warn("远端图源删除异常: id={}, uuid={}", dto.getId(), dto.getImageUuid(), e);
             return RemoteResult.fail("远端连接失败");
@@ -174,7 +176,7 @@ public class ImageSourceClient {
     public static RemoteResult setStatus(ImageSourceDTO dto, ImageReviewStatus status) {
         Config config = Config.getInstance();
         String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlank(base) || isBlank(dto.getImageUuid())) {
+        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base) || isBlankOrNullLiteral(dto.getImageUuid())) {
             return RemoteResult.success();
         }
 
@@ -195,7 +197,7 @@ public class ImageSourceClient {
             String message = response.path("message").asText("");
             log.warn("远端图源审核状态变更失败: id={}, uuid={}, status={}, code={}, message={}",
                     dto.getId(), dto.getImageUuid(), status, code, message);
-            return RemoteResult.fail(isBlank(message) ? "远端审核状态变更失败" : message);
+            return RemoteResult.fail(isBlankOrNullLiteral(message) ? "远端审核状态变更失败" : message);
         } catch (Exception e) {
             log.warn("远端图源审核状态变更异常: id={}, uuid={}", dto.getId(), dto.getImageUuid(), e);
             return RemoteResult.fail("远端连接失败");
@@ -261,15 +263,15 @@ public class ImageSourceClient {
         Config config = Config.getInstance();
         String base = config.getImageSourceApiUrl();
         String uuid = dto.getImageUuid();
-        if (isBlank(uuid)) {
+        if (isBlankOrNullLiteral(uuid)) {
             return viewUrl(dto);
         }
 
         String cnbBaseUrl = cnbImageBaseUrl;
-        if (!isBlank(cnbBaseUrl)) {
+        if (!isBlankOrNullLiteral(cnbBaseUrl)) {
             return cnbBaseUrl + uuid;
         }
-        if (isBlank(base)) {
+        if (isBlankOrNullLiteral(base)) {
             return viewUrl(dto);
         }
 
@@ -282,14 +284,14 @@ public class ImageSourceClient {
                 String way = data.path("way").asText(null);
                 if ("cnb".equalsIgnoreCase(way)) {
                     String baseUrl = data.path("base_url").asText(null);
-                    if (!isBlank(baseUrl)) {
+                    if (!isBlankOrNullLiteral(baseUrl)) {
                         cnbImageBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
                     }
-                    if (!isBlank(url)) {
+                    if (!isBlankOrNullLiteral(url)) {
                         return url;
                     }
                 }
-                if ("oss".equalsIgnoreCase(way) && !isBlank(url)) {
+                if ("oss".equalsIgnoreCase(way) && !isBlankOrNullLiteral(url)) {
                     return url;
                 }
             }
@@ -302,7 +304,7 @@ public class ImageSourceClient {
     /** 本机图源地址。WebUI 列表用它，不走调度也不该为每张缩略图多打一次请求 */
     public static String viewUrl(ImageSourceDTO dto) {
         String base = Config.getInstance().getImageSourceViewBaseUrl();
-        if (!isBlank(base) && !isBlank(dto.getImageUuid())) {
+        if (!isBlankOrNullLiteral(base) && !isBlankOrNullLiteral(dto.getImageUuid())) {
             return base.endsWith("/") ? base + dto.getImageUuid() : base + "/" + dto.getImageUuid();
         }
         return dto.getSourceUrl();
@@ -310,25 +312,10 @@ public class ImageSourceClient {
 
     private static String[] authHeaders(Config config) {
         String token = config.getImageSourceToken();
-        if (isBlank(token)) {
+        if (isBlankOrNullLiteral(token)) {
             return new String[0];
         }
         return new String[]{"Authorization", "Bearer " + token};
-    }
-
-    private static String sha256Hex(byte[] data) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(data);
-        StringBuilder sb = new StringBuilder(hash.length * 2);
-        for (byte b : hash) {
-            sb.append(Character.forDigit((b >> 4) & 0xF, 16));
-            sb.append(Character.forDigit(b & 0xF, 16));
-        }
-        return sb.toString();
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim());
     }
 
     private static String joinPath(String base, String value) {

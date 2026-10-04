@@ -169,6 +169,21 @@ public class Config {
     @Getter
     private int discordIntents;
 
+    @Getter
+    private boolean kookEnabled;
+    @Getter
+    private String kookBotToken;
+    @Getter
+    private String kookVerifyToken;
+    @Getter
+    private String kookEncryptKey;
+    @Getter
+    private String kookApiBaseUrl;
+    @Getter
+    private String kookWebhookPath;
+    @Getter
+    private List<String> kookAdminIds;
+
     // Email configuration
     @Getter
     private boolean emailEnabled;
@@ -359,6 +374,14 @@ public class Config {
             this.discordBotToken = yaml.getString("discord.bot-token", "");
             this.discordApiBaseUrl = yaml.getString("discord.api-base-url", "https://discord.com/api/v10");
             this.discordIntents = yaml.getInt("discord.intents", (1 << 0) | (1 << 9) | (1 << 12) | (1 << 15));
+
+            this.kookEnabled = yaml.getBoolean("kook.enabled", false);
+            this.kookBotToken = yaml.getString("kook.bot-token", "");
+            this.kookVerifyToken = yaml.getString("kook.verify-token", "");
+            this.kookEncryptKey = yaml.getString("kook.encrypt-key", "");
+            this.kookApiBaseUrl = yaml.getString("kook.api-base-url", "https://www.kookapp.cn/api/v3");
+            this.kookWebhookPath = yaml.getString("kook.webhook-path", "/kook/webhook");
+            this.kookAdminIds = List.copyOf(yaml.getStringList("kook.admin-ids"));
 
             // ########## 特殊群专用内容设置区域 ##########
             this.manosabaGroupId = yaml.getString("manosaba-group-id", "null");

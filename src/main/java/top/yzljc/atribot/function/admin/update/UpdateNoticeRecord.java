@@ -6,12 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.IOException;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -163,18 +162,7 @@ public final class UpdateNoticeRecord {
     }
 
     private static void saveToFile(UpdateData data) throws IOException {
-        Path parent = DATA_FILE.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-
-        Path tempFile = DATA_FILE.resolveSibling(DATA_FILE.getFileName() + ".tmp");
-        MAPPER.writeValue(tempFile.toFile(), RawUpdateData.from(data));
-        try {
-            Files.move(tempFile, DATA_FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(tempFile, DATA_FILE, StandardCopyOption.REPLACE_EXISTING);
-        }
+        AtomicFiles.write(DATA_FILE, MAPPER.writeValueAsBytes(RawUpdateData.from(data)));
     }
 
     private record UpdateData(String text, long createdAt, long updatedAt, Set<String> notifiedGroups) {

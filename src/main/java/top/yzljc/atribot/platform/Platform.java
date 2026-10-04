@@ -15,7 +15,9 @@ public enum Platform {
     NAPCAT_GROUP,
     NAPCAT_PRIVATE,
     DISCORD_GUILD,
-    DISCORD_DM;
+    DISCORD_DM,
+    KOOK_CHANNEL,
+    KOOK_DM;
 
     public boolean isDiscordSlashCommand() {
         return this == DISCORD_GUILD || this == DISCORD_DM;

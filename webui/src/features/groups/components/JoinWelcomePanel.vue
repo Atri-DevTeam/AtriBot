@@ -2,10 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import botBlue from '../../../assets/bot-blue.svg'
 import { renderMarkdown } from '../../../shared/lib/markdown.js'
+import { renderCommandInputTags } from '../../../shared/lib/messageRender.js'
 import { buttonStyles, createWelcomeButton, imageMarkdown, readWelcomeDraft, serializeWelcomeDraft } from '../lib/welcomeEditor.js'
 
 const props = defineProps({
-  groupOpenId: { type: String, required: true },
+  groupOpenId: { type: String, default: '' },
+  defaultRole: { type: String, default: '', validator: value => ['', 'USER', 'ADMIN', 'OWNER'].includes(value) },
   botName: { type: String, default: 'AtriBot' },
   botAvatarUrl: { type: String, default: '' },
   debugGroupId: { type: String, default: '' },
@@ -32,7 +34,7 @@ const busy = computed(() => loading.value || saving.value || testing.value)
 const dirty = computed(() => loaded.value && JSON.stringify(draft.value) !== baseline.value)
 const hasContent = computed(() => !!draft.value.text.trim() || draft.value.keyboard.length > 0)
 const selectedButton = computed(() => selected.value ? draft.value.keyboard[selected.value.row]?.[selected.value.column] : null)
-const preview = computed(() => renderMarkdown(`@新成员${draft.value.text.trim() ? ` ${draft.value.text}` : ''}`)
+const preview = computed(() => renderMarkdown(renderCommandInputTags(`@新成员${draft.value.text.trim() ? ` ${draft.value.text}` : ''}`))
   .replace('@新成员', '<span class="welcome-mention">@新成员</span>'))
 const allowedUsers = computed({
   get: () => selectedButton.value?.allowed_open_ids.join('\n') || '',
@@ -43,9 +45,12 @@ const allowedUsers = computed({
 let nextButtonId = 0
 let disposed = false
 let loadController = null
-// 父组件按群 OpenID 设置 key，每次打开都只编辑这一群。
+// 父组件按群 OpenID 或默认身份设置 key，切换目标时重新挂载编辑器。
 const groupOpenId = props.groupOpenId
-const endpoint = `/groups/${encodeURIComponent(groupOpenId)}/join-welcome`
+const editingDefault = !!props.defaultRole
+const endpoint = editingDefault
+  ? `/bot/join-welcome/${encodeURIComponent(props.defaultRole)}`
+  : `/groups/${encodeURIComponent(groupOpenId)}/join-welcome`
 
 function acceptDraft(config) {
   draft.value = readWelcomeDraft(config)
@@ -67,7 +72,7 @@ function releaseLeaveGuard() {
   loaded.value = false
   window.removeEventListener('beforeunload', beforeUnload)
 }
-defineExpose({ mayLeave, releaseLeaveGuard })
+defineExpose({ mayLeave, releaseLeaveGuard, load })
 
 async function load() {
   if (disposed || loadController) return
@@ -78,9 +83,11 @@ async function load() {
     const result = await props.request(endpoint, { signal: loadController.signal })
     if (disposed) return
     acceptDraft(result.config)
-    custom.value = result.custom
-    enabled.value = result.enabled
-    emit('enabled-change', enabled.value)
+    custom.value = editingDefault || result.custom
+    if (!editingDefault) {
+      enabled.value = result.enabled
+      emit('enabled-change', enabled.value)
+    }
   } catch (e) {
     if (!disposed) error.value = e.message
   } finally {
@@ -99,22 +106,26 @@ async function save() {
     if (disposed) return
     acceptDraft(result)
     custom.value = true
-    notice.value = enabled.value ? '已保存，下次成员入群时生效。' : '已保存，本群入群欢迎仍为关闭状态。'
+    notice.value = editingDefault ? '已保存，下次对应身份成员入群时生效。'
+      : enabled.value ? '已保存，下次成员入群时生效。' : '已保存，本群入群欢迎仍为关闭状态。'
   } catch (e) { if (!disposed) error.value = e.message }
   finally { saving.value = false }
 }
 
 async function restoreDefault() {
-  if (busy.value || !loaded.value || !window.confirm('确定恢复默认欢迎？本群自定义内容及未保存的修改将被清除，欢迎开关保持不变。')) return
+  const confirmation = editingDefault
+    ? '确定恢复该身份的初始模板？当前配置和未保存的修改将被替换，其他身份与群自定义欢迎保持不变。'
+    : '确定恢复默认欢迎？本群自定义内容及未保存的修改将被清除，欢迎开关保持不变。'
+  if (busy.value || !loaded.value || !window.confirm(confirmation)) return
   saving.value = true
   error.value = ''
   notice.value = ''
   try {
-    await props.request(endpoint, { method: 'DELETE' })
+    const result = await props.request(endpoint, { method: 'DELETE' })
     if (disposed) return
-    acceptDraft({})
-    custom.value = false
-    notice.value = '已恢复默认欢迎。'
+    acceptDraft(editingDefault ? result : {})
+    custom.value = editingDefault
+    notice.value = editingDefault ? '已恢复该身份的初始模板。' : '已恢复默认欢迎。'
   } catch (e) { if (!disposed) error.value = e.message }
   finally { saving.value = false }
 }
@@ -219,7 +230,7 @@ onBeforeUnmount(() => {
         <button type="button" class="nt-mini-btn" @click="load">重新加载</button>
       </div>
       <template v-else>
-        <section class="chatnt-info-section">
+        <section v-if="!editingDefault" class="chatnt-info-section">
           <div class="chatnt-info-label">欢迎设置</div>
           <div class="nt-card">
             <div class="nt-row">
@@ -349,7 +360,7 @@ onBeforeUnmount(() => {
     <footer v-if="loaded && !loading" class="welcome-save-bar">
       <span class="welcome-muted" aria-live="polite">{{ dirty ? '有未保存的修改' : custom ? '暂无修改' : '当前使用默认欢迎' }}</span>
       <div class="welcome-row-tools">
-        <button type="button" class="nt-mini-btn welcome-danger" :disabled="busy || (!custom && !dirty)" @click="restoreDefault">恢复默认</button>
+        <button type="button" class="nt-mini-btn welcome-danger" :disabled="busy || (!custom && !dirty)" @click="restoreDefault">{{ editingDefault ? '恢复初始模板' : '恢复默认' }}</button>
         <button type="button" class="nt-btn-primary" :disabled="busy || !hasContent || (custom && !dirty)" @click="save">{{ saving ? '处理中…' : '保存配置' }}</button>
       </div>
     </footer>

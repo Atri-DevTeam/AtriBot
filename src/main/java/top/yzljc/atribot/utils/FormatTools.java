@@ -1,6 +1,5 @@
 package top.yzljc.atribot.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.sql.Timestamp;
@@ -15,16 +14,41 @@ import java.time.format.DateTimeParseException;
  * @Author YZ_Ljc_
  * @ClassName FormatTools
  * @Created_at 2026/04/04
- * @Project AtriBot
- * @Package top.yzljc.qqbot.utils
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.utils
  */
 public class FormatTools {
+    private static final DateTimeFormatter DEFAULT_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * 按 yyyy-MM-dd HH:mm:ss 格式化数据库时间，沿用 {@link Timestamp#toLocalDateTime()} 的本地时间语义
+     *
+     * @param timestamp 数据库时间，可为 null
+     * @param fallback 时间为 null 时返回的值，可为 null
+     * @return 格式化结果或 fallback
+     */
+    public static String formatTimestamp(Timestamp timestamp, String fallback) {
+        return formatTimestamp(timestamp, DEFAULT_TIME_FORMAT, fallback);
+    }
+
+    /**
+     * 使用指定格式格式化数据库时间，沿用 {@link Timestamp#toLocalDateTime()} 的本地时间语义
+     *
+     * @param timestamp 数据库时间，可为 null
+     * @param formatter 时间格式
+     * @param fallback 时间为 null 时返回的值，可为 null
+     * @return 格式化结果或 fallback
+     */
+    public static String formatTimestamp(Timestamp timestamp, DateTimeFormatter formatter, String fallback) {
+        return timestamp == null ? fallback : timestamp.toLocalDateTime().format(formatter);
+    }
+
     public static String formatTimestamp(long timestamp) {
         LocalDateTime dateTime = LocalDateTime.ofInstant(
                 Instant.ofEpochSecond(timestamp),
                 ZoneId.systemDefault()
         );
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return dateTime.format(DEFAULT_TIME_FORMAT);
     }
 
     public static String formatTimestamp(String timestamp) {
@@ -42,7 +66,7 @@ public class FormatTools {
                 Instant.ofEpochMilli(timestamp),
                 ZoneId.systemDefault()
         );
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return dateTime.format(DEFAULT_TIME_FORMAT);
     }
 
     public static String unescape(String text) {
