@@ -28,7 +28,7 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
 
         String messageId = sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
 
-        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.status"), Map.of(), sender.getPlatform());
 
         try {
             if (data.isError()) {
@@ -40,6 +40,8 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
             if (messageId != null && !messageId.isBlank()) {
                 if (sender instanceof QQCommandSender qq) {
                     qq.recall(messageId);
+                } else if (sender instanceof KookCommandSender kook) {
+                    kook.recall(messageId);
                 }
             }
         }
@@ -47,6 +49,7 @@ public class McStatusCommand implements CommandExecutor, SlashCommandExecutor {
         switch (sender) {
 //            case NapcatCommandSender nc -> nc.sendMessage(ImageComponent.imageOf(data.url()));
             case QQCommandSender qq -> qq.sendMessage(ImageComponent.imageOf(data.url()));
+            case KookCommandSender kook -> kook.sendMessage(ImageComponent.imageOf(data.url()));
             case QQGuildCommandSender guildUser -> guildUser.sendMessage(ImageComponent.imageOf(data.url()));
             default -> {}
         }

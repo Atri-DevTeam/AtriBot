@@ -16,8 +16,7 @@
 | --- | --- |
 | [架构与生命周期](framework/architecture.md) | 请求流转、模块职责、初始化与关闭 |
 | [平台与消息](framework/platforms.md) | 平台接入、用户和消息模型、平台能力 |
-| [QQ 频道帖子](framework/platforms.md#频道帖子) | 富文本构建与解析、发表、删除与返回值 |
-| [事件](framework/events.md) | 注册、类型匹配、执行顺序、取消与频道帖子事件 |
+| [事件](framework/events.md) | 监听器、分发规则与各平台事件参考 |
 | [指令](framework/commands.md) | 命令声明、执行器、两种参数模型 |
 | [账号与权限](framework/accounts.md) | 平台身份、统一账号、权限与临时登录 |
 | [插件开发](framework/plugins.md) | 插件结构、编译、依赖与资源释放 |

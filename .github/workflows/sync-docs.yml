@@ -1,0 +1,81 @@
+name: Sync Documentation
+
+on:
+  push:
+    branches:
+      - AtriMeow
+    paths:
+      - README.md
+      - docs/**
+      - .github/docs-map.json
+      - .github/scripts/sync_docs.py
+      - .github/scripts/test_sync_docs.py
+      - .github/workflows/sync-docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-atrimeow-website-docs
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'Atri-DevTeam/AtriBot' && github.ref == 'refs/heads/AtriMeow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          path: source
+          persist-credentials: false
+
+      - name: Test documentation export
+        run: python3 -B -m unittest discover -s source/.github/scripts -p 'test_sync_docs.py' -v
+
+      - name: Check synchronization token
+        env:
+          DOCS_SYNC_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN }}
+        run: |
+          if [ -z "$DOCS_SYNC_TOKEN" ]; then
+            echo '::error::请在当前仓库的 Actions Secrets 中设置 DOCS_SYNC_TOKEN'
+            exit 1
+          fi
+
+      - name: Checkout website content
+        uses: actions/checkout@v7
+        with:
+          repository: Atri-DevTeam/Atri-Website-Content
+          ref: main
+          token: ${{ secrets.DOCS_SYNC_TOKEN }}
+          path: website
+
+      - name: Export documentation
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_REVISION: ${{ github.sha }}
+        run: |
+          python3 -B source/.github/scripts/sync_docs.py \
+            --source-root source \
+            --target-root website \
+            --repository "$SOURCE_REPOSITORY" \
+            --revision "$SOURCE_REVISION"
+
+      - name: Commit documentation changes
+        working-directory: website
+        run: |
+          git add -- '亚托莉喵/'
+          if git diff --cached --quiet; then
+            echo '文档没有变化'
+            exit 0
+          fi
+          if [ -n "$(git diff --cached --name-only -- . ':(exclude)亚托莉喵/**')" ]; then
+            echo '::error::暂存区包含目标目录之外的修改'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs: 同步亚托莉喵文档'
+          git push origin HEAD:main

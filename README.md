@@ -12,8 +12,7 @@
 | --- | --- |
 | [架构与生命周期](docs/framework/architecture.md) | 模块职责、启动与关闭顺序 |
 | [平台与消息](docs/framework/platforms.md) | 平台接入、User、Message、发送与撤回 |
-| [QQ 频道帖子](docs/framework/platforms.md#频道帖子) | RichText、发表与删除、任务 ID 与帖子 ID |
-| [事件](docs/framework/events.md) | 监听器、优先级、取消与线程 |
+| [事件](docs/framework/events.md) | 监听器、分发规则与各平台事件参考 |
 | [指令](docs/framework/commands.md) | 文本指令、无前缀触发词、Slash Command、参数与注册 |
 | [账号与权限](docs/framework/accounts.md) | AtriAccount、平台身份、权限检查 |
 | [插件开发](docs/framework/plugins.md) | SDK、描述文件、生命周期与资源管理 |
@@ -33,8 +32,6 @@
 ## 管理页面
 
 WebUI 提供聊天管理、机器人设置、群管理和日志查询，访问方式与权限说明见 [WebUI 与 Miniapp](docs/web.md)
-
-QQ 官方群支持按 `USER`、`ADMIN`、`OWNER` 配置默认加群欢迎，入口为「机器人设置 → 默认加群欢迎」，生效规则见 [配置](docs/configuration.md#修改生效范围)
 
 ## 构建
 

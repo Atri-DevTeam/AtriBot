@@ -9,6 +9,8 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
+import top.yzljc.atribot.chat.kook.KookCard;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -134,9 +136,10 @@ public class HypixelCommand implements CommandExecutor, Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender instanceof QQCommandSender user) {
+        if (sender instanceof QQCommandSender || sender instanceof KookCommandSender) {
+            CommandSender user = sender;
             if (args.length == 0) {
-                user.sendMessage(getSubCommands(), keyboard);
+                sendMenu(user, Category.GENERAL);
                 return true;
             }
 
@@ -146,7 +149,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
                 if (args.length != 1) {
                     user.sendMessage("用法: /hyp " + category.command + "\n查看分类后，请使用菜单中显示的原有指令。");
                 } else {
-                    user.sendMessage(getSubCommands(category), keyboard);
+                    sendMenu(user, category);
                 }
                 return true;
             }
@@ -169,15 +172,35 @@ public class HypixelCommand implements CommandExecutor, Listener {
         return true;
     }
 
-    private static boolean handleWizards(QQCommandSender user, String[] args) {
+    private static void sendMenu(CommandSender sender, Category category) {
+        if (sender instanceof QQCommandSender qq) {
+            qq.sendMessage(getSubCommands(category), keyboard);
+        } else if (sender instanceof KookCommandSender kook) {
+            StringBuilder menu = new StringBuilder();
+            if (category == Category.GENERAL) menu.append("`/hyp skb` SkyBlock 指令二级菜单\n");
+            for (SubCommand sub : SUB_COMMANDS.values()) {
+                if (sub.category() == category) {
+                    menu.append("`/hyp ").append(sub.prefix()).append("` ").append(sub.description()).append('\n');
+                }
+            }
+            kook.sendCard(new KookCard().header("Hypixel " + category.title + "菜单").markdown(menu.toString()));
+        }
+    }
+
+    private static void sendMissingPlayer(CommandSender sender) {
+        sender.sendMessage(sender instanceof KookCommandSender ? "请指定 Minecraft 玩家名或 UUID。"
+                : "笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
+    }
+
+    private static boolean handleWizards(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.tnt-wizards"), "wz");
     }
 
-    private static boolean handleZombies(QQCommandSender user, String[] args) {
+    private static boolean handleZombies(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.zombies"), "zs");
     }
 
-    private static boolean handleGameStatus(QQCommandSender user, String[] args) {
+    private static boolean handleGameStatus(CommandSender user, String[] args) {
         if (args.length > 1) {
             user.sendMessage("用法: /hyp gs [小游戏]\n支持: " + GAME_ALIAS_HELP);
             return true;
@@ -196,70 +219,79 @@ public class HypixelCommand implements CommandExecutor, Listener {
         }
 
         var result = withQueryProgress(user, "正在查询目标数据，请稍等片刻...",
-                () -> PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), request));
+                () -> PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), request, user.getPlatform()));
+        if (result.isError() || result.url() == null) {
+            sendImageResult(user, result, null);
+            return true;
+        }
+        if (user instanceof KookCommandSender) {
+            sendImageResult(user, result, "查询指定小游戏：/hyp gs <编号>\n" + GAME_ALIAS_HELP);
+            return true;
+        }
+        QQCommandSender qq = (QQCommandSender) user;
         if (OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())) {
-            user.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
+            qq.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
         } else {
-            user.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
+            qq.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
         }
         return true;
     }
 
-    private static boolean handlePack(QQCommandSender user, String[] args) {
-        return Atri.getInstance().getSkyblockPackCheck().onCommand(user);
+    private static boolean handlePack(CommandSender user, String[] args) {
+        return new SkyblockPackCommand().onCommand(user, null, "skbpack", args);
     }
 
-    private static boolean handleDice(QQCommandSender user, String[] args) {
+    private static boolean handleDice(CommandSender user, String[] args) {
         DiceImpl.handle(user, args);
         return true;
     }
 
-    private static boolean handleCoop(QQCommandSender user, String[] args) {
+    private static boolean handleCoop(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.skyblock.coop"), "coop");
     }
 
-    private static boolean handleDungeon(QQCommandSender user, String[] args) {
+    private static boolean handleDungeon(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.skyblock.dungeons"), "dungeon");
     }
 
-    private static boolean handleLobbyFishing(QQCommandSender user, String[] args) {
+    private static boolean handleLobbyFishing(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.fishing"), "lf");
     }
 
-    private static boolean handleSlumberHotel(QQCommandSender user, String[] args) {
+    private static boolean handleSlumberHotel(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars.slumber"), "sh");
     }
 
-    private static boolean handleBedwars(QQCommandSender user, String[] args) {
+    private static boolean handleBedwars(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars"), "bw");
     }
 
-    private static boolean handleSkyblockCalendar(QQCommandSender user, String[] args) {
+    private static boolean handleSkyblockCalendar(CommandSender user, String[] args) {
 
         var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
-                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.calendar"), Map.of(), "Authorization", bearer()));
+                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.calendar"), Map.of(), user.getPlatform(), "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
             return true;
         }
 
-        user.sendMessage(ImageComponent.imageOf(result.i.url()));
+        sendImageResult(user, result.i(), null);
         return true;
     }
 
-    private static boolean handleHotf(QQCommandSender user, String[] args) {
+    private static boolean handleHotf(CommandSender user, String[] args) {
         return handleHeartTasks(user, args, OpenApi.get("bot.hypixel.skyblock.forest"), "hotf");
     }
 
-    private static boolean handleHotm(QQCommandSender user, String[] args) {
+    private static boolean handleHotm(CommandSender user, String[] args) {
         return handleHeartTasks(user, args, OpenApi.get("bot.hypixel.skyblock.mountain"), "hotm");
     }
 
-    private static boolean handleHeartTasks(QQCommandSender user, String[] args, String api, String subCommand) {
-        String player = getPlayer(user.getUserId(), args);
+    private static boolean handleHeartTasks(CommandSender user, String[] args, String api, String subCommand) {
+        String player = getPlayer(user, args);
         if (player == null) {
-            user.sendMessage("笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
+            sendMissingPlayer(user);
             return true;
         }
 
@@ -271,7 +303,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
         }
 
         var result = withQueryProgress(user, "正在查询目标玩家数据，请稍等片刻...",
-                () -> customQueryRequest(api, requestBody, "Authorization", bearer()));
+                () -> customQueryRequest(api, requestBody, user.getPlatform(), "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
@@ -287,6 +319,15 @@ public class HypixelCommand implements CommandExecutor, Listener {
             }
         }
 
+        if (user instanceof KookCommandSender) {
+            StringBuilder text = new StringBuilder();
+            for (String profile : profiles) {
+                text.append("/hyp ").append(subCommand).append(' ').append(player).append(' ').append(profile).append('\n');
+            }
+            sendImageResult(user, result.i(), text.isEmpty() ? null : "切换存档：\n" + text);
+            return true;
+        }
+
         List<List<Button>> buttons = new ArrayList<>();
         for (int i = 0; i < profiles.size(); i += 2) {
             List<Button> pair = new ArrayList<>();
@@ -298,37 +339,54 @@ public class HypixelCommand implements CommandExecutor, Listener {
         }
 
         Object keyboard = TC.keyboard(buttons);
-        user.sendMessage(TC.md(getTemplate(result.i.url(), result.i().width(), result.i().height(), user.getUserId())), keyboard, false);
+        ((QQCommandSender) user).sendMessage(TC.md(getTemplate(result.i.url(), result.i().width(), result.i().height(), user.getUserId())), keyboard, false);
         return true;
     }
 
-    private static boolean handleParkour(QQCommandSender user, String[] args) {
+    private static boolean handleParkour(CommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.parkour"), "pr");
     }
 
-    private static boolean handleArcadeDropper(QQCommandSender sender, String[] args) {
+    private static boolean handleArcadeDropper(CommandSender sender, String[] args) {
         return queryPlayer(sender, args, OpenApi.get("bot.hypixel.dropper"), "dpr");
     }
 
-    private static boolean handleSearchSkyblockItemPrice(QQCommandSender user, String[] args) {
+    private static boolean handleSearchSkyblockItemPrice(CommandSender user, String[] args) {
         if (args.length < 1) {
             user.sendMessage("未指定查询物品，请指定查询目标。");
             return true;
         }
 
-        var search = String.join(" ", args);
+        String cursor = null;
+        int end = args.length;
+        if (user instanceof KookCommandSender && args.length >= 3 && args[args.length - 2].equals("--cursor")) {
+            cursor = args[args.length - 1];
+            end -= 2;
+        }
+        String search = String.join(" ", Arrays.copyOf(args, end));
+        Map<String, String> request = cursor == null ? Map.of("q", search) : Map.of("q", search, "cursor", cursor);
         var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
-                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), Map.of("q", search), "Authorization", bearer()));
+                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), request, user.getPlatform(), "Authorization", bearer()));
 
         if (!result.success()) {
             user.sendMessage(result.message());
             return true;
         }
 
+        if (user instanceof KookCommandSender) {
+            StringBuilder pages = new StringBuilder();
+            String previous = result.d().path("pre_cursor").asText(null);
+            String next = result.d().path("next_cursor").asText(null);
+            if (previous != null && !previous.isBlank()) pages.append("上一页：/hyp ip ").append(search).append(" --cursor ").append(previous).append('\n');
+            if (next != null && !next.isBlank()) pages.append("下一页：/hyp ip ").append(search).append(" --cursor ").append(next);
+            sendImageResult(user, result.i(), pages.isEmpty() ? null : pages.toString());
+            return true;
+        }
+
         var next_cursor = result.d().path("next_cursor").asText(null);
         int type = next_cursor == null ? 0 : 1;
 
-        user.sendMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), user.getUserId()).setKeyboard(getSkyblockPriceKeyboard(type, next_cursor, null, search)), false);
+        ((QQCommandSender) user).sendMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), user.getUserId()).setKeyboard(getSkyblockPriceKeyboard(type, next_cursor, null, search)), false);
 
         return true;
     }
@@ -405,29 +463,30 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     @Deprecated(forRemoval = true)
-    private static boolean queryPlayerImage(QQCommandSender user, String[] args, String api) {
-        String player = getPlayer(user.getUserId(), args);
+    private static boolean queryPlayerImage(CommandSender user, String[] args, String api) {
+        String player = getPlayer(user, args);
         if (player == null) {
-            user.sendMessage("笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
+            sendMissingPlayer(user);
             return true;
         }
 
         var result = withQueryProgress(user, "正在查询目标玩家数据，请稍等片刻...",
-                () -> PreImageGenerate.dump(api, Map.of("player", player)));
+                () -> PreImageGenerate.dump(api, Map.of("player", player), user.getPlatform()));
         sendImageResult(user, result, "根据开放平台要求，自定义内容须审核后才能显示，请使用 /反馈 <用户名> 提交审核。");
         return true;
     }
 
-    private static String getPlayer(String userId, String[] args) {
+    private static String getPlayer(CommandSender sender, String[] args) {
         if (args.length > 0) {
             return args[0];
         }
-        var account = UnifiedAuthentication.findByQqUserOpenId(userId);
+        if (!(sender instanceof QQCommandSender)) return null;
+        var account = UnifiedAuthentication.findByQqUserOpenId(sender.getUserId());
         return account == null ? null : account.minecraftUuid();
     }
 
     // 提交等待并执行撤回任务
-    private static <T> T withQueryProgress(QQCommandSender user, String message, Supplier<T> query) {
+    private static <T> T withQueryProgress(CommandSender user, String message, Supplier<T> query) {
         String messageId = null;
         // 允许不发消息
         if (message != null && !message.isBlank()) {
@@ -437,12 +496,13 @@ public class HypixelCommand implements CommandExecutor, Listener {
             return query.get();
         } finally {
             if (messageId != null && !messageId.isBlank()) {
-                user.recall(messageId);
+                if (user instanceof QQCommandSender qq) qq.recall(messageId);
+                else if (user instanceof KookCommandSender kook) kook.recall(messageId);
             }
         }
     }
 
-    private static void sendImageResult(QQCommandSender user, ImageDTO result, String text) {
+    private static void sendImageResult(CommandSender user, ImageDTO result, String text) {
         if (result == null) {
             user.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
         } else if (result.isError()) {
@@ -450,7 +510,9 @@ public class HypixelCommand implements CommandExecutor, Listener {
         } else if (result.url() == null || result.url().isBlank()) {
             user.sendMessage("在执行操作时出现错误: 请尝试重新查询！");
         } else {
-            user.sendMessage(ImageComponent.imageOf(result.url()).setText(text));
+            ImageComponent image = ImageComponent.imageOf(result.url()).setText(text);
+            if (user instanceof QQCommandSender qq) qq.sendMessage(image);
+            else if (user instanceof KookCommandSender kook) kook.sendMessage(image);
         }
     }
 
@@ -459,25 +521,29 @@ public class HypixelCommand implements CommandExecutor, Listener {
         /**
          * args 只包含子命令后的参数，例如 /hyp gs bw 收到 ["bw"]。
          */
-        boolean execute(QQCommandSender user, String[] args);
+        boolean execute(CommandSender user, String[] args);
     }
 
-    private static boolean queryPlayer(QQCommandSender sender, String[] args, String api, String subCommand) {
-        String player = getPlayer(sender.getUserId(), args);
+    private static boolean queryPlayer(CommandSender sender, String[] args, String api, String subCommand) {
+        String player = getPlayer(sender, args);
         if (player == null) {
-            sender.sendMessage("笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。");
+            sendMissingPlayer(sender);
             return true;
         }
 
         var result = withQueryProgress(sender, "正在查询目标玩家数据，请稍等片刻...",
-                () -> customQueryRequest(api, Map.of("player", player), "Authorization", bearer()));
+                () -> customQueryRequest(api, Map.of("player", player), sender.getPlatform(), "Authorization", bearer()));
 
         if (!result.success()) {
             sender.sendMessage(result.message());
             return true;
         }
 
-        sender.sendMessage(TC.md(getTemplate(result.i().url(), result.i().width(), result.i().height(), sender.getUserId())), getKeyboard(subCommand, player), false);
+        if (sender instanceof KookCommandSender) {
+            sendImageResult(sender, result.i(), null);
+            return true;
+        }
+        ((QQCommandSender) sender).sendMessage(TC.md(getTemplate(result.i().url(), result.i().width(), result.i().height(), sender.getUserId())), getKeyboard(subCommand, player), false);
 
         return true;
     }
@@ -506,6 +572,10 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private static Result customQueryRequest(String api, Map<?, ?> requestBody, String... headers) {
+        return customQueryRequest(api, requestBody, (Platform) null, headers);
+    }
+
+    private static Result customQueryRequest(String api, Map<?, ?> requestBody, Platform platform, String... headers) {
         var response = Requests.post(api, requestBody, headers);
         if (!response.isSuccess()) {
             return new Result(false, response.message(), null, null);
@@ -513,7 +583,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
         var d = response.data();
         if (d == null || !d.isObject()) return new Result(false, "图片响应数据无效", null, null);
 
-        var url = ImageDelivery.resolve(d);
+        var url = ImageDelivery.resolve(d, api, platform);
         if (url == null || url.isBlank()) {
             return new Result(false, "图片地址无效，请稍后重试！", d, null);
         }

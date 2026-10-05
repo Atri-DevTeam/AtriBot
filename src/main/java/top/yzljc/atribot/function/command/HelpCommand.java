@@ -38,8 +38,26 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
         if (sender instanceof KookCommandSender kook) {
             String prefix = Config.getInstance().getCommandPrefix();
             kook.sendCard(new KookCard().header("KOOK 指令帮助")
-                    .markdown("`" + prefix + "help` 查看帮助\n"
-                    + "`" + prefix + "whoami` 查看当前用户与会话信息"));
+                    .markdown("**Hypixel**\n"
+                            + "`" + prefix + "hyp` 综合查询菜单\n"
+                            + "`" + prefix + "hyp skb` SkyBlock 菜单\n"
+                            + "`" + prefix + "bantrack [时间范围]` 封禁统计\n"
+                            + "`" + prefix + "hypstatus` 服务器状态\n"
+                            + "`" + prefix + "wz <玩家>` 法师决战\n"
+                            + "`" + prefix + "zs <玩家>` 僵尸末日\n"
+                            + "`" + prefix + "skbpack` SkyBlock 资源包")
+                    .markdown("**Minecraft**\n"
+                            + "`" + prefix + "mctool` 工具菜单\n"
+                            + "`" + prefix + "mcv` 最新版本\n"
+                            + "`" + prefix + "mccape` 披风状态\n"
+                            + "`" + prefix + "mojang` 验证服务器状态")
+                    .markdown("**其他**\n"
+                            + "`" + prefix + "today` 今日日历\n"
+                            + "`" + prefix + "newyear` 新年倒计时\n"
+                            + "`" + prefix + "hitokoto` 一言\n"
+                            + "`" + prefix + "whoami` 用户与会话信息\n"
+                            + "`" + prefix + "ping` 运行状态")
+                    .context("玩家查询需显式填写玩家名或 UUID"));
             return true;
         }
 

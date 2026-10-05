@@ -284,6 +284,12 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             case "AT_FORUM_THREAD_CREATE":
                 BotEvents.handleAtForumThreadCreateEvent(eventData);
                 break;
+            case "AT_FORUM_POST_CREATE":
+                BotEvents.handleAtForumPostCreateEvent(eventData);
+                break;
+            case "AT_FORUM_REPLY_CREATE":
+                BotEvents.handleAtForumReplyCreateEvent(eventData);
+                break;
             case "GROUP_JOIN_REQUEST":
                 BotEvents.handleGroupJoinRequestEvent(eventId, eventData);
                 break;

@@ -277,6 +277,7 @@ public class Atri {
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new QQEventRecord());
+        EventManager.getInstance().registerEvents(new KookEventRecord());
         EventManager.getInstance().registerEvents(new QQChatContentRecord());
         EventManager.getInstance().registerEvents(new FeedbackCommand());
         EventManager.getInstance().registerEvents(new ReminderCommand());

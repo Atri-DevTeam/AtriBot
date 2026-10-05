@@ -4,6 +4,7 @@ import java.util.Map;
 
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -21,13 +22,15 @@ public final class MinecraftCapeCommand implements CommandExecutor, SlashCommand
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        var data = request();
+        var data = request(sender.getPlatform());
         if (data.isError() || data.url() == null) {
             sender.sendMessage(data.isError() ? data.errorMessage() : "Minecraft 披风数据获取失败，请稍后重试。");
             return true;
         }
         if (sender instanceof QQCommandSender qq) {
             qq.sendMessage(ImageComponent.imageOf(data.url()));
+        } else if (sender instanceof KookCommandSender kook) {
+            kook.sendMessage(ImageComponent.imageOf(data.url()));
         } else if (sender instanceof QQGuildCommandSender guild) {
             guild.sendMessage(ImageComponent.imageOf(data.url()));
         }
@@ -45,10 +48,6 @@ public final class MinecraftCapeCommand implements CommandExecutor, SlashCommand
         }
         sender.sendEmbed(new DiscordEmbed().title("Minecraft 披风状态").image(data.url()));
         return true;
-    }
-
-    private static top.yzljc.atribot.function.impl.ImageDTO request() {
-        return PreImageGenerate.dump(OpenApi.get("bot.minecraft.capes"), Map.of());
     }
 
     private static top.yzljc.atribot.function.impl.ImageDTO request(Platform platform) {

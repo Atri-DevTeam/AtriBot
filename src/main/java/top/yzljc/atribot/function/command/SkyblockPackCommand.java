@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.Atri;
+import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -15,6 +16,9 @@ public final class SkyblockPackCommand implements CommandExecutor, SlashCommandE
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof KookCommandSender kook) {
+            return Atri.getInstance().getSkyblockPackCheck().onCommand(kook);
+        }
         if (sender instanceof QQCommandSender qq) {
             return Atri.getInstance().getSkyblockPackCheck().onCommand(qq);
         }

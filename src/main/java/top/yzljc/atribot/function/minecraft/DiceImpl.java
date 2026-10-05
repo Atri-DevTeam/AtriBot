@@ -8,6 +8,8 @@ import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.KookCommandSender;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,7 +35,7 @@ public class DiceImpl {
     };
 
     /** args 只包含投掷参数，不包含 dice 子命令名称。 */
-    public static void handle(QQCommandSender sender, String[] args) {
+    public static void handle(CommandSender sender, String[] args) {
         long count = 1;
         if (args.length > 0) {
             try {
@@ -52,7 +54,7 @@ public class DiceImpl {
         }
     }
 
-    public static void rollSingle(QQCommandSender sender) {
+    public static void rollSingle(CommandSender sender) {
         String url = ResourcesProperties.DICE_RENDER_RESULT_IMG_T;
 
         int rolledNumber = getRolledNumber();
@@ -93,10 +95,11 @@ public class DiceImpl {
         );
 
         Object button = TC.keyboard(buttons);
-        sender.sendMessage(TC.md(markdown), button);
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(markdown), button);
+        else if (sender instanceof KookCommandSender kook) sendKookResult(kook, markdown);
     }
 
-    public static void rollMultiple(QQCommandSender sender, long times) {
+    public static void rollMultiple(CommandSender sender, long times) {
 
         long[] calculatedPulls = simulateMultinomial(times, PROBABILITIES);
 
@@ -137,7 +140,13 @@ public class DiceImpl {
                 )
         );
 
-        sender.sendMessage(TC.md(sb.toString()), TC.keyboard(buttons));
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(sb.toString()), TC.keyboard(buttons));
+        else if (sender instanceof KookCommandSender kook) sendKookResult(kook, sb.toString());
+    }
+
+    private static void sendKookResult(KookCommandSender sender, String markdown) {
+        sender.sendKMarkdown(markdown.replaceAll("!\\[[^\\]]*]\\([^)]*\\)", "")
+                .replace(Markdown.at(sender.getUserId()), "") + "\n再次投掷：`/hyp dice [次数]`");
     }
 
     static int getRolledNumber() {

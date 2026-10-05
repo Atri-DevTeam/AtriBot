@@ -151,7 +151,7 @@ CompletableFuture<Boolean> deletion = AsyncGuildChannelChat.deleteThread(channel
 | 发表 | `PUT /channels/{channelId}/threads` | 响应中的 `task_id`，未取得任务 ID 时为 `null` |
 | 删除 | `DELETE /channels/{channelId}/threads/{threadId}` | HTTP 2xx 为 `true`，空响应体也视为成功；接口请求失败为 `false` |
 
-**`task_id` 是发表任务 ID，不能用于删除帖子**。删除需要实际帖子 ID，例如 [帖子事件](events.md#频道帖子事件) 中的 `event.getThreadInfo().threadId()`。取得任务 ID 仅表示接口返回了发表任务，不表示已取得帖子 ID
+**`task_id` 是发表任务 ID，不能用于删除帖子**。删除需要实际帖子 ID，例如 [帖子事件](events.md#officialatforumthreadcreateevent) 中的 `event.getThreadInfo().threadId()`。取得任务 ID 仅表示接口返回了发表任务，不表示已取得帖子 ID
 
 同步方法等待异步结果；等待中断或任务异常时，发表返回 `null`，删除返回 `false`，中断标记会恢复。异步接口沿用前述 `ThreadManager` 调度规则，调用方应同时处理正常结果和异常完成
 
@@ -190,7 +190,20 @@ Callback URL 指向外部地址的 `/kook/webhook`。路径须位于 `/kook/` �
 
 `bot-token` 用于出站 API，`verify-token` 用于回调校验。启用加密时，`encrypt-key` 必须与平台配置一致；启用后拒绝未加密回调
 
-当前使用文本指令，已适配 `/help`、`/whoami`。使用其他平台专有能力的业务命令需单独增加 KOOK 支持
+当前使用文本指令，KOOK 频道和私信支持以下 16 个主指令（别名不重复计数）：
+
+| 分类 | 指令 |
+| --- | --- |
+| 帮助与状态 | `help`、`whoami`、`ping` |
+| Hypixel | `hyp`、`hypstatus`、`wz`、`zs`、`bantrack`、`skbpack` |
+| Minecraft | `mctool`、`mcv`、`mccape`、`mojang` |
+| 日常查询 | `today`、`newyear`、`hitokoto` |
+
+`hyp` 保留通用与 SkyBlock 分类，支持全部 16 个子指令。查询玩家时显式填写玩家名或 UUID；KOOK 用户尚未绑定 AtriAccount，不使用 QQ OpenID 查询账号。山之心、树心查询可通过返回的指令切换存档；物品价格分页使用 `/hyp ip <物品> --cursor <游标>`
+
+`mctool` 支持 `ver`、`cape`、`lb`、`pack`。QQ 专属签到、抽卡、群管理、推送配置及提醒功能未开放给 KOOK
+
+动态图片生成与查询传入发送者的 `Platform`。KOOK 使用响应中的 `api_url`，经 API 下载后上传至 KOOK；缺少有效 API 地址时返回错误，不回退到 COS。官机 QQ 仍遵循原有分发方式
 
 ### 卡片
 

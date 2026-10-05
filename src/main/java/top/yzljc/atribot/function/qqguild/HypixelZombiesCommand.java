@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.qqguild;
 
 import java.util.Map;
+import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.ImageComponent;
@@ -21,6 +22,13 @@ import top.yzljc.atribot.service.request.OpenApi;
 public class HypixelZombiesCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (sender instanceof KookCommandSender) {
+            String[] queryArgs = new String[args.length + 1];
+            queryArgs[0] = "zs";
+            System.arraycopy(args, 0, queryArgs, 1, args.length);
+            return new HypixelCommand().onCommand(sender, command, "hyp", queryArgs);
+        }
 
         if (sender instanceof QQCommandSender user) {
             user.sendMessage(TC.md("> 该指令在当前场景下已弃用，请使用二级指令 " + Markdown.enterCommand("/hyp zs", "/hyp zs") + "查询！"));

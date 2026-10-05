@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -42,13 +43,19 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
             return true;
         }
 
-        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false));
+        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false), sender.getPlatform());
 
         if (data.isError()) {
             String errMsg = data.errorMessage();
             sender.sendMessage("获取日历图片失败: " + errMsg);
             Alert.notify("日历图片获取失败: " + errMsg);
             log.warn("获取日历图片失败: {}", errMsg);
+            return true;
+        }
+
+        if (sender instanceof KookCommandSender kook) {
+            kook.sendMessage(ImageComponent.imageOf(data.url()).setText("现在是北京时间"
+                    + FormatTools.formatTimestampMilli(System.currentTimeMillis())));
             return true;
         }
 

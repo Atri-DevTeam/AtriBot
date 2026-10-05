@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.chat.discord.DiscordEmbed;
+import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
@@ -19,6 +20,12 @@ public final class MinecraftVersionCommand implements CommandExecutor, SlashComm
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (sender instanceof KookCommandSender kook) {
+            Map<String, McVersionImpl.VersionInfo> versions = McVersionImpl.checkCurrentVersion();
+            kook.sendKMarkdown("**Minecraft 最新版本**\n正式版：" + formatVersion(versions.get("release"))
+                    + "\n快照版：" + formatVersion(versions.get("snapshot")));
+            return true;
+        }
         if (sender instanceof QQCommandSender qq) {
             return McVersionImpl.onCommand(qq);
         }

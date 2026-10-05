@@ -3,6 +3,8 @@ package top.yzljc.atribot.function.minecraft;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.KookCommandSender;
 
 public final class McPackMetaImpl {
 
@@ -32,9 +34,9 @@ public final class McPackMetaImpl {
               }
             }""";
 
-    public static void handle(QQCommandSender sender, String[] args) {
+    public static void handle(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("用法: /mctool pack <版本>\n示例: /mc pack 1.21.2");
+            sender.sendMessage("用法: /mctool pack <版本>\n示例: /mctool pack 1.21.2");
             return;
         }
 
@@ -68,7 +70,7 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
+                    sender instanceof QQCommandSender ? Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) : "",
                     args[1],
                     resourcePack,
                     rpJson
@@ -89,14 +91,15 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24),
+                    sender instanceof QQCommandSender ? Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) : "",
                     args[1],
                     resourcePack, dataPack,
                     rpJson, dpJson
             );
         }
 
-        sender.sendMessage(TC.md(result));
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(result));
+        else if (sender instanceof KookCommandSender kook) kook.sendKMarkdown(result);
     }
 
     private static String formatJson(String description, int minFormat, int maxFormat, boolean isNew) {

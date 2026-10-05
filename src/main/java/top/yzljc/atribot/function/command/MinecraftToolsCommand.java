@@ -2,6 +2,8 @@ package top.yzljc.atribot.function.command;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Locale;
+import top.yzljc.atribot.chat.kook.KookCard;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,13 +64,21 @@ public class MinecraftToolsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender instanceof QQCommandSender user) {
+        if (sender instanceof QQCommandSender || sender instanceof KookCommandSender) {
+            CommandSender user = sender;
             if (args.length == 0) {
-                user.sendMessage(getSubCommands());
+                if (user instanceof QQCommandSender qq) qq.sendMessage(getSubCommands());
+                else if (user instanceof KookCommandSender kook) {
+                    StringBuilder menu = new StringBuilder();
+                    for (SubCommand sub : availableSubCommands) {
+                        menu.append("`/mctool ").append(sub.prefix()).append("` ").append(sub.description()).append('\n');
+                    }
+                    kook.sendCard(new KookCard().header("Minecraft 工具").markdown(menu.toString()));
+                }
                 return true;
             }
 
-            String sub = args[0].toLowerCase();
+            String sub = args[0].toLowerCase(Locale.ROOT);
             if (!isValidSubCommand(sub)) {
                 user.sendMessage("未知的子命令，请使用 /mctool 查看可用的子命令列表");
                 return true;
@@ -76,7 +86,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
 
             switch (sub) {
                 case "ver" -> {
-                    return McVersionImpl.onCommand(user);
+                    return new MinecraftVersionCommand().onCommand(user, command, "mcv", new String[0]);
                 }
                 case "cape", "capes" -> {
                     return checkMinecraftCape(user);
@@ -120,6 +130,13 @@ public class MinecraftToolsCommand implements CommandExecutor {
                     int colorOffline = McLocationBarColorImpl.getPlayerRGBColor(uuidOffline);
                     String hexColorOffline = String.format("#%06X", colorOffline & 0xFFFFFF);
 
+                    if (user instanceof KookCommandSender kook) {
+                        kook.sendKMarkdown("**Location Bar 颜色**\n离线 UUID：`" + uuidOffline
+                                + "`\n离线颜色：`" + hexColorOffline + "`\n正版 UUID：`" + (d == null ? "无效" : d.uuid())
+                                + "`\n正版颜色：`" + (d == null ? "无效" : hexColorOnline) + "`");
+                        return true;
+                    }
+
                     Markdown md = TC.md(((onlineHeadPic != null && onlineHeadPic.avatarUrl() != null && onlineHeadPic.username() != null) ? Markdown.img("pic", onlineHeadPic.avatarUrl(), 16, 16) + onlineHeadPic.username() : "") + " **查询结果如下**\n\n" +
                             "离线UUID: `" + uuidOffline + "`\n\n" +
                             "RGB颜色代码: `" + hexColorOffline + "`\n\n" +
@@ -128,7 +145,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
                             "RGB颜色代码: `" + (d != null ? hexColorOnline : "无效") + "`\n\n" +
                             "> 参考颜色: " + (d != null ? "$\\textcolor{" + hexColorOnline + "}{\\text{" + "▄" + "}}$" : "无效")
                     );
-                    user.sendMessage(md);
+                    ((QQCommandSender) user).sendMessage(md);
                     return true;
                 }
             }
@@ -155,7 +172,7 @@ public class MinecraftToolsCommand implements CommandExecutor {
     }
 
     private static boolean checkMinecraftCape(CommandSender sender) {
-        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.capes"), Map.of());
+        var data = PreImageGenerate.dump(OpenApi.get("bot.minecraft.capes"), Map.of(), sender.getPlatform());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;
@@ -167,6 +184,8 @@ public class MinecraftToolsCommand implements CommandExecutor {
 
         if (sender instanceof QQCommandSender) {
             ((QQCommandSender) sender).sendMessage(ImageComponent.imageOf(data.url()));
+        } else if (sender instanceof KookCommandSender kook) {
+            kook.sendMessage(ImageComponent.imageOf(data.url()));
         } else if (sender instanceof QQGuildCommandSender) {
             ((QQGuildCommandSender) sender).sendMessage(ImageComponent.imageOf(data.url()));
         }

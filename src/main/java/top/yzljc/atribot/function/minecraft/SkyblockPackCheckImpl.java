@@ -17,6 +17,7 @@ import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
@@ -69,6 +70,11 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         return true;
     }
 
+    public boolean onCommand(KookCommandSender sender) {
+        check(sender);
+        return true;
+    }
+
     @Override
     public TaskSchedule schedule() {
         return new TaskPlan().setMode(ScheduleMode.hourly);
@@ -83,6 +89,7 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         var d = HttpService.sendGetRequest(ResourcesProperties.SKB_VERSION_CHECK);
         if (d == null || d.isEmpty() || d.path("packs").isMissingNode()) {
             log.error("获取Hypixel Skyblock资源包信息失败");
+            if (sender != null) sender.sendMessage("获取 Hypixel Skyblock 资源包信息失败，请稍后重试。");
             return;
         }
         Map<String, Object> request = new HashMap<>();
@@ -139,6 +146,8 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                 qqSender.sendMessage(image);
             } else if (sender instanceof QQGuildCommandSender guildSender) {
                 guildSender.sendMessage(image);
+            } else if (sender instanceof KookCommandSender kook) {
+                kook.sendMessage(image);
             } else if (sender instanceof DiscordCommandSender discordSender) {
                 discordSender.sendEmbed(new DiscordEmbed()
                         .title("Hypixel Skyblock 资源包")

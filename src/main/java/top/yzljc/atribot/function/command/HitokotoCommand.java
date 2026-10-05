@@ -21,7 +21,7 @@ import top.yzljc.atribot.service.request.OpenApi;
  * @Created_at 2026/06/02
  * @Project AtriBot
  * @Package top.yzljc.atribot.functions.overall
- * @Description 仅支持 Napcat 和 Discord 端
+ * @Description 支持 Napcat、Discord 和 KOOK
  */
 @Slf4j
 public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandExecutor {
@@ -31,6 +31,11 @@ public class HitokotoCommand implements CommandExecutor, Listener, SlashCommandE
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         var d = PreImageGenerate.dump(OpenApi.get("bot.hitokoto"), Map.of(), sender.getPlatform());
+        if (sender instanceof KookCommandSender kook) {
+            if (d.isError()) kook.sendMessage(d.errorMessage());
+            else kook.sendMessage(ImageComponent.imageOf(d.url()));
+            return true;
+        }
         if (sender instanceof NapcatCommandSender nc) {
             if (!d.isError()) {
                 nc.sendMessage(ImageComponent.imageOf(d.url()));

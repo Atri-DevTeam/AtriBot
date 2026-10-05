@@ -32,6 +32,8 @@ public class HappyNewYearCommand implements CommandExecutor, SlashCommandExecuto
         } else if (sender instanceof NapcatCommandSender nc) {
             if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "new_year")) return true;
             nc.sendMessage(ImageComponent.imageOf(data.url()));
+        } else if (sender instanceof KookCommandSender kook) {
+            kook.sendMessage(ImageComponent.imageOf(data.url()));
         } else if (sender instanceof QQGuildCommandSender guild) {
             guild.sendMessage(ImageComponent.imageOf(data.url()));
         }

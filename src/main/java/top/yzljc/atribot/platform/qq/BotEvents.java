@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.management.JoinRequestApproval;
+import top.yzljc.atribot.chat.official.thread.PostInfo;
+import top.yzljc.atribot.chat.official.thread.ReplyInfo;
 import top.yzljc.atribot.chat.official.thread.ThreadInfo;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.EventType;
@@ -476,6 +478,50 @@ public class BotEvents {
 
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的论坛帖子At消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleAtForumPostCreateEvent(JsonNode eventData) {
+        try {
+            String guildId = eventData.path("guild_id").asText(null);
+            String channelId = eventData.path("channel_id").asText(null);
+            String authorId = eventData.path("author_id").asText(null);
+            JsonNode info = eventData.path("post_info");
+            if (!info.isObject()) throw new IllegalArgumentException("论坛评论事件缺少 post_info 对象");
+            PostInfo postInfo = new PostInfo(
+                    info.path("thread_id").asText(null),
+                    info.path("post_id").asText(null),
+                    info.path("content").asText(null),
+                    info.path("date_time").asText(null),
+                    info.path("thread_author_id").asText(null));
+            OfficialAtForumPostCreateEvent event = new OfficialAtForumPostCreateEvent(
+                    guildId, channelId, authorId, postInfo);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的论坛评论At消息事件时发生错误：", e);
+        }
+    }
+
+    public static void handleAtForumReplyCreateEvent(JsonNode eventData) {
+        try {
+            String guildId = eventData.path("guild_id").asText(null);
+            String channelId = eventData.path("channel_id").asText(null);
+            String authorId = eventData.path("author_id").asText(null);
+            JsonNode info = eventData.path("reply_info");
+            if (!info.isObject()) throw new IllegalArgumentException("论坛回复事件缺少 reply_info 对象");
+            ReplyInfo replyInfo = new ReplyInfo(
+                    info.path("thread_id").asText(null),
+                    info.path("post_id").asText(null),
+                    info.path("reply_id").asText(null),
+                    info.path("content").asText(null),
+                    info.path("date_time").asText(null));
+            OfficialAtForumReplyCreateEvent event = new OfficialAtForumReplyCreateEvent(
+                    guildId, channelId, authorId, replyInfo);
+            EventManager.getInstance().callEvent(event);
+
+        } catch (Exception e) {
+            log.error("在解析官方机器人接收到的论坛回复At消息事件时发生错误：", e);
         }
     }
 

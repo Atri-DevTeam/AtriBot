@@ -82,3 +82,13 @@ Miniapp 构建包含 TypeScript 检查，浏览器测试入口为 `npm --prefix 
 ## 文档维护
 
 文档描述当前实现。接口签名、配置项和生命周期发生变化时，同步修改对应页面及源码链接；业务功能只维护入口和必要配置。新增文档在 [文档目录](README.md) 注册
+
+### 网站文档同步
+
+[Sync Documentation](../.github/workflows/sync-docs.yml) 在 `AtriMeow` 分支的 README、文档或同步配置变更后运行，也可在 Actions 页面手动触发，分支选择 `AtriMeow`
+
+目标为 `Atri-DevTeam/Atri-Website-Content` 仓库的 `main` 分支，仅更新 `亚托莉喵/`。项目 README 导出为 `介绍.md`，其余文件名由 [文档映射](../.github/docs-map.json) 指定，分类目录最多一层。新增、删除或重命名文档时需同步维护映射
+
+导出时重写文档间的相对链接，源码链接指向源仓库的对应提交。目标目录中的 `.atrimeow-docs.json` 记录已同步文件；下次同步只删除清单中已不再导出的文件，其他手工添加的文件保留。同名导出文件以源项目为准，应在本项目修改
+
+在本项目仓库的 `Settings → Secrets and variables → Actions` 中添加 `DOCS_SYNC_TOKEN`。Token 仅授权目标仓库，`Contents` 权限设为 `Read and write`。工作流无变更时不提交，也不强制推送；目标分支拒绝推送时需处理分支规则或并发更新后重新运行

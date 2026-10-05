@@ -1,0 +1,19 @@
+{
+  "README.md": "介绍.md",
+  "docs/README.md": "文档目录.md",
+  "docs/features.md": "功能索引.md",
+  "docs/getting-started.md": "部署与开发/部署.md",
+  "docs/configuration.md": "部署与开发/配置.md",
+  "docs/development.md": "部署与开发/开发与构建.md",
+  "docs/framework/architecture.md": "框架/架构与生命周期.md",
+  "docs/framework/platforms.md": "框架/平台与消息.md",
+  "docs/framework/events.md": "框架/事件.md",
+  "docs/framework/commands.md": "框架/指令.md",
+  "docs/framework/accounts.md": "框架/账号与权限.md",
+  "docs/framework/plugins.md": "框架/插件开发.md",
+  "docs/framework/runtime.md": "框架/运行时服务.md",
+  "docs/web.md": "接入与应用/管理页面.md",
+  "docs/integrations/images.md": "接入与应用/图片与业务接口.md",
+  "docs/integrations/ai.md": "接入与应用/AI与文本审查.md",
+  "docs/integrations/tencent-channel.md": "接入与应用/腾讯频道第二账号.md"
+}

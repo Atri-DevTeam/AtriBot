@@ -37,6 +37,20 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
+        if (sender instanceof KookCommandSender kook) {
+            if (isCoolingDown(kook)) return true;
+            String window = resolveType(args);
+            if (args.length > 1 || !isValidType(window)) {
+                kook.sendMessage("用法: /bantrack [10min 至 3mo 之间的时间范围]");
+                return true;
+            }
+            ImageDTO data = requestData(window, kook.getPlatform());
+            if (data.isError() || data.url() == null) {
+                kook.sendMessage(data.isError() ? data.errorMessage() : "图片地址无效，请稍后重试。");
+            } else kook.sendMessage(ImageComponent.imageOf(data.url()).setText("当前查询范围: " + window));
+            return true;
+        }
+
         if (sender instanceof QQGuildCommandSender guildSender) {
             return handle(guildSender, args);
         }
@@ -180,27 +194,31 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
         }
 
         long minutes;
+        try {
 
-        if (type.endsWith("mo")) {
-            int value = Integer.parseInt(type.substring(0, type.length() - 2));
-            minutes = value * 30L * 24 * 60;
-        } else if (type.endsWith("min")) {
-            int value = Integer.parseInt(type.substring(0, type.length() - 3));
-            minutes = value;
-        } else if (type.endsWith("m")) {
-            int value = Integer.parseInt(type.substring(0, type.length() - 1));
-            minutes = value;
-        } else if (type.endsWith("h")) {
-            int value = Integer.parseInt(type.substring(0, type.length() - 1));
-            minutes = value * 60L;
-        } else if (type.endsWith("d")) {
-            int value = Integer.parseInt(type.substring(0, type.length() - 1));
-            minutes = value * 24L * 60;
-        } else {
-            int value = Integer.parseInt(type.substring(0, type.length() - 1));
-            minutes = value * 7L * 24 * 60;
+            if (type.endsWith("mo")) {
+                int value = Integer.parseInt(type.substring(0, type.length() - 2));
+                minutes = value * 30L * 24 * 60;
+            } else if (type.endsWith("min")) {
+                int value = Integer.parseInt(type.substring(0, type.length() - 3));
+                minutes = value;
+            } else if (type.endsWith("m")) {
+                int value = Integer.parseInt(type.substring(0, type.length() - 1));
+                minutes = value;
+            } else if (type.endsWith("h")) {
+                int value = Integer.parseInt(type.substring(0, type.length() - 1));
+                minutes = value * 60L;
+            } else if (type.endsWith("d")) {
+                int value = Integer.parseInt(type.substring(0, type.length() - 1));
+                minutes = value * 24L * 60;
+            } else {
+                int value = Integer.parseInt(type.substring(0, type.length() - 1));
+                minutes = value * 7L * 24 * 60;
+            }
+
+        } catch (NumberFormatException e) {
+            return false;
         }
-
         return minutes >= 10 && minutes <= 3L * 30 * 24 * 60;
     }
 
@@ -218,7 +236,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
         long now = System.currentTimeMillis();
         AtomicLong remainingMillis = new AtomicLong();
 
-        LAST_ACCESS_TIMES.compute(sender.getUserId(), (userId, lastAccessTime) -> {
+        LAST_ACCESS_TIMES.compute(sender.getPlatform() + ":" + sender.getUserId(), (userId, lastAccessTime) -> {
             if (lastAccessTime != null) {
                 long remaining = COOLDOWN_MILLIS - (now - lastAccessTime);
                 if (remaining > 0) {
