@@ -1,4 +1,4 @@
-# 腾讯频道第二账号
+# QQ 频道第二账号
 
 [文档目录](../README.md) · [WebUI 与 Miniapp](../web.md)
 

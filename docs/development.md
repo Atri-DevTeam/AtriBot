@@ -16,7 +16,7 @@
 | `src/main/java/top/yzljc/atribot/database` | 连接池、Repository 与 DTO |
 | `src/main/java/top/yzljc/atribot/function` | 业务指令、事件监听与定时任务 |
 | `src/main/java/top/yzljc/atribot/webui`、`miniapp` | 两套页面的服务端接口 |
-| `src/main/java/top/yzljc/sakuraba_ema` | 腾讯频道第二账号 CLI 封装 |
+| `src/main/java/top/yzljc/sakuraba_ema` | QQ 频道第二账号 CLI 封装 |
 | `webui`、`miniapp` | 前端源码 |
 | `src/main/resources` | 配置模板、指令声明、语言和静态资源 |
 

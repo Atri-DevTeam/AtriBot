@@ -29,7 +29,7 @@
 | [WebUI 与 Miniapp](web.md) | 页面入口、构建产物、认证与权限边界 |
 | [图片与业务接口](integrations/images.md) | OpenAPI 目录、请求结果、图片分发方式 |
 | [AI 与文本审查](integrations/ai.md) | AI 配置、调用接口、文本替换规则 |
-| [腾讯频道第二账号](integrations/tencent-channel.md) | CLI 配置、Java 调用与管理入口 |
+| [QQ 频道第二账号](integrations/tencent-channel.md) | CLI 配置、Java 调用与管理入口 |
 | [功能索引](features.md) | 业务模块与源码入口 |
 
 框架阅读顺序：架构与生命周期 → 平台与消息 → 事件 → 指令 → 账号与权限。开发独立插件时，继续阅读插件开发与运行时服务

@@ -15,7 +15,7 @@
 | Minecraft 音效 | 听音辨物、资源索引与答题 | [SoundCommand](../src/main/java/top/yzljc/atribot/function/command/SoundCommand.java)、[games/sound](../src/main/java/top/yzljc/atribot/function/games/sound) |
 | 群聊 AI | Napcat 群内会话 | [AtriChat](../src/main/java/top/yzljc/atribot/function/utils/AtriChat.java) |
 | 图片及资料审查 | 生图、转存、皮肤和名字审查 | [图片与业务接口](integrations/images.md) |
-| 频道第二账号 | 频道内容、成员与通知操作 | [腾讯频道第二账号](integrations/tencent-channel.md) |
+| 频道第二账号 | 频道内容、成员与通知操作 | [QQ 频道第二账号](integrations/tencent-channel.md) |
 
 ## 提醒
 

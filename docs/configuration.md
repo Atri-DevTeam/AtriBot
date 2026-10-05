@@ -49,7 +49,7 @@ ugc-api-url: "https://images.example.com"
 | `kook` | `enabled`、`bot-token`、`verify-token`、`encrypt-key`、`webhook-path`、`admin-ids` |
 | `tencent-channel` | `enabled`、`cli-path`、`login-token`、`timeout-seconds` |
 
-平台接入详见 [平台与消息](framework/platforms.md)。`tencent-channel` 使用外部 CLI 登录第二账号，单独说明见 [腾讯频道第二账号](integrations/tencent-channel.md)
+平台接入详见 [平台与消息](framework/platforms.md)。`tencent-channel` 使用外部 CLI 登录第二账号，单独说明见 [QQ 频道第二账号](integrations/tencent-channel.md)
 
 ## 页面与服务
 
