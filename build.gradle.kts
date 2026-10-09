@@ -39,10 +39,10 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
-    api("ch.qos.logback:logback-classic:1.6.4")
+    api("ch.qos.logback:logback-classic:1.6.5")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
-    api("org.jline:jline:4.4.6")
+    api("org.jline:jline:4.4.7")
 
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
