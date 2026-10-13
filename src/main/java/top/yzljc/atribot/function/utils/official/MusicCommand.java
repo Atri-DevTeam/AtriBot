@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.utils.official;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 
 import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.RT;
@@ -22,8 +22,8 @@ import java.util.Map;
 public class MusicCommand implements CommandExecutor {
 
     private static final Map<String, String> musicList = Map.of(
-            "a_silent_mirror", ResourcesProperties.A_SILENT_MIRROR_MP3,
-            "biome_fest", ResourcesProperties.BIOME_FEST_MP3
+            "a_silent_mirror", RS.get("resource.audio.a-silent-mirror"),
+            "biome_fest", RS.get("resource.audio.biome-fest")
     );
 
     @Override

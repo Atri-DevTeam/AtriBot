@@ -1,0 +1,2632 @@
+{
+  "minecraft_version": "26.3",
+  "rules": {
+    "timezone": "Asia/Shanghai",
+    "daily_limit": 1,
+    "luck_of_the_sea_level": 3,
+    "player_luck": 0,
+    "open_water": true,
+    "biome_selection": "atribot_strategy_v1"
+  },
+  "categories": {
+    "fish": {
+      "base_weight": 85,
+      "quality": -1
+    },
+    "junk": {
+      "base_weight": 10,
+      "quality": -2
+    },
+    "treasure": {
+      "base_weight": 5,
+      "quality": 2
+    }
+  },
+  "common_loot": {
+    "fish": [
+      {
+        "id": "cod",
+        "name": "鳕鱼",
+        "weight": 60,
+        "items": [
+          {
+            "id": "minecraft:cod",
+            "count": 1
+          }
+        ],
+        "gold": 20
+      },
+      {
+        "id": "salmon",
+        "name": "鲑鱼",
+        "weight": 25,
+        "items": [
+          {
+            "id": "minecraft:salmon",
+            "count": 1
+          }
+        ],
+        "gold": 30
+      },
+      {
+        "id": "tropical_fish",
+        "name": "热带鱼",
+        "weight": 2,
+        "items": [
+          {
+            "id": "minecraft:tropical_fish",
+            "count": 1
+          }
+        ],
+        "gold": 100
+      },
+      {
+        "id": "pufferfish",
+        "name": "河豚",
+        "weight": 13,
+        "items": [
+          {
+            "id": "minecraft:pufferfish",
+            "count": 1
+          }
+        ],
+        "gold": 50
+      }
+    ],
+    "junk": [
+      {
+        "id": "lily_pad",
+        "name": "睡莲",
+        "weight": 17,
+        "items": [
+          {
+            "id": "minecraft:lily_pad",
+            "count": 1
+          }
+        ],
+        "gold": 5
+      },
+      {
+        "id": "leather_boots",
+        "name": "皮革靴子",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:leather_boots",
+            "count": 1
+          }
+        ],
+        "gold": 3,
+        "durability": "junk_leather_boots"
+      },
+      {
+        "id": "leather",
+        "name": "皮革",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:leather",
+            "count": 1
+          }
+        ],
+        "gold": 4
+      },
+      {
+        "id": "bone",
+        "name": "骨头",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:bone",
+            "count": 1
+          }
+        ],
+        "gold": 3
+      },
+      {
+        "id": "potion",
+        "name": "水瓶",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:potion",
+            "count": 1
+          }
+        ],
+        "gold": 2,
+        "potion": "minecraft:water"
+      },
+      {
+        "id": "string",
+        "name": "线",
+        "weight": 5,
+        "items": [
+          {
+            "id": "minecraft:string",
+            "count": 1
+          }
+        ],
+        "gold": 3
+      },
+      {
+        "id": "fishing_rod",
+        "name": "钓鱼竿",
+        "weight": 2,
+        "items": [
+          {
+            "id": "minecraft:fishing_rod",
+            "count": 1
+          }
+        ],
+        "gold": 5,
+        "durability": "junk_fishing_rod"
+      },
+      {
+        "id": "bowl",
+        "name": "碗",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:bowl",
+            "count": 1
+          }
+        ],
+        "gold": 2
+      },
+      {
+        "id": "stick",
+        "name": "木棍",
+        "weight": 5,
+        "items": [
+          {
+            "id": "minecraft:stick",
+            "count": 1
+          }
+        ],
+        "gold": 1
+      },
+      {
+        "id": "ink_sac",
+        "name": "墨囊 ×10",
+        "weight": 1,
+        "items": [
+          {
+            "id": "minecraft:ink_sac",
+            "count": 10
+          }
+        ],
+        "gold": 20
+      },
+      {
+        "id": "tripwire_hook",
+        "name": "绊线钩",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:tripwire_hook",
+            "count": 1
+          }
+        ],
+        "gold": 5
+      },
+      {
+        "id": "rotten_flesh",
+        "name": "腐肉",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:rotten_flesh",
+            "count": 1
+          }
+        ],
+        "gold": 1
+      }
+    ],
+    "treasure": [
+      {
+        "id": "name_tag",
+        "name": "命名牌",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:name_tag",
+            "count": 1
+          }
+        ],
+        "gold": 150
+      },
+      {
+        "id": "saddle",
+        "name": "鞍",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:saddle",
+            "count": 1
+          }
+        ],
+        "gold": 120
+      },
+      {
+        "id": "bow",
+        "name": "附魔弓",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:bow",
+            "count": 1
+          }
+        ],
+        "gold": 100,
+        "enchantment": "bow",
+        "durability": "treasure_bow"
+      },
+      {
+        "id": "fishing_rod",
+        "name": "附魔钓鱼竿",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:fishing_rod",
+            "count": 1
+          }
+        ],
+        "gold": 100,
+        "enchantment": "fishing_rod",
+        "durability": "treasure_fishing_rod"
+      },
+      {
+        "id": "enchanted_book",
+        "name": "附魔书",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:enchanted_book",
+            "count": 1
+          }
+        ],
+        "gold": 150,
+        "enchantment": "book"
+      },
+      {
+        "id": "nautilus_shell",
+        "name": "鹦鹉螺壳",
+        "weight": 10,
+        "items": [
+          {
+            "id": "minecraft:nautilus_shell",
+            "count": 1
+          }
+        ],
+        "gold": 180
+      }
+    ]
+  },
+  "biomes": [
+    {
+      "id": "plains",
+      "name": "平原与河流",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "wheat_seeds",
+          "name": "小麦种子",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:wheat_seeds",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        },
+        {
+          "id": "dandelion",
+          "name": "蒲公英",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:dandelion",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "sunflower",
+          "name": "向日葵",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sunflower",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "honeycomb",
+          "name": "蜜脾",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:honeycomb",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "forest",
+      "name": "森林与白桦林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "oak_sapling",
+          "name": "橡树树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:oak_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "birch_sapling",
+          "name": "白桦树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:birch_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "apple",
+          "name": "苹果",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:apple",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "honeycomb",
+          "name": "蜜脾",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:honeycomb",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "flowers",
+      "name": "繁花森林与草甸",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "dandelion",
+          "name": "蒲公英",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:dandelion",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "poppy",
+          "name": "虞美人",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:poppy",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "allium",
+          "name": "绒球葱",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:allium",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "azure_bluet",
+          "name": "蓝花美耳草",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:azure_bluet",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "red_tulip",
+          "name": "红色郁金香",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_tulip",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "orange_tulip",
+          "name": "橙色郁金香",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:orange_tulip",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "white_tulip",
+          "name": "白色郁金香",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:white_tulip",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "pink_tulip",
+          "name": "粉红色郁金香",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pink_tulip",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "oxeye_daisy",
+          "name": "滨菊",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:oxeye_daisy",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "cornflower",
+          "name": "矢车菊",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cornflower",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "lily_of_the_valley",
+          "name": "铃兰",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:lily_of_the_valley",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "flower_bundle",
+          "name": "百花束",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:dandelion",
+              "count": 1
+            },
+            {
+              "id": "minecraft:poppy",
+              "count": 1
+            },
+            {
+              "id": "minecraft:allium",
+              "count": 1
+            },
+            {
+              "id": "minecraft:azure_bluet",
+              "count": 1
+            },
+            {
+              "id": "minecraft:red_tulip",
+              "count": 1
+            },
+            {
+              "id": "minecraft:orange_tulip",
+              "count": 1
+            },
+            {
+              "id": "minecraft:white_tulip",
+              "count": 1
+            },
+            {
+              "id": "minecraft:pink_tulip",
+              "count": 1
+            },
+            {
+              "id": "minecraft:oxeye_daisy",
+              "count": 1
+            },
+            {
+              "id": "minecraft:cornflower",
+              "count": 1
+            },
+            {
+              "id": "minecraft:lily_of_the_valley",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "taiga",
+      "name": "针叶林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "spruce_sapling",
+          "name": "云杉树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:spruce_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "fern",
+          "name": "蕨",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:fern",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        },
+        {
+          "id": "sweet_berries",
+          "name": "甜浆果",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sweet_berries",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "podzol",
+          "name": "灰化土",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:podzol",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "emerald",
+          "name": "绿宝石",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:emerald",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        }
+      ]
+    },
+    {
+      "id": "jungle",
+      "name": "丛林与竹林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "bamboo",
+          "name": "竹子",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:bamboo",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "cocoa_beans",
+          "name": "可可豆",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cocoa_beans",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "melon_seeds",
+          "name": "西瓜种子",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:melon_seeds",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "jungle_sapling",
+          "name": "丛林树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:jungle_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "melon_seeds",
+          "name": "西瓜种子 ×10",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:melon_seeds",
+              "count": 10
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "swamp",
+      "name": "沼泽",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "clay_ball",
+          "name": "黏土球",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:clay_ball",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "blue_orchid",
+          "name": "兰花",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:blue_orchid",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "slime_ball",
+          "name": "黏液球",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:slime_ball",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "mangrove",
+      "name": "红树林沼泽",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "mangrove_propagule",
+          "name": "红树胎生苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:mangrove_propagule",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "mangrove_roots",
+          "name": "红树根",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:mangrove_roots",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "mud",
+          "name": "泥巴",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:mud",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "slime_ball",
+          "name": "黏液球",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:slime_ball",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "desert",
+      "name": "沙漠与沙滩",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "cactus",
+          "name": "仙人掌",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cactus",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "dead_bush",
+          "name": "枯萎的灌木",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:dead_bush",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        },
+        {
+          "id": "rabbit_hide",
+          "name": "兔子皮",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:rabbit_hide",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "rabbit_foot",
+          "name": "兔子脚",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:rabbit_foot",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        }
+      ]
+    },
+    {
+      "id": "badlands",
+      "name": "恶地",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "red_sand",
+          "name": "红沙",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_sand",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "terracotta",
+          "name": "陶瓦",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:terracotta",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "raw_gold",
+          "name": "粗金",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:raw_gold",
+              "count": 1
+            }
+          ],
+          "gold": 120
+        }
+      ]
+    },
+    {
+      "id": "savanna",
+      "name": "热带草原",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "acacia_sapling",
+          "name": "金合欢树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:acacia_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "short_grass",
+          "name": "矮草丛",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:short_grass",
+              "count": 1
+            }
+          ],
+          "gold": 2
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "armadillo_scute",
+          "name": "犰狳鳞甲",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:armadillo_scute",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "snow",
+      "name": "雪原与冰川",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "snowball",
+          "name": "雪球",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:snowball",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        },
+        {
+          "id": "ice",
+          "name": "冰",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:ice",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "packed_ice",
+          "name": "浮冰",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:packed_ice",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "blue_ice",
+          "name": "蓝冰",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:blue_ice",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "mountains",
+      "name": "山地与石岸",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "flint",
+          "name": "燧石",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:flint",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "calcite",
+          "name": "方解石",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:calcite",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "goat_horn",
+          "name": "山羊角",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:goat_horn",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        },
+        {
+          "id": "emerald",
+          "name": "绿宝石",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:emerald",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        }
+      ]
+    },
+    {
+      "id": "cherry",
+      "name": "樱花树林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "cherry_sapling",
+          "name": "樱花树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cherry_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "pink_petals",
+          "name": "粉红色花簇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pink_petals",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "cherry_sapling",
+          "name": "樱花树苗 ×5",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cherry_sapling",
+              "count": 5
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "dark_forest",
+      "name": "黑森林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "dark_oak_sapling",
+          "name": "深色橡树树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:dark_oak_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "red_mushroom",
+          "name": "红色蘑菇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_mushroom",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "brown_mushroom",
+          "name": "棕色蘑菇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:brown_mushroom",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "red_mushroom_block",
+          "name": "红色蘑菇方块",
+          "weight": 5,
+          "items": [
+            {
+              "id": "minecraft:red_mushroom_block",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        },
+        {
+          "id": "brown_mushroom_block",
+          "name": "棕色蘑菇方块",
+          "weight": 5,
+          "items": [
+            {
+              "id": "minecraft:brown_mushroom_block",
+              "count": 1
+            }
+          ],
+          "gold": 80
+        }
+      ]
+    },
+    {
+      "id": "pale_garden",
+      "name": "苍白之园",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "pale_oak_sapling",
+          "name": "苍白橡树树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pale_oak_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "pale_moss_block",
+          "name": "苍白苔藓块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pale_moss_block",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "pale_hanging_moss",
+          "name": "苍白垂须",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pale_hanging_moss",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "resin_clump",
+          "name": "树脂团",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:resin_clump",
+              "count": 1
+            }
+          ],
+          "gold": 120
+        }
+      ]
+    },
+    {
+      "id": "mushroom",
+      "name": "蘑菇岛",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "red_mushroom",
+          "name": "红色蘑菇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_mushroom",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "brown_mushroom",
+          "name": "棕色蘑菇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:brown_mushroom",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "mushroom_stem",
+          "name": "蘑菇柄",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:mushroom_stem",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "mycelium",
+          "name": "菌丝体",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:mycelium",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "ocean",
+      "name": "海洋",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "kelp",
+          "name": "海带",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:kelp",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "seagrass",
+          "name": "海草",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:seagrass",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "prismarine_shard",
+          "name": "海晶碎片",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:prismarine_shard",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        },
+        {
+          "id": "prismarine_crystals",
+          "name": "海晶砂粒",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:prismarine_crystals",
+              "count": 1
+            }
+          ],
+          "gold": 120
+        }
+      ]
+    },
+    {
+      "id": "warm_ocean",
+      "name": "暖水海洋",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "sea_pickle",
+          "name": "海泡菜",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sea_pickle",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "tube_coral_block",
+          "name": "管珊瑚块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:tube_coral_block",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        },
+        {
+          "id": "brain_coral_block",
+          "name": "脑珊瑚块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:brain_coral_block",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        },
+        {
+          "id": "bubble_coral_block",
+          "name": "气泡珊瑚块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:bubble_coral_block",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        },
+        {
+          "id": "fire_coral_block",
+          "name": "火珊瑚块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:fire_coral_block",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        },
+        {
+          "id": "horn_coral_block",
+          "name": "鹿角珊瑚块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:horn_coral_block",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "sponge",
+          "name": "海绵",
+          "weight": 5,
+          "items": [
+            {
+              "id": "minecraft:sponge",
+              "count": 1
+            }
+          ],
+          "gold": 180
+        }
+      ]
+    },
+    {
+      "id": "deep_ocean",
+      "name": "深海",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "kelp",
+          "name": "海带",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:kelp",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "seagrass",
+          "name": "海草",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:seagrass",
+              "count": 1
+            }
+          ],
+          "gold": 3
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "heart_of_the_sea",
+          "name": "海洋之心",
+          "weight": 3,
+          "items": [
+            {
+              "id": "minecraft:heart_of_the_sea",
+              "count": 1
+            }
+          ],
+          "gold": 300
+        }
+      ]
+    },
+    {
+      "id": "lush_caves",
+      "name": "繁茂洞穴",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "moss_block",
+          "name": "苔藓块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:moss_block",
+              "count": 1
+            }
+          ],
+          "gold": 5
+        },
+        {
+          "id": "azalea",
+          "name": "杜鹃花丛",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:azalea",
+              "count": 1
+            }
+          ],
+          "gold": 8
+        },
+        {
+          "id": "glow_berries",
+          "name": "发光浆果",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:glow_berries",
+              "count": 1
+            }
+          ],
+          "gold": 15
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "spore_blossom",
+          "name": "孢子花",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:spore_blossom",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        }
+      ]
+    },
+    {
+      "id": "dripstone_caves",
+      "name": "溶洞",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "pointed_dripstone",
+          "name": "滴水石锥",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:pointed_dripstone",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "amethyst_shard",
+          "name": "紫水晶碎片",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:amethyst_shard",
+              "count": 1
+            }
+          ],
+          "gold": 100
+        }
+      ]
+    },
+    {
+      "id": "deep_dark",
+      "name": "深暗之域",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "sculk",
+          "name": "幽匿块",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sculk",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "echo_shard",
+          "name": "回响碎片",
+          "weight": 5,
+          "items": [
+            {
+              "id": "minecraft:echo_shard",
+              "count": 1
+            }
+          ],
+          "gold": 200
+        },
+        {
+          "id": "sculk_catalyst",
+          "name": "幽匿催发体",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sculk_catalyst",
+              "count": 1
+            }
+          ],
+          "gold": 180
+        }
+      ]
+    },
+    {
+      "id": "sulfur_caves",
+      "name": "硫磺洞穴",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "sulfur",
+          "name": "硫磺",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:sulfur",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "cinnabar",
+          "name": "朱砂",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:cinnabar",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "potent_sulfur",
+          "name": "高活性硫磺",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:potent_sulfur",
+              "count": 1
+            }
+          ],
+          "gold": 150
+        }
+      ]
+    },
+    {
+      "id": "dappled_forest",
+      "name": "斑驳森林",
+      "weight": 1,
+      "append_junk": [
+        {
+          "id": "poplar_sapling",
+          "name": "杨树树苗",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:poplar_sapling",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "red_poplar_leaves",
+          "name": "红色杨树树叶",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_poplar_leaves",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "orange_poplar_leaves",
+          "name": "橙色杨树树叶",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:orange_poplar_leaves",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "yellow_poplar_leaves",
+          "name": "黄色杨树树叶",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:yellow_poplar_leaves",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "shelf_mushroom",
+          "name": "层架蘑菇",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:shelf_mushroom",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        },
+        {
+          "id": "red_shrub",
+          "name": "红色灌木",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_shrub",
+              "count": 1
+            }
+          ],
+          "gold": 10
+        }
+      ],
+      "append_treasure": [
+        {
+          "id": "poplar_leaves_bundle",
+          "name": "三色杨树树叶",
+          "weight": 10,
+          "items": [
+            {
+              "id": "minecraft:red_poplar_leaves",
+              "count": 1
+            },
+            {
+              "id": "minecraft:orange_poplar_leaves",
+              "count": 1
+            },
+            {
+              "id": "minecraft:yellow_poplar_leaves",
+              "count": 1
+            }
+          ],
+          "gold": 120
+        }
+      ]
+    }
+  ],
+  "durability": {
+    "junk_leather_boots": {
+      "max_durability": 65,
+      "remaining_fraction_min": 0,
+      "remaining_fraction_max": 0.9
+    },
+    "junk_fishing_rod": {
+      "max_durability": 64,
+      "remaining_fraction_min": 0,
+      "remaining_fraction_max": 0.9
+    },
+    "treasure_fishing_rod": {
+      "max_durability": 64,
+      "remaining_fraction_min": 0,
+      "remaining_fraction_max": 0.25
+    },
+    "treasure_bow": {
+      "max_durability": 384,
+      "remaining_fraction_min": 0,
+      "remaining_fraction_max": 0.25
+    }
+  },
+  "enchantments": {
+    "base_level": 30,
+    "enchantability": 1,
+    "gold_per_non_curse_level": 5,
+    "mending_extra_gold": 30,
+    "max_bonus_gold": 100,
+    "curse_ids": [
+      "minecraft:binding_curse",
+      "minecraft:vanishing_curse"
+    ],
+    "definitions": {
+      "minecraft:protection": {
+        "weight": 10,
+        "max_level": 4,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 11
+        },
+        "max_cost": {
+          "base": 12,
+          "per_level_above_first": 11
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:protection",
+          "minecraft:blast_protection",
+          "minecraft:fire_protection",
+          "minecraft:projectile_protection"
+        ],
+        "name": "保护"
+      },
+      "minecraft:fire_protection": {
+        "weight": 5,
+        "max_level": 4,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 18,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:protection",
+          "minecraft:blast_protection",
+          "minecraft:fire_protection",
+          "minecraft:projectile_protection"
+        ],
+        "name": "火焰保护"
+      },
+      "minecraft:feather_falling": {
+        "weight": 5,
+        "max_level": 4,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 6
+        },
+        "max_cost": {
+          "base": 11,
+          "per_level_above_first": 6
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "摔落缓冲"
+      },
+      "minecraft:blast_protection": {
+        "weight": 2,
+        "max_level": 4,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 13,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:protection",
+          "minecraft:blast_protection",
+          "minecraft:fire_protection",
+          "minecraft:projectile_protection"
+        ],
+        "name": "爆炸保护"
+      },
+      "minecraft:projectile_protection": {
+        "weight": 5,
+        "max_level": 4,
+        "min_cost": {
+          "base": 3,
+          "per_level_above_first": 6
+        },
+        "max_cost": {
+          "base": 9,
+          "per_level_above_first": 6
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:protection",
+          "minecraft:blast_protection",
+          "minecraft:fire_protection",
+          "minecraft:projectile_protection"
+        ],
+        "name": "弹射物保护"
+      },
+      "minecraft:respiration": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 40,
+          "per_level_above_first": 10
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "水下呼吸"
+      },
+      "minecraft:aqua_affinity": {
+        "weight": 2,
+        "max_level": 1,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 41,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "水下速掘"
+      },
+      "minecraft:thorns": {
+        "weight": 1,
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 20
+        },
+        "max_cost": {
+          "base": 60,
+          "per_level_above_first": 20
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "荆棘"
+      },
+      "minecraft:depth_strider": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 10
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:frost_walker",
+          "minecraft:depth_strider"
+        ],
+        "name": "深海探索者"
+      },
+      "minecraft:sharpness": {
+        "weight": 10,
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 11
+        },
+        "max_cost": {
+          "base": 21,
+          "per_level_above_first": 11
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "锋利"
+      },
+      "minecraft:smite": {
+        "weight": 5,
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "亡灵杀手"
+      },
+      "minecraft:bane_of_arthropods": {
+        "weight": 5,
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "节肢杀手"
+      },
+      "minecraft:knockback": {
+        "weight": 5,
+        "max_level": 2,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 20
+        },
+        "max_cost": {
+          "base": 55,
+          "per_level_above_first": 20
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "击退"
+      },
+      "minecraft:fire_aspect": {
+        "weight": 2,
+        "max_level": 2,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 20
+        },
+        "max_cost": {
+          "base": 60,
+          "per_level_above_first": 20
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "火焰附加"
+      },
+      "minecraft:looting": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "抢夺"
+      },
+      "minecraft:sweeping_edge": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 20,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "横扫之刃"
+      },
+      "minecraft:efficiency": {
+        "weight": 10,
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 51,
+          "per_level_above_first": 10
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "效率"
+      },
+      "minecraft:silk_touch": {
+        "weight": 1,
+        "max_level": 1,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:fortune",
+          "minecraft:silk_touch"
+        ],
+        "name": "精准采集"
+      },
+      "minecraft:unbreaking": {
+        "weight": 5,
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 55,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book",
+          "bow",
+          "fishing_rod"
+        ],
+        "incompatible_with": [],
+        "name": "耐久"
+      },
+      "minecraft:fortune": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:fortune",
+          "minecraft:silk_touch"
+        ],
+        "name": "时运"
+      },
+      "minecraft:power": {
+        "weight": 10,
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 16,
+          "per_level_above_first": 10
+        },
+        "allowed_items": [
+          "book",
+          "bow"
+        ],
+        "incompatible_with": [],
+        "name": "力量"
+      },
+      "minecraft:punch": {
+        "weight": 2,
+        "max_level": 2,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 20
+        },
+        "max_cost": {
+          "base": 37,
+          "per_level_above_first": 20
+        },
+        "allowed_items": [
+          "book",
+          "bow"
+        ],
+        "incompatible_with": [],
+        "name": "冲击"
+      },
+      "minecraft:flame": {
+        "weight": 2,
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book",
+          "bow"
+        ],
+        "incompatible_with": [],
+        "name": "火矢"
+      },
+      "minecraft:infinity": {
+        "weight": 1,
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book",
+          "bow"
+        ],
+        "incompatible_with": [
+          "minecraft:infinity",
+          "minecraft:mending"
+        ],
+        "name": "无限"
+      },
+      "minecraft:luck_of_the_sea": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book",
+          "fishing_rod"
+        ],
+        "incompatible_with": [],
+        "name": "海之眷顾"
+      },
+      "minecraft:lure": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book",
+          "fishing_rod"
+        ],
+        "incompatible_with": [],
+        "name": "饵钓"
+      },
+      "minecraft:loyalty": {
+        "weight": 5,
+        "max_level": 3,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 7
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "忠诚"
+      },
+      "minecraft:impaling": {
+        "weight": 2,
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 21,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "穿刺"
+      },
+      "minecraft:riptide": {
+        "weight": 2,
+        "max_level": 3,
+        "min_cost": {
+          "base": 17,
+          "per_level_above_first": 7
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:loyalty",
+          "minecraft:channeling"
+        ],
+        "name": "激流"
+      },
+      "minecraft:channeling": {
+        "weight": 1,
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "引雷"
+      },
+      "minecraft:multishot": {
+        "weight": 2,
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:multishot",
+          "minecraft:piercing"
+        ],
+        "name": "多重射击"
+      },
+      "minecraft:quick_charge": {
+        "weight": 5,
+        "max_level": 3,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 20
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "快速装填"
+      },
+      "minecraft:piercing": {
+        "weight": 10,
+        "max_level": 4,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:multishot",
+          "minecraft:piercing"
+        ],
+        "name": "穿透"
+      },
+      "minecraft:density": {
+        "weight": 5,
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "致密"
+      },
+      "minecraft:breach": {
+        "weight": 2,
+        "max_level": 4,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:sharpness",
+          "minecraft:smite",
+          "minecraft:bane_of_arthropods",
+          "minecraft:impaling",
+          "minecraft:density",
+          "minecraft:breach"
+        ],
+        "name": "破甲"
+      },
+      "minecraft:lunge": {
+        "weight": 5,
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "突进"
+      },
+      "minecraft:binding_curse": {
+        "weight": 1,
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [],
+        "name": "绑定诅咒"
+      },
+      "minecraft:vanishing_curse": {
+        "weight": 1,
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "allowed_items": [
+          "book",
+          "bow",
+          "fishing_rod"
+        ],
+        "incompatible_with": [],
+        "name": "消失诅咒"
+      },
+      "minecraft:frost_walker": {
+        "weight": 2,
+        "max_level": 2,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 10
+        },
+        "allowed_items": [
+          "book"
+        ],
+        "incompatible_with": [
+          "minecraft:frost_walker",
+          "minecraft:depth_strider"
+        ],
+        "name": "冰霜行者"
+      },
+      "minecraft:mending": {
+        "weight": 2,
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 25
+        },
+        "max_cost": {
+          "base": 75,
+          "per_level_above_first": 25
+        },
+        "allowed_items": [
+          "book",
+          "bow",
+          "fishing_rod"
+        ],
+        "incompatible_with": [],
+        "name": "经验修补"
+      }
+    }
+  }
+}

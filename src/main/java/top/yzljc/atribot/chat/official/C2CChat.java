@@ -15,8 +15,7 @@ import java.util.concurrent.ExecutionException;
  * @Created_at 2026/06/09
  * @Project AtriBot
  * @Package top.yzljc.atribot.chat.official
- * @Description
- * 单聊同步业务层
+ * @Description 单聊同步业务层
  * 内部委托 {@link AsyncC2CChat} 执行异步业务逻辑
  * 如需非阻塞调用请直接使用 {@link AsyncC2CChat}
  */
@@ -72,7 +71,9 @@ public final class C2CChat {
         return await(AsyncC2CChat.wakeupMessage(openId, ark));
     }
 
-    /** 发送单聊卡片召回消息，不携带回复来源或引用。 */
+    /**
+     * 发送单聊卡片召回消息，不携带回复来源或引用。
+     */
     public static String wakeupMessage(String openId, Card card) {
         return await(AsyncC2CChat.wakeupMessage(openId, card));
     }

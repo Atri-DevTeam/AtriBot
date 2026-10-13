@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -65,7 +65,7 @@ public final class HypixelAnnouncementFeed {
     private static final int INTRO_MAX_LENGTH = 100;
     private static final int MAX_PUSH_PER_RUN = 3;
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
-    private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
+    private static final String HYPIXEL_HEADER_URL = RS.get("resource.image.hypixel-header");
 
     static boolean pushAnnouncements(List<Announcement> announcements, String functionId) {
         if (announcements.isEmpty()) return false;

@@ -61,19 +61,19 @@ public class SignRepository {
             try (var ps = con.prepareStatement(sqlDaily)) {
                 ps.execute();
             }
-            // 迁移：为旧表补充 coins 列
-            try (var ps = con.prepareStatement(
-                    "ALTER TABLE `check_in_daily` ADD COLUMN `coins` INT DEFAULT 0")) {
-                ps.execute();
-            } catch (SQLException ignored) {
-                // 列已存在，忽略
-            }
-            try (var ps = con.prepareStatement(
-                    "ALTER TABLE `check_in_total` ADD COLUMN `total_coins` INT DEFAULT 0")) {
-                ps.execute();
-            } catch (SQLException ignored) {
-                // 列已存在，忽略
-            }
+//            // 迁移：为旧表补充 coins 列
+//            try (var ps = con.prepareStatement(
+//                    "ALTER TABLE `check_in_daily` ADD COLUMN `coins` INT DEFAULT 0")) {
+//                ps.execute();
+//            } catch (SQLException ignored) {
+//                // 列已存在，忽略
+//            }
+//            try (var ps = con.prepareStatement(
+//                    "ALTER TABLE `check_in_total` ADD COLUMN `total_coins` INT DEFAULT 0")) {
+//                ps.execute();
+//            } catch (SQLException ignored) {
+//                // 列已存在，忽略
+//            }
             log.info("打卡数据库表初始化完成");
         } catch (Exception e) {
             log.error("初始化打卡数据库表失败", e);

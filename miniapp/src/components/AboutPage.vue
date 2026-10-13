@@ -142,7 +142,9 @@ function value(text: string | null | undefined) {
             class="about-link-text"><strong>帮助文档</strong><small>查看功能说明与使用帮助</small></span>
           <Icon name="external"/>
         </a>
-        <button class="about-link" type="button" @click="emit('copy', 'https://github.com/Atri-DevTeam/AtriBot', '仓库链接')"><span class="about-link-icon"><Icon name="code"/></span><span
+        <button class="about-link" type="button"
+                @click="emit('copy', 'https://github.com/Atri-DevTeam/AtriBot', '仓库链接')"><span
+            class="about-link-icon"><Icon name="code"/></span><span
             class="about-link-text"><strong>GitHub 开源仓库</strong><small>Atri-DevTeam / AtriBot</small></span>
           <Icon name="copy"/>
         </button>

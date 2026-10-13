@@ -120,7 +120,10 @@ export class PageSession {
         }
         const response = await this.#request(path, {method: 'GET', headers: {Authorization: `Bearer ${this.#token}`}})
         if (this.#ended) return null
-        if (!response.ok) { await this.#failure(response, path); return null }
+        if (!response.ok) {
+            await this.#failure(response, path);
+            return null
+        }
         const result = await response.json() as T
         if (this.#ended) return null
         this.#deadline = this.#now() + this.#idleMillis
@@ -140,7 +143,10 @@ export class PageSession {
             body: JSON.stringify(body)
         })
         if (this.#ended) return null
-        if (!response.ok) { await this.#failure(response, path); return null }
+        if (!response.ok) {
+            await this.#failure(response, path);
+            return null
+        }
         const result = await response.json() as T
         if (this.#ended) return null
         this.#deadline = this.#now() + this.#idleMillis

@@ -14,6 +14,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.function.reminder.ReminderService;
 import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 
 import java.util.Collections;
@@ -36,10 +37,12 @@ public final class ReminderCommand implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender qq) || qq.getPlatform() != Platform.OFFICIAL_C2C) {
-            sender.sendMessage("提醒功能仅支持QQ官方机器人私聊。");
+        if (!(sender instanceof QQCommandSender qq)) return true;
+        if (qq.getPlatform() != Platform.OFFICIAL_C2C) {
+            qq.sendMessage("该功能暂且仅在私聊开放，请前往添加" + QQBot.BOT_NAME + "好友私聊使用");
             return true;
         }
+
         if (qq.isBot() || OfficialUsers.isBlocked(qq.getUserId()) || OfficialUsers.isIgnored(qq.getUserId())) return true;
         if (!qq.hasPermission(ReminderService.USE_PERMISSION)) {
             qq.sendMessage(ReminderService.BETA_ONLY, false);

@@ -12,7 +12,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
@@ -61,7 +61,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         Markdown md = TC.md(
                 "**编辑消息权限**\n\n" +
                         "> 请群主大大按下方操作开启权限，需要手机QQ版本为9.2.90及以上，IOS未知\n\n" +
-                        Markdown.img(ResourcesProperties.FULL_MESSAGE_ENABLE_GUIDE, 540, 479)
+                        Markdown.img(RS.get("resource.image.full-message-guide"), 540, 479)
         );
         String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
         Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);

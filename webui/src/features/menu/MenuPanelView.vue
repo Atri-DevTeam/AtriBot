@@ -22,9 +22,16 @@
           </div>
         </div>
         <div class="topbar-right mp-transfer-actions">
-          <input ref="transferFileInput" type="file" accept="application/json,.json" hidden @change="importTransferFile"/>
-          <button class="ghost-button" title="导入单个配置" aria-label="导入单个配置" :disabled="transferBusy" @click="transferFileInput?.click()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+          <input ref="transferFileInput" type="file" accept="application/json,.json" hidden
+                 @change="importTransferFile"/>
+          <button class="ghost-button" title="导入单个配置" aria-label="导入单个配置" :disabled="transferBusy"
+                  @click="transferFileInput?.click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <path d="M5 21h14"/>
+            </svg>
             <span class="mp-transfer-label">导入单项</span>
           </button>
         </div>
@@ -42,7 +49,8 @@
                 <svg class="mp-action-icon" :class="{ 'mp-action-icon--spin': menuLoading }" width="16" height="16"
                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                      stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 6v5h-5"/><path d="M4 18v-5h5"/>
+                  <path d="M20 6v5h-5"/>
+                  <path d="M4 18v-5h5"/>
                   <path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 11M4 13l2.4 4.6A7 7 0 0 0 17.9 15"/>
                 </svg>
                 <span class="mp-action-label">{{ menuLoading ? '加载中...' : '重新加载' }}</span>
@@ -51,16 +59,20 @@
                       :disabled="transferBusy || menuLoading || menuItems.length === 0" @click="exportMenuFile">
                 <svg class="mp-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 21V9"/><polyline points="7 14 12 9 17 14"/><path d="M5 3h14"/>
+                  <path d="M12 21V9"/>
+                  <polyline points="7 14 12 9 17 14"/>
+                  <path d="M5 3h14"/>
                 </svg>
                 <span class="mp-action-label">导出菜单</span>
               </button>
               <button class="primary-button mp-head-action" :title="menuSaving ? '保存中' : '保存菜单'"
-                      :aria-label="menuSaving ? '保存中' : '保存菜单'" :disabled="menuSaving || menuItems.length === 0" @click="saveMenu">
+                      :aria-label="menuSaving ? '保存中' : '保存菜单'" :disabled="menuSaving || menuItems.length === 0"
+                      @click="saveMenu">
                 <svg class="mp-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
                 </svg>
                 <span class="mp-action-label">{{ menuSaving ? '保存中...' : '保存菜单' }}</span>
               </button>
@@ -75,88 +87,106 @@
                 <MenuPreview :items="menuItems" :bot-name="botName"/>
               </div>
               <div class="mp-menu-editor">
-              <div v-if="menuItems.length === 0" class="mp-hint">
-                尚未设置菜单，点击下方「添加菜单项」开始配置，最多 10 个菜单项
-              </div>
-              <div v-for="(item, idx) in menuItems" :key="idx" class="mp-menu-item"
-                   :class="{ 'mp-dragging': menuDragIndex === idx }"
-                   @dragover.prevent @drop.prevent="onMenuDrop(idx)">
-                <div class="mp-menu-item-head">
-                  <span class="mp-drag" title="拖动排序" draggable="true" @dragstart="onMenuDragStart(idx, $event)" @dragend="onMenuDragEnd">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
-                  </span>
-                  <span class="mp-idx">#{{ idx + 1 }}</span>
-                  <select v-model="item.type" class="gs-input mp-type">
-                    <option value="send_message">发送消息</option>
-                    <option value="link">链接跳转</option>
-                    <option value="switch">开关</option>
-                    <option value="menu">折叠子菜单</option>
-                  </select>
-                  <input v-model="item.name" class="gs-input mp-name" type="text" maxlength="10"
-                         placeholder="按钮名称（最多 5 个汉字或 10 个字母）"
-                         @input="limitMenuNameInput(item, 10, $event)"/>
-                  <select v-model="item.align" class="gs-input mp-align">
-                    <option value="left">左对齐</option>
-                    <option value="right">右对齐</option>
-                  </select>
-                  <button class="icon-button" title="删除菜单项" @click="removeMenuItem(idx)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+                <div v-if="menuItems.length === 0" class="mp-hint">
+                  尚未设置菜单，点击下方「添加菜单项」开始配置，最多 10 个菜单项
                 </div>
-
-                <div class="mp-menu-item-body">
-                  <label v-if="item.type === 'send_message'" class="gs-form-row">
-                    <span class="gs-form-label">发送内容</span>
-                    <input v-model="item.sendMessage" class="gs-input" type="text" placeholder="点击后自动填入输入框的内容"/>
-                  </label>
-
-                  <label v-if="item.type === 'link'" class="gs-form-row">
-                    <span class="gs-form-label">跳转链接</span>
-                    <input v-model="item.link" class="gs-input" type="text" placeholder="必须以 https:// 开头"/>
-                  </label>
-
-                  <div v-if="item.type === 'switch'" class="mp-switch-cfg">
-                    <label class="gs-form-row">
-                      <span class="gs-form-label">开关标识 switch_id</span>
-                      <input v-model="item.switchId" class="gs-input" type="text" placeholder="唯一标识，如 search"/>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox" v-model="item.defaultOn"/> 默认打开
-                    </label>
+                <div v-for="(item, idx) in menuItems" :key="idx" class="mp-menu-item"
+                     :class="{ 'mp-dragging': menuDragIndex === idx }"
+                     @dragover.prevent @drop.prevent="onMenuDrop(idx)">
+                  <div class="mp-menu-item-head">
+                  <span class="mp-drag" title="拖动排序" draggable="true" @dragstart="onMenuDragStart(idx, $event)"
+                        @dragend="onMenuDragEnd">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle
+                        cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle
+                        cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
+                  </span>
+                    <span class="mp-idx">#{{ idx + 1 }}</span>
+                    <select v-model="item.type" class="gs-input mp-type">
+                      <option value="send_message">发送消息</option>
+                      <option value="link">链接跳转</option>
+                      <option value="switch">开关</option>
+                      <option value="menu">折叠子菜单</option>
+                    </select>
+                    <input v-model="item.name" class="gs-input mp-name" type="text" maxlength="10"
+                           placeholder="按钮名称（最多 5 个汉字或 10 个字母）"
+                           @input="limitMenuNameInput(item, 10, $event)"/>
+                    <select v-model="item.align" class="gs-input mp-align">
+                      <option value="left">左对齐</option>
+                      <option value="right">右对齐</option>
+                    </select>
+                    <button class="icon-button" title="删除菜单项" @click="removeMenuItem(idx)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
                   </div>
 
-                  <div v-if="item.type === 'menu'" class="mp-subs">
-                    <div class="mp-subs-head">
-                      <span class="gs-form-label">子菜单（最多 5 个，不支持再嵌套）</span>
-                      <button class="ghost-button mp-mini" :disabled="item.subMenuItems.length >= 5" @click="addSubItem(item)">添加子项</button>
+                  <div class="mp-menu-item-body">
+                    <label v-if="item.type === 'send_message'" class="gs-form-row">
+                      <span class="gs-form-label">发送内容</span>
+                      <input v-model="item.sendMessage" class="gs-input" type="text"
+                             placeholder="点击后自动填入输入框的内容"/>
+                    </label>
+
+                    <label v-if="item.type === 'link'" class="gs-form-row">
+                      <span class="gs-form-label">跳转链接</span>
+                      <input v-model="item.link" class="gs-input" type="text" placeholder="必须以 https:// 开头"/>
+                    </label>
+
+                    <div v-if="item.type === 'switch'" class="mp-switch-cfg">
+                      <label class="gs-form-row">
+                        <span class="gs-form-label">开关标识 switch_id</span>
+                        <input v-model="item.switchId" class="gs-input" type="text" placeholder="唯一标识，如 search"/>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" v-model="item.defaultOn"/> 默认打开
+                      </label>
                     </div>
-                    <div v-for="(sub, si) in item.subMenuItems" :key="si" class="mp-sub"
-                         :class="{ 'mp-dragging': subMenuDrag?.parent === item && subMenuDrag?.sub === sub }"
-                         @dragover="onSubMenuDragOver(item, $event)" @drop="onSubMenuDrop(item, si, $event)">
+
+                    <div v-if="item.type === 'menu'" class="mp-subs">
+                      <div class="mp-subs-head">
+                        <span class="gs-form-label">子菜单（最多 5 个，不支持再嵌套）</span>
+                        <button class="ghost-button mp-mini" :disabled="item.subMenuItems.length >= 5"
+                                @click="addSubItem(item)">添加子项
+                        </button>
+                      </div>
+                      <div v-for="(sub, si) in item.subMenuItems" :key="si" class="mp-sub"
+                           :class="{ 'mp-dragging': subMenuDrag?.parent === item && subMenuDrag?.sub === sub }"
+                           @dragover="onSubMenuDragOver(item, $event)" @drop="onSubMenuDrop(item, si, $event)">
                       <span class="mp-drag" title="拖动排序子项" draggable="true"
                             @dragstart.stop="onSubMenuDragStart(item, sub, $event)" @dragend.stop="onSubMenuDragEnd">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5"
+                                                                                                    r="1.6"/><circle
+                            cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle
+                            cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
                       </span>
-                      <select v-model="sub.type" class="gs-input mp-type">
-                        <option value="send_message">发送消息</option>
-                        <option value="link">链接跳转</option>
-                      </select>
-                      <input v-model="sub.name" class="gs-input mp-name" type="text" maxlength="14"
-                             placeholder="子项名称（最多 7 个汉字或 14 个字母）"
-                             @input="limitMenuNameInput(sub, 14, $event)"/>
-                      <input v-if="sub.type === 'send_message'" v-model="sub.sendMessage" class="gs-input" type="text" placeholder="发送内容"/>
-                      <input v-else v-model="sub.link" class="gs-input" type="text" placeholder="https:// 链接"/>
-                      <button class="icon-button" title="删除子项" @click="item.subMenuItems.splice(si, 1)">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
+                        <select v-model="sub.type" class="gs-input mp-type">
+                          <option value="send_message">发送消息</option>
+                          <option value="link">链接跳转</option>
+                        </select>
+                        <input v-model="sub.name" class="gs-input mp-name" type="text" maxlength="14"
+                               placeholder="子项名称（最多 7 个汉字或 14 个字母）"
+                               @input="limitMenuNameInput(sub, 14, $event)"/>
+                        <input v-if="sub.type === 'send_message'" v-model="sub.sendMessage" class="gs-input" type="text"
+                               placeholder="发送内容"/>
+                        <input v-else v-model="sub.link" class="gs-input" type="text" placeholder="https:// 链接"/>
+                        <button class="icon-button" title="删除子项" @click="item.subMenuItems.splice(si, 1)">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                               stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <button class="ghost-button mp-add" :disabled="menuItems.length >= 10" @click="addMenuItem">
-                + 添加菜单项
-              </button>
+                <button class="ghost-button mp-add" :disabled="menuItems.length >= 10" @click="addMenuItem">
+                  + 添加菜单项
+                </button>
               </div>
             </div>
           </div>
@@ -169,17 +199,24 @@
             <div class="chat-head-right">
               <span class="status-pill"><span class="dot ok"></span>{{ panels.length }} 个面板</span>
               <button class="ghost-button mp-head-action" :title="panelLoading ? '加载中' : '刷新面板'"
-                      :aria-label="panelLoading ? '加载中' : '刷新面板'" :disabled="panelLoading" @click="loadPanels(true)">
+                      :aria-label="panelLoading ? '加载中' : '刷新面板'" :disabled="panelLoading"
+                      @click="loadPanels(true)">
                 <svg class="mp-action-icon" :class="{ 'mp-action-icon--spin': panelLoading }" width="16" height="16"
                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                      stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 6v5h-5"/><path d="M4 18v-5h5"/>
+                  <path d="M20 6v5h-5"/>
+                  <path d="M4 18v-5h5"/>
                   <path d="M6.1 9a7 7 0 0 1 11.5-2.6L20 11M4 13l2.4 4.6A7 7 0 0 0 17.9 15"/>
                 </svg>
                 <span class="mp-action-label">{{ panelLoading ? '加载中...' : '刷新' }}</span>
               </button>
-              <button class="primary-button mp-add-btn mp-head-action" title="新建面板" aria-label="新建面板" @click="openCreate">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button class="primary-button mp-add-btn mp-head-action" title="新建面板" aria-label="新建面板"
+                      @click="openCreate">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
                 <span class="mp-action-label">新建面板</span>
               </button>
             </div>
@@ -191,62 +228,103 @@
             <div v-else-if="panels.length === 0" class="empty-state">还没有指令面板，点右上角「新建面板」创建</div>
             <div v-else class="mp-panel-layout">
               <div class="mp-panel-preview">
-                <PanelPreview :scope="selectedPanel?.scope" :items="previewItems" :bot-name="botName" :bot-avatar="botAvatar"/>
+                <PanelPreview :scope="selectedPanel?.scope" :items="previewItems" :bot-name="botName"
+                              :bot-avatar="botAvatar"/>
               </div>
               <div class="mp-panel-grid">
-              <article v-for="p in panels" :key="p.panelId" class="mp-panel-card"
-                       :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId }"
-                       @click="selectPanel(p)">
-                <div class="mp-panel-card-head">
-                  <div class="mp-panel-card-title">
-                    <span class="mp-panel-title">{{ p.panel?.remark || '未命名面板' }}</span>
-                    <span class="mp-version">版本 {{ p.version }}</span>
-                  </div>
-                  <div class="mp-panel-badges">
+                <article v-for="p in panels" :key="p.panelId" class="mp-panel-card"
+                         :class="{ 'mp-panel-card--selected': p.panelId === selectedPanel?.panelId }"
+                         @click="selectPanel(p)">
+                  <div class="mp-panel-card-head">
+                    <div class="mp-panel-card-title">
+                      <span class="mp-panel-title">{{ p.panel?.remark || '未命名面板' }}</span>
+                      <span class="mp-version">版本 {{ p.version }}</span>
+                    </div>
+                    <div class="mp-panel-badges">
                     <span class="mp-badge" :class="'mp-badge--' + p.scope">
-                      <svg v-if="p.scope === 'c2c'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                      <svg v-else-if="p.scope === 'group'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                      <svg v-else-if="p.scope === 'channel'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                      <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                      <svg v-if="p.scope === 'c2c'" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+                          d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <svg v-else-if="p.scope === 'group'" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+                          d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path
+                          d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      <svg v-else-if="p.scope === 'channel'" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line
+                          x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3"
+                                                                                                    x2="8" y2="21"/><line
+                          x1="16" y1="3" x2="14" y2="21"/></svg>
+                      <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+                          d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                       {{ scopeLabel(p.scope) }}
                     </span>
-                    <span class="mp-badge" :class="p.targetType === 'specific' ? 'mp-badge--specific' : 'mp-badge--all'">{{ p.targetType === 'specific' ? '指定对象' : '全局' }}</span>
-                    <span v-if="isLegacyPanel(p)" class="mp-badge mp-badge--legacy" title="旧版面板">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                      <span class="mp-badge"
+                            :class="p.targetType === 'specific' ? 'mp-badge--specific' : 'mp-badge--all'">{{
+                          p.targetType === 'specific' ? '指定对象' : '全局'
+                        }}</span>
+                      <span v-if="isLegacyPanel(p)" class="mp-badge mp-badge--legacy" title="旧版面板">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10"
+                                                                                rx="2"/><path
+                          d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                       旧版
                     </span>
+                    </div>
                   </div>
-                </div>
-                <div class="mp-panel-card-body">
-                  <div class="mp-items-preview">
+                  <div class="mp-panel-card-body">
+                    <div class="mp-items-preview">
                     <span v-for="(it, i) in (p.panel?.items || [])" :key="i" class="mp-item-chip">
-                      <svg v-if="it.type === 'link'" class="mp-chip-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                      <svg v-if="it.type === 'link'" class="mp-chip-icon" width="11" height="11" viewBox="0 0 24 24"
+                           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                           stroke-linejoin="round"><path
+                          d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                       <span v-else class="mp-chip-slash">/</span>
                       {{ it.name }}
                     </span>
-                    <span v-if="!(p.panel?.items || []).length" class="gs-muted">无面板元素</span>
+                      <span v-if="!(p.panel?.items || []).length" class="gs-muted">无面板元素</span>
+                    </div>
                   </div>
-                </div>
-                <div class="mp-panel-card-foot">
-                  <span class="gs-id" :title="p.panelId">#{{ p.panelId }}</span>
-                  <div class="mp-panel-actions">
-                    <button class="icon-button mp-export" title="导出此面板" :disabled="transferBusy" @click.stop="exportPanelFile(p)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
-                    </button>
-                    <button class="icon-button mp-edit" title="编辑" @click.stop="openEdit(p)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                    </button>
-                    <button class="icon-button mp-target" title="关联对象"
-                            :disabled="p.targetType !== 'specific'" @click.stop="openTarget(p)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </button>
-                    <button class="icon-button mp-danger" :title="isLegacyPanel(p) ? '旧版面板不可删除' : '删除'"
-                            :disabled="isLegacyPanel(p)" @click.stop="removePanel(p)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
+                  <div class="mp-panel-card-foot">
+                    <span class="gs-id" :title="p.panelId">#{{ p.panelId }}</span>
+                    <div class="mp-panel-actions">
+                      <button class="icon-button mp-export" title="导出此面板" :disabled="transferBusy"
+                              @click.stop="exportPanelFile(p)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 15V3"/>
+                          <polyline points="7 8 12 3 17 8"/>
+                          <path d="M5 21h14"/>
+                        </svg>
+                      </button>
+                      <button class="icon-button mp-edit" title="编辑" @click.stop="openEdit(p)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 20h9"/>
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                        </svg>
+                      </button>
+                      <button class="icon-button mp-target" title="关联对象"
+                              :disabled="p.targetType !== 'specific'" @click.stop="openTarget(p)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                      </button>
+                      <button class="icon-button mp-danger" :title="isLegacyPanel(p) ? '旧版面板不可删除' : '删除'"
+                              :disabled="isLegacyPanel(p)" @click.stop="removePanel(p)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
+                </article>
               </div>
             </div>
           </div>
@@ -279,7 +357,8 @@
             </label>
             <label class="gs-form-row">
               <span class="gs-form-label">作用范围</span>
-              <select v-model="panelForm.targetType" class="gs-input" :disabled="!scopeSupportSpecific(panelForm.scope)">
+              <select v-model="panelForm.targetType" class="gs-input"
+                      :disabled="!scopeSupportSpecific(panelForm.scope)">
                 <option value="all" :disabled="createHasAllPanel">全局</option>
                 <option value="specific">指定对象</option>
               </select>
@@ -294,23 +373,28 @@
             <span class="gs-muted">复制来源的备注和面板元素；生效场景、作用范围和关联对象使用当前设置。</span>
           </label>
           <div v-if="panelModal.mode === 'create' && createHasAllPanel" class="gs-muted">
-            {{ scopeSupportSpecific(panelForm.scope) ? '该场景已存在全局面板，仅可编辑，可新建多个指定对象面板' : '该场景已存在全局面板且仅支持全局，无法新建，请编辑现有面板' }}
+            {{
+              scopeSupportSpecific(panelForm.scope) ? '该场景已存在全局面板，仅可编辑，可新建多个指定对象面板' : '该场景已存在全局面板且仅支持全局，无法新建，请编辑现有面板'
+            }}
           </div>
 
           <div v-if="panelModal.mode === 'create' && panelForm.targetType === 'specific'" class="mp-form-grid">
             <label v-if="panelForm.scope === 'c2c'" class="gs-form-row">
               <span class="gs-form-label">用户 openid（每行一个，最多 20）</span>
-              <textarea v-model="panelForm.userOpenIdsText" class="gs-textarea" rows="3" placeholder="每行一个用户 openid"/>
+              <textarea v-model="panelForm.userOpenIdsText" class="gs-textarea" rows="3"
+                        placeholder="每行一个用户 openid"/>
             </label>
             <label v-if="panelForm.scope === 'group'" class="gs-form-row">
               <span class="gs-form-label">群 openid（每行一个，最多 20）</span>
-              <textarea v-model="panelForm.groupOpenIdsText" class="gs-textarea" rows="3" placeholder="每行一个群 openid"/>
+              <textarea v-model="panelForm.groupOpenIdsText" class="gs-textarea" rows="3"
+                        placeholder="每行一个群 openid"/>
             </label>
           </div>
 
           <label class="gs-form-row">
             <span class="gs-form-label">备注（不对用户展示）</span>
-            <input v-model="panelForm.remark" class="gs-input" type="text" maxlength="255" placeholder="面板备注，可留空"/>
+            <input v-model="panelForm.remark" class="gs-input" type="text" maxlength="255"
+                   placeholder="面板备注，可留空"/>
           </label>
 
           <div v-if="panelModal.mode === 'edit'" class="mp-editor-import">
@@ -328,17 +412,24 @@
           <div class="mp-panel-items">
             <div class="mp-subs-head">
               <span class="gs-form-label">面板元素（最多 20 个）</span>
-              <button class="ghost-button mp-mini" :disabled="panelForm.items.length >= 20" @click="addPanelItem">添加元素</button>
+              <button class="ghost-button mp-mini" :disabled="panelForm.items.length >= 20" @click="addPanelItem">
+                添加元素
+              </button>
             </div>
             <div v-for="(it, i) in panelForm.items" :key="i" class="mp-panel-item"
                  :class="{ 'mp-dragging': panelDragIndex === i }"
                  @dragover.prevent @drop.prevent="onPanelDrop(i)">
-              <span class="mp-drag" title="拖动排序" draggable="true" @dragstart="onPanelDragStart(i, $event)" @dragend="onPanelDragEnd">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
+              <span class="mp-drag" title="拖动排序" draggable="true" @dragstart="onPanelDragStart(i, $event)"
+                    @dragend="onPanelDragEnd">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle
+                    cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle
+                    cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>
               </span>
               <span class="mp-idx">#{{ i + 1 }}</span>
               <span class="mp-type-icon" :class="it.type === 'link' ? 'mp-type-icon--link' : 'mp-type-icon--command'">
-                <svg v-if="it.type === 'link'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <svg v-if="it.type === 'link'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                 <span v-else class="mp-slash">/</span>
               </span>
               <select v-model="it.type" class="gs-input mp-type">
@@ -346,7 +437,8 @@
                 <option value="link">链接跳转</option>
               </select>
               <input v-model="it.name" class="gs-input mp-name" type="text" maxlength="14" placeholder="名称"/>
-              <input v-if="it.type === 'command'" v-model="it.desc" class="gs-input" type="text" maxlength="30" placeholder="描述"/>
+              <input v-if="it.type === 'command'" v-model="it.desc" class="gs-input" type="text" maxlength="30"
+                     placeholder="描述"/>
               <template v-else>
                 <input v-model="it.link" class="gs-input" type="text" placeholder="链接 URL"/>
                 <input v-model="it.desc" class="gs-input" type="text" maxlength="30" placeholder="介绍，可留空"/>
@@ -355,7 +447,10 @@
                 <input type="checkbox" v-model="it.onlyAdmin"/> 仅管理员
               </label>
               <button class="icon-button" title="删除元素" @click="panelForm.items.splice(i, 1)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
               </button>
             </div>
             <div v-if="panelForm.items.length === 0" class="gs-muted">暂无元素，点「添加元素」开始</div>
@@ -363,7 +458,9 @@
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closePanelModal">取消</button>
-          <button class="primary-button" :disabled="submitting || panelForm.items.length === 0 || (panelModal.mode === 'create' && createBlocked)" @click="savePanel">
+          <button class="primary-button"
+                  :disabled="submitting || panelForm.items.length === 0 || (panelModal.mode === 'create' && createBlocked)"
+                  @click="savePanel">
             {{ submitting ? '提交中...' : '保存' }}
           </button>
         </div>
@@ -398,12 +495,14 @@
           </div>
           <label class="gs-form-row">
             <span class="gs-form-label">批量添加（每行一个，最多 20）</span>
-            <textarea v-model="targetModal.input" class="gs-textarea" rows="3" :placeholder="targetModal.scope === 'c2c' ? '每行一个用户 openid' : '每行一个群 openid'"/>
+            <textarea v-model="targetModal.input" class="gs-textarea" rows="3"
+                      :placeholder="targetModal.scope === 'c2c' ? '每行一个用户 openid' : '每行一个群 openid'"/>
           </label>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeTarget">关闭</button>
-          <button class="primary-button" :disabled="submitting || parseLines(targetModal.input).length === 0" @click="addTarget">
+          <button class="primary-button" :disabled="submitting || parseLines(targetModal.input).length === 0"
+                  @click="addTarget">
             {{ submitting ? '提交中...' : '添加' }}
           </button>
         </div>
@@ -413,19 +512,19 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, watch, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import MenuPreview from './components/MenuPreview.vue'
 import PanelPreview from './components/PanelPreview.vue'
 import './styles/menu-panel-theme.css'
 import {createTransferDocument, parseTransferDocument} from './lib/menuPanelTransfer.js'
 
-const { appId, botOpenId, botName, loadBotConfig } = useBotConfig()
+const {appId, botOpenId, botName, loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 
@@ -475,10 +574,11 @@ const botAvatar = computed(() => appId.value && botOpenId.value ? `https://third
 // ============ 通用 ============
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 function switchTab(name) {
   tab.value = name
@@ -562,8 +662,8 @@ async function exportPanelFile(record) {
   transferBusy.value = true
   try {
     const detail = (record.targetType || 'all') === 'specific'
-      ? await api(`/panels/${record.panelId}`)
-      : null
+        ? await api(`/panels/${record.panelId}`)
+        : null
     const document = createTransferDocument({
       menu: null,
       panels: [transferPanelData(record, detail)]
@@ -601,8 +701,8 @@ async function applyTransferDocument(document) {
   let createdPanelId = ''
   try {
     const existing = entry.targetType === 'all'
-      ? existingPanels.find(panel => panel.scope === entry.scope && (panel.targetType || 'all') === 'all')
-      : null
+        ? existingPanels.find(panel => panel.scope === entry.scope && (panel.targetType || 'all') === 'all')
+        : null
     if (existing) {
       await api(`/panels/${existing.panelId}`, {method: 'PUT', body: JSON.stringify({panel: entry.panel})})
     } else {
@@ -644,13 +744,13 @@ async function importTransferFile(event) {
       throw new Error('只支持导入一个菜单或一个指令面板，请选择单项配置文件')
     }
     const summary = hasMenu
-      ? '1 份自定义菜单'
-      : `1 个${scopeLabel(document.panels[0].scope)}指令面板`
+        ? '1 份自定义菜单'
+        : `1 个${scopeLabel(document.panels[0].scope)}指令面板`
     const confirmed = confirm(
-      `将导入${summary}。\n\n` +
-      (hasMenu
-        ? '自定义菜单会被覆盖。是否继续？'
-        : '同场景的全局面板会更新；指定对象面板会新增。是否继续？')
+        `将导入${summary}。\n\n` +
+        (hasMenu
+            ? '自定义菜单会被覆盖。是否继续？'
+            : '同场景的全局面板会更新；指定对象面板会新增。是否继续？')
     )
     if (!confirmed) return
     await applyTransferDocument(document)
@@ -675,8 +775,8 @@ async function importPanelIntoEditor(event) {
     }
     const entry = document.panels[0]
     const confirmed = confirm(
-      `将用导入文件中的备注和 ${entry.panel.items.length} 个面板元素覆盖当前编辑内容。\n\n` +
-      '当前面板的生效场景、作用范围和关联对象不会改变。是否继续？'
+        `将用导入文件中的备注和 ${entry.panel.items.length} 个面板元素覆盖当前编辑内容。\n\n` +
+        '当前面板的生效场景、作用范围和关联对象不会改变。是否继续？'
     )
     if (!confirmed) return
 
@@ -694,7 +794,16 @@ async function importPanelIntoEditor(event) {
 // ============ 自定义菜单 ============
 
 function newMenuDraftItem() {
-  return {name: '', type: 'send_message', subMenuItems: [], sendMessage: '', link: '', switchId: '', defaultOn: false, align: 'left'}
+  return {
+    name: '',
+    type: 'send_message',
+    subMenuItems: [],
+    sendMessage: '',
+    link: '',
+    switchId: '',
+    defaultOn: false,
+    align: 'left'
+  }
 }
 
 function newMenuDraftSub() {

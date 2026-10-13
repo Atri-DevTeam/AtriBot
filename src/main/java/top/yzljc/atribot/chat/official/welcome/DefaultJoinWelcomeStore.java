@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import top.yzljc.atribot.auth.official.UnifiedRole;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.function.impl.JoinWelcomeDAO;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.utils.AtomicFiles;
@@ -37,7 +37,7 @@ public final class DefaultJoinWelcomeStore {
     public static synchronized DefaultJoinWelcomeStore getInstance() throws IOException {
         if (instance == null) {
             instance = new DefaultJoinWelcomeStore(Path.of(Properties.JOIN_WELCOME_DEFAULTS),
-                    loadInitialDefaults(QQBot.BOT_NAME, ResourcesProperties.WELCOME_IMG, ResourcesProperties.WELCOME_DEV_IMG));
+                    loadInitialDefaults(QQBot.BOT_NAME, RS.get("resource.image.welcome"), RS.get("resource.image.welcome-dev")));
         }
         return instance;
     }

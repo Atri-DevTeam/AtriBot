@@ -16,11 +16,17 @@ import java.nio.file.Path;
  */
 public interface KookCommandSender extends CommandSender {
     Platform getPlatform();
+
     String getGuildId();
+
     String getChannelId();
+
     KookMessage getMessage();
+
     String sendKMarkdown(String text);
+
     String sendCard(KookCard... cards);
+
     /**
      * 上传图片组件并发送纯图片消息；URL 先下载，Base64 先解码，附带文字另发纯文本消息。
      *
@@ -28,7 +34,10 @@ public interface KookCommandSender extends CommandSender {
      * @return 图片消息 ID，图片数据无效、下载、上传或发送失败时返回 {@code null}
      */
     String sendMessage(ImageComponent image);
+
     String sendFile(Path file);
+
     boolean recall();
+
     boolean recall(String messageId);
 }

@@ -71,13 +71,24 @@ public class BilibiliBindCommand implements CommandExecutor {
             return true;
         }
 
+        JsonNode existing = store.get(user.getUserId());
+        boolean hasClaimedBefore = (existing != null && !existing.isNull()) || CoinGainLogRepository.countCoinGains(user.getUserId(), "bv_follow") > 0;
+
         if (args.length == 1 && args[0].equals("help")) {
             Markdown md = TC.md("关注开发者哔哩哔哩\n\n> 点击第一个按钮前往关注\n> 关注成功后，将会发放1200金粒奖励\n> 点击第二个按钮，输入你的B站UID验证关注状态");
+
+            Button varBtn = null;
+            if (hasClaimedBefore) {
+                varBtn = new Button("c2", "✅ 已关注", "/bvbind ", false, ButtonStyle.RED, ButtonType.CUSTOM).setUnsupportedTip("您已完成关注，感谢支持！");
+            } else {
+                varBtn = new Button("c2", "验证关注", "/bvbind ", false, ButtonStyle.BLUE, ButtonType.COMMAND);
+            }
+
             var keyboard = TC.keyboard(
                     List.of(
                             List.of(
                                     new Button("c1", "关注B站", "https://space.bilibili.com/592616376", ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK),
-                                    new Button("c2", "验证关注", "/bvbind ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                                    varBtn
                             )
                     )
             );
@@ -97,8 +108,8 @@ public class BilibiliBindCommand implements CommandExecutor {
             user.sendMessage("输入的UID无效哦！");
             return true;
         }
-        JsonNode existing = store.get(user.getUserId());
-        if ((existing != null && !existing.isNull()) || CoinGainLogRepository.countCoinGains(user.getUserId(), "bv_follow") > 0) {
+//        JsonNode existing = store.get(user.getUserId());
+        if (hasClaimedBefore) {
             user.sendMessage("你已经领取过关注奖励啦！");
             return true;
         }

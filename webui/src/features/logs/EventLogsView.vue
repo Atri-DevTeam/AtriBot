@@ -49,14 +49,14 @@
 
           <div class="sendlogs-tabs eventlogs-tabs" role="tablist">
             <button
-              v-for="tab in tabs"
-              :key="tab.type"
-              class="sendlogs-tab"
-              :class="{ active: activeType === tab.type }"
-              type="button"
-              role="tab"
-              :aria-selected="activeType === tab.type"
-              @click="selectType(tab.type)"
+                v-for="tab in tabs"
+                :key="tab.type"
+                class="sendlogs-tab"
+                :class="{ active: activeType === tab.type }"
+                type="button"
+                role="tab"
+                :aria-selected="activeType === tab.type"
+                @click="selectType(tab.type)"
             >
               <span>{{ tab.label }}</span>
               <i>{{ tabCount(tab.type) }}</i>
@@ -65,11 +65,11 @@
 
           <div class="errors-search">
             <input
-              v-model="searchInput"
-              class="errors-search-input"
-              type="text"
-              placeholder="搜索..."
-              @keyup.enter="doSearch"
+                v-model="searchInput"
+                class="errors-search-input"
+                type="text"
+                placeholder="搜索..."
+                @keyup.enter="doSearch"
             />
             <button class="primary-button errors-search-btn" @click="doSearch">查询</button>
             <button v-if="keyword || mode === 'detail'" class="ghost-button errors-search-btn" @click="resetSearch">
@@ -137,10 +137,10 @@
 
               <div class="errors-list">
                 <article
-                  v-for="item in items"
-                  :key="item.id"
-                  class="sendlogs-grid eventlogs-row"
-                  @click="openDetail(item.id)"
+                    v-for="item in items"
+                    :key="item.id"
+                    class="sendlogs-grid eventlogs-row"
+                    @click="openDetail(item.id)"
                 >
                   <span>
                     <span class="eventlogs-type" :style="typeStyle(item.eventType)">{{ item.eventType }}</span>
@@ -148,7 +148,9 @@
                   <span class="eventlogs-eid" :title="item.eventId">{{ item.eventId || '-' }}</span>
                   <span class="eventlogs-seq">{{ item.seq ?? '-' }}</span>
                   <span class="eventlogs-raw" :title="item.rawData">{{ snippet(item.rawData) }}</span>
-                  <span class="sendlogs-time" :title="formatTime(item.createTime)">{{ relativeTime(item.createTime) }}</span>
+                  <span class="sendlogs-time" :title="formatTime(item.createTime)">{{
+                      relativeTime(item.createTime)
+                    }}</span>
                 </article>
               </div>
             </div>
@@ -159,13 +161,13 @@
               <button class="ghost-button" :disabled="page >= totalPages" @click="goPage(page + 1)">下一页</button>
               <div class="eventlogs-jump">
                 <input
-                  v-model="jumpPage"
-                  class="eventlogs-jump-input"
-                  type="number"
-                  min="1"
-                  :max="totalPages"
-                  placeholder="页号"
-                  @keyup.enter="jumpToPage"
+                    v-model="jumpPage"
+                    class="eventlogs-jump-input"
+                    type="number"
+                    min="1"
+                    :max="totalPages"
+                    placeholder="页号"
+                    @keyup.enter="jumpToPage"
                 />
                 <button class="ghost-button" :disabled="!jumpPage" @click="jumpToPage">跳转</button>
               </div>
@@ -214,18 +216,18 @@
 </template>
 
 <script setup>
-import { useLatestRequest } from '../../shared/lib/latestRequest.js'
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {useLatestRequest} from '../../shared/lib/latestRequest.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime, relativeTime} from '../../shared/lib/time.js'
 import {useMobileDetailNavigation} from '../../shared/lib/useMobileDetailNavigation.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 const sidebarOpen = ref(false)
@@ -253,25 +255,28 @@ const clearEnd = ref('')
 const clearType = ref('')
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 const topTypeNames = computed(() =>
-  Object.entries(stats.topTypes || {})
-    .sort((a, b) => b[1] - a[1])
-    .map(([name]) => name)
+    Object.entries(stats.topTypes || {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([name]) => name)
 )
 const tabs = computed(() => [
   {type: 'ALL', label: '全部'},
   ...topTypeNames.value.map(name => ({type: name, label: name}))
 ])
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 const fetchStatsRequests = useLatestRequest()
+
 async function fetchStats() {
   const request = fetchStatsRequests.begin()
   if (!request.isCurrent()) return
   try {
-    const data = await api('/event-logs/stats', { signal: request.signal })
+    const data = await api('/event-logs/stats', {signal: request.signal})
     if (!request.isCurrent()) return
     stats.all = data.all || 0
     stats.today = data.today || 0
@@ -291,6 +296,7 @@ async function fetchStats() {
 }
 
 const fetchListRequests = useLatestRequest()
+
 async function fetchList() {
   const request = fetchListRequests.begin()
   if (!request.isCurrent()) return
@@ -302,7 +308,7 @@ async function fetchList() {
     params.set('pageSize', String(pageSize))
     if (activeType.value !== 'ALL') params.set('type', activeType.value)
     if (keyword.value) params.set('keyword', keyword.value)
-    const data = await api(`/event-logs/list?${params.toString()}`, { signal: request.signal })
+    const data = await api(`/event-logs/list?${params.toString()}`, {signal: request.signal})
     if (!request.isCurrent()) return
     items.value = data.items || []
     total.value = data.total || 0
@@ -494,7 +500,9 @@ async function clearAll() {
   }
 }
 
-onBeforeUnmount(() => { ++detailRequest })
+onBeforeUnmount(() => {
+  ++detailRequest
+})
 
 onMounted(async () => {
   try {

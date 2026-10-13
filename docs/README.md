@@ -27,6 +27,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [WebUI 与 Miniapp](web.md) | 页面入口、构建产物、认证与权限边界 |
+| [机器人统计接口](integrations/bot-stats.md) | 聚合查询、个人成绩、排行榜与统计口径 |
 | [图片与业务接口](integrations/images.md) | OpenAPI 目录、请求结果、图片分发方式 |
 | [AI 与文本审查](integrations/ai.md) | AI 配置、调用接口、文本替换规则 |
 | [QQ 频道第二账号](integrations/tencent-channel.md) | CLI 配置、Java 调用与管理入口 |

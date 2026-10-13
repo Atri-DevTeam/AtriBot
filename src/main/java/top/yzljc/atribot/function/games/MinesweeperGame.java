@@ -74,8 +74,6 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             return true;
         }
 
-        game.participants.add(qq.getUserId());
-
         if (args.length < 2) return true;
 
         String coordStr = args[1].toUpperCase();
@@ -107,12 +105,12 @@ public class MinesweeperGame implements Listener, CommandExecutor {
 
         String markdown = """
                 **扫雷小游戏 (6x5)**
-
+                
                 **规则与操作:**
                 1. 使用“扫雷区”按钮挖开格子。
                 2. 使用“插旗区”按钮插旗或拔旗。
                 3. 与传统扫雷游戏一致，排除所有地雷后获胜！
-
+                
                 请点击下方按钮开始游戏：
                 """;
 
@@ -148,7 +146,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         game.operations.merge(sender.getUserId(), 1, Integer::sum);
-        recordOperation(game, sender.getUserId());
+        recordOperation(game, sender.getUserId(), "digs", game.board[r][c] == -1);
         game.revealed[r][c] = true;
 
         if (game.board[r][c] == -1) {
@@ -175,14 +173,18 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         game.operations.merge(sender.getUserId(), 1, Integer::sum);
-        recordOperation(game, sender.getUserId());
+        recordOperation(game, sender.getUserId(), game.flagged[r][c] ? "flagsRemoved" : "flagsPlaced", false);
         game.flagged[r][c] = !game.flagged[r][c];
         sendOrUpdateGameBoard(game, sessionId, sender, game.flagged[r][c] ? "成功插旗 🚩" : "已拔除旗帜 🔲");
     }
 
-    private void recordOperation(GameState game, String userId) {
-        UserGameDataRepository.record(UserGameDataRepository.Game.minesweeper, game.statisticsId + ":" + ++game.operationSequence,
-                List.of(UserGameDataRepository.Delta.operation(userId, false)));
+    private void recordOperation(GameState game, String userId, String operation, boolean mineHit) {
+        boolean firstOperation = game.participants.add(userId);
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.minesweeper,
+                game.statisticsId + ":" + ++game.operationSequence,
+                List.of(new UserGameDataRepository.Counters(userId, Map.of(
+                        "operations", 1L, operation, 1L, "mineHits", mineHit ? 1L : 0L,
+                        "participations", firstOperation ? 1L : 0L))));
     }
 
     private void floodFill(GameState game, int r, int c) {
@@ -227,6 +229,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         activeGames.remove(sessionId);
         long timeTaken = (System.currentTimeMillis() - game.startTime) / 1000;
 
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.minesweeper, game.statisticsId,
+                game.participants.stream().map(userId -> new UserGameDataRepository.Counters(userId,
+                        Map.of("plays", 1L, game.isWin ? "wins" : "losses", 1L))).toList());
+
         Map<String, Integer> rewards = grantRewards(game);
 
         StringBuilder participantsMarkdown = new StringBuilder();
@@ -240,16 +246,16 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         String markdown = String.format("""
-                **扫雷小游戏 - 结算**
-                **结果:** %s
-                **雷数:** %d
-                **耗时:** %d 秒
-                **参与者:** %s
-
-                %s
-
-                最终棋盘如下：
-                """, resultMsg, game.minesCount, timeTaken, participantsMarkdown,
+                        **扫雷小游戏 - 结算**
+                        **结果:** %s
+                        **雷数:** %d
+                        **耗时:** %d 秒
+                        **参与者:** %s
+                        
+                        %s
+                        
+                        最终棋盘如下：
+                        """, resultMsg, game.minesCount, timeTaken, participantsMarkdown,
                 buildInlineCmd("/扫雷", "再来一局"));
 
         sendKeyboardMessage(game, sender, markdown);
@@ -354,10 +360,10 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 **扫雷** | 用时: %d秒
                 > **状态: %s**
                 > 旗帜数量: %d/%d
-
+                
                 **插旗区**
                 %s
-
+                
                 **扫雷区**
                 """, timeElapsed, actionMsg, flagCount, game.minesCount, flagBoard);
 

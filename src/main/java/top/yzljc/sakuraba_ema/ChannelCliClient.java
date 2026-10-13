@@ -8,8 +8,6 @@ import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliException;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliOptions;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
-import top.yzljc.sakuraba_ema.guild.impl.ChannelFeedClient;
-import top.yzljc.sakuraba_ema.manager.ChannelManageClient;
 import top.yzljc.sakuraba_ema.manager.ChannelSystemClient;
 
 import java.io.IOException;
@@ -52,8 +50,6 @@ public final class ChannelCliClient implements AutoCloseable {
     private final Semaphore invocationPermit = new Semaphore(1, true);
     private final Set<ProcessHandle> activeProcesses = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final ChannelFeedClient feed;
-    private final ChannelManageClient manage;
     private final ChannelSystemClient system;
 
     public ChannelCliClient(boolean enabled, String cliPath, String loginToken, Duration timeout) {
@@ -70,17 +66,7 @@ public final class ChannelCliClient implements AutoCloseable {
             throw new IllegalArgumentException("timeout must be positive");
         }
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
-        this.feed = new ChannelFeedClient(this);
-        this.manage = new ChannelManageClient(this);
         this.system = new ChannelSystemClient(this);
-    }
-
-    public ChannelFeedClient feed() {
-        return feed;
-    }
-
-    public ChannelManageClient manage() {
-        return manage;
     }
 
     public ChannelSystemClient system() {
@@ -209,7 +195,7 @@ public final class ChannelCliClient implements AutoCloseable {
         try {
             try (var input = process.getOutputStream()) {
                 if (parameters != null && !parameters.isMissingNode() && !parameters.isNull()) {
-                    objectMapper.writeValue(input, parameters);
+                    input.write(objectMapper.writeValueAsBytes(parameters));
                     input.write('\n');
                 }
             }

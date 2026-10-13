@@ -49,7 +49,7 @@ public class LootRepository {
             log.error("初始化抽卡数据库表失败", e);
         }
         initLootItemCounts();
-        rebuildLootItemCounts();
+//        rebuildLootItemCounts();
     }
 
     private static void initLootItemCounts() {
@@ -73,61 +73,61 @@ public class LootRepository {
         }
     }
 
-    private static void rebuildLootItemCounts() {
-        record LootsSnapshot(String userId, String json) {
-        }
-
-        List<LootsSnapshot> snapshots = new ArrayList<>();
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement("SELECT `user_id`, `loots` FROM `user_loots`");
-             var rs = ps.executeQuery()) {
-            while (rs.next()) {
-                snapshots.add(new LootsSnapshot(rs.getString("user_id"), rs.getString("loots")));
-            }
-        } catch (Exception e) {
-            log.error("读取抽卡旧数据失败，无法重建物品计数表", e);
-            return;
-        }
-
-        try (var con = DatabaseManager.getConnection()) {
-            con.setAutoCommit(false);
-            try (var clear = con.prepareStatement("DELETE FROM `user_loot_items`")) {
-                clear.executeUpdate();
-            }
-
-            String insertSql = "INSERT INTO `user_loot_items` " +
-                    "(`user_id`, `item_id`, `display_name`, `count`, `first_receive_timestamp`, `last_receive_timestamp`, `way`) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
-            String updateSql = "UPDATE `user_loots` SET `loots` = ? WHERE `user_id` = ?";
-            try (var insert = con.prepareStatement(insertSql);
-                 var update = con.prepareStatement(updateSql)) {
-                for (LootsSnapshot snapshot : snapshots) {
-                    List<LootRecord> loots = parseLoots(snapshot.json());
-                    String normalized = writeLoots(loots);
-                    update.setString(1, normalized);
-                    update.setString(2, snapshot.userId());
-                    update.addBatch();
-
-                    for (LootRecord loot : loots) {
-                        insert.setString(1, snapshot.userId());
-                        insert.setString(2, loot.itemId());
-                        insert.setString(3, loot.displayName());
-                        insert.setInt(4, loot.count());
-                        insert.setLong(5, loot.receiveTimestamp());
-                        insert.setLong(6, loot.receiveTimestamp());
-                        insert.setString(7, loot.way());
-                        insert.addBatch();
-                    }
-                }
-                update.executeBatch();
-                insert.executeBatch();
-            }
-            con.commit();
-            log.info("抽卡物品计数表重建完成，共处理 {} 名用户", snapshots.size());
-        } catch (Exception e) {
-            log.error("重建抽卡物品计数表失败", e);
-        }
-    }
+//    private static void rebuildLootItemCounts() {
+//        record LootsSnapshot(String userId, String json) {
+//        }
+//
+//        List<LootsSnapshot> snapshots = new ArrayList<>();
+//        try (var con = DatabaseManager.getConnection();
+//             var ps = con.prepareStatement("SELECT `user_id`, `loots` FROM `user_loots`");
+//             var rs = ps.executeQuery()) {
+//            while (rs.next()) {
+//                snapshots.add(new LootsSnapshot(rs.getString("user_id"), rs.getString("loots")));
+//            }
+//        } catch (Exception e) {
+//            log.error("读取抽卡旧数据失败，无法重建物品计数表", e);
+//            return;
+//        }
+//
+//        try (var con = DatabaseManager.getConnection()) {
+//            con.setAutoCommit(false);
+//            try (var clear = con.prepareStatement("DELETE FROM `user_loot_items`")) {
+//                clear.executeUpdate();
+//            }
+//
+//            String insertSql = "INSERT INTO `user_loot_items` " +
+//                    "(`user_id`, `item_id`, `display_name`, `count`, `first_receive_timestamp`, `last_receive_timestamp`, `way`) " +
+//                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+//            String updateSql = "UPDATE `user_loots` SET `loots` = ? WHERE `user_id` = ?";
+//            try (var insert = con.prepareStatement(insertSql);
+//                 var update = con.prepareStatement(updateSql)) {
+//                for (LootsSnapshot snapshot : snapshots) {
+//                    List<LootRecord> loots = parseLoots(snapshot.json());
+//                    String normalized = writeLoots(loots);
+//                    update.setString(1, normalized);
+//                    update.setString(2, snapshot.userId());
+//                    update.addBatch();
+//
+//                    for (LootRecord loot : loots) {
+//                        insert.setString(1, snapshot.userId());
+//                        insert.setString(2, loot.itemId());
+//                        insert.setString(3, loot.displayName());
+//                        insert.setInt(4, loot.count());
+//                        insert.setLong(5, loot.receiveTimestamp());
+//                        insert.setLong(6, loot.receiveTimestamp());
+//                        insert.setString(7, loot.way());
+//                        insert.addBatch();
+//                    }
+//                }
+//                update.executeBatch();
+//                insert.executeBatch();
+//            }
+//            con.commit();
+//            log.info("抽卡物品计数表重建完成，共处理 {} 名用户", snapshots.size());
+//        } catch (Exception e) {
+//            log.error("重建抽卡物品计数表失败", e);
+//        }
+//    }
 
     // ==================== 金粒 ====================
 
@@ -140,7 +140,9 @@ public class LootRepository {
         return 0;
     }
 
-    /** 使用调用方连接查询余额，查询失败交由调用方回滚事务。 */
+    /**
+     * 使用调用方连接查询余额，查询失败交由调用方回滚事务。
+     */
     static int getCoins(Connection con, String userId) throws SQLException {
         String sql = "SELECT `coins` FROM `user_loots` WHERE `user_id` = ?";
         try (var ps = con.prepareStatement(sql)) {
@@ -153,6 +155,7 @@ public class LootRepository {
 
     /**
      * 此函数用于记录特殊途径的获取，通过本函数的给予将计入日志数据
+     *
      * @return 增加的金粒数量，失败返回 -1
      */
     public static int addCoins(String userId, int amount, String way) {
@@ -173,7 +176,9 @@ public class LootRepository {
         }
     }
 
-    /** 使用调用方连接发放金粒，不独立提交事务。 */
+    /**
+     * 使用调用方连接发放金粒，不独立提交事务。
+     */
     static int addCoins(Connection con, String userId, int amount) throws SQLException {
         if (amount <= 0) throw new IllegalArgumentException("金粒数量必须大于零");
         String sql = "INSERT INTO `user_loots` (`user_id`, `loots`, `coins`) VALUES (?, '[]', ?) " +
@@ -267,7 +272,9 @@ public class LootRepository {
         }
     }
 
-    /** 扣款、库存与重复奖励在同一事务中结算，调用前应完成远程资源准备。 */
+    /**
+     * 扣款、库存与重复奖励在同一事务中结算，调用前应完成远程资源准备。
+     */
     public static LootDrawResult drawLoot(String userId, String itemId, String displayName, String way,
                                           boolean special, int costCoins, int duplicateReward) {
         if (costCoins < 0 || duplicateReward < 0) throw new IllegalArgumentException("抽卡金粒数量不能为负数");
@@ -294,7 +301,7 @@ public class LootRepository {
     }
 
     private static LootRecord appendLoot(Connection con, String userId, String itemId, String displayName,
-                                          String way, boolean special) throws Exception {
+                                         String way, boolean special) throws Exception {
         String safeItemId = itemId == null || itemId.isBlank() ? UUID.randomUUID().toString() : itemId;
         String safeDisplayName = displayName == null ? "" : displayName;
         String safeWay = way == null || way.isBlank() ? "未知" : way;
@@ -376,7 +383,9 @@ public class LootRepository {
         }
     }
 
-    /** 管理端收回指定物品卡的全部持有数量 */
+    /**
+     * 管理端收回指定物品卡的全部持有数量
+     */
     public static boolean adminRemoveAllLoot(String userId, String itemId) {
         if (isBlank(itemId)) return false;
         try (var con = DatabaseManager.getConnection()) {
@@ -406,7 +415,9 @@ public class LootRepository {
         }
     }
 
-    /** 批量追加物品卡，所有变更在同一事务中写入库存 JSON 与计数表 */
+    /**
+     * 批量追加物品卡，所有变更在同一事务中写入库存 JSON 与计数表
+     */
     public static int appendLootsBatch(String userId, List<LootGrant> grants, String way, boolean special) {
         if (grants == null || grants.isEmpty()) return 0;
         String safeWay = way == null || way.isBlank() ? "未知" : way;
@@ -456,7 +467,9 @@ public class LootRepository {
         }
     }
 
-    /** 批量收回物品卡，每种卡最多收回一张 */
+    /**
+     * 批量收回物品卡，每种卡最多收回一张
+     */
     public static int adminRemoveLootsBatch(String userId, Set<String> itemIds) {
         if (itemIds == null || itemIds.isEmpty()) return 0;
         try (var con = DatabaseManager.getConnection()) {
@@ -500,7 +513,9 @@ public class LootRepository {
         }
     }
 
-    /** 更新仍持有物品卡的特殊状态，不改变数量或计数表 */
+    /**
+     * 更新仍持有物品卡的特殊状态，不改变数量或计数表
+     */
     public static int setLootsSpecial(String userId, Set<String> itemIds, boolean special) {
         if (itemIds == null || itemIds.isEmpty()) return 0;
         try (var con = DatabaseManager.getConnection()) {
@@ -833,7 +848,9 @@ public class LootRepository {
         }
     }
 
-    /** 卡片拥有量全区排名：rank 为名次（并列同名次），totalPlayers 为持有过卡片的人数 */
+    /**
+     * 卡片拥有量全区排名：rank 为名次（并列同名次），totalPlayers 为持有过卡片的人数
+     */
     public record LootRank(int rank, int totalPlayers) {
     }
 }

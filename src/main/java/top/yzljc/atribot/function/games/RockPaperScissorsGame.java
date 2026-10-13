@@ -110,7 +110,10 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
         }
 
         synchronized (game) {
-            if (game.phase != Phase.CHOOSING) { event.answer(AnswerCode.FAIL); return; }
+            if (game.phase != Phase.CHOOSING) {
+                event.answer(AnswerCode.FAIL);
+                return;
+            }
             String userId = event.getUserOpenId();
             boolean isPlayerA = userId.equals(game.playerAOpenId);
 
@@ -153,15 +156,16 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
             } else {
                 game.playerBChoice = choice;
             }
+            UserGameDataRepository.recordCounters(UserGameDataRepository.Game.rsp, game.statisticsId + ":choice",
+                    List.of(new UserGameDataRepository.Counters(userId, Map.of("participations", 1L, choice, 1L))));
 
             // 双方都选了 → 结果
             if (game.playerAChoice != null && game.playerBChoice != null) {
                 game.phase = Phase.FINISHED;
                 activeGames.remove(sessionId);
                 int winner = determineWinner(game.playerAChoice, game.playerBChoice);
-                UserGameDataRepository.record(UserGameDataRepository.Game.rsp, game.statisticsId, List.of(
-                        UserGameDataRepository.Delta.match(game.playerAOpenId, winner == 1),
-                        UserGameDataRepository.Delta.match(game.playerBOpenId, winner == 2)));
+                UserGameDataRepository.recordCounters(UserGameDataRepository.Game.rsp, game.statisticsId, List.of(
+                        matchCounters(game.playerAOpenId, winner, 1), matchCounters(game.playerBOpenId, winner, 2)));
                 event.answer(AnswerCode.SUCCESS);
                 sendResult(game, event);
             } else {
@@ -170,6 +174,12 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
                 sendWaitingForOther(game, event);
             }
         }
+    }
+
+    private UserGameDataRepository.Counters matchCounters(String userId, int winner, int player) {
+        return new UserGameDataRepository.Counters(userId, Map.of(
+                "plays", 1L, "wins", winner == player ? 1L : 0L,
+                "draws", winner == 0 ? 1L : 0L, "losses", winner != 0 && winner != player ? 1L : 0L));
     }
 
     private void sendWaitingForOther(GameState game, OfficialButtonInteractionEvent event) {

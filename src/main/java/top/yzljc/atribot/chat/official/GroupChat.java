@@ -14,8 +14,7 @@ import java.util.concurrent.ExecutionException;
  * @Created_at 2026/06/09
  * @Project AtriBot
  * @Package top.yzljc.atribot.chat.official
- * @Description
- * 群聊同步业务层
+ * @Description 群聊同步业务层
  * 内部委托 {@link AsyncGroupChat} 执行异步业务逻辑
  * 如需非阻塞调用请直接使用 {@link AsyncGroupChat}
  */

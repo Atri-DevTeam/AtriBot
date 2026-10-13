@@ -9,7 +9,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 
 import java.util.List;
 
@@ -47,7 +47,7 @@ public class MarkdownDisplayTest implements CommandExecutor {
                 Markdown.link("https://qun.qq.com/qunpro/robot/qunshare?robot_uin=3889798968&robot_appid=102808581&sceneData=Y2m6DyvYd2SX5MyQfppq4axrIRdiOobQ6HDJim4ofdHS4e7PXVyNveeS8neRVhk4WdeLSBVcwJqpoXQTamuFFFC", "外显链接") + "\n" +
                 " \n" +
                 "图片\n" +
-                Markdown.img("test", ResourcesProperties.SKB_BANK_LOGO_IMG, 20, 20) + "\n" +
+                Markdown.img("test", RS.get("resource.image.skyblock-bank-logo"), 20, 20) + "\n" +
                 " \n" +
                 "有序列表\n" +
                 "1. 第一项\n" +

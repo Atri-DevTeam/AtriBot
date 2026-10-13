@@ -1,12 +1,12 @@
 <template>
-  <AppShell v-model:open="sidebarOpen"
-                :gallery-badge="counts.pending">
+  <AppShell v-model:open="sidebarOpen" class="image-review-page"
+            :gallery-badge="pendingTotal">
     <template #toolbar>
       <button class="ghost-button" :disabled="loading" @click="refresh">刷新</button>
       <button class="ghost-button" @click="logout">退出</button>
     </template>
 
-    <main class="workspace">
+    <main class="workspace image-review-workspace">
       <header class="topbar gallery-topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
@@ -17,21 +17,8 @@
               <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <h2 class="feedback-title">图源管理</h2>
-          <div class="feedback-tabs">
-            <button :class="{ active: filter === 'PENDING' }" @click="setFilter('PENDING')">
-              未审查 {{ counts.pending }}
-            </button>
-            <button :class="{ active: filter === 'REVIEWED' }" @click="setFilter('REVIEWED')">
-              图库 {{ counts.reviewed }}
-            </button>
-            <button :class="{ active: filter === 'DENIED' }" @click="setFilter('DENIED')">
-              已拒绝 {{ counts.denied }}
-            </button>
-            <button :class="{ active: filter === 'all' }" @click="setFilter('all')">
-              全部 {{ counts.all }}
-            </button>
-          </div>
+          <h2 class="feedback-title">图片审核</h2>
+
         </div>
         <div class="topbar-right">
           <div class="gallery-density" role="group" aria-label="视图密度">
@@ -62,6 +49,34 @@
         </div>
       </header>
 
+      <nav class="review-kinds" aria-label="图片审核分类">
+        <button :class="{ active: kind === 'gallery' }" :aria-current="kind === 'gallery' ? 'page' : undefined"
+                :disabled="mutating" @click="setKind('gallery')">
+          图源审核 <span v-if="kindCounts.gallery.pending">{{ kindCounts.gallery.pending }}</span>
+        </button>
+        <button :class="{ active: kind === 'backgrounds' }" :aria-current="kind === 'backgrounds' ? 'page' : undefined"
+                :disabled="mutating" @click="setKind('backgrounds')">
+          背景图审核 <span v-if="kindCounts.backgrounds.pending">{{ kindCounts.backgrounds.pending }}</span>
+        </button>
+      </nav>
+      <div class="review-filterbar">
+          <div class="feedback-tabs review-status-tabs">
+            <button :class="{ active: filter === 'PENDING' }" @click="setFilter('PENDING')">
+              待审核 {{ counts.pending }}
+            </button>
+            <button :class="{ active: filter === 'REVIEWED' }" @click="setFilter('REVIEWED')">
+              已通过 {{ counts.reviewed }}
+            </button>
+            <button :class="{ active: filter === 'DENIED' }" @click="setFilter('DENIED')">
+              已拒绝 {{ counts.denied }}
+            </button>
+            <button :class="{ active: filter === 'all' }" @click="setFilter('all')">
+              全部 {{ counts.all }}
+            </button>
+          </div>
+        <p>{{ kind === 'gallery' ? '审核用户提交的图源投稿' : '审核通过后替换个人背景；新申请不会覆盖已通过的背景' }}</p>
+      </div>
+
       <section class="content feedback-layout">
         <section class="chat-panel feedback-panel">
           <div class="chat-head">
@@ -85,7 +100,7 @@
             </div>
             <div v-else-if="error" class="empty-state error">{{ error }}</div>
             <div v-else-if="items.length === 0" class="empty-state">
-              {{ filter === 'PENDING' ? '没有待审查的投稿，喵~' : '这里还没有图片' }}
+              {{ filter === 'PENDING' ? '暂无待审核图片' : '这里还没有图片' }}
             </div>
 
             <div v-else class="gallery-grid" :class="`gallery-grid--${density}`">
@@ -117,7 +132,7 @@
                     <span class="gallery-time">{{ formatTime(item.createTime) }}</span>
                   </div>
                   <div class="gallery-meta-row gallery-meta-sub">
-                    <span class="gallery-dim">原 {{ formatDimensions(item.width, item.height) }}</span>
+                    <span class="gallery-dim">{{ kind === 'backgrounds' ? '' : '原 ' }}{{ formatDimensions(item.width, item.height) }}</span>
                     <span class="gallery-size">{{ formatSize(item.fileSize) }}</span>
                     <span v-if="hasProcessedInfo(item)" class="gallery-dim">
                       存 {{ formatDimensions(item.processedWidth, item.processedHeight) }}
@@ -187,7 +202,8 @@
       </button>
 
       <figure class="gallery-viewer-stage" @click.self="closeViewer">
-        <img v-if="visibleUrl(viewer.displayUrl) && !failed.has(viewer.id)" :src="visibleUrl(viewer.displayUrl)" :alt="viewer.fileName || ''"/>
+        <img v-if="visibleUrl(viewer.fullUrl || viewer.displayUrl) && !failed.has(viewer.id)" :src="visibleUrl(viewer.fullUrl || viewer.displayUrl)"
+             :alt="viewer.fileName || ''"/>
         <div v-else class="gallery-broken large">
           <span>图片不可用（原始链接可能已过期）</span>
         </div>
@@ -218,11 +234,11 @@
             <dd>{{ formatTime(viewer.createTime) }}</dd>
           </div>
           <div>
-            <dt>原始尺寸</dt>
+            <dt>{{ kind === 'backgrounds' ? '存储尺寸' : '原始尺寸' }}</dt>
             <dd>{{ formatDimensions(viewer.width, viewer.height) }}</dd>
           </div>
           <div>
-            <dt>原始大小</dt>
+            <dt>{{ kind === 'backgrounds' ? '存储大小' : '原始大小' }}</dt>
             <dd>{{ formatSize(viewer.fileSize) }}</dd>
           </div>
           <div v-if="hasProcessedInfo(viewer)">
@@ -273,7 +289,8 @@
             </button>
           </template>
           <button class="ghost-button danger" :disabled="busy === viewer.id" @click="deleteImage(viewer)">删除</button>
-          <a v-if="visibleUrl(viewer.displayUrl)" class="ghost-button" :href="visibleUrl(viewer.displayUrl)" target="_blank"
+          <a v-if="visibleUrl(viewer.fullUrl || viewer.displayUrl)" class="ghost-button" :href="visibleUrl(viewer.fullUrl || viewer.displayUrl)"
+             target="_blank"
              rel="noopener noreferrer">原图</a>
         </div>
       </aside>
@@ -314,18 +331,18 @@
 </template>
 
 <script setup>
-import { useLatestRequest } from '../../shared/lib/latestRequest.js'
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {useLatestRequest} from '../../shared/lib/latestRequest.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, onMounted, onUnmounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime} from '../../shared/lib/time.js'
-import { isBlockedCosUrl } from '../../shared/lib/mediaUrl.js'
+import {isBlockedCosUrl} from '../../shared/lib/mediaUrl.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 function visibleUrl(url) {
   return url && !isBlockedCosUrl(url) ? url : ''
@@ -351,7 +368,14 @@ const page = ref(1)
 const pageSize = 24
 const filter = ref('PENDING')
 const density = ref('comfy')
-const counts = reactive({pending: 0, reviewed: 0, denied: 0, all: 0})
+const kind = ref('gallery')
+const kindCounts = reactive({
+  gallery: {pending: 0, reviewed: 0, denied: 0, all: 0},
+  backgrounds: {pending: 0, reviewed: 0, denied: 0, all: 0}
+})
+const counts = computed(() => kindCounts[kind.value])
+const pendingTotal = computed(() => kindCounts.gallery.pending + kindCounts.backgrounds.pending)
+const mutating = computed(() => !!busy.value || bulkBusy.value || submitting.value)
 
 const failed = reactive(new Set())
 const selection = reactive(new Set())
@@ -366,29 +390,32 @@ const submitting = ref(false)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 const viewerIndex = computed(() => viewer.value ? items.value.findIndex(i => i.id === viewer.value.id) : -1)
 const currentFilterName = computed(() => ({
-  PENDING: '未审查投稿',
-  REVIEWED: '图库',
+  PENDING: '待审核图片',
+  REVIEWED: '已通过图片',
   DENIED: '已拒绝投稿',
-  all: '全部投稿'
+  all: '全部图片'
 }[filter.value] || '图源'))
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 const fetchCountsRequests = useLatestRequest()
+
 async function fetchCounts() {
   const request = fetchCountsRequests.begin()
   if (!request.isCurrent()) return
   try {
-    const data = await api('/gallery/count', { signal: request.signal })
+    const [gallery, backgrounds] = await Promise.all([
+      api('/gallery/count', {signal: request.signal}),
+      api('/backgrounds/count', {signal: request.signal})
+    ])
     if (!request.isCurrent()) return
-    counts.pending = data.pending
-    counts.reviewed = data.reviewed
-    counts.denied = data.denied
-    counts.all = data.all
+    Object.assign(kindCounts.gallery, gallery)
+    Object.assign(kindCounts.backgrounds, backgrounds)
   } catch (e) {
     if (!request.isCurrent()) return
     // ignore
@@ -396,13 +423,14 @@ async function fetchCounts() {
 }
 
 const fetchListRequests = useLatestRequest()
+
 async function fetchList() {
   const request = fetchListRequests.begin()
   if (!request.isCurrent()) return
   loading.value = true
   error.value = ''
   try {
-    const data = await api(`/gallery/list?page=${page.value}&pageSize=${pageSize}&status=${filter.value}`, { signal: request.signal })
+    const data = await api(`/${kind.value}/list?page=${page.value}&pageSize=${pageSize}&status=${filter.value}`, {signal: request.signal})
     if (!request.isCurrent()) return
     items.value = data.items
     total.value = data.total
@@ -420,6 +448,20 @@ async function fetchList() {
 async function refresh() {
   await fetchCounts()
   await fetchList()
+}
+
+function setKind(value) {
+  if (mutating.value || kind.value === value) return
+  fetchListRequests.invalidate()
+  closeViewer()
+  closeDeny()
+  clearSelection()
+  items.value = []
+  total.value = 0
+  kind.value = value
+  filter.value = 'PENDING'
+  page.value = 1
+  refresh()
 }
 
 function setFilter(f) {
@@ -448,7 +490,7 @@ function clearSelection() {
 async function review(item, status, remark) {
   busy.value = item.id
   try {
-    await api('/gallery/review', {
+    await api(`/${kind.value}/review`, {
       method: 'POST',
       body: JSON.stringify({id: item.id, status, remark: remark || ''})
     })
@@ -464,10 +506,11 @@ async function review(item, status, remark) {
 async function bulkReview(status) {
   bulkBusy.value = true
   try {
-    await api('/gallery/review-batch', {
+    const result = await api(`/${kind.value}/review-batch`, {
       method: 'POST',
       body: JSON.stringify({ids: [...selection], status, remark: ''})
     })
+    if (result.success < result.total) alert(`已处理 ${result.success} / ${result.total} 张，其余申请已发生变化，请刷新确认`)
     clearSelection()
     await refresh()
   } catch (e) {
@@ -478,10 +521,10 @@ async function bulkReview(status) {
 }
 
 async function deleteImage(item) {
-  if (!item || !confirm(`确定删除 #${shortId(item.id)} 吗？这个操作会从图源管理里移除该记录。`)) return
+  if (!item || !confirm(`确定删除 #${shortId(item.imageUuid || item.id)} 吗？该图片的审核记录将被移除。`)) return
   busy.value = item.id
   try {
-    await api('/gallery/delete', {
+    await api(`/${kind.value}/delete`, {
       method: 'POST',
       body: JSON.stringify({id: item.id})
     })
@@ -524,7 +567,7 @@ async function doDeny() {
   const target = denyTarget.value
   const remark = denyRemark.value.trim()
   try {
-    await api('/gallery/review', {
+    await api(`/${kind.value}/review`, {
       method: 'POST',
       body: JSON.stringify({id: target.id, status: 'DENIED', remark})
     })

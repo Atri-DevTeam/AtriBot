@@ -10,13 +10,13 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.MessageBody;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.database.repo.OfficialMessageIdSchema;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.EventPriority;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atribot.platform.User;
 import top.yzljc.atribot.platform.qq.MessageReference;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.SseBroadcaster;
@@ -42,6 +42,10 @@ public class QQChatContentRecord implements Listener {
 
     private static final String GROUP_TABLE = "official_group_record";
     private static final String C2C_TABLE = "official_c2c_record";
+    private static final String MESSAGE_ID_COLUMN = "`message_openId` MEDIUMTEXT NULL";
+    private static final String MESSAGE_ID_HASH_COLUMN = "`message_id_hash` BINARY(32) GENERATED ALWAYS AS "
+            + "(UNHEX(SHA2(`message_openId`, 256))) STORED";
+    private static final String MATCH_MESSAGE_ID = "message_id_hash = UNHEX(SHA2(?, 256)) AND message_openId = ?";
     private static final String BOT_UNION_OPEN_ID = Config.getInstance().getOfficialOpenId();
     private static final DateTimeFormatter LOCAL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int REFERENCE_SCAN_LIMIT = 500;
@@ -53,8 +57,8 @@ public class QQChatContentRecord implements Listener {
                 "  `union_openId` VARCHAR(256) NULL," +
                 "  `username` VARCHAR(256) NULL," +
                 "  `content` MEDIUMTEXT NULL," +
-                "  " + OfficialMessageIdSchema.ID_COLUMN + "," +
-                "  " + OfficialMessageIdSchema.HASH_COLUMN + "," +
+                "  " + MESSAGE_ID_COLUMN + "," +
+                "  " + MESSAGE_ID_HASH_COLUMN + "," +
                 "  `sender_is_bot` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `member_role` VARCHAR(32) NULL," +
                 "  `event_type` VARCHAR(64) NOT NULL," +
@@ -85,8 +89,8 @@ public class QQChatContentRecord implements Listener {
                 "  `union_openId` VARCHAR(256) NULL," +
                 "  `username` VARCHAR(256) NULL," +
                 "  `content` MEDIUMTEXT NULL," +
-                "  " + OfficialMessageIdSchema.ID_COLUMN + "," +
-                "  " + OfficialMessageIdSchema.HASH_COLUMN + "," +
+                "  " + MESSAGE_ID_COLUMN + "," +
+                "  " + MESSAGE_ID_HASH_COLUMN + "," +
                 "  `sender_is_bot` BOOLEAN NOT NULL DEFAULT FALSE," +
                 "  `source` VARCHAR(64) NOT NULL," +
                 "  `message_type` INT NULL," +
@@ -112,7 +116,6 @@ public class QQChatContentRecord implements Listener {
              var c2cStmt = conn.prepareStatement(c2cSql)) {
             groupStmt.execute();
             c2cStmt.execute();
-            OfficialMessageIdSchema.migrate(conn);
             log.info("官方机器人消息记录表初始化完成");
         } catch (SQLException e) {
             log.error("初始化官方机器人消息记录表失败: {}", e.getMessage(), e);
@@ -138,7 +141,6 @@ public class QQChatContentRecord implements Listener {
         String uid = user.getUserId();
         if (uid != null) ensureC2CUserInCache(uid);
         recordC2CMessage(
-                null,
                 uid,
                 user.getUsername(),
                 event.getMessage().getContent(),
@@ -201,7 +203,7 @@ public class QQChatContentRecord implements Listener {
                 event.getTimestamp(),
                 toJson(event.getMessage().getAttachments()),
                 toJsonOrNull(event.getMessage().getArk()),
-                toJson(event.getMessage().getMentionedUsers()),
+                mentionedUsersJson(event.getMessage().getMentionedUsers()),
                 toJsonOrNull(event.getMessage().getReference()),
                 event.getMessage().getRefIdx()
         );
@@ -221,7 +223,7 @@ public class QQChatContentRecord implements Listener {
         if (isBlank(refAuthor) && isBlank(refContent) && isBlank(refAttachments) && isBlank(refMsgIdx)) return;
         try (var conn = DatabaseManager.getConnection()) {
             String rawReference = null;
-            try (var stmt = conn.prepareStatement("SELECT message_reference FROM `" + table + "` WHERE " + OfficialMessageIdSchema.MATCH_ID)) {
+            try (var stmt = conn.prepareStatement("SELECT message_reference FROM `" + table + "` WHERE " + MATCH_MESSAGE_ID)) {
                 stmt.setString(1, messageOpenId);
                 stmt.setString(2, messageOpenId);
                 try (var rs = stmt.executeQuery()) {
@@ -231,7 +233,7 @@ public class QQChatContentRecord implements Listener {
             }
             String messageReference = objectMapper.writeValueAsString(
                     mergeWebUiReferenceDisplayData(rawReference, refAuthor, refContent, refAttachments, refMsgIdx));
-            String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE " + OfficialMessageIdSchema.MATCH_ID;
+            String sql = "UPDATE `" + table + "` SET message_reference = ? WHERE " + MATCH_MESSAGE_ID;
             try (var stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, messageReference);
                 stmt.setString(2, messageOpenId);
@@ -375,7 +377,6 @@ public class QQChatContentRecord implements Listener {
 
     public static void recordSentC2CMessage(String userOpenId, MessageBody request, String messageOpenId, String refIdx, String timestamp) {
         recordC2CMessage(
-                null,
                 userOpenId,
                 QQBot.BOT_NAME,
                 extractContent(request),
@@ -718,7 +719,10 @@ public class QQChatContentRecord implements Listener {
             if (root != null && root.isObject() && root.has("preview") && root.has("messageType")) {
                 return enrichReferenceAuthor(conn, table, keyColumn, keyValue, (ObjectNode) root, rawReference);
             }
-            JsonNode refNode = root.isArray() && !root.isEmpty() ? root.get(0) : root;
+            JsonNode refNode = null;
+            if (root != null) {
+                refNode = root.isArray() && !root.isEmpty() ? root.get(0) : root;
+            }
             if (refNode == null || refNode.isMissingNode() || refNode.isNull()) {
                 return rawReference;
             }
@@ -994,7 +998,7 @@ public class QQChatContentRecord implements Listener {
                 "username = VALUES(username), " +
                 "sender_is_bot = VALUES(sender_is_bot), " +
                 "member_role = COALESCE(VALUES(member_role), member_role), " +
-                "event_type = VALUES(event_type), " +
+                "event_type = CASE WHEN event_type = 'BOT_SEND' THEN event_type ELSE VALUES(event_type) END, " +
                 "message_type = COALESCE(VALUES(message_type), message_type), " +
                 "event_timestamp = COALESCE(VALUES(event_timestamp), event_timestamp), " +
                 "attachments = COALESCE(VALUES(attachments), attachments), " +
@@ -1003,9 +1007,22 @@ public class QQChatContentRecord implements Listener {
                 "message_reference = COALESCE(VALUES(message_reference), message_reference), " +
                 "ref_idx = COALESCE(VALUES(ref_idx), ref_idx)";
 
-        int affected;
+        boolean updateStats;
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
+            boolean selfSend = "BOT_SEND".equals(source);
+            boolean alreadySent = false;
+            if (selfSend) {
+                conn.setAutoCommit(false);
+                try (var existing = conn.prepareStatement("SELECT event_type FROM `" + GROUP_TABLE
+                        + "` WHERE " + MATCH_MESSAGE_ID + " FOR UPDATE")) {
+                    existing.setString(1, emptyToNull(messageOpenId));
+                    existing.setString(2, emptyToNull(messageOpenId));
+                    try (var rs = existing.executeQuery()) {
+                        alreadySent = rs.next() && "BOT_SEND".equals(rs.getString("event_type"));
+                    }
+                }
+            }
             stmt.setString(1, groupOpenId);
             stmt.setString(2, emptyToNull(unionOpenId));
             stmt.setString(3, emptyToNull(username));
@@ -1025,15 +1042,17 @@ public class QQChatContentRecord implements Listener {
             stmt.setString(13, emptyToNull(mentions));
             stmt.setString(14, emptyToNull(messageReference));
             stmt.setString(15, emptyToNull(refIdx));
-            affected = stmt.executeUpdate();
+            int affected = stmt.executeUpdate();
+            updateStats = selfSend ? !alreadySent : affected == 1;
+            if (selfSend) conn.commit();
         } catch (SQLException e) {
             log.error("记录官方群消息失败, groupOpenId={}, messageOpenId={}: {}", groupOpenId, messageOpenId, e.getMessage(), e);
             return;
         }
 
         // 消息连接归还后再保存统计，避免同一任务嵌套占用连接池。
-        if (affected == 1) {
-            ChatStatsSnapshotRepo.recordGroupMessage(groupOpenId, unionOpenId, username, senderIsBot, eventTimestamp);
+        if (updateStats) {
+            ChatStatsSnapshotRepo.recordGroupMessage(groupOpenId, unionOpenId, username, senderIsBot, source, eventTimestamp);
         }
         try {
             var payload = objectMapper.createObjectNode();
@@ -1071,13 +1090,13 @@ public class QQChatContentRecord implements Listener {
 //        }
 //    }
 
-    private static void recordC2CMessage(String userOpenId, String unionOpenId, String username, String content,
+    private static void recordC2CMessage(String userOpenId, String username, String content,
                                          String messageOpenId, boolean senderIsBot, String source,
                                          Integer messageType, String eventTimestamp, String attachments, String ark,
                                          String messageReference, String refIdx) {
-        String conversationOpenId = firstNonBlank(unionOpenId, userOpenId);
-        if (isBlank(conversationOpenId)) {
-            log.warn("跳过官方 C2C 消息记录：userOpenId/unionOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
+//        String conversationOpenId = firstNonBlank(unionOpenId, userOpenId);
+        if (isBlank(userOpenId)) {
+            log.warn("[!] 官机 C2C 消息记录失败：userOpenId 为空, eventType={}, messageOpenId={}", source, messageOpenId);
             return;
         }
         ChatStatsSnapshotRepo.ensureInitialized();
@@ -1094,7 +1113,7 @@ public class QQChatContentRecord implements Listener {
         int affected;
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, conversationOpenId);
+            stmt.setString(1, userOpenId);
             stmt.setString(2, emptyToNull(username));
             stmt.setString(3, content);
             stmt.setString(4, emptyToNull(messageOpenId));
@@ -1112,21 +1131,21 @@ public class QQChatContentRecord implements Listener {
             stmt.setString(12, emptyToNull(refIdx));
             affected = stmt.executeUpdate();
         } catch (SQLException e) {
-            log.error("记录官方 C2C 消息失败, userOpenId={}, unionOpenId={}, messageOpenId={}: {}",
-                    userOpenId, unionOpenId, messageOpenId, e.getMessage(), e);
+            log.error("[!] 官机 C2C 消息记录失败, userOpenId={}, messageOpenId={}: {}",
+                    userOpenId, messageOpenId, e.getMessage(), e);
             return;
         }
 
         if (affected == 1) {
-            ChatStatsSnapshotRepo.recordC2CMessage(conversationOpenId, username, senderIsBot, source, eventTimestamp);
+            ChatStatsSnapshotRepo.recordC2CMessage(userOpenId, username, senderIsBot, source, eventTimestamp);
         }
         try {
             var payload = objectMapper.createObjectNode();
             payload.put("type", "c2c_refresh");
-            payload.put("userOpenId", conversationOpenId);
+            payload.put("userOpenId", userOpenId);
             SseBroadcaster.broadcast(objectMapper.writeValueAsString(payload));
         } catch (Exception e) {
-            log.warn("发送官方 C2C 消息刷新通知失败: userOpenId={}", conversationOpenId, e);
+            log.warn("发送官方 C2C 消息刷新通知失败: userOpenId={}", userOpenId, e);
         }
     }
 
@@ -1162,6 +1181,16 @@ public class QQChatContentRecord implements Listener {
             return contentNode.asText();
         }
         return node.toString();
+    }
+
+    static String mentionedUsersJson(List<User> users) {
+        if (users == null) return null;
+        var mentions = objectMapper.createArrayNode();
+        for (User user : users) {
+            if (user == null) continue;
+            mentions.addObject().put("userId", user.getUserId()).put("username", user.getUsername());
+        }
+        return mentions.toString();
     }
 
     private static String toJson(Object value) {
@@ -1770,7 +1799,7 @@ public class QQChatContentRecord implements Listener {
                 return emptyToNull(rs.getString("username"));
             }
         } catch (SQLException e) {
-            log.error("查询官方用户最近用户名失败, userOpenId={}: {}", userOpenId, e.getMessage(), e);
+            log.error("查询官机用户最近用户名失败, userOpenId={}: {}", userOpenId, e.getMessage(), e);
         }
         return null;
     }
@@ -1778,12 +1807,12 @@ public class QQChatContentRecord implements Listener {
     /**
      * 批量查询用户的用户名
      */
-    public static Map<String, String> findLatestKnownUsernames(Set<String> unionOpenIds) {
-        if (unionOpenIds == null || unionOpenIds.isEmpty()) {
+    public static Map<String, String> findLatestKnownUsernames(Set<String> userOpenIds) {
+        if (userOpenIds == null || userOpenIds.isEmpty()) {
             return Map.of();
         }
         try (var conn = DatabaseManager.getConnection()) {
-            return batchFindLatestKnownUsernames(conn, unionOpenIds);
+            return batchFindLatestKnownUsernames(conn, userOpenIds);
         } catch (SQLException e) {
             log.error("批量查询用户最近用户名失败: {}", e.getMessage(), e);
             return Map.of();

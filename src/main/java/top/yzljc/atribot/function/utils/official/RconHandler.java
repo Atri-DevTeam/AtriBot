@@ -7,7 +7,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.function.utils.official.minecraft.AtriNetwork;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftNetwork;
 import top.yzljc.atribot.function.utils.official.minecraft.YunLandNetwork;
@@ -43,7 +43,7 @@ public class RconHandler implements CommandExecutor {
 
                     该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系
 
-                    ![show_img #540px #606px](%s)""", ResourcesProperties.RCON_GUIDE_IMG)));
+                    ![show_img #540px #606px](%s)""", RS.get("resource.image.rcon-guide"))));
             return true;
         }
         String server = args[0];
@@ -62,7 +62,7 @@ public class RconHandler implements CommandExecutor {
             String maskedServer = "*".repeat(server.length());
             qq.sendMessage(TC.md("无效的服务器编号: `" + maskedServer + "`\n\n" +
                     "该指令专为Minecraft服务器远程执行指令设计，如果您有需求可以通过 `/feedback` 与开发者联系\n\n" +
-                    "![show_img #540px #606px](" + ResourcesProperties.RCON_GUIDE_IMG + ")"));
+                    "![show_img #540px #606px](" + RS.get("resource.image.rcon-guide") + ")"));
             return true;
         }
     }

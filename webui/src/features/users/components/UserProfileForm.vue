@@ -6,13 +6,16 @@
       <button v-for="opt in roleOptions" :key="opt.key" type="button"
               :class="{ active: profile.role === opt.key }"
               :disabled="locked"
-              @click="profile.role = opt.key">{{ opt.label }}</button>
+              @click="profile.role = opt.key">{{ opt.label }}
+      </button>
     </div>
   </div>
 
   <div class="chatnt-info-section">
     <div class="chatnt-info-label">权限节点</div>
-    <div v-if="profile.permissions.length === 0" class="nt-card"><div class="nt-empty">暂无权限节点</div></div>
+    <div v-if="profile.permissions.length === 0" class="nt-card">
+      <div class="nt-empty">暂无权限节点</div>
+    </div>
     <div v-else class="nt-chips">
       <button v-for="perm in profile.permissions" :key="perm" type="button" class="nt-chip"
               :disabled="locked"
@@ -21,7 +24,7 @@
       </button>
     </div>
     <form class="nt-add" @submit.prevent="submitPerm">
-      <input class="nt-input" v-model="draft" :disabled="locked" placeholder="新增权限节点" />
+      <input class="nt-input" v-model="draft" :disabled="locked" placeholder="新增权限节点"/>
       <button class="nt-btn" :disabled="locked || !draft.trim()">添加</button>
     </form>
   </div>
@@ -34,7 +37,7 @@
         <button type="button" class="nt-switch" :class="{ on: profile.blocked }" role="switch"
                 :disabled="locked"
                 :aria-checked="profile.blocked" @click="profile.blocked = !profile.blocked">
-          <span class="nt-switch-knob" />
+          <span class="nt-switch-knob"/>
         </button>
       </div>
       <div class="nt-row">
@@ -42,7 +45,7 @@
         <button type="button" class="nt-switch" :class="{ on: profile.ignored }" role="switch"
                 :disabled="locked"
                 :aria-checked="profile.ignored" @click="profile.ignored = !profile.ignored">
-          <span class="nt-switch-knob" />
+          <span class="nt-switch-knob"/>
         </button>
       </div>
       <div class="nt-row">
@@ -50,7 +53,7 @@
         <button type="button" class="nt-switch" :class="{ on: profile.c2cPush }" role="switch"
                 :disabled="locked"
                 :aria-checked="profile.c2cPush" @click="profile.c2cPush = !profile.c2cPush">
-          <span class="nt-switch-knob" />
+          <span class="nt-switch-knob"/>
         </button>
       </div>
     </div>
@@ -65,16 +68,16 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import {computed, ref} from 'vue'
 
 const props = defineProps({
   // 直接收下父组件的 reactive 对象，权限组和开关就地改，保存时统一提交
-  profile: { type: Object, required: true },
-  roleOptions: { type: Array, default: () => [] },
-  saving: { type: Boolean, default: false },
-  loading: { type: Boolean, default: false },
-  disabled: { type: Boolean, default: false },
-  error: { type: String, default: '' }
+  profile: {type: Object, required: true},
+  roleOptions: {type: Array, default: () => []},
+  saving: {type: Boolean, default: false},
+  loading: {type: Boolean, default: false},
+  disabled: {type: Boolean, default: false},
+  error: {type: String, default: ''}
 })
 
 const emit = defineEmits(['save', 'add-perm', 'remove-perm'])

@@ -12,7 +12,7 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.OfficialGroupSendFailEvent;
 import top.yzljc.atribot.event.events.OfficialC2CSendFailEvent;
@@ -38,8 +38,7 @@ import static top.yzljc.atribot.utils.StringUtils.isBlank;
  * @Created_at 2026/05/02
  * @Project AtriBot
  * @Package top.yzljc.atribot.chat.official
- * @Description
- * 聊天服务底层管道
+ * @Description 聊天服务底层管道
  */
 @Slf4j
 @Getter
@@ -48,7 +47,7 @@ public class ChatService {
     private static final int MAX_INVALID_EVENT_ID_RETRIES = 5;
     private static final long INVALID_EVENT_ID_RETRY_DELAY_MS = 100;
     private static final String EMERGENCY_PAUSED_MESSAGE = "开发者暂且维护中，马上回来！";
-    private static final ImageComponent MAINTENANCE = ImageComponent.imageOf(ResourcesProperties.MAINTENANCE_IMG).setText(EMERGENCY_PAUSED_MESSAGE);
+    private static final ImageComponent MAINTENANCE = ImageComponent.imageOf(RS.get("resource.image.maintenance")).setText(EMERGENCY_PAUSED_MESSAGE);
     @Getter
     @Setter
     private static volatile boolean emergencyPaused = false;
@@ -158,7 +157,7 @@ public class ChatService {
      * 频道删除帖子 API URL， Method: DELETE
      *
      * @param channelId 子频道板块 ID
-     * @param threadId 帖子 ID
+     * @param threadId  帖子 ID
      * @return 频道删除帖子 API URL
      */
     public String guildThreadDeleteUrl(String channelId, String threadId) {
@@ -183,7 +182,7 @@ public class ChatService {
                             QQChatContentRecord.recordSentC2CMessage(openId, effectiveRequest, response.id(), response.refIdx(), response.timestamp());
                         }
                         if (response != null) {
-                            return response.id() ;
+                            return response.id();
                         } else {
                             return null;
                         }
@@ -272,7 +271,7 @@ public class ChatService {
                             }
                         }
                         if (response != null) {
-                            return response.id() ;
+                            return response.id();
                         } else {
                             return null;
                         }
@@ -283,8 +282,8 @@ public class ChatService {
     /**
      * 异步发送文字子频道消息
      *
-     * @param channelId   频道 ID
-     * @param request     消息体
+     * @param channelId 频道 ID
+     * @param request   消息体
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGuildChannelMessageAsync(String channelId, MessageBody request) {
@@ -306,8 +305,8 @@ public class ChatService {
     /**
      * 异步发送频道私信消息
      *
-     * @param guildId   频道 ID
-     * @param request     消息体
+     * @param guildId 频道 ID
+     * @param request 消息体
      * @return 消息 ID 的 Future
      */
     public CompletableFuture<String> sendGuildDirectMessageAsync(String guildId, MessageBody request) {
@@ -332,7 +331,7 @@ public class ChatService {
                     if (response == null) {
                         return null;
                     } else {
-                        return ((JsonNode)response).path("task_id").asText(null);
+                        return ((JsonNode) response).path("task_id").asText(null);
                     }
                 });
     }
@@ -341,7 +340,7 @@ public class ChatService {
      * 异步删除频道帖子
      *
      * @param channelId 子频道板块 ID
-     * @param threadId 帖子 ID
+     * @param threadId  帖子 ID
      * @return 删除结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
      */
     public CompletableFuture<Boolean> deleteGuildThreadAsync(String channelId, String threadId) {
@@ -362,7 +361,7 @@ public class ChatService {
      * 异步撤回单聊消息
      *
      * @param userOpenId 用户 openId
-     * @param messageId 消息 ID
+     * @param messageId  消息 ID
      * @return 撤回结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
      */
     public CompletableFuture<Boolean> recallPrivateMessageAsync(String userOpenId, String messageId) {
@@ -494,7 +493,7 @@ public class ChatService {
      * 异步撤回群聊消息
      *
      * @param groupOpenId 群 openId
-     * @param messageId 消息 ID
+     * @param messageId   消息 ID
      * @return 撤回结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
      */
     public CompletableFuture<Boolean> recallGroupMessageAsync(String groupOpenId, String messageId) {
@@ -523,10 +522,10 @@ public class ChatService {
     /**
      * 异步记录 DELETE 请求及其结果，两条记录使用同一 traceId
      *
-     * @param scene 日志场景
-     * @param url 请求地址
+     * @param scene  日志场景
+     * @param url    请求地址
      * @param result 平台响应
-     * @param ok 请求是否成功
+     * @param ok     请求是否成功
      */
     private void recordDeleteLog(String scene, String url, HttpService.GetResult result, boolean ok) {
         Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
@@ -549,6 +548,7 @@ public class ChatService {
      * @param groupOpenId 群 openId
      * @return 用户信息 JSON 字符串，失败返回 null
      */
+    @Deprecated
     public String getUserInfo(String userOpenId, String groupOpenId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/members/" + userOpenId;
         try {
@@ -702,5 +702,6 @@ public class ChatService {
         }
     }
 
-    private record ChatResponse(String id, String timestamp, String refIdx) {}
+    private record ChatResponse(String id, String timestamp, String refIdx) {
+    }
 }

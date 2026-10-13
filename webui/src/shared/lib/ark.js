@@ -1,194 +1,196 @@
 export function parseArkMessage(raw) {
-  const value = parseJsonLike(raw)
-  if (!value || typeof value !== 'object') return null
+    const value = parseJsonLike(raw)
+    if (!value || typeof value !== 'object') return null
 
-  const ark = Array.isArray(value) ? value.find(item => item && typeof item === 'object') : value
-  if (!ark || typeof ark !== 'object') return null
-  if (Number(ark.template_id) === 23 && Array.isArray(ark.kv)) {
-    const entry = key => ark.kv.find(item => item?.key === key)
-    const title = firstText(entry('#DESC#')?.value)
-    const prompt = firstText(entry('#PROMPT#')?.value)
-    const rows = entry('#LIST#')?.obj
-    const items = (Array.isArray(rows) ? rows : []).map(row => {
-      const fields = Array.isArray(row?.obj_kv) ? row.obj_kv : []
-      return {
-        description: firstText(fields.find(field => field?.key === 'desc')?.value),
-        link: firstUrl(fields.find(field => field?.key === 'link')?.value)
-      }
-    }).filter(item => item.description)
-    if (!title && !prompt && !items.length) return null
-    return { type: '23', typeName: 'Ark', title: title || prompt || 'Ark', prompt, items, targetUrl: '' }
-  }
+    const ark = Array.isArray(value) ? value.find(item => item && typeof item === 'object') : value
+    if (!ark || typeof ark !== 'object') return null
+    if (Number(ark.template_id) === 23 && Array.isArray(ark.kv)) {
+        const entry = key => ark.kv.find(item => item?.key === key)
+        const title = firstText(entry('#DESC#')?.value)
+        const prompt = firstText(entry('#PROMPT#')?.value)
+        const rows = entry('#LIST#')?.obj
+        const items = (Array.isArray(rows) ? rows : []).map(row => {
+            const fields = Array.isArray(row?.obj_kv) ? row.obj_kv : []
+            return {
+                description: firstText(fields.find(field => field?.key === 'desc')?.value),
+                link: firstUrl(fields.find(field => field?.key === 'link')?.value)
+            }
+        }).filter(item => item.description)
+        if (!title && !prompt && !items.length) return null
+        return {type: '23', typeName: 'Ark', title: title || prompt || 'Ark', prompt, items, targetUrl: ''}
+    }
 
-  const templateId = Number(ark.template_id)
-  if ((templateId === 24 || templateId === 37) && Array.isArray(ark.kv)) {
-    const entry = key => firstText(ark.kv.find(item => item?.key === key)?.value)
-    const title = entry(templateId === 24 ? '#TITLE#' : '#METATITLE#')
-    const prompt = entry('#PROMPT#')
-    const description = entry(templateId === 24 ? '#METADESC#' : '#METASUBTITLE#')
-    const preview = entry(templateId === 24 ? '#IMG#' : '#METACOVER#')
-    if (!title && !prompt && !description && !preview) return null
-    return { type: String(templateId), typeName: 'Ark', title: title || prompt || 'Ark', prompt,
-      description, preview, source: templateId === 24 ? entry('#SUBTITLE#') : '',
-      targetUrl: firstUrl(entry(templateId === 24 ? '#LINK#' : '#METAURL#')) }
-  }
+    const templateId = Number(ark.template_id)
+    if ((templateId === 24 || templateId === 37) && Array.isArray(ark.kv)) {
+        const entry = key => firstText(ark.kv.find(item => item?.key === key)?.value)
+        const title = entry(templateId === 24 ? '#TITLE#' : '#METATITLE#')
+        const prompt = entry('#PROMPT#')
+        const description = entry(templateId === 24 ? '#METADESC#' : '#METASUBTITLE#')
+        const preview = entry(templateId === 24 ? '#IMG#' : '#METACOVER#')
+        if (!title && !prompt && !description && !preview) return null
+        return {
+            type: String(templateId), typeName: 'Ark', title: title || prompt || 'Ark', prompt,
+            description, preview, source: templateId === 24 ? entry('#SUBTITLE#') : '',
+            targetUrl: firstUrl(entry(templateId === 24 ? '#LINK#' : '#METAURL#'))
+        }
+    }
 
-  const fields = ark.fields && typeof ark.fields === 'object' ? ark.fields : {}
-  const typeName = firstText(ark.ark_name, ark.arkName, ark.ark_type, ark.arkType, fields.type) || '卡片消息'
-  const type = firstText(ark.ark_type, ark.arkType)
-  const tag = normalizeTags(fields.tags) || firstText(fields.tag, ark.tag, ark.tags)
-  const title = firstText(fields.title, ark.title, fields.nickname, ark.nickname, fields.address, ark.address, fields.desc, fields.description, ark.prompt, fields.prompt)
-  const prompt = firstText(ark.prompt, fields.prompt, fields.desc, fields.description, fields.address, ark.address, fields.summary)
-  const source = firstText(fields.source, ark.source, fields.source_name, ark.source_name, tag)
-  const sourceLogo = firstText(fields.source_logo, fields.sourceLogo, fields.tag_icon, fields.tagIcon, ark.source_logo, ark.sourceLogo, ark.tag_icon, ark.tagIcon)
-  const preview = firstText(fields.preview, fields.avatar, fields.cover, fields.image, fields.img, fields.pic, fields.thumbnail, ark.preview, ark.avatar)
-  const targetUrl = findTargetUrl(ark, fields, preview, sourceLogo)
+    const fields = ark.fields && typeof ark.fields === 'object' ? ark.fields : {}
+    const typeName = firstText(ark.ark_name, ark.arkName, ark.ark_type, ark.arkType, fields.type) || '卡片消息'
+    const type = firstText(ark.ark_type, ark.arkType)
+    const tag = normalizeTags(fields.tags) || firstText(fields.tag, ark.tag, ark.tags)
+    const title = firstText(fields.title, ark.title, fields.nickname, ark.nickname, fields.address, ark.address, fields.desc, fields.description, ark.prompt, fields.prompt)
+    const prompt = firstText(ark.prompt, fields.prompt, fields.desc, fields.description, fields.address, ark.address, fields.summary)
+    const source = firstText(fields.source, ark.source, fields.source_name, ark.source_name, tag)
+    const sourceLogo = firstText(fields.source_logo, fields.sourceLogo, fields.tag_icon, fields.tagIcon, ark.source_logo, ark.sourceLogo, ark.tag_icon, ark.tagIcon)
+    const preview = firstText(fields.preview, fields.avatar, fields.cover, fields.image, fields.img, fields.pic, fields.thumbnail, ark.preview, ark.avatar)
+    const targetUrl = findTargetUrl(ark, fields, preview, sourceLogo)
 
-  if (!title && !prompt && !source && !tag && !preview) return null
+    if (!title && !prompt && !source && !tag && !preview) return null
 
-  return {
-    type,
-    typeName,
-    title: title || prompt || typeName,
-    prompt,
-    source,
-    sourceLogo,
-    tag,
-    preview,
-    targetUrl
-  }
+    return {
+        type,
+        typeName,
+        title: title || prompt || typeName,
+        prompt,
+        source,
+        sourceLogo,
+        tag,
+        preview,
+        targetUrl
+    }
 }
 
 export function hasArkMessage(raw) {
-  return !!parseArkMessage(raw)
+    return !!parseArkMessage(raw)
 }
 
 export function renderArkSummary(raw) {
-  const ark = parseArkMessage(raw)
-  if (!ark) return ''
-  const title = ark.title || ark.prompt || ''
-  return title ? `[${ark.typeName}] ${title}` : `[${ark.typeName}]`
+    const ark = parseArkMessage(raw)
+    if (!ark) return ''
+    const title = ark.title || ark.prompt || ''
+    return title ? `[${ark.typeName}] ${title}` : `[${ark.typeName}]`
 }
 
 function parseJsonLike(raw) {
-  if (!raw) return null
-  if (typeof raw !== 'string') return raw
-  const text = raw.trim()
-  if (!text || text === 'null') return null
-  try {
-    return JSON.parse(text)
-  } catch {
-    return null
-  }
+    if (!raw) return null
+    if (typeof raw !== 'string') return raw
+    const text = raw.trim()
+    if (!text || text === 'null') return null
+    try {
+        return JSON.parse(text)
+    } catch {
+        return null
+    }
 }
 
 function firstText(...values) {
-  for (const value of values) {
-    if (typeof value !== 'string') continue
-    const text = value.trim()
-    if (text) return text
-  }
-  return ''
+    for (const value of values) {
+        if (typeof value !== 'string') continue
+        const text = value.trim()
+        if (text) return text
+    }
+    return ''
 }
 
 function normalizeTags(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map(item => typeof item === 'string' ? item.trim() : '')
-      .filter(Boolean)
-      .join(' / ')
-  }
-  return firstText(value)
+    if (Array.isArray(value)) {
+        return value
+            .map(item => typeof item === 'string' ? item.trim() : '')
+            .filter(Boolean)
+            .join(' / ')
+    }
+    return firstText(value)
 }
 
 function findTargetUrl(ark, fields, preview, sourceLogo) {
-  const direct = firstUrl(
-    fields.jump_url,
-    fields.jumpUrl,
-    fields.target_url,
-    fields.targetUrl,
-    fields.web_url,
-    fields.webUrl,
-    fields.page_url,
-    fields.pageUrl,
-    fields.qqdocurl,
-    fields.url,
-    fields.link,
-    fields.href,
-    ark.jump_url,
-    ark.jumpUrl,
-    ark.target_url,
-    ark.targetUrl,
-    ark.web_url,
-    ark.webUrl,
-    ark.page_url,
-    ark.pageUrl,
-    ark.qqdocurl,
-    ark.url,
-    ark.link,
-    ark.href
-  )
-  if (direct && !sameUrl(direct, preview) && !sameUrl(direct, sourceLogo)) return direct
+    const direct = firstUrl(
+        fields.jump_url,
+        fields.jumpUrl,
+        fields.target_url,
+        fields.targetUrl,
+        fields.web_url,
+        fields.webUrl,
+        fields.page_url,
+        fields.pageUrl,
+        fields.qqdocurl,
+        fields.url,
+        fields.link,
+        fields.href,
+        ark.jump_url,
+        ark.jumpUrl,
+        ark.target_url,
+        ark.targetUrl,
+        ark.web_url,
+        ark.webUrl,
+        ark.page_url,
+        ark.pageUrl,
+        ark.qqdocurl,
+        ark.url,
+        ark.link,
+        ark.href
+    )
+    if (direct && !sameUrl(direct, preview) && !sameUrl(direct, sourceLogo)) return direct
 
-  return findUrlDeep(ark, new Set([preview, sourceLogo].filter(Boolean)))
+    return findUrlDeep(ark, new Set([preview, sourceLogo].filter(Boolean)))
 }
 
 function findUrlDeep(value, excluded, seen = new Set()) {
-  if (!value || typeof value !== 'object' || seen.has(value)) return ''
-  seen.add(value)
+    if (!value || typeof value !== 'object' || seen.has(value)) return ''
+    seen.add(value)
 
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findUrlDeep(item, excluded, seen)
-      if (found) return found
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const found = findUrlDeep(item, excluded, seen)
+            if (found) return found
+        }
+        return ''
+    }
+
+    const preferredKeys = ['jump_url', 'jumpUrl', 'target_url', 'targetUrl', 'web_url', 'webUrl', 'page_url', 'pageUrl', 'qqdocurl', 'url', 'link', 'href']
+    for (const key of preferredKeys) {
+        const candidate = firstUrl(value[key])
+        if (candidate && !isExcludedUrl(key, candidate, excluded)) return candidate
+    }
+
+    for (const [key, item] of Object.entries(value)) {
+        if (isMediaKey(key)) continue
+        if (typeof item === 'string') {
+            const candidate = firstUrl(item)
+            if (candidate && !isExcludedUrl(key, candidate, excluded)) return candidate
+        } else {
+            const found = findUrlDeep(item, excluded, seen)
+            if (found) return found
+        }
     }
     return ''
-  }
-
-  const preferredKeys = ['jump_url', 'jumpUrl', 'target_url', 'targetUrl', 'web_url', 'webUrl', 'page_url', 'pageUrl', 'qqdocurl', 'url', 'link', 'href']
-  for (const key of preferredKeys) {
-    const candidate = firstUrl(value[key])
-    if (candidate && !isExcludedUrl(key, candidate, excluded)) return candidate
-  }
-
-  for (const [key, item] of Object.entries(value)) {
-    if (isMediaKey(key)) continue
-    if (typeof item === 'string') {
-      const candidate = firstUrl(item)
-      if (candidate && !isExcludedUrl(key, candidate, excluded)) return candidate
-    } else {
-      const found = findUrlDeep(item, excluded, seen)
-      if (found) return found
-    }
-  }
-  return ''
 }
 
 function firstUrl(...values) {
-  for (const value of values) {
-    if (typeof value !== 'string') continue
-    const text = value.trim()
-    if (isNavigableUrl(text)) return text
-  }
-  return ''
+    for (const value of values) {
+        if (typeof value !== 'string') continue
+        const text = value.trim()
+        if (isNavigableUrl(text)) return text
+    }
+    return ''
 }
 
 function isNavigableUrl(value) {
-  return /^(https?:\/\/|mqqapi:\/\/|qqminiapp:\/\/)/i.test(value)
+    return /^(https?:\/\/|mqqapi:\/\/|qqminiapp:\/\/)/i.test(value)
 }
 
 function isMediaKey(key) {
-  return /preview|source[_-]?logo|tag[_-]?icon|logo|icon|image|img|pic|cover|thumb|thumbnail|avatar/i.test(key || '')
+    return /preview|source[_-]?logo|tag[_-]?icon|logo|icon|image|img|pic|cover|thumb|thumbnail|avatar/i.test(key || '')
 }
 
 function isExcludedUrl(key, value, excluded) {
-  if (isMediaKey(key)) return true
-  for (const item of excluded) {
-    if (sameUrl(value, item)) return true
-  }
-  return false
+    if (isMediaKey(key)) return true
+    for (const item of excluded) {
+        if (sameUrl(value, item)) return true
+    }
+    return false
 }
 
 function sameUrl(a, b) {
-  return !!a && !!b && String(a).trim() === String(b).trim()
+    return !!a && !!b && String(a).trim() === String(b).trim()
 }

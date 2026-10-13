@@ -1,7 +1,7 @@
 package top.yzljc.sakuraba_ema;
 
-import top.yzljc.sakuraba_ema.guild.impl.ChannelCliException;
-import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
+import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.sakuraba_ema.internal.SystemTools;
 
 import java.nio.file.Path;
 
@@ -12,9 +12,7 @@ import java.nio.file.Path;
  * @Project AtriMeow
  * @Package top.yzljc.sakuraba_ema
  * @Description 频道 CLI 版本、登录与命令结构查询
- *
- * 静态同步业务入口，内部复用配置中的频道第二账号 CLI 客户端。
- * 返回原始执行结果；业务失败查看 success/getError，执行异常抛出 ChannelCliException。
+
  */
 public final class ChannelSystem {
 
@@ -24,31 +22,28 @@ public final class ChannelSystem {
     /**
      * 查询 CLI 版本
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult version() {
-        return ChannelCalls.client().system().version();
+    public static String version() {
+        return ChannelCalls.text(SystemTools::version);
     }
 
     /**
      * 检查 CLI 运行环境
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult doctor() {
-        return ChannelCalls.client().system().doctor();
+    public static JsonNode doctor() {
+        return ChannelCalls.systemQuery(SystemTools::doctor);
     }
 
     /**
      * 获取第二账号登录二维码
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult login() {
-        return ChannelCalls.client().system().login();
+    public static JsonNode login() {
+        return ChannelCalls.systemQuery(SystemTools::login);
     }
 
     /**
@@ -56,62 +51,56 @@ public final class ChannelSystem {
      *
      * @param qrcodePath 二维码文件路径，null 时使用 CLI 默认位置
      * @param forceRelogin 是否添加 --yes 强制重新登录
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult login(Path qrcodePath, boolean forceRelogin) {
-        return ChannelCalls.client().system().login(qrcodePath, forceRelogin);
+    public static JsonNode login(Path qrcodePath, boolean forceRelogin) {
+        return ChannelCalls.systemQuery(() -> SystemTools.login(qrcodePath, forceRelogin));
     }
 
     /**
      * 轮询扫码登录结果
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult pollToken() {
-        return ChannelCalls.client().system().pollToken();
+    public static JsonNode pollToken() {
+        return ChannelCalls.systemQuery(SystemTools::pollToken);
     }
 
     /**
      * 查询第二账号登录状态
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult loginStatus() {
-        return ChannelCalls.client().system().loginStatus();
+    public static JsonNode loginStatus() {
+        return ChannelCalls.systemQuery(SystemTools::loginStatus);
     }
 
     /**
      * 查询 CLI 全部命令目录
      *
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult schema() {
-        return ChannelCalls.client().system().schema();
+    public static JsonNode schema() {
+        return ChannelCalls.systemQuery(SystemTools::schema);
     }
 
     /**
      * 查询指定命令的参数结构
      *
      * @param commandPath 命令路径，如 feed.publish-feed、manage.kick-guild-member
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult schema(String commandPath) {
-        return ChannelCalls.client().system().schema(commandPath);
+    public static JsonNode schema(String commandPath) {
+        return ChannelCalls.systemQuery(() -> SystemTools.schema(commandPath));
     }
 
     /**
      * 按关键字搜索命令结构
      *
      * @param keyword 非空搜索关键字
-     * @return CLI 执行结果，success 为 false 表示失败，详情见 getError()
-     * @throws ChannelCliException 客户端不可用或进程执行异常
+     * @return 查询结果，调用失败时为 null
      */
-    public static ChannelCliResult searchSchema(String keyword) {
-        return ChannelCalls.client().system().searchSchema(keyword);
+    public static JsonNode searchSchema(String keyword) {
+        return ChannelCalls.systemQuery(() -> SystemTools.searchSchema(keyword));
     }
 }

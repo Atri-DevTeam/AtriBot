@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.tasks.pushtask;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
@@ -32,7 +33,7 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
 
     @Override
     public Markdown getDescription(Platform platform, String platformIdentifyId) {
-        return TC.md("**Hypixel BanWave告警**\n\n在Hypixel Punishment数据发生波动时予以提醒，例如：\n\n---\n\n" + "Hypixel BanWave告警\n\n> 近5分钟 225，前5分钟 100，环比 +125.0%\n\n---\n\n"
+        return TC.md("**Hypixel BanWave告警**\n\n在Hypixel Punishment数据发生波动时予以提醒，例如：\n\n---\n\n" + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel BanWave告警\n\n> 近5分钟 225，前5分钟 100，环比 +125.0%" + " " + Markdown.enterCommand("/bantrack 6h", "详情") + "\n\n---\n\n"
                 + getStatus(platform, platformIdentifyId));
     }
 
@@ -49,7 +50,7 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
         var data = response.path("data");
         if (data.path("is_banwave").asBoolean(false) && tryAcquireAlert()) {
             String alert = data.path("alert").asText("");
-            PushTask.push("hyp_banwave_alert", TC.md("Hypixel BanWave告警\n\n" + "> " + alert + "\n> " + Markdown.enterCommand("/bantrack 6h", "查看近期趋势")));
+            PushTask.push("hyp_banwave_alert", TC.md(Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel BanWave告警\n\n" + "> " + alert + " " + Markdown.enterCommand("/bantrack 6h", "详情")));
         }
     }
 

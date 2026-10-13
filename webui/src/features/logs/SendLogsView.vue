@@ -42,21 +42,24 @@
               </div>
               <div class="errors-metric">
                 <dt class="errors-metric-label">当前结果</dt>
-                <dd class="errors-metric-value">{{ mode === 'detail' ? 1 : contextAnchor ? contextItems.length : total }}</dd>
+                <dd class="errors-metric-value">{{
+                    mode === 'detail' ? 1 : contextAnchor ? contextItems.length : total
+                  }}
+                </dd>
               </div>
             </dl>
           </div>
 
           <div class="sendlogs-tabs" role="tablist">
             <button
-              v-for="tab in tabs"
-              :key="tab.type"
-              class="sendlogs-tab"
-              :class="{ active: !contextAnchor && activeType === tab.type }"
-              type="button"
-              role="tab"
-              :aria-selected="!contextAnchor && activeType === tab.type"
-              @click="selectType(tab.type)"
+                v-for="tab in tabs"
+                :key="tab.type"
+                class="sendlogs-tab"
+                :class="{ active: !contextAnchor && activeType === tab.type }"
+                type="button"
+                role="tab"
+                :aria-selected="!contextAnchor && activeType === tab.type"
+                @click="selectType(tab.type)"
             >
               <span>{{ tab.label }}</span>
               <i>{{ tabCount(tab.type) }}</i>
@@ -65,14 +68,15 @@
 
           <div class="errors-search">
             <input
-              v-model="searchInput"
-              class="errors-search-input"
-              type="text"
-              placeholder="搜索..."
-              @keyup.enter="doSearch"
+                v-model="searchInput"
+                class="errors-search-input"
+                type="text"
+                placeholder="搜索..."
+                @keyup.enter="doSearch"
             />
             <button class="primary-button errors-search-btn" @click="doSearch">查询</button>
-            <button v-if="keyword || contextAnchor || mode === 'detail'" class="ghost-button errors-search-btn" @click="resetSearch">
+            <button v-if="keyword || contextAnchor || mode === 'detail'" class="ghost-button errors-search-btn"
+                    @click="resetSearch">
               重置
             </button>
           </div>
@@ -80,7 +84,10 @@
 
           <template v-if="mode === 'detail'">
             <div class="errors-detail-bar">
-              <button class="ghost-button" @click="backToList">{{ contextAnchor ? '返回临近事件' : '返回列表' }}</button>
+              <button class="ghost-button" @click="backToList">{{
+                  contextAnchor ? '返回临近事件' : '返回列表'
+                }}
+              </button>
               <span class="errors-detail-crumb">日志详情</span>
               <button v-if="detail" class="ghost-button" @click="openContext(detail.id)">查看临近事件</button>
             </div>
@@ -91,7 +98,9 @@
 
             <article v-else class="errors-surface errors-detail sendlogs-detail">
               <header class="errors-detail-head">
-                <span class="sendlogs-type" :class="typeClass(detail.entryType)">{{ typeLabel(detail.entryType) }}</span>
+                <span class="sendlogs-type" :class="typeClass(detail.entryType)">{{
+                    typeLabel(detail.entryType)
+                  }}</span>
                 <h3 class="errors-detail-message">{{ detail.scene || '官方接口' }}</h3>
                 <span class="errors-detail-time">{{ formatLogTime(detail.createTime) }}</span>
               </header>
@@ -155,14 +164,16 @@
 
               <div class="errors-list">
                 <article
-                  v-for="item in displayItems"
-                  :key="item.id"
-                  class="sendlogs-grid sendlogs-row"
-                  :class="{ 'sendlogs-row--anchor': item.id === contextAnchor }"
-                  @click="openDetail(item.id)"
+                    v-for="item in displayItems"
+                    :key="item.id"
+                    class="sendlogs-grid sendlogs-row"
+                    :class="{ 'sendlogs-row--anchor': item.id === contextAnchor }"
+                    @click="openDetail(item.id)"
                 >
                   <span>
-                    <span class="sendlogs-type" :class="typeClass(item.entryType)">{{ typeLabel(item.entryType) }}</span>
+                    <span class="sendlogs-type" :class="typeClass(item.entryType)">{{
+                        typeLabel(item.entryType)
+                      }}</span>
                   </span>
                   <span class="sendlogs-scene" :title="item.scene">{{ item.scene || '-' }}</span>
                   <span class="sendlogs-endpoint" :title="item.url">
@@ -170,7 +181,8 @@
                     <b v-if="rowSnippet(item)" :title="rowSnippet(item)">{{ rowSnippet(item) }}</b>
                   </span>
                   <span class="sendlogs-status" :class="{ danger: item.entryType === 'ERROR' }">
-                    {{ statusText(item) }}
+                    <span class="sendlogs-status-code">{{ statusText(item) }}</span>
+                    <span class="sendlogs-status-message" :title="mobileStatusText(item)">{{ mobileStatusText(item) }}</span>
                   </span>
                   <span class="sendlogs-time" :title="formatLogTime(item.createTime)">
                     <b v-if="item.id === contextAnchor" class="sendlogs-anchor-label">定位日志</b>
@@ -184,17 +196,22 @@
             </div>
 
             <div v-if="contextAnchor && !listLoading && !listError" class="errors-pagination sendlogs-pagination">
-              <button class="ghost-button" :disabled="!hasNewer" @click="openContext(contextItems[0].id)">查看更晚事件</button>
+              <button class="ghost-button" :disabled="!hasNewer" @click="openContext(contextItems[0].id)">查看更晚事件
+              </button>
               <span class="errors-pagination-label">共 {{ contextItems.length }} 条</span>
-              <button class="ghost-button" :disabled="!hasOlder" @click="openContext(contextItems[contextItems.length - 1].id)">查看更早事件</button>
+              <button class="ghost-button" :disabled="!hasOlder"
+                      @click="openContext(contextItems[contextItems.length - 1].id)">查看更早事件
+              </button>
             </div>
-            <div v-if="!contextAnchor && !loading && !error && totalPages > 1" class="errors-pagination sendlogs-pagination">
+            <div v-if="!contextAnchor && !loading && !error && totalPages > 1"
+                 class="errors-pagination sendlogs-pagination">
               <button class="ghost-button" :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
               <span class="errors-pagination-label">第 {{ page }} / {{ totalPages }} 页</span>
               <button class="ghost-button" :disabled="page >= totalPages" @click="goPage(page + 1)">下一页</button>
               <form class="sendlogs-page-jump" @submit.prevent="goPage(pageInput)">
                 <label for="sendlogs-page-input">跳至</label>
-                <input id="sendlogs-page-input" v-model="pageInput" type="number" min="1" :max="totalPages" step="1" required />
+                <input id="sendlogs-page-input" v-model="pageInput" type="number" min="1" :max="totalPages" step="1"
+                       required/>
                 <span>页</span>
                 <button class="ghost-button" type="submit">跳转</button>
               </form>
@@ -207,17 +224,17 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {computed, onMounted, onBeforeUnmount, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime, parseTime, relativeTime} from '../../shared/lib/time.js'
 import {useMobileDetailNavigation} from '../../shared/lib/useMobileDetailNavigation.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 const sidebarOpen = ref(false)
@@ -258,9 +275,11 @@ let listRequest = 0
 let detailRequest = 0
 let contextRequest = 0
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 async function fetchStats() {
   try {
@@ -434,6 +453,13 @@ function statusText(item) {
   return item.entryType === 'ERROR' ? '失败' : '-'
 }
 
+function mobileStatusText(item) {
+  if (item?.entryType !== 'ERROR') return statusText(item)
+  const reason = String(item.errorReason || '').trim()
+  const message = String(item.errorMessage || '').trim()
+  return (reason || message || statusText(item)).replace(/\s+/g, ' ')
+}
+
 function shortUrl(url) {
   if (!url) return '-'
   return String(url).replace(/^https?:\/\/[^/]+/i, '')
@@ -446,10 +472,10 @@ function formatLogTime(value) {
 
 function rowSnippet(item) {
   const raw = item.entryType === 'ERROR'
-    ? (item.errorReason || item.errorMessage || item.responseBody)
-    : item.entryType === 'RESPONSE'
-      ? item.responseBody
-      : item.requestJson
+      ? (item.errorReason || item.errorMessage || item.responseBody)
+      : item.entryType === 'RESPONSE'
+          ? item.responseBody
+          : item.requestJson
   if (!raw) return ''
   return String(raw).replace(/\s+/g, ' ').trim().slice(0, 140)
 }

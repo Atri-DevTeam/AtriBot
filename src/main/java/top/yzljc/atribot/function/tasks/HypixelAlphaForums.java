@@ -2,7 +2,7 @@ package top.yzljc.atribot.function.tasks;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -75,7 +75,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
     private static final int INTRO_MAX_LENGTH = 100;
     private static final int MAX_PUSH_PER_RUN = 3;
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
-    private static final String HYPIXEL_HEADER_URL = ResourcesProperties.HYPIXEL_HEADER_IMG;
+    private static final String HYPIXEL_HEADER_URL = RS.get("resource.image.hypixel-header");
     private static final Set<String> OFFICIAL_CREATORS = Set.of(
             "Hypixel Team",
             "MotorGorilla",

@@ -117,7 +117,9 @@ public class LuckyRouletteGame implements CommandExecutor {
         return -2;
     }
 
-    /** 玩家字母编号：0 → A, 1 → B ... */
+    /**
+     * 玩家字母编号：0 → A, 1 → B ...
+     */
     private static String playerLabel(int idx) {
         return String.valueOf((char) ('A' + idx));
     }
@@ -125,23 +127,23 @@ public class LuckyRouletteGame implements CommandExecutor {
     private void sendWelcomeScreen(String sessionId, QQCommandSender sender) {
         String markdown = """
                 🪄**魔法轮盘**
-
+                
                 **规则:**
                 > 轮盘共 6 格，其中 1 格是魔法格，每次转动过后不重置
                 > 轮到你时需要指定一个目标：自己 或 任意一名玩家
                 > 指定自己：目标安全 → 轮到下一位；魔法命中 → 你被淘汰
                 > 指定他人：目标安全 → 轮到下一位；魔法命中 → 目标被淘汰，其余人获胜
                 > 每次选择限时 60 秒，超时将随机指定目标喵！
-
+                
                 **奖励:** 幸存玩家每人 7~15 金粒，被淘汰者 1~6 金粒安慰奖
-
+                
                 请点击下方按钮选择人数开局:
                 > 1 分钟内未满员将自动取消
                 """;
 
         List<Button> row = new ArrayList<>();
         for (int n = MIN_PLAYERS; n <= MAX_PLAYERS; n++) {
-            row.add(new Button("btn_size_" + n, + n + "人局", "/幸运轮盘 start " + n,
+            row.add(new Button("btn_size_" + n, +n + "人局", "/幸运轮盘 start " + n,
                     true, ButtonStyle.GRAY, ButtonType.COMMAND));
         }
 
@@ -208,6 +210,9 @@ public class LuckyRouletteGame implements CommandExecutor {
         game.phase = Phase.PLAYING;
         game.magicIndex = new Random().nextInt(SLOTS);
         game.currentPlayer = 0;
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.roulette, game.statisticsId + ":start",
+                game.players.stream().map(userId ->
+                        new UserGameDataRepository.Counters(userId, Map.of("participations", 1L))).toList());
 
         sendGameBoard(game, sessionId, cmdMsgId,
                 "游戏开始！由 " + playerLabel(0) + " 号 " + Markdown.at(game.players.getFirst()) + " 先选择目标");
@@ -255,6 +260,10 @@ public class LuckyRouletteGame implements CommandExecutor {
 
         // Consume the next slot
         int slot = game.slotIndex++;
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.roulette, game.statisticsId + ":turn:" + slot,
+                List.of(new UserGameDataRepository.Counters(chooserId, forced
+                        ? Map.of("timeouts", 1L)
+                        : Map.of("actions", 1L, selfTarget ? "selfTargets" : "otherTargets", 1L))));
 
         if (slot == game.magicIndex) {
             // 魔法命中 — target eliminate
@@ -307,7 +316,7 @@ public class LuckyRouletteGame implements CommandExecutor {
         // 加入按钮：显示当前进度，未满员前任何群友都可点
         List<List<Button>> layout = new ArrayList<>();
         layout.add(List.of(new Button("btn_join", "加入本局 ("
-                        + game.players.size() + "/" + game.maxPlayers + ")", "/幸运轮盘 join",
+                + game.players.size() + "/" + game.maxPlayers + ")", "/幸运轮盘 join",
                 true, ButtonStyle.BLUE, ButtonType.COMMAND)));
 
         Object keyboard = TC.keyboard(layout);
@@ -418,8 +427,10 @@ public class LuckyRouletteGame implements CommandExecutor {
     private Map<String, Integer> grantRewards(GameState game) {
         if (game.rewardsGranted) return game.goldRewards;
         game.rewardsGranted = true;
-        UserGameDataRepository.record(UserGameDataRepository.Game.roulette, game.statisticsId,
-                game.players.stream().map(uid -> UserGameDataRepository.Delta.match(uid, !uid.equals(game.loserOpenId))).toList());
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.roulette, game.statisticsId,
+                game.players.stream().map(uid -> new UserGameDataRepository.Counters(uid,
+                        Map.of("plays", 1L, "wins", uid.equals(game.loserOpenId) ? 0L : 1L,
+                                "losses", uid.equals(game.loserOpenId) ? 1L : 0L))).toList());
 
         for (String uid : game.players) {
             int golds = uid.equals(game.loserOpenId) ? RandomGolds.get(1, 6) : RandomGolds.get(7, 15);
@@ -442,7 +453,7 @@ public class LuckyRouletteGame implements CommandExecutor {
                 if (targetOpenId != null && current.lastCmdMsgId != null) {
                     try {
                         GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
-                        TC.md("⏰ 幸运轮盘因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
+                                TC.md("⏰ 幸运轮盘因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
                     } catch (Exception e) {
                         log.warn("发送加入超时通知失败: ", e);
                     }

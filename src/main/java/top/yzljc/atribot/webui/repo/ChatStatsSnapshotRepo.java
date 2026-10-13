@@ -22,10 +22,10 @@ import static top.yzljc.atribot.utils.StringUtils.isBlank;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName ChatStatsSnapshotStore
+ * @ClassName ChatStatsSnapshotRepo
  * @Created_at 2026/08/14
  * @Project AtriMeow
- * @Package top.yzljc.atribot.webui.impl
+ * @Package top.yzljc.atribot.webui.repo
  */
 @Slf4j
 public final class ChatStatsSnapshotRepo {
@@ -34,6 +34,8 @@ public final class ChatStatsSnapshotRepo {
     private static final String GROUP_TABLE = "official_group_record";
     private static final String C2C_TABLE = "official_c2c_record";
     private static final String SNAPSHOT_TABLE = "official_chat_stats_snapshot";
+//    private static final String LEGACY_BACKUP_TABLE = "official_chat_stats_snapshot_before_self_send";
+    private static final String GROUP_SEND_VERSION_KEY = "meta:group_send_version";
     private static final String BOT_SEND = "BOT_SEND";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final Object PERSIST_LOCK = new Object();
@@ -46,15 +48,18 @@ public final class ChatStatsSnapshotRepo {
     public static synchronized void ensureInitialized() {
         if (snapshot != null) return;
         ensureTable();
-        if (loadFromDatabase()) return;
-        snapshot = new Snapshot();
         try {
+            if (loadFromDatabase()) return;
+//            rebuildGroupSendCounts();
+            snapshot = new Snapshot();
             rebuildFromDatabase();
+            snapshot.selfGroupSend = true;
             if (!persistAll()) {
                 throw new IllegalStateException("初始化聊天统计快照失败");
             }
         } catch (RuntimeException e) {
             snapshot = null;
+            dirtyScopes.clear();
             throw e;
         }
     }
@@ -85,7 +90,9 @@ public final class ChatStatsSnapshotRepo {
                 String date = dateValue == null ? null : dateValue.toLocalDate().toString();
                 long n1 = rs.getLong("n1"), n2 = rs.getLong("n2"), n3 = rs.getLong("n3"),
                         n4 = rs.getLong("n4"), n5 = rs.getLong("n5");
-                if ("global".equals(type) && date != null) {
+                if (GROUP_SEND_VERSION_KEY.equals(rs.getString("scope_key"))) {
+                    loaded.selfGroupSend = n1 >= 1;
+                } else if ("global".equals(type) && date != null) {
                     DailyStats d = new DailyStats();
                     d.groupReceived = n1; d.groupSent = n2; d.c2cReceived = n3; d.c2cSent = n4;
                     d.receiveUsers = readSet(rs.getString("json_a"));
@@ -119,11 +126,12 @@ public final class ChatStatsSnapshotRepo {
 
     public static void recordGroupMessage(String groupOpenId, String unionOpenId,
                                                         String username, boolean senderIsBot,
+                                                        String source,
                                                         String eventTimestamp) {
         ensureInitialized();
         String timestamp = normalizeTime(eventTimestamp);
         synchronized (ChatStatsSnapshotRepo.class) {
-            addGroupMessage(snapshot, groupOpenId, unionOpenId, username, senderIsBot, timestamp);
+            addGroupMessage(snapshot, groupOpenId, unionOpenId, username, senderIsBot, BOT_SEND.equals(source), timestamp);
             markDirty(groupOpenId, unionOpenId, dayOf(timestamp));
         }
         persistPending();
@@ -245,6 +253,7 @@ public final class ChatStatsSnapshotRepo {
                 while (rs.next()) {
                     addGroupMessage(snapshot, rs.getString("group_openId"), rs.getString("union_openId"),
                             rs.getString("username"), rs.getBoolean("sender_is_bot") || BOT_SEND.equals(rs.getString("event_type")),
+                            BOT_SEND.equals(rs.getString("event_type")),
                             FormatTools.formatTimestamp(rs.getTimestamp("event_time"), null));
                 }
             }
@@ -261,17 +270,18 @@ public final class ChatStatsSnapshotRepo {
     }
 
     private static void addGroupMessage(Snapshot data, String groupOpenId, String unionOpenId,
-                                        String username, boolean senderIsBot, String timestamp) {
+                                        String username, boolean senderIsBot, boolean selfSent, String timestamp) {
         if (isBlank(groupOpenId)) return;
         String day = dayOf(timestamp);
         DailyStats daily = data.days.computeIfAbsent(day, ignored -> new DailyStats());
         ScopeStats group = data.groups.computeIfAbsent(groupOpenId, ignored -> new ScopeStats());
-        addScopeDaily(group, day, senderIsBot);
-        if (senderIsBot) {
+        if (selfSent) {
+            addScopeDaily(group, day, true);
             daily.groupSent++;
             daily.sendGroups.add(groupOpenId);
             group.sent++;
-        } else {
+        } else if (!senderIsBot) {
+            addScopeDaily(group, day, false);
             daily.groupReceived++;
             if (!isBlank(unionOpenId)) {
                 daily.receiveUsers.add(unionOpenId);
@@ -287,6 +297,57 @@ public final class ChatStatsSnapshotRepo {
             updateSeen(user, timestamp);
         }
     }
+
+    /*
+    private static void rebuildGroupSendCounts() {
+        Map<String, Map<String, Long>> counts = new LinkedHashMap<>();
+        String sql = "SELECT group_openId, "
+                + "DATE(COALESCE(STR_TO_DATE(REPLACE(SUBSTRING(event_timestamp, 1, 19), 'T', ' '), '%Y-%m-%d %H:%i:%s'), created_at)) stat_date, "
+                + "COUNT(*) amount FROM `" + GROUP_TABLE + "` WHERE event_type = ? "
+                + "GROUP BY group_openId, stat_date";
+        try (var conn = DatabaseManager.getConnection(); var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, BOT_SEND);
+            try (var rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String groupId = rs.getString("group_openId");
+                    if (isBlank(groupId)) continue;
+                    String day = rs.getDate("stat_date").toLocalDate().toString();
+                    counts.computeIfAbsent(groupId, _ -> new TreeMap<>()).put(day, rs.getLong("amount"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("重建本机器人群聊发送统计失败", e);
+        }
+        long previous = snapshot.days.values().stream().mapToLong(day -> day.groupSent).sum();
+        replaceGroupSendCounts(snapshot, counts);
+        long current = snapshot.days.values().stream().mapToLong(day -> day.groupSent).sum();
+        log.warn("群聊发送统计将迁移为仅本机器人发送：原计数={}，现存 BOT_SEND 记录={}；"
+                + "旧快照备份表={}。已清理的消息明细无法用于重建，接收、私聊及 DAU 保持不变",
+                previous, current, LEGACY_BACKUP_TABLE);
+    }
+
+    private static void replaceGroupSendCounts(Snapshot data, Map<String, Map<String, Long>> counts) {
+        data.days.values().forEach(day -> {
+            day.groupSent = 0;
+            day.sendGroups.clear();
+        });
+        data.groups.values().forEach(group -> {
+            group.sent = 0;
+            group.daily.values().forEach(day -> day[1] = 0);
+        });
+        counts.forEach((groupId, days) -> {
+            ScopeStats group = data.groups.computeIfAbsent(groupId, _ -> new ScopeStats());
+            days.forEach((date, amount) -> {
+                DailyStats day = data.days.computeIfAbsent(date, _ -> new DailyStats());
+                day.groupSent += amount;
+                if (amount > 0) day.sendGroups.add(groupId);
+                group.sent += amount;
+                group.daily.computeIfAbsent(date, _ -> new long[2])[1] = amount;
+            });
+        });
+    }
+
+    */
 
     private static void addC2CMessage(Snapshot data, String userOpenId, String username,
                                       boolean senderIsBot, String timestamp) {
@@ -486,8 +547,24 @@ public final class ChatStatsSnapshotRepo {
     private static boolean persistRows(List<SnapshotRow> rows, boolean replaceAll) {
         if (rows.isEmpty() && !replaceAll) return true;
         try (var conn = DatabaseManager.getConnection()) {
+            /*
+            if (backupLegacy) {
+                try (var stmt = conn.createStatement()) {
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS `" + LEGACY_BACKUP_TABLE
+                            + "` LIKE `" + SNAPSHOT_TABLE + "`");
+                }
+            }
+            */
             conn.setAutoCommit(false);
             try (var stmt = conn.prepareStatement(upsertSql())) {
+                /*
+                if (backupLegacy) {
+                    try (var backup = conn.createStatement()) {
+                        backup.executeUpdate("INSERT IGNORE INTO `" + LEGACY_BACKUP_TABLE
+                                + "` SELECT * FROM `" + SNAPSHOT_TABLE + "`");
+                    }
+                }
+                */
                 if (replaceAll) {
                     try (var delete = conn.createStatement()) {
                         delete.executeUpdate("DELETE FROM `" + SNAPSHOT_TABLE + "`");
@@ -501,6 +578,11 @@ public final class ChatStatsSnapshotRepo {
                     bind(stmt, scopeKey, key.type(), key.id(), key.day(),
                             row.n1(), row.n2(), row.n3(), row.n4(), row.n5(),
                             row.a(), row.b(), row.c(), row.d(), row.first(), row.last(), row.username());
+                    stmt.addBatch();
+                }
+                if (replaceAll && snapshot.selfGroupSend) {
+                    bind(stmt, GROUP_SEND_VERSION_KEY, "meta", null, null,
+                            1, 0, 0, 0, 0, null, null, null, null, null, null, null);
                     stmt.addBatch();
                 }
                 stmt.executeBatch();
@@ -573,6 +655,7 @@ public final class ChatStatsSnapshotRepo {
                               String firstSeenAt, String lastSeenAt, String lastUsername) {}
 
     public static class Snapshot {
+        public boolean selfGroupSend;
         public Map<String, DailyStats> days = new TreeMap<>();
         public Map<String, ScopeStats> groups = new LinkedHashMap<>();
         public Map<String, ScopeStats> users = new LinkedHashMap<>();

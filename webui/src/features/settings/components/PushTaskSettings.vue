@@ -7,10 +7,12 @@
       <template v-else>
         <div v-if="entries.length === 0" class="nt-empty">暂无功能配置</div>
         <div v-for="[key, cfg] in entries" :key="key" class="nt-row">
-          <span class="nt-row-label">{{ cfg.displayName || key }}<span v-if="cfg.displayName" class="nt-row-note">{{ key }}</span></span>
+          <span class="nt-row-label">{{ cfg.displayName || key }}<span v-if="cfg.displayName" class="nt-row-note">{{
+              key
+            }}</span></span>
           <button type="button" class="nt-switch" :class="{ on: cfg.enabled }" role="switch"
                   :aria-label="cfg.displayName || key" :aria-checked="!!cfg.enabled" :disabled="!!savingKey"
-                  @click="emit('toggle', key, !cfg.enabled)"><span class="nt-switch-knob" /></button>
+                  @click="emit('toggle', key, !cfg.enabled)"><span class="nt-switch-knob"/></button>
         </div>
       </template>
     </div>
@@ -20,20 +22,21 @@
         <option v-for="key in addableKeys" :key="key" :value="key">{{ key }}</option>
       </select>
       <button type="button" class="nt-btn" :disabled="!newFunctionKey || !!savingKey"
-              @click="emit('toggle', newFunctionKey, true)">添加</button>
+              @click="emit('toggle', newFunctionKey, true)">添加
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import {computed, ref, watch} from 'vue'
 
 const props = defineProps({
-  entries: { type: Array, default: () => [] },
-  functionKeys: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false },
-  error: { type: String, default: '' },
-  savingKey: { type: String, default: '' }
+  entries: {type: Array, default: () => []},
+  functionKeys: {type: Array, default: () => []},
+  loading: {type: Boolean, default: false},
+  error: {type: String, default: ''},
+  savingKey: {type: String, default: ''}
 })
 const emit = defineEmits(['toggle'])
 const newFunctionKey = ref('')

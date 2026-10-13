@@ -3,14 +3,19 @@ import type { Activity, Item, Gain, Page } from '../../src/activity'
 export const inventoryImage = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64')
 
 export const activity: Activity = {
-  reaction: { plays: 24, completed: 21, bestMs: 18240, bestMisses: 0, bestDate: '2026-09-18', rank: 12 },
+  reaction: { plays: 24, completed: 21, bestMs: 18240, bestMisses: 0, bestDate: '2026-09-18', rank: 12,
+    metrics: { hits: 530, misses: 9, abandoned: 1, timeouts: 2, timedCompletions: 2, totalCompletedMs: 40000 } },
   freeDraw: 'available', unavailable: [],
   games: [
-    { game: 'minesweeper', operations: 156, correct: 0, plays: 0, wins: 0 },
+    { game: 'minesweeper', operations: 156, correct: 0, plays: 5, wins: 3,
+      metrics: { operations: 156, digs: 120, mineHits: 2, flagsPlaced: 30, flagsRemoved: 6, participations: 6, plays: 5, wins: 3, losses: 2 } },
     { game: 'sound', operations: 25, correct: 20, plays: 0, wins: 0 },
-    { game: 'connect4', operations: 0, correct: 0, plays: 16, wins: 10 },
+    { game: 'connect4', operations: 0, correct: 0, plays: 16, wins: 10,
+      metrics: { moves: 150, normalWins: 8, timeoutWins: 2, losses: 4, draws: 2, moveTimeouts: 1, timeoutPlays: 3, participations: 16 } },
     { game: 'roulette', operations: 0, correct: 0, plays: 12, wins: 8 },
-    { game: 'rsp', operations: 0, correct: 0, plays: 30, wins: 15 }
+    { game: 'rsp', operations: 0, correct: 0, plays: 30, wins: 15 },
+    { game: 'fishing', operations: 0, correct: 0, plays: 20, wins: 0,
+      metrics: { plays: 20, fish: 16, junk: 1, treasure: 3, gold: 810, enchanted: 2 } }
   ],
   settings: { bilibiliUid: '12345678', reward: { enabled: true, mode: 'priority', priorities: [{ item: 'BEDWARS', value: 30 }, { item: 'SKYWARS', value: 20 }] },
     share: { url: 'https://qun.qq.com/example', invitedCount: 6, invitedBySomeone: false, createdAt: '2026-09-18T12:00:00' } }

@@ -253,7 +253,8 @@ final class C2CStreamMessage {
 
     private void putSource(Map<String, Object> request, RT rt) {
         switch (rt) {
-            case null -> { }
+            case null -> {
+            }
             case RT.Message message -> request.put("msg_id", message.id());
             case RT.Event event -> request.put("event_id", event.id());
         }

@@ -1,7 +1,6 @@
 package top.yzljc.atribot.function.command;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.*;
 import top.yzljc.atribot.chat.official.button.Button;
 import top.yzljc.atribot.chat.official.button.ButtonStyle;
@@ -11,8 +10,7 @@ import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
@@ -193,12 +191,14 @@ public class SignCommand implements CommandExecutor, Listener {
                                 "> 收集自网络，可联系删除 " + Markdown.enterCommand("/submit ", "投稿图片") + "\n" +
                                 "> 你已累计打卡**" + result.totalCount() + "**次！\n" +
                                 "> 今天已有**" + result.rank() + "**人参与了打卡！\n" +
-                                "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + " " + Markdown.link("https://www.yzljc.top/dev/sign/", "排行榜"));
+                                "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + " " + Markdown.link("https://www.yzljc.top/atribot/#sign", "排行榜"));
             }
 
             Object buttons = TC.keyboard(List.of(
-                    List.of(new Button("c1", "我也要打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                            new Button("c2", "抽MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND)))
+                    List.of(new Button("c1", "今日打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("c3", "每日钓鱼", "/fish", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("c2", "MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    )
             );
 
             if (label == 1) {

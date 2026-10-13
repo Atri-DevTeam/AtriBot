@@ -370,7 +370,6 @@ import { useBotConfig } from '../../shared/lib/botConfig.js'
 
 const { loadBotConfig } = useBotConfig()
 
-const PUBLIC_BASE = `${API_BASE}/public/official`
 
 const router = useRouter()
 
@@ -720,7 +719,6 @@ const userPermissions = computed(() => {
 })
 
 const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-const publicApi = createWebuiApi({ baseUrl: PUBLIC_BASE, onSessionExpired: logout })
 
 function logout() { return logoutWebui(API_BASE, router) }
 
@@ -752,7 +750,7 @@ async function fetchOverview() {
   error.value = ''
   try {
     const query = rangeQuery()
-    const dau = await publicApi(`/dau${query}`, { signal: request.signal })
+    const dau = await api(`/stats/overview${query}`, { signal: request.signal })
     if (!request.isCurrent()) return
     overview.value = dau
     counts.groupReceived = dau?.groupReceiveMessages ?? 0
@@ -779,7 +777,7 @@ async function fetchSeries() {
   seriesError.value = ''
   hoverIndex.value = -1
   try {
-    const result = await publicApi(`/series${seriesRangeQuery()}`, { signal: request.signal })
+    const result = await api(`/stats/series${seriesRangeQuery()}`, { signal: request.signal })
     if (!request.isCurrent()) return
     series.value = result
   } catch (e) {
@@ -804,7 +802,7 @@ async function fetchGroupStats() {
   groupLoading.value = true
   groupError.value = ''
   try {
-    const result = await publicApi(`/groups/${encodeURIComponent(value)}`, { signal: request.signal })
+    const result = await api(`/stats/groups/${encodeURIComponent(value)}`, { signal: request.signal })
     if (!request.isCurrent()) return
     groupStats.value = result
   } catch (e) {
@@ -827,7 +825,7 @@ async function fetchUserStats() {
   userLoading.value = true
   userError.value = ''
   try {
-    const result = await publicApi(`/users/${encodeURIComponent(value)}`, { signal: request.signal })
+    const result = await api(`/stats/users/${encodeURIComponent(value)}`, { signal: request.signal })
     if (!request.isCurrent()) return
     userStats.value = result
   } catch (e) {

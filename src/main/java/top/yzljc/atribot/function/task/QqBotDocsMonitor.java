@@ -7,7 +7,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
+import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
+import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
 import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;
@@ -25,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -108,12 +114,64 @@ public final class QqBotDocsMonitor implements ScheduledTask {
             Files.createDirectories(DATA_DIR);
             Files.writeString(REPORT_FILE, report, StandardCharsets.UTF_8);
 
-            PushTask.push("open_platform_doc_check", report);
+            pushReport(changes, previous, current, report);
             log.info("检测到 QQ 开放平台文档变化：新增 {}，修改 {}，删除 {}；完整报告：{}",
                     changes.added.size(), changes.modified.size(), changes.removed.size(), REPORT_FILE);
         }
         return new CheckResult(false, changes.added.size(), changes.modified.size(), changes.removed.size(), report);
     }
+
+    private static void pushReport(ChangeSet changes, Map<String, PageSnapshot> previous,
+                                   Map<String, PageSnapshot> current, String report) {
+        Markdown message;
+        try {
+            String checkedAt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                    .withZone(ZoneId.of("Asia/Shanghai")).format(Instant.now());
+            var image = PreImageGenerate.dump(OpenApi.get("bot.docs.diff"), imageRequest(changes, previous, current, checkedAt));
+            if (image.isError() || image.width() <= 0 || image.height() <= 0) {
+                throw new IOException(image.isError() ? image.errorMessage() : "文档差异图尺寸无效");
+            }
+            message = TC.md("**QQ 开放平台文档更新**\n\n"
+                    + Markdown.img(image.url(), image.width(), image.height()) + "\n\n"
+                    + "[查看文档](https://bot.q.qq.com/wiki/develop/api-v2/)");
+        } catch (Exception e) {
+            log.warn("文档差异图生成失败，本轮使用文字报告: {}", e.getMessage(), e);
+            PushTask.push("open_platform_doc_check", report);
+            return;
+        }
+        PushTask.push("open_platform_doc_check", message);
+    }
+
+    public static Map<String, Object> imageRequest(ChangeSet changes, Map<String, PageSnapshot> previous,
+                                                   Map<String, PageSnapshot> current, String checkedAt) {
+        List<Map<String, Object>> documents = new ArrayList<>();
+        for (String kind : List.of("added", "modified", "removed")) {
+            List<String> urls = switch (kind) {
+                case "added" -> changes.added;
+                case "removed" -> changes.removed;
+                default -> changes.modified;
+            };
+            for (String url : urls) {
+                PageSnapshot page = kind.equals("removed") ? previous.get(url) : current.get(url);
+                List<DiffLine> lines;
+                if (kind.equals("modified")) {
+                    lines = UnifiedDiff.visibleLines(comparisonContent(previous.get(url)), comparisonContent(page));
+                } else {
+                    String[] content = comparisonContent(page).split("\n", -1);
+                    lines = new ArrayList<>();
+                    for (int i = 0; i < content.length; i++) {
+                        lines.add(new DiffLine(kind, kind.equals("removed") ? i + 1 : 0,
+                                kind.equals("added") ? i + 1 : 0, content[i]));
+                    }
+                }
+                documents.add(Map.of("title", plainTitle(page.title), "url", url, "change", kind, "lines", lines));
+            }
+        }
+        return Map.of("checkedAt", checkedAt, "addedPages", changes.added.size(),
+                "modifiedPages", changes.modified.size(), "removedPages", changes.removed.size(), "documents", documents);
+    }
+
+    public record DiffLine(String kind, int oldLine, int newLine, String text) {}
 
     private static Map<String, PageSnapshot> crawlAllPages() throws Exception {
         return crawlAllPages(QqBotDocsMonitor::fetch);
@@ -128,8 +186,6 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     }
 
     static Map<String, PageSnapshot> crawlAllPages(PageFetcher fetcher) throws Exception {
-        // 站点地图覆盖没有导航入口的文档；每页的链接继续补充尚未进入站点地图的页面。
-        // 地图或任意正文抓取失败都会中止本轮，避免把不完整结果写成新的基线。
         Set<URI> urls = readSitemap(fetcher);
         urls.add(ROOT_URI);
         urls.add(INDEX_URI);
@@ -385,6 +441,18 @@ public final class QqBotDocsMonitor implements ScheduledTask {
     /** 简单的逐行 LCS diff；文档页规模较小，无需额外引入 diff 依赖。 */
     private static final class UnifiedDiff {
         private static String create(String before, String after) {
+            StringBuilder out = new StringBuilder();
+            for (DiffLine line : visibleLines(before, after)) {
+                out.append(switch (line.kind) {
+                    case "added" -> "现文：";
+                    case "removed" -> "原文：";
+                    default -> "  ";
+                }).append(line.text).append('\n');
+            }
+            return out.toString();
+        }
+
+        private static List<DiffLine> allLines(String before, String after) {
             String[] a = before.split("\n", -1);
             String[] b = after.split("\n", -1);
             int[][] lcs = new int[a.length + 1][b.length + 1];
@@ -394,46 +462,42 @@ public final class QqBotDocsMonitor implements ScheduledTask {
                             : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
                 }
             }
-            StringBuilder diff = new StringBuilder("--- 更新前\n+++ 更新后\n");
+            List<DiffLine> diff = new ArrayList<>();
             int i = 0, j = 0;
             while (i < a.length || j < b.length) {
                 if (i < a.length && j < b.length && a[i].equals(b[j])) {
-                    diff.append(' ').append(a[i]).append('\n');
+                    diff.add(new DiffLine("context", i + 1, j + 1, a[i]));
                     i++;
                     j++;
                 } else if (j < b.length && (i == a.length || lcs[i][j + 1] > lcs[i + 1][j])) {
-                    diff.append('+').append(b[j++]).append('\n');
+                    diff.add(new DiffLine("added", 0, j + 1, b[j++]));
                 } else {
-                    diff.append('-').append(a[i++]).append('\n');
+                    diff.add(new DiffLine("removed", i + 1, 0, a[i++]));
                 }
             }
-            return compact(diff.toString(), 2);
+            return diff;
         }
 
-        private static String compact(String raw, int context) {
-            String[] lines = raw.split("\n", -1);
-            StringBuilder out = new StringBuilder();
-            boolean[] keep = new boolean[lines.length];
-            keep[0] = keep[1] = true;
-            for (int i = 2; i < lines.length; i++) {
-                if (lines[i].startsWith("+") || lines[i].startsWith("-")) {
-                    for (int j = Math.max(2, i - context); j <= Math.min(lines.length - 1, i + context); j++) keep[j] = true;
+        private static List<DiffLine> visibleLines(String before, String after) {
+            List<DiffLine> lines = allLines(before, after);
+            boolean[] keep = new boolean[lines.size()];
+            for (int i = 0; i < lines.size(); i++) {
+                if (!lines.get(i).kind.equals("context")) {
+                    for (int j = Math.max(0, i - 2); j <= Math.min(lines.size() - 1, i + 2); j++) keep[j] = true;
                 }
             }
+            List<DiffLine> result = new ArrayList<>();
             boolean gap = false;
-            for (int i = 2; i < lines.length; i++) {
+            for (int i = 0; i < lines.size(); i++) {
                 if (keep[i]) {
-                    if (gap && !out.isEmpty()) out.append("  ……\n");
-                    if (lines[i].startsWith("-")) out.append("原文：").append(lines[i].substring(1));
-                    else if (lines[i].startsWith("+")) out.append("现文：").append(lines[i].substring(1));
-                    else out.append("  ").append(lines[i].stripLeading());
-                    out.append('\n');
+                    if (gap && !result.isEmpty()) result.add(new DiffLine("gap", 0, 0, "……"));
+                    result.add(lines.get(i));
                     gap = false;
-                } else if (!lines[i].isEmpty()) {
+                } else {
                     gap = true;
                 }
             }
-            return out.toString();
+            return result;
         }
     }
 }

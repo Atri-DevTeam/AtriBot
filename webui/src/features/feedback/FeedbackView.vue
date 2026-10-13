@@ -66,7 +66,8 @@
                   </div>
                 </div>
                 <div class="feedback-card-actions">
-                  <button class="primary-button feedback-action" :disabled="isNapcatFeedback(fb)" @click="openReply(fb)">
+                  <button class="primary-button feedback-action" :disabled="isNapcatFeedback(fb)"
+                          @click="openReply(fb)">
                     {{ isNapcatFeedback(fb) ? 'NapCat 回复已停用' : (fb.replyContent ? '重新回复' : '回复') }}
                   </button>
                 </div>
@@ -125,17 +126,17 @@
 </template>
 
 <script setup>
-import { useLatestRequest } from '../../shared/lib/latestRequest.js'
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {useLatestRequest} from '../../shared/lib/latestRequest.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime} from '../../shared/lib/time.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const quickReplies = [
   "已完成审核。",
@@ -172,18 +173,20 @@ const currentFilterName = computed(() => {
 })
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 const fetchCountsRequests = useLatestRequest()
+
 async function fetchCounts() {
   const request = fetchCountsRequests.begin()
   if (!request.isCurrent()) return
   loadingCounts.value = true
   try {
-    const data = await api('/feedback/count', { signal: request.signal })
+    const data = await api('/feedback/count', {signal: request.signal})
     if (!request.isCurrent()) return
     counts.unreplied = data.unreplied
     counts.replied = data.replied
@@ -199,13 +202,14 @@ async function fetchCounts() {
 }
 
 const fetchListRequests = useLatestRequest()
+
 async function fetchList() {
   const request = fetchListRequests.begin()
   if (!request.isCurrent()) return
   loading.value = true
   error.value = ''
   try {
-    const data = await api(`/feedback/list?page=${page.value}&pageSize=${pageSize}&filter=${filter.value}`, { signal: request.signal })
+    const data = await api(`/feedback/list?page=${page.value}&pageSize=${pageSize}&filter=${filter.value}`, {signal: request.signal})
     if (!request.isCurrent()) return
     items.value = data.items
     total.value = data.total

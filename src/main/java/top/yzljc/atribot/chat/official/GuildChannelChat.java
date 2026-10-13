@@ -43,8 +43,8 @@ public final class GuildChannelChat {
      * 发送频道文字子频道 Embed 被动消息
      *
      * @param channelId 私聊状态下获取到的频道 ID
-     * @param rt      消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param embed   Embed 消息
+     * @param rt        消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param embed     Embed 消息
      * @return 消息 ID，发送失败返回 null
      */
     public static String replyMessage(String channelId, RT rt, Embed embed) {
@@ -59,7 +59,7 @@ public final class GuildChannelChat {
      * 同步删除频道帖子，等待异步任务返回结果
      *
      * @param channelId 子频道板块 ID
-     * @param threadId 帖子 ID，不是发表帖子返回的任务 ID
+     * @param threadId  帖子 ID，不是发表帖子返回的任务 ID
      * @return 平台返回成功状态时返回 true，请求失败或等待中断时返回 false
      */
     public static boolean deleteThread(String channelId, String threadId) {

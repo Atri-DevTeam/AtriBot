@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.time.Instant;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * 金粒增加来源记录表数据库访问层
@@ -60,19 +62,31 @@ public class CoinGainLogRepository {
      */
     public static boolean recordCoinGain(String userId, String way, int amount) {
         if (amount <= 0) return false;
-        String safeWay = way == null || way.isBlank() ? DEFAULT_WAY : way;
-        String sql = "INSERT INTO `user_coin_gain_logs` (`user_id`, `timestamp`, `way`, `amount`) VALUES (?, ?, ?, ?)";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, userId);
-            ps.setLong(2, Instant.now().getEpochSecond());
-            ps.setString(3, safeWay);
-            ps.setInt(4, amount);
-            ps.executeUpdate();
+        try (var con = DatabaseManager.getConnection()) {
+            recordCoinGain(con, userId, way, amount);
             return true;
         } catch (Exception e) {
-            log.error("记录金粒来源失败: userId={}, way={}, amount={}", userId, safeWay, amount, e);
+            log.error("记录金粒来源失败: userId={}, way={}, amount={}", userId, way, amount, e);
             return false;
+        }
+    }
+
+    /**
+     * @param con 调用方事务连接，本方法不提交事务
+     * @param userId 用户标识
+     * @param way 金粒来源
+     * @param amount 增加数量，必须大于零
+     * @throws SQLException 日志写入失败
+     */
+    static void recordCoinGain(Connection con, String userId, String way, int amount) throws SQLException {
+        if (amount <= 0) throw new IllegalArgumentException("金粒数量必须大于零");
+        String sql = "INSERT INTO `user_coin_gain_logs` (`user_id`, `timestamp`, `way`, `amount`) VALUES (?, ?, ?, ?)";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            ps.setLong(2, Instant.now().getEpochSecond());
+            ps.setString(3, way == null || way.isBlank() ? DEFAULT_WAY : way);
+            ps.setInt(4, amount);
+            ps.executeUpdate();
         }
     }
 

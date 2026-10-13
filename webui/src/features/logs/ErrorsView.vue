@@ -54,11 +54,11 @@
           <!-- 查询条 -->
           <div class="errors-search">
             <input
-              v-model="searchInput"
-              class="errors-search-input"
-              type="text"
-              placeholder="输入关键字搜索类名 / 异常类型 / 错误信息 / traceId"
-              @keyup.enter="doSearch"
+                v-model="searchInput"
+                class="errors-search-input"
+                type="text"
+                placeholder="输入关键字搜索类名 / 异常类型 / 错误信息 / traceId"
+                @keyup.enter="doSearch"
             />
             <select v-model="exceptionType" class="errors-type-select" @change="applyFilters">
               <option value="">全部异常类型</option>
@@ -163,21 +163,25 @@
 
               <div class="errors-list">
                 <article
-                  v-for="err in items"
-                  :key="err.traceId"
-                  class="errors-grid errors-row"
-                  @click="openDetail(err.traceId)"
+                    v-for="err in items"
+                    :key="err.traceId"
+                    class="errors-grid errors-row"
+                    @click="openDetail(err.traceId)"
                 >
                   <span class="errors-col-type">
                     <span class="errors-type" :title="err.exceptionType">{{ badgeType(err.exceptionType) }}</span>
                   </span>
-                  <span class="errors-col-class errors-mono" :title="err.className">{{ shortClass(err.className) }}</span>
+                  <span class="errors-col-class errors-mono" :title="err.className">{{
+                      shortClass(err.className)
+                    }}</span>
                   <span class="errors-col-message" :title="rowMessageTitle(err)">
                     {{ err.exceptionMessage || '(无错误信息)' }}
                     <i v-if="err.causeType" class="errors-row-cause">⤷ {{ shortType(err.causeType) }}</i>
                   </span>
                   <span class="errors-col-trace errors-mono" :title="err.traceId">{{ shortTrace(err.traceId) }}</span>
-                  <span class="errors-col-time" :title="formatTime(err.createTime)">{{ relativeTime(err.createTime) }}</span>
+                  <span class="errors-col-time" :title="formatTime(err.createTime)">{{
+                      relativeTime(err.createTime)
+                    }}</span>
                 </article>
               </div>
             </div>
@@ -196,17 +200,17 @@
 </template>
 
 <script setup>
-import { useLatestRequest } from '../../shared/lib/latestRequest.js'
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {useLatestRequest} from '../../shared/lib/latestRequest.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime, relativeTime} from '../../shared/lib/time.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const TRACE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -236,21 +240,23 @@ const topTypes = ref([])
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 function isTraceId(value) {
   return TRACE_ID_RE.test(String(value || '').trim())
 }
 
 const fetchStatsRequests = useLatestRequest()
+
 async function fetchStats() {
   const request = fetchStatsRequests.begin()
   if (!request.isCurrent()) return
   try {
-    const data = await api('/errors/stats', { signal: request.signal })
+    const data = await api('/errors/stats', {signal: request.signal})
     if (!request.isCurrent()) return
     stats.total = data.total || 0
     stats.last24h = data.last24h || 0
@@ -264,6 +270,7 @@ async function fetchStats() {
 }
 
 const fetchListRequests = useLatestRequest()
+
 async function fetchList() {
   const request = fetchListRequests.begin()
   if (!request.isCurrent()) return
@@ -275,7 +282,7 @@ async function fetchList() {
     params.set('pageSize', String(pageSize))
     if (keyword.value) params.set('keyword', keyword.value)
     if (exceptionType.value) params.set('exceptionType', exceptionType.value)
-    const data = await api(`/errors/list?${params.toString()}`, { signal: request.signal })
+    const data = await api(`/errors/list?${params.toString()}`, {signal: request.signal})
     if (!request.isCurrent()) return
     items.value = data.items || []
     total.value = data.total || 0
@@ -292,6 +299,7 @@ async function fetchList() {
 }
 
 const fetchDetailRequests = useLatestRequest()
+
 async function fetchDetail(traceId) {
   const request = fetchDetailRequests.begin()
   if (!request.isCurrent()) return
@@ -301,7 +309,7 @@ async function fetchDetail(traceId) {
   detailError.value = ''
   copied.value = false
   try {
-    const result = await api(`/errors/${encodeURIComponent(traceId)}`, { signal: request.signal })
+    const result = await api(`/errors/${encodeURIComponent(traceId)}`, {signal: request.signal})
     if (!request.isCurrent()) return
     detail.value = result
   } catch (e) {

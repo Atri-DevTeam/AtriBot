@@ -81,6 +81,17 @@ public final class JoinWelcomeController {
             ctx.status(400).json(Result.fail(400, "请先在机器人设置中配置 QQ 调试群 OpenId（qq.debug-group-openId）"));
             return;
         }
+        sendTest(ctx, config, debugGroupId.trim(), "调试群", "debugGroupId");
+    }
+
+    public static void sendToGroup(Context ctx) {
+        String groupId = ctx.pathParam("groupOpenId");
+        ObjectNode config = readConfig(ctx);
+        if (config == null) return;
+        sendTest(ctx, config, groupId, "当前群", "groupOpenId");
+    }
+
+    private static void sendTest(Context ctx, ObjectNode config, String groupId, String targetName, String targetKey) {
         long now = System.currentTimeMillis();
         long next = NEXT_TEST_AT.get();
         if (now < next || !NEXT_TEST_AT.compareAndSet(next, now + 3000)) {
@@ -89,17 +100,17 @@ public final class JoinWelcomeController {
         }
         try {
             String text = "@新成员（测试占位） " + config.path("text").asText("");
-            String messageId = GroupChat.sendMessage(debugGroupId.trim(), TC.md(text), GroupJoinWelcome.buildWelcomeKeyboard(config));
+            String messageId = GroupChat.sendMessage(groupId, TC.md(text), GroupJoinWelcome.buildWelcomeKeyboard(config));
             if (messageId == null || messageId.isBlank()) {
-                ctx.status(502).json(Result.fail(502, "调试群发送失败：官方接口未返回消息 ID，请检查发送日志和主动消息权限"));
+                ctx.status(502).json(Result.fail(502, targetName + "发送失败：官方接口未返回消息 ID，请检查发送日志和主动消息权限"));
                 return;
             }
-            ctx.json(Result.success(Map.of("messageId", messageId, "debugGroupId", debugGroupId.trim())));
+            ctx.json(Result.success(Map.of("messageId", messageId, targetKey, groupId)));
         } catch (QQMessageSendException e) {
-            ctx.status(502).json(Result.fail(502, "调试群发送失败：" + e.getMessage()));
+            ctx.status(502).json(Result.fail(502, targetName + "发送失败：" + e.getMessage()));
         } catch (Exception e) {
-            log.error("发送入群欢迎测试到调试群失败", e);
-            ctx.status(502).json(Result.fail(502, "调试群发送失败，请检查发送日志和主动消息权限"));
+            log.error("发送入群欢迎测试失败: groupId={}", groupId, e);
+            ctx.status(502).json(Result.fail(502, targetName + "发送失败，请检查发送日志和主动消息权限"));
         }
     }
 

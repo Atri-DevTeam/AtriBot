@@ -24,6 +24,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 游戏与收藏的只读视图；只返回当前会话用户的记录。
@@ -43,10 +45,11 @@ public final class MiniappActivityService {
     private final Object freeDrawLock;
     private final UserGameDataRepository gameData;
 
-    public record Reaction(long plays, long completed, Long bestMs, Integer bestMisses, String bestDate, Integer rank) {
+    public record Reaction(long plays, long completed, Long bestMs, Integer bestMisses, String bestDate, Integer rank,
+                           Map<String, Long> metrics) {
     }
 
-    public record GameStats(String game, long operations, long correct, long plays, long wins) {
+    public record GameStats(String game, long operations, long correct, long plays, long wins, Map<String, Long> metrics) {
     }
 
     public record Activity(Reaction reaction, String freeDraw, List<GameStats> games, MiniappUserSettings settings,
@@ -109,7 +112,8 @@ public final class MiniappActivityService {
                     JsonNode node = root.get(game.name());
                     if (node == null) continue;
                     if (!node.isObject()) throw new IOException("Invalid game data");
-                    records.add(new GameStats(game.name(), number(node, "operations"), number(node, "correct"), number(node, "plays"), number(node, "wins")));
+                    records.add(new GameStats(game.name(), number(node, "operations"), number(node, "correct"),
+                            number(node, "plays"), number(node, "wins"), metrics(node, game.name())));
                 }
                 games = List.copyOf(records);
             } catch (IOException e) {
@@ -176,7 +180,13 @@ public final class MiniappActivityService {
         if (misses > Integer.MAX_VALUE) throw new IOException("Invalid bestMisses");
         return new Reaction(plays, completed, best > 0 ? best : null,
                 best > 0 ? (int) misses : null,
-                best > 0 ? user.path("bestDate").asText("") : null, best > 0 ? rank : null);
+                best > 0 ? user.path("bestDate").asText("") : null, best > 0 ? rank : null, metrics(user, "reaction"));
+    }
+
+    private static Map<String, Long> metrics(JsonNode node, String game) throws IOException {
+        var metrics = new LinkedHashMap<String, Long>();
+        for (String field : UserGameDataRepository.counterFields(game)) metrics.put(field, number(node, field));
+        return Map.copyOf(metrics);
     }
 
     private String freeDraw(String userId) throws IOException {

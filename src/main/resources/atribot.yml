@@ -139,6 +139,10 @@ commands:
     usage: /提醒 <时间或周期> 或 /提醒列表 [页码]
     aliases: [提醒, reminder, reminder-list, 提醒列表]
     prefixless-aliases: [提醒, 提醒列表]
+  bg:
+    description: 提交个人背景图片审核
+    usage: /bg [图片] 或 /bg clear
+    aliases: [背景]
   submit:
     description: 投稿图片到图源
     usage: /submit [图片]
@@ -238,6 +242,12 @@ commands:
     description: 检查Hypixel最新公告
   check-hyp-skyblock:
     description: 检查Hypixel SkyBlock最新公告
+  fish:
+    description: 每日钓鱼并兑换金粒
+    usage: /fish
+    aliases:
+      - 今日钓鱼
+    prefixless-aliases: [今日钓鱼]
   games:
     aliases:
       - 游戏

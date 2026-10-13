@@ -1,266 +1,266 @@
 .napcat-layout {
-  grid-template-columns: 360px minmax(0, 1fr) 280px;
+    grid-template-columns: 360px minmax(0, 1fr) 280px;
 }
 
 .napcat-panel {
-  min-width: 0;
+    min-width: 0;
 }
 
 .napcat-panel-body {
-  display: grid;
-  gap: 12px;
-  min-height: 0;
-  padding: 14px;
-  overflow: auto;
+    display: grid;
+    gap: 12px;
+    min-height: 0;
+    padding: 14px;
+    overflow: auto;
 }
 
 .napcat-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
 }
 
 .napcat-head-btn {
-  min-height: 30px;
-  padding: 0 10px;
-  font-size: 12px;
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
 }
 
 .napcat-group-select label {
-  display: grid;
-  gap: 6px;
-  color: var(--color-text-muted);
-  font-size: 12px;
+    display: grid;
+    gap: 6px;
+    color: var(--color-text-muted);
+    font-size: 12px;
 }
 
 .napcat-group-select select {
-  width: 100%;
-  min-width: 0;
-  padding: 7px 9px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  background: #ffffff;
-  outline: none;
+    width: 100%;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    background: #ffffff;
+    outline: none;
 }
 
 .napcat-feature-list {
-  display: grid;
-  gap: 6px;
+    display: grid;
+    gap: 6px;
 }
 
 .napcat-feature-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  background: #ffffff;
-  text-align: left;
-  cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    background: #ffffff;
+    text-align: left;
+    cursor: pointer;
 }
 
 .napcat-feature-row:hover {
-  border-color: var(--color-sidebar-active-text);
-  background: var(--color-surface-alt);
+    border-color: var(--color-sidebar-active-text);
+    background: var(--color-surface-alt);
 }
 
 .napcat-feature-row.enabled {
-  border-color: #b7e4dc;
-  background: var(--color-accent-soft);
+    border-color: #b7e4dc;
+    background: var(--color-accent-soft);
 }
 
 .napcat-feature-row span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .napcat-switch {
-  position: relative;
-  width: 34px;
-  height: 18px;
-  border-radius: var(--radius-pill);
-  background: var(--color-sidebar-text);
-  transition: background 0.15s;
+    position: relative;
+    width: 34px;
+    height: 18px;
+    border-radius: var(--radius-pill);
+    background: var(--color-sidebar-text);
+    transition: background 0.15s;
 }
 
 .napcat-switch span {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-circle);
-  background: #ffffff;
-  transition: transform 0.15s;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-circle);
+    background: #ffffff;
+    transition: transform 0.15s;
 }
 
 .napcat-switch.on {
-  background: var(--color-accent);
+    background: var(--color-accent);
 }
 
 .napcat-switch.on span {
-  transform: translateX(16px);
+    transform: translateX(16px);
 }
 
 .napcat-messages {
-  align-content: start;
+    align-content: start;
 }
 
 .napcat-message-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
 }
 
 .napcat-message-toolbar label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text);
-  font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text);
+    font-size: 12px;
 }
 
 .napcat-pager {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .napcat-pager .pager-arrow.active {
-  color: #ffffff;
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+    color: #ffffff;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 .napcat-message-list {
-  display: grid;
-  gap: 8px;
+    display: grid;
+    gap: 8px;
 }
 
 .napcat-message {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: start;
-  padding: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: #ffffff;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
 }
 
 .napcat-message.recalled {
-  color: var(--color-text-subtle);
-  background: var(--color-surface-sunken);
+    color: var(--color-text-subtle);
+    background: var(--color-surface-sunken);
 }
 
 .napcat-message-check {
-  padding-top: 3px;
+    padding-top: 3px;
 }
 
 .napcat-message-main {
-  min-width: 0;
+    min-width: 0;
 }
 
 .napcat-message-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .napcat-message-head strong {
-  min-width: 0;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-strong);
-  font-size: 13px;
+    min-width: 0;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-strong);
+    font-size: 13px;
 }
 
 .napcat-message-head time {
-  margin-left: auto;
-  color: var(--color-text-subtle);
-  font-size: 11px;
+    margin-left: auto;
+    color: var(--color-text-subtle);
+    font-size: 11px;
 }
 
 .napcat-message p {
-  margin: 0;
-  color: var(--color-text);
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .napcat-message.recalled p {
-  color: var(--color-text-subtle);
-  text-decoration: line-through;
+    color: var(--color-text-subtle);
+    text-decoration: line-through;
 }
 
 .napcat-recall-btn {
-  min-height: 28px;
-  padding: 0 10px;
-  color: var(--color-danger);
-  font-size: 12px;
+    min-height: 28px;
+    padding: 0 10px;
+    color: var(--color-danger);
+    font-size: 12px;
 }
 
 .napcat-recalled-text {
-  color: var(--color-text-subtle);
-  font-size: 12px;
+    color: var(--color-text-subtle);
+    font-size: 12px;
 }
 
 .napcat-log {
-  min-width: 0;
+    min-width: 0;
 }
 
 .napcat-log dl {
-  margin-top: 14px;
+    margin-top: 14px;
 }
 
 @media (max-width: 980px) {
-  .napcat-layout {
-    grid-template-columns: 1fr;
-  }
+    .napcat-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
-  .napcat-panel-body {
-    padding: 10px;
-  }
+    .napcat-panel-body {
+        padding: 10px;
+    }
 
-  .napcat-head-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
+    .napcat-head-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
 
-  .napcat-message-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+    .napcat-message-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 
-  .napcat-message {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
+    .napcat-message {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
 
-  .napcat-recall-btn,
-  .napcat-recalled-text {
-    grid-column: 2;
-    justify-self: start;
-  }
+    .napcat-recall-btn,
+    .napcat-recalled-text {
+        grid-column: 2;
+        justify-self: start;
+    }
 }

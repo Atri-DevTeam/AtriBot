@@ -22,7 +22,9 @@ body {
     line-height: normal;
 }
 
-*:focus { outline: none; }
+*:focus {
+    outline: none;
+}
 
 *:focus-visible {
     outline: 2px solid var(--color-accent);
@@ -35,14 +37,23 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(150, 158, 172, 0.5) transparent;
 }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: transparent; }
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 *::-webkit-scrollbar-thumb {
     background: rgba(150, 158, 172, 0.45);
     border: 3px solid transparent;
     background-clip: content-box;
     border-radius: var(--radius-pill);
 }
+
 *::-webkit-scrollbar-thumb:hover {
     background: rgba(110, 120, 136, 0.65);
     background-clip: content-box;
@@ -145,8 +156,14 @@ body {
     box-shadow: none;
 }
 
-:where(.shell:not(.legacy-chat)) .primary-button:hover:not(:disabled) { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
-:where(.shell:not(.legacy-chat)) .primary-button:active:not(:disabled) { background: var(--color-accent-active); }
+:where(.shell:not(.legacy-chat)) .primary-button:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+}
+
+:where(.shell:not(.legacy-chat)) .primary-button:active:not(:disabled) {
+    background: var(--color-accent-active);
+}
 
 :where(.shell:not(.legacy-chat)) .workspace .ghost-button,
 :where(.shell:not(.legacy-chat)) .workspace .icon-button {
@@ -173,10 +190,12 @@ body {
     color: var(--color-danger);
     border-color: var(--color-border);
 }
+
 :where(.shell:not(.legacy-chat)) .ghost-button.danger:hover:not(:disabled) {
     background: var(--color-danger-soft);
     border-color: var(--color-danger);
 }
+
 :where(.shell:not(.legacy-chat)) .primary-button.danger {
     color: #ffffff;
     background: var(--color-danger);

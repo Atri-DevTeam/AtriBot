@@ -22,7 +22,7 @@ import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
@@ -86,7 +86,7 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
     }
 
     private void check(CommandSender sender) {
-        var d = HttpService.sendGetRequest(ResourcesProperties.SKB_VERSION_CHECK);
+        var d = HttpService.sendGetRequest(RS.get("request.hypixel.resource-packs"));
         if (d == null || d.isEmpty() || d.path("packs").isMissingNode()) {
             log.error("获取Hypixel Skyblock资源包信息失败");
             if (sender != null) sender.sendMessage("获取 Hypixel Skyblock 资源包信息失败，请稍后重试。");

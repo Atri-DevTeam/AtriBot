@@ -9,8 +9,11 @@
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <h2>调试</h2>
@@ -29,7 +32,7 @@
                 <span class="debug-method-caret" aria-hidden="true">▾</span>
               </div>
               <input class="debug-path" v-model="path" spellcheck="false"
-                     placeholder="/v2/groups/{group_openid}/messages" />
+                     placeholder="/v2/groups/{group_openid}/messages"/>
               <button class="debug-send-btn" type="submit" :disabled="loading || !path.trim()">
                 {{ loading ? '请求中' : '发送' }}
               </button>
@@ -51,15 +54,15 @@
             <div class="debug-template-line">
               <label class="debug-template-field">
                 <span>{group_openid}</span>
-                <input v-model="templateGroupOpenId" spellcheck="false" placeholder="qq.debug-group-openId" />
+                <input v-model="templateGroupOpenId" spellcheck="false" placeholder="qq.debug-group-openId"/>
               </label>
               <label class="debug-template-field">
                 <span>{user_openid}</span>
-                <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id" />
+                <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id"/>
               </label>
               <label v-for="name in additionalTemplateNames" :key="name" class="debug-template-field">
                 <span>{{ '{' + name + '}' }}</span>
-                <input v-model="templateValues[name]" spellcheck="false" :placeholder="`填写 ${name}`" />
+                <input v-model="templateValues[name]" spellcheck="false" :placeholder="`填写 ${name}`"/>
               </label>
             </div>
 
@@ -99,11 +102,12 @@
                   </div>
                   <div v-for="(row, index) in queryParams" :key="index" class="debug-param-row">
                     <input type="checkbox" v-model="row.enabled" :aria-label="'启用 ' + (row.key || '参数')"
-                           @change="applyParamsToPath" />
-                    <input v-model="row.key" spellcheck="false" placeholder="key" @input="applyParamsToPath" />
-                    <input v-model="row.value" spellcheck="false" placeholder="value" @input="applyParamsToPath" />
+                           @change="applyParamsToPath"/>
+                    <input v-model="row.key" spellcheck="false" placeholder="key" @input="applyParamsToPath"/>
+                    <input v-model="row.value" spellcheck="false" placeholder="value" @input="applyParamsToPath"/>
                     <button type="button" class="debug-param-del" title="删除该参数"
-                            @click="removeParamRow(index)">×</button>
+                            @click="removeParamRow(index)">×
+                    </button>
                   </div>
                 </template>
               </div>
@@ -143,7 +147,8 @@
             </button>
             <div class="debug-tab-actions">
               <button type="button" class="debug-ghost-btn" :class="{ active: wrapResponse }"
-                      @click="wrapResponse = !wrapResponse">自动换行</button>
+                      @click="wrapResponse = !wrapResponse">自动换行
+              </button>
               <button type="button" class="debug-ghost-btn" @click="copyResponse">
                 {{ copied ? '已复制' : '复制' }}
               </button>
@@ -161,35 +166,40 @@
                 </span>
                 <span class="debug-final-url" :title="result.url">{{ result.url }}</span>
               </div>
-              <pre v-show="responseTab === 'body'" class="debug-output" :class="{ nowrap: !wrapResponse }">{{ responseText }}</pre>
-              <pre v-show="responseTab === 'headers'" class="debug-output" :class="{ nowrap: !wrapResponse }">{{ formatJson(result.headers) }}</pre>
+              <pre v-show="responseTab === 'body'" class="debug-output"
+                   :class="{ nowrap: !wrapResponse }">{{ responseText }}</pre>
+              <pre v-show="responseTab === 'headers'" class="debug-output"
+                   :class="{ nowrap: !wrapResponse }">{{ formatJson(result.headers) }}</pre>
             </template>
           </div>
         </section>
       </section>
 
       <div v-if="expandedEditor" class="debug-modal-backdrop" @click.self="closeEditor">
-        <section class="debug-modal" role="dialog" aria-modal="true" :aria-label="expandedEditor === 'headers' ? 'Headers 编辑器' : 'Body 编辑器'">
+        <section class="debug-modal" role="dialog" aria-modal="true"
+                 :aria-label="expandedEditor === 'headers' ? 'Headers 编辑器' : 'Body 编辑器'">
           <div class="debug-modal-head">
             <strong>{{ expandedEditor === 'headers' ? 'Headers' : 'Body' }}</strong>
             <div class="debug-modal-actions">
-              <button v-if="expandedEditor === 'body'" type="button" class="debug-format-btn" @click="formatBodyJson">格式化</button>
+              <button v-if="expandedEditor === 'body'" type="button" class="debug-format-btn" @click="formatBodyJson">
+                格式化
+              </button>
               <button type="button" class="debug-format-btn" @click="closeEditor">关闭</button>
             </div>
           </div>
           <textarea
-            v-if="expandedEditor === 'headers'"
-            v-model="headers"
-            class="debug-modal-textarea"
-            spellcheck="false"
-            placeholder="X-Union-Appid: ..."
+              v-if="expandedEditor === 'headers'"
+              v-model="headers"
+              class="debug-modal-textarea"
+              spellcheck="false"
+              placeholder="X-Union-Appid: ..."
           ></textarea>
           <textarea
-            v-else
-            v-model="body"
-            class="debug-modal-textarea"
-            spellcheck="false"
-            placeholder="{&#10;  &quot;content&quot;: &quot;hello&quot;&#10;}"
+              v-else
+              v-model="body"
+              class="debug-modal-textarea"
+              spellcheck="false"
+              placeholder="{&#10;  &quot;content&quot;: &quot;hello&quot;&#10;}"
           ></textarea>
         </section>
       </div>
@@ -198,16 +208,16 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { API_BASE, LEGACY_TOKEN_KEY } from '../../router.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
+import {computed, nextTick, onMounted, ref, watch} from 'vue'
+import {API_BASE, LEGACY_TOKEN_KEY} from '../../router.js'
 import router from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
-import { officialApiPresets } from './data/officialApiPresets.js'
+import {officialApiPresets} from './data/officialApiPresets.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
 const sampleKeyboard = {
@@ -593,8 +603,8 @@ const messageExamples = [
 const debugPresets = [
   ...officialApiPresets,
   ...messageExamples
-    .filter(example => !officialApiPresets.some(item => item.key === example.key))
-    .map(example => ({ ...example, category: '消息进阶样例' }))
+      .filter(example => !officialApiPresets.some(item => item.key === example.key))
+      .map(example => ({...example, category: '消息进阶样例'}))
 ]
 
 const sidebarOpen = ref(false)
@@ -623,14 +633,14 @@ const groupedPresets = computed(() => {
     if (!groups.has(category)) groups.set(category, [])
     groups.get(category).push(preset)
   }
-  return [...groups].map(([category, items]) => ({ category, items }))
+  return [...groups].map(([category, items]) => ({category, items}))
 })
 
 const additionalTemplateNames = computed(() => {
   const text = path.value
   return [...text.matchAll(/\{([a-z][a-z0-9_]*)\}/gi)]
-    .map(match => match[1])
-    .filter((name, index, names) => !['group_openid', 'user_openid'].includes(name) && names.indexOf(name) === index)
+      .map(match => match[1])
+      .filter((name, index, names) => !['group_openid', 'user_openid'].includes(name) && names.indexOf(name) === index)
 })
 
 const responseText = computed(() => {
@@ -647,14 +657,14 @@ const headerCount = computed(() => Object.keys(parseHeaders(headers.value)).leng
 const activeParamCount = computed(() => queryParams.value.filter(r => r.enabled && r.key.trim()).length)
 
 const requestTabs = computed(() => [
-  { key: 'params', label: 'Params', count: activeParamCount.value },
-  { key: 'headers', label: 'Headers', count: headerCount.value },
-  { key: 'body', label: 'Body', dot: body.value.trim().length > 0 },
+  {key: 'params', label: 'Params', count: activeParamCount.value},
+  {key: 'headers', label: 'Headers', count: headerCount.value},
+  {key: 'body', label: 'Body', dot: body.value.trim().length > 0},
 ])
 
 const responseTabs = computed(() => [
-  { key: 'body', label: 'Body' },
-  { key: 'headers', label: 'Headers', count: Object.keys(result.value?.headers || {}).length },
+  {key: 'body', label: 'Body'},
+  {key: 'headers', label: 'Headers', count: Object.keys(result.value?.headers || {}).length},
 ])
 
 const responseSize = computed(() => {
@@ -684,7 +694,7 @@ function parseParamsFromPath() {
     const eq = segment.indexOf('=')
     const key = eq < 0 ? segment : segment.slice(0, eq)
     const value = eq < 0 ? '' : segment.slice(eq + 1)
-    rows.push({ enabled: true, key: safeDecode(key), value: safeDecode(value) })
+    rows.push({enabled: true, key: safeDecode(key), value: safeDecode(value)})
   }
   // 被取消勾选的行不在 path 里，重新解析时要手动带回来，否则一取消勾选行就消失了
   const disabled = queryParams.value.filter(row => !row.enabled)
@@ -695,16 +705,18 @@ function applyParamsToPath() {
   const index = path.value.indexOf('?')
   const base = index >= 0 ? path.value.slice(0, index) : path.value
   const query = queryParams.value
-    .filter(row => row.enabled && row.key.trim())
-    .map(row => `${encodeURIComponent(row.key.trim())}=${encodeURIComponent(row.value)}`)
-    .join('&')
+      .filter(row => row.enabled && row.key.trim())
+      .map(row => `${encodeURIComponent(row.key.trim())}=${encodeURIComponent(row.value)}`)
+      .join('&')
   syncingPath = true
   path.value = query ? `${base}?${query}` : base
-  nextTick(() => { syncingPath = false })
+  nextTick(() => {
+    syncingPath = false
+  })
 }
 
 function addParamRow() {
-  queryParams.value.push({ enabled: true, key: '', value: '' })
+  queryParams.value.push({enabled: true, key: '', value: ''})
 }
 
 function removeParamRow(index) {
@@ -753,12 +765,14 @@ async function copyResponse() {
     document.body.removeChild(area)
   }
   copied.value = true
-  setTimeout(() => { copied.value = false }, 1200)
+  setTimeout(() => {
+    copied.value = false
+  }, 1200)
 }
 
 onMounted(loadConfig)
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
 async function loadConfig() {
   try {
@@ -766,7 +780,8 @@ async function loadConfig() {
 
     templateGroupOpenId.value = normalizeTemplateValue(data.debugGroupId || data.debugGroupOpenId)
     templateUserOpenId.value = normalizeTemplateValue(data.superAdminId || data.superAdminOpenId)
-  } catch { /* ignore */ }
+  } catch { /* ignore */
+  }
 }
 
 async function sendRequest() {
@@ -805,8 +820,8 @@ function normalizeTemplateValue(value) {
 
 function applyTemplateVariables(value) {
   let resolved = String(value || '')
-    .replace(/\{group_openid\}/g, templateGroupOpenId.value.trim())
-    .replace(/\{user_openid\}/g, templateUserOpenId.value.trim())
+      .replace(/\{group_openid\}/g, templateGroupOpenId.value.trim())
+      .replace(/\{user_openid\}/g, templateUserOpenId.value.trim())
   for (const name of additionalTemplateNames.value) {
     resolved = resolved.replaceAll(`{${name}}`, String(templateValues.value[name] || '').trim())
   }
@@ -890,5 +905,7 @@ function resetRequest() {
   result.value = null
 }
 
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 </script>

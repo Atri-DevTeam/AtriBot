@@ -69,23 +69,44 @@
                 </div>
                 <div class="feedback-card-actions">
                   <button class="ghost-button gs-mini-btn" @click="openEdit(s)">
-                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
                     <span class="gs-act-label">编辑</span>
                   </button>
                   <button class="ghost-button gs-mini-btn" @click="openGroups(s)">
-                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
                     <span class="gs-act-label">关联群</span>
                   </button>
                   <button class="ghost-button gs-mini-btn" @click="openWhitelist(s)">
-                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 11l3 3L22 4"/>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
                     <span class="gs-act-label">白名单</span>
                   </button>
                   <button class="ghost-button gs-mini-btn" @click="execStrategy(s)">
-                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
                     <span class="gs-act-label">执行扫描</span>
                   </button>
                   <button class="ghost-button danger gs-mini-btn" @click="removeStrategy(s)">
-                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <svg class="gs-act-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
                     <span class="gs-act-label">删除</span>
                   </button>
                 </div>
@@ -101,7 +122,10 @@
             <div class="chat-head-right">
               <select v-model="reqGroupOpenId" class="gs-group-select" @change="loadJoinRequests(true)">
                 <option value="">选择群...</option>
-                <option v-for="g in groups" :key="g.groupOpenId" :value="g.groupOpenId">{{ g.groupName || g.groupOpenId }}</option>
+                <option v-for="g in groups" :key="g.groupOpenId" :value="g.groupOpenId">{{
+                    g.groupName || g.groupOpenId
+                  }}
+                </option>
               </select>
               <button class="ghost-button" :disabled="!reqGroupOpenId || loadingReqs" @click="loadJoinRequests(true)">
                 {{ loadingReqs ? '加载中...' : '刷新' }}
@@ -128,7 +152,9 @@
                     <div class="feedback-label">验证消息</div>
                     <div class="feedback-text">{{ r.verifyInfo.verifyMessage || '(无)' }}</div>
                   </div>
-                  <div v-else-if="r.verifyInfo && r.verifyInfo.method === 'admin_review_qa' && r.verifyInfo.reviewQaList && r.verifyInfo.reviewQaList.length" class="gs-req-verify">
+                  <div
+                      v-else-if="r.verifyInfo && r.verifyInfo.method === 'admin_review_qa' && r.verifyInfo.reviewQaList && r.verifyInfo.reviewQaList.length"
+                      class="gs-req-verify">
                     <div class="feedback-label">问答验证</div>
                     <div class="gs-req-qa" v-for="(qa, i) in r.verifyInfo.reviewQaList" :key="i">
                       <span class="gs-qa-q">Q: {{ qa.question }}</span>
@@ -165,7 +191,8 @@
         <div class="modal-body gs-form">
           <label class="gs-form-row">
             <span class="gs-form-label">备注</span>
-            <input v-model="editForm.remark" class="gs-input" type="text" maxlength="255" placeholder="最多 255 汉字，留空则不改动"/>
+            <input v-model="editForm.remark" class="gs-input" type="text" maxlength="255"
+                   placeholder="最多 255 汉字，留空则不改动"/>
           </label>
           <label class="checkbox-label">
             <input type="checkbox" v-model="editForm.enable"/> 启用策略
@@ -179,14 +206,17 @@
             <div class="gs-group-list">
               <div v-if="groups.length === 0" class="gs-muted">群列表为空</div>
               <label v-for="g in groups" :key="g.groupOpenId" class="checkbox-label gs-group-opt">
-                <input type="checkbox" :value="g.groupOpenId" v-model="editForm.groupOpenIds"/> {{ g.groupName || g.groupOpenId }}
+                <input type="checkbox" :value="g.groupOpenId" v-model="editForm.groupOpenIds"/>
+                {{ g.groupName || g.groupOpenId }}
               </label>
             </div>
           </div>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeEdit">取消</button>
-          <button class="primary-button" :disabled="submitting || (!editTarget.strategyId && editForm.groupOpenIds.length === 0)" @click="saveStrategy">
+          <button class="primary-button"
+                  :disabled="submitting || (!editTarget.strategyId && editForm.groupOpenIds.length === 0)"
+                  @click="saveStrategy">
             {{ submitting ? '提交中...' : '保存' }}
           </button>
         </div>
@@ -210,14 +240,18 @@
             <span class="gs-form-label">关联群</span>
             <div class="gs-group-list">
               <label v-for="g in groups" :key="g.groupOpenId" class="checkbox-label gs-group-opt">
-                <input type="checkbox" :value="g.groupOpenId" v-model="groupTarget.selected"/> {{ g.groupName || g.groupOpenId }}
+                <input type="checkbox" :value="g.groupOpenId" v-model="groupTarget.selected"/>
+                {{ g.groupName || g.groupOpenId }}
               </label>
             </div>
           </div>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeGroups">取消</button>
-          <button class="primary-button" :disabled="submitting" @click="saveGroups">{{ submitting ? '提交中...' : '保存' }}</button>
+          <button class="primary-button" :disabled="submitting" @click="saveGroups">{{
+              submitting ? '提交中...' : '保存'
+            }}
+          </button>
         </div>
       </div>
     </div>
@@ -255,7 +289,8 @@
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeWhitelist">关闭</button>
-          <button class="primary-button" :disabled="parseNumbers(whitelistInput).length === 0 || submitting" @click="applyWhitelist">
+          <button class="primary-button" :disabled="parseNumbers(whitelistInput).length === 0 || submitting"
+                  @click="applyWhitelist">
             {{ submitting ? '提交中...' : '添加' }}
           </button>
         </div>
@@ -286,7 +321,10 @@
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeDecline">取消</button>
-          <button class="primary-button" :disabled="submitting" @click="doDecline">{{ submitting ? '提交中...' : '确认拒绝' }}</button>
+          <button class="primary-button" :disabled="submitting" @click="doDecline">{{
+              submitting ? '提交中...' : '确认拒绝'
+            }}
+          </button>
         </div>
       </div>
     </div>
@@ -294,16 +332,16 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime} from '../../shared/lib/time.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 
@@ -338,10 +376,11 @@ const declineForm = reactive({reason: '', addBlacklist: false})
 const submitting = ref(false)
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 function switchTab(name) {
   tab.value = name

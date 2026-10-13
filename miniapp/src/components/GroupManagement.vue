@@ -345,8 +345,10 @@ onBeforeUnmount(() => {
     </article>
     <GroupWelcome v-if="selectedBinding" :key="selectedBinding.groupId" :bot="bot" :group-id="selectedBinding.groupId"
                   :request="request" :revision="welcomeRevision"/>
-    <GroupModeration v-if="selectedBinding && group?.canManageModeration === true" :key="selectedBinding.groupId" ref="moderationPanel" :group-id="selectedBinding.groupId"
-                     :request="request" :post="post" :revision="welcomeRevision" @access-denied="group = group ? { ...group, canManageModeration: false } : null"/>
+    <GroupModeration v-if="selectedBinding && group?.canManageModeration === true" :key="selectedBinding.groupId"
+                     ref="moderationPanel" :group-id="selectedBinding.groupId"
+                     :request="request" :post="post" :revision="welcomeRevision"
+                     @access-denied="group = group ? { ...group, canManageModeration: false } : null"/>
   </div>
 </template>
 

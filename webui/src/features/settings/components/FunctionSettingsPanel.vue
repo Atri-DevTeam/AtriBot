@@ -23,17 +23,17 @@
       <article v-for="item in items" :key="item.functionId" class="function-setting-card" :class="stateClass(item)">
         <header class="function-setting-card-head">
           <div class="function-setting-main">
-          <div class="function-setting-title-row">
-            <span class="function-setting-title">{{ item.functionName }}</span>
-            <span class="function-setting-state" :class="stateClass(item)">
+            <div class="function-setting-title-row">
+              <span class="function-setting-title">{{ item.functionName }}</span>
+              <span class="function-setting-state" :class="stateClass(item)">
               {{ stateText(item) }}
             </span>
-          </div>
-          <code class="function-setting-id">{{ item.functionId }}</code>
-          <div class="function-setting-support">
-            <span :class="{ muted: !item.groupEnable }">{{ item.groupEnable ? '支持群聊' : '不支持群聊' }}</span>
-            <span :class="{ muted: !item.c2cEnable }">{{ item.c2cEnable ? '支持私聊' : '不支持私聊' }}</span>
-          </div>
+            </div>
+            <code class="function-setting-id">{{ item.functionId }}</code>
+            <div class="function-setting-support">
+              <span :class="{ muted: !item.groupEnable }">{{ item.groupEnable ? '支持群聊' : '不支持群聊' }}</span>
+              <span :class="{ muted: !item.c2cEnable }">{{ item.c2cEnable ? '支持私聊' : '不支持私聊' }}</span>
+            </div>
           </div>
 
           <label class="function-setting-switch-card" :class="{ enabled: drafts[item.functionId].enabled }">
@@ -41,7 +41,7 @@
               <strong>禁用规则</strong>
               <small>{{ drafts[item.functionId].enabled ? '已启用' : '未启用' }}</small>
             </span>
-            <input v-model="drafts[item.functionId].enabled" type="checkbox" />
+            <input v-model="drafts[item.functionId].enabled" type="checkbox"/>
             <i aria-hidden="true"></i>
           </label>
         </header>
@@ -56,28 +56,28 @@
 
           <label class="function-setting-field">
             <span>开始时间</span>
-            <input v-model="drafts[item.functionId].startTime" class="function-setting-input" type="datetime-local" />
+            <input v-model="drafts[item.functionId].startTime" class="function-setting-input" type="datetime-local"/>
           </label>
 
           <label class="function-setting-field">
             <span>结束时间</span>
-            <input v-model="drafts[item.functionId].endTime" class="function-setting-input" type="datetime-local" />
+            <input v-model="drafts[item.functionId].endTime" class="function-setting-input" type="datetime-local"/>
           </label>
 
         </div>
 
         <footer class="function-setting-actions">
           <span class="function-setting-time-hint">时间留空表示不限制</span>
-            <button class="primary-button function-setting-btn"
-                    :disabled="saving[item.functionId]"
-                    @click="saveSetting(item)">
-              {{ saving[item.functionId] ? '保存中...' : '保存' }}
-            </button>
-            <button class="ghost-button function-setting-btn"
-                    :disabled="saving[item.functionId] || !item.enabled"
-                    @click="clearSetting(item)">
-              清除
-            </button>
+          <button class="primary-button function-setting-btn"
+                  :disabled="saving[item.functionId]"
+                  @click="saveSetting(item)">
+            {{ saving[item.functionId] ? '保存中...' : '保存' }}
+          </button>
+          <button class="ghost-button function-setting-btn"
+                  :disabled="saving[item.functionId] || !item.enabled"
+                  @click="clearSetting(item)">
+            清除
+          </button>
         </footer>
       </article>
     </div>

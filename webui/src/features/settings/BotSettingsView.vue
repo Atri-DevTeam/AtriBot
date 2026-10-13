@@ -1,6 +1,7 @@
 <template>
-  <AppShell ref="sidebarRef" v-model:open="sidebarOpen" :app-id="profile.appId || ''" :bot-open-id="profile.openId || ''"
-                :bot-name="profile.botName || 'AtriBot'">
+  <AppShell ref="sidebarRef" v-model:open="sidebarOpen" :app-id="profile.appId || ''"
+            :bot-open-id="profile.openId || ''"
+            :bot-name="profile.botName || 'AtriBot'">
     <template #toolbar>
       <button class="ghost-button" :disabled="loading" @click="refreshAll">刷新</button>
       <button class="ghost-button" @click="logout">退出</button>
@@ -12,9 +13,9 @@
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <h2>机器人设置</h2>
@@ -42,7 +43,8 @@
                     <button class="bs-share-icon" :class="{ active: shareQr === 'group' }"
                             title="添加到群/消息列表分享二维码"
                             @mouseenter="openShareQr('group')" @click="toggleShareQr('group')">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                         <circle cx="9" cy="7" r="4"/>
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -52,7 +54,8 @@
                     <button class="bs-share-icon" :class="{ active: shareQr === 'channel' }"
                             title="添加到频道分享二维码"
                             @mouseenter="openShareQr('channel')" @click="toggleShareQr('channel')">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round">
                         <line x1="4" y1="9" x2="20" y2="9"/>
                         <line x1="4" y1="15" x2="20" y2="15"/>
                         <line x1="10" y1="3" x2="8" y2="21"/>
@@ -61,7 +64,10 @@
                     </button>
                     <div v-if="shareQr" class="bs-share-popover">
                       <template v-if="!qrText">
-                        <div class="bs-share-qr-empty">{{ shareQr === 'group' ? '尚未获取到机器人 QQ 号或 AppID，无法生成群分享二维码' : '尚未获取到 AppID，无法生成频道分享二维码' }}</div>
+                        <div class="bs-share-qr-empty">{{
+                            shareQr === 'group' ? '尚未获取到机器人 QQ 号或 AppID，无法生成群分享二维码' : '尚未获取到 AppID，无法生成频道分享二维码'
+                          }}
+                        </div>
                       </template>
                       <template v-else>
                         <div class="bs-qr-title">{{ shareQr === 'group' ? '添加到群 / 消息列表' : '添加到频道' }}</div>
@@ -72,7 +78,10 @@
                         </div>
                         <div class="bs-qr-url bs-mono bs-ellipsis" :title="qrText">{{ qrText }}</div>
                         <div class="bs-qr-popover-actions">
-                          <button class="ghost-button bs-copy-btn" @click="copyQrUrl">{{ qrCopied ? '已复制' : '复制链接' }}</button>
+                          <button class="ghost-button bs-copy-btn" @click="copyQrUrl">{{
+                              qrCopied ? '已复制' : '复制链接'
+                            }}
+                          </button>
                           <button class="ghost-button bs-copy-btn" @click="downloadQr">下载二维码</button>
                         </div>
                       </template>
@@ -106,7 +115,10 @@
                 <dt>分享链接</dt>
                 <dd class="bs-share-row">
                   <span class="bs-mono bs-ellipsis" :title="profile.shareUrl">{{ profile.shareUrl }}</span>
-                  <button class="ghost-button bs-copy-btn" @click="copyShare">{{ shareCopied ? '已复制' : '复制' }}</button>
+                  <button class="ghost-button bs-copy-btn" @click="copyShare">{{
+                      shareCopied ? '已复制' : '复制'
+                    }}
+                  </button>
                 </dd>
               </div>
             </dl>
@@ -134,7 +146,8 @@
                   <button v-if="item.type === 'boolean'" class="nt-switch" :class="{ on: !!drafts[item.key] }"
                           role="switch" :aria-checked="!!drafts[item.key]" :title="item.label"
                           @click="drafts[item.key] = !drafts[item.key]"><span class="nt-switch-knob"/></button>
-                  <input v-else v-model="drafts[item.key]" class="bs-input" :type="item.type === 'int' ? 'number' : 'text'"
+                  <input v-else v-model="drafts[item.key]" class="bs-input"
+                         :type="item.type === 'int' ? 'number' : 'text'"
                          :placeholder="item.label"/>
                 </div>
               </div>
@@ -156,7 +169,7 @@
             </header>
             <DefaultJoinWelcomeSettings ref="welcomePanel" :api="api" :bot-name="profile.botName"
                                         :bot-avatar-url="profile.avatarUrl"
-                                        :debug-group-id="settingItems.find(item => item.key === 'qq.debug-group-openId')?.value || ''" />
+                                        :debug-group-id="settingItems.find(item => item.key === 'qq.debug-group-openId')?.value || ''"/>
           </div>
 
           <!-- 面板设置 -->
@@ -184,7 +197,8 @@
               <div class="bs-setting-control">
                 <button type="button" class="nt-switch" :class="{ on: chatBackground.enabled }"
                         role="switch" :aria-checked="chatBackground.enabled" aria-label="聊天背景"
-                        @click="updateChatBackground({ enabled: !chatBackground.enabled })"><span class="nt-switch-knob" /></button>
+                        @click="updateChatBackground({ enabled: !chatBackground.enabled })"><span
+                    class="nt-switch-knob"/></button>
               </div>
             </div>
             <div class="bs-setting-row">
@@ -196,12 +210,12 @@
                 <input id="chat-background-transparency" type="range" min="0" max="100" step="1"
                        :value="chatBackground.transparency" :disabled="!chatBackground.enabled"
                        :aria-valuetext="`${chatBackground.transparency}%`"
-                       @input="updateChatBackground({ transparency: Number($event.target.value) })" />
+                       @input="updateChatBackground({ transparency: Number($event.target.value) })"/>
                 <output for="chat-background-transparency">{{ chatBackground.transparency }}%</output>
               </div>
             </div>
-            <OrphanedRecordCleanup ref="cleanupPanel" :api="api" />
-            <OrphanedRecordCleanup ref="friendCleanupPanel" kind="friend" :api="api" />
+            <OrphanedRecordCleanup ref="cleanupPanel" :api="api"/>
+            <OrphanedRecordCleanup ref="friendCleanupPanel" kind="friend" :api="api"/>
           </div>
 
           <!-- 指令管理 -->
@@ -229,12 +243,12 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {computed, reactive, ref, onMounted} from 'vue'
 import {onBeforeRouteLeave, useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 import FunctionSettingsPanel from './components/FunctionSettingsPanel.vue'
 import CommandSettingsPanel from './components/CommandSettingsPanel.vue'
 import OrphanedRecordCleanup from './components/OrphanedRecordCleanup.vue'
@@ -243,16 +257,18 @@ import {resetPanelLayout} from '../../shared/lib/panelLayout.js'
 import {useChatBackground} from '../chat/lib/chatBackground.js'
 import QRCode from 'qrcode'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const router = useRouter()
-const { settings: chatBackground, updateSettings: updateChatBackground } = useChatBackground()
+const {settings: chatBackground, updateSettings: updateChatBackground} = useChatBackground()
 
 const sidebarOpen = ref(false)
 const sidebarRef = ref(null)
 const panelResetDone = ref(false)
-const profile = reactive({botName: '', appId: '', openId: '', unionId: '', avatarUrl: '', apiBaseUrl: '',
-  env: 'production', apiSandbox: false, connectionMode: '', shareUrl: '', botUin: ''})
+const profile = reactive({
+  botName: '', appId: '', openId: '', unionId: '', avatarUrl: '', apiBaseUrl: '',
+  env: 'production', apiSandbox: false, connectionMode: '', shareUrl: '', botUin: ''
+})
 
 const settingItems = ref([])
 const drafts = reactive({})
@@ -283,7 +299,7 @@ function isEqual(a, b) {
   return String(a ?? '') === String(b ?? '')
 }
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: endSession })
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: endSession})
 
 function endSession() {
   welcomePanel.value?.releaseLeaveGuard()
@@ -298,7 +314,8 @@ function logout() {
 onBeforeRouteLeave(() => welcomePanel.value?.mayLeave() ?? true)
 
 async function loadProfile() {
-  loadBotConfig(api, { force: true }).catch(() => {})
+  loadBotConfig(api, {force: true}).catch(() => {
+  })
   try {
     Object.assign(profile, await api('/bot/profile'))
   } catch {
@@ -427,8 +444,8 @@ const qrUrls = computed(() => {
   return {
     channel: `https://qun.qq.com/qunpro/robot/share?robot_appid=${profile.appId}`,
     group: profile.botUin
-      ? `https://qun.qq.com/qunpro/robot/qunshare?robot_appid=${profile.appId}&robot_uin=${profile.botUin}`
-      : null
+        ? `https://qun.qq.com/qunpro/robot/qunshare?robot_appid=${profile.appId}&robot_uin=${profile.botUin}`
+        : null
   }
 })
 const qrText = computed(() => qrUrls.value[shareQr.value] || '')
@@ -491,7 +508,7 @@ async function downloadQr() {
   try {
     // 下载用 440px 重新生成，比悬浮展示的 220px 更清晰
     const qrImg = await loadImage(
-      await QRCode.toDataURL(text, {width: 440, margin: 1, errorCorrectionLevel: 'H'}), false)
+        await QRCode.toDataURL(text, {width: 440, margin: 1, errorCorrectionLevel: 'H'}), false)
     // 头像带 crossOrigin 请求，图床不允许匿名跨域时降级为纯二维码
     let avatar = null
     if (profile.avatarUrl) {

@@ -259,7 +259,8 @@ final class MessageBodyFactory {
     private MessageBody.MessageBodyBuilder builder(RT rt, boolean withSequence) {
         var builder = MessageBody.builder();
         switch (rt) {
-            case null -> { }
+            case null -> {
+            }
             case RT.Message message -> {
                 builder.msgId(message.id());
                 if (withSequence) builder.msgSeq(msgSeqProvider.apply(message.id()));

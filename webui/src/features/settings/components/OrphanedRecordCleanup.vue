@@ -23,7 +23,9 @@
           已扫描 {{ orphanCleanup.scannedTargets }} / {{ orphanCleanup.totalTargets }} {{ cleanupConfig.unit }}
         </template>
         <template v-else>
-          发现 {{ orphanCleanup.orphanedTargets }} {{ cleanupConfig.orphanUnit }}，已删除 {{ orphanCleanup.deletedRecords }} 条记录
+          发现 {{ orphanCleanup.orphanedTargets }} {{ cleanupConfig.orphanUnit }}，已删除 {{
+            orphanCleanup.deletedRecords
+          }} 条记录
         </template>
       </div>
       <div v-if="orphanCleanup.error" class="chatnt-cleanup-error" role="alert">{{ orphanCleanup.error }}</div>
@@ -33,11 +35,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+import {computed, reactive, ref, onMounted, onBeforeUnmount} from 'vue'
 
 const props = defineProps({
-  api: { type: Function, required: true },
-  kind: { type: String, default: 'group' }
+  api: {type: Function, required: true},
+  kind: {type: String, default: 'group'}
 })
 const cleanupConfig = computed(() => props.kind === 'friend' ? {
   title: '已删除好友记录', description: '清除已不在好友登记中的私聊记录并归档',
@@ -107,7 +109,7 @@ async function startCleanup() {
   starting.value = true
   requestError.value = ''
   try {
-    const data = await props.api(cleanupConfig.value.endpoint, { method: 'POST' })
+    const data = await props.api(cleanupConfig.value.endpoint, {method: 'POST'})
     if (disposed || version !== requestVersion) return
     applyStatus(data)
     if (orphanCleanup.running) schedulePoll()
@@ -124,11 +126,15 @@ onBeforeUnmount(() => {
   requestVersion++
   clearTimeout(pollTimer)
 })
-defineExpose({ reload: loadStatus })
+defineExpose({reload: loadStatus})
 </script>
 
 <style scoped>
-.cleanup-controls { width: 150px; max-width: 50%; }
+.cleanup-controls {
+  width: 150px;
+  max-width: 50%;
+}
+
 .chatnt-scan-submit {
   background: #f1f6fa;
   color: #3e6d8c;
@@ -162,9 +168,17 @@ defineExpose({ reload: loadStatus })
   accent-color: #4c91bf;
 }
 
-.chatnt-cleanup-progress progress::-webkit-progress-bar { background: #e5e9ee; }
-.chatnt-cleanup-progress progress::-webkit-progress-value { background: #4c91bf; }
-.chatnt-cleanup-progress progress::-moz-progress-bar { background: #4c91bf; }
+.chatnt-cleanup-progress progress::-webkit-progress-bar {
+  background: #e5e9ee;
+}
+
+.chatnt-cleanup-progress progress::-webkit-progress-value {
+  background: #4c91bf;
+}
+
+.chatnt-cleanup-progress progress::-moz-progress-bar {
+  background: #4c91bf;
+}
 
 .chatnt-cleanup-stats,
 .chatnt-cleanup-error {
@@ -174,5 +188,7 @@ defineExpose({ reload: loadStatus })
   line-height: 1.4;
 }
 
-.chatnt-cleanup-error { color: #c64949; }
+.chatnt-cleanup-error {
+  color: #c64949;
+}
 </style>

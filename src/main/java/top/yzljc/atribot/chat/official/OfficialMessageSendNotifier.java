@@ -24,11 +24,12 @@ public final class OfficialMessageSendNotifier {
     private static final Pattern MESSAGE_PATH = Pattern.compile(
             "/(?:(v2/groups|v2/users)|(channels|dms))/([^/]+)/(messages|stream_messages|files)/?$");
 
-    private OfficialMessageSendNotifier() {}
+    private OfficialMessageSendNotifier() {
+    }
 
     /**
-     * @param method 待发送的请求方法，仅 POST 消息请求触发事件
-     * @param url 官机 API 请求的完整 URL，允许带查询参数和代理路径前缀
+     * @param method      待发送的请求方法，仅 POST 消息请求触发事件
+     * @param url         官机 API 请求的完整 URL，允许带查询参数和代理路径前缀
      * @param requestBody 待发送的 JSON 快照；纯上传及输入状态通知不会触发事件
      * @return 监听器未取消或请求不属于消息发送时为 true，取消发送时为 false
      */

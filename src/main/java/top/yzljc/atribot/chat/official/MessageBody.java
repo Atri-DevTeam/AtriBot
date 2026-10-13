@@ -17,14 +17,14 @@ import lombok.Data;
 @Builder(toBuilder = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MessageBody {
-    
+
     private String content;
-    
+
     @JsonProperty("msg_type")
     private Integer msgType; // 必填
-    
+
     private Object markdown;
-    
+
     private Object keyboard;
 
     /**
@@ -32,31 +32,35 @@ public class MessageBody {
      */
     @JsonProperty("prompt_keyboard")
     private Object promptKeyboard;
-    
+
     private Object ark;
-    
+
     private Object media;
 
-    /** 单聊输入状态通知 */
+    /**
+     * 单聊输入状态通知
+     */
     @JsonProperty("input_notify")
     private Object inputNotify;
-    
+
     @JsonProperty("message_reference")
     private Object messageReference;
-    
+
     @JsonProperty("event_id")
     private String eventId;
-    
+
     @JsonProperty("msg_id")
     private String msgId;
-    
+
     @JsonProperty("msg_seq")
     private Integer msgSeq;
-    
+
     @JsonProperty("is_wakeup")
     private Boolean isWakeup;
 
-    /** 仅频道可用 */
+    /**
+     * 仅频道可用
+     */
     @JsonProperty("image")
     private String image;
 

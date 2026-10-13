@@ -14,12 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
-* @Author AndyOctopus
-* @ClassName ModerationLogRepository
-* @Created_at 2026/08/20
-* @Project AtriMeow
-* @Package top.yzljc.atribot.database.repo
-*/
+ * @Author AndyOctopus
+ * @ClassName ModerationLogRepository
+ * @Created_at 2026/08/20
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.database.repo
+ */
 @Slf4j
 public final class ModerationLogRepository {
 
@@ -53,21 +53,21 @@ public final class ModerationLogRepository {
         try (var ps = con.prepareStatement(sql)) {
             ps.execute();
         }
-        boolean hasOriginalContent = false;
-        try (var columns = con.getMetaData().getColumns(con.getCatalog(), null, TABLE, "original_content")) {
-            while (columns.next()) {
-                if (TABLE.equalsIgnoreCase(columns.getString("TABLE_NAME"))
-                        && "original_content".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
-                    hasOriginalContent = true;
-                    break;
-                }
-            }
-        }
-        if (!hasOriginalContent) {
-            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` ADD COLUMN `original_content` MEDIUMTEXT NULL")) {
-                ps.execute();
-            }
-        }
+//        boolean hasOriginalContent = false;
+//        try (var columns = con.getMetaData().getColumns(con.getCatalog(), null, TABLE, "original_content")) {
+//            while (columns.next()) {
+//                if (TABLE.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+//                        && "original_content".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+//                    hasOriginalContent = true;
+//                    break;
+//                }
+//            }
+//        }
+//        if (!hasOriginalContent) {
+//            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` ADD COLUMN `original_content` MEDIUMTEXT NULL")) {
+//                ps.execute();
+//            }
+//        }
     }
 
     public static void log(String groupOpenId, String category, String action, String targetMemberOpenId, String detail, String originalContent) {

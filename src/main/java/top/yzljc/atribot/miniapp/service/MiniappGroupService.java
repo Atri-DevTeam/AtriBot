@@ -1,7 +1,7 @@
 package top.yzljc.atribot.miniapp.service;
 
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.database.repo.GroupBindingRepository;
@@ -57,7 +57,7 @@ public final class MiniappGroupService {
                 || config.path("keyboard").isArray() && !config.path("keyboard").isEmpty());
         if (!custom) {
             // The ordinary new-member default from GroupJoinWelcome; role-specific greetings are event-dependent.
-            String text = "欢迎新人喵~\n\n" + Markdown.img(ResourcesProperties.WELCOME_IMG, 1858, 846) + "\n\n> 关闭欢迎提示";
+            String text = "欢迎新人喵~\n\n" + Markdown.img(RS.get("resource.image.welcome"), 1858, 846) + "\n\n> 关闭欢迎提示";
             return new Welcome(enabled, false, text, "SMALL", List.of(List.of(
                     new WelcomeButton("打卡", "BLUE"), new WelcomeButton("帮助", "BLUE"), new WelcomeButton("自定义欢迎", "BLUE"))));
         }

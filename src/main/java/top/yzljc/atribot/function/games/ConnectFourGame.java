@@ -91,7 +91,9 @@ public class ConnectFourGame implements CommandExecutor {
         }
 
         if (action.equals("drop")) {
-            synchronized (game) { handleDrop(game, sessionId, qq, args); }
+            synchronized (game) {
+                handleDrop(game, sessionId, qq, args);
+            }
         }
 
         return true;
@@ -104,17 +106,17 @@ public class ConnectFourGame implements CommandExecutor {
 
         String markdown = """
                 **四子棋 (Connect Four)**
-
+                
                 **规则:**
                 - 7列 × 6行棋盘，双方轮流落子
                 - 棋子会因重力下沉到该列最底部的空位
                 - 率先在横、竖、斜方向连成 4 子者获胜
                 - 若棋盘填满仍无人连成四子，则为平局
-
+                
                 **时限:**
                 - 每人每步限时 60 秒，超时判对方胜
                 - 整场对局不超过 15 分钟，超时自动平局
-
+                
                 请点击下方按钮选择你的阵营:
                 > 游戏将在 1 分钟内未满员时自动取消
                 """;
@@ -244,6 +246,9 @@ public class ConnectFourGame implements CommandExecutor {
         game.startTime = System.currentTimeMillis();
         game.currentPlayer = PLAYER_A;
         game.board = new int[ROWS][COLS];
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.connect4, game.statisticsId + ":start",
+                List.of(game.playerAOpenId, game.playerBOpenId).stream()
+                        .map(userId -> new UserGameDataRepository.Counters(userId, Map.of("participations", 1L))).toList());
 
         String firstPlayerName = "⚫ 玩家A";
         String firstPlayerId = game.playerAOpenId;
@@ -303,6 +308,9 @@ public class ConnectFourGame implements CommandExecutor {
 
         // Place the piece
         game.board[row][col] = game.currentPlayer;
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.connect4,
+                game.statisticsId + ":move:" + row + ":" + col,
+                List.of(new UserGameDataRepository.Counters(playerId, Map.of("moves", 1L))));
 
         // Check win
         List<int[]> winningLine = findWinningLine(game.board, row, col, game.currentPlayer);
@@ -358,11 +366,24 @@ public class ConnectFourGame implements CommandExecutor {
         List<List<Button>> layout = new ArrayList<>();
         List<Button> row = new ArrayList<>();
         for (int i = 1; i <= COLS; i++) {
-            ButtonStyle style = fullCols.contains(i - 1) ? ButtonStyle.GRAY : ButtonStyle.BLUE;
-            row.add(new Button("col_" + i, String.valueOf(i), "/四子棋 drop " + i,
-                    true, style, ButtonType.COMMAND)
-                    .setPermissionType(PermissionType.SPECIFIC_USER)
-                    .setAllowedOpenIds(List.of(currentPlayerOpenId)));
+            boolean isFullCol = fullCols.contains(i - 1);
+
+            if (isFullCol) {
+                row.add(new Button("col_" + i, String.valueOf(i), "/四子棋 drop " + i, true, ButtonStyle.RED, ButtonType.CUSTOM)
+                        .setAllowedOpenIds(List.of(currentPlayerOpenId))
+                        .setUnsupportedTip("该列已满，请选择其他列落子！"));
+            } else {
+                row.add(new Button("col_" + i, String.valueOf(i), "/四子棋 drop " + i, true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                        .setAllowedOpenIds(List.of(currentPlayerOpenId))
+                        .setVisitedDisplayText("√"));
+            }
+
+//            ButtonStyle style = isFullCol ? ButtonStyle.RED : ButtonStyle.BLUE;
+//            ButtonType type = isFullCol ? ButtonType.CUSTOM : ButtonType.COMMAND;
+//            row.add(new Button("col_" + i, String.valueOf(i), "/四子棋 drop " + i,
+//                    true, style, type)
+//                    .setPermissionType(PermissionType.SPECIFIC_USER)
+//                    .setAllowedOpenIds(List.of(currentPlayerOpenId)));
         }
         layout.add(row);
         return TC.keyboard(layout);
@@ -417,9 +438,8 @@ public class ConnectFourGame implements CommandExecutor {
     private void grantRewards(GameState game) {
         if (game.rewardsGranted) return;
         game.rewardsGranted = true;
-        UserGameDataRepository.record(UserGameDataRepository.Game.connect4, game.statisticsId, List.of(
-                UserGameDataRepository.Delta.match(game.playerAOpenId, game.winner == PLAYER_A),
-                UserGameDataRepository.Delta.match(game.playerBOpenId, game.winner == PLAYER_B)));
+        UserGameDataRepository.recordCounters(UserGameDataRepository.Game.connect4, game.statisticsId,
+                List.of(matchCounters(game, PLAYER_A, game.playerAOpenId), matchCounters(game, PLAYER_B, game.playerBOpenId)));
 
         if (game.winner == PLAYER_A) {
             game.playerAGolds = RandomGolds.get(31, 45);
@@ -434,6 +454,18 @@ public class ConnectFourGame implements CommandExecutor {
 
         LootRepository.addCoins(game.playerAOpenId, game.playerAGolds);
         LootRepository.addCoins(game.playerBOpenId, game.playerBGolds);
+    }
+
+    private UserGameDataRepository.Counters matchCounters(GameState game, int player, String userId) {
+        boolean won = game.winner == player;
+        boolean draw = game.winner == 0;
+        return new UserGameDataRepository.Counters(userId, Map.of(
+                "plays", 1L, "wins", won ? 1L : 0L, "draws", draw ? 1L : 0L,
+                "losses", !won && !draw ? 1L : 0L,
+                "normalWins", won && !game.timedOut ? 1L : 0L,
+                "timeoutWins", won && game.timedOut ? 1L : 0L,
+                "timeoutPlays", game.timedOut ? 1L : 0L,
+                "moveTimeouts", game.timedOut && !won && !draw ? 1L : 0L));
     }
 
     private String buildSettlementMarkdown(GameState game, String resultMsg) {
@@ -552,7 +584,7 @@ public class ConnectFourGame implements CommandExecutor {
                 if (targetOpenId != null && current.lastCmdMsgId != null) {
                     try {
                         GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
-                        TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
+                                TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
                     } catch (Exception e) {
                         log.warn("发送加入超时通知失败: ", e);
                     }
@@ -575,6 +607,7 @@ public class ConnectFourGame implements CommandExecutor {
                 // Timeout — current player loses, opponent wins
                 current.phase = Phase.FINISHED;
                 current.winner = (current.currentPlayer == PLAYER_A) ? PLAYER_B : PLAYER_A;
+                current.timedOut = true;
 
                 grantRewards(current);
 
@@ -589,21 +622,21 @@ public class ConnectFourGame implements CommandExecutor {
 
                 try {
                     String resultMsg = "⏰ " + Markdown.at(loserId) + "(+" + loserGolds + "金粒) (" + loserName
-                    + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！";
+                            + ") 超时未落子，" + winnerName + " " + Markdown.at(winnerId) + "(+" + winnerGolds + "金粒) 获胜！";
                     String markdown = buildSettlementMarkdown(current, resultMsg);
 
                     List<List<Button>> layout = new ArrayList<>();
                     layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
-                    true, ButtonStyle.BLUE, ButtonType.COMMAND)));
+                            true, ButtonStyle.BLUE, ButtonType.COMMAND)));
                     Object keyboard = TC.keyboard(layout);
 
                     GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), loserId,
-                    TC.md(markdown), keyboard);
+                            TC.md(markdown), keyboard);
                 } catch (Exception e) {
                     log.warn("发送落子超时结算面板失败: ", e);
                 }
                 log.info("四子棋游戏在群 {} 因玩家 {} 超时未落子而自动结束",
-                sessionId, loserId);
+                        sessionId, loserId);
             }
         }, MOVE_TIMEOUT_MS);
     }
@@ -617,6 +650,7 @@ public class ConnectFourGame implements CommandExecutor {
 
                 // Game exceeded 15 minutes — auto tie
                 current.phase = Phase.FINISHED;
+                current.timedOut = true;
                 grantRewards(current);
 
                 String playerAId = current.playerAOpenId;
@@ -625,18 +659,18 @@ public class ConnectFourGame implements CommandExecutor {
 
                 try {
                     String resultMsg = "⏰ 对局已超过 15 分钟，"
-                    + Markdown.at(playerAId) + "(+" + current.playerAGolds + "金粒) "
-                    + Markdown.at(playerBId) + "(+" + current.playerBGolds + "金粒) "
-                    + "自动判为平局！";
+                            + Markdown.at(playerAId) + "(+" + current.playerAGolds + "金粒) "
+                            + Markdown.at(playerBId) + "(+" + current.playerBGolds + "金粒) "
+                            + "自动判为平局！";
                     String markdown = buildSettlementMarkdown(current, resultMsg);
 
                     List<List<Button>> layout = new ArrayList<>();
                     layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
-                    true, ButtonStyle.BLUE, ButtonType.COMMAND)));
+                            true, ButtonStyle.BLUE, ButtonType.COMMAND)));
                     Object keyboard = TC.keyboard(layout);
 
                     GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), playerAId,
-                    TC.md(markdown), keyboard);
+                            TC.md(markdown), keyboard);
                 } catch (Exception e) {
                     log.warn("发送对局超时结算面板失败: ", e);
                 }
@@ -676,6 +710,7 @@ public class ConnectFourGame implements CommandExecutor {
         int playerAGolds;
         int playerBGolds;
         boolean rewardsGranted;
+        boolean timedOut;
 
         String lastMessageId;
         String lastCmdMsgId;

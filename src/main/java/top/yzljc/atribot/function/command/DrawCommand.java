@@ -11,7 +11,7 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.function.impl.drawitem.LootService;
 
 import java.util.List;
@@ -51,7 +51,7 @@ public class DrawCommand implements CommandExecutor {
 
         int netCoins = d.refundCoins() - d.costCoins();
         String coinChange = String.format("%+d金粒", netCoins);
-        String levelLine = "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16)
+        String levelLine = "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16)
                 + "当前物品「" + (d.itemName() != null ? d.itemName() : d.itemId()) + "」等级 "
                 + Markdown.colored(pickLevelColor(d.count(), d.special()), "Lv." + d.count())
                 + " (" + coinChange + ")   "

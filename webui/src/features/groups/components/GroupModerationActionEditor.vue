@@ -19,7 +19,8 @@
              @input="patch('muteSeconds', Number($event.target.value) || 0)"/>
     </label>
     <label class="checkbox-label">
-      <input type="checkbox" :checked="modelValue.notifyDebugGroup" @change="patch('notifyDebugGroup', $event.target.checked)"/> 通知到开发组
+      <input type="checkbox" :checked="modelValue.notifyDebugGroup"
+             @change="patch('notifyDebugGroup', $event.target.checked)"/> 通知到开发组
     </label>
   </div>
 </template>
@@ -37,9 +38,31 @@ function patch(key, value) {
 </script>
 
 <style scoped>
-.gm-action-grid { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.gm-remind-input { flex: 1 1 260px; min-width: 0; }
-.gm-remind-input:disabled { background: #f3f4f6; color: #9aa1ab; cursor: not-allowed; }
-.gm-mute-seconds { flex-direction: row; align-items: center; gap: 8px; }
-.gm-mute-seconds .gs-input { width: 100px; }
+.gm-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.gm-remind-input {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.gm-remind-input:disabled {
+  background: #f3f4f6;
+  color: #9aa1ab;
+  cursor: not-allowed;
+}
+
+.gm-mute-seconds {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.gm-mute-seconds .gs-input {
+  width: 100px;
+}
 </style>

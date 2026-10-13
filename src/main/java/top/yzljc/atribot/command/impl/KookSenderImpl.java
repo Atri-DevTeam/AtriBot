@@ -24,16 +24,42 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public final class KookSenderImpl implements KookCommandSender {
     private final KookUser user;
-    @Getter private final KookMessage message;
+    @Getter
+    private final KookMessage message;
     private final KookApiClient api;
 
-    @Override public Platform getPlatform() { return user.getPlatform(); }
-    @Override public String getUserId() { return user.getUserId(); }
-    @Override public String getUsername() { return user.getUsername(); }
-    @Override public boolean hasPermission() { return user.hasPermission(); }
-    @Override public boolean hasPermission(String permission) { return user.hasPermission(permission); }
-    @Override public String getGuildId() { return message.getGuildId(); }
-    @Override public String getChannelId() {
+    @Override
+    public Platform getPlatform() {
+        return user.getPlatform();
+    }
+
+    @Override
+    public String getUserId() {
+        return user.getUserId();
+    }
+
+    @Override
+    public String getUsername() {
+        return user.getUsername();
+    }
+
+    @Override
+    public boolean hasPermission() {
+        return user.hasPermission();
+    }
+
+    @Override
+    public boolean hasPermission(String permission) {
+        return user.hasPermission(permission);
+    }
+
+    @Override
+    public String getGuildId() {
+        return message.getGuildId();
+    }
+
+    @Override
+    public String getChannelId() {
         return getPlatform() == Platform.KOOK_CHANNEL ? message.getTargetId() : null;
     }
 

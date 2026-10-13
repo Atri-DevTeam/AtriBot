@@ -9,8 +9,11 @@
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <h2 class="feedback-title">用户数据</h2>
@@ -24,35 +27,41 @@
               <button v-for="tab in tabs" :key="tab.key"
                       class="userlist-source-tab" :class="{ active: activeTab === tab.key }"
                       type="button" role="tab" :aria-selected="activeTab === tab.key"
-                      @click="switchTab(tab.key)">{{ tab.label }}</button>
+                      @click="switchTab(tab.key)">{{ tab.label }}
+              </button>
             </div>
             <div class="dir-head-right">
               <button v-if="activeTab === 'groups'" type="button" class="broadcast-trigger" :disabled="loadingGroups"
                       aria-label="群广播" title="群广播" @click="openBroadcast">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 10h3l9-4v13l-9-4H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z" />
-                  <path d="m7 15 1.3 4h3.2l-1.4-4.7" />
-                  <path d="M19 9a4 4 0 0 1 0 6" />
+                  <path d="M4 10h3l9-4v13l-9-4H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"/>
+                  <path d="m7 15 1.3 4h3.2l-1.4-4.7"/>
+                  <path d="M19 9a4 4 0 0 1 0 6"/>
                 </svg>
               </button>
-              <button ref="filterBtn" type="button" class="dir-filter-btn" :class="{ active: filterOpen }" @click="toggleFilter">
-                <svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+              <button ref="filterBtn" type="button" class="dir-filter-btn" :class="{ active: filterOpen }"
+                      @click="toggleFilter">
+                <svg viewBox="0 0 24 24">
+                  <path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>
+                </svg>
                 筛选
               </button>
               <span class="status-pill">
-                <span class="dot ok"></span>{{ activeTab === 'groups' ? `${groups.length} 个群` : `${users.length} 个用户` }}
+                <span class="dot ok"></span>{{
+                  activeTab === 'groups' ? `${groups.length} 个群` : `${users.length} 个用户`
+                }}
               </span>
             </div>
           </div>
 
           <div class="userlist-search-bar">
             <input
-              v-model="searchText"
-              class="userlist-search-input"
-              type="text"
-              :placeholder="activeTab === 'groups' ? '搜索群信息...' : '搜索用户信息...'"
-              @keyup.enter="applySearch"
+                v-model="searchText"
+                class="userlist-search-input"
+                type="text"
+                :placeholder="activeTab === 'groups' ? '搜索群信息...' : '搜索用户信息...'"
+                @keyup.enter="applySearch"
             />
             <button class="primary-button" @click="applySearch">搜索</button>
             <button v-if="searchText" class="ghost-button" @click="clearSearch">清除</button>
@@ -72,10 +81,15 @@
                     <span class="dir-tile-name" :title="groupName(g)">{{ groupName(g) }}</span>
                     <div class="dir-tile-actions">
                       <button class="dir-mini-btn" title="进入聊天" @click="openGroupChat(g.groupOpenId)">
-                        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <svg viewBox="0 0 24 24">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
                       </button>
                       <button class="dir-mini-btn" title="复制群ID" @click="copyText(g.groupOpenId)">
-                        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <svg viewBox="0 0 24 24">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -86,13 +100,15 @@
                     <span v-if="g.joinedAt">{{ formatTime(g.joinedAt) }}</span>
                   </div>
                   <div class="dir-tile-line">
-                    <span v-if="g.memberRole" class="dir-role-chip" :class="gRoleCls(g.memberRole)">{{ gRoleLabel(g.memberRole) }}</span>
+                    <span v-if="g.memberRole" class="dir-role-chip"
+                          :class="gRoleCls(g.memberRole)">{{ gRoleLabel(g.memberRole) }}</span>
                     <span class="dir-chips">
                       <span v-if="g.whitelist" class="dir-chip dir-chip-green">白名单</span>
                       <span v-if="g.blacklisted" class="dir-chip dir-chip-red">黑名单</span>
                       <span v-if="g.allowProactiveMsg" class="dir-chip dir-chip-blue">主动</span>
                     </span>
-                    <span v-if="groupTypeText(g) !== '-'" class="dir-tile-type" :title="groupTypeText(g)">{{ groupTypeText(g) }}</span>
+                    <span v-if="groupTypeText(g) !== '-'" class="dir-tile-type"
+                          :title="groupTypeText(g)">{{ groupTypeText(g) }}</span>
                   </div>
                 </article>
               </div>
@@ -111,18 +127,26 @@
                       <span>{{ userInitial(u) }}</span>
                       <img v-if="appId" :src="`https://thirdqq.qlogo.cn/qqapp/${appId}/${u.userOpenId}/100`"
                            alt="" referrerpolicy="no-referrer" loading="lazy"
-                           @error="$event.target.style.display='none'" />
+                           @error="$event.target.style.display='none'"/>
                     </span>
-                    <span class="dir-tile-name" :title="u.username || u.userOpenId">{{ u.username || u.userOpenId }}</span>
+                    <span class="dir-tile-name" :title="u.username || u.userOpenId">{{
+                        u.username || u.userOpenId
+                      }}</span>
                     <div class="dir-tile-actions">
                       <button class="dir-mini-btn" title="更改信息" @click="openPermModal(u.userOpenId)">
                         <span style="font-size:13px;line-height:1">⚙</span>
                       </button>
                       <button class="dir-mini-btn" title="进入私聊" @click="openUserChat(u)">
-                        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg>
+                        <svg viewBox="0 0 24 24">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          <circle cx="12" cy="10" r="1.1" fill="currentColor" stroke="none"/>
+                        </svg>
                       </button>
                       <button class="dir-mini-btn" title="复制用户ID" @click="copyText(u.userOpenId)">
-                        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <svg viewBox="0 0 24 24">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -152,17 +176,23 @@
         <div class="modal-head">
           <h2>更改信息</h2>
           <button class="icon-button" @click="closePermModal">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
         <div class="modal-body">
           <p class="perm-uid">{{ permTarget }}</p>
           <p v-if="permLoading" role="status">加载中…</p>
           <p v-if="permError" class="perm-error" role="alert">{{ permError }}</p>
-          <button v-if="!permLoading && !permReady" class="ghost-button" @click="openPermModal(permTarget)">重新加载</button>
+          <button v-if="!permLoading && !permReady" class="ghost-button" @click="openPermModal(permTarget)">重新加载
+          </button>
           <div class="perm-roles">
-            <button v-for="r in roles" :key="r" :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
-                    :disabled="permLocked" @click="pendingPermRole = r">{{ r }}</button>
+            <button v-for="r in roles" :key="r"
+                    :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
+                    :disabled="permLocked" @click="pendingPermRole = r">{{ r }}
+            </button>
           </div>
           <h4 style="margin:10px 0 4px">权限节点</h4>
           <div v-for="p in pendingPermNodes" :key="p" class="func-row">
@@ -170,26 +200,29 @@
             <button class="perm-del" :disabled="permLocked" @click="removePermNode(p)">×</button>
           </div>
           <form class="perm-add" @submit.prevent="addPermNode(newPermNode)">
-            <input v-model="newPermNode" :disabled="permLocked" placeholder="新权限节点" />
+            <input v-model="newPermNode" :disabled="permLocked" placeholder="新权限节点"/>
             <button class="primary-button" :disabled="permLocked || !newPermNode.trim()">添加</button>
           </form>
           <h4 style="margin:10px 0 4px">状态</h4>
           <label class="checkbox-label">
-            <input type="checkbox" v-model="pendingIsBlocked" :disabled="permLocked" />
+            <input type="checkbox" v-model="pendingIsBlocked" :disabled="permLocked"/>
             拉黑（禁止使用指令）
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" v-model="pendingIsIgnored" :disabled="permLocked" />
+            <input type="checkbox" v-model="pendingIsIgnored" :disabled="permLocked"/>
             屏蔽（静默忽略所有交互）
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" v-model="pendingC2CPush" :disabled="permLocked" />
+            <input type="checkbox" v-model="pendingC2CPush" :disabled="permLocked"/>
             主动消息
           </label>
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closePermModal">关闭</button>
-          <button class="primary-button" :disabled="permLocked" @click="confirmPerm">{{ permSaving ? '保存中…' : '确认' }}</button>
+          <button class="primary-button" :disabled="permLocked" @click="confirmPerm">{{
+              permSaving ? '保存中…' : '确认'
+            }}
+          </button>
         </div>
       </div>
     </div>
@@ -199,75 +232,116 @@
       <section class="modal broadcast-modal" role="dialog" aria-modal="true" aria-labelledby="broadcast-title">
         <div class="modal-head">
           <h2 id="broadcast-title">群广播 · 主动消息</h2>
-          <button type="button" class="icon-button" aria-label="关闭广播" :disabled="broadcastSending" @click="closeBroadcast">×</button>
+          <button type="button" class="icon-button" aria-label="关闭广播" :disabled="broadcastSending"
+                  @click="closeBroadcast">×
+          </button>
         </div>
         <div class="modal-body broadcast-body">
           <label class="broadcast-field">
             <span>目标分类</span>
             <select v-model="broadcastCategory" :disabled="broadcastSending" @change="broadcastConfirm = false">
-              <option v-for="option in broadcastCategories" :key="option.value" :value="option.value">{{ option.label }}</option>
+              <option v-for="option in broadcastCategories" :key="option.value" :value="option.value">{{
+                  option.label
+                }}
+              </option>
             </select>
           </label>
           <div v-if="broadcastCategory === 'custom'" class="broadcast-picker">
             <span>已选 {{ broadcastSelectedGroups.length }} 个群</span>
             <button type="button" class="ghost-button" :disabled="broadcastSending"
-                    @click="openBroadcastPicker">{{ broadcastSelectedGroups.length ? '重新选择群' : '打开选群面板' }}</button>
+                    @click="openBroadcastPicker">{{ broadcastSelectedGroups.length ? '重新选择群' : '打开选群面板' }}
+            </button>
           </div>
-          <p class="broadcast-note">仅发送给当前允许主动消息、且未被拉黑的群。发送前会显示实际目标；发送时请保持页面打开，期间可停止后续发送。</p>
+          <p class="broadcast-note">
+            仅发送给当前允许主动消息、且未被拉黑的群。发送前会显示实际目标；发送时请保持页面打开，期间可停止后续发送。</p>
           <div class="broadcast-targets">
             <strong>目标群 {{ broadcastTargets.length }} 个</strong>
             <div v-if="broadcastTargets.length" class="broadcast-target-list">
-              <span v-for="group in broadcastTargets" :key="group.groupOpenId" :title="group.groupOpenId">{{ groupName(group) }}</span>
+              <span v-for="group in broadcastTargets" :key="group.groupOpenId"
+                    :title="group.groupOpenId">{{ groupName(group) }}</span>
             </div>
-            <span v-else class="broadcast-note">{{ broadcastCategory === 'custom' ? '请先勾选目标群' : '该分类暂无可发送的群' }}</span>
+            <span v-else class="broadcast-note">{{
+                broadcastCategory === 'custom' ? '请先勾选目标群' : '该分类暂无可发送的群'
+              }}</span>
           </div>
           <div class="broadcast-types" role="group" aria-label="广播类型">
             <label v-for="type in broadcastTypes" :key="type.value" :class="{ active: broadcastType === type.value }">
-              <input v-model="broadcastType" type="radio" :value="type.value" :disabled="broadcastSending" @change="broadcastConfirm = false" />
+              <input v-model="broadcastType" type="radio" :value="type.value" :disabled="broadcastSending"
+                     @change="broadcastConfirm = false"/>
               {{ type.label }}
             </label>
           </div>
           <template v-if="broadcastType === 'ark'">
-            <label class="broadcast-field"><span>卡片描述</span><input v-model="broadcastArk.description" :disabled="broadcastSending" placeholder="卡片描述" @input="broadcastConfirm = false" /></label>
-            <label class="broadcast-field"><span>通知预览</span><input v-model="broadcastArk.prompt" :disabled="broadcastSending" placeholder="消息列表和通知中显示的文字" @input="broadcastConfirm = false" /></label>
+            <label class="broadcast-field"><span>卡片描述</span><input v-model="broadcastArk.description"
+                                                                       :disabled="broadcastSending"
+                                                                       placeholder="卡片描述"
+                                                                       @input="broadcastConfirm = false"/></label>
+            <label class="broadcast-field"><span>通知预览</span><input v-model="broadcastArk.prompt"
+                                                                       :disabled="broadcastSending"
+                                                                       placeholder="消息列表和通知中显示的文字"
+                                                                       @input="broadcastConfirm = false"/></label>
             <div v-for="(item, index) in broadcastArk.items" :key="index" class="broadcast-ark-item">
-              <label class="broadcast-field"><span>条目 {{ index + 1 }}</span><input v-model="item.description" :disabled="broadcastSending" placeholder="条目内容" @input="broadcastConfirm = false" /></label>
-              <label class="broadcast-field"><span>链接（可选）</span><input v-model="item.link" :disabled="broadcastSending" placeholder="https://…" @input="broadcastConfirm = false" /></label>
-              <button type="button" class="ghost-button" :disabled="broadcastSending || broadcastArk.items.length === 1" @click="broadcastArk.items.splice(index, 1); broadcastConfirm = false">删除</button>
+              <label class="broadcast-field"><span>条目 {{ index + 1 }}</span><input v-model="item.description"
+                                                                                     :disabled="broadcastSending"
+                                                                                     placeholder="条目内容"
+                                                                                     @input="broadcastConfirm = false"/></label>
+              <label class="broadcast-field"><span>链接（可选）</span><input v-model="item.link"
+                                                                           :disabled="broadcastSending"
+                                                                           placeholder="https://…"
+                                                                           @input="broadcastConfirm = false"/></label>
+              <button type="button" class="ghost-button" :disabled="broadcastSending || broadcastArk.items.length === 1"
+                      @click="broadcastArk.items.splice(index, 1); broadcastConfirm = false">删除
+              </button>
             </div>
-            <button type="button" class="ghost-button" :disabled="broadcastSending" @click="broadcastArk.items.push({ description: '', link: '' }); broadcastConfirm = false">添加条目</button>
+            <button type="button" class="ghost-button" :disabled="broadcastSending"
+                    @click="broadcastArk.items.push({ description: '', link: '' }); broadcastConfirm = false">添加条目
+            </button>
           </template>
           <template v-else>
             <label v-if="broadcastType === 'image'" class="broadcast-field">
               <span>图片</span>
-              <input type="file" accept="image/*" :disabled="broadcastSending" @change="pickBroadcastImage" />
+              <input type="file" accept="image/*" :disabled="broadcastSending" @change="pickBroadcastImage"/>
             </label>
-            <img v-if="broadcastType === 'image' && broadcastImagePreview" class="broadcast-image-preview" :src="broadcastImagePreview" alt="待发送图片预览" />
+            <img v-if="broadcastType === 'image' && broadcastImagePreview" class="broadcast-image-preview"
+                 :src="broadcastImagePreview" alt="待发送图片预览"/>
             <label class="broadcast-field">
-              <span>{{ broadcastType === 'image' ? '图片说明（可选）' : broadcastType === 'markdown' ? 'Markdown 内容' : '文本内容' }}</span>
+              <span>{{
+                  broadcastType === 'image' ? '图片说明（可选）' : broadcastType === 'markdown' ? 'Markdown 内容' : '文本内容'
+                }}</span>
               <textarea v-model="broadcastText" rows="5" :disabled="broadcastSending"
                         :placeholder="broadcastType === 'image' ? '可选的图片说明' : '输入广播内容'"
-                        @input="broadcastConfirm = false" @paste="pasteBroadcastImage" />
+                        @input="broadcastConfirm = false" @paste="pasteBroadcastImage"/>
             </label>
           </template>
           <p v-if="broadcastConfirm && !broadcastSending" class="broadcast-confirm" role="alert">
             确认向以上 {{ broadcastTargets.length }} 个群发送{{ broadcastTypeLabel }}广播？发送后无法批量撤回。
           </p>
           <div v-if="broadcastProgress" class="broadcast-progress" role="status">
-            已处理 {{ broadcastProgress.done }}/{{ broadcastProgress.total }} 个群；成功 {{ broadcastProgress.success }}，失败 {{ broadcastProgress.failures.length }}。
+            已处理 {{ broadcastProgress.done }}/{{ broadcastProgress.total }} 个群；成功 {{
+              broadcastProgress.success
+            }}，失败 {{ broadcastProgress.failures.length }}。
             <span v-if="broadcastProgress.stopped">已停止后续发送。</span>
             <span v-else-if="!broadcastSending">广播已完成。</span>
           </div>
           <ul v-if="broadcastProgress?.failures.length" class="broadcast-failures">
-            <li v-for="failure in broadcastProgress.failures" :key="failure.id">{{ failure.name }}：{{ failure.reason }}</li>
+            <li v-for="failure in broadcastProgress.failures" :key="failure.id">{{ failure.name }}：{{
+                failure.reason
+              }}
+            </li>
           </ul>
         </div>
         <div class="modal-foot">
-          <button v-if="broadcastSending" type="button" class="ghost-button" :disabled="broadcastStop" @click="broadcastStop = true">{{ broadcastStop ? '正在停止…' : '停止后续发送' }}</button>
+          <button v-if="broadcastSending" type="button" class="ghost-button" :disabled="broadcastStop"
+                  @click="broadcastStop = true">{{ broadcastStop ? '正在停止…' : '停止后续发送' }}
+          </button>
           <template v-else>
             <button type="button" class="ghost-button" @click="closeBroadcast">关闭</button>
-            <button v-if="!broadcastProgress && !broadcastConfirm" type="button" class="primary-button" :disabled="!canBroadcast" @click="broadcastConfirm = true">核对并发送</button>
-            <button v-else-if="!broadcastProgress" type="button" class="primary-button" :disabled="!canBroadcast" @click="sendBroadcast">确认发送 {{ broadcastTargets.length }} 个群</button>
+            <button v-if="!broadcastProgress && !broadcastConfirm" type="button" class="primary-button"
+                    :disabled="!canBroadcast" @click="broadcastConfirm = true">核对并发送
+            </button>
+            <button v-else-if="!broadcastProgress" type="button" class="primary-button" :disabled="!canBroadcast"
+                    @click="sendBroadcast">确认发送 {{ broadcastTargets.length }} 个群
+            </button>
           </template>
         </div>
       </section>
@@ -275,7 +349,8 @@
 
     <div v-if="showBroadcast && broadcastPickerOpen" class="modal-backdrop broadcast-picker-overlay"
          @click.self="closeBroadcastPicker" @keydown.esc="closeBroadcastPicker">
-      <section class="modal broadcast-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="broadcast-picker-title">
+      <section class="modal broadcast-picker-dialog" role="dialog" aria-modal="true"
+               aria-labelledby="broadcast-picker-title">
         <div class="modal-head broadcast-picker-head">
           <div>
             <h2 id="broadcast-picker-title">选择广播群</h2>
@@ -287,26 +362,32 @@
           <div class="broadcast-picker-main">
             <div class="broadcast-picker-controls">
               <input ref="broadcastPickerSearchRef" v-model="broadcastGroupSearch" type="search"
-                     placeholder="搜索群名称、ID、群号、分类或标签" aria-label="搜索自选群" />
+                     placeholder="搜索群名称、ID、群号、分类或标签" aria-label="搜索自选群"/>
               <select v-model="broadcastPickerFilter" aria-label="筛选可选群">
-                <option v-for="option in broadcastPickerFilters" :key="option.value" :value="option.value">{{ option.label }}</option>
+                <option v-for="option in broadcastPickerFilters" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
               </select>
             </div>
             <div class="broadcast-picker-actions">
               <span>找到 {{ broadcastPickerGroups.length }} 个群</span>
               <div>
                 <button type="button" class="ghost-button" :disabled="!broadcastPickerGroups.length"
-                        @click="selectVisibleBroadcastGroups">全选当前结果</button>
+                        @click="selectVisibleBroadcastGroups">全选当前结果
+                </button>
                 <button type="button" class="ghost-button" :disabled="!broadcastPickerGroups.length"
-                        @click="deselectVisibleBroadcastGroups">取消当前结果</button>
+                        @click="deselectVisibleBroadcastGroups">取消当前结果
+                </button>
               </div>
             </div>
             <div class="broadcast-picker-list" role="group" aria-label="自选群列表">
               <label v-for="group in broadcastPickerGroups" :key="group.groupOpenId" class="broadcast-picker-row">
                 <input type="checkbox" :checked="broadcastSelectedIds.includes(group.groupOpenId)"
-                       @change="toggleBroadcastGroup(group.groupOpenId, $event.target.checked)" />
+                       @change="toggleBroadcastGroup(group.groupOpenId, $event.target.checked)"/>
                 <span class="broadcast-picker-name">{{ groupName(group) }}</span>
-                <span class="broadcast-picker-meta">{{ groupTypeText(group) }} · {{ group.realGroupId || shortId(group.groupOpenId) }}</span>
+                <span class="broadcast-picker-meta">{{
+                    groupTypeText(group)
+                  }} · {{ group.realGroupId || shortId(group.groupOpenId) }}</span>
               </label>
               <p v-if="!broadcastPickerGroups.length" class="broadcast-note">没有匹配的可发送群</p>
             </div>
@@ -315,13 +396,16 @@
             <div class="broadcast-picker-selected-head">
               <strong>已选 {{ broadcastSelectedGroups.length }} 个</strong>
               <button type="button" class="ghost-button" :disabled="!broadcastSelectedGroups.length"
-                      @click="clearBroadcastGroups">清空</button>
+                      @click="clearBroadcastGroups">清空
+              </button>
             </div>
             <div class="broadcast-picker-selected-list">
-              <div v-for="group in broadcastSelectedGroups" :key="group.groupOpenId" class="broadcast-picker-selected-row">
+              <div v-for="group in broadcastSelectedGroups" :key="group.groupOpenId"
+                   class="broadcast-picker-selected-row">
                 <span :title="group.groupOpenId">{{ groupName(group) }}</span>
                 <button type="button" :aria-label="'移除 ' + groupName(group)"
-                        @click="toggleBroadcastGroup(group.groupOpenId, false)">×</button>
+                        @click="toggleBroadcastGroup(group.groupOpenId, false)">×
+                </button>
               </div>
               <p v-if="!broadcastSelectedGroups.length" class="broadcast-note">尚未选择群</p>
             </div>
@@ -367,19 +451,19 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
-import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, toRefs } from 'vue'
-import { emptyUserProfile, loadUserProfile, saveUserProfile } from './lib/userProfile.js'
-import { useLatestRequest } from '../../shared/lib/latestRequest.js'
-import { parseTime, formatTime } from '../../shared/lib/time.js'
-import { useRouter } from 'vue-router'
-import { API_BASE } from '../../router.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
+import {ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, toRefs} from 'vue'
+import {emptyUserProfile, loadUserProfile, saveUserProfile} from './lib/userProfile.js'
+import {useLatestRequest} from '../../shared/lib/latestRequest.js'
+import {parseTime, formatTime} from '../../shared/lib/time.js'
+import {useRouter} from 'vue-router'
+import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import './styles/userlist-theme.css'
 
-const { appId, loadBotConfig } = useBotConfig()
+const {appId, loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 
@@ -388,8 +472,8 @@ const sidebarOpen = ref(false)
 /* ═══════════ 双 Tab：群列表 / 用户列表 ═══════════ */
 
 const tabs = [
-  { key: 'groups', label: '群列表' },
-  { key: 'users', label: '用户列表' }
+  {key: 'groups', label: '群列表'},
+  {key: 'users', label: '用户列表'}
 ]
 const activeTab = ref('groups')
 
@@ -432,45 +516,45 @@ function toggleFilter() {
     const r = filterBtn.value.getBoundingClientRect()
     const vw = window.innerWidth
     filterPanelStyle.value = vw <= 640
-      ? { top: r.bottom + 6 + 'px', left: '8px', right: '8px' }
-      : { top: r.bottom + 6 + 'px', right: Math.max(8, vw - r.right) + 'px' }
+        ? {top: r.bottom + 6 + 'px', left: '8px', right: '8px'}
+        : {top: r.bottom + 6 + 'px', right: Math.max(8, vw - r.right) + 'px'}
   }
 }
 
 const groupFilterOptions = [
-  { value: '', label: '全部分类' },
-  { value: 'whitelist', label: '白名单' },
-  { value: 'blacklist', label: '黑名单' },
-  { value: 'admin', label: '是管理员' },
-  { value: 'active', label: '主动消息' },
-  { value: 'moderation', label: '启用群管系统' }
+  {value: '', label: '全部分类'},
+  {value: 'whitelist', label: '白名单'},
+  {value: 'blacklist', label: '黑名单'},
+  {value: 'admin', label: '是管理员'},
+  {value: 'active', label: '主动消息'},
+  {value: 'moderation', label: '启用群管系统'}
 ]
 const groupMsgOptions = [
-  { value: '', label: '全部' },
-  { value: 'only_mention', label: '仅@' },
-  { value: 'mention_and_context', label: '@+上下文' },
-  { value: 'all', label: '全部消息' }
+  {value: '', label: '全部'},
+  {value: 'only_mention', label: '仅@'},
+  {value: 'mention_and_context', label: '@+上下文'},
+  {value: 'all', label: '全部消息'}
 ]
 const userFilterOptions = [
-  { value: '', label: '全部身份' },
-  { value: 'owner', label: '开发' },
-  { value: 'admin', label: '管理' },
-  { value: 'user', label: '用户' }
+  {value: '', label: '全部身份'},
+  {value: 'owner', label: '开发'},
+  {value: 'admin', label: '管理'},
+  {value: 'user', label: '用户'}
 ]
 
 const groupFuncKeys = ref([])
 const groupFuncOptions = computed(() => [
-  { value: '', label: '全部功能' },
-  ...groupFuncKeys.value.map(k => ({ value: k, label: k }))
+  {value: '', label: '全部功能'},
+  ...groupFuncKeys.value.map(k => ({value: k, label: k}))
 ])
 
 /* ═══════════ 群广播（主动消息） ═══════════ */
 
 const broadcastTypes = [
-  { value: 'text', label: '文本' },
-  { value: 'markdown', label: 'MD' },
-  { value: 'image', label: '图片' },
-  { value: 'ark', label: 'Ark' }
+  {value: 'text', label: '文本'},
+  {value: 'markdown', label: 'MD'},
+  {value: 'image', label: '图片'},
+  {value: 'ark', label: 'Ark'}
 ]
 const showBroadcast = ref(false)
 const broadcastCategory = ref('all')
@@ -481,7 +565,7 @@ const broadcastGroupSearch = ref('')
 const broadcastSelectedIds = ref([])
 const broadcastType = ref('text')
 const broadcastText = ref('')
-const broadcastArk = reactive({ description: '', prompt: '', items: [{ description: '', link: '' }] })
+const broadcastArk = reactive({description: '', prompt: '', items: [{description: '', link: ''}]})
 const broadcastImage = ref(null)
 const broadcastImagePreview = ref(null)
 const broadcastConfirm = ref(false)
@@ -490,24 +574,24 @@ const broadcastStop = ref(false)
 const broadcastProgress = ref(null)
 
 const broadcastEligibleGroups = computed(() => groups.value.filter(group =>
-  group.groupOpenId && group.allowProactiveMsg && !group.blacklisted
+    group.groupOpenId && group.allowProactiveMsg && !group.blacklisted
 ))
 const broadcastCategories = computed(() => {
   const classes = [...new Set(broadcastEligibleGroups.value.map(group => group.groupClassText?.trim()).filter(Boolean))].sort()
   const tags = [...new Set(broadcastEligibleGroups.value.flatMap(group => group.groupTags || []).map(tag => tag?.trim()).filter(Boolean))].sort()
   return [
-    { value: 'all', label: '全部可主动发送的群' },
-    { value: 'custom', label: '自选群' },
-    { value: 'whitelist', label: '白名单群' },
-    { value: 'admin', label: '机器人是群主或管理员' },
-    ...classes.map(value => ({ value: 'class:' + value, label: '群分类 · ' + value })),
-    ...tags.map(value => ({ value: 'tag:' + value, label: '群标签 · ' + value })),
-    ...groupFuncKeys.value.map(value => ({ value: 'function:' + value, label: '已启用功能 · ' + value }))
+    {value: 'all', label: '全部可主动发送的群'},
+    {value: 'custom', label: '自选群'},
+    {value: 'whitelist', label: '白名单群'},
+    {value: 'admin', label: '机器人是群主或管理员'},
+    ...classes.map(value => ({value: 'class:' + value, label: '群分类 · ' + value})),
+    ...tags.map(value => ({value: 'tag:' + value, label: '群标签 · ' + value})),
+    ...groupFuncKeys.value.map(value => ({value: 'function:' + value, label: '已启用功能 · ' + value}))
   ]
 })
 const broadcastPickerFilters = computed(() => broadcastCategories.value
-  .filter(option => option.value !== 'custom')
-  .map(option => option.value === 'all' ? { value: 'all', label: '全部可选群' } : option))
+    .filter(option => option.value !== 'custom')
+    .map(option => option.value === 'all' ? {value: 'all', label: '全部可选群'} : option))
 const broadcastSelectedGroups = computed(() => {
   const byId = new Map(broadcastEligibleGroups.value.map(group => [group.groupOpenId, group]))
   return broadcastSelectedIds.value.map(id => byId.get(id)).filter(Boolean)
@@ -515,12 +599,13 @@ const broadcastSelectedGroups = computed(() => {
 const broadcastPickerGroups = computed(() => {
   const query = broadcastGroupSearch.value.trim().toLowerCase()
   const list = broadcastEligibleGroups.value.filter(group =>
-    groupMatchesBroadcastCategory(group, broadcastPickerFilter.value)
-    && (!query || [groupName(group), group.groupOpenId, group.realGroupId, group.groupClassText, ...(group.groupTags || [])]
-      .some(value => String(value || '').toLowerCase().includes(query)))
+      groupMatchesBroadcastCategory(group, broadcastPickerFilter.value)
+      && (!query || [groupName(group), group.groupOpenId, group.realGroupId, group.groupClassText, ...(group.groupTags || [])]
+          .some(value => String(value || '').toLowerCase().includes(query)))
   )
   return [...list].sort((a, b) => groupName(a).localeCompare(groupName(b), 'zh-CN'))
 })
+
 function groupMatchesBroadcastCategory(group, category) {
   if (category === 'all') return true
   if (category === 'custom') return broadcastSelectedIds.value.includes(group.groupOpenId)
@@ -531,8 +616,9 @@ function groupMatchesBroadcastCategory(group, category) {
   if (category.startsWith('function:')) return (group.enabledFunctions || []).includes(category.slice(9))
   return false
 }
+
 const broadcastTargets = computed(() => broadcastEligibleGroups.value.filter(group =>
-  groupMatchesBroadcastCategory(group, broadcastCategory.value)
+    groupMatchesBroadcastCategory(group, broadcastCategory.value)
 ))
 const broadcastTypeLabel = computed(() => broadcastTypes.find(type => type.value === broadcastType.value)?.label || '')
 const canBroadcast = computed(() => {
@@ -540,15 +626,15 @@ const canBroadcast = computed(() => {
   if (broadcastType.value === 'image') return !!broadcastImage.value
   if (broadcastType.value === 'ark') {
     return !!broadcastArk.description.trim() && !!broadcastArk.prompt.trim()
-      && broadcastArk.items.length > 0 && broadcastArk.items.every(item => !!item.description.trim())
+        && broadcastArk.items.length > 0 && broadcastArk.items.every(item => !!item.description.trim())
   }
   return !!broadcastText.value.trim()
 })
 
 function toggleBroadcastGroup(groupOpenId, checked) {
   broadcastSelectedIds.value = checked
-    ? [...new Set([...broadcastSelectedIds.value, groupOpenId])]
-    : broadcastSelectedIds.value.filter(id => id !== groupOpenId)
+      ? [...new Set([...broadcastSelectedIds.value, groupOpenId])]
+      : broadcastSelectedIds.value.filter(id => id !== groupOpenId)
   broadcastConfirm.value = false
 }
 
@@ -594,7 +680,7 @@ async function openBroadcast() {
   broadcastText.value = ''
   broadcastArk.description = ''
   broadcastArk.prompt = ''
-  broadcastArk.items = [{ description: '', link: '' }]
+  broadcastArk.items = [{description: '', link: ''}]
   broadcastImage.value = null
   broadcastImagePreview.value = null
   broadcastConfirm.value = false
@@ -637,7 +723,7 @@ function pasteBroadcastImage(event) {
 }
 
 function broadcastBody() {
-  const body = { msgType: broadcastType.value, content: broadcastText.value.trim() }
+  const body = {msgType: broadcastType.value, content: broadcastText.value.trim()}
   if (body.msgType === 'markdown') {
     body.content = body.content.replace(/@([A-F0-9]{32})/g, '<qqbot-at-user id="$1" />')
   } else if (body.msgType === 'image') {
@@ -648,7 +734,7 @@ function broadcastBody() {
     body.ark = {
       description: broadcastArk.description.trim(),
       prompt: broadcastArk.prompt.trim(),
-      items: broadcastArk.items.map(item => ({ description: item.description.trim(), link: item.link.trim() || null }))
+      items: broadcastArk.items.map(item => ({description: item.description.trim(), link: item.link.trim() || null}))
     }
   }
   return body
@@ -661,19 +747,19 @@ async function sendBroadcast() {
   broadcastConfirm.value = false
   broadcastSending.value = true
   broadcastStop.value = false
-  broadcastProgress.value = { total: targets.length, done: 0, success: 0, failures: [], stopped: false }
+  broadcastProgress.value = {total: targets.length, done: 0, success: 0, failures: [], stopped: false}
   try {
     for (const group of targets) {
       if (broadcastStop.value) break
       try {
-        await api('/groups/send', { method: 'POST', body: JSON.stringify({ ...body, groupOpenId: group.groupOpenId }) })
+        await api('/groups/send', {method: 'POST', body: JSON.stringify({...body, groupOpenId: group.groupOpenId})})
         broadcastProgress.value.success++
       } catch (error) {
         broadcastProgress.value.failures.push({
           id: group.groupOpenId, name: groupName(group), reason: error.message || '发送失败'
         })
         if (error.message === '未授权' || error.message === 'WebUI 已关闭'
-          || /频控|频率限制|rate.?limit/i.test(error.message || '')) broadcastStop.value = true
+            || /频控|频率限制|rate.?limit/i.test(error.message || '')) broadcastStop.value = true
       }
       broadcastProgress.value.done++
       if (!broadcastStop.value && broadcastProgress.value.done < targets.length) {
@@ -695,8 +781,7 @@ const visibleGroups = computed(() => {
   else if (groupFilterValue.value === 'admin') {
     // memberRole 是机器人在群内的身份，群主也算管理
     list = list.filter(g => ['owner', 'admin', 'administrator'].includes((g.memberRole || '').toLowerCase()))
-  }
-  else if (groupFilterValue.value === 'active') list = list.filter(g => g.allowProactiveMsg)
+  } else if (groupFilterValue.value === 'active') list = list.filter(g => g.allowProactiveMsg)
   else if (groupFilterValue.value === 'moderation') list = list.filter(g => g.moderationEnabled)
   if (groupMsgValue.value) {
     list = list.filter(g => (g.recvMsgSetting || '') === groupMsgValue.value)
@@ -707,9 +792,9 @@ const visibleGroups = computed(() => {
   const q = currentSearch.value.trim().toLowerCase()
   if (q) {
     list = list.filter(g =>
-      (g.groupOpenId || '').toLowerCase().includes(q) ||
-      (g.groupName || '').toLowerCase().includes(q) ||
-      (g.realGroupId != null && String(g.realGroupId).includes(q))
+        (g.groupOpenId || '').toLowerCase().includes(q) ||
+        (g.groupName || '').toLowerCase().includes(q) ||
+        (g.realGroupId != null && String(g.realGroupId).includes(q))
     )
   }
   return [...list].sort((a, b) => {
@@ -747,12 +832,12 @@ const visibleUsers = computed(() => {
   const q = currentSearch.value.trim().toLowerCase()
   if (q) {
     list = list.filter(u =>
-      (u.userOpenId || '').toLowerCase().includes(q) ||
-      (u.username || '').toLowerCase().includes(q)
+        (u.userOpenId || '').toLowerCase().includes(q) ||
+        (u.username || '').toLowerCase().includes(q)
     )
   }
   return [...list].sort((a, b) =>
-    (a.username || a.userOpenId || '').localeCompare(b.username || b.userOpenId || '')
+      (a.username || a.userOpenId || '').localeCompare(b.username || b.userOpenId || '')
   )
 })
 
@@ -802,17 +887,17 @@ function shortId(id) {
 function tileStyle(openId) {
   let h = 0
   for (const ch of openId || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return { background: `hsl(${h % 360}, 42%, 62%)` }
+  return {background: `hsl(${h % 360}, 42%, 62%)`}
 }
 
 /* ═══════════ 跳转（深链到聊天页） ═══════════ */
 
 function openGroupChat(openId) {
-  router.push({ path: '/', query: { group: openId } })
+  router.push({path: '/', query: {group: openId}})
 }
 
 function openUserChat(u) {
-  router.push({ path: '/', query: { user: u.userOpenId } })
+  router.push({path: '/', query: {user: u.userOpenId}})
 }
 
 /* ═══════════ 复制 ═══════════ */
@@ -825,7 +910,9 @@ function copyText(text) {
   const done = () => {
     copyState.value = text
     if (copyTimer) clearTimeout(copyTimer)
-    copyTimer = setTimeout(() => { copyState.value = '' }, 1200)
+    copyTimer = setTimeout(() => {
+      copyState.value = ''
+    }, 1200)
   }
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done))
@@ -841,7 +928,11 @@ function fallbackCopy(text, done) {
   ta.style.opacity = '0'
   document.body.appendChild(ta)
   ta.select()
-  try { document.execCommand('copy'); done() } catch { /* ignore */ }
+  try {
+    document.execCommand('copy');
+    done()
+  } catch { /* ignore */
+  }
   document.body.removeChild(ta)
 }
 
@@ -850,8 +941,10 @@ function fallbackCopy(text, done) {
 const showPermModal = ref(false)
 const permTarget = ref('')
 const permProfile = reactive(emptyUserProfile())
-const { role: pendingPermRole, permissions: pendingPermNodes, blocked: pendingIsBlocked,
-  ignored: pendingIsIgnored, c2cPush: pendingC2CPush } = toRefs(permProfile)
+const {
+  role: pendingPermRole, permissions: pendingPermNodes, blocked: pendingIsBlocked,
+  ignored: pendingIsIgnored, c2cPush: pendingC2CPush
+} = toRefs(permProfile)
 const permRequests = useLatestRequest()
 let permRequest = null
 const permLoading = ref(false)
@@ -873,7 +966,7 @@ async function openPermModal(unionOpenId) {
   permError.value = ''
   showPermModal.value = true
   try {
-    const data = await loadUserProfile(api, unionOpenId, { signal: request.signal })
+    const data = await loadUserProfile(api, unionOpenId, {signal: request.signal})
     if (!request.isCurrent()) return
     Object.assign(permProfile, data)
     permReady.value = true
@@ -901,12 +994,16 @@ async function confirmPerm() {
     const saved = await saveUserProfile(api, target, permProfile)
     if (!request.isCurrent()) return
     users.value = users.value.map(user => user.userOpenId === target
-      ? { ...user, role: saved.role, permissions: saved.permissions, isBlocked: saved.blocked,
-          isIgnored: saved.ignored, c2cPush: saved.c2cPush } : user)
+        ? {
+          ...user, role: saved.role, permissions: saved.permissions, isBlocked: saved.blocked,
+          isIgnored: saved.ignored, c2cPush: saved.c2cPush
+        } : user)
     closePermModal()
   } catch (e) {
     if (request.isCurrent()) permError.value = e.message
-  } finally { permSaving.value = false }
+  } finally {
+    permSaving.value = false
+  }
 }
 
 async function addPermNode(perm) {
@@ -915,7 +1012,9 @@ async function addPermNode(perm) {
   if (await setPermNode(value, true)) newPermNode.value = ''
 }
 
-function removePermNode(perm) { return setPermNode(perm, false) }
+function removePermNode(perm) {
+  return setPermNode(perm, false)
+}
 
 async function setPermNode(perm, enabled) {
   if (!permTarget.value || permLocked.value) return false
@@ -924,23 +1023,26 @@ async function setPermNode(perm, enabled) {
   permSaving.value = true
   permError.value = ''
   try {
-    await api(`/c2c/${encodeURIComponent(target)}/permissions/${encodeURIComponent(perm)}?enabled=${enabled}`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(target)}/permissions/${encodeURIComponent(perm)}?enabled=${enabled}`, {method: 'POST'})
     if (!request.isCurrent()) return false
     pendingPermNodes.value = enabled ? [...pendingPermNodes.value, perm] : pendingPermNodes.value.filter(p => p !== perm)
     return true
   } catch (e) {
     if (request.isCurrent()) permError.value = e.message
     return false
-  } finally { permSaving.value = false }
+  } finally {
+    permSaving.value = false
+  }
 }
 
 /* ═══════════ 请求 ═══════════ */
 
 
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
-
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 
 function applySearch() {
   currentSearch.value = searchText.value.trim()
@@ -952,13 +1054,14 @@ function clearSearch() {
 }
 
 const loadGroupsRequests = useLatestRequest()
+
 async function loadGroups() {
   const request = loadGroupsRequests.begin()
   if (!request.isCurrent()) return
   loadingGroups.value = true
   groupsError.value = ''
   try {
-    const result = await api('/groups', { signal: request.signal })
+    const result = await api('/groups', {signal: request.signal})
     if (!request.isCurrent()) return
     groups.value = result || []
   } catch (e) {
@@ -972,13 +1075,14 @@ async function loadGroups() {
 }
 
 const loadUsersRequests = useLatestRequest()
+
 async function loadUsers() {
   const request = loadUsersRequests.begin()
   if (!request.isCurrent()) return
   loadingUsers.value = true
   usersError.value = ''
   try {
-    const result = await api('/c2c/users', { signal: request.signal })
+    const result = await api('/c2c/users', {signal: request.signal})
     if (!request.isCurrent()) return
     users.value = result || []
   } catch (e) {
@@ -992,11 +1096,12 @@ async function loadUsers() {
 }
 
 const loadGroupFuncKeysRequests = useLatestRequest()
+
 async function loadGroupFuncKeys() {
   const request = loadGroupFuncKeysRequests.begin()
   if (!request.isCurrent()) return
   try {
-    const result = await api('/groups/functions/keys', { signal: request.signal })
+    const result = await api('/groups/functions/keys', {signal: request.signal})
     if (!request.isCurrent()) return
     groupFuncKeys.value = result || []
   } catch (e) {
@@ -1026,91 +1131,462 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.perm-error { color: var(--color-danger, #dc2626); overflow-wrap: anywhere; }
+.perm-error {
+  color: var(--color-danger, #dc2626);
+  overflow-wrap: anywhere;
+}
+
 .broadcast-trigger {
-  display: inline-grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; padding: 0;
-  border: 1px solid var(--color-border-input); border-radius: var(--radius-sm);
-  background: var(--color-surface); color: var(--color-text-secondary); cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
-.broadcast-trigger svg { width: 17px; height: 17px; }
-.broadcast-trigger:hover { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); }
-.broadcast-trigger:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.broadcast-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
-.broadcast-modal { width: min(680px, calc(100vw - 24px)); max-width: none; max-height: min(88vh, 860px); }
-.broadcast-body { gap: 14px; min-height: 0; }
-.broadcast-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--color-text); }
+
+.broadcast-trigger svg {
+  width: 17px;
+  height: 17px;
+}
+
+.broadcast-trigger:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+
+.broadcast-trigger:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.broadcast-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.broadcast-modal {
+  width: min(680px, calc(100vw - 24px));
+  max-width: none;
+  max-height: min(88vh, 860px);
+}
+
+.broadcast-body {
+  gap: 14px;
+  min-height: 0;
+}
+
+.broadcast-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
 .broadcast-field input:not([type="file"]), .broadcast-field select, .broadcast-field textarea {
-  width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--color-border-input);
-  border-radius: 8px; background: var(--color-surface); color: var(--color-text); font: inherit;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
 }
-.broadcast-field textarea { resize: vertical; min-height: 110px; }
-.broadcast-field input[type="file"] { max-width: 100%; }
-.broadcast-picker { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 13px; }
-.broadcast-picker-overlay { z-index: 1100; }
-.broadcast-picker-dialog { width: min(1040px, calc(100vw - 32px)); height: min(84dvh, 780px); max-width: none; max-height: none; overflow: hidden; }
-.broadcast-picker-head > div { min-width: 0; }
-.broadcast-picker-head h2 { margin: 0; }
-.broadcast-picker-head p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 12px; }
-.broadcast-picker-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; flex: 1; min-height: 0; }
-.broadcast-picker-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; padding: 18px; }
-.broadcast-picker-controls { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 9px; }
+
+.broadcast-field textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.broadcast-field input[type="file"] {
+  max-width: 100%;
+}
+
+.broadcast-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.broadcast-picker-overlay {
+  z-index: 1100;
+}
+
+.broadcast-picker-dialog {
+  width: min(1040px, calc(100vw - 32px));
+  height: min(84dvh, 780px);
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+}
+
+.broadcast-picker-head > div {
+  min-width: 0;
+}
+
+.broadcast-picker-head h2 {
+  margin: 0;
+}
+
+.broadcast-picker-head p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.broadcast-picker-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  flex: 1;
+  min-height: 0;
+}
+
+.broadcast-picker-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  padding: 18px;
+}
+
+.broadcast-picker-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 9px;
+}
+
 .broadcast-picker-controls input, .broadcast-picker-controls select {
-  min-width: 0; width: 100%; box-sizing: border-box; padding: 9px 10px;
-  border: 1px solid var(--color-border-input); border-radius: 7px;
-  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 12px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
 }
-.broadcast-picker-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--color-text-muted); }
-.broadcast-picker-actions > div { display: flex; flex-wrap: wrap; gap: 6px; }
-.broadcast-picker-list { flex: 1; min-height: 0; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; }
-.broadcast-picker-list > .broadcast-note { padding: 12px; }
+
+.broadcast-picker-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.broadcast-picker-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.broadcast-picker-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.broadcast-picker-list > .broadcast-note {
+  padding: 12px;
+}
+
 .broadcast-picker-row {
-  display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 9px;
-  min-height: 42px; padding: 8px 10px; border-bottom: 1px solid var(--color-hairline);
-  cursor: pointer; font-size: 12px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-hairline);
+  cursor: pointer;
+  font-size: 12px;
 }
-.broadcast-picker-row:last-child { border-bottom: 0; }
-.broadcast-picker-row:hover { background: var(--color-surface-hover); }
-.broadcast-picker-row input { margin: 0; accent-color: var(--color-accent); }
-.broadcast-picker-name, .broadcast-picker-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.broadcast-picker-meta { max-width: 190px; color: var(--color-text-muted); font-size: 11px; }
-.broadcast-picker-selected { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--color-border); background: var(--color-surface-alt); }
-.broadcast-picker-selected-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 12px; border-bottom: 1px solid var(--color-border); font-size: 12px; }
-.broadcast-picker-selected-list { flex: 1; min-height: 0; overflow-y: auto; padding: 7px 9px; }
-.broadcast-picker-selected-list > .broadcast-note { padding: 8px 4px; }
-.broadcast-picker-selected-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; border-radius: 6px; font-size: 12px; }
-.broadcast-picker-selected-row:hover { background: var(--color-surface); }
-.broadcast-picker-selected-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.broadcast-picker-selected-row button { flex: 0 0 24px; width: 24px; height: 24px; border: 0; border-radius: 5px; background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: 18px; }
-.broadcast-picker-selected-row button:hover { background: var(--color-danger-soft); color: var(--color-danger); }
-.broadcast-picker-foot { align-items: center; justify-content: space-between; }
-.broadcast-picker-foot span { color: var(--color-text-muted); font-size: 11px; }
-.broadcast-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--color-text-muted); }
-.broadcast-targets { display: flex; flex-direction: column; gap: 8px; padding: 11px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 12px; }
-.broadcast-target-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 100px; overflow-y: auto; }
-.broadcast-target-list span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 4px 7px; border-radius: 6px; background: var(--color-surface-alt); }
-.broadcast-types { display: flex; flex-wrap: wrap; gap: 7px; }
-.broadcast-types label { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 7px; cursor: pointer; font-size: 12px; }
-.broadcast-types label.active { border-color: var(--color-accent); color: var(--color-accent); }
-.broadcast-ark-item { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 8px; }
-.broadcast-ark-item .ghost-button { min-height: 36px; }
-.broadcast-image-preview { max-width: min(100%, 320px); max-height: 180px; object-fit: contain; align-self: flex-start; border-radius: 7px; }
-.broadcast-confirm, .broadcast-progress { margin: 0; padding: 10px; border-radius: 8px; background: var(--color-surface-alt); font-size: 12px; line-height: 1.5; }
-.broadcast-failures { margin: 0; padding-left: 22px; max-height: 120px; overflow-y: auto; color: var(--color-danger-strong); font-size: 12px; }
+
+.broadcast-picker-row:last-child {
+  border-bottom: 0;
+}
+
+.broadcast-picker-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.broadcast-picker-row input {
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.broadcast-picker-name, .broadcast-picker-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broadcast-picker-meta {
+  max-width: 190px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.broadcast-picker-selected {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+.broadcast-picker-selected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+.broadcast-picker-selected-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 7px 9px;
+}
+
+.broadcast-picker-selected-list > .broadcast-note {
+  padding: 8px 4px;
+}
+
+.broadcast-picker-selected-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.broadcast-picker-selected-row:hover {
+  background: var(--color-surface);
+}
+
+.broadcast-picker-selected-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.broadcast-picker-selected-row button {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.broadcast-picker-selected-row button:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.broadcast-picker-foot {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.broadcast-picker-foot span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.broadcast-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.broadcast-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.broadcast-target-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.broadcast-target-list span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--color-surface-alt);
+}
+
+.broadcast-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.broadcast-types label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.broadcast-types label.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.broadcast-ark-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.broadcast-ark-item .ghost-button {
+  min-height: 36px;
+}
+
+.broadcast-image-preview {
+  max-width: min(100%, 320px);
+  max-height: 180px;
+  object-fit: contain;
+  align-self: flex-start;
+  border-radius: 7px;
+}
+
+.broadcast-confirm, .broadcast-progress {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--color-surface-alt);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.broadcast-failures {
+  margin: 0;
+  padding-left: 22px;
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--color-danger-strong);
+  font-size: 12px;
+}
+
 @media (max-width: 600px) {
-  .broadcast-modal { max-height: calc(100dvh - 20px); }
-  .broadcast-picker-dialog { width: 100vw; height: 100dvh; border-radius: 0; }
-  .broadcast-picker-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(120px, 25%); }
-  .broadcast-picker-main { padding: 12px; gap: 9px; }
-  .broadcast-picker-controls { grid-template-columns: minmax(0, 1fr); }
-  .broadcast-picker-selected { border-left: 0; border-top: 1px solid var(--color-border); }
-  .broadcast-picker-selected-head { padding: 7px 12px; }
-  .broadcast-picker-selected-list { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; padding: 6px 10px; }
-  .broadcast-picker-selected-row { max-width: 100%; background: var(--color-surface); }
-  .broadcast-picker-row { grid-template-columns: 16px minmax(0, 1fr); }
-  .broadcast-picker-meta { grid-column: 2; max-width: 100%; }
-  .broadcast-picker-foot span { display: none; }
-  .broadcast-picker-foot { justify-content: flex-end; }
-  .broadcast-ark-item { grid-template-columns: 1fr; }
+  .broadcast-modal {
+    max-height: calc(100dvh - 20px);
+  }
+
+  .broadcast-picker-dialog {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  .broadcast-picker-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(120px, 25%);
+  }
+
+  .broadcast-picker-main {
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .broadcast-picker-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .broadcast-picker-selected {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .broadcast-picker-selected-head {
+    padding: 7px 12px;
+  }
+
+  .broadcast-picker-selected-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 4px;
+    padding: 6px 10px;
+  }
+
+  .broadcast-picker-selected-row {
+    max-width: 100%;
+    background: var(--color-surface);
+  }
+
+  .broadcast-picker-row {
+    grid-template-columns: 16px minmax(0, 1fr);
+  }
+
+  .broadcast-picker-meta {
+    grid-column: 2;
+    max-width: 100%;
+  }
+
+  .broadcast-picker-foot span {
+    display: none;
+  }
+
+  .broadcast-picker-foot {
+    justify-content: flex-end;
+  }
+
+  .broadcast-ark-item {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

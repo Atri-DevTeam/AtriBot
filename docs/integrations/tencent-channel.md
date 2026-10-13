@@ -20,30 +20,69 @@ tencent-channel:
 
 ## Java 接口
 
-业务通过静态封装传递参数，返回 `ChannelCliResult`：
+业务调用使用静态方法，参数为频道 ID、成员 ID、正文等业务字段，不需要构造 JSON 或处理 CLI 执行选项
+
+- 查询返回 `JsonNode` 业务数据，失败返回 `null`，分页游标随数据保留
+- 发送、修改、删除等操作返回 `boolean`，失败返回 `false`
+- 搜索后选择、快捷发布等多步流程返回 `JsonNode`，保留候选项与 `resume_id`，由对应的 `resume...` 方法继续处理
+- 方法同步等待 CLI 完成；后台任务可在项目现有异步任务中调用
 
 ```java
-ChannelCliResult result = ChannelInformation.getJoinedGuilds();
-if (result.success()) {
-    JsonNode data = result.getData();
-}
+JsonNode guilds = ChannelInformation.getJoinedGuilds();
+JsonNode members = ChannelMembers.getMemberList(guildId);
+JsonNode currentUser = ChannelMembers.getCurrentUser(guildId);
+
+boolean sent = ChannelPosts.sendMessage(guildId, channelId, "公告内容");
+boolean muted = ChannelMembers.muteMember(guildId, tinyId, Duration.ofMinutes(10));
+boolean removed = ChannelPosts.deleteFeed(guildId, channelId, feedId, createTime);
 ```
 
-| 封装 | 内容 |
+封装覆盖本地 `tencent-channel-cli 1.0.10` 命令目录中的 64 个业务命令（`feed` 24 个、`manage` 40 个），另提供登录、诊断和命令结构查询。CLI 后续新增的命令和参数需要单独适配
+
+| 封装 | 方法与能力 |
 | --- | --- |
-| `ChannelInformation` | 频道资料、列表、板块、搜索与分享 |
-| `ChannelPosts` | 帖子查询、发布和管理 |
-| `ChannelComments` | 评论与回复 |
-| `ChannelPrivateChat` | 私信 |
-| `ChannelNotices` | 通知 |
-| `ChannelMembers` | 成员 |
-| `ChannelRoles` | 身份组 |
-| `ChannelManagement` | 频道管理 |
-| `ChannelSystem` | 系统与账号相关操作 |
+| `ChannelInformation` | `getJoinedGuilds`、`getGuildInfo`、`getChannelList`、`searchGuildContent`、`getJoinGuildSetting`、`getGuildShareUrl`、`getShareInfo` |
+| `ChannelPosts` | `getGuildFeeds`、`getChannelTimelineFeeds`、`getPost`、`searchGuildFeeds`、`sharePost`；文本、URL 图片、Markdown、本地图片发布；编辑、删除、点赞、置顶、精华、移动；快捷发布、最新及热门帖子查询和流程续办 |
+| `ChannelComments` | `getFeedComments`、`getNextPageReplies`；评论与回复发送、删除、点赞及取消；`replyToReply` 回复指定回复；搜索评论、搜索删帖禁言及流程续办 |
+| `ChannelPrivateChat` | `sendMessage` 发送频道私信、`replyMessage` 按通知编号回复 |
+| `ChannelNotices` | 互动通知、增量通知、最近记录；开启、关闭、订阅、取消订阅；同意或拒绝申请；`notifyDaemon` 通知检查 |
+| `ChannelMembers` | `getCurrentUser`、`getMemberInfo`、`getMemberList`、`searchMembers`；单人或批量移除；按时长禁言、`setMuteUntil` 设置截止时间、解除禁言 |
+| `ChannelRoles` | 创建及修改身份组、增减身份组成员、增减管理员 |
+| `ChannelManagement` | 修改频道资料及频道号、加入及退出、板块创建修改删除、头像、频道创建、加入设置、搜索加入及流程续办 |
+| `ChannelSystem` | `version`、`doctor`、`login`、`pollToken`、`loginStatus`、`schema`、`searchSchema` |
 
-`ChannelCliResult` 保留成功状态、退出码、JSON 响应、标准输出、标准错误和调用信息。通过 `getData()`、`getError()` 读取业务结果，并可检查限流或认证过期
+除 `version()` 返回字符串外，系统查询返回 `JsonNode`，失败返回 `null`
 
-[ChannelCliClient](../../src/main/java/top/yzljc/sakuraba_ema/ChannelCliClient.java) 统一管理进程执行与参数传递。新增业务调用优先扩展对应封装，避免业务层自行拼接 shell 命令
+### 图片、Markdown 与评论
+
+```java
+ChannelPosts.sendMessage(guildId, channelId,
+        new ImageComponent(imageUrl).setText("图片说明"));
+
+ChannelPosts.sendMessage(guildId, channelId, "公告标题",
+        new Markdown("## 公告\n\n正文内容"));
+
+ChannelPosts.publishImages(guildId, channelId,
+        List.of("/data/images/example.png"), "图片说明", null);
+
+var target = new ChannelComments.FeedTarget(guildId, channelId, feedId, createTime);
+ChannelComments.sendComment(target, "评论内容");
+ChannelComments.sendComment(target, null, Path.of("/data/images/example.png"));
+```
+
+URL 图片及 Markdown 中的远程配图先下载至临时文件，CLI 调用完成后清理。评论和回复允许仅发送本地图片，正文与图片至少提供一项
+
+评论、回复操作所需的创建时间、作者 ID 等字段使用查询结果中的原值。`FeedTarget` 和 `CommentTarget` 集中保存这些定位字段
+
+### 执行层
+
+业务方法内部确认写入操作，不要求调用者再传 `confirmed` 或 `ChannelCliOptions`。`/ema` 管理指令继续保留 `--yes`、`--dry-run` 和详细执行结果
+
+`internal` 中的 `PostTools`、`CommentTools`、`MemberTools` 等负责参数构造，返回 `ChannelCliResult`。该结果保留退出码、响应、标准输出、标准错误、超时和重试信息。确有预演或详细错误处理需求时使用这一层
+
+[ChannelCliClient](../../src/main/java/top/yzljc/sakuraba_ema/ChannelCliClient.java) 统一执行进程。普通调用串行执行，限流后等待 70 秒重试一次；WebUI 使用独立的交互入口，不自动重试。`notifyDaemon` 仍受客户端进程超时限制，单次检查使用 `once=true`
+
+原来需要读取 `ChannelCliResult` 的业务调用，应改为检查 `null` 或 `boolean`。原来的带执行选项重载迁入 `internal`，重复的 `ChannelFeedClient`、`ChannelManageClient` 原始 JSON 转发层已移除
 
 ## 管理指令
 

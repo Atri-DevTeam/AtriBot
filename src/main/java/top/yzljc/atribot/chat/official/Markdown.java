@@ -40,7 +40,7 @@ public class Markdown {
     }
 
     public static String img(String url, int width, int height) {
-        return String.format("![img #%dpx #%dpx](%s)", width, height, url);
+        return String.format("![atribot_pic #%dpx #%dpx](%s)", width, height, url);
     }
 
     public static String img(String alt, String url, int width, int height) {

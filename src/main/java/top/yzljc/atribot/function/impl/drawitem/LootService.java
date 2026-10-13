@@ -94,6 +94,13 @@ public class LootService {
         return catalogCache;
     }
 
+    /**
+     * @return 最近一次成功获取物品目录的时间戳（毫秒），尚未获取时为零
+     */
+    public static long getCatalogFetchedAt() {
+        return catalogFetchedAt;
+    }
+
     private enum FreeDrawClaimStatus {
         CLAIMED,
         USED,

@@ -1,354 +1,354 @@
 
 .userlist-layout {
-  display: block;
+    display: block;
 }
 
 .userlist-panel {
-  height: 100%;
+    height: 100%;
 }
 
 /* search bar */
 .userlist-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
-  background: #fff;
-  border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: #fff;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .userlist-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  color: #1e293b;
-  outline: none;
-  background: var(--color-surface-alt);
-  transition: border-color 0.15s;
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    color: #1e293b;
+    outline: none;
+    background: var(--color-surface-alt);
+    transition: border-color 0.15s;
 }
 
 .userlist-search-input:focus {
-  border-color: var(--color-accent);
-  background: #fff;
+    border-color: var(--color-accent);
+    background: #fff;
 }
 
 .userlist-search-input::placeholder {
-  color: var(--color-text-subtle);
+    color: var(--color-text-subtle);
 }
 
 .userlist-content {
-  overflow-y: auto;
-  padding: 18px;
-  background: var(--color-surface-alt);
+    overflow-y: auto;
+    padding: 18px;
+    background: var(--color-surface-alt);
 }
 
 /* card list */
 .userlist-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .userlist-card {
-  background: #fff;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
+    background: #fff;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
 }
 
 .userlist-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-circle);
-  flex-shrink: 0;
-  object-fit: cover;
-  background: var(--color-border);
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-circle);
+    flex-shrink: 0;
+    object-fit: cover;
+    background: var(--color-border);
 }
 
 .userlist-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .userlist-row1 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .userlist-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1e293b;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
 }
 
 .userlist-role {
-  padding: 1px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 600;
+    padding: 1px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .userlist-role.role-owner {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-strong);
+    background: var(--color-danger-soft);
+    color: var(--color-danger-strong);
 }
 
 .userlist-role.role-admin {
-  background: #dbeafe;
-  color: #1e40af;
+    background: #dbeafe;
+    color: #1e40af;
 }
 
 .userlist-role.role-member {
-  background: var(--color-border);
-  color: #475569;
+    background: var(--color-border);
+    color: #475569;
 }
 
 .userlist-perm {
-  padding: 1px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 600;
+    padding: 1px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .userlist-perm.perm-owner {
-  background: var(--color-warning-soft);
-  color: #92400e;
+    background: var(--color-warning-soft);
+    color: #92400e;
 }
 
 .userlist-perm.perm-admin {
-  background: var(--color-success-soft);
-  color: var(--color-success-strong);
+    background: var(--color-success-soft);
+    color: var(--color-success-strong);
 }
 
 .userlist-perm.perm-blacklist {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-strong);
+    background: var(--color-danger-soft);
+    color: var(--color-danger-strong);
 }
 
 .userlist-perm.perm-user {
-  background: var(--color-surface-sunken);
-  color: var(--color-text-muted);
+    background: var(--color-surface-sunken);
+    color: var(--color-text-muted);
 }
 
 .userlist-row2 {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--color-text-subtle);
-  font-family: monospace;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--color-text-subtle);
+    font-family: monospace;
 }
 
 .userlist-id {
-  cursor: default;
+    cursor: default;
 }
 
 .userlist-gid {
-  cursor: default;
+    cursor: default;
 }
 
 .userlist-time {
-  font-family: inherit;
+    font-family: inherit;
 }
 
 .userlist-row3 {
-  margin-top: 2px;
+    margin-top: 2px;
 }
 
 .userlist-actions {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .userlist-action-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  background: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  transition: background 0.15s, border-color 0.15s;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius-md);
+    background: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    transition: background 0.15s, border-color 0.15s;
 }
 
 .userlist-action-btn:hover {
-  background: var(--color-surface-sunken);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+    background: var(--color-surface-sunken);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
 }
 
 .userlist-msg {
-  font-size: 14px;
-  color: #334155;
-  line-height: 1.5;
-  word-break: break-all;
-  white-space: pre-wrap;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.5;
+    word-break: break-all;
+    white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .userlist-bottom-pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 0 4px;
-  color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 0 4px;
+    color: var(--color-text-muted);
 }
 
 .userlist-page-indicator {
-  min-width: 78px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-strong);
+    min-width: 78px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-strong);
 }
 
 .userlist-page-btn {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border: 1px solid var(--color-border-input);
-  border-radius: 11px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 11px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
 }
 
 .userlist-page-btn svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .userlist-page-btn:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.08);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(15, 118, 110, 0.08);
 }
 
 .userlist-page-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-  box-shadow: none;
+    opacity: 0.35;
+    cursor: default;
+    box-shadow: none;
 }
 
 @media (max-width: 640px) {
-  .userlist-search-bar {
-    padding: 10px 8px;
-    gap: 6px;
-  }
+    .userlist-search-bar {
+        padding: 10px 8px;
+        gap: 6px;
+    }
 
-  .userlist-search-input {
-    font-size: 13px;
-  }
+    .userlist-search-input {
+        font-size: 13px;
+    }
 
-  .userlist-content {
-    padding: 8px;
-  }
+    .userlist-content {
+        padding: 8px;
+    }
 
-  .userlist-bottom-pager {
-    gap: 8px;
-    padding: 12px 0 2px;
-  }
+    .userlist-bottom-pager {
+        gap: 8px;
+        padding: 12px 0 2px;
+    }
 
-  .userlist-page-indicator {
-    min-width: 64px;
-  }
+    .userlist-page-indicator {
+        min-width: 64px;
+    }
 
-  .userlist-card {
-    padding: 10px;
-    gap: 10px;
-  }
+    .userlist-card {
+        padding: 10px;
+        gap: 10px;
+    }
 
-  .userlist-avatar {
-    width: 36px;
-    height: 36px;
-  }
+    .userlist-avatar {
+        width: 36px;
+        height: 36px;
+    }
 
-  .userlist-row2 {
-    gap: 8px;
-    font-size: 11px;
-  }
+    .userlist-row2 {
+        gap: 8px;
+        font-size: 11px;
+    }
 
-  .userlist-id,
-  .userlist-gid {
-    word-break: break-all;
-  }
+    .userlist-id,
+    .userlist-gid {
+        word-break: break-all;
+    }
 }
 
 /* ══════════ 消息来源切换（全部群消息 / 全部私聊消息）══════════ */
 
 .userlist-source-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: 2px;
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    padding: 2px;
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
 }
 
 .userlist-source-tab {
-  padding: 4px 12px;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-  background: transparent;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 1.6;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease;
+    padding: 4px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    background: transparent;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.12s ease, background 0.12s ease;
 }
 
 .userlist-source-tab:hover {
-  color: var(--color-text-strong);
+    color: var(--color-text-strong);
 }
 
 .userlist-source-tab.active {
-  color: var(--color-accent);
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    color: var(--color-accent);
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 @media (max-width: 640px) {
-  .userlist-source-tab {
-    padding: 4px 9px;
-    font-size: var(--text-xs);
-  }
+    .userlist-source-tab {
+        padding: 4px 9px;
+        font-size: var(--text-xs);
+    }
 }

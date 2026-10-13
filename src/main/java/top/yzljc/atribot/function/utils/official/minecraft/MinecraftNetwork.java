@@ -1,6 +1,6 @@
 package top.yzljc.atribot.function.utils.official.minecraft;
 
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -79,10 +79,10 @@ public abstract class MinecraftNetwork {
 
             String markdownLogs;
             if (logs == null) {
-                markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n" +
+                markdownLogs = "![console #24px #24px](" + RS.get("resource.image.console-logo") + ") **指令执行结果**\n\n" +
                         "> 无法获取指令执行结果，可能是服务器未响应或发生错误\n";
             } else if (sender.hasPermission()) {
-                markdownLogs = "![console #24px #24px](" + ResourcesProperties.CONSOLE_LOGO_IMG + ") **指令执行结果**\n\n" +
+                markdownLogs = "![console #24px #24px](" + RS.get("resource.image.console-logo") + ") **指令执行结果**\n\n" +
                         "```\n" + logs + "\n```\n";
             } else {
                 markdownLogs = "指令已送达，但对你隐藏";

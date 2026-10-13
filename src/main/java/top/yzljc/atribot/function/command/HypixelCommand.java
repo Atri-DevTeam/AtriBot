@@ -20,10 +20,11 @@ import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
-import top.yzljc.atribot.configuration.ResourcesProperties;
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
+import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.DiceImpl;
@@ -74,22 +75,22 @@ public class HypixelCommand implements CommandExecutor, Listener {
 
     private static Map<String, SubCommand> createSubCommands() {
         Map<String, SubCommand> commands = new LinkedHashMap<>();
-        register(commands, new SubCommand("wz", Category.GENERAL, "查询玩家法师掘战详细数据", ResourcesProperties.ICON_TNT, HypixelCommand::handleWizards));
-        register(commands, new SubCommand("zs", Category.GENERAL, "查询玩家僵尸末日详细数据", ResourcesProperties.ICON_ZOMBIE_HEAD, HypixelCommand::handleZombies));
-        register(commands, new SubCommand("gs", Category.GENERAL, "全服小游戏在线情况", ResourcesProperties.HYPIXEL_HEADER_IMG, HypixelCommand::handleGameStatus));
-        register(commands, new SubCommand("pack", Category.SKYBLOCK, "查询Skyblock资源包版本信息", ResourcesProperties.ICON_KNOWLEDGE_BOOK, HypixelCommand::handlePack));
-        register(commands, new SubCommand("dice", Category.SKYBLOCK, "随机Skyblock Dice(鉴定你的欧气)", ResourcesProperties.DICE_RENDER_RESULT_IMG_T.replace("<id>", "6"), HypixelCommand::handleDice));
-        register(commands, new SubCommand("coop", Category.SKYBLOCK, "查询玩家Skyblock Coop在线情况", ResourcesProperties.ICON_DIAMOND_PICKAXE, HypixelCommand::handleCoop));
-        register(commands, new SubCommand("dungeon", Category.SKYBLOCK, "查询玩家最近地牢游玩场次", ResourcesProperties.ICON_SKYBLOCK_DUNGEON, HypixelCommand::handleDungeon));
-        register(commands, new SubCommand("lf", Category.GENERAL, "查询玩家大厅钓鱼数据", ResourcesProperties.ICON_FISHING_ROD, HypixelCommand::handleLobbyFishing));
-        register(commands, new SubCommand("hotf", Category.SKYBLOCK, "查看玩家Skyblock树心数据", ResourcesProperties.ICON_HOTF, HypixelCommand::handleHotf));
-        register(commands, new SubCommand("pr", Category.GENERAL, "查询玩家大厅跑酷详细数据", ResourcesProperties.ICON_PARKOUR, HypixelCommand::handleParkour));
-        register(commands, new SubCommand("dpr", Category.GENERAL, "查询玩家街机心跳水立方详细数据", ResourcesProperties.ICON_DROPPER, HypixelCommand::handleArcadeDropper));
-        register(commands, new SubCommand("bw", Category.GENERAL, "查询玩家起床战争详细数据", ResourcesProperties.ICON_BEDWARS, HypixelCommand::handleBedwars));
-        register(commands, new SubCommand("sh", Category.GENERAL, "查询玩家起床战争入梦酒店任务树", ResourcesProperties.ICON_SLUMBER_HOTEL, HypixelCommand::handleSlumberHotel));
-        register(commands, new SubCommand("cr", Category.SKYBLOCK, "查询Skyblock日历", ResourcesProperties.ICON_SKYBLOCK_CALENDAR, HypixelCommand::handleSkyblockCalendar));
-        register(commands, new SubCommand("ip", Category.SKYBLOCK, "查询Skyblock物品价格信息", ResourcesProperties.SKB_BANK_LOGO_IMG, HypixelCommand::handleSearchSkyblockItemPrice));
-        register(commands, new SubCommand("hotm", Category.SKYBLOCK, "查询玩家Skyblock山之心数据", ResourcesProperties.ICON_SKYBLOCK_HOTM, HypixelCommand::handleHotm));
+        register(commands, new SubCommand("wz", Category.GENERAL, "查询玩家法师掘战详细数据", RS.get("resource.image.icon-tnt"), HypixelCommand::handleWizards));
+        register(commands, new SubCommand("zs", Category.GENERAL, "查询玩家僵尸末日详细数据", RS.get("resource.image.icon-zombie-head"), HypixelCommand::handleZombies));
+        register(commands, new SubCommand("gs", Category.GENERAL, "全服小游戏在线情况", RS.get("resource.image.hypixel-header"), HypixelCommand::handleGameStatus));
+        register(commands, new SubCommand("pack", Category.SKYBLOCK, "查询Skyblock资源包版本信息", RS.get("resource.image.icon-knowledge-book"), HypixelCommand::handlePack));
+        register(commands, new SubCommand("dice", Category.SKYBLOCK, "随机Skyblock Dice(鉴定你的欧气)", RS.get("resource.image.dice-result-template").replace("<id>", "6"), HypixelCommand::handleDice));
+        register(commands, new SubCommand("coop", Category.SKYBLOCK, "查询玩家Skyblock Coop在线情况", RS.get("resource.image.icon-diamond-pickaxe"), HypixelCommand::handleCoop));
+        register(commands, new SubCommand("dungeon", Category.SKYBLOCK, "查询玩家最近地牢游玩场次", RS.get("resource.image.icon-skyblock-dungeon"), HypixelCommand::handleDungeon));
+        register(commands, new SubCommand("lf", Category.GENERAL, "查询玩家大厅钓鱼数据", RS.get("resource.image.icon-fishing-rod"), HypixelCommand::handleLobbyFishing));
+        register(commands, new SubCommand("hotf", Category.SKYBLOCK, "查看玩家Skyblock树心数据", RS.get("resource.image.icon-hotf"), HypixelCommand::handleHotf));
+        register(commands, new SubCommand("pr", Category.GENERAL, "查询玩家大厅跑酷详细数据", RS.get("resource.image.icon-parkour"), HypixelCommand::handleParkour));
+        register(commands, new SubCommand("dpr", Category.GENERAL, "查询玩家街机心跳水立方详细数据", RS.get("resource.image.icon-dropper"), HypixelCommand::handleArcadeDropper));
+        register(commands, new SubCommand("bw", Category.GENERAL, "查询玩家起床战争详细数据", RS.get("resource.image.icon-bedwars"), HypixelCommand::handleBedwars));
+        register(commands, new SubCommand("sh", Category.GENERAL, "查询玩家起床战争入梦酒店任务树", RS.get("resource.image.icon-slumber-hotel"), HypixelCommand::handleSlumberHotel));
+        register(commands, new SubCommand("cr", Category.SKYBLOCK, "查询Skyblock日历", RS.get("resource.image.icon-skyblock-calendar"), HypixelCommand::handleSkyblockCalendar));
+        register(commands, new SubCommand("ip", Category.SKYBLOCK, "查询Skyblock物品价格信息", RS.get("resource.image.skyblock-bank-logo"), HypixelCommand::handleSearchSkyblockItemPrice));
+        register(commands, new SubCommand("hotm", Category.SKYBLOCK, "查询玩家Skyblock山之心数据", RS.get("resource.image.icon-skyblock-hotm"), HypixelCommand::handleHotm));
         return Collections.unmodifiableMap(commands);
     }
 
@@ -206,17 +207,17 @@ public class HypixelCommand implements CommandExecutor, Listener {
             return true;
         }
 
-        Map<String, Object> request;
-        if (args.length == 0) {
-            request = Map.of();
-        } else {
+        Map<String, Object> request = new LinkedHashMap<>();
+        if (args.length != 0) {
             String gameId = GAME_IDS_BY_ALIAS.get(args[0].toLowerCase(Locale.ROOT));
             if (gameId == null) {
                 user.sendMessage("未知的小游戏编号，请在总人数列表里查看可用参数。");
                 return true;
             }
-            request = Map.of("game", gameId);
+            request.put("game", gameId);
         }
+
+        if (user instanceof QQCommandSender) BackgroundService.applyApprovedBackground(request, user.getUserId());
 
         var result = withQueryProgress(user, "正在查询目标数据，请稍等片刻...",
                 () -> PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), request, user.getPlatform()));
@@ -230,9 +231,9 @@ public class HypixelCommand implements CommandExecutor, Listener {
         }
         QQCommandSender qq = (QQCommandSender) user;
         if (OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())) {
-            qq.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
+            qq.sendMessage(TC.md(Markdown.img("atri_bot_pic", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
         } else {
-            qq.sendMessage(TC.md(Markdown.img("player-stats", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
+            qq.sendMessage(TC.md(Markdown.img("atri_bot_pic", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
         }
         return true;
     }
@@ -364,7 +365,7 @@ public class HypixelCommand implements CommandExecutor, Listener {
             end -= 2;
         }
         String search = String.join(" ", Arrays.copyOf(args, end));
-        Map<String, String> request = cursor == null ? Map.of("q", search) : Map.of("q", search, "cursor", cursor);
+        Map<String, Object> request = priceRequest(search, cursor, user instanceof QQCommandSender ? user.getUserId() : null);
         var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
                 () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), request, user.getPlatform(), "Authorization", bearer()));
 
@@ -402,17 +403,17 @@ public class HypixelCommand implements CommandExecutor, Listener {
                 : d.lastIndexOf(':', offsetSeparator - 1);
 
         if (querySeparator <= 0) {
-            event.sendMessage("分页参数无效，请重新查询。");
+            event.replyMessage("分页参数无效，请重新查询。");
             return;
         }
 
         String itemId = d.substring(0, querySeparator);
         String cursor = d.substring(querySeparator + 1);
 
-        var result = customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), Map.of("q", itemId, "cursor", cursor), "Authorization", bearer());
+        var result = customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), priceRequest(itemId, cursor, event.getUserOpenId()), "Authorization", bearer());
 
         if (!result.success()) {
-            event.sendMessage(result.message());
+            event.replyMessage(result.message());
             return;
         }
 
@@ -425,6 +426,14 @@ public class HypixelCommand implements CommandExecutor, Listener {
         else if (next_cursor != null) type = 2;
 
         event.replyMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), event.getUserOpenId()).setKeyboard(getSkyblockPriceKeyboard(type, next_cursor, pre_cursor, itemId)), false);
+    }
+
+    private static Map<String, Object> priceRequest(String query, String cursor, String userId) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("q", query);
+        if (cursor != null) request.put("cursor", cursor);
+        BackgroundService.applyApprovedBackground(request, userId);
+        return request;
     }
 
     private static Keyboard getSkyblockPriceKeyboard(int type, String var1, String var2, String itemId) {
@@ -531,8 +540,13 @@ public class HypixelCommand implements CommandExecutor, Listener {
             return true;
         }
 
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("player", player);
+        if (sender instanceof QQCommandSender && Set.of("wz", "zs", "dungeon").contains(subCommand)) {
+            BackgroundService.applyApprovedBackground(request, sender.getUserId());
+        }
         var result = withQueryProgress(sender, "正在查询目标玩家数据，请稍等片刻...",
-                () -> customQueryRequest(api, Map.of("player", player), sender.getPlatform(), "Authorization", bearer()));
+                () -> customQueryRequest(api, request, sender.getPlatform(), "Authorization", bearer()));
 
         if (!result.success()) {
             sender.sendMessage(result.message());
@@ -593,8 +607,8 @@ public class HypixelCommand implements CommandExecutor, Listener {
     }
 
     private enum Category {
-        GENERAL("", "通用", ResourcesProperties.HYPIXEL_HEADER_IMG),
-        SKYBLOCK("skb", "SkyBlock", ResourcesProperties.SKB_LOGO_IMG);
+        GENERAL("", "通用", RS.get("resource.image.hypixel-header")),
+        SKYBLOCK("skb", "SkyBlock", RS.get("resource.image.skyblock-logo"));
 
         private final String command;
         private final String title;

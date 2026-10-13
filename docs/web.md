@@ -23,7 +23,11 @@
 
 主要页面包括聊天与群配置、指令面板、用户和权限、发送及事件记录、频道管理。群管理和加群欢迎从聊天侧栏进入
 
-公开查询接口位于 `/webui/api/public/official`，使用独立频控，豁免后台开关与登录检查。具体范围以 [WebUIRouter](../src/main/java/top/yzljc/atribot/webui/WebUIRouter.java) 中注册的路由为准
+原 `/webui/api/public/official` 下的 GET 统计接口已移除，POST `/ntuid` 工具接口保留。WebUI 统计页使用私有的 `/webui/api/stats/overview` 和 `/webui/api/stats/series`，保留日期筛选
+
+用户、群详情仅供 WebUI 使用，接口分别为 `/webui/api/stats/users/{userOpenId}` 和 `/webui/api/stats/groups/{groupOpenId}`，要求后台已开启且登录会话有效。原公开路径不再提供这两个接口
+
+`GET /openapi/bot_stats` 为公开接口，无需鉴权，不受 WebUI 开关影响。无参数返回消息、小游戏、卡片、签到、图源及在档数量统计，包含完整个人成绩与排行榜。响应与统计口径见[机器人统计接口](integrations/bot-stats.md)
 
 ## Miniapp
 

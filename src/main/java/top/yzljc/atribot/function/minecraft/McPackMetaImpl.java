@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.minecraft;
 
+import top.yzljc.atribot.configuration.RS;
+
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.QQCommandSender;
@@ -70,7 +72,7 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    sender instanceof QQCommandSender ? Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) : "",
+                    sender instanceof QQCommandSender ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
                     args[1],
                     resourcePack,
                     rpJson
@@ -91,7 +93,7 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    sender instanceof QQCommandSender ? Markdown.img(top.yzljc.atribot.configuration.ResourcesProperties.GRASS_BLOCK_IMG, 24, 24) : "",
+                    sender instanceof QQCommandSender ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
                     args[1],
                     resourcePack, dataPack,
                     rpJson, dpJson

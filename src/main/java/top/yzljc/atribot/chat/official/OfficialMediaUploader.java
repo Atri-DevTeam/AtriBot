@@ -30,7 +30,7 @@ final class OfficialMediaUploader {
     }
 
     public MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
-                                  RT rt, String content) {
+                                         RT rt, String content) {
         if (ChatService.isEmergencyPaused()) {
             return pausedMediaFallback(uploadUrl, logLabel, rt);
         }
@@ -56,7 +56,7 @@ final class OfficialMediaUploader {
      * @return 图片消息体；上传失败时保留原有文字回退，维护图片上传失败返回 null
      */
     public MessageBody buildImageRequest(String uploadUrl, ImageType type, String value, String logLabel,
-                                  RT rt, String content, String refIdx) {
+                                         RT rt, String content, String refIdx) {
         MessageBody request = buildImageRequest(uploadUrl, type, value, logLabel, rt, content);
         if (request != null && refIdx != null && rt != null
                 && request.getMsgId() == null && request.getEventId() == null) {
@@ -70,7 +70,7 @@ final class OfficialMediaUploader {
     }
 
     public MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt,
-                                 boolean requireMedia) {
+                                        boolean requireMedia) {
         if (requireMedia && ChatService.isEmergencyPaused()) return null;
         if (ChatService.isEmergencyPaused()) {
             return requireMedia ? null : pausedMediaFallback(uploadUrl, logLabel, rt);
@@ -184,7 +184,8 @@ final class OfficialMediaUploader {
                 OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
                         null, uploadRes, "未返回 file_info");
                 log.error("{}上传失败，未返回 file_info: {}", logLabel, uploadRes);
-                if (requireMedia) throw QQMessageSendException.fromResponse(objectMapper, uploadRes, "音频上传未返回 file_info");
+                if (requireMedia)
+                    throw QQMessageSendException.fromResponse(objectMapper, uploadRes, "音频上传未返回 file_info");
                 return null;
             }
             OfficialSendLogRepository.recordResponse(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,

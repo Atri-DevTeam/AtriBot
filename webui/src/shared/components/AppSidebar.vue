@@ -61,7 +61,7 @@
           <circle cx="8.5" cy="8.5" r="1.5" />
           <polyline points="21 15 16 10 5 21" />
         </svg>
-        <span class="side-nav-label">图源管理</span>
+        <span class="side-nav-label">图片审核</span>
         <span v-if="galleryBadge > 0" class="feedback-nav-badge">{{ galleryBadge }}</span>
       </button>
       <button class="side-nav-item" :class="{ active: route.path === '/loot' }" @click="go('/loot')">

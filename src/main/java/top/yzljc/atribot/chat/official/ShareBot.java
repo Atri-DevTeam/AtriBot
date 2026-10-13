@@ -73,7 +73,8 @@ public final class ShareBot {
 
         var inviter = getShareSettings(inviterOpenId);
         var invited = getShareSettings(invitedOpenId);
-        if (invited.inviterOpenId() != null && !invited.inviterOpenId().isBlank() && !inviterOpenId.equals(invited.inviterOpenId())) return false;
+        if (invited.inviterOpenId() != null && !invited.inviterOpenId().isBlank() && !inviterOpenId.equals(invited.inviterOpenId()))
+            return false;
 
         if (!inviterOpenId.equals(invited.inviterOpenId())) {
             var updated = new ShareSettings(invited.shareLink(), invited.users(), inviterOpenId, invited.createTime());
@@ -90,6 +91,7 @@ public final class ShareBot {
 
     /**
      * 获取分享链接短码，如 vch8t0RMe4
+     *
      * @param userOpenId 被查询对象的开放平台 userOpenId
      * @return 分享链接短码，若获取失败则返回 null
      */

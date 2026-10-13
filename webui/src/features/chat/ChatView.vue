@@ -11,19 +11,27 @@
       <section class="chatnt-list">
         <div class="chatnt-list-head">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <label class="chatnt-search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round">
+              <circle cx="11" cy="11" r="7"/>
+              <line x1="21" y1="21" x2="16.5" y2="16.5"/>
             </svg>
-            <input v-model="search" placeholder="搜索" />
+            <input v-model="search" placeholder="搜索"/>
           </label>
-          <button class="chatnt-refresh" :class="{ spin: loadingConvs }" title="刷新会话" aria-label="刷新会话" @click="loadConversations()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
+          <button class="chatnt-refresh" :class="{ spin: loadingConvs }" title="刷新会话" aria-label="刷新会话"
+                  @click="loadConversations()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+              <polyline points="21 3 21 9 15 9"/>
             </svg>
           </button>
         </div>
@@ -35,15 +43,16 @@
             <span class="cnv-avatar" :style="c.type === 'group' ? groupTileStyle(c.openId) : null">
               <img v-if="c.type === 'group' && groupAvatarUrls[c.openId]"
                    :src="groupAvatarUrls[c.openId]" :alt="convName(c)"
-                   class="cnv-group-avatar" />
+                   class="cnv-group-avatar"/>
               <template v-else-if="c.type === 'c2c'">
                 <span>{{ convAvatarText(c) }}</span>
                 <img v-if="userAvatarUrl(c.openId) && !avatarFailed['cnv-' + c.openId]"
                      :src="userAvatarUrl(c.openId)" :alt="convName(c)"
                      referrerpolicy="no-referrer"
-                     @error="avatarFailed['cnv-' + c.openId] = true" />
+                     @error="avatarFailed['cnv-' + c.openId] = true"/>
               </template>
-              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -62,7 +71,8 @@
                   :title="isPinned(c) ? '取消置顶' : '置顶'"
                   :aria-label="isPinned(c) ? '取消置顶' : '置顶'"
                   @click.stop="togglePin(c)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="17" x2="12" y2="22"/>
                 <path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6z"/>
               </svg>
@@ -87,14 +97,15 @@
       <section class="chatnt-main">
         <template v-if="!active">
           <div class="chatnt-placeholder">
-            <img :src="atriImg" alt="" />
+            <img :src="atriImg" alt=""/>
             <p>选择一个会话开始查看</p>
           </div>
         </template>
         <template v-else>
           <header class="chatnt-head">
             <button class="chatnt-back" aria-label="返回会话列表" @click="backToConversationList">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
             </button>
@@ -107,17 +118,22 @@
             <button v-if="active.type === 'group'" class="chatnt-members-btn"
                     :class="{ active: panel === 'members' }" title="群成员" aria-label="群成员"
                     @click="togglePanel('members')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
             </button>
-            <button class="chatnt-members-btn" :class="{ active: ['info', 'user', 'welcome', 'moderation'].includes(panel) }"
+            <button class="chatnt-members-btn"
+                    :class="{ active: ['info', 'user', 'welcome', 'moderation'].includes(panel) }"
                     title="信息与设置" aria-label="信息与设置" @click="togglePanel('info')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <line x1="12" y1="11" x2="12" y2="16"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
             </button>
           </header>
@@ -127,113 +143,135 @@
           </Transition>
 
           <div class="chatnt-message-area">
-            <ChatBackground />
+            <ChatBackground/>
             <div ref="messageListRef" class="chatnt-msgs" @scroll="onScroll"
                  @wheel.passive="interruptMessageScroll" @touchstart.passive="interruptMessageScroll"
                  @pointerdown="interruptMessageScroll" @keydown="interruptMessageScroll">
               <div ref="messageContentRef" class="chatnt-msg-content">
-              <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
-              <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
-              <div v-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
-              <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
+                <div v-if="loadingMore" class="load-tip">加载更早的消息…</div>
+                <div v-else-if="!hasMore && messages.length > 0" class="load-tip">— 没有更早的消息了 —</div>
+                <div v-if="loadingMessages && messages.length === 0" class="empty-state">正在加载消息</div>
+                <div v-else-if="messages.length === 0" class="empty-state">暂无消息记录</div>
 
-              <article v-for="message in orderedMessages" :key="message.id"
-                       :data-message-id="message.id"
-                       class="qm" :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id, 'qm-arriving': arrivingMessageIds.has(message.id) }"
-                       @animationend.self="arrivingMessageIds.delete(message.id)">
+                <article v-for="message in orderedMessages" :key="message.id"
+                         :data-message-id="message.id"
+                         class="qm"
+                         :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id, 'qm-arriving': arrivingMessageIds.has(message.id) }"
+                         @animationend.self="arrivingMessageIds.delete(message.id)">
                 <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)">
                   <span>{{ avatarText(message) }}</span>
                   <img v-if="avatarUrl(message) && !avatarFailed[message.id]"
                        :src="avatarUrl(message)" :alt="message.username"
                        referrerpolicy="no-referrer"
-                       @error="avatarFailed[message.id] = true" />
+                       @error="avatarFailed[message.id] = true"/>
                 </span>
-                <div class="qm-main">
-                  <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
-                    <span class="qm-name-text" :class="{ 'bot-staff-name': !isMe(message) && isBotStaff(message) }">{{ displayName(message) }}</span>
-                    <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。 -->
-                    <img v-if="isMe(message) || message.senderIsBot" class="qm-bot"
-                         :src="botBlue" width="13" height="13" alt="机器人" />
-                    <!-- 只标群主/管理员，普通成员不标 -->
-                    <span v-if="!isMe(message) && active.type === 'group' && isSpecialRole(message.memberRole)"
-                          class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{ roleLabel(message.memberRole) }}</span>
-                    <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
-                  </div>
-                  <div v-chat-image-layout class="qm-bubble" :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
-                       @contextmenu.prevent.stop="onContextMenu($event, message)">
-                    <pre v-if="recalledIds[message.messageOpenId]">{{ isMe(message) ? '你撤回了一条消息' : '该消息已被撤回' }}</pre>
-                    <template v-else>
-                      <div v-if="msgRef(message)" class="qm-ref qm-ref--clickable"
-                           title="跳转到引用来源" @click.stop="jumpToReference(message)">
-                        <span class="qm-ref-author">{{ msgRef(message).author || '引用消息' }}</span>
-                        <div class="qm-ref-content" v-html="renderRefContent(msgRef(message))"></div>
-                      </div>
-                      <div v-if="message.attachments" class="qm-attach">
-                        <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
-                          <img v-if="att.type === 'image' && att.url && !attachFailed[att.url]"
-                               :src="att.url" :alt="att.filename"
-                               referrerpolicy="no-referrer"
-                               @error="attachFailed[att.url] = true"
-                               @click="previewImg = att.url" />
-                          <span v-else-if="att.type === 'image'" class="attach-fail">📎 {{ att.filename }}</span>
-                          <div v-else-if="att.type === 'video'" class="qm-video">
-                            <template v-if="att.url && !attachFailed[att.url]">
-                              <video :src="att.url" controls playsinline preload="metadata"
-                                     @error="attachFailed[att.url] = true"></video>
-                              <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
-                              <button type="button" class="qm-video-expand" title="放大查看" aria-label="放大查看"
-                                      @click.stop="previewVideo = att.url">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                                </svg>
-                              </button>
-                            </template>
-                            <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank" rel="noreferrer">
-                              🎬 {{ att.filename || '视频' }}（点击在新标签打开）
-                            </a>
-                            <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
-                          </div>
-                          <div v-else-if="att.type === 'voice'" class="qm-voice">
-                            <div class="qm-voice-title">语音消息</div>
-                            <div v-if="att.asrText" class="qm-voice-asr">{{ att.asrText }}</div>
-                            <audio v-if="att.voiceUrl && !attachFailed[att.voiceUrl]" :src="att.voiceUrl" controls preload="none"
-                                   @error="attachFailed[att.voiceUrl] = true"></audio>
-                            <template v-else>
-                              <span class="qm-media-hint">{{ att.voiceUrl ? '音频暂时无法播放' : '未保存音频播放地址' }}</span>
-                              <a v-if="att.url || att.voiceUrl" class="attach-fail" :href="att.url || att.voiceUrl" target="_blank" rel="noreferrer">打开原始音频</a>
-                            </template>
-                          </div>
-                          <a v-else-if="att.type === 'file' && att.url" class="qm-file"
-                             :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
+                  <div class="qm-main">
+                    <div class="qm-name" :class="{ 'uid-expanded': expandedIds[message.id] }">
+                      <span class="qm-name-text" :class="{ 'bot-staff-name': !isMe(message) && isBotStaff(message) }">{{
+                          displayName(message)
+                        }}</span>
+                      <!-- 自己发的入库时 senderIsBot 恒为 true，isMe 再兜一层防止字段缺失时漏标。 -->
+                      <img v-if="isMe(message) || message.senderIsBot" class="qm-bot"
+                           :src="botBlue" width="13" height="13" alt="机器人"/>
+                      <!-- 只标群主/管理员，普通成员不标 -->
+                      <span v-if="!isMe(message) && active.type === 'group' && isSpecialRole(message.memberRole)"
+                            class="qm-role" :class="'role-' + message.memberRole.toLowerCase()">{{
+                          roleLabel(message.memberRole)
+                        }}</span>
+                      <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
+                    </div>
+                    <div v-chat-image-layout class="qm-bubble"
+                         :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
+                         @contextmenu.prevent.stop="onContextMenu($event, message)">
+                      <pre v-if="recalledIds[message.messageOpenId]">{{
+                          isMe(message) ? '你撤回了一条消息' : '该消息已被撤回'
+                        }}</pre>
+                      <template v-else>
+                        <div v-if="msgRef(message)" class="qm-ref qm-ref--clickable"
+                             title="跳转到引用来源" @click.stop="jumpToReference(message)">
+                          <span class="qm-ref-author">{{ msgRef(message).author || '引用消息' }}</span>
+                          <div class="qm-ref-content" v-html="renderRefContent(msgRef(message))"></div>
+                        </div>
+                        <div v-if="message.attachments" class="qm-attach">
+                          <template v-for="(att, i) in parseAttach(message.attachments)" :key="message.id + '-' + i">
+                            <img v-if="att.type === 'image' && att.url && !attachFailed[att.url]"
+                                 :src="att.url" :alt="att.filename"
+                                 referrerpolicy="no-referrer"
+                                 @error="attachFailed[att.url] = true"
+                                 @click="previewImg = att.url"/>
+                            <span v-else-if="att.type === 'image'" class="attach-fail">📎 {{ att.filename }}</span>
+                            <div v-else-if="att.type === 'video'" class="qm-video">
+                              <template v-if="att.url && !attachFailed[att.url]">
+                                <video :src="att.url" controls playsinline preload="metadata"
+                                       @error="attachFailed[att.url] = true"></video>
+                                <!-- 放大按钮单独放角上：点视频主体是播放/暂停，不能兼作放大 -->
+                                <button type="button" class="qm-video-expand" title="放大查看" aria-label="放大查看"
+                                        @click.stop="previewVideo = att.url">
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 3 21 3 21 9"/>
+                                    <polyline points="9 21 3 21 3 15"/>
+                                    <line x1="21" y1="3" x2="14" y2="10"/>
+                                    <line x1="3" y1="21" x2="10" y2="14"/>
+                                  </svg>
+                                </button>
+                              </template>
+                              <a v-else-if="att.url" class="attach-fail" :href="att.url" target="_blank"
+                                 rel="noreferrer">
+                                🎬 {{ att.filename || '视频' }}（点击在新标签打开）
+                              </a>
+                              <span v-else class="attach-fail">🎬 {{ att.filename || '视频' }}</span>
+                            </div>
+                            <div v-else-if="att.type === 'voice'" class="qm-voice">
+                              <div class="qm-voice-title">语音消息</div>
+                              <div v-if="att.asrText" class="qm-voice-asr">{{ att.asrText }}</div>
+                              <audio v-if="att.voiceUrl && !attachFailed[att.voiceUrl]" :src="att.voiceUrl" controls
+                                     preload="none"
+                                     @error="attachFailed[att.voiceUrl] = true"></audio>
+                              <template v-else>
+                                <span class="qm-media-hint">{{
+                                    att.voiceUrl ? '音频暂时无法播放' : '未保存音频播放地址'
+                                  }}</span>
+                                <a v-if="att.url || att.voiceUrl" class="attach-fail" :href="att.url || att.voiceUrl"
+                                   target="_blank" rel="noreferrer">打开原始音频</a>
+                              </template>
+                            </div>
+                            <a v-else-if="att.type === 'file' && att.url" class="qm-file"
+                               :href="att.url" target="_blank" rel="noreferrer" :title="att.filename">
                             <span class="qm-file-icon">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                               </svg>
                             </span>
-                            <span class="qm-file-body">
+                              <span class="qm-file-body">
                               <span class="qm-file-name">{{ att.filename || '文件' }}</span>
                               <span class="qm-file-size">{{ fmtSize(att.size) || '点击下载' }}</span>
                             </span>
-                          </a>
-                        </template>
-                      </div>
-                      <div v-if="legacyMedia(message) && !parseAttach(message.attachments).length" class="qm-voice">
-                        <div class="qm-voice-title">媒体消息</div>
-                        <span class="qm-media-hint">这条历史消息未保存媒体地址，暂时无法预览</span>
-                      </div>
-                      <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)" />
-                      <ArkMessageCard v-if="hasArk(message)" :ark="message.ark" />
-                      <CardMessageCard v-if="hasCard(message)" :card="cardPayload(message)" />
-                      <pre v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType !== 2 && renderContent(message)">{{ renderContent(message) }}</pre>
-                      <div v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType === 2" class="md-body"
-                           v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
-                    </template>
+                            </a>
+                          </template>
+                        </div>
+                        <div v-if="legacyMedia(message) && !parseAttach(message.attachments).length" class="qm-voice">
+                          <div class="qm-voice-title">媒体消息</div>
+                          <span class="qm-media-hint">这条历史消息未保存媒体地址，暂时无法预览</span>
+                        </div>
+                        <ForwardMessageCard v-if="forwardRecord(message)" :record="forwardRecord(message)"/>
+                        <ArkMessageCard v-if="hasArk(message)" :ark="message.ark"/>
+                        <CardMessageCard v-if="hasCard(message)" :card="cardPayload(message)"/>
+                        <pre
+                            v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType !== 2 && renderContent(message)">{{
+                            renderContent(message)
+                          }}</pre>
+                        <div
+                            v-if="!forwardRecord(message) && !hasArk(message) && !hasCard(message) && message.messageType === 2"
+                            class="md-body"
+                            v-html="renderMd(renderContent(message))" @error.capture="replaceBrokenMarkdownImage"></div>
+                      </template>
+                    </div>
+                    <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
                   </div>
-                  <div class="qm-time">{{ fmtMsgTime(message.eventTimestamp || message.createdAt) }}</div>
-                </div>
-              </article>
+                </article>
               </div>
             </div>
             <Transition name="chatnt-new-messages">
@@ -242,9 +280,11 @@
                       @click="jumpToLatestMessages">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 4v14m-5-5 5 5 5-5M5 21h14" />
+                  <path d="M12 4v14m-5-5 5 5 5-5M5 21h14"/>
                 </svg>
-                <span aria-live="polite" aria-atomic="true">{{ newMessageCount > 99 ? '99+' : newMessageCount }} 条新消息</span>
+                <span aria-live="polite" aria-atomic="true">{{
+                    newMessageCount > 99 ? '99+' : newMessageCount
+                  }} 条新消息</span>
               </button>
             </Transition>
           </div>
@@ -257,25 +297,35 @@
           <form class="chatnt-composer" @submit.prevent="sendMessage">
             <div class="chatnt-tools" tabindex="0" aria-label="消息类型与发送方式，可左右滑动">
               <div class="chatnt-type">
-                <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text" />文本</label>
-                <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType" value="markdown" />MD</label>
-                <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image" />图片</label>
-                <label :class="{ active: msgType === 'ark' }"><input type="radio" v-model="msgType" value="ark" />Ark</label>
-                <label :class="{ active: msgType === 'card' }"><input type="radio" v-model="msgType" value="card" />卡片</label>
-                <label v-if="active.type === 'c2c'" :class="{ active: msgType === 'stream' }"><input type="radio" v-model="msgType" value="stream" />流式</label>
+                <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text"/>文本</label>
+                <label :class="{ active: msgType === 'markdown' }"><input type="radio" v-model="msgType"
+                                                                          value="markdown"/>MD</label>
+                <label :class="{ active: msgType === 'image' }"><input type="radio" v-model="msgType" value="image"/>图片</label>
+                <label :class="{ active: msgType === 'ark' }"><input type="radio" v-model="msgType"
+                                                                     value="ark"/>Ark</label>
+                <label :class="{ active: msgType === 'card' }"><input type="radio" v-model="msgType" value="card"/>卡片</label>
+                <label v-if="active.type === 'c2c'" :class="{ active: msgType === 'stream' }"><input type="radio"
+                                                                                                     v-model="msgType"
+                                                                                                     value="stream"/>流式</label>
               </div>
-              <button v-if="msgType === 'image'" type="button" class="chatnt-tool-btn" title="上传图片" aria-label="上传图片" @click="$refs.fileInputRef.click()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+              <button v-if="msgType === 'image'" type="button" class="chatnt-tool-btn" title="上传图片"
+                      aria-label="上传图片" @click="$refs.fileInputRef.click()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
                 </svg>
               </button>
-              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+              <input ref="fileInputRef" type="file" accept="image/*" style="display:none" @change="onFilePicked"/>
               <div class="chatnt-send-options" aria-label="发送方式">
                 <button type="button" class="chatnt-mode-toggle" :class="{ active: passiveMode }"
                         :aria-pressed="passiveMode" :disabled="!!passiveDisabledReason"
-                        :title="passiveDisabledReason || '使用所选消息发送被动回复'" @click="passiveMode = !passiveMode">
+                        :title="passiveDisabledReason || '使用所选消息发送被动回复'"
+                        @click="passiveMode = !passiveMode">
                   <span class="chatnt-mode-check" aria-hidden="true">
-                    <svg v-if="passiveMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                    <svg v-if="passiveMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
                   </span>
                   被动消息
                 </button>
@@ -283,7 +333,8 @@
                         :aria-pressed="refMode" :disabled="!!referenceDisabledReason"
                         :title="referenceDisabledReason || '发送时附带所选消息的引用'" @click="refMode = !refMode">
                   <span class="chatnt-mode-check" aria-hidden="true">
-                    <svg v-if="refMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                    <svg v-if="refMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
                   </span>
                   引用
                 </button>
@@ -291,7 +342,8 @@
                         :class="{ active: wakeupMode }" :aria-pressed="wakeupMode"
                         title="发送召回消息，无需选择来源消息" @click="toggleWakeupMode">
                   <span class="chatnt-mode-check" aria-hidden="true">
-                    <svg v-if="wakeupMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
+                    <svg v-if="wakeupMode" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 6 2.5 2.5L10 3"/></svg>
                   </span>
                   召回
                 </button>
@@ -299,47 +351,57 @@
                         :disabled="sendingInputNotify" :aria-busy="sendingInputNotify"
                         title="发送正在输入提示（60 秒）" aria-label="发送正在输入提示（60 秒）" @click="sendInputNotify">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 4.5h14a2.5 2.5 0 0 1 2.5 2.5v9a2.5 2.5 0 0 1-2.5 2.5h-9L5 22v-3.5A2.5 2.5 0 0 1 2.5 16V7A2.5 2.5 0 0 1 5 4.5Z"
-                          stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                    <path
+                        d="M5 4.5h14a2.5 2.5 0 0 1 2.5 2.5v9a2.5 2.5 0 0 1-2.5 2.5h-9L5 22v-3.5A2.5 2.5 0 0 1 2.5 16V7A2.5 2.5 0 0 1 5 4.5Z"
+                        stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
                     <g fill="currentColor">
-                      <circle class="chatnt-typing-dot" cx="7.5" cy="11.5" r="1.25" />
-                      <circle class="chatnt-typing-dot" cx="12" cy="11.5" r="1.25" />
-                      <circle class="chatnt-typing-dot" cx="16.5" cy="11.5" r="1.25" />
+                      <circle class="chatnt-typing-dot" cx="7.5" cy="11.5" r="1.25"/>
+                      <circle class="chatnt-typing-dot" cx="12" cy="11.5" r="1.25"/>
+                      <circle class="chatnt-typing-dot" cx="16.5" cy="11.5" r="1.25"/>
                     </g>
                   </svg>
                 </button>
               </div>
             </div>
-            <img v-if="pastePreview" :src="pastePreview" class="chatnt-paste-preview" title="点击清除" @click="clearSelectedImage" />
+            <img v-if="pastePreview" :src="pastePreview" class="chatnt-paste-preview" title="点击清除"
+                 @click="clearSelectedImage"/>
             <div class="chatnt-resize-handle" :class="{ dragging: resizingComposer }"
                  title="拖拽调整输入区高度"
                  @mousedown="startComposerResize" @touchstart="startComposerResize"></div>
-            <fieldset v-if="msgType === 'ark'" class="chatnt-structured-editor chatnt-ark-editor" :disabled="sending" aria-label="Ark 内容"
+            <fieldset v-if="msgType === 'ark'" class="chatnt-structured-editor chatnt-ark-editor" :disabled="sending"
+                      aria-label="Ark 内容"
                       :style="{ height: activeComposerHeight + 'px' }">
               <label>模板<select v-model.number="arkDraft.templateId" aria-label="Ark 模板">
-                <option v-for="template in ARK_TEMPLATES" :key="template.id" :value="template.id">{{ template.label }}</option>
+                <option v-for="template in ARK_TEMPLATES" :key="template.id" :value="template.id">{{
+                    template.label
+                  }}
+                </option>
               </select></label>
               <label v-for="field in selectedArkFields" :key="field.key">
                 {{ field.label }}{{ field.required ? '' : '（可选）' }}
                 <input v-model="arkDraft[field.key]" :placeholder="field.placeholder" :required="field.required"
-                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined" />
+                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined"/>
               </label>
               <template v-if="arkDraft.templateId === 23">
                 <div v-for="(item, index) in arkDraft.items" :key="index" class="chatnt-ark-item">
-                  <label>条目 {{ index + 1 }}<input v-model="item.description" placeholder="条目内容" required /></label>
-                  <label>链接（可选）<input v-model="item.link" placeholder="https://…" inputmode="url" /></label>
+                  <label>条目 {{ index + 1 }}<input v-model="item.description" placeholder="条目内容" required/></label>
+                  <label>链接（可选）<input v-model="item.link" placeholder="https://…" inputmode="url"/></label>
                   <button type="button" class="nt-mini-btn" :disabled="arkDraft.items.length === 1"
-                          :aria-label="`删除条目 ${index + 1}`" @click="arkDraft.items.splice(index, 1)">删除</button>
+                          :aria-label="`删除条目 ${index + 1}`" @click="arkDraft.items.splice(index, 1)">删除
+                  </button>
                 </div>
-                <button type="button" class="nt-mini-btn" @click="arkDraft.items.push({ description: '', link: '' })">添加条目</button>
+                <button type="button" class="nt-mini-btn" @click="arkDraft.items.push({ description: '', link: '' })">
+                  添加条目
+                </button>
               </template>
             </fieldset>
-            <fieldset v-else-if="msgType === 'card'" class="chatnt-structured-editor chatnt-card-editor" :disabled="sending" aria-label="卡片内容"
+            <fieldset v-else-if="msgType === 'card'" class="chatnt-structured-editor chatnt-card-editor"
+                      :disabled="sending" aria-label="卡片内容"
                       :style="{ height: activeComposerHeight + 'px' }">
               <label v-for="field in CARD_FIELDS" :key="field.key">
                 {{ field.label }}
                 <input v-model="cardDraft[field.key]" :placeholder="field.placeholder" required
-                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined" />
+                       :type="field.url ? 'url' : 'text'" :inputmode="field.url ? 'url' : undefined"/>
               </label>
             </fieldset>
             <textarea v-if="!isStructuredMessage" ref="composerRef" v-model="draft" :disabled="sending"
@@ -351,291 +413,371 @@
               <span class="chatnt-hint">{{ sendModeHint || 'Enter 发送 · Shift+Enter 换行' }}</span>
               <div class="chatnt-composer-actions">
                 <button class="chatnt-send" :disabled="!canSend">{{ sending ? '发送中…' : '发送' }}</button>
-                <GroupLeaveMessages v-if="active.type === 'group'" :key="active.openId" :group-id="active.openId" :request="api" />
+                <GroupLeaveMessages v-if="active.type === 'group'" :key="active.openId" :group-id="active.openId"
+                                    :request="api"/>
               </div>
             </div>
           </form>
 
           <!-- ── 右侧栏：成员 / 信息 / 单用户设置 / 入群欢迎 ── -->
           <Transition name="chatnt-panel-backdrop">
-            <div v-if="panel" class="chatnt-members-backdrop" @click="closePanel" />
+            <div v-if="panel" class="chatnt-members-backdrop" @click="closePanel"/>
           </Transition>
           <Transition name="chatnt-panel" mode="out-in">
-          <aside v-if="panel" :key="panel" class="chatnt-members" :class="{ 'chatnt-members--welcome': panel === 'welcome', 'chatnt-members--moderation': panel === 'moderation' }">
-            <div class="chatnt-members-head">
-              <button v-if="['user', 'welcome', 'moderation'].includes(panel)" class="chatnt-members-close"
-                      :aria-label="['welcome', 'moderation'].includes(panel) ? '返回群聊信息' : '返回'" @click="backPanel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-              </button>
-              <div>
-                <div class="chatnt-members-title">
-                  {{ panel === 'members' ? '群成员' : panel === 'user' ? '用户设置' : panel === 'welcome' ? '入群欢迎' : panel === 'moderation' ? '群管设置' : (active.type === 'group' ? '群聊信息' : '用户信息') }}
+            <aside v-if="panel" :key="panel" class="chatnt-members"
+                   :class="{ 'chatnt-members--welcome': panel === 'welcome', 'chatnt-members--moderation': panel === 'moderation' }">
+              <div class="chatnt-members-head">
+                <button v-if="['user', 'welcome', 'moderation'].includes(panel)" class="chatnt-members-close"
+                        :aria-label="['welcome', 'moderation'].includes(panel) ? '返回群聊信息' : '返回'"
+                        @click="backPanel">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                <div>
+                  <div class="chatnt-members-title">
+                    {{
+                      panel === 'members' ? '群成员' : panel === 'user' ? '用户设置' : panel === 'welcome' ? '入群欢迎' : panel === 'moderation' ? '群管设置' : (active.type === 'group' ? '群聊信息' : '用户信息')
+                    }}
+                  </div>
+                  <div class="chatnt-members-sub">
+                    <template v-if="panel === 'members'">{{ members.length }} 人发过言</template>
+                    <template v-else-if="panel === 'user'">{{ profileName || profileTarget }}</template>
+                    <template v-else-if="['welcome', 'moderation'].includes(panel)">{{
+                        groupDisplayName(groupMeta)
+                      }}
+                    </template>
+                    <template v-else>{{ active.openId }}</template>
+                  </div>
                 </div>
-                <div class="chatnt-members-sub">
-                  <template v-if="panel === 'members'">{{ members.length }} 人发过言</template>
-                  <template v-else-if="panel === 'user'">{{ profileName || profileTarget }}</template>
-                  <template v-else-if="['welcome', 'moderation'].includes(panel)">{{ groupDisplayName(groupMeta) }}</template>
-                  <template v-else>{{ active.openId }}</template>
-                </div>
+                <button class="chatnt-members-close" aria-label="关闭" @click="closePanel">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
               </div>
-              <button class="chatnt-members-close" aria-label="关闭" @click="closePanel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
 
-            <!-- ═══ 成员列表 ═══ -->
-            <template v-if="panel === 'members'">
-              <label class="chatnt-members-search">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
-                </svg>
-                <input v-model="memberSearch" placeholder="搜索成员" />
-              </label>
+              <!-- ═══ 成员列表 ═══ -->
+              <template v-if="panel === 'members'">
+                <label class="chatnt-members-search">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round">
+                    <circle cx="11" cy="11" r="7"/>
+                    <line x1="21" y1="21" x2="16.5" y2="16.5"/>
+                  </svg>
+                  <input v-model="memberSearch" placeholder="搜索成员"/>
+                </label>
 
-              <div class="chatnt-members-list">
-                <div v-if="loadingMembers" class="chatnt-members-empty">正在加载</div>
-                <div v-else-if="filteredMembers.length === 0" class="chatnt-members-empty">没有匹配的成员</div>
-                <template v-for="section in memberSections" :key="section.key">
-                  <div v-if="section.items.length" class="chatnt-members-group">{{ section.label }}（{{ section.items.length }}）</div>
-                  <div v-for="m in section.items" :key="m.unionOpenId" class="mbr">
-                    <button type="button" class="mbr-avatar" title="查看成员详情"
-                            :aria-label="`查看 ${m.username || '该成员'} 的详情`" @click.stop="memberInfoTarget = m">
-                      <span>{{ (m.username || '?').slice(0, 1).toUpperCase() }}</span>
-                      <img v-if="userAvatarUrl(m.unionOpenId) && !avatarFailed['mbr-' + m.unionOpenId]"
-                           :src="userAvatarUrl(m.unionOpenId)" :alt="m.username"
-                           referrerpolicy="no-referrer"
-                           @error="avatarFailed['mbr-' + m.unionOpenId] = true" />
-                    </button>
-                    <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
+                <div class="chatnt-members-list">
+                  <div v-if="loadingMembers" class="chatnt-members-empty">正在加载</div>
+                  <div v-else-if="filteredMembers.length === 0" class="chatnt-members-empty">没有匹配的成员</div>
+                  <template v-for="section in memberSections" :key="section.key">
+                    <div v-if="section.items.length" class="chatnt-members-group">{{
+                        section.label
+                      }}（{{ section.items.length }}）
+                    </div>
+                    <div v-for="m in section.items" :key="m.unionOpenId" class="mbr">
+                      <button type="button" class="mbr-avatar" title="查看成员详情"
+                              :aria-label="`查看 ${m.username || '该成员'} 的详情`" @click.stop="memberInfoTarget = m">
+                        <span>{{ (m.username || '?').slice(0, 1).toUpperCase() }}</span>
+                        <img v-if="userAvatarUrl(m.unionOpenId) && !avatarFailed['mbr-' + m.unionOpenId]"
+                             :src="userAvatarUrl(m.unionOpenId)" :alt="m.username"
+                             referrerpolicy="no-referrer"
+                             @error="avatarFailed['mbr-' + m.unionOpenId] = true"/>
+                      </button>
+                      <button class="mbr-body" title="点击 @ 该成员" @click="atMember(m)">
                       <span class="mbr-top">
-                        <span class="mbr-name" :class="{ 'bot-staff-name': isBotStaff(m) }">{{ m.username || 'Unknown' }}</span>
+                        <span class="mbr-name" :class="{ 'bot-staff-name': isBotStaff(m) }">{{
+                            m.username || 'Unknown'
+                          }}</span>
                         <img v-if="m.senderIsBot" class="qm-bot"
-                             :src="botBlue" width="13" height="13" alt="机器人" />
+                             :src="botBlue" width="13" height="13" alt="机器人"/>
                         <span v-if="isSpecialRole(m.memberRole)" class="qm-role"
                               :class="'role-' + m.memberRole.toLowerCase()">{{ roleLabel(m.memberRole) }}</span>
                       </span>
-                      <span class="mbr-sub">{{ m.messageCount }} 条 · {{ fmtMemberTime(m.lastActiveAt) }}</span>
-                    </button>
-                    <button class="mbr-mention" title="@ 该成员" aria-label="@ 该成员" @click.stop="atMember(m)">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="4"/>
-                        <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
-                      </svg>
-                    </button>
-                    <button class="mbr-cog" title="用户设置" aria-label="用户设置"
-                            @click.stop="openProfile(m.unionOpenId, m.username)">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </template>
-              </div>
-            </template>
-
-            <!-- ═══ 会话信息 ═══ -->
-            <div v-else-if="panel === 'info'" class="chatnt-members-list chatnt-info">
-              <template v-if="active.type === 'group'">
-                <div class="chatnt-info-section">
-                  <div class="chatnt-info-label chatnt-info-label-line">
-                    <span>群聊资料</span>
-                    <button class="nt-mini-btn" :disabled="syncingGroupProfile" @click="syncGroupProfile">
-                      <svg :class="{ spin: syncingGroupProfile }" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
-                      </svg>
-                      {{ syncingGroupProfile ? '同步中' : '同步' }}
-                    </button>
-                  </div>
-                  <div class="nt-card">
-                    <div class="nt-row"><span class="nt-row-label">群名</span><span class="nt-row-value">{{ groupDisplayName(groupMeta) }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">群 OpenId</span><span class="nt-row-value">{{ groupMeta?.groupOpenId || active.openId }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">成员数</span><span class="nt-row-value">{{ groupMeta?.groupMemberNum ?? '-' }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">加群时间</span><span class="nt-row-value">{{ fmtGroupTime(groupMeta?.joinedAt) }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">Bot 群内 ID</span><span class="nt-row-value">{{ groupMeta?.memberOpenid || '-' }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">Bot 身份</span><span class="nt-row-value">{{ groupRoleLabel(groupMeta?.memberRole) }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">主动消息</span><span class="nt-row-value">{{ groupMeta?.allowProactiveMsg ? '允许' : '未允许' }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">接收消息</span><span class="nt-row-value">{{ recvMsgSettingLabel(groupMeta?.recvMsgSetting) }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">群分类</span><span class="nt-row-value">{{ groupMeta?.groupClassText || '-' }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">群标签</span><span class="nt-row-value">{{ groupTagsText(groupMeta?.groupTags) }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">群简介</span><span class="nt-row-value">{{ groupMeta?.groupFingerMemo || '-' }}</span></div>
-                  </div>
-                </div>
-
-                <div class="chatnt-info-section">
-                  <div class="chatnt-info-label">群聊设置</div>
-                  <div class="nt-card">
-                    <div class="nt-row">
-                      <span class="nt-row-label">白名单</span>
-                      <button class="nt-switch" :class="{ on: groupMeta?.whitelist }" role="switch"
-                              :aria-checked="!!groupMeta?.whitelist" :disabled="!groupMeta"
-                              @click="toggleGroupStatus('whitelist')"><span class="nt-switch-knob" /></button>
-                    </div>
-                    <div class="nt-row">
-                      <span class="nt-row-label">黑名单</span>
-                      <button class="nt-switch" :class="{ on: groupMeta?.blacklisted }" role="switch"
-                              :aria-checked="!!groupMeta?.blacklisted" :disabled="!groupMeta"
-                              @click="toggleGroupStatus('blacklist')"><span class="nt-switch-knob" /></button>
-                    </div>
-                    <div class="nt-row">
-                      <span class="nt-row-label">真实群号</span>
-                      <input class="nt-input" v-model="realGroupInput" placeholder="未设置"
-                             @blur="saveRealGroup" @keydown.enter="saveRealGroup" />
-                    </div>
-                    <div class="nt-row">
-                      <span class="nt-row-label">邀请人</span>
-                      <span class="nt-row-value">{{ groupMeta?.opMemberOpenId || '-' }}</span>
-                    </div>
-                    <button type="button" class="nt-row clickable chatnt-settings-link" @click="togglePanel('welcome')">
-                      <span class="nt-row-label">入群欢迎<span class="nt-row-note">欢迎内容与按钮设置</span></span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
-                    </button>
-                    <button type="button" class="nt-row clickable chatnt-settings-link" @click="togglePanel('moderation')">
-                      <span class="nt-row-label">群管设置<span class="nt-row-note">消息审查、入群审核与操作日志</span></span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="chatnt-info-section">
-                  <div class="chatnt-info-label chatnt-info-label-line">
-                    <span>群禁言状态</span>
-                    <button class="nt-mini-btn" :disabled="!canQueryMuteState || muteStateLoading" @click="queryMuteState">
-                      <svg :class="{ spin: muteStateLoading }" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/>
-                      </svg>
-                      {{ muteStateLoading ? '查询中' : '查询' }}
-                    </button>
-                  </div>
-                  <!-- 查询群禁言状态要求机器人是群管理员，不是就禁用，连点都不让点 -->
-                  <div v-if="!canQueryMuteState" class="nt-empty">机器人不是群管理员，无法查询</div>
-                  <template v-else>
-                    <div v-if="muteStateError" class="nt-empty">{{ muteStateError }}</div>
-                    <div v-else-if="muteState" class="nt-card">
-                      <div class="nt-row">
-                        <span class="nt-row-label">全员禁言</span>
-                        <span class="nt-row-value">{{ muteModeLabel(muteState.globalRule?.mode) }}</span>
-                      </div>
-                      <!-- schedule 模式下把定时/周期规则明细列出来，别跟始终禁言混成一个标签 -->
-                      <template v-if="muteState.globalRule?.mode === 'schedule'">
-                        <div v-if="(muteState.globalRule.scheduleRules || []).length" class="nt-mute-sub">
-                          <div class="nt-mute-sub-title">定时禁言（{{ muteState.globalRule.scheduleRules.length }}）</div>
-                          <div v-for="r in muteState.globalRule.scheduleRules" :key="r.taskId" class="nt-row">
-                            <span class="nt-row-label nt-row-label-ellipsis">{{ fmtMuteRuleTime(r.startAt) }} ~ {{ fmtMuteRuleTime(r.endAt) }}</span>
-                            <span class="nt-row-value" :class="{ off: !r.enabled }">{{ r.enabled ? '启用' : '停用' }}</span>
-                          </div>
-                        </div>
-                        <div v-if="(muteState.globalRule.recurringRules || []).length" class="nt-mute-sub">
-                          <div class="nt-mute-sub-title">周期禁言（{{ muteState.globalRule.recurringRules.length }}）</div>
-                          <div v-for="r in muteState.globalRule.recurringRules" :key="r.taskId" class="nt-row">
-                            <span class="nt-row-label nt-row-label-ellipsis">{{ fmtRecurring(r) }}</span>
-                            <span class="nt-row-value" :class="{ off: !r.enabled }">{{ r.enabled ? '启用' : '停用' }}</span>
-                          </div>
-                        </div>
-                      </template>
-                      <div class="nt-row">
-                        <span class="nt-row-label">禁言成员</span>
-                        <span class="nt-row-value">{{ (muteState.members || []).length }} 人</span>
-                      </div>
-                      <div v-if="(muteState.members || []).length" class="nt-card nt-mute-members">
-                        <div v-for="m in muteState.members" :key="m.memberOpenId" class="nt-row">
-                          <span class="nt-row-label nt-row-label-ellipsis">{{ m.username || shortId(m.memberOpenId) }}</span>
-                          <span class="nt-row-value">{{ fmtGroupTime(m.muteExpireAt) }}</span>
-                        </div>
-                      </div>
+                        <span class="mbr-sub">{{ m.messageCount }} 条 · {{ fmtMemberTime(m.lastActiveAt) }}</span>
+                      </button>
+                      <button class="mbr-mention" title="@ 该成员" aria-label="@ 该成员" @click.stop="atMember(m)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="12" r="4"/>
+                          <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
+                        </svg>
+                      </button>
+                      <button class="mbr-cog" title="用户设置" aria-label="用户设置"
+                              @click.stop="openProfile(m.unionOpenId, m.username)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="3"/>
+                          <path
+                              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                      </button>
                     </div>
                   </template>
                 </div>
-
-                <GroupBlacklistPanel :group-open-id="active.openId" :can-manage="canQueryMuteState"
-                                     :request="api" :format-time="fmtGroupTime" @notice="showNotice" />
-
-                <PushTaskSettings :key="currentConvKey()" :entries="funcEntries" :function-keys="knownFunctionKeys"
-                                  :loading="groupFunctionsLoading" :error="groupFunctionsError" :saving-key="functionSavingKey"
-                                  @toggle="toggleFunction" />
               </template>
 
-              <!-- 私聊：信息面板直接就是对端的用户设置 -->
-              <template v-else>
-                <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
-                                 :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady" :error="profileError"
-                                 @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
-                <PushTaskSettings :key="currentConvKey()" :entries="userFunctionEntries" :function-keys="userFunctionKeys"
-                                  :loading="userPushTasksLoading" :error="userPushTasksError" :saving-key="functionSavingKey"
-                                  @toggle="toggleFunction" />
-              </template>
+              <!-- ═══ 会话信息 ═══ -->
+              <div v-else-if="panel === 'info'" class="chatnt-members-list chatnt-info">
+                <template v-if="active.type === 'group'">
+                  <div class="chatnt-info-section">
+                    <div class="chatnt-info-label chatnt-info-label-line">
+                      <span>群聊资料</span>
+                      <button class="nt-mini-btn" :disabled="syncingGroupProfile" @click="syncGroupProfile">
+                        <svg :class="{ spin: syncingGroupProfile }" width="13" height="13" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                             stroke-linejoin="round">
+                          <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                          <polyline points="21 3 21 9 15 9"/>
+                        </svg>
+                        {{ syncingGroupProfile ? '同步中' : '同步' }}
+                      </button>
+                    </div>
+                    <div class="nt-card">
+                      <div class="nt-row"><span class="nt-row-label">群名</span><span
+                          class="nt-row-value">{{ groupDisplayName(groupMeta) }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">群 OpenId</span><span
+                          class="nt-row-value">{{ groupMeta?.groupOpenId || active.openId }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">成员数</span><span
+                          class="nt-row-value">{{ groupMeta?.groupMemberNum ?? '-' }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">加群时间</span><span
+                          class="nt-row-value">{{ fmtGroupTime(groupMeta?.joinedAt) }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">Bot 群内 ID</span><span
+                          class="nt-row-value">{{ groupMeta?.memberOpenid || '-' }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">Bot 身份</span><span
+                          class="nt-row-value">{{ groupRoleLabel(groupMeta?.memberRole) }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">主动消息</span><span
+                          class="nt-row-value">{{ groupMeta?.allowProactiveMsg ? '允许' : '未允许' }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">接收消息</span><span
+                          class="nt-row-value">{{ recvMsgSettingLabel(groupMeta?.recvMsgSetting) }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">群分类</span><span
+                          class="nt-row-value">{{ groupMeta?.groupClassText || '-' }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">群标签</span><span
+                          class="nt-row-value">{{ groupTagsText(groupMeta?.groupTags) }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">群简介</span><span
+                          class="nt-row-value">{{ groupMeta?.groupFingerMemo || '-' }}</span></div>
+                    </div>
+                  </div>
 
-              <div class="chatnt-info-section">
-                <div class="chatnt-info-label">统计</div>
-                <div class="nt-card">
-                  <div v-if="convStatsError" class="nt-empty">{{ convStatsError }}</div>
-                  <div v-else-if="!convStats" class="nt-empty">加载中</div>
-                  <template v-else>
-                    <template v-if="active.type === 'group'">
-                      <div class="nt-row"><span class="nt-row-label">收到消息</span><span class="nt-row-value">{{ convStats.receivedMessages }}</span></div>
-                      <div class="nt-row"><span class="nt-row-label">发出消息</span><span class="nt-row-value">{{ convStats.sentMessages }}</span></div>
-                      <div class="nt-row"><span class="nt-row-label">活跃人数</span><span class="nt-row-value">{{ convStats.activeUsers }}</span></div>
-                    </template>
+                  <div class="chatnt-info-section">
+                    <div class="chatnt-info-label">群聊设置</div>
+                    <div class="nt-card">
+                      <div class="nt-row">
+                        <span class="nt-row-label">白名单</span>
+                        <button class="nt-switch" :class="{ on: groupMeta?.whitelist }" role="switch"
+                                :aria-checked="!!groupMeta?.whitelist" :disabled="!groupMeta"
+                                @click="toggleGroupStatus('whitelist')"><span class="nt-switch-knob"/></button>
+                      </div>
+                      <div class="nt-row">
+                        <span class="nt-row-label">黑名单</span>
+                        <button class="nt-switch" :class="{ on: groupMeta?.blacklisted }" role="switch"
+                                :aria-checked="!!groupMeta?.blacklisted" :disabled="!groupMeta"
+                                @click="toggleGroupStatus('blacklist')"><span class="nt-switch-knob"/></button>
+                      </div>
+                      <div class="nt-row">
+                        <span class="nt-row-label">真实群号</span>
+                        <input class="nt-input" v-model="realGroupInput" placeholder="未设置"
+                               @blur="saveRealGroup" @keydown.enter="saveRealGroup"/>
+                      </div>
+                      <div class="nt-row">
+                        <span class="nt-row-label">邀请人</span>
+                        <span class="nt-row-value">{{ groupMeta?.opMemberOpenId || '-' }}</span>
+                      </div>
+                      <button type="button" class="nt-row clickable chatnt-settings-link"
+                              @click="togglePanel('welcome')">
+                        <span class="nt-row-label">入群欢迎<span class="nt-row-note">欢迎内容与按钮设置</span></span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="m9 5 7 7-7 7"/>
+                        </svg>
+                      </button>
+                      <button type="button" class="nt-row clickable chatnt-settings-link"
+                              @click="togglePanel('moderation')">
+                        <span class="nt-row-label">群管设置<span class="nt-row-note">消息审查、入群审核与操作日志</span></span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="m9 5 7 7-7 7"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="chatnt-info-section">
+                    <div class="chatnt-info-label chatnt-info-label-line">
+                      <span>群禁言状态</span>
+                      <button class="nt-mini-btn" :disabled="!canQueryMuteState || muteStateLoading"
+                              @click="queryMuteState">
+                        <svg :class="{ spin: muteStateLoading }" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                          <polyline points="21 3 21 9 15 9"/>
+                        </svg>
+                        {{ muteStateLoading ? '查询中' : '查询' }}
+                      </button>
+                    </div>
+                    <!-- 查询群禁言状态要求机器人是群管理员，不是就禁用，连点都不让点 -->
+                    <div v-if="!canQueryMuteState" class="nt-empty">机器人不是群管理员，无法查询</div>
                     <template v-else>
-                      <div class="nt-row"><span class="nt-row-label">私聊收到</span><span class="nt-row-value">{{ convStats.c2cReceivedMessages }}</span></div>
-                      <div class="nt-row"><span class="nt-row-label">私聊发出</span><span class="nt-row-value">{{ convStats.c2cSentMessages }}</span></div>
-                      <div class="nt-row"><span class="nt-row-label">群内消息</span><span class="nt-row-value">{{ convStats.groupReceivedMessages }}</span></div>
+                      <div v-if="muteStateError" class="nt-empty">{{ muteStateError }}</div>
+                      <div v-else-if="muteState" class="nt-card">
+                        <div class="nt-row">
+                          <span class="nt-row-label">全员禁言</span>
+                          <span class="nt-row-value">{{ muteModeLabel(muteState.globalRule?.mode) }}</span>
+                        </div>
+                        <!-- schedule 模式下把定时/周期规则明细列出来，别跟始终禁言混成一个标签 -->
+                        <template v-if="muteState.globalRule?.mode === 'schedule'">
+                          <div v-if="(muteState.globalRule.scheduleRules || []).length" class="nt-mute-sub">
+                            <div class="nt-mute-sub-title">定时禁言（{{
+                                muteState.globalRule.scheduleRules.length
+                              }}）
+                            </div>
+                            <div v-for="r in muteState.globalRule.scheduleRules" :key="r.taskId" class="nt-row">
+                              <span class="nt-row-label nt-row-label-ellipsis">{{
+                                  fmtMuteRuleTime(r.startAt)
+                                }} ~ {{ fmtMuteRuleTime(r.endAt) }}</span>
+                              <span class="nt-row-value" :class="{ off: !r.enabled }">{{
+                                  r.enabled ? '启用' : '停用'
+                                }}</span>
+                            </div>
+                          </div>
+                          <div v-if="(muteState.globalRule.recurringRules || []).length" class="nt-mute-sub">
+                            <div class="nt-mute-sub-title">周期禁言（{{
+                                muteState.globalRule.recurringRules.length
+                              }}）
+                            </div>
+                            <div v-for="r in muteState.globalRule.recurringRules" :key="r.taskId" class="nt-row">
+                              <span class="nt-row-label nt-row-label-ellipsis">{{ fmtRecurring(r) }}</span>
+                              <span class="nt-row-value" :class="{ off: !r.enabled }">{{
+                                  r.enabled ? '启用' : '停用'
+                                }}</span>
+                            </div>
+                          </div>
+                        </template>
+                        <div class="nt-row">
+                          <span class="nt-row-label">禁言成员</span>
+                          <span class="nt-row-value">{{ (muteState.members || []).length }} 人</span>
+                        </div>
+                        <div v-if="(muteState.members || []).length" class="nt-card nt-mute-members">
+                          <div v-for="m in muteState.members" :key="m.memberOpenId" class="nt-row">
+                            <span class="nt-row-label nt-row-label-ellipsis">{{
+                                m.username || shortId(m.memberOpenId)
+                              }}</span>
+                            <span class="nt-row-value">{{ fmtGroupTime(m.muteExpireAt) }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </template>
-                    <div class="nt-row"><span class="nt-row-label">首次记录</span><span class="nt-row-value">{{ convStats.firstSeenAt || '-' }}</span></div>
-                    <div class="nt-row"><span class="nt-row-label">最近记录</span><span class="nt-row-value">{{ convStats.lastSeenAt || '-' }}</span></div>
-                  </template>
+                  </div>
+
+                  <GroupBlacklistPanel :group-open-id="active.openId" :can-manage="canQueryMuteState"
+                                       :request="api" :format-time="fmtGroupTime" @notice="showNotice"/>
+
+                  <PushTaskSettings :key="currentConvKey()" :entries="funcEntries" :function-keys="knownFunctionKeys"
+                                    :loading="groupFunctionsLoading" :error="groupFunctionsError"
+                                    :saving-key="functionSavingKey"
+                                    @toggle="toggleFunction"/>
+                </template>
+
+                <!-- 私聊：信息面板直接就是对端的用户设置 -->
+                <template v-else>
+                  <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
+                                   :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady"
+                                   :error="profileError"
+                                   @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm"/>
+                  <PushTaskSettings :key="currentConvKey()" :entries="userFunctionEntries"
+                                    :function-keys="userFunctionKeys"
+                                    :loading="userPushTasksLoading" :error="userPushTasksError"
+                                    :saving-key="functionSavingKey"
+                                    @toggle="toggleFunction"/>
+                </template>
+
+                <div class="chatnt-info-section">
+                  <div class="chatnt-info-label">统计</div>
+                  <div class="nt-card">
+                    <div v-if="convStatsError" class="nt-empty">{{ convStatsError }}</div>
+                    <div v-else-if="!convStats" class="nt-empty">加载中</div>
+                    <template v-else>
+                      <template v-if="active.type === 'group'">
+                        <div class="nt-row"><span class="nt-row-label">收到消息</span><span
+                            class="nt-row-value">{{ convStats.receivedMessages }}</span></div>
+                        <div class="nt-row"><span class="nt-row-label">发出消息</span><span
+                            class="nt-row-value">{{ convStats.sentMessages }}</span></div>
+                        <div class="nt-row"><span class="nt-row-label">活跃人数</span><span
+                            class="nt-row-value">{{ convStats.activeUsers }}</span></div>
+                      </template>
+                      <template v-else>
+                        <div class="nt-row"><span class="nt-row-label">私聊收到</span><span
+                            class="nt-row-value">{{ convStats.c2cReceivedMessages }}</span></div>
+                        <div class="nt-row"><span class="nt-row-label">私聊发出</span><span
+                            class="nt-row-value">{{ convStats.c2cSentMessages }}</span></div>
+                        <div class="nt-row"><span class="nt-row-label">群内消息</span><span
+                            class="nt-row-value">{{ convStats.groupReceivedMessages }}</span></div>
+                      </template>
+                      <div class="nt-row"><span class="nt-row-label">首次记录</span><span
+                          class="nt-row-value">{{ convStats.firstSeenAt || '-' }}</span></div>
+                      <div class="nt-row"><span class="nt-row-label">最近记录</span><span
+                          class="nt-row-value">{{ convStats.lastSeenAt || '-' }}</span></div>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="chatnt-info-section chatnt-clear-section">
+                  <div class="chatnt-info-label">清除聊天记录</div>
+                  <div class="nt-card chatnt-clear-card">
+                    <div class="chatnt-clear-modes" role="group" aria-label="清除范围">
+                      <button type="button" :class="{ active: clearForm.mode === 'all' }"
+                              @click="clearForm.mode = 'all'">全部
+                      </button>
+                      <button type="button" :class="{ active: clearForm.mode === 'first' }"
+                              @click="clearForm.mode = 'first'">前 N 条
+                      </button>
+                      <button type="button" :class="{ active: clearForm.mode === 'range' }"
+                              @click="clearForm.mode = 'range'">日期范围
+                      </button>
+                    </div>
+                    <label v-if="clearForm.mode === 'first'" class="chatnt-clear-field">
+                      <span>清除前</span>
+                      <input v-model.number="clearForm.count" class="nt-input" type="number" min="1" max="1000000"
+                             step="1"/>
+                      <span>条</span>
+                    </label>
+                    <div v-if="clearForm.mode === 'range'" class="chatnt-clear-range">
+                      <label class="chatnt-clear-field"><span>从</span><input v-model="clearForm.start" class="nt-input"
+                                                                              type="date"/></label>
+                      <label class="chatnt-clear-field"><span>到</span><input v-model="clearForm.end" class="nt-input"
+                                                                              type="date"/></label>
+                    </div>
+                    <button type="button" class="chatnt-clear-submit" :disabled="clearForm.loading"
+                            @click="clearCurrentConversation">
+                      {{ clearForm.loading ? '清除中…' : '清除记录' }}
+                    </button>
+                    <!--                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>-->
+
+                  </div>
                 </div>
               </div>
 
-              <div class="chatnt-info-section chatnt-clear-section">
-                <div class="chatnt-info-label">清除聊天记录</div>
-                <div class="nt-card chatnt-clear-card">
-                  <div class="chatnt-clear-modes" role="group" aria-label="清除范围">
-                    <button type="button" :class="{ active: clearForm.mode === 'all' }"
-                            @click="clearForm.mode = 'all'">全部</button>
-                    <button type="button" :class="{ active: clearForm.mode === 'first' }"
-                            @click="clearForm.mode = 'first'">前 N 条</button>
-                    <button type="button" :class="{ active: clearForm.mode === 'range' }"
-                            @click="clearForm.mode = 'range'">日期范围</button>
-                  </div>
-                  <label v-if="clearForm.mode === 'first'" class="chatnt-clear-field">
-                    <span>清除前</span>
-                    <input v-model.number="clearForm.count" class="nt-input" type="number" min="1" max="1000000" step="1" />
-                    <span>条</span>
-                  </label>
-                  <div v-if="clearForm.mode === 'range'" class="chatnt-clear-range">
-                    <label class="chatnt-clear-field"><span>从</span><input v-model="clearForm.start" class="nt-input" type="date" /></label>
-                    <label class="chatnt-clear-field"><span>到</span><input v-model="clearForm.end" class="nt-input" type="date" /></label>
-                  </div>
-                  <button type="button" class="chatnt-clear-submit" :disabled="clearForm.loading"
-                          @click="clearCurrentConversation">
-                    {{ clearForm.loading ? '清除中…' : '清除记录' }}
-                  </button>
-<!--                  <div class="chatnt-clear-hint">仅影响当前{{ active.type === 'group' ? '群聊' : '用户' }}会话聊天数据</div>-->
+              <JoinWelcomePanel v-else-if="panel === 'welcome' && active.type === 'group'"
+                                :key="`welcome:${active.openId}`" ref="welcomePanelRef" :group-open-id="active.openId"
+                                :bot-name="botName" :bot-avatar-url="userAvatarUrl(botOpenId) || ''"
+                                :debug-group-id="debugGroupId" :request="api"
+                                @enabled-change="syncWelcomeEnabled"/>
+              <GroupModerationPanel v-else-if="panel === 'moderation' && active.type === 'group'"
+                                    :key="`moderation:${active.openId}`" ref="moderationPanelRef" :group-open-id="active.openId"
+                                    :request="api"/>
 
-                </div>
+              <!-- ═══ 单用户设置 ═══ -->
+              <div v-else-if="panel === 'user'" class="chatnt-members-list chatnt-info">
+                <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
+                                 :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady"
+                                 :error="profileError"
+                                 @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm"/>
               </div>
-            </div>
-
-            <JoinWelcomePanel v-else-if="panel === 'welcome' && active.type === 'group'"
-                              :key="active.openId" ref="welcomePanelRef" :group-open-id="active.openId"
-                              :bot-name="botName" :bot-avatar-url="userAvatarUrl(botOpenId) || ''"
-                              :debug-group-id="debugGroupId" :request="api"
-                              @enabled-change="syncWelcomeEnabled" />
-            <GroupModerationPanel v-else-if="panel === 'moderation' && active.type === 'group'"
-                                  :key="active.openId" ref="moderationPanelRef" :group-open-id="active.openId" :request="api" />
-
-            <!-- ═══ 单用户设置 ═══ -->
-            <div v-else-if="panel === 'user'" class="chatnt-members-list chatnt-info">
-              <UserProfileForm :key="profileTarget" :profile="profile" :role-options="ROLE_OPTIONS"
-                               :saving="profileSaving" :loading="profileLoading" :disabled="!profileReady" :error="profileError"
-                               @save="saveProfile" @add-perm="addPermNode" @remove-perm="removePerm" />
-            </div>
-          </aside>
+            </aside>
           </Transition>
         </template>
       </section>
@@ -643,31 +785,36 @@
 
     <div v-if="ctxMenu.visible" class="ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
       <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户</button>
+              @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户
+      </button>
       <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click="openProfile(ctxMenu.message.unionOpenId, ctxMenu.message.username); ctxMenu.visible = false">用户设置</button>
+              @click="openProfile(ctxMenu.message.unionOpenId, ctxMenu.message.username); ctxMenu.visible = false">用户设置
+      </button>
       <!-- 禁言不做身份预判：机器人没权限时接口会报错，直接把错误甩给用户看 -->
       <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言</button>
+              @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言
+      </button>
       <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言</button>
+              @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言
+      </button>
       <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">选择</button>
       <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
       <!-- 别人的消息也给撤回入口，能不能撤由官方接口判定，前端不预判权限 -->
       <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
               class="ctx-recall"
-              @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回</button>
+              @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回
+      </button>
     </div>
 
     <div v-if="previewImg || previewVideo" class="lightbox" @click="closePreview">
-      <img v-if="previewImg" :src="previewImg" referrerpolicy="no-referrer" alt="预览" @click.stop />
+      <img v-if="previewImg" :src="previewImg" referrerpolicy="no-referrer" alt="预览" @click.stop/>
       <video v-else :src="previewVideo" controls autoplay playsinline @click.stop></video>
     </div>
 
     <GroupMemberDialog v-if="memberInfoTarget && active?.type === 'group'"
                        :group-open-id="active.openId" :member="memberInfoTarget" :request="api"
                        :avatar-url="userAvatarUrl(memberInfoTarget.unionOpenId)"
-                       @close="memberInfoTarget = null" @mute="muteFromMemberInfo" @removed="memberRemoved" />
+                       @close="memberInfoTarget = null" @mute="muteFromMemberInfo" @removed="memberRemoved"/>
 
     <!-- 禁言设置弹窗：Teleport 到 body，避免聊天布局裁切时长菜单 -->
     <Teleport to="body">
@@ -712,28 +859,30 @@
 </template>
 
 <script setup>
-import { createWebuiApi } from '../../shared/lib/webuiApi.js'
-import { emptyUserProfile, loadUserProfile, saveUserProfile } from '../users/lib/userProfile.js'
-import { createDetailHistory } from '../../shared/lib/detailHistory.js'
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
-import { LEGACY_TOKEN_KEY, API_BASE } from '../../router.js'
-import { renderAttachmentTags, renderCommandInputTags, renderFaceTags } from '../../shared/lib/messageRender.js'
-import { escapeHtml, renderMarkdown as renderMd } from '../../shared/lib/markdown.js'
-import { mediaUrl } from '../../shared/lib/mediaUrl.js'
-import { hasArkMessage, renderArkSummary } from '../../shared/lib/ark.js'
-import { parseCardMessage, renderCardSummary } from '../../shared/lib/card.js'
-import { ARK_TEMPLATES, CARD_FIELDS, createArkDraft, createCardDraft, getArkFields,
-  isArkDraftValid, isCardDraftValid, buildArkPayload, buildCardPayload } from './lib/messageDrafts.js'
-import { parseForwardContent } from '../../shared/lib/forward.js'
-import { vChatImageLayout } from './lib/chatImageLayout.js'
-import { countNewMessages, latestMessageId } from './lib/chatUnread.js'
-import { createChatBottomScroller, createChatPositionKeeper, prefersReducedMotion } from './lib/chatMotion.js'
-import { CHAT_LAYOUT_KEY } from '../../shared/lib/panelLayout.js'
+import {createWebuiApi} from '../../shared/lib/webuiApi.js'
+import {emptyUserProfile, loadUserProfile, saveUserProfile} from '../users/lib/userProfile.js'
+import {createDetailHistory} from '../../shared/lib/detailHistory.js'
+import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
+import {onBeforeRouteLeave, onBeforeRouteUpdate, useRouter} from 'vue-router'
+import {LEGACY_TOKEN_KEY, API_BASE} from '../../router.js'
+import {renderAttachmentTags, renderCommandInputTags, renderFaceTags} from '../../shared/lib/messageRender.js'
+import {escapeHtml, renderMarkdown as renderMd} from '../../shared/lib/markdown.js'
+import {mediaUrl} from '../../shared/lib/mediaUrl.js'
+import {hasArkMessage, renderArkSummary} from '../../shared/lib/ark.js'
+import {parseCardMessage, renderCardSummary} from '../../shared/lib/card.js'
+import {
+  ARK_TEMPLATES, CARD_FIELDS, createArkDraft, createCardDraft, getArkFields,
+  isArkDraftValid, isCardDraftValid, buildArkPayload, buildCardPayload
+} from './lib/messageDrafts.js'
+import {parseForwardContent} from '../../shared/lib/forward.js'
+import {vChatImageLayout} from './lib/chatImageLayout.js'
+import {countNewMessages, latestMessageId} from './lib/chatUnread.js'
+import {createChatBottomScroller, createChatPositionKeeper, prefersReducedMotion} from './lib/chatMotion.js'
+import {CHAT_LAYOUT_KEY} from '../../shared/lib/panelLayout.js'
 import botBlue from '../../assets/bot-blue.svg'
 import GroupAvatarRenderer from './lib/GroupAvatarRenderer.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import ArkMessageCard from '../../shared/components/ArkMessageCard.vue'
 import CardMessageCard from '../../shared/components/CardMessageCard.vue'
@@ -747,7 +896,7 @@ import JoinWelcomePanel from '../groups/components/JoinWelcomePanel.vue'
 import GroupModerationPanel from '../groups/components/GroupModerationPanel.vue'
 import GroupLeaveMessages from '../groups/components/GroupLeaveMessages.vue'
 
-const { appId, botOpenId, botName, loadBotConfig } = useBotConfig()
+const {appId, botOpenId, botName, loadBotConfig} = useBotConfig()
 
 const router = useRouter()
 
@@ -836,7 +985,7 @@ let functionSaveSeq = 0
 let groupFunctionsLoadSeq = 0
 const convStats = ref(null)
 const convStatsError = ref('')
-const clearForm = reactive({ mode: 'all', count: 100, start: '', end: '', loading: false })
+const clearForm = reactive({mode: 'all', count: 100, start: '', end: '', loading: false})
 const muteState = ref(null)
 const muteStateLoading = ref(false)
 const muteStateError = ref('')
@@ -850,8 +999,8 @@ function muteFromMemberInfo(member) {
 function memberRemoved(member) {
   memberInfoTarget.value = null
   const result = member.blacklistFailed
-    ? '，但加入群黑名单失败'
-    : member.addToMemberBlacklist ? '，并加入群黑名单' : ''
+      ? '，但加入群黑名单失败'
+      : member.addToMemberBlacklist ? '，并加入群黑名单' : ''
   showNotice(`已将 ${member.username || '该成员'} 踢出群聊${result}`)
 }
 
@@ -867,14 +1016,14 @@ const userPushTasks = ref([])
 const userPushTasksLoading = ref(false)
 const userPushTasksError = ref('')
 const userFunctionEntries = computed(() => userPushTasks.value.filter(task => task.configured)
-  .map(task => [task.functionId, task]))
+    .map(task => [task.functionId, task]))
 const userFunctionKeys = computed(() => userPushTasks.value.map(task => task.functionId))
 let profileLoadSeq = 0
 let profileLoadController = null
 const ROLE_OPTIONS = [
-  { key: 'USER', label: '普通' },
-  { key: 'ADMIN', label: '管理员' },
-  { key: 'OWNER', label: '所有者' }
+  {key: 'USER', label: '普通'},
+  {key: 'ADMIN', label: '管理员'},
+  {key: 'OWNER', label: '所有者'}
 ]
 
 const highlightedMessageId = ref(null)
@@ -885,7 +1034,7 @@ let noticeTimer = null
 const sidebarOpen = ref(false)
 const previewImg = ref(null)
 const previewVideo = ref(null)
-const ctxMenu = reactive({ visible: false, x: 0, y: 0, message: null })
+const ctxMenu = reactive({visible: false, x: 0, y: 0, message: null})
 const recalledIds = reactive({})
 const avatarFailed = reactive({})
 const attachFailed = reactive({})
@@ -910,7 +1059,7 @@ watch([messageListRef, messageContentRef], ([viewport, content], _, onCleanup) =
   observer.observe(viewport)
   observer.observe(content)
   onCleanup(() => observer.disconnect())
-}, { flush: 'post' })
+}, {flush: 'post'})
 const fileInputRef = ref(null)
 const composerRef = ref(null)
 
@@ -926,17 +1075,17 @@ let messageRefreshPending = false
 let messageRefreshController = null
 
 const activeConv = computed(() =>
-  active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
+    active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
 )
 
 const filteredConvs = computed(() => {
   const q = search.value.trim().toLowerCase()
   const list = q
-    ? conversations.value.filter(c =>
-      convName(c).toLowerCase().includes(q) ||
-      c.openId.toLowerCase().includes(q) ||
-      convPreview(c).toLowerCase().includes(q))
-    : conversations.value
+      ? conversations.value.filter(c =>
+          convName(c).toLowerCase().includes(q) ||
+          c.openId.toLowerCase().includes(q) ||
+          convPreview(c).toLowerCase().includes(q))
+      : conversations.value
   // 置顶的浮到最前，两组内部各自保持后端给的时间倒序（Array.sort 在现代引擎里是稳定的）
   return [...list].sort((a, b) => (isPinned(b) ? 1 : 0) - (isPinned(a) ? 1 : 0))
 })
@@ -954,22 +1103,22 @@ function queueGroupAvatars(list) {
 
 // Queue only when the app ID or visible conversation IDs actually change.
 watch(
-  () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)].join('\u0000'),
-  () => queueGroupAvatars(filteredConvs.value),
-  { immediate: true }
+    () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)].join('\u0000'),
+    () => queueGroupAvatars(filteredConvs.value),
+    {immediate: true}
 )
 
 // 已加载的「非置顶」会话数：置顶会话由后端单独前置、不计入分页偏移，翻页 offset 只按它算
 const nonPinnedLoadedCount = computed(() =>
-  conversations.value.filter(c => !isPinned(c)).length
+    conversations.value.filter(c => !isPinned(c)).length
 )
 
 const filteredMembers = computed(() => {
   const q = memberSearch.value.trim().toLowerCase()
   if (!q) return members.value
   return members.value.filter(m =>
-    (m.username || '').toLowerCase().includes(q) ||
-    (m.unionOpenId || '').toLowerCase().includes(q)
+      (m.username || '').toLowerCase().includes(q) ||
+      (m.unionOpenId || '').toLowerCase().includes(q)
   )
 })
 
@@ -978,8 +1127,8 @@ const filteredMembers = computed(() => {
 const memberSections = computed(() => {
   const list = filteredMembers.value
   return [
-    { key: 'owner', label: '群主', items: list.filter(m => m.memberRole === 'OWNER') },
-    { key: 'admin', label: '管理员', items: list.filter(m => m.memberRole === 'ADMIN') },
+    {key: 'owner', label: '群主', items: list.filter(m => m.memberRole === 'OWNER')},
+    {key: 'admin', label: '管理员', items: list.filter(m => m.memberRole === 'ADMIN')},
     {
       key: 'bot',
       label: '机器人',
@@ -1117,7 +1266,7 @@ function startComposerResize(e) {
   resizingComposer.value = true
   document.addEventListener('mousemove', onComposerResizeMove)
   document.addEventListener('mouseup', stopComposerResize)
-  document.addEventListener('touchmove', onComposerResizeMove, { passive: false })
+  document.addEventListener('touchmove', onComposerResizeMove, {passive: false})
   document.addEventListener('touchend', stopComposerResize)
   document.body.style.cursor = 'ns-resize'
   document.body.style.userSelect = 'none'
@@ -1167,7 +1316,7 @@ function startListResize(e) {
   resizingList.value = true
   document.addEventListener('mousemove', onListResizeMove)
   document.addEventListener('mouseup', stopListResize)
-  document.addEventListener('touchmove', onListResizeMove, { passive: false })
+  document.addEventListener('touchmove', onListResizeMove, {passive: false})
   document.addEventListener('touchend', stopListResize)
   document.body.style.cursor = 'ew-resize'
   document.body.style.userSelect = 'none'
@@ -1204,7 +1353,8 @@ function loadLayout() {
     if (Number.isFinite(saved.arkComposerHeight)) {
       arkComposerHeight.value = Math.max(ARK_COMPOSER_MIN_HEIGHT, saved.arkComposerHeight)
     }
-  } catch { /* 存的值坏了就用默认布局 */ }
+  } catch { /* 存的值坏了就用默认布局 */
+  }
   clampListWidth()
 }
 
@@ -1215,13 +1365,18 @@ function saveLayout() {
       composerHeight: Math.round(composerHeight.value),
       arkComposerHeight: Math.round(arkComposerHeight.value)
     }))
-  } catch { /* 隐私模式下 localStorage 可能不可写，忽略 */ }
+  } catch { /* 隐私模式下 localStorage 可能不可写，忽略 */
+  }
 }
 
 // ═══════════════ API 基础 ═══════════════
 
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: expireSession,
-  assertActive: () => { if (disposed || sseStopped) throw new Error('会话已结束') } })
+const api = createWebuiApi({
+  baseUrl: API_BASE, onSessionExpired: expireSession,
+  assertActive: () => {
+    if (disposed || sseStopped) throw new Error('会话已结束')
+  }
+})
 
 async function logout() {
   if (disposed || sseStopped) return
@@ -1230,10 +1385,14 @@ async function logout() {
   moderationPanelRef.value?.releaseLeaveGuard()
   stopSse()
   try {
-    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' })
-  } catch { /* ignore */ }
+    await fetch(`${API_BASE}/auth/logout`, {method: 'POST', credentials: 'same-origin'})
+  } catch { /* ignore */
+  }
   if (disposed) return
-  try { localStorage.removeItem(LEGACY_TOKEN_KEY) } catch { /* 存储不可用不影响退出。 */ }
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY)
+  } catch { /* 存储不可用不影响退出。 */
+  }
   window.location.replace(router.resolve('/login').href)
 }
 
@@ -1242,7 +1401,8 @@ async function loadConfig() {
     const data = await loadBotConfig(api)
 
     debugGroupId.value = data.debugGroupId && data.debugGroupId !== 'null' ? String(data.debugGroupId) : ''
-  } catch { /* ignore */ }
+  } catch { /* ignore */
+  }
 }
 
 // ═══════════════ 会话列表 ═══════════════
@@ -1263,12 +1423,15 @@ async function loadConversations() {
     // 按「当前已加载的非置顶会话数」重取：首屏 100，SSE 刷新时保持已加载深度，
     // 新消息让某个会话实时跳到顶部、其余整体重排（QQ 式）
     const depth = Math.min(Math.max(nonPinnedLoadedCount.value, CONV_LIST_PAGE_SIZE), 1000)
-    const data = await api(`/chat/conversations?limit=${depth}&offset=0`, { signal: controller.signal }) || { items: [], hasMore: true }
+    const data = await api(`/chat/conversations?limit=${depth}&offset=0`, {signal: controller.signal}) || {
+      items: [],
+      hasMore: true
+    }
     if (disposed) return
     conversations.value = data.items || []
     hasMoreConvs.value = data.hasMore !== false
-  } catch { /* 静默失败，保留旧列表 */ }
-  finally {
+  } catch { /* 静默失败，保留旧列表 */
+  } finally {
     convRefreshController = null
     loadingConvs.value = false
     if (convRefreshPending) scheduleConvRefresh()
@@ -1281,14 +1444,17 @@ async function loadMoreConversations() {
   // offset 只统计非置顶会话：置顶的由后端单独前置，不计入分页偏移
   const offset = nonPinnedLoadedCount.value
   try {
-    const data = await api(`/chat/conversations?limit=${CONV_LIST_PAGE_SIZE}&offset=${offset}`) || { items: [], hasMore: false }
+    const data = await api(`/chat/conversations?limit=${CONV_LIST_PAGE_SIZE}&offset=${offset}`) || {
+      items: [],
+      hasMore: false
+    }
     if (disposed) return
     const existing = new Set(conversations.value.map(c => convKey(c)))
     const fresh = (data.items || []).filter(c => !existing.has(convKey(c)))
     conversations.value = [...conversations.value, ...fresh]
     hasMoreConvs.value = data.hasMore !== false
-  } catch { /* ignore */ }
-  finally {
+  } catch { /* ignore */
+  } finally {
     loadingMoreConvs.value = false
     if (convRefreshPending) scheduleConvRefresh()
   }
@@ -1321,7 +1487,8 @@ function convKey(c) {
 async function loadPinned() {
   try {
     pinnedKeys.value = await api('/chat/pinned') || []
-  } catch { /* 拿不到就当没有置顶，不影响会话列表 */ }
+  } catch { /* 拿不到就当没有置顶，不影响会话列表 */
+  }
 }
 
 function isPinned(c) {
@@ -1337,7 +1504,7 @@ async function togglePin(c) {
   try {
     pinnedKeys.value = await api('/chat/pinned', {
       method: 'POST',
-      body: JSON.stringify({ key, pinned: next })
+      body: JSON.stringify({key, pinned: next})
     }) || []
   } catch (error) {
     pinnedKeys.value = previous
@@ -1412,7 +1579,7 @@ function convAvatarText(c) {
 function groupTileStyle(openId) {
   let h = 0
   for (const ch of openId || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return { background: `hsl(${h % 360}, 42%, 62%)` }
+  return {background: `hsl(${h % 360}, 42%, 62%)`}
 }
 
 function userAvatarUrl(openId) {
@@ -1448,6 +1615,7 @@ function messagesPath(page) {
 
 // 用于丢弃「会话已切换/已有更新的加载」之后才返回的旧响应，避免串会话消息
 let convLoadSeq = 0
+
 function currentConvKey() {
   return active.value ? `${active.value.type}:${active.value.openId}` : null
 }
@@ -1457,8 +1625,8 @@ async function selectConv(c) {
     const route = router.currentRoute.value
     const query = conversationListQuery(route.query)
     query[c.type === 'group' ? 'group' : 'user'] = c.openId
-    if (deepLinkTarget(route.query)) await router.replace({ path: route.path, query, hash: route.hash })
-    else await router.push({ path: route.path, query, hash: route.hash })
+    if (deepLinkTarget(route.query)) await router.replace({path: route.path, query, hash: route.hash})
+    else await router.push({path: route.path, query, hash: route.hash})
     return
   }
   return openConversation(c)
@@ -1470,7 +1638,7 @@ async function openConversation(c) {
     return
   }
   if (!mayLeaveSettings()) return
-  active.value = { type: c.type, openId: c.openId }
+  active.value = {type: c.type, openId: c.openId}
   resetProfile()
   messageScroller.cancel()
   clearReferencePosition()
@@ -1515,6 +1683,7 @@ async function openConversation(c) {
 // 深链：/?group=xxx 或 /?user=xxx 直接打开对应会话（群/用户列表页「进入聊天」跳转用）
 // 需要 watch query：/?group=A → /?group=B 不会重挂载组件，只能靠路由变化触发
 const detailHistory = createDetailHistory(router, () => disposed)
+
 async function applyDeepLink() {
   const route = router.currentRoute.value
   if (route.name !== 'chat' || detailHistory.preparing || disposed) return
@@ -1525,7 +1694,7 @@ async function applyDeepLink() {
     return
   }
   if (window.matchMedia('(max-width: 768px)').matches) {
-    const list = { path: route.path, query: conversationListQuery(route.query), hash: route.hash }
+    const list = {path: route.path, query: conversationListQuery(route.query), hash: route.hash}
     // 直接进入会话链接时补齐列表历史，使系统返回键仍先回到会话列表。
     if (!await detailHistory.ensureList(route, list)) return
   }
@@ -1533,13 +1702,13 @@ async function applyDeepLink() {
 }
 
 function conversationListQuery(query) {
-  const { group, user, ...rest } = query
+  const {group, user, ...rest} = query
   return rest
 }
 
 function backToConversationList() {
   const route = router.currentRoute.value
-  const list = { path: route.path, query: conversationListQuery(route.query), hash: route.hash }
+  const list = {path: route.path, query: conversationListQuery(route.query), hash: route.hash}
   if (deepLinkTarget(route.query)) {
     detailHistory.backToList(list)
   } else if (mayLeaveSettings()) {
@@ -1550,10 +1719,10 @@ function backToConversationList() {
 
 function deepLinkTarget(q) {
   return q.group
-    ? { type: 'group', openId: String(q.group) }
-    : q.user
-      ? { type: 'c2c', openId: String(q.user) }
-      : null
+      ? {type: 'group', openId: String(q.group)}
+      : q.user
+          ? {type: 'c2c', openId: String(q.user)}
+          : null
 }
 
 watch(() => router.currentRoute.value.query, applyDeepLink)
@@ -1567,7 +1736,7 @@ onBeforeRouteUpdate(to => {
   return true
 })
 
-async function loadLatestMessages({ animate = false } = {}) {
+async function loadLatestMessages({animate = false} = {}) {
   if (disposed || !active.value) return
   cancelMessageRefresh()
   const targetKey = currentConvKey()
@@ -1589,8 +1758,8 @@ async function loadLatestMessages({ animate = false } = {}) {
     await nextTick()
     if (seq !== convLoadSeq || currentConvKey() !== targetKey) return
     scrollToBottom(animate ? 'smooth' : 'auto')
-  } catch { /* ignore */ }
-  finally {
+  } catch { /* ignore */
+  } finally {
     if (seq === convLoadSeq) {
       loadingMessages.value = false
       if (messageRefreshPending) scheduleMessageRefresh()
@@ -1620,8 +1789,10 @@ async function loadMore() {
     await nextTick()
     if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     messagePosition.sync()
-  } catch { /* 保留当前页，下次向上滚动时重试。 */ }
-  finally { if (currentConvKey() === targetKey && seq === convLoadSeq) loadingMore.value = false }
+  } catch { /* 保留当前页，下次向上滚动时重试。 */
+  } finally {
+    if (currentConvKey() === targetKey && seq === convLoadSeq) loadingMore.value = false
+  }
 }
 
 function onScroll() {
@@ -1708,14 +1879,17 @@ function backPanel() {
 
 function syncWelcomeEnabled(enabled) {
   const entry = funcEntries.value.find(([key]) => key === 'member_add_welcome')
-  if (entry) entry[1] = { ...entry[1], enabled }
+  if (entry) entry[1] = {...entry[1], enabled}
   else if (knownFunctionKeys.value.includes('member_add_welcome')) {
-    funcEntries.value = [...funcEntries.value, ['member_add_welcome', { enabled, displayName: '新成员入群欢迎语' }]]
+    funcEntries.value = [...funcEntries.value, ['member_add_welcome', {enabled, displayName: '新成员入群欢迎语'}]]
   }
 }
 
 async function togglePanel(name) {
-  if (panel.value === name) { closePanel(); return }
+  if (panel.value === name) {
+    closePanel();
+    return
+  }
   if (!mayLeaveSettings()) return
   panel.value = name
   if (name === 'members') await loadMembers()
@@ -1769,7 +1943,7 @@ function recvMsgSettingLabel(value) {
 }
 
 function groupRoleLabel(value) {
-  const map = { OWNER: '群主', ADMIN: '管理员', MEMBER: '成员' }
+  const map = {OWNER: '群主', ADMIN: '管理员', MEMBER: '成员'}
   return map[value] || value || '-'
 }
 
@@ -1780,7 +1954,7 @@ const canQueryMuteState = computed(() => {
 })
 
 function muteModeLabel(mode) {
-  const map = { none: '未开启', always: '始终禁言', schedule: '定时禁言' }
+  const map = {none: '未开启', always: '始终禁言', schedule: '定时禁言'}
   return map[mode] || mode || '未开启'
 }
 
@@ -1798,8 +1972,8 @@ function fmtMuteRuleTime(value) {
 // 周期规则：星期几 + 时段，end_time 小于 start_time 表示跨天到次日
 function fmtRecurring(r) {
   const weekdays = Array.isArray(r.weekdays) && r.weekdays.length
-    ? r.weekdays.map(w => WEEKDAY_LABELS[w] || w).join(' ')
-    : '每天'
+      ? r.weekdays.map(w => WEEKDAY_LABELS[w] || w).join(' ')
+      : '每天'
   const range = `${r.startTime || '-'}~${r.endTime || '-'}${(r.endTime && r.startTime && r.endTime < r.startTime) ? '（次日）' : ''}`
   return `${weekdays} ${range}`
 }
@@ -1840,7 +2014,9 @@ async function loadGroupMeta() {
     const list = await api('/groups') || []
     groupMeta.value = list.find(g => g.groupOpenId === active.value.openId) || null
     realGroupInput.value = groupMeta.value?.realGroupId || ''
-  } catch (error) { showNotice(error.message || '加载群信息失败') }
+  } catch (error) {
+    showNotice(error.message || '加载群信息失败')
+  }
 }
 
 async function syncGroupProfile() {
@@ -1848,7 +2024,7 @@ async function syncGroupProfile() {
   const groupOpenId = active.value.openId
   syncingGroupProfile.value = true
   try {
-    const data = await api(`/groups/${encodeURIComponent(groupOpenId)}/profile/sync`, { method: 'POST' })
+    const data = await api(`/groups/${encodeURIComponent(groupOpenId)}/profile/sync`, {method: 'POST'})
     if (!active.value || active.value.type !== 'group' || active.value.openId !== groupOpenId) return
     groupMeta.value = data || null
     realGroupInput.value = groupMeta.value?.realGroupId || ''
@@ -1868,9 +2044,11 @@ async function toggleGroupStatus(kind) {
   const field = kind === 'whitelist' ? 'whitelist' : 'blacklisted'
   const next = !g[field]
   try {
-    await api(`/groups/${encodeURIComponent(g.groupOpenId)}/${kind}?enabled=${next}`, { method: 'POST' })
+    await api(`/groups/${encodeURIComponent(g.groupOpenId)}/${kind}?enabled=${next}`, {method: 'POST'})
     g[field] = next
-  } catch (error) { showNotice(error.message || '修改失败') }
+  } catch (error) {
+    showNotice(error.message || '修改失败')
+  }
 }
 
 async function saveRealGroup() {
@@ -1879,7 +2057,7 @@ async function saveRealGroup() {
   const val = String(realGroupInput.value || '').trim()
   if (val === String(g.realGroupId || '')) return
   try {
-    await api(`/groups/${encodeURIComponent(g.groupOpenId)}/real-group-id?value=${encodeURIComponent(val || 'null')}`, { method: 'POST' })
+    await api(`/groups/${encodeURIComponent(g.groupOpenId)}/real-group-id?value=${encodeURIComponent(val || 'null')}`, {method: 'POST'})
     g.realGroupId = val ? Number(val) : null
     scheduleConvRefresh()
   } catch (error) {
@@ -1926,7 +2104,7 @@ async function toggleFunction(key, enabled) {
   functionSavingKey.value = key
   try {
     const scope = isGroup ? 'groups' : 'c2c'
-    await api(`/${scope}/${encodeURIComponent(openId)}/functions/${encodeURIComponent(key)}?enabled=${enabled}`, { method: 'POST' })
+    await api(`/${scope}/${encodeURIComponent(openId)}/functions/${encodeURIComponent(key)}?enabled=${enabled}`, {method: 'POST'})
     if (disposed || seq !== functionSaveSeq || currentConvKey() !== targetKey) return
     // 重新读取，保证新增任务也有名称，并与服务端当前有效的 key 保持一致。
     if (isGroup) await loadGroupFunctions()
@@ -1943,8 +2121,8 @@ async function toggleFunction(key, enabled) {
 async function loadConvStats() {
   const isGroup = active.value.type === 'group'
   const path = isGroup
-    ? `/public/official/groups/${encodeURIComponent(active.value.openId)}`
-    : `/public/official/users/${encodeURIComponent(active.value.openId)}`
+      ? `/stats/groups/${encodeURIComponent(active.value.openId)}`
+      : `/stats/users/${encodeURIComponent(active.value.openId)}`
   try {
     convStats.value = await api(path)
   } catch (error) {
@@ -1965,17 +2143,17 @@ async function clearCurrentConversation() {
 
   const scopeLabel = active.value.type === 'group' ? '当前群聊' : '当前用户'
   const actionLabel = clearForm.mode === 'all'
-    ? '全部聊天记录'
-    : clearForm.mode === 'first'
-      ? `最早的 ${clearForm.count} 条聊天记录`
-      : `${clearForm.start} 至 ${clearForm.end} 的聊天记录`
+      ? '全部聊天记录'
+      : clearForm.mode === 'first'
+          ? `最早的 ${clearForm.count} 条聊天记录`
+          : `${clearForm.start} 至 ${clearForm.end} 的聊天记录`
   if (!confirm(`确认清除${scopeLabel}的${actionLabel}吗？统计数据会保留，删除后无法恢复。`)) return
 
   clearForm.loading = true
   try {
     const path = active.value.type === 'group'
-      ? `/groups/${encodeURIComponent(active.value.openId)}/messages`
-      : `/c2c/${encodeURIComponent(active.value.openId)}/messages`
+        ? `/groups/${encodeURIComponent(active.value.openId)}/messages`
+        : `/c2c/${encodeURIComponent(active.value.openId)}/messages`
     const body = {mode: clearForm.mode}
     if (clearForm.mode === 'first') body.count = clearForm.count
     if (clearForm.mode === 'range') {
@@ -2028,7 +2206,7 @@ async function openProfile(userOpenId, displayName, switchPanel = true) {
   profileLoading.value = true
   if (switchPanel) panel.value = 'user'
   try {
-    const data = await loadUserProfile(api, userOpenId, { signal: controller.signal })
+    const data = await loadUserProfile(api, userOpenId, {signal: controller.signal})
     // 目标相同也可能已重新打开，必须同时校验本次读取的版本。
     if (disposed || seq !== profileLoadSeq || profileTarget.value !== userOpenId) return
     Object.assign(profile, data)
@@ -2064,7 +2242,7 @@ async function saveProfile() {
     const saved = await saveUserProfile(api, savedUserId, profile)
     if (disposed) return
     const applyRole = user => user.unionOpenId === savedUserId && !user.senderIsBot
-      ? { ...user, userRole: saved.role } : user
+        ? {...user, userRole: saved.role} : user
     messages.value = messages.value.map(applyRole)
     members.value = members.value.map(applyRole)
     if (seq === profileLoadSeq && profileTarget.value === savedUserId) {
@@ -2119,7 +2297,9 @@ function fmtMemberTime(ts) {
 function showNotice(text) {
   notice.value = text
   if (noticeTimer) clearTimeout(noticeTimer)
-  noticeTimer = setTimeout(() => { notice.value = '' }, 2400)
+  noticeTimer = setTimeout(() => {
+    notice.value = ''
+  }, 2400)
 }
 
 function clearReferencePosition() {
@@ -2163,7 +2343,8 @@ function getRefTargetMsgIdx(message) {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
     const fromRef = findRefIdxValue(parsed)
     if (fromRef) return fromRef
-  } catch { /* 解析失败就走内容匹配 */ }
+  } catch { /* 解析失败就走内容匹配 */
+  }
   // 兼容旧版 WebUI 主动引用记录：当时把被引用消息的 msg_idx 暂存在本记录 refIdx
   if ((message.eventType === 'BOT_SEND' || message.senderIsBot) && message.refIdx) {
     return message.refIdx
@@ -2247,7 +2428,7 @@ async function refreshActiveMessages() {
   const controller = new AbortController()
   messageRefreshController = controller
   try {
-    const data = await api(messagesPath(1), { signal: controller.signal })
+    const data = await api(messagesPath(1), {signal: controller.signal})
     if (disposed || controller.signal.aborted || seq !== convLoadSeq || currentConvKey() !== targetKey) return
     const latest = data.records || []
     const count = countNewMessages(latest, knownLatestMessageId, totalMessages.value, data.total || 0)
@@ -2270,8 +2451,8 @@ async function refreshActiveMessages() {
       if (disposed || controller.signal.aborted || currentConvKey() !== targetKey || seq !== convLoadSeq) return
       if (follow && followingLatest) scrollToBottom('smooth')
     }
-  } catch { /* 保留当前消息，后续事件可再次触发刷新。 */ }
-  finally {
+  } catch { /* 保留当前消息，后续事件可再次触发刷新。 */
+  } finally {
     messageRefreshController = null
     if (messageRefreshPending) scheduleMessageRefresh()
   }
@@ -2298,7 +2479,10 @@ function expireSession() {
   convRefreshTimer = null
   convRefreshPending = false
   // 失效通知只结束本页，不能清除其他标签页可能已更新的会话 Cookie。
-  try { localStorage.removeItem(LEGACY_TOKEN_KEY) } catch { /* 存储不可用不影响退出。 */ }
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY)
+  } catch { /* 存储不可用不影响退出。 */
+  }
   window.location.replace(router.resolve('/login').href)
 }
 
@@ -2315,7 +2499,7 @@ function connectSse() {
   if (sseReconnectTimer) clearTimeout(sseReconnectTimer)
   sseReconnectTimer = null
   if (eventSource) eventSource.close()
-  const source = new EventSource(`${API_BASE}/events`, { withCredentials: true })
+  const source = new EventSource(`${API_BASE}/events`, {withCredentials: true})
   eventSource = source
   source.onmessage = (e) => {
     if (disposed || eventSource !== source) return
@@ -2325,10 +2509,11 @@ function connectSse() {
       scheduleConvRefresh()
       if (!active.value) return
       const matchesActive =
-        (payload.type === 'refresh' && active.value.type === 'group' && payload.groupOpenId === active.value.openId) ||
-        (payload.type === 'c2c_refresh' && active.value.type === 'c2c' && payload.userOpenId === active.value.openId)
+          (payload.type === 'refresh' && active.value.type === 'group' && payload.groupOpenId === active.value.openId) ||
+          (payload.type === 'c2c_refresh' && active.value.type === 'c2c' && payload.userOpenId === active.value.openId)
       if (matchesActive) scheduleMessageRefresh()
-    } catch { /* ignore */ }
+    } catch { /* ignore */
+    }
   }
   source.onerror = () => {
     if (disposed || sseStopped || eventSource !== source) return
@@ -2346,7 +2531,7 @@ async function sendInputNotify() {
   const openId = active.value.openId
   sendingInputNotify.value = true
   try {
-    await api(`/c2c/${encodeURIComponent(openId)}/input-notify`, { method: 'POST' })
+    await api(`/c2c/${encodeURIComponent(openId)}/input-notify`, {method: 'POST'})
     if (currentConvKey() === targetKey) showNotice('已发送正在输入提示（60 秒）')
   } catch (error) {
     if (currentConvKey() === targetKey) showNotice(error.message || '发送输入状态失败')
@@ -2379,12 +2564,12 @@ async function sendMessage() {
   const targetKey = currentConvKey()
   try {
     if (msgType.value === 'stream' && type === 'c2c') {
-      const body = { userOpenId: active.value.openId, content: draft.value }
+      const body = {userOpenId: active.value.openId, content: draft.value}
       if (useWakeup) body.wakeup = true
       else if (passiveMode.value) body.replyMessageId = replyTo.value.messageOpenId
-      await api('/c2c/stream', { method: 'POST', body: JSON.stringify(body) })
+      await api('/c2c/stream', {method: 'POST', body: JSON.stringify(body)})
     } else {
-      const body = { msgType: msgType.value, content: draft.value.trim() }
+      const body = {msgType: msgType.value, content: draft.value.trim()}
       if (type === 'group') body.groupOpenId = active.value.openId
       else body.userOpenId = active.value.openId
       if (useWakeup) body.wakeup = true
@@ -2415,9 +2600,12 @@ async function sendMessage() {
           body.replyMessageId = replyTo.value.messageOpenId
         }
       }
-      await api(type === 'group' ? '/groups/send' : '/c2c/send', { method: 'POST', body: JSON.stringify(body) })
+      await api(type === 'group' ? '/groups/send' : '/c2c/send', {method: 'POST', body: JSON.stringify(body)})
     }
-    if (currentConvKey() !== targetKey) { scheduleConvRefresh(); return }
+    if (currentConvKey() !== targetKey) {
+      scheduleConvRefresh();
+      return
+    }
     draft.value = ''
     resetArkDraft()
     resetCardDraft()
@@ -2425,7 +2613,7 @@ async function sendMessage() {
     pastePreview.value = null
     cancelReply()
     wakeupMode.value = false
-    await loadLatestMessages({ animate: true })
+    await loadLatestMessages({animate: true})
     scheduleConvRefresh()
   } catch (error) {
     showNotice(error.message || '发送消息失败')
@@ -2455,7 +2643,10 @@ function onPaste(e) {
       e.preventDefault()
       const blob = item.getAsFile()
       const reader = new FileReader()
-      reader.onload = () => { imageData.value = reader.result.split(',')[1]; pastePreview.value = reader.result }
+      reader.onload = () => {
+        imageData.value = reader.result.split(',')[1];
+        pastePreview.value = reader.result
+      }
       reader.readAsDataURL(blob)
       return
     }
@@ -2479,7 +2670,10 @@ function clearSelectedImage() {
   pastePreview.value = null
 }
 
-watch(msgType, () => { pastePreview.value = null; imageData.value = null })
+watch(msgType, () => {
+  pastePreview.value = null;
+  imageData.value = null
+})
 
 // ═══════════════ 消息操作 ═══════════════
 
@@ -2509,7 +2703,10 @@ function cancelReply() {
 }
 
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text || '') } catch { /* ignore */ }
+  try {
+    await navigator.clipboard.writeText(text || '')
+  } catch { /* ignore */
+  }
 }
 
 function atUser(message) {
@@ -2518,25 +2715,25 @@ function atUser(message) {
 }
 
 // 禁言弹窗：老 QQ 风格四段时长选择，提交时换算为后端需要的总秒数
-const mutePanel = reactive({ visible: false, message: null })
+const mutePanel = reactive({visible: false, message: null})
 const mutePickerOpen = ref(null)
 const mutePickerEl = ref(null)
-const muteDuration = reactive({ days: 0, hours: 1, minutes: 0, seconds: 0 })
+const muteDuration = reactive({days: 0, hours: 1, minutes: 0, seconds: 0})
 const MUTE_DURATION_FIELDS = [
-  { key: 'days', label: '天', options: Array.from({ length: 31 }, (_, i) => i) },
-  { key: 'hours', label: '小时', options: Array.from({ length: 24 }, (_, i) => i) },
-  { key: 'minutes', label: '分钟', options: Array.from({ length: 60 }, (_, i) => i) },
-  { key: 'seconds', label: '秒', options: Array.from({ length: 60 }, (_, i) => i) }
+  {key: 'days', label: '天', options: Array.from({length: 31}, (_, i) => i)},
+  {key: 'hours', label: '小时', options: Array.from({length: 24}, (_, i) => i)},
+  {key: 'minutes', label: '分钟', options: Array.from({length: 60}, (_, i) => i)},
+  {key: 'seconds', label: '秒', options: Array.from({length: 60}, (_, i) => i)}
 ]
 
 // 官方接口禁言时长上限 30 天
 const MAX_MUTE_SECONDS = 30 * 86400
 
 const muteTotalSeconds = computed(() =>
-  muteDuration.days * 86400 +
-  muteDuration.hours * 3600 +
-  muteDuration.minutes * 60 +
-  muteDuration.seconds
+    muteDuration.days * 86400 +
+    muteDuration.hours * 3600 +
+    muteDuration.minutes * 60 +
+    muteDuration.seconds
 )
 
 const muteDurationText = computed(() => {
@@ -2568,6 +2765,7 @@ function selectMuteValue(key, value) {
   muteDuration[key] = value
   mutePickerOpen.value = null
 }
+
 function openMutePanel(message) {
   mutePickerOpen.value = null
   mutePanel.message = message
@@ -2597,7 +2795,7 @@ async function confirmMute() {
   try {
     await api(`/groups/${encodeURIComponent(active.value.openId)}/mute`, {
       method: 'POST',
-      body: JSON.stringify({ memberOpenId: m.unionOpenId, seconds })
+      body: JSON.stringify({memberOpenId: m.unionOpenId, seconds})
     })
     showNotice(`已禁言 ${target} ${durationText}`)
   } catch (error) {
@@ -2612,7 +2810,7 @@ async function unmuteMember(message) {
   try {
     await api(`/groups/${encodeURIComponent(active.value.openId)}/unmute`, {
       method: 'POST',
-      body: JSON.stringify({ memberOpenId: message.unionOpenId })
+      body: JSON.stringify({memberOpenId: message.unionOpenId})
     })
     showNotice(`已解除 ${target} 的禁言`)
   } catch (error) {
@@ -2626,12 +2824,12 @@ async function recallMsg(message) {
     if (active.value.type === 'group') {
       await api('/groups/recall', {
         method: 'POST',
-        body: JSON.stringify({ groupOpenId: active.value.openId, messageId: message.messageOpenId })
+        body: JSON.stringify({groupOpenId: active.value.openId, messageId: message.messageOpenId})
       })
     } else {
       await api('/c2c/recall', {
         method: 'POST',
-        body: JSON.stringify({ userOpenId: active.value.openId, messageId: message.messageOpenId })
+        body: JSON.stringify({userOpenId: active.value.openId, messageId: message.messageOpenId})
       })
     }
     recalledIds[message.messageOpenId] = true
@@ -2671,7 +2869,7 @@ function avatarText(message) {
 }
 
 function roleLabel(r) {
-  const map = { OWNER: '群主', ADMIN: '管理员' }
+  const map = {OWNER: '群主', ADMIN: '管理员'}
   return map[r] || r
 }
 
@@ -2710,7 +2908,8 @@ function renderContent(message) {
           if (m.userId && m.username) text = text.replaceAll(`<@${m.userId}>`, `@${m.username}`)
         }
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore */
+    }
   }
   return text
 }
@@ -2723,7 +2922,9 @@ function parseLegacyMedia(content) {
   try {
     const media = JSON.parse(match[1])
     return typeof media?.file_info === 'string' && media.file_info.trim() ? media : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function legacyMedia(message) {
@@ -2748,7 +2949,7 @@ function forwardRecord(message) {
   const cached = forwardCache.get(message)
   if (cached && cached.content === content) return cached.value
   const value = parseForwardContent(content)
-  forwardCache.set(message, { content, value })
+  forwardCache.set(message, {content, value})
   return value
 }
 
@@ -2777,7 +2978,7 @@ function msgRef(message) {
     const display = ref.webui && typeof ref.webui === 'object' ? ref.webui : null
     let content = preview.trim() ? preview + '...' : fullContent
     const attachments = Array.isArray(display?.attachments) ? display.attachments
-      : Array.isArray(ref.attachments) ? ref.attachments : []
+        : Array.isArray(ref.attachments) ? ref.attachments : []
     if (display && !content.trim() && !attachments.length && findRefIdxValue(ref)) content = '[引用消息]'
     if (!content.trim() && !attachments.length) return null
     return {
@@ -2785,7 +2986,9 @@ function msgRef(message) {
       content,
       attachments
     }
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function renderRefContent(ref) {
@@ -2824,7 +3027,9 @@ function parseAttach(raw) {
     const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!Array.isArray(arr)) return []
     return arr.map(normalizeAttachment).filter(Boolean)
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 /*
@@ -2834,10 +3039,10 @@ function parseAttach(raw) {
 function normalizeAttachment(att) {
   const contentType = att?.content_type || ''
   if (att?.url && contentType.startsWith('image/')) {
-    return { ...att, type: 'image', url: mediaUrl(att.url) }
+    return {...att, type: 'image', url: mediaUrl(att.url)}
   }
   if (contentType.startsWith('video/')) {
-    return { ...att, type: 'video', url: mediaUrl(att.url) }
+    return {...att, type: 'video', url: mediaUrl(att.url)}
   }
   if (contentType === 'voice' || contentType.startsWith('audio/')) {
     return {
@@ -2851,7 +3056,7 @@ function normalizeAttachment(att) {
   // content_type 为 file，以及任何有 url 但类型不认识的附件，都按文件卡片兜底，
   // 免得像之前那样被静默丢掉、消息看起来是空的
   if (att?.url) {
-    return { ...att, type: 'file', url: mediaUrl(att.url) }
+    return {...att, type: 'file', url: mediaUrl(att.url)}
   }
   return null
 }
@@ -2862,7 +3067,10 @@ function fmtSize(bytes) {
   const units = ['B', 'KB', 'MB', 'GB']
   let i = 0
   let value = n
-  while (value >= 1024 && i < units.length - 1) { value /= 1024; i++ }
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024;
+    i++
+  }
   return `${value >= 10 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`
 }
 

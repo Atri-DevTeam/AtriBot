@@ -57,12 +57,19 @@ public class WebUIRouter {
         // Auth middleware for webui paths.
         server.before("/webui/api/*", WebUIRouter::auth);
 
-        registerPublicOfficialRoutes(server, "/webui/api/public/official");
+        registerPublicUtilityRoutes(server, "/webui/api/public/official");
+
+        server.before("/openapi/bot_stats", WebUIRouter::publicRateLimit);
+        server.get("/openapi/bot_stats", BotStatsController::query);
 
         // API routes
         server.get("/webui/api/channels/query/{operation}", ChannelController::query);
         server.post("/webui/api/channels/action/{operation}", ChannelController::action);
         server.get("/webui/api/stats/database", DatabaseStatsController::usage);
+        server.get("/webui/api/stats/overview", StatsQueryController::overview);
+        server.get("/webui/api/stats/series", StatsQueryController::series);
+        server.get("/webui/api/stats/users/{userOpenId}", StatsQueryController::officialUserInfo);
+        server.get("/webui/api/stats/groups/{groupOpenId}", StatsQueryController::officialGroupInfo);
         server.get("/webui/api/auth/challenge", AuthController::createChallenge);
         server.post("/webui/api/auth/verify", AuthController::login);
         server.post("/webui/api/auth/logout", AuthController::logout);
@@ -82,6 +89,7 @@ public class WebUIRouter {
         server.put("/webui/api/groups/{groupOpenId}/join-welcome", JoinWelcomeController::save);
         server.delete("/webui/api/groups/{groupOpenId}/join-welcome", JoinWelcomeController::clear);
         server.post("/webui/api/join-welcome/test", JoinWelcomeController::sendTest);
+        server.post("/webui/api/groups/{groupOpenId}/join-welcome/test", JoinWelcomeController::sendToGroup);
         server.get("/webui/api/groups/{groupOpenId}/messages", GroupController::fetchGroupMessages);
         server.delete("/webui/api/groups/{groupOpenId}/messages", GroupController::clearGroupMessages);
         server.get("/webui/api/groups/{groupOpenId}/messages/ref", GroupController::locateGroupMessageByRefIdx);
@@ -193,6 +201,13 @@ public class WebUIRouter {
         server.get("/webui/api/feedback/list", AdminController::listFeedback);
         server.get("/webui/api/feedback/count", AdminController::countFeedback);
         server.post("/webui/api/feedback/reply", AdminController::replyFeedback);
+
+        server.get("/webui/api/backgrounds/list", BackgroundController::list);
+        server.get("/webui/api/backgrounds/count", BackgroundController::count);
+        server.post("/webui/api/backgrounds/review", BackgroundController::review);
+        server.post("/webui/api/backgrounds/review-batch", BackgroundController::reviewBatch);
+        server.post("/webui/api/backgrounds/delete", BackgroundController::delete);
+        server.get("/webui/api/backgrounds/{userId}/{id}/image", BackgroundController::image);
 
         // 图源管理
         server.get("/webui/api/gallery/list", ContentController::listGallery);
@@ -336,17 +351,8 @@ public class WebUIRouter {
         }
     }
 
-    private static void registerPublicOfficialRoutes(Javalin server, String prefix) {
+    private static void registerPublicUtilityRoutes(Javalin server, String prefix) {
         server.before(prefix + "/*", WebUIRouter::publicRateLimit);
-        server.get(prefix + "/group/messages/received", PublicQueryController::publicOfficialGroupReceivedMessages);
-        server.get(prefix + "/group/messages/sent", PublicQueryController::publicOfficialGroupSentMessages);
-        server.get(prefix + "/c2c/messages/received", PublicQueryController::publicOfficialC2CReceivedMessages);
-        server.get(prefix + "/c2c/messages/sent", PublicQueryController::publicOfficialC2CSentMessages);
-        server.get(prefix + "/dau", PublicQueryController::publicOfficialDau);
-        server.get(prefix + "/series", PublicQueryController::publicOfficialSeries);
-        server.get(prefix + "/sign", PublicQueryController::publicOfficialSign);
-        server.get(prefix + "/users/{userOpenId}", PublicQueryController::publicOfficialUserInfo);
-        server.get(prefix + "/groups/{groupOpenId}", PublicQueryController::publicOfficialGroupInfo);
         server.before(prefix + "/ntuid", WebUIRouter::ntUidRateLimit);
         server.post(prefix + "/ntuid", SizeNtUid::ntUidController);
     }

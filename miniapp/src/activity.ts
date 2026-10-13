@@ -4,12 +4,13 @@ export type Reaction = {
     bestMs: number | null;
     bestMisses: number | null;
     bestDate: string | null;
-    rank: number | null
+    rank: number | null;
+    metrics?: Record<string, number>
 }
 export type Activity = {
     reaction: Reaction | null
     freeDraw: 'available' | 'used' | 'locked' | null
-    games: { game: string; operations: number; correct: number; plays: number; wins: number }[] | null
+    games: { game: string; operations: number; correct: number; plays: number; wins: number; metrics?: Record<string, number> }[] | null
     settings: {
         bilibiliUid: string | null
         reward: { enabled: boolean; mode: string; priorities: { item: string; value: number }[] }
@@ -56,7 +57,7 @@ const sources: Record<string, string> = {
     group_invite: '邀请机器人入群', friend_add: '添加机器人好友', join_my_group: '加入官方群',
     join_guild: '加入官方频道', read_doc: '阅读文档', mc_bind: '绑定 Minecraft',
     bv_follow: 'B站关注奖励', image_upload_reward: '图源投稿奖励', sign_in: '签到',
-    share_bot: '分享机器人'
+    share_bot: '分享机器人', daily_fishing: '今日钓鱼'
 }
 export const sourceName = (source: string) => sources[source] || source || '未记录来源'
 export const number = (n: number | null | undefined) => n == null ? '—' : n.toLocaleString('zh-CN')

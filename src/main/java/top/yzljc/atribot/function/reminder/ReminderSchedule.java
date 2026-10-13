@@ -30,7 +30,7 @@ public record ReminderSchedule(Kind kind, LocalDateTime at, LocalTime time,
             .withResolverStyle(ResolverStyle.STRICT);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public enum Kind { ONCE, DAILY, WEEKLY, MONTHLY, INTERVAL }
+    public enum Kind {ONCE, DAILY, WEEKLY, MONTHLY, INTERVAL}
 
     public ReminderSchedule {
         if (kind == null) throw new IllegalArgumentException("Missing schedule kind");
@@ -96,7 +96,9 @@ public record ReminderSchedule(Kind kind, LocalDateTime at, LocalTime time,
         return node.toString();
     }
 
-    /** interval 的 anchor 是原定触发时刻；重启后跳过错过的周期，不连续补发。 */
+    /**
+     * interval 的 anchor 是原定触发时刻；重启后跳过错过的周期，不连续补发。
+     */
     public Instant nextAfter(Instant now, Instant anchor) {
         if (kind == Kind.ONCE) {
             Instant result = at.atZone(ZONE).toInstant();

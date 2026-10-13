@@ -9,8 +9,11 @@
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
           <h2>Napcat功能</h2>
@@ -22,7 +25,9 @@
         <section class="chat-panel napcat-panel">
           <div class="chat-head">
             <strong>群功能</strong>
-            <button class="ghost-button napcat-head-btn" :disabled="loadingFeatures || !selectedGroupId" @click="loadFeatures">刷新配置</button>
+            <button class="ghost-button napcat-head-btn" :disabled="loadingFeatures || !selectedGroupId"
+                    @click="loadFeatures">刷新配置
+            </button>
           </div>
           <div class="napcat-panel-body">
             <div class="napcat-group-select">
@@ -47,12 +52,12 @@
               <div v-else-if="!featureKeys.length" class="empty-state">该群暂无注册功能</div>
               <div v-else class="napcat-feature-list">
                 <button
-                  v-for="key in featureKeys"
-                  :key="key"
-                  class="napcat-feature-row"
-                  :class="{ enabled: features[key] }"
-                  :disabled="savingFeature === key"
-                  @click="toggleFeature(key)"
+                    v-for="key in featureKeys"
+                    :key="key"
+                    class="napcat-feature-row"
+                    :class="{ enabled: features[key] }"
+                    :disabled="savingFeature === key"
+                    @click="toggleFeature(key)"
                 >
                   <span>{{ key }}</span>
                   <span class="napcat-switch" :class="{ on: features[key] }">
@@ -68,8 +73,11 @@
           <div class="chat-head">
             <strong>消息预览</strong>
             <div class="napcat-head-actions">
-              <button class="ghost-button napcat-head-btn" :disabled="messageLoading || !selectedGroupId" @click="fetchMessages(messagePage)">加载消息</button>
-              <button class="primary-button napcat-head-btn" :disabled="!selectedMessageIds.size || batchRecalling" @click="batchRecall">
+              <button class="ghost-button napcat-head-btn" :disabled="messageLoading || !selectedGroupId"
+                      @click="fetchMessages(messagePage)">加载消息
+              </button>
+              <button class="primary-button napcat-head-btn" :disabled="!selectedMessageIds.size || batchRecalling"
+                      @click="batchRecall">
                 {{ batchRecalling ? '撤回中' : `撤回所选 ${selectedMessageIds.size}` }}
               </button>
             </div>
@@ -84,24 +92,32 @@
             <template v-else>
               <div class="napcat-message-toolbar">
                 <label>
-                  <input type="checkbox" :checked="allRecallableSelected" :disabled="batchRecalling" @change="toggleSelectAll" />
+                  <input type="checkbox" :checked="allRecallableSelected" :disabled="batchRecalling"
+                         @change="toggleSelectAll"/>
                   全选可撤回
                 </label>
                 <div class="napcat-pager">
-                  <button class="pager-arrow" :disabled="messagePage <= 1 || messageLoading" @click="fetchMessages(messagePage - 1)">◂</button>
-                  <button v-for="page in pageNumbers" :key="page" class="pager-arrow" :class="{ active: page === messagePage }" :disabled="messageLoading" @click="fetchMessages(page)">{{ page }}</button>
-                  <button class="pager-arrow" :disabled="messageLoading" @click="fetchMessages(messagePage + 1)">▸</button>
+                  <button class="pager-arrow" :disabled="messagePage <= 1 || messageLoading"
+                          @click="fetchMessages(messagePage - 1)">◂
+                  </button>
+                  <button v-for="page in pageNumbers" :key="page" class="pager-arrow"
+                          :class="{ active: page === messagePage }" :disabled="messageLoading"
+                          @click="fetchMessages(page)">{{ page }}
+                  </button>
+                  <button class="pager-arrow" :disabled="messageLoading" @click="fetchMessages(messagePage + 1)">▸
+                  </button>
                 </div>
               </div>
 
               <div class="napcat-message-list">
-                <article v-for="msg in messages" :key="msg.messageId" class="napcat-message" :class="{ recalled: isRecalled(msg.messageId) }">
+                <article v-for="msg in messages" :key="msg.messageId" class="napcat-message"
+                         :class="{ recalled: isRecalled(msg.messageId) }">
                   <label class="napcat-message-check">
                     <input
-                      type="checkbox"
-                      :checked="selectedMessageIds.has(msg.messageId)"
-                      :disabled="isRecalled(msg.messageId) || batchRecalling"
-                      @change="toggleSelectMessage(msg.messageId)"
+                        type="checkbox"
+                        :checked="selectedMessageIds.has(msg.messageId)"
+                        :disabled="isRecalled(msg.messageId) || batchRecalling"
+                        @change="toggleSelectMessage(msg.messageId)"
                     />
                   </label>
                   <div class="napcat-message-main">
@@ -114,10 +130,10 @@
                     <p :title="msg.content">{{ msg.content || '[空消息]' }}</p>
                   </div>
                   <button
-                    v-if="!isRecalled(msg.messageId)"
-                    class="ghost-button napcat-recall-btn"
-                    :disabled="recallingIds.has(msg.messageId)"
-                    @click="recallMessage(msg.messageId)"
+                      v-if="!isRecalled(msg.messageId)"
+                      class="ghost-button napcat-recall-btn"
+                      :disabled="recallingIds.has(msg.messageId)"
+                      @click="recallMessage(msg.messageId)"
                   >
                     {{ recallingIds.has(msg.messageId) ? '...' : '撤回' }}
                   </button>
@@ -151,14 +167,14 @@
 </template>
 
 <script setup>
-import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
-import { computed, onMounted, ref } from 'vue'
-import { API_BASE, LEGACY_TOKEN_KEY } from '../../router.js'
+import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
+import {computed, onMounted, ref} from 'vue'
+import {API_BASE, LEGACY_TOKEN_KEY} from '../../router.js'
 import router from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
-import { useBotConfig } from '../../shared/lib/botConfig.js'
+import {useBotConfig} from '../../shared/lib/botConfig.js'
 
-const { loadBotConfig } = useBotConfig()
+const {loadBotConfig} = useBotConfig()
 
 const RECALLED_STORAGE_KEY = 'atri.napcat.recalled_msg_ids'
 const VISIBLE_PAGES = 5
@@ -194,7 +210,7 @@ const allRecallableSelected = computed(() => {
 })
 const pageNumbers = computed(() => {
   const start = Math.max(1, messagePage.value - Math.floor(VISIBLE_PAGES / 2))
-  return Array.from({ length: VISIBLE_PAGES }, (_, i) => start + i)
+  return Array.from({length: VISIBLE_PAGES}, (_, i) => start + i)
 })
 
 onMounted(async () => {
@@ -203,14 +219,14 @@ onMounted(async () => {
 })
 
 
-
-const api = createWebuiApi({ baseUrl: API_BASE, onSessionExpired: logout })
+const api = createWebuiApi({baseUrl: API_BASE, onSessionExpired: logout})
 
 async function loadConfig() {
   try {
     await loadBotConfig(api)
 
-  } catch { /* ignore */ }
+  } catch { /* ignore */
+  }
 }
 
 async function loadGroups() {
@@ -251,16 +267,16 @@ async function loadFeatures() {
 async function toggleFeature(key) {
   if (!selectedGroupId.value || savingFeature.value) return
   const next = !features.value[key]
-  features.value = { ...features.value, [key]: next }
+  features.value = {...features.value, [key]: next}
   savingFeature.value = key
   try {
     const data = await api(`/napcat/groups/${encodeURIComponent(selectedGroupId.value)}/features/${encodeURIComponent(key)}?enabled=${next}`, {
       method: 'POST'
     })
-    features.value = { ...features.value, [key]: data.enabled }
+    features.value = {...features.value, [key]: data.enabled}
     notice.value = `${key} 已${data.enabled ? '开启' : '关闭'}`
   } catch (error) {
-    features.value = { ...features.value, [key]: !next }
+    features.value = {...features.value, [key]: !next}
     notice.value = error.message
   } finally {
     savingFeature.value = ''
@@ -285,7 +301,7 @@ async function fetchMessages(page) {
   try {
     const data = await api('/napcat/messages', {
       method: 'POST',
-      body: JSON.stringify({ groupId: selectedGroupId.value, page })
+      body: JSON.stringify({groupId: selectedGroupId.value, page})
     })
     messages.value = Array.isArray(data) ? data : []
     messagePage.value = page
@@ -306,7 +322,7 @@ async function recallMessage(messageId) {
   try {
     await api('/napcat/recall', {
       method: 'POST',
-      body: JSON.stringify({ messageIds: [messageId] })
+      body: JSON.stringify({messageIds: [messageId]})
     })
     markRecalled([messageId])
     removeSelected([messageId])
@@ -329,7 +345,7 @@ async function batchRecall() {
   try {
     await api('/napcat/recall', {
       method: 'POST',
-      body: JSON.stringify({ messageIds: ids })
+      body: JSON.stringify({messageIds: ids})
     })
     markRecalled(ids)
     selectedMessageIds.value = new Set()
@@ -369,7 +385,8 @@ function loadRecalledIds() {
 function persistRecalledIds() {
   try {
     localStorage.setItem(RECALLED_STORAGE_KEY, JSON.stringify([...recalledIds.value]))
-  } catch { /* ignore */ }
+  } catch { /* ignore */
+  }
 }
 
 function markRecalled(ids) {
@@ -402,5 +419,7 @@ function formatMessageTime(ts) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${time}`
 }
 
-function logout() { return logoutWebui(API_BASE, router) }
+function logout() {
+  return logoutWebui(API_BASE, router)
+}
 </script>

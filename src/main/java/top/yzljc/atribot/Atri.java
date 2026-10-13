@@ -24,6 +24,7 @@ import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atribot.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
+import top.yzljc.atribot.database.repo.DailyFishingRepository;
 import top.yzljc.atribot.database.repo.FeedbackRepository;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
@@ -37,6 +38,7 @@ import top.yzljc.atribot.function.command.*;
 import top.yzljc.atribot.function.reminder.ReminderService;
 import top.yzljc.atribot.function.command.HelpCommand;
 import top.yzljc.atribot.function.games.ClickTrainGame;
+import top.yzljc.atribot.function.games.DailyFishingGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
@@ -55,6 +57,7 @@ import top.yzljc.atribot.function.utils.napcat.*;
 import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.command.PicStatsCommand;
 import top.yzljc.atribot.function.command.PicSubmitCommand;
+import top.yzljc.atribot.function.command.BackgroundCommand;
 import top.yzljc.atribot.function.command.DrawCommand;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.utils.personal.*;
@@ -156,7 +159,9 @@ public class Atri {
     private final MiniappSessions miniappSessions = new MiniappSessions();
     @Getter
     private final PluginManager pluginManager = new PluginManager(Path.of("plugins"));
-    /** 记录已访问过 webui api 的 IP */
+    /**
+     * 记录已访问过 webui api 的 IP
+     */
     private final Set<String> seenWebuiApiIps = ConcurrentHashMap.newKeySet();
 
     public Atri() {
@@ -216,6 +221,12 @@ public class Atri {
                     new org.eclipse.jetty.server.ForwardedRequestCustomizer()
             ));
             cfg.http.maxRequestSize = 10_000_000;
+            cfg.requestLogger.http((ctx, executionTimeMs) -> {
+                if (ctx.path().equals("/openapi") || ctx.path().startsWith("/openapi/")) {
+                    log.info("[!] 开放API访问记录 -> IP位置: {} 状态: {} 连接用时: {}",
+                            ctx.ip(), ctx.res().getStatus(), Math.round(executionTimeMs));
+                }
+            });
         }).start(qqBotPort);
 
         server.before("/webui/api/*", ctx -> {
@@ -358,6 +369,7 @@ public class Atri {
         CommandManager.getCommand("check-hyp-skyblock").setExecutor(this.hypixelSkyblockAnnouncements);
         CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
+        CommandManager.getCommand("fish").setExecutor(new DailyFishingGame());
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
         CommandManager.getCommand("sound").setExecutor(soundCommand);
         CommandManager.getCommand("ping").setExecutor(new PingCommand());
@@ -367,6 +379,7 @@ public class Atri {
         CommandManager.getCommand("golds").setExecutor(new GoldsCommand());
         CommandManager.getCommand("hypstatus").setExecutor(new HypixelStatusCommand());
         CommandManager.getCommand("submit").setExecutor(new PicSubmitCommand());
+        CommandManager.getCommand("bg").setExecutor(new BackgroundCommand());
         CommandManager.getCommand("图源").setExecutor(new PicStatsCommand());
         CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
@@ -418,6 +431,11 @@ public class Atri {
         SignRepository.init();
         LootRepository.init();
         CoinGainLogRepository.init();
+        try {
+            new DailyFishingRepository().init();
+        } catch (java.sql.SQLException e) {
+            log.error("每日钓鱼记录表初始化失败", e);
+        }
         FeedbackRepository.init();
         try {
             ReminderService.getInstance().init();

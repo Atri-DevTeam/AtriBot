@@ -65,20 +65,26 @@ public final class ReminderService {
     private volatile boolean ready;
 
     @FunctionalInterface
-    public interface Review { boolean allowed(String input) throws Exception; }
+    public interface Review {
+        boolean allowed(String input) throws Exception;
+    }
 
     @FunctionalInterface
-    public interface Permissions { boolean has(String userId, String permission); }
+    public interface Permissions {
+        boolean has(String userId, String permission);
+    }
 
     private static final class Holder {
         private static final ReminderService INSTANCE = new ReminderService(new ReminderRepository(),
                 new ReminderAiParser(), input -> TextReviewService.reviewDetailed(input).replacements().isEmpty(),
                 Clock.systemUTC(), (userId, permission) -> !OfficialUsers.isBlocked(userId)
-                        && !OfficialUsers.isIgnored(userId) && (OfficialUsers.isAdmin(userId)
-                        || OfficialUsers.hasPermission(userId, permission)));
+                && !OfficialUsers.isIgnored(userId) && (OfficialUsers.isAdmin(userId)
+                || OfficialUsers.hasPermission(userId, permission)));
     }
 
-    public static ReminderService getInstance() { return Holder.INSTANCE; }
+    public static ReminderService getInstance() {
+        return Holder.INSTANCE;
+    }
 
     ReminderService(ReminderStore store, ReminderParser parser, Review review, Clock clock) {
         this(store, parser, review, clock, (userId, permission) -> USE_PERMISSION.equals(permission));
@@ -107,9 +113,9 @@ public final class ReminderService {
     /**
      * 解析提醒时间并等待下一条事项消息，此时尚未启用任务
      *
-     * @param userId 任务所属用户
+     * @param userId    任务所属用户
      * @param requestId 本次设置消息 ID
-     * @param input 时间或周期描述
+     * @param input     时间或周期描述
      * @return 时间确认提示或失败原因
      */
     public String prepare(String userId, String requestId, String input) {
@@ -174,8 +180,11 @@ public final class ReminderService {
             log.warn("提醒设置失败: stage={}, errorType={}, source={}", stage, e.getClass().getSimpleName(),
                     e.getStackTrace().length == 0 ? "unknown" : e.getStackTrace()[0]);
             if (admitted) {
-                try { store.reject(userId, requestId, ReminderStore.Code.ERROR); }
-                catch (Exception failure) { log.warn("提醒请求结束失败: errorType={}", failure.getClass().getSimpleName()); }
+                try {
+                    store.reject(userId, requestId, ReminderStore.Code.ERROR);
+                } catch (Exception failure) {
+                    log.warn("提醒请求结束失败: errorType={}", failure.getClass().getSimpleName());
+                }
             }
             return ERROR;
         } finally {
@@ -195,7 +204,7 @@ public final class ReminderService {
     /**
      * 在事件接收线程预占下一条内容，防止并发消息替换首条输入
      *
-     * @param userId 用户 OpenID
+     * @param userId    用户 OpenID
      * @param messageId 内容消息 ID
      * @return 预占成功时返回 true；重复消息、尚未确认时间或已在处理时返回 false
      */
@@ -215,7 +224,7 @@ public final class ReminderService {
     /**
      * 工作队列拒绝任务时释放预占，允许重新提交内容消息
      *
-     * @param userId 用户 OpenID
+     * @param userId    用户 OpenID
      * @param messageId 已预占的内容消息 ID
      */
     public void releaseCustomInput(String userId, String messageId) {
@@ -232,10 +241,10 @@ public final class ReminderService {
     /**
      * 审查内容并使用第二条消息的引用索引完成提醒设置
      *
-     * @param userId 任务所属用户
+     * @param userId    任务所属用户
      * @param messageId 已预占的内容消息 ID
-     * @param refIdx 内容消息的引用索引
-     * @param input 事项文字，不再参与时间解析
+     * @param refIdx    内容消息的引用索引
+     * @param input     事项文字，不再参与时间解析
      * @return 设置结果；预占已失效时返回 null
      */
     public String completeCustom(String userId, String messageId, String refIdx, String input) {
@@ -314,7 +323,7 @@ public final class ReminderService {
     /**
      * 时间确认消息发送失败时，按原始请求 ID 清理待输入状态
      *
-     * @param userId 用户 OpenID
+     * @param userId    用户 OpenID
      * @param requestId 原始设置消息 ID
      */
     public void discardCustom(String userId, String requestId) {
@@ -341,8 +350,11 @@ public final class ReminderService {
     }
 
     private void rejectPending(String userId, PendingInput pending) {
-        try { store.reject(userId, pending.requestId, ReminderStore.Code.ERROR); }
-        catch (Exception e) { log.warn("提醒请求结束失败: errorType={}", e.getClass().getSimpleName()); }
+        try {
+            store.reject(userId, pending.requestId, ReminderStore.Code.ERROR);
+        } catch (Exception e) {
+            log.warn("提醒请求结束失败: errorType={}", e.getClass().getSimpleName());
+        }
     }
 
     private void removePending(String userId, PendingInput pending) {
@@ -359,7 +371,8 @@ public final class ReminderService {
         };
     }
 
-    private record InputKey(String userId, String messageId) {}
+    private record InputKey(String userId, String messageId) {
+    }
 
     private static final class PendingInput {
         private final String requestId;
@@ -413,7 +426,8 @@ public final class ReminderService {
         try {
             if (enabled) {
                 ReminderStore.Result result = store.enable(userId, taskId, clock.instant());
-                if (result.code() == ReminderStore.Code.EXPIRED) return "该一次性提醒的时间已过，请重新发送“提醒 <时间>”设置。";
+                if (result.code() == ReminderStore.Code.EXPIRED)
+                    return "该一次性提醒的时间已过，请重新发送“提醒 <时间>”设置。";
                 if (result.code() != ReminderStore.Code.SAVED) return reply(result);
             } else if (!store.stop(userId, taskId, false)) return NOT_FOUND;
             return (enabled ? "已开启任务ID #" : "已关闭任务ID #") + taskId + "。";

@@ -1,5 +1,7 @@
 package top.yzljc.atribot.test;
 
+import top.yzljc.atribot.configuration.RS;
+
 import lombok.extern.slf4j.Slf4j;
 
 import top.yzljc.atribot.chat.official.*;
@@ -58,9 +60,9 @@ public class Test implements CommandExecutor, Listener {
 //        }
 //        if (sender.getPlatform() != Platform.OFFICIAL_GROUP) return true;
 //        if (sender.getPlatform() != Platform.NAPCAT_GROUP) return true;
-//        String url = ResourcesProperties.A_SILENT_MIRROR_MP3;
+//        String url = RS.get("resource.audio.a-silent-mirror");
 //        GroupChat.replyMessage(sender.getGroupId(), RT.message(sender.getMessageId()), 3, url);
-//        String url = ResourcesProperties.WELCOME_IMG;
+//        String url = RS.get("resource.image.welcome");
 //        Markdown md = TC.md(
 //                "欢迎新人喵~\n\n" +
 //                        Markdown.img(url, 1238 ,564) + "\n\n" + Markdown.link("https://hypixel.net/threads/add-an-achievement-or-something-for-clearing-the-cobwebs-in-the-haunted-biome.6129847", "查看原帖")
@@ -91,7 +93,7 @@ public class Test implements CommandExecutor, Listener {
 //                "## 打卡成功\n\n" +
 //                        "> 你已累计打卡**" + 1 + "**次！\n" +
 //                        "> 今天已有**" + 2 + "**人参与了打卡！\n" +
-//                        "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + 3 + "金粒" + "\n\n" +
+//                        "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16) + "+ " + 3 + "金粒" + "\n\n" +
 //                        "文本123zzzzzzzzz"
 //        );
 //        Object buttons = TC.keyboard(List.of(
@@ -106,7 +108,7 @@ public class Test implements CommandExecutor, Listener {
 //                        "> 收集自网络，可联系删除 " + Markdown.enterCommand("/投稿 ", "我要投稿") + "\n" +
 //                        "> 你已累计打卡**" + 20 + "**次！\n" +
 //                        "> 今天已有**" + 11 + "**人参与了打卡！\n" +
-//                        "> " + Markdown.img(ResourcesProperties.GOLD_IMG, 16, 16) + "+ " + 100 + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + "\n\n"
+//                        "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16) + "+ " + 100 + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + "\n\n"
 //        );
 //
 //        Object buttons = TC.keyboard(List.of(

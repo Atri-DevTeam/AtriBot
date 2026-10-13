@@ -6,12 +6,12 @@
     <form class="login-panel" :aria-busy="loading" @submit.prevent="login">
       <h1 class="login-title">登录到 WebUI</h1>
       <label>
-        <span>访问 Token</span>
+        <span>访问密钥</span>
         <input
           v-model="tokenInput"
           type="password"
           autocomplete="current-password"
-          placeholder="请输入 Token"
+          placeholder="在此处输入登陆密钥"
           :aria-describedby="notice ? 'login-notice' : undefined"
         />
       </label>

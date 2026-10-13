@@ -43,8 +43,9 @@ const paths: Record<string, string> = {
 }
 </script>
 <template>
-  <svg viewBox="0 0 24 24" fill="none" :stroke="name === 'bot' ? '#90969D' : 'currentColor'" :stroke-width="name === 'bot' ? 2 : 1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path :d="paths[name] || paths.spark" />
-    <circle v-if="name === 'bot'" cx="12" cy="3.3" r="1.5" fill="#90969D" stroke="none" />
+  <svg viewBox="0 0 24 24" fill="none" :stroke="name === 'bot' ? '#90969D' : 'currentColor'"
+       :stroke-width="name === 'bot' ? 2 : 1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path :d="paths[name] || paths.spark"/>
+    <circle v-if="name === 'bot'" cx="12" cy="3.3" r="1.5" fill="#90969D" stroke="none"/>
   </svg>
 </template>

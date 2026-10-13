@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public final class ReminderRepository implements ReminderStore {
     @FunctionalInterface
-    public interface Connections { Connection open() throws SQLException; }
+    public interface Connections {
+        Connection open() throws SQLException;
+    }
 
     private final Connections connections;
     private final Clock clock;
@@ -81,7 +83,9 @@ public final class ReminderRepository implements ReminderStore {
                 """);
         try (Connection con = connections.open()) {
             for (String sql : ddl) {
-                try (PreparedStatement ps = con.prepareStatement(sql)) { ps.execute(); }
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    ps.execute();
+                }
             }
         }
     }
@@ -106,7 +110,8 @@ public final class ReminderRepository implements ReminderStore {
                 Code denied = null;
                 if (!unlimited && count(con, "SELECT COUNT(*) FROM reminder_requests WHERE user_id=? AND created_at>?",
                         userId, now.minus(Duration.ofMinutes(30)).toEpochMilli()) >= 30) denied = Code.LIMITED;
-                else if (count(con, "SELECT COUNT(*) FROM reminder_requests WHERE user_id=? AND result='PENDING'", userId) > 0) denied = Code.BUSY;
+                else if (count(con, "SELECT COUNT(*) FROM reminder_requests WHERE user_id=? AND result='PENDING'", userId) > 0)
+                    denied = Code.BUSY;
                 else if (!unlimited && taskId == null && taskCount(con, userId) >= 10) denied = Code.FULL;
                 long revision = 0;
                 if (denied == null && taskId != null) {
@@ -306,7 +311,10 @@ public final class ReminderRepository implements ReminderStore {
                         "SELECT ref_idx,schedule_json,next_run_at,attempts FROM reminder_tasks WHERE user_id=? AND task_id=? AND revision=? AND state='ACTIVE' AND delivery_at<=? FOR UPDATE",
                         key.userId(), key.id(), key.revision(), scanTime.toEpochMilli());
                      ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) { con.commit(); return; }
+                    if (!rs.next()) {
+                        con.commit();
+                        return;
+                    }
                     String refIdx = rs.getString(1);
                     ReminderSchedule schedule = ReminderSchedule.fromJson(ReminderAiParser.read(rs.getString(2)));
                     Instant originalDue = Instant.ofEpochMilli(rs.getLong(3));
@@ -346,12 +354,16 @@ public final class ReminderRepository implements ReminderStore {
 
     private void advance(Connection con, TaskKey key, ReminderSchedule schedule, Instant due, Instant now) throws SQLException {
         Instant next = schedule.kind() == ReminderSchedule.Kind.ONCE ? null : schedule.nextAfter(now, due);
-        if (next == null) execute(con, "DELETE FROM reminder_tasks WHERE user_id=? AND task_id=?", key.userId(), key.id());
-        else execute(con, "UPDATE reminder_tasks SET next_run_at=?,delivery_at=?,attempts=0,revision=revision+1 WHERE user_id=? AND task_id=?",
-                next.toEpochMilli(), next.toEpochMilli(), key.userId(), key.id());
+        if (next == null)
+            execute(con, "DELETE FROM reminder_tasks WHERE user_id=? AND task_id=?", key.userId(), key.id());
+        else
+            execute(con, "UPDATE reminder_tasks SET next_run_at=?,delivery_at=?,attempts=0,revision=revision+1 WHERE user_id=? AND task_id=?",
+                    next.toEpochMilli(), next.toEpochMilli(), key.userId(), key.id());
     }
 
-    /** 每个用户一行锁，同时约束创建配额、编号、设置请求和任务修改。 */
+    /**
+     * 每个用户一行锁，同时约束创建配额、编号、设置请求和任务修改。
+     */
     private long lockUser(Connection con, String userId) throws SQLException {
         execute(con, "INSERT IGNORE INTO reminder_users(user_id) VALUES(?)", userId);
         try (PreparedStatement ps = prepare(con, "SELECT next_id FROM reminder_users WHERE user_id=? FOR UPDATE", userId);
@@ -373,7 +385,9 @@ public final class ReminderRepository implements ReminderStore {
     }
 
     private int execute(Connection con, String sql, Object... args) throws SQLException {
-        try (PreparedStatement ps = prepare(con, sql, args)) { return ps.executeUpdate(); }
+        try (PreparedStatement ps = prepare(con, sql, args)) {
+            return ps.executeUpdate();
+        }
     }
 
     private PreparedStatement prepare(Connection con, String sql, Object... args) throws SQLException {
@@ -387,5 +401,6 @@ public final class ReminderRepository implements ReminderStore {
         }
     }
 
-    private record TaskKey(String userId, long id, long revision) {}
+    private record TaskKey(String userId, long id, long revision) {
+    }
 }

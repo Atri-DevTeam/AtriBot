@@ -77,7 +77,11 @@ public class ClickTrainGame implements Listener, CommandExecutor {
             boolean abandoned;
             synchronized (game) {
                 abandoned = game.phase == Phase.PLAYING && activeGames.remove(ownerId, game);
-                if (abandoned) game.phase = Phase.FINISHED;
+                if (abandoned) {
+                    game.phase = Phase.FINISHED;
+                    long elapsedMs = game.startTime == 0 ? 0 : System.currentTimeMillis() - game.startTime;
+                    updatePersonalRecord(game, UserGameDataRepository.ReactionOutcome.ABANDONED, elapsedMs);
+                }
             }
             qq.sendMessage(abandoned
                     ? "已放弃本局反应力测试喵！可以重新开始啦。"
@@ -211,7 +215,8 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                         true,
                         ButtonStyle.BLUE,
                         ButtonType.CALLBACK);
-                if (needPermissionRestriction) btn.setAllowedOpenIds(List.of(game.ownerOpenId)).setPermissionType(PermissionType.SPECIFIC_USER);
+                if (needPermissionRestriction)
+                    btn.setAllowedOpenIds(List.of(game.ownerOpenId)).setPermissionType(PermissionType.SPECIFIC_USER);
 
                 buttons.add(btn);
             }
@@ -228,7 +233,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 > 手机端由于点击间隔无法快速完成，建议使用PC端测试
                 > 开始后限时 2 分钟，未完成自动取消
                 > 你的最好记录: """ + formatBest(ownerId)
-                + "\n\n> " + Markdown.enterCommand("/反应力测试 放弃", "放弃本局");
+                + "\n\n> " + Markdown.enterCommand("/反应力测试 放弃", "\uD83D\uDED1 放弃本局");
     }
 
     /**
@@ -251,7 +256,8 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         long elapsedMs = game.startTime == 0 ? 0 : System.currentTimeMillis() - game.startTime;
         int intervalCount = Math.max(0, game.completedCount - 1);
         long avgInterval = intervalCount == 0 ? 0 : game.totalIntervalMs / intervalCount;
-        boolean newBest = updatePersonalRecord(game, completed, elapsedMs, game.missCount);
+        boolean newBest = updatePersonalRecord(game, completed ? UserGameDataRepository.ReactionOutcome.COMPLETED
+                : UserGameDataRepository.ReactionOutcome.TIMED_OUT, elapsedMs);
 
         StringBuilder markdown = new StringBuilder();
         markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
@@ -293,11 +299,10 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         return markdown.toString();
     }
 
-    /** 完成时刷新个人最好记录，失败只累计场次；数据统一存入用户 JSON。 */
-    private static boolean updatePersonalRecord(GameState game, boolean completed, long elapsedMs, int missCount) {
+    private static boolean updatePersonalRecord(GameState game, UserGameDataRepository.ReactionOutcome outcome, long elapsedMs) {
         try {
             return UserGameDataRepository.instance().recordReaction(game.ownerOpenId, game.statisticsId,
-                    completed, elapsedMs, missCount, LocalDate.now());
+                    outcome, elapsedMs, game.completedCount, game.missCount, LocalDate.now());
         } catch (Exception e) {
             log.error("保存反应力测试记录失败", e);
             return false;
@@ -317,7 +322,9 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         }
     }
 
-    /** 本局用时相对于所有玩家最好用时的排名，不替换个人最好记录。 */
+    /**
+     * 本局用时相对于所有玩家最好用时的排名，不替换个人最好记录。
+     */
     private static int getRoundRank(String ownerId, long elapsedMs) {
         try {
             return UserGameDataRepository.instance().reactionRank(elapsedMs, ownerId);
@@ -327,7 +334,9 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         }
     }
 
-    /** 用户没有完成记录时返回 0，用时相同的用户并列。 */
+    /**
+     * 用户没有完成记录时返回 0，用时相同的用户并列。
+     */
     public static int getUserRank(String ownerId) {
         if (ownerId == null || ownerId.isBlank()) return 0;
         try {
