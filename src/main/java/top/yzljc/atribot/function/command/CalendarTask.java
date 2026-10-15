@@ -5,12 +5,7 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
@@ -33,7 +28,7 @@ import top.yzljc.atribot.utils.tools.Alert;
  * @Package top.yzljc.qqbot.official.function
  */
 @Slf4j
-public class CalendarTask implements CommandExecutor, ScheduledTask, SlashCommandExecutor {
+public class CalendarTask implements CommandExecutor, ScheduledTask {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -53,11 +48,6 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
             return true;
         }
 
-        if (sender instanceof KookCommandSender kook) {
-            kook.sendMessage(ImageComponent.imageOf(data.url()).setText("现在是北京时间"
-                    + FormatTools.formatTimestampMilli(System.currentTimeMillis())));
-            return true;
-        }
 
         String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
         if (sender instanceof QQCommandSender qq) {
@@ -97,21 +87,4 @@ public class CalendarTask implements CommandExecutor, ScheduledTask, SlashComman
         PushTask.push("daily_calendar", TC.md(today));
     }
 
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-
-        ImageDTO data = PreImageGenerate.dump(OpenApi.get("bot.calendar"), Map.of("system", false), sender.getPlatform());
-        if (data.isError()) {
-            String errMsg = data.errorMessage();
-            sender.sendMessage("获取日历图片失败: " + errMsg);
-            Alert.notify("日历图片获取失败: " + errMsg);
-            log.warn("获取日历图片失败: {}", errMsg);
-            return true;
-        }
-
-        String today = "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
-        sender.sendEmbed(new DiscordEmbed().title(today).image(data.url()));
-        return true;
-    }
 }

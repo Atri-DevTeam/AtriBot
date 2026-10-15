@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.event.EventManager;
 import top.yzljc.atribot.event.events.UserRunCommandEvent;
 import top.yzljc.atribot.plugin.PluginCommand;
+import top.yzljc.atribot.platform.Platform;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.Collections;
  */
 public class CommandMap {
     private static final Logger log = LoggerFactory.getLogger(CommandMap.class);
-    private volatile Registry registry = new Registry(Map.of(), Map.of());
+    private volatile Registry registry = new Registry(Map.of(), Map.of(), Map.of(), Map.of());
     private final Map<String, Command> coreCommands = new LinkedHashMap<>();
     private final Map<String, List<PluginCommand>> pluginCommands = new LinkedHashMap<>();
 
@@ -55,6 +56,25 @@ public class CommandMap {
         return registry.commands().get(name.toLowerCase(Locale.ROOT));
     }
 
+    public Command getCommand(String name, Platform platform) {
+        if (name == null || name.isBlank()) return null;
+        Registry current = registry;
+        String label = name.toLowerCase(Locale.ROOT);
+        Command command = platform == null ? null : current.scoped().getOrDefault(platform, Map.of()).get(label);
+        if (command == null) command = current.commands().get(label);
+        return command instanceof PluginCommand plugin && !plugin.supports(platform) ? null : command;
+    }
+
+    public List<CommandFeature> getCommands(Platform platform) {
+        Registry current = registry;
+        Map<String, Command> commands = new LinkedHashMap<>(current.commands());
+        if (platform != null) commands.putAll(current.scoped().getOrDefault(platform, Map.of()));
+        return commands.values().stream().distinct().filter(CommandFeature.class::isInstance)
+                .map(CommandFeature.class::cast)
+                .filter(command -> getCommand(command.getName(), platform) == command)
+                .filter(command -> !(command instanceof PluginCommand plugin) || plugin.supports(platform)).toList();
+    }
+
     public synchronized void clear() {
         rebuild(Map.of(), pluginCommands);
     }
@@ -82,20 +102,37 @@ public class CommandMap {
 
     private void rebuild(Map<String, Command> core, Map<String, List<PluginCommand>> plugins) {
         Map<String, Command> updated = new LinkedHashMap<>(core);
+        Map<Platform, Map<String, Command>> scoped = new HashMap<>();
         plugins.forEach((owner, commands) -> {
             for (PluginCommand command : commands) {
                 updated.putIfAbsent(owner + ":" + command.getName(), command);
                 command.getAliases().forEach(alias -> updated.putIfAbsent(owner + ":" + alias, command));
-                updated.putIfAbsent(command.getName(), command);
-                command.getAliases().forEach(alias -> updated.putIfAbsent(alias, command));
+                if (command.getPlatforms().isEmpty()) {
+                    updated.putIfAbsent(command.getName(), command);
+                    command.getAliases().forEach(alias -> updated.putIfAbsent(alias, command));
+                } else {
+                    for (Platform platform : command.getPlatforms()) {
+                        Map<String, Command> labels = scoped.computeIfAbsent(platform, _ -> new LinkedHashMap<>());
+                        registerScoped(labels, command.getName(), command);
+                        command.getAliases().forEach(alias -> registerScoped(labels, alias, command));
+                    }
+                }
             }
         });
         Map<String, String> prefixless = new HashMap<>();
+        Map<Platform, Map<String, String>> scopedPrefixless = new HashMap<>();
         for (Command command : new HashSet<>(updated.values())) {
             if (!(command instanceof CommandFeature feature)) continue;
             String label = command instanceof PluginCommand plugin ? plugin.getQualifiedName()
                     : command.getName().toLowerCase(Locale.ROOT);
             for (String alias : feature.getPrefixlessAliases()) {
+                if (command instanceof PluginCommand plugin && !plugin.getPlatforms().isEmpty()) {
+                    for (Platform platform : plugin.getPlatforms()) {
+                        String previous = scopedPrefixless.computeIfAbsent(platform, _ -> new HashMap<>()).putIfAbsent(alias, label);
+                        if (previous != null && !previous.equals(label)) throw new IllegalArgumentException("无前缀触发词冲突: " + alias);
+                    }
+                    continue;
+                }
                 String dispatchLabel = updated.get(alias) == command ? alias : label;
                 String previous = prefixless.putIfAbsent(alias, dispatchLabel);
                 if (previous != null && !previous.equals(dispatchLabel)) {
@@ -103,7 +140,9 @@ public class CommandMap {
                 }
             }
         }
-        Registry next = new Registry(Map.copyOf(updated), Collections.unmodifiableMap(prefixless));
+        scoped.replaceAll((_, labels) -> Map.copyOf(labels));
+        scopedPrefixless.replaceAll((_, labels) -> Map.copyOf(labels));
+        Registry next = new Registry(Map.copyOf(updated), Map.copyOf(prefixless), Map.copyOf(scoped), Map.copyOf(scopedPrefixless));
         if (core != coreCommands) {
             coreCommands.clear();
             coreCommands.putAll(core);
@@ -115,6 +154,11 @@ public class CommandMap {
         registry = next;
     }
 
+    private static void registerScoped(Map<String, Command> labels, String label, Command command) {
+        Command previous = labels.putIfAbsent(label.toLowerCase(Locale.ROOT), command);
+        if (previous != null && previous != command) throw new IllegalArgumentException("平台指令冲突: " + label);
+    }
+
     /**
      * 将平台文本转换为现有分发器使用的指令行，显式前缀优先于无前缀触发词
      *
@@ -123,12 +167,19 @@ public class CommandMap {
      * @return 去除前缀或替换触发词后的指令行，普通消息返回 null
      */
     public String resolveCommandLine(String input, String prefix) {
+        return resolveCommandLine(input, prefix, null);
+    }
+
+    public String resolveCommandLine(String input, String prefix, Platform platform) {
         if (input == null) return null;
         String text = input.trim();
         if (text.startsWith(prefix)) return text.substring(prefix.length());
         if (text.isEmpty()) return null;
         String[] parts = text.split("\\s+", 2);
-        String label = registry.prefixlessAliases().get(parts[0].toLowerCase(Locale.ROOT));
+        Registry current = registry;
+        String alias = parts[0].toLowerCase(Locale.ROOT);
+        String label = platform == null ? null : current.scopedPrefixless().getOrDefault(platform, Map.of()).get(alias);
+        if (label == null) label = current.prefixlessAliases().get(alias);
         return label == null ? null : label + (parts.length > 1 ? " " + parts[1] : "");
     }
 
@@ -143,7 +194,9 @@ public class CommandMap {
         return resolveCommandLine(input, prefix) != null;
     }
 
-    private record Registry(Map<String, Command> commands, Map<String, String> prefixlessAliases) {}
+    private record Registry(Map<String, Command> commands, Map<String, String> prefixlessAliases,
+                            Map<Platform, Map<String, Command>> scoped,
+                            Map<Platform, Map<String, String>> scopedPrefixless) {}
 
     public synchronized Map<String, CommandExecutor> snapshotExecutors() {
         Map<String, CommandExecutor> executors = new LinkedHashMap<>();
@@ -179,7 +232,7 @@ public class CommandMap {
         String commandLabel = parts[0].toLowerCase(Locale.ROOT);
         String[] args = parts.length > 1 ? parts[1].split("\\s+") : new String[0];
 
-        Command target = registry.commands().get(commandLabel);
+        Command target = getCommand(commandLabel, sender.getPlatform());
         if (target == null) {
             return false;
         }

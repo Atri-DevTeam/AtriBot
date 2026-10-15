@@ -24,9 +24,12 @@ import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.JsonPayload;
+import top.yzljc.atribot.utils.concurrent.RateLimitedTaskQueue;
+import top.yzljc.atribot.utils.concurrent.SlidingWindowRateLimiter;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,6 +48,8 @@ import static top.yzljc.atribot.utils.StringUtils.isBlank;
 public class ChatService {
 
     private static final int MAX_INVALID_EVENT_ID_RETRIES = 5;
+    private static final RateLimitedTaskQueue GROUP_RECALL_QUEUE = new RateLimitedTaskQueue(
+            "qq-group-recall", 1024, new SlidingWindowRateLimiter(10, Duration.ofSeconds(1)));
     private static final long INVALID_EVENT_ID_RETRY_DELAY_MS = 100;
     private static final String EMERGENCY_PAUSED_MESSAGE = "开发者暂且维护中，马上回来！";
     private static final ImageComponent MAINTENANCE = ImageComponent.imageOf(RS.get("resource.image.maintenance")).setText(EMERGENCY_PAUSED_MESSAGE);
@@ -490,24 +495,46 @@ public class ChatService {
     }
 
     /**
-     * 异步撤回群聊消息
+     * 异步撤回群聊消息。所有群共用 FIFO 队列和每秒 10 次的滑动窗口，最多等待 1024 个任务。
      *
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
-     * @return 撤回结果，HTTP 状态为 2xx 时为 true，请求失败时为 false
+     * @return HTTP 状态为 2xx 时为 true，请求失败时为 false；队列满或关闭时异常完成
      */
     public CompletableFuture<Boolean> recallGroupMessageAsync(String groupOpenId, String messageId) {
-        return ThreadManager.supplyAsync(() -> recallGroupMessage(groupOpenId, messageId));
+        return GROUP_RECALL_QUEUE.submit(() -> recallGroupMessageNow(groupOpenId, messageId));
     }
 
     /**
-     * 同步撤回群聊消息，等待平台响应
+     * 同步撤回群聊消息，等待限速队列及平台响应
      *
      * @param groupOpenId 群 openId
      * @param messageId   消息 ID
      * @return HTTP 状态为 2xx 时返回 true，请求失败时返回 false
      */
     public boolean recallGroupMessage(String groupOpenId, String messageId) {
+        CompletableFuture<Boolean> future = recallGroupMessageAsync(groupOpenId, messageId);
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            future.cancel(false);
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (ExecutionException e) {
+            log.warn("群撤回任务执行失败, groupOpenId: {}, messageId: {}", groupOpenId, messageId, e.getCause());
+            return false;
+        }
+    }
+
+    /**
+     * 关闭群撤回队列，中断当前工作线程并使等待中的任务异常完成。
+     * 仅用于应用停止，关闭后不接受新任务。
+     */
+    public static void shutdownGroupRecallQueue() {
+        GROUP_RECALL_QUEUE.close();
+    }
+
+    private boolean recallGroupMessageNow(String groupOpenId, String messageId) {
         String url = apiBaseUrl + "/v2/groups/" + groupOpenId + "/messages/" + messageId;
         var res = HttpService.deleteRequestDetailed(url, "Authorization", "QQBot " + tokenManager.getAccessToken());
         boolean ok = res.status() >= 200 && res.status() < 300;

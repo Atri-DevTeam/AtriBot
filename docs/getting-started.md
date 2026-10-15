@@ -58,7 +58,7 @@ Javalin 监听 `listen-port`，默认 `1234`。平台回调、WebUI 和 Miniapp 
 | --- | --- |
 | `POST /` | Napcat 事件上报 |
 | `/qq/webhook` | QQ Webhook，路径可配置 |
-| `/kook/webhook` | KOOK Webhook，路径可配置 |
+| `/plugins/platform-kook/webhook` | 安装 KOOK 插件后的默认 Webhook 路径 |
 | `/webui/` | 管理后台 |
 | `/atrimeow/profile/` | Miniapp |
 

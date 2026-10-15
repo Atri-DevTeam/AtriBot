@@ -100,7 +100,7 @@ export default class GroupAvatarRenderer {
     const seen = new Set()
     for (const member of members) {
       const id = String(
-        member?.unionOpenId || member?.memberOpenId || member?.openId || member?.userOpenId || ''
+        typeof member === 'string' ? member : member?.unionOpenId || member?.memberOpenId || member?.openId || member?.userOpenId || ''
       ).trim()
       if (!id || seen.has(id)) continue
       seen.add(id)

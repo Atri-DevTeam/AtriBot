@@ -1,6 +1,7 @@
 package top.yzljc.atribot.webui.repo;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.webui.ChatChanges;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -121,11 +122,16 @@ public final class OrphanedFriendRecordCleanup {
             for (Candidate candidate : candidates) {
                 long deletedForUser = 0;
                 while (!OfficialUsers.isCached(candidate.userOpenId())) {
+                    conn.setAutoCommit(false);
+                    ChatConversationRepo.lock(conn, "c2c", candidate.userOpenId());
                     stmt.setString(1, candidate.userOpenId());
                     stmt.setLong(2, candidate.lastId());
                     stmt.setString(3, candidate.userOpenId());
                     stmt.setInt(4, DELETE_BATCH_SIZE);
                     int deleted = stmt.executeUpdate();
+                    ChatConversationRepo.refresh(conn, "c2c", candidate.userOpenId(), null);
+                    conn.commit();
+                    if (deleted > 0) ChatChanges.publish("c2c", candidate.userOpenId(), 0, true);
                     deletedForUser += deleted;
                     progress.deletedRecords += deleted;
                     progress.publishDelete();

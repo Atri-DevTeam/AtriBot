@@ -8,22 +8,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.KookCommandSender;
-import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.RS;
+import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
+import top.yzljc.atribot.function.impl.ImageDTO;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.service.request.OpenApi;
@@ -65,19 +61,40 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         return true;
     }
 
-    public boolean onCommand(DiscordCommandSender sender) {
-        check(sender);
-        return true;
-    }
-
-    public boolean onCommand(KookCommandSender sender) {
-        check(sender);
-        return true;
-    }
 
     @Override
     public TaskSchedule schedule() {
         return new TaskPlan().setMode(ScheduleMode.hourly);
+    }
+
+    /**
+     * @param platform 图片接收平台，用于选择图片分发方式
+     * @return 资源包成图及更新时间；查询不会更改定时推送的更新游标
+     */
+    public static PackImage query(Platform platform) {
+        var data = HttpService.sendGetRequest(RS.get("request.hypixel.resource-packs"));
+        if (data != null) {
+            for (var pack : data.path("packs")) {
+                if (pack.path("id").asText().equals("SkyBlock")) {
+                    return new PackImage(PreImageGenerate.dump(OpenApi.get("bot.hypixel.skyblock.resource-pack"),
+                            renderRequest(pack), platform), pack.path("lastUpdated").asLong());
+                }
+            }
+        }
+        return new PackImage(new ImageDTO(null, 0, 0, "获取 Hypixel Skyblock 资源包信息失败，请稍后重试。", null), 0);
+    }
+
+    public record PackImage(ImageDTO image, long lastUpdated) {}
+
+    private static Map<String, Object> renderRequest(JsonNode pack) {
+        List<Pack> versions = new ArrayList<>();
+        for (var version : pack.path("versions")) {
+            int format = version.path("packFormat").asInt(-1);
+            String name = PackVersion.getVersionNameByResourcePackVersion(format, true);
+            versions.add(new Pack(name == null ? "资源包版本: " + format : name, version.path("hash").asText("null")));
+        }
+        return Map.of("lastUpdated", FormatTools.formatTimestampMilli(pack.path("lastUpdated").asLong()),
+                "deployId", pack.path("deployId").asText("unknown"), "versions", versions);
     }
 
     @Override
@@ -94,7 +111,6 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         }
         Map<String, Object> request = new HashMap<>();
 
-        int i = 0;
         long tmpLastTime = lastUpdateTime;
         for (var node : d.path("packs")) {
             if (node.path("id").asText("default").equals("SkyBlock")) {
@@ -112,25 +128,12 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                 lastDeployId = deployId;
                 saveCache();
 
-                String updateTime = FormatTools.formatTimestampMilli(updateTimeRaw);
-                List<Pack> versions = new ArrayList<>();
-                for (var t : node.path("versions")) {
-                    int packVersionNum = t.path("packFormat").asInt(-1);
-                    String hash = t.path("hash").asText("null");
-                    String versionName = PackVersion.getVersionNameByResourcePackVersion(packVersionNum, true);
-                    if (versionName == null) {
-                        versionName = "资源包版本: " + packVersionNum;
-                    }
-                    versions.add(new Pack(versionName, hash));
-                    i++;
-                }
-                request.put("lastUpdated", updateTime);
-                request.put("deployId", deployId);
-                request.put("versions", versions);
+                request.putAll(renderRequest(node));
                 break;
             }
         }
 
+        if (sender instanceof QQCommandSender) BackgroundService.applyApprovedBackground(request, sender.getUserId());
         String renderUrl = OpenApi.get("bot.hypixel.skyblock.resource-pack");
         var r = sender == null
                 ? PreImageGenerate.dump(renderUrl, request)
@@ -142,17 +145,11 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
             }
             var lastUpdatedTime = "上一次的更新时间为 " + FormatTools.formatTimestampMilli(lastUpdateTime);
             ImageComponent image = ImageComponent.imageOf(r.url()).setText(lastUpdatedTime);
-            if (sender instanceof QQCommandSender qqSender) {
-                qqSender.sendMessage(image);
-            } else if (sender instanceof QQGuildCommandSender guildSender) {
-                guildSender.sendMessage(image);
-            } else if (sender instanceof KookCommandSender kook) {
-                kook.sendMessage(image);
-            } else if (sender instanceof DiscordCommandSender discordSender) {
-                discordSender.sendEmbed(new DiscordEmbed()
-                        .title("Hypixel Skyblock 资源包")
-                        .description(lastUpdatedTime)
-                        .image(r.url()));
+            switch (sender) {
+                case QQCommandSender qqSender -> qqSender.sendMessage(image);
+                case QQGuildCommandSender guildSender -> guildSender.sendMessage(image);
+                default -> {
+                }
             }
         } else {
             if (r.url() == null || r.isError()) {

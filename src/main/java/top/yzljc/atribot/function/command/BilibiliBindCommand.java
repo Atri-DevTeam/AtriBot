@@ -17,8 +17,6 @@ import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.database.repo.C2CRepository;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.function.impl.drawitem.LootService;
-import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.service.request.HttpService;
 
 import java.util.List;

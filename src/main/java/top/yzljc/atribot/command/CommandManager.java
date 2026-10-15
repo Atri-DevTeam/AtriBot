@@ -3,7 +3,6 @@ package top.yzljc.atribot.command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import top.yzljc.atribot.command.impl.DiscordSenderImpl;
 import top.yzljc.atribot.command.impl.NapcatSenderImpl;
 import top.yzljc.atribot.command.impl.QQGuildSenderImpl;
 import top.yzljc.atribot.command.impl.QQSenderImpl;
@@ -14,8 +13,7 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.*;
 import top.yzljc.atribot.i18n.I18N;
 import top.yzljc.atribot.plugin.PluginCommand;
-import top.yzljc.atribot.platform.kook.KookMessage;
-import top.yzljc.atribot.platform.kook.KookUser;
+import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
 import java.io.InputStream;
@@ -42,6 +40,27 @@ public class CommandManager implements Listener {
 
     public static CommandFeature getCommand(String name) {
         return (CommandFeature) commandMap.getCommand(name);
+    }
+
+    public static CommandFeature getCommand(String name, Platform platform) {
+        return (CommandFeature) commandMap.getCommand(name, platform);
+    }
+
+    public static List<CommandFeature> getCommands(Platform platform) {
+        return commandMap.getCommands(platform);
+    }
+
+    public static boolean dispatch(CommandSender sender, String commandLine) {
+        return commandMap.dispatch(sender, commandLine);
+    }
+
+    public static String resolveCommandLine(CommandSender sender, String input) {
+        return commandMap.resolveCommandLine(input, COMMAND_PREFIX, sender.getPlatform());
+    }
+
+    public static boolean dispatchSlash(SlashCommandSender sender, String label, SlashCommandArguments args) {
+        CommandFeature command = getCommand(label, sender.getPlatform());
+        return command != null && command.getSlashExecutor() != null && command.executeSlash(sender, label, args);
     }
 
     /**
@@ -206,59 +225,4 @@ public class CommandManager implements Listener {
         dispatchTextCommand(senderUser, revPrefixContent, true);
     }
 
-    @EventHandler
-    public void onDiscordSlashCommand(DiscordSlashCommandEvent event) {
-        log.info("[Discord] slash command: guild={}, channel={}, user={}, /{}",
-                event.getGuildId(),
-                event.getChannelId(),
-                event.getUser().getUsername(),
-                event.getCommandName());
-
-        CommandFeature command = getCommand(event.getCommandName());
-        if (command == null) {
-            log.warn("Discord slash command /{} is not registered in CommandManager", event.getCommandName());
-            return;
-        }
-
-        SlashCommandExecutor slashExecutor = command.getSlashExecutor();
-        if (slashExecutor == null) {
-            log.warn("Discord slash command /{} has no SlashCommandExecutor", event.getCommandName());
-            return;
-        }
-
-        DiscordCommandSender sender = new DiscordSenderImpl(
-                event.getUser(),
-                event.getApplicationId(),
-                event.getInteractionId(),
-                event.getToken()
-        );
-        slashExecutor.onCommand(sender, command, event.getCommandName(), event.getArgs());
-    }
-
-    @EventHandler
-    public void onKookChannelMessage(KookChannelMessageCreateEvent event) {
-        dispatchKookCommand(event.getUser(), event.getMessage(), event.getSender());
-    }
-
-    @EventHandler
-    public void onKookDirectMessage(KookDirectMessageCreateEvent event) {
-        dispatchKookCommand(event.getUser(), event.getMessage(), event.getSender());
-    }
-
-    private void dispatchKookCommand(KookUser user,
-                                     KookMessage message,
-                                     KookCommandSender sender) {
-        if (user.isBot() || user.isBlocked() || !message.isText()) return;
-        String content = message.getContent().trim();
-        String commandLine = commandMap.resolveCommandLine(content, COMMAND_PREFIX);
-        if (commandLine == null || commandLine.isBlank()) return;
-        String scene = sender.getChannelId() == null ? "私信"
-                : "服务器: " + sender.getGuildId() + ", 频道: " + sender.getChannelId();
-        log.info("[KOOK] 用户 {} ({}) 使用指令: {}{} ({})",
-                user.getUsername().replaceAll("[\\r\\n\\t]", " "), user.getUserId(),
-                COMMAND_PREFIX, commandLine.replaceAll("\\s+", " "), scene);
-        boolean executed = commandMap.dispatch(sender, commandLine);
-        BotRuntimeData.callCommandExecuted();
-        if (!executed) sender.sendMessage(I18N.text("command.unknown"));
-    }
 }

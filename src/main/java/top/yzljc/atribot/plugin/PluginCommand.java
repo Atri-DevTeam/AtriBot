@@ -3,6 +3,12 @@ package top.yzljc.atribot.plugin;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandFeature;
 import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atribot.command.SlashCommandSender;
+import top.yzljc.atribot.command.SlashCommandArguments;
+import top.yzljc.atribot.platform.Platform;
+
+import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 /**
  * @Author YZ_Ljc_
@@ -16,6 +22,7 @@ public final class PluginCommand extends CommandFeature {
     private final String qualifiedName;
     private final String permission;
     private final String permissionMessage;
+    private final Set<Platform> platforms;
     private volatile CommandExecutor executor;
     private volatile boolean active;
 
@@ -25,12 +32,17 @@ public final class PluginCommand extends CommandFeature {
         this.qualifiedName = plugin.getContext().getDescription().name() + ":" + getName();
         this.permission = definition.permission();
         this.permissionMessage = definition.permissionMessage();
+        this.platforms = definition.platforms();
         this.executor = plugin;
     }
 
     public AtriPlugin getPlugin() { return plugin; }
 
     public String getQualifiedName() { return qualifiedName; }
+
+    public Set<Platform> getPlatforms() { return platforms; }
+
+    public boolean supports(Platform platform) { return platforms.isEmpty() || platform != null && platforms.contains(platform); }
 
     @Override
     public CommandExecutor getExecutor() { return executor; }
@@ -42,7 +54,18 @@ public final class PluginCommand extends CommandFeature {
 
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-        if (!active) return false;
+        return invoke(sender, commandLabel, () -> executor.onCommand(sender, this, commandLabel, args));
+    }
+
+    @Override
+    public boolean executeSlash(SlashCommandSender sender, String commandLabel, SlashCommandArguments args) {
+        var slash = getSlashExecutor();
+        if (slash == null) return false;
+        return invoke(sender, commandLabel, () -> slash.onCommand(sender, this, commandLabel, args));
+    }
+
+    private boolean invoke(CommandSender sender, String commandLabel, BooleanSupplier action) {
+        if (!active || !supports(sender.getPlatform())) return false;
         if (!permission.isBlank() && !sender.hasPermission(permission)) {
             sender.sendMessage(permissionMessage);
             return true;
@@ -51,7 +74,7 @@ public final class PluginCommand extends CommandFeature {
         ClassLoader previous = thread.getContextClassLoader();
         try {
             thread.setContextClassLoader(plugin.getClass().getClassLoader());
-            boolean success = executor.onCommand(sender, this, commandLabel, args);
+            boolean success = action.getAsBoolean();
             if (!success && !getUsage().isBlank()) sender.sendMessage("指令用法: " + getUsage().replace("<command>", commandLabel));
             return success;
         } catch (Throwable failure) {

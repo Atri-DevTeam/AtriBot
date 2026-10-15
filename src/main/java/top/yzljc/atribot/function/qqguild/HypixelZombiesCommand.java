@@ -5,7 +5,6 @@ import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
@@ -19,16 +18,10 @@ import top.yzljc.atribot.service.request.OpenApi;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.official
  */
-public class HypixelZombiesCommand implements CommandExecutor, SlashCommandExecutor {
+public class HypixelZombiesCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender instanceof KookCommandSender) {
-            String[] queryArgs = new String[args.length + 1];
-            queryArgs[0] = "zs";
-            System.arraycopy(args, 0, queryArgs, 1, args.length);
-            return new HypixelCommand().onCommand(sender, command, "hyp", queryArgs);
-        }
 
         if (sender instanceof QQCommandSender user) {
             user.sendMessage(TC.md("> 该指令在当前场景下已弃用，请使用二级指令 " + Markdown.enterCommand("/hyp zs", "/hyp zs") + "查询！"));
@@ -64,23 +57,4 @@ public class HypixelZombiesCommand implements CommandExecutor, SlashCommandExecu
         return true;
     }
 
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
-                                  SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        String player = args.getString("player", "").trim();
-        if (player.isBlank()) {
-            sender.sendEphemeralMessage("请指定要查询的 Minecraft 玩家名或 UUID。");
-            return true;
-        }
-
-        sender.sendMessage("正在查询相关数据，请稍等片刻...");
-        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.zombies"), Map.of("player", player), sender.getPlatform());
-        if (data.isError() || data.url() == null) {
-            sender.sendMessage(data.isError() ? data.errorMessage() : "在执行操作时出现错误，请稍后重试。");
-            return true;
-        }
-        sender.sendEmbed(new DiscordEmbed().title("Hypixel 僵尸末日数据").image(data.url()));
-        return true;
-    }
 }

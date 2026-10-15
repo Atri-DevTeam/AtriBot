@@ -1,6 +1,7 @@
 package top.yzljc.atribot.plugin;
 
 import top.yzljc.atribot.command.CommandDefinition;
+import top.yzljc.atribot.platform.Platform;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,7 +18,15 @@ import java.util.Set;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.plugin
  */
-public record PluginCommandDefinition(CommandDefinition command, String permission, String permissionMessage) {
+public record PluginCommandDefinition(CommandDefinition command, String permission, String permissionMessage,
+                                      Set<Platform> platforms) {
+    public PluginCommandDefinition {
+        platforms = Set.copyOf(platforms);
+    }
+
+    public PluginCommandDefinition(CommandDefinition command, String permission, String permissionMessage) {
+        this(command, permission, permissionMessage, Set.of());
+    }
     static List<PluginCommandDefinition> parse(Object source) {
         if (source == null) return List.of();
         if (!(source instanceof Map<?, ?> commands)) throw new IllegalArgumentException("commands 必须是指令对象");
@@ -46,14 +55,21 @@ public record PluginCommandDefinition(CommandDefinition command, String permissi
             definition.put("usage", text(data, "usage", "/<command>"));
             definition.put("aliases", aliases);
             definition.put("prefixless-aliases", data.get("prefixless-aliases"));
+            definition.put("options", data.get("options"));
+            Set<Platform> platforms = new HashSet<>();
+            if (data.get("platforms") != null) {
+                if (!(data.get("platforms") instanceof List<?> list) || list.isEmpty())
+                    throw new IllegalArgumentException("platforms 必须是非空平台列表");
+                for (Object platform : list) platforms.add(Platform.valueOf(String.valueOf(platform)));
+            }
             result.add(new PluginCommandDefinition(CommandDefinition.from(name, definition), text(data, "permission", ""),
-                    text(data, "permission-message", "你没有权限执行此指令")));
+                    text(data, "permission-message", "你没有权限执行此指令"), platforms));
         }
         return List.copyOf(result);
     }
 
     private static String label(Object value) {
-        if (!(value instanceof String text) || !text.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}")) {
+        if (!(value instanceof String text) || !text.matches("[\\p{L}\\p{N}][\\p{L}\\p{N}_-]{0,63}")) {
             throw new IllegalArgumentException("指令和别名只能包含字母、数字、下划线、连字符，最长 64 字符，不包含 / 或命名空间");
         }
         return text.toLowerCase(Locale.ROOT);

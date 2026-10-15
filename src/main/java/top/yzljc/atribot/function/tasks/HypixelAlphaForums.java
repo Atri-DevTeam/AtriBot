@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.C2CChat;
 import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +11,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
-import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.official.GroupChat;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
@@ -28,7 +21,6 @@ import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
-import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.HttpService;
 import top.yzljc.atribot.utils.AtomicFiles;
 import top.yzljc.atribot.service.taskscheduler.TaskPlan;

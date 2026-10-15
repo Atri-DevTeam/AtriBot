@@ -16,6 +16,8 @@
 
 QQ 群聊 / C2C 与频道 / 频道私信使用不同类型，事件也分别定义。频道 ID、群 OpenID、用户 ID 和会话 ID 保留各自语义，不互相替代
 
+主项目只内置 QQ 与 Napcat。Discord、KOOK 的连接、User / Message、事件、发送组件及命令适配位于各自插件中；`Platform` 保留相应枚举值，供账号、存储和图片分发识别平台
+
 ## User
 
 [User](../../src/main/java/top/yzljc/atribot/platform/User.java) 保存共同身份字段：
@@ -78,6 +80,44 @@ QQ 官方群聊和 C2C 提供同步与异步撤回入口：
 这些接口与发送共用 `ThreadManager`。在其管理的任务中嵌套调用时，请求直接在当前工作线程执行，避免同步包装等待子任务导致死锁，因此异步入口不保证每次都切换线程。同步方法和 `message.recall()` 仍会等待平台响应
 
 ## QQ 官方机器人
+
+### 群聊与单聊本地文件
+
+`GroupChat`、`C2CChat` 及对应的异步类支持 `FileType + Path` 重载，返回发送后的消息 ID
+
+```java
+GroupChat.replyMessage(groupOpenId, RT.message(messageId),
+        FileType.FILE, Path.of("/data/report.zip"));
+
+C2CChat.sendMessage(userOpenId, FileType.VIDEO, Path.of("/data/demo.mp4"));
+
+CompletableFuture<String> pending = AsyncGroupChat.sendMessage(
+        groupOpenId, FileType.IMAGE, Path.of("/data/image.png"));
+```
+
+文件不超过 5,000,000 字节时通过 `file_data` 直传，超过后自动预上传、逐片 PUT、确认各分片并合并，最后使用返回的 `file_info` 发送消息。单文件上限为 200 MiB；媒体格式及超过软限制后的降级由平台处理
+
+分片使用磁盘流读取，顺序上传，不将整个文件载入内存。每片 PUT 的网络错误、HTTP 429 和 5xx 按服务端下发的间隔重试，重试窗口最多 300 秒；其他失败终止上传，不发送媒体消息。调用完成前不得修改或删除源文件，异步调用以 Future 完成为准
+
+现有 URL 上传方式保留。`ImageComponent` 的 Base64 数据也使用上述大小分流，自动补充文件名，支持原始 Base64、`base64://` 和 `data:image/...;base64,`；中间文件在上传结束后清理
+
+预上传、分片 PUT、完成通知及合并均写入发送日志。Base64 请求体仅记录长度，分片 PUT 仅记录索引和大小。新的本地文件重载在上传失败时返回 `null`，原有 URL 和图片接口保留原来的失败回退行为
+
+协议参考：[富媒体上传](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_openid_files.post.html)、[预上传](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_id_upload_prepare.post.html)、[分片完成通知](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_id_upload_part_finish.post.html)
+
+### 备用图片上传
+
+`HackMPUploader.upload(byte[] image)` 接收 PNG、JPEG、GIF 或 WebP 图片字节，最大 20 MiB，返回图片 URL，失败返回 `null`
+
+```java
+String imageUrl = HackMPUploader.upload(imageBytes);
+```
+
+使用 `qq.debug-group-openId` 申请占位图片上传地址，完成占位上传后复用同一 PUT 地址写入实际图片，再返回带实际图片 Content-Type 的下载 URL。仅在调用时执行，不发送群消息，不自动接入现有图片发送流程
+
+调用结束前不得修改输入数组。上传日志保留请求结果和数据长度，不记录图片二进制内容。该方式依赖平台允许复用上传地址，地址过期时间由平台决定，不按固定一小时推算
+
+### 配置与连接
 
 使用 `qq.enabled` 启用，配置 `app-id`、`client-secret`、`api-base-url`
 
@@ -167,26 +207,24 @@ CompletableFuture<Boolean> deletion = AsyncGuildChannelChat.deleteThread(channel
 
 ## Discord
 
-配置 `discord.enabled`、`bot-token`、`api-base-url` 与 `intents`。连接和交互处理位于 [platform/discord](../../src/main/java/top/yzljc/atribot/platform/discord)
+安装 [platform-discord](../../platform-discord/README.md) 插件，在 `plugins/platform-discord/config.yml` 配置 `bot-token`、`api-base-url` 与 `intents`。连接和交互处理位于 [platform/discord](../../platform-discord/src/main/java/top/yzljc/atribot/platform/discord)
 
-当前命令入口为结构化 Slash Command，参数声明来自 `atribot.yml`，由 `SlashCommandExecutor` 处理，详见 [指令](commands.md)
+当前命令入口为结构化 Slash Command，插件命令及参数在自身的 `plugin.yml` 声明，由 `SlashCommandExecutor` 处理。连接启动时按 Discord 平台选取已注册的 Slash 执行器，详见 [指令](commands.md)
 
 ## KOOK
 
-直接接入 Webhook 与 HTTP API v3，无 KOOK SDK 依赖：
+安装 [platform-kook](../../platform-kook/README.md) 插件，直接接入 Webhook 与 HTTP API v3，无 KOOK SDK 依赖。配置文件为 `plugins/platform-kook/config.yml`：
 
 ```yaml
-kook:
-  enabled: true
-  bot-token: "替换为 Bot Token"
-  verify-token: "替换为 Verify Token"
-  encrypt-key: ""
-  api-base-url: "https://www.kookapp.cn/api/v3"
-  webhook-path: "/kook/webhook"
-  admin-ids: []
+bot-token: "替换为 Bot Token"
+verify-token: "替换为 Verify Token"
+encrypt-key: ""
+api-base-url: "https://www.kookapp.cn/api/v3"
+webhook-path: "/webhook"
+admin-ids: []
 ```
 
-Callback URL 指向外部地址的 `/kook/webhook`。路径须位于 `/kook/` 下且不得与其他回调重复。支持 zlib 压缩，回调 URL 也可附加 `?compress=0`
+Callback URL 默认指向外部地址的 `/plugins/platform-kook/webhook`。`webhook-path` 是插件命名空间下的相对路径，前缀 `/plugins/platform-kook` 由宿主添加。支持 zlib 压缩，回调 URL 也可附加 `?compress=0`
 
 `bot-token` 用于出站 API，`verify-token` 用于回调校验。启用加密时，`encrypt-key` 必须与平台配置一致；启用后拒绝未加密回调
 
@@ -201,7 +239,7 @@ Callback URL 指向外部地址的 `/kook/webhook`。路径须位于 `/kook/` �
 
 `hyp` 保留通用与 SkyBlock 分类，支持全部 16 个子指令。查询玩家时显式填写玩家名或 UUID；KOOK 用户尚未绑定 AtriAccount，不使用 QQ OpenID 查询账号。山之心、树心查询可通过返回的指令切换存档；物品价格分页使用 `/hyp ip <物品> --cursor <游标>`
 
-`mctool` 支持 `ver`、`cape`、`lb`、`pack`。QQ 专属签到、抽卡、群管理、推送配置及提醒功能未开放给 KOOK
+`mctool` 支持 `ver`、`cape`、`pf`、`lb`、`pack`。`/mctool pf [玩家名或UUID]` 调用 UGC 的 `bot.minecraft.profile` 渲染玩家档案：QQ 省略参数时读取绑定的 Minecraft UUID，KOOK 需要显式指定玩家。查询前发送等待提示，查询结束后撤回提示，再发送结果或错误信息。QQ 专属签到、抽卡、群管理、推送配置及提醒功能未开放给 KOOK
 
 动态图片生成与查询传入发送者的 `Platform`。KOOK 使用响应中的 `api_url`，经 API 下载后上传至 KOOK；缺少有效 API 地址时返回错误，不回退到 COS。官机 QQ 仍遵循原有分发方式
 
@@ -221,7 +259,7 @@ if (sender instanceof KookCommandSender kook) {
 }
 ```
 
-组件位于 [chat/kook](../../src/main/java/top/yzljc/atribot/chat/kook)。图片沿用 `ImageComponent`：
+组件位于插件的 [chat/kook](../../platform-kook/src/main/java/top/yzljc/atribot/chat/kook)。图片沿用 `ImageComponent`：
 
 ```java
 kook.sendMessage(ImageComponent.imageOf("https://images.example.com/image.png"));
@@ -234,4 +272,4 @@ URL 图片在内部下载并上传到 KOOK，Base64 数据解码后上传，两�
 
 回调完成校验后进入异步处理，未就绪或容量不足时返回 `503`。队列最多容纳 256 个未处理完成的事件；已完成事件去重记录最多 20,000 条，保留 10 分钟
 
-队列与去重记录均在内存中，不保证跨重启投递。出站发送不自动重试，避免重复产生消息。实现见 [platform/kook](../../src/main/java/top/yzljc/atribot/platform/kook)
+队列与去重记录均在内存中，不保证跨重启投递。出站发送不自动重试，避免重复产生消息。实现见 [platform/kook](../../platform-kook/src/main/java/top/yzljc/atribot/platform/kook)

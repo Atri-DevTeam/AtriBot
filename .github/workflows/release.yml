@@ -57,7 +57,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Test Miniapp authentication
-        run: ./gradlew test --tests 'top.yzljc.atribot.miniapp.*' --no-daemon
+        run: ./gradlew :test --tests 'top.yzljc.atribot.miniapp.*' --tests 'top.yzljc.atribot.plugin.*' --no-daemon
 
       - name: Get project version
         id: get-version
@@ -74,5 +74,8 @@ jobs:
         with:
           tag_name: v${{ steps.get-version.outputs.version }}
           name: Release v${{ steps.get-version.outputs.version }}
-          files: build/libs/*-${{ steps.get-version.outputs.version }}.jar
+          files: |
+            build/libs/*-${{ steps.get-version.outputs.version }}.jar
+            platform-kook/build/libs/*.jar
+            platform-discord/build/libs/*.jar
           make_latest: true

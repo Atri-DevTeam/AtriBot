@@ -1,6 +1,5 @@
 package top.yzljc.atribot.test;
 
-import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;

@@ -1,7 +1,6 @@
 package top.yzljc.atribot.function.utils.napcat;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.PrivateMessage;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.NapcatFriendRequestEvent;
@@ -37,7 +36,7 @@ public class AutoAcceptFriend implements Listener {
 //                        "项目开发说明", "指令帮助", "功能介绍");
                 lastUser = event.getUserId();
             }, 10, TimeUnit.SECONDS);
-            log.info("已自动接受好友请求，用户ID: " + event.getUserId());
+            log.info("已自动接受好友请求，用户ID: {}", event.getUserId());
         }
     }
 }

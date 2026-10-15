@@ -145,6 +145,24 @@
   border-color: var(--color-accent);
 }
 
+.debug-doc-link {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.debug-doc-link:hover {
+  color: var(--color-accent);
+}
+
+.debug-preset-note {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .debug-template-line {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

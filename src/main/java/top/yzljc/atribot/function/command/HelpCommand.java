@@ -1,8 +1,6 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
-import top.yzljc.atribot.chat.kook.KookCard;
 import top.yzljc.atribot.chat.napcat.GroupMessage;
 import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.chat.official.Markdown;
@@ -11,11 +9,9 @@ import top.yzljc.atribot.chat.official.button.*;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.KookCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;
 import top.yzljc.atribot.command.SlashCommandSender;
@@ -32,34 +28,9 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.command
  */
-public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
+public class HelpCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof KookCommandSender kook) {
-            String prefix = Config.getInstance().getCommandPrefix();
-            kook.sendCard(new KookCard().header("KOOK 指令帮助")
-                    .markdown("**Hypixel**\n"
-                            + "`" + prefix + "hyp` 综合查询菜单\n"
-                            + "`" + prefix + "hyp skb` SkyBlock 菜单\n"
-                            + "`" + prefix + "bantrack [时间范围]` 封禁统计\n"
-                            + "`" + prefix + "hypstatus` 服务器状态\n"
-                            + "`" + prefix + "wz <玩家>` 法师决战\n"
-                            + "`" + prefix + "zs <玩家>` 僵尸末日\n"
-                            + "`" + prefix + "skbpack` SkyBlock 资源包")
-                    .markdown("**Minecraft**\n"
-                            + "`" + prefix + "mctool` 工具菜单\n"
-                            + "`" + prefix + "mcv` 最新版本\n"
-                            + "`" + prefix + "mccape` 披风状态\n"
-                            + "`" + prefix + "mojang` 验证服务器状态")
-                    .markdown("**其他**\n"
-                            + "`" + prefix + "today` 今日日历\n"
-                            + "`" + prefix + "newyear` 新年倒计时\n"
-                            + "`" + prefix + "hitokoto` 一言\n"
-                            + "`" + prefix + "whoami` 用户与会话信息\n"
-                            + "`" + prefix + "ping` 运行状态")
-                    .context("玩家查询需显式填写玩家名或 UUID"));
-            return true;
-        }
 
         if (sender instanceof QQCommandSender user) {
             Markdown md = TC.md("✨ **" + QQBot.BOT_NAME + "帮助菜单**\n\n" +
@@ -136,30 +107,6 @@ public class HelpCommand implements CommandExecutor, SlashCommandExecutor {
         return true;
     }
 
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
-                                  SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        sender.sendEmbed(new DiscordEmbed()
-                .title(QQBot.BOT_NAME + " Discord 指令帮助")
-                .description("""
-                        `/zs <player>` Hypixel 僵尸末日数据
-                        `/wz <player>` Hypixel 法师掘战数据
-                        `/hypstatus` Hypixel 服务状态
-                        `/mojang` Mojang 服务状态
-                        `/mcv` Minecraft 最新版本
-                        `/mccape` Minecraft 披风状态
-                        `/skbpack` Skyblock 资源包版本
-                        `/today` 查看今日日历
-                        `/newyear` 新年倒计时
-                        `/time [zone]` 地区时间
-                        `/bantrack [window]` Hypixel 封禁统计
-                        `/whoami` 当前 Discord 场景信息
-                        `/feedback <content>` 提交反馈
-                        """.trim())
-                .footer("Discord 查询指令不会读取 QQ 绑定信息"));
-        return true;
-    }
 
     private static List<MessageSegment> napcatHelp() {
         return List.of(

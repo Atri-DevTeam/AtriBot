@@ -2,7 +2,6 @@ package top.yzljc.atribot.chat.official;
 
 import top.yzljc.atribot.chat.ImageComponent;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 

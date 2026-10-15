@@ -2,7 +2,7 @@
 
 基于 Java / Kotlin 的跨平台机器人项目，包含平台适配、事件分发、指令执行、账号与权限、任务调度和插件加载框架
 
-支持 QQ 官方机器人、Napcat / OneBot、Discord 和 KOOK，附带 WebUI 管理后台与 Miniapp 用户页面
+主项目内置 QQ 官方机器人（群聊、C2C、频道、频道私信）与 Napcat / OneBot。Discord 和 KOOK 通过独立插件接入，附带 WebUI 管理后台与 Miniapp 用户页面
 
 ## 文档
 
@@ -24,8 +24,8 @@
 | --- | --- | --- |
 | QQ 官方机器人 | WebSocket / Webhook，群聊、C2C、频道、频道私信 | 文本指令 |
 | Napcat / OneBot | HTTP 事件上报与 HTTP API | 文本指令 |
-| Discord | Gateway 与 HTTP API | Slash Command |
-| KOOK | Webhook 与 HTTP API v3 | 文本指令 |
+| [Discord 插件](platform-discord/README.md) | Gateway 与 HTTP API | Slash Command |
+| [KOOK 插件](platform-kook/README.md) | Webhook 与 HTTP API v3 | 文本指令 |
 
 业务指令的支持范围由各执行器决定，接入平台不代表所有功能均已适配。功能分类见 [功能索引](docs/features.md)
 
@@ -39,10 +39,12 @@ WebUI 提供聊天管理、机器人设置、群管理和日志查询，访问�
 
 ```sh
 ./gradlew build
-java --enable-preview -jar build/libs/AtriMeow-3.3.0-SNAPSHOT.jar
+java --enable-preview -jar build/libs/AtriMeow-3.3.1-SNAPSHOT.jar
 ```
 
 Windows 使用 `gradlew.bat`。版本号以 [构建配置](build.gradle.kts) 为准；部署前需配置 MySQL 和所用平台的凭据，完整步骤见 [部署](docs/getting-started.md)
+
+平台插件分别输出到 `platform-kook/build/libs/` 和 `platform-discord/build/libs/`，按需复制到运行目录的 `plugins/`。主程序 JAR 不包含这两个平台的实现；配置迁移见各插件 README
 
 前端使用 Node.js 24，通过各自目录中的 `npm ci`、`npm run build` 构建。Gradle 不自动执行前端构建，修改前端后应先生成静态资源，再打包后端
 

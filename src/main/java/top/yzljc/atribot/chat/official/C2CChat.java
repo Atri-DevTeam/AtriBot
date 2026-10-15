@@ -1,5 +1,7 @@
 package top.yzljc.atribot.chat.official;
 
+import java.nio.file.Path;
+
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.ark.Ark;
 import top.yzljc.atribot.chat.official.card.Card;
@@ -20,6 +22,32 @@ import java.util.concurrent.ExecutionException;
  * 如需非阻塞调用请直接使用 {@link AsyncC2CChat}
  */
 public final class C2CChat {
+
+    /**
+     * 主动发送单聊本地文件，按文件大小自动选择直传或分片上传
+     *
+     * @param openId 用户 openId
+     * @param fileType 图片、视频、语音或文件类型
+     * @param file 本地文件，调用完成前不得修改或删除
+     * @return 消息 ID，上传或发送失败时返回 null
+     */
+    public static String sendMessage(String openId, FileType fileType, Path file) {
+        return await(AsyncC2CChat.sendMessage(openId, fileType, file));
+    }
+
+    /**
+     * 回复单聊本地文件，按文件大小自动选择直传或分片上传
+     *
+     * @param openId 用户 openId
+     * @param rt 消息或事件回复来源
+     * @param fileType 图片、视频、语音或文件类型
+     * @param file 本地文件，调用完成前不得修改或删除
+     * @return 消息 ID，上传或发送失败时返回 null
+     */
+    public static String replyMessage(String openId, RT rt, FileType fileType, Path file) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, fileType, file));
+    }
+
 
     /**
      * 发送单聊正在输入通知，默认持续 60 秒

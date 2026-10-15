@@ -16,6 +16,7 @@ import java.util.Set;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.test
  */
+@Deprecated
 public class YunLandSpecialCommand implements CommandExecutor {
 
     private static final Set<String> allowedCommands = Set.of("list", "tps");

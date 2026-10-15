@@ -114,6 +114,17 @@ public final class PluginContext {
         }
     }
 
+    /**
+     * @param path 插件内的绝对路径，例如 {@code /webhook}
+     * @param handler POST 请求处理器，鉴权由插件实现
+     * @return 完整路径 {@code /plugins/<插件名><path>}；插件停用时移除处理器
+     */
+    public synchronized String registerPostRoute(String path, io.javalin.http.Handler handler) {
+        ensureOpen();
+        manage(PluginHttpRoutes.registerPost(description.name(), path, Objects.requireNonNull(handler, "handler")));
+        return "/plugins/" + description.name() + path;
+    }
+
     public synchronized <T extends AutoCloseable> T manage(T resource) {
         ensureOpen();
         resources.push(Objects.requireNonNull(resource, "resource"));

@@ -18,7 +18,10 @@ public enum AnswerCode {
     TOO_FAST(2),
     REPEAT(3),
     NO_PERMISSION(4),
-    ONLY_ADMIN(5);
+    ONLY_ADMIN(5),
+    // 2026-10-14 发现：已屏蔽，love from 工单小助手，之后通过穷举顺手找到了 99 屏蔽失败
+    IGNORED(66),
+    IGNORE_FAILED(99);
 
     private final int code;
 

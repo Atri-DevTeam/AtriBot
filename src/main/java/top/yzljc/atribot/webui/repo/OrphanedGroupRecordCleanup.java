@@ -1,6 +1,7 @@
 package top.yzljc.atribot.webui.repo;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.webui.ChatChanges;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.service.runtime.ThreadManager;
@@ -117,9 +118,14 @@ public final class OrphanedGroupRecordCleanup {
             for (Candidate candidate : candidates) {
                 long deletedForGroup = 0;
                 while (!OfficialGroups.isCached(candidate.groupOpenId())) {
+                    conn.setAutoCommit(false);
+                    ChatConversationRepo.lock(conn, "group", candidate.groupOpenId());
                     stmt.setString(1, candidate.groupOpenId());
                     stmt.setInt(2, DELETE_BATCH_SIZE);
                     int deleted = stmt.executeUpdate();
+                    ChatConversationRepo.refresh(conn, "group", candidate.groupOpenId(), null);
+                    conn.commit();
+                    if (deleted > 0) ChatChanges.publish("group", candidate.groupOpenId(), 0, true);
                     deletedForGroup += deleted;
                     progress.deletedRecords += deleted;
                     progress.publishDelete();

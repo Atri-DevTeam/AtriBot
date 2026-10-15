@@ -4,7 +4,6 @@ import java.util.Map;
 import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.*;
@@ -19,16 +18,10 @@ import top.yzljc.atribot.service.request.OpenApi;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.general
  */
-public class HypixelStatusCommand implements CommandExecutor, SlashCommandExecutor {
+public class HypixelStatusCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender instanceof KookCommandSender) {
-            String[] queryArgs = new String[args.length + 1];
-            queryArgs[0] = "gs";
-            System.arraycopy(args, 0, queryArgs, 1, args.length);
-            return new HypixelCommand().onCommand(sender, command, "hyp", queryArgs);
-        }
 
         if (sender instanceof QQCommandSender user) {
             user.sendMessage(TC.md("> 该指令已弃用，请使用二级指令 " + Markdown.enterCommand("/hyp gs", "/hyp gs") + "查询！"));
@@ -54,20 +47,4 @@ public class HypixelStatusCommand implements CommandExecutor, SlashCommandExecut
         return true;
     }
 
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        sender.sendMessage("正在检查Hypixel服务器状态，请稍候...");
-        var data = PreImageGenerate.dump(OpenApi.get("bot.hypixel.status"), Map.of(), sender.getPlatform());
-        if (data.isError()) {
-            sender.sendMessage(data.errorMessage());
-            return true;
-        }
-        if (data.url() == null) {
-            sender.sendMessage(Identifier.HANDLER_ERROR);
-            return true;
-        }
-        sender.sendEmbed(new DiscordEmbed().image(data.url()));
-        return true;
-    }
 }

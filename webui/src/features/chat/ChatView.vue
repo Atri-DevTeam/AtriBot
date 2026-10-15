@@ -38,6 +38,7 @@
 
         <div class="chatnt-items" @scroll="onConvListScroll">
           <button v-for="c in filteredConvs" :key="convKey(c)"
+                  v-visible-group-avatar="c.type === 'group' ? () => loadGroupAvatar(c.openId) : null"
                   class="cnv" :class="{ active: isActive(c), pinned: isPinned(c) }"
                   @click="selectConv(c)">
             <span class="cnv-avatar" :style="c.type === 'group' ? groupTileStyle(c.openId) : null">
@@ -48,7 +49,7 @@
                 <span>{{ convAvatarText(c) }}</span>
                 <img v-if="userAvatarUrl(c.openId) && !avatarFailed['cnv-' + c.openId]"
                      :src="userAvatarUrl(c.openId)" :alt="convName(c)"
-                     referrerpolicy="no-referrer"
+                     referrerpolicy="no-referrer" loading="lazy"
                      @error="avatarFailed['cnv-' + c.openId] = true"/>
               </template>
               <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -80,7 +81,7 @@
           </button>
           <div v-if="loadingConvs && conversations.length === 0" class="empty-state">正在加载会话</div>
           <div v-else-if="filteredConvs.length === 0" class="empty-state">暂无会话</div>
-          <template v-if="!loadingConvs && conversations.length > 0 && !search">
+          <template v-if="!loadingConvs && conversations.length > 0">
             <div v-if="loadingMoreConvs" class="load-tip">正在加载更多会话…</div>
             <div v-else-if="!hasMoreConvs" class="load-tip">— 没有更多会话了 —</div>
           </template>
@@ -868,19 +869,21 @@ import {LEGACY_TOKEN_KEY, API_BASE} from '../../router.js'
 import {renderAttachmentTags, renderCommandInputTags, renderFaceTags} from '../../shared/lib/messageRender.js'
 import {escapeHtml, renderMarkdown as renderMd} from '../../shared/lib/markdown.js'
 import {mediaUrl} from '../../shared/lib/mediaUrl.js'
-import {hasArkMessage, renderArkSummary} from '../../shared/lib/ark.js'
-import {parseCardMessage, renderCardSummary} from '../../shared/lib/card.js'
+import {hasArkMessage} from '../../shared/lib/ark.js'
+import {parseCardMessage} from '../../shared/lib/card.js'
 import {
   ARK_TEMPLATES, CARD_FIELDS, createArkDraft, createCardDraft, getArkFields,
   isArkDraftValid, isCardDraftValid, buildArkPayload, buildCardPayload
 } from './lib/messageDrafts.js'
 import {parseForwardContent} from '../../shared/lib/forward.js'
 import {vChatImageLayout} from './lib/chatImageLayout.js'
-import {countNewMessages, latestMessageId} from './lib/chatUnread.js'
+import {latestMessageId} from './lib/chatUnread.js'
 import {createChatBottomScroller, createChatPositionKeeper, prefersReducedMotion} from './lib/chatMotion.js'
 import {CHAT_LAYOUT_KEY} from '../../shared/lib/panelLayout.js'
 import botBlue from '../../assets/bot-blue.svg'
 import GroupAvatarRenderer from './lib/GroupAvatarRenderer.js'
+import {vVisibleGroupAvatar} from './lib/visibleGroupAvatar.js'
+import {mergeConversations, mergeMessageChanges} from './lib/chatSync.js'
 import AppShell from '../../shared/components/AppShell.vue'
 import {useBotConfig} from '../../shared/lib/botConfig.js'
 
@@ -906,17 +909,23 @@ const debugGroupId = ref('')
 const groupAvatarUrls = reactive({})
 
 const groupAvatarRenderer = new GroupAvatarRenderer({
-  loadMembers: groupOpenId => api(`/groups/${encodeURIComponent(groupOpenId)}/members`),
+  loadMembers: groupOpenId => api(`/groups/${encodeURIComponent(groupOpenId)}/avatar-members`),
   avatarUrl: memberOpenId => userAvatarUrl(memberOpenId)
 })
 
 const conversations = ref([])
 const pinnedKeys = ref([])
 const loadingConvs = ref(false)
-const CONV_LIST_PAGE_SIZE = 100
+const CONV_LIST_PAGE_SIZE = 40
 const hasMoreConvs = ref(true)
 const loadingMoreConvs = ref(false)
 const search = ref('')
+let searchTimer = null
+let conversationGeneration = 0
+let conversationCursor = ''
+let messageCursor = ''
+const selectedConversation = ref(null)
+const hasOlderMessages = ref(false)
 const active = ref(null)               // { type: 'group' | 'c2c', openId }
 const mobileChatOpen = ref(false)
 
@@ -1069,44 +1078,34 @@ let sseStopped = false
 let sseReconnectTimer = null
 let convRefreshTimer = null
 let convRefreshPending = false
+let convRefreshDelay = 800
 let convRefreshController = null
 let messageRefreshTimer = null
 let messageRefreshPending = false
+let messageRefreshDelay = 200
 let messageRefreshController = null
 
 const activeConv = computed(() =>
-    active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) : null
+    active.value ? conversations.value.find(c => c.type === active.value.type && c.openId === active.value.openId) || selectedConversation.value : null
 )
 
-const filteredConvs = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  const list = q
-      ? conversations.value.filter(c =>
-          convName(c).toLowerCase().includes(q) ||
-          c.openId.toLowerCase().includes(q) ||
-          convPreview(c).toLowerCase().includes(q))
-      : conversations.value
-  // 置顶的浮到最前，两组内部各自保持后端给的时间倒序（Array.sort 在现代引擎里是稳定的）
-  return [...list].sort((a, b) => (isPinned(b) ? 1 : 0) - (isPinned(a) ? 1 : 0))
-})
+const filteredConvs = computed(() => [...conversations.value].sort((a, b) =>
+    Number(isPinned(b)) - Number(isPinned(a))))
 
-function queueGroupAvatars(list) {
-  for (const conversation of list) {
-    if (conversation.type !== 'group' || groupAvatarUrls[conversation.openId]) continue
-    groupAvatarRenderer.enqueue(conversation.openId).then(url => {
-      if (!url) return
-      const stillPresent = conversations.value.some(c => c.type === 'group' && c.openId === conversation.openId)
-      if (stillPresent) groupAvatarUrls[conversation.openId] = url
-    })
+async function loadGroupAvatar(openId) {
+  if (disposed || groupAvatarUrls[openId]) return
+  const url = await groupAvatarRenderer.enqueue(openId)
+  if (!disposed && url && conversations.value.some(c => c.type === 'group' && c.openId === openId)) {
+    groupAvatarUrls[openId] = url
   }
 }
 
-// Queue only when the app ID or visible conversation IDs actually change.
-watch(
-    () => [appId.value, ...filteredConvs.value.map(c => `${c.type}:${c.openId}`)].join('\u0000'),
-    () => queueGroupAvatars(filteredConvs.value),
-    {immediate: true}
-)
+watch(search, () => {
+  conversationGeneration++
+  convRefreshController?.abort()
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => loadConversations({reset: true}), 300)
+})
 
 // 已加载的「非置顶」会话数：置顶会话由后端单独前置、不计入分页偏移，翻页 offset 只按它算
 const nonPinnedLoadedCount = computed(() =>
@@ -1143,7 +1142,7 @@ const memberSections = computed(() => {
 })
 
 const orderedMessages = computed(() => [...messages.value].reverse())
-const hasMore = computed(() => messages.value.length < totalMessages.value)
+const hasMore = computed(() => hasOlderMessages.value)
 
 const canSend = computed(() => {
   if (!active.value || sending.value) return false
@@ -1240,6 +1239,7 @@ onBeforeUnmount(() => {
   if (noticeTimer) clearTimeout(noticeTimer)
   stopComposerResize()
   stopListResize()
+  clearTimeout(searchTimer)
   groupAvatarRenderer.dispose()
 })
 
@@ -1407,75 +1407,100 @@ async function loadConfig() {
 
 // ═══════════════ 会话列表 ═══════════════
 
-async function loadConversations() {
+async function loadConversations({reset = false} = {}) {
   if (disposed) return
-  if (loadingConvs.value || loadingMoreConvs.value) {
-    scheduleConvRefresh()
-    return
-  }
-  if (convRefreshTimer) clearTimeout(convRefreshTimer)
+  const generation = ++conversationGeneration
+  convRefreshController?.abort()
+  clearTimeout(convRefreshTimer)
   convRefreshTimer = null
   convRefreshPending = false
   loadingConvs.value = true
+  loadingMoreConvs.value = false
   const controller = new AbortController()
   convRefreshController = controller
+  const query = search.value.trim()
   try {
-    // 按「当前已加载的非置顶会话数」重取：首屏 100，SSE 刷新时保持已加载深度，
-    // 新消息让某个会话实时跳到顶部、其余整体重排（QQ 式）
-    const depth = Math.min(Math.max(nonPinnedLoadedCount.value, CONV_LIST_PAGE_SIZE), 1000)
-    const data = await api(`/chat/conversations?limit=${depth}&offset=0`, {signal: controller.signal}) || {
-      items: [],
-      hasMore: true
-    }
-    if (disposed) return
+    const depth = reset ? CONV_LIST_PAGE_SIZE : Math.min(Math.max(nonPinnedLoadedCount.value, CONV_LIST_PAGE_SIZE), 1000)
+    const params = new URLSearchParams({limit: String(depth), offset: '0', q: query})
+    const data = await api(`/chat/conversations?${params}`, {signal: controller.signal})
+    if (disposed || generation !== conversationGeneration) return
     conversations.value = data.items || []
     hasMoreConvs.value = data.hasMore !== false
-  } catch { /* 静默失败，保留旧列表 */
+    conversationCursor = data.cursor
+  } catch { /* Keep the last successful list when the request fails. */
   } finally {
-    convRefreshController = null
-    loadingConvs.value = false
-    if (convRefreshPending) scheduleConvRefresh()
+    if (convRefreshController === controller) convRefreshController = null
+    if (generation === conversationGeneration) {
+      loadingConvs.value = false
+      if (convRefreshPending) scheduleConvRefresh()
+    }
   }
 }
 
 async function loadMoreConversations() {
-  if (disposed || loadingMoreConvs.value || !hasMoreConvs.value || loadingConvs.value || search.value.trim()) return
+  if (disposed || loadingMoreConvs.value || !hasMoreConvs.value || loadingConvs.value || convRefreshController) return
+  const generation = conversationGeneration
   loadingMoreConvs.value = true
-  // offset 只统计非置顶会话：置顶的由后端单独前置，不计入分页偏移
-  const offset = nonPinnedLoadedCount.value
   try {
-    const data = await api(`/chat/conversations?limit=${CONV_LIST_PAGE_SIZE}&offset=${offset}`) || {
-      items: [],
-      hasMore: false
-    }
-    if (disposed) return
-    const existing = new Set(conversations.value.map(c => convKey(c)))
-    const fresh = (data.items || []).filter(c => !existing.has(convKey(c)))
-    conversations.value = [...conversations.value, ...fresh]
+    const params = new URLSearchParams({limit: String(CONV_LIST_PAGE_SIZE), offset: String(nonPinnedLoadedCount.value), q: search.value.trim()})
+    const data = await api(`/chat/conversations?${params}`)
+    if (disposed || generation !== conversationGeneration) return
+    const existing = new Set(conversations.value.map(convKey))
+    conversations.value = [...conversations.value, ...(data.items || []).filter(c => !existing.has(convKey(c)))]
     hasMoreConvs.value = data.hasMore !== false
-  } catch { /* ignore */
+  } catch {
   } finally {
-    loadingMoreConvs.value = false
+    if (generation === conversationGeneration) loadingMoreConvs.value = false
+    if (convRefreshPending) scheduleConvRefresh()
+  }
+}
+
+async function refreshConversations() {
+  if (disposed || sseStopped || !convRefreshPending || loadingConvs.value || loadingMoreConvs.value || convRefreshController) return
+  if (!conversationCursor) return loadConversations()
+  convRefreshPending = false
+  const generation = conversationGeneration
+  const controller = new AbortController()
+  convRefreshController = controller
+  try {
+    const params = new URLSearchParams({cursor: conversationCursor, q: search.value.trim()})
+    const data = await api(`/chat/changes?${params}`, {signal: controller.signal})
+    if (disposed || controller.signal.aborted || generation !== conversationGeneration) return
+    if (data.reset) return await loadConversations()
+    const limit = Math.max(CONV_LIST_PAGE_SIZE, nonPinnedLoadedCount.value)
+    const merged = mergeConversations(conversations.value, data.items || [], data.removed || [], pinnedKeys.value, Infinity)
+    if (merged.filter(c => !isPinned(c)).length > limit) hasMoreConvs.value = true
+    conversations.value = mergeConversations(merged, [], [], pinnedKeys.value, limit)
+    if (active.value) {
+      const updated = (data.items || []).find(isActive)
+      if (updated) selectedConversation.value = updated
+    }
+    conversationCursor = data.cursor
+    convRefreshDelay = 800
+  } catch {
+    if (!controller.signal.aborted) {
+      convRefreshPending = true
+      convRefreshDelay = 3000
+    }
+  } finally {
+    if (convRefreshController === controller) convRefreshController = null
     if (convRefreshPending) scheduleConvRefresh()
   }
 }
 
 function onConvListScroll(e) {
   const el = e.currentTarget
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
-    loadMoreConversations()
-  }
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) loadMoreConversations()
 }
 
 function scheduleConvRefresh() {
   if (disposed || sseStopped) return
   convRefreshPending = true
-  if (convRefreshTimer || loadingConvs.value || loadingMoreConvs.value) return
-  // 固定刷新窗口；持续到来的事件只标记补刷，不推迟已排队的请求。
+  if (convRefreshTimer || loadingConvs.value || loadingMoreConvs.value || convRefreshController) return
   convRefreshTimer = setTimeout(() => {
     convRefreshTimer = null
-    if (convRefreshPending) loadConversations()
-  }, 800)
+    refreshConversations()
+  }, convRefreshDelay)
 }
 
 function convKey(c) {
@@ -1548,26 +1573,8 @@ function stripPreviewTags(text) {
 }
 
 function convPreview(c) {
-  let body = ''
-  if (c.lastArk) {
-    body = renderArkSummary(c.lastArk) || '[Ark]'
-  } else if (renderCardSummary(c.lastContent)) {
-    body = renderCardSummary(c.lastContent)
-  } else if (c.lastAttachments) {
-    const atts = parseAttach(c.lastAttachments)
-    if (atts.some(a => a.type === 'image')) body = '[图片]'
-    else if (atts.some(a => a.type === 'video')) body = '[视频]'
-    else if (atts.some(a => a.type === 'voice')) body = '[语音]'
-    else if (atts.some(a => a.type === 'file')) body = '[文件]'
-  }
-  if (!body && c.isMe && parseLegacyMedia(c.lastContent)) body = '[媒体消息]'
-  if (!body) body = stripPreviewTags(c.lastContent) || ' '
-  if (c.isMe) return `${botName.value}: ${body}`
-  if (c.type === 'group') {
-    // 群消息 username 为空时不拿群自身 openId 顶替发送者名字，避免误导
-    const sender = c.lastSenderName || 'Unknown'
-    return `${sender}: ${body}`
-  }
+  const body = c.preview || ' '
+  if (c.type === 'group') return `${c.lastSenderName || 'Unknown'}: ${body}`
   return body
 }
 
@@ -1639,6 +1646,15 @@ async function openConversation(c) {
   }
   if (!mayLeaveSettings()) return
   active.value = {type: c.type, openId: c.openId}
+  selectedConversation.value = c
+  messageCursor = ''
+  hasOlderMessages.value = false
+  if (!c.name) {
+    const params = new URLSearchParams({type: c.type, openId: c.openId})
+    api(`/chat/conversation?${params}`).then(value => {
+      if (!disposed && isActive(c) && value) selectedConversation.value = value
+    }).catch(() => {})
+  }
   resetProfile()
   messageScroller.cancel()
   clearReferencePosition()
@@ -1751,6 +1767,8 @@ async function loadLatestMessages({animate = false} = {}) {
     if (animate) markArrivingMessages(data.records || [])
     else arrivingMessageIds.clear()
     messages.value = data.records || []
+    messageCursor = data.cursor
+    hasOlderMessages.value = messages.value.length === pageSize
     totalMessages.value = data.total || 0
     knownLatestMessageId = latestMessageId(messages.value)
     viewingHistoryPage = false
@@ -1775,7 +1793,8 @@ async function loadMore() {
   const el = messageListRef.value
   const nextPage = currentPage.value + 1
   try {
-    const data = await api(messagesPath(nextPage))
+    const before = messages.value.at(-1)?.id
+    const data = await api(`${messagesBase()}?before=${encodeURIComponent(before)}&pageSize=${pageSize}`)
     if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     const viewportTop = el?.getBoundingClientRect().top || 0
     const anchor = el && [...el.querySelectorAll('.qm')].find(node => node.getBoundingClientRect().bottom > viewportTop)
@@ -1783,6 +1802,7 @@ async function loadMore() {
     if (anchor) messagePosition.hold(anchor, anchorTop - viewportTop - el.clientTop)
     const seen = new Set(messages.value.map(message => message.id))
     currentPage.value = nextPage
+    hasOlderMessages.value = (data.records || []).length === pageSize
     messages.value = [...messages.value, ...(data.records || []).filter(message => !seen.has(message.id))]
     // 加载提示与历史记录在同一次布局更新中处理，避免提示消失后再次推移内容。
     loadingMore.value = false
@@ -2385,6 +2405,11 @@ async function jumpToReference(message) {
     // 请求期间可能已经切走了会话，翻页结果不能再往新会话里塞
     if (currentConvKey() !== targetKey || seq !== convLoadSeq) return
     messages.value = data.records || []
+    if (page === 1) {
+      messageCursor = data.cursor
+      knownLatestMessageId = latestMessageId(messages.value)
+    }
+    hasOlderMessages.value = messages.value.length === pageSize
     totalMessages.value = data.total || totalMessages.value
     currentPage.value = page
     viewingHistoryPage = page > 1
@@ -2417,43 +2442,45 @@ function scheduleMessageRefresh() {
   messageRefreshTimer = setTimeout(() => {
     messageRefreshTimer = null
     refreshActiveMessages()
-  }, 200)
+  }, messageRefreshDelay)
 }
 
 async function refreshActiveMessages() {
   if (disposed || sseStopped || !active.value || !messageRefreshPending || messageRefreshController || loadingMessages.value) return
   messageRefreshPending = false
+  if (!messageCursor) return loadLatestMessages()
   const targetKey = currentConvKey()
   const seq = convLoadSeq
   const controller = new AbortController()
   messageRefreshController = controller
   try {
-    const data = await api(messagesPath(1), {signal: controller.signal})
+    const data = await api(`${messagesBase()}?since=${encodeURIComponent(messageCursor)}`, {signal: controller.signal})
     if (disposed || controller.signal.aborted || seq !== convLoadSeq || currentConvKey() !== targetKey) return
-    const latest = data.records || []
-    const count = countNewMessages(latest, knownLatestMessageId, totalMessages.value, data.total || 0)
+    if (data.reset) return await loadLatestMessages()
+    const changed = data.records || []
+    const count = changed.filter(m => BigInt(m.id) > knownLatestMessageId).length
     const follow = !messagePosition.active && !viewingHistoryPage && (messageScroller.running || isNearBottom())
-    const seen = new Set(messages.value.map(m => m.id))
-    const fresh = latest.filter(m => !seen.has(m.id))
-    if (follow) markArrivingMessages(fresh)
-    const latestId = latestMessageId(latest)
+    if (follow) markArrivingMessages(changed)
+    messages.value = mergeMessageChanges(messages.value, changed, knownLatestMessageId, viewingHistoryPage)
+    const latestId = latestMessageId(changed)
     if (latestId > knownLatestMessageId) knownLatestMessageId = latestId
     totalMessages.value = data.total ?? totalMessages.value
-    if (viewingHistoryPage) {
-      newMessageCount.value += count
-      return
-    }
-    if (fresh.length > 0) {
+    messageCursor = data.cursor
+    messageRefreshDelay = 200
+    if (!follow) newMessageCount.value += count
+    if (changed.length > 0) {
       followingLatest = follow
-      messages.value = [...fresh, ...messages.value]
-      if (!follow) newMessageCount.value += count
       await nextTick()
       if (disposed || controller.signal.aborted || currentConvKey() !== targetKey || seq !== convLoadSeq) return
       if (follow && followingLatest) scrollToBottom('smooth')
     }
-  } catch { /* 保留当前消息，后续事件可再次触发刷新。 */
+  } catch {
+    if (!controller.signal.aborted) {
+      messageRefreshPending = true
+      messageRefreshDelay = 3000
+    }
   } finally {
-    messageRefreshController = null
+    if (messageRefreshController === controller) messageRefreshController = null
     if (messageRefreshPending) scheduleMessageRefresh()
   }
 }
@@ -2501,6 +2528,11 @@ function connectSse() {
   if (eventSource) eventSource.close()
   const source = new EventSource(`${API_BASE}/events`, {withCredentials: true})
   eventSource = source
+  source.onopen = () => {
+    if (disposed || eventSource !== source) return
+    scheduleConvRefresh()
+    scheduleMessageRefresh()
+  }
   source.onmessage = (e) => {
     if (disposed || eventSource !== source) return
     try {
@@ -2613,7 +2645,8 @@ async function sendMessage() {
     pastePreview.value = null
     cancelReply()
     wakeupMode.value = false
-    await loadLatestMessages({animate: true})
+    if (viewingHistoryPage || !messageCursor) await loadLatestMessages({animate: true})
+    else scheduleMessageRefresh()
     scheduleConvRefresh()
   } catch (error) {
     showNotice(error.message || '发送消息失败')

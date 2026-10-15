@@ -5,5 +5,7 @@
   "command.test.no_permission": "你是谁？",
   "command.unsupported": "当前场景下暂不支持该指令！",
   "command.error": "执行指令时出现错误，请向开发者报告此问题！",
-  "command.error.template": "执行指令时出现错误：{error_message}，请向开发者报告此问题！"
+  "command.error.template": "执行指令时出现错误：{error_message}，请向开发者报告此问题！",
+  "command.mc.noplayer": "笨蛋喵，你没有绑定用户信息，请指定一个玩家或使用/bind完成绑定。",
+  "command.mc.querying": "正在查询目标玩家数据，请稍等片刻..."
 }

@@ -22,6 +22,8 @@ import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ChatChanges;
+import top.yzljc.atribot.webui.repo.GroupAvatarRepo;
 import top.yzljc.atribot.webui.repo.ChatPinnedRepo;
 import top.yzljc.atribot.webui.repo.OrphanedGroupRecordCleanup;
 
@@ -53,41 +55,74 @@ public class GroupController {
 
     /** 「聊天」页会话列表：群聊 + 私聊合并，各带最后一条消息预览。置顶会话始终前置并从分页排除。 */
     public static void listChatConversations(Context ctx) {
-        int limit = parseInt(ctx.queryParam("limit"), 100);
-        int offset = parseInt(ctx.queryParam("offset"), 0);
-
+        String cursor = ChatChanges.cursor();
+        int limit = Math.max(1, Math.min(parseInt(ctx.queryParam("limit"), 40), 1000));
+        int offset = Math.max(0, parseInt(ctx.queryParam("offset"), 0));
+        String query = ctx.queryParam("q");
+        query = query == null ? "" : query.trim();
         List<String> pinnedKeys = ChatPinnedRepo.list();
         Set<String> pinnedGroups = new LinkedHashSet<>();
         Set<String> pinnedC2c = new LinkedHashSet<>();
         for (String key : pinnedKeys) {
-            int colon = key.indexOf(':');
-            if (colon > 0 && colon < key.length() - 1) {
-                String type = key.substring(0, colon);
-                String openId = key.substring(colon + 1);
-                if ("group".equals(type)) pinnedGroups.add(openId);
-                else if ("c2c".equals(type)) pinnedC2c.add(openId);
+            if (key.startsWith("group:")) pinnedGroups.add(key.substring(6));
+            else if (key.startsWith("c2c:")) pinnedC2c.add(key.substring(4));
+        }
+        List<QQChatContentRecord.ConversationRecord> items = new ArrayList<>();
+        for (var record : QQChatContentRecord.fetchConversationRecords(pinnedKeys)) {
+            if (query.isEmpty() || record.matches(query)) items.add(record);
+        }
+        boolean hasMore;
+        if (query.isEmpty()) {
+            var page = QQChatContentRecord.fetchConversations(limit, offset, pinnedGroups, pinnedC2c);
+            items.addAll(page.items());
+            hasMore = page.hasMore();
+        } else {
+            int skipped = 0;
+            int matched = 0;
+            int scanOffset = 0;
+            hasMore = false;
+            boolean done = false;
+            while (!done) {
+                var page = QQChatContentRecord.fetchConversations(200, scanOffset, pinnedGroups, pinnedC2c);
+                for (var record : page.items()) {
+                    if (!record.matches(query)) continue;
+                    if (skipped++ < offset) continue;
+                    if (matched++ == limit) { hasMore = true; done = true; break; }
+                    items.add(record);
+                }
+                if (!page.hasMore()) break;
+                scanOffset += 200;
             }
         }
-
-        // 置顶会话单独取最新一条消息并前置（按置顶顺序），分页里排除它们避免重复
-        List<QQChatContentRecord.ConversationRecord> pinned = new ArrayList<>();
-        for (String groupOpenId : pinnedGroups) {
-            var c = QQChatContentRecord.fetchConversation("group", groupOpenId);
-            if (c != null) pinned.add(c);
-        }
-        for (String userOpenId : pinnedC2c) {
-            var c = QQChatContentRecord.fetchConversation("c2c", userOpenId);
-            if (c != null) pinned.add(c);
-        }
-
-        var page = QQChatContentRecord.fetchConversations(limit, offset, pinnedGroups, pinnedC2c);
-        List<QQChatContentRecord.ConversationRecord> items = new ArrayList<>(pinned);
-        items.addAll(page.items());
-        ctx.json(Result.success(new ConversationListResult(items, page.hasMore())));
+        ctx.json(Result.success(new ConversationListResult(items, hasMore, cursor)));
     }
 
-    public record ConversationListResult(List<QQChatContentRecord.ConversationRecord> items, boolean hasMore) {
+    public static void listChatChanges(Context ctx) {
+        var batch = ChatChanges.since(ctx.queryParam("cursor"));
+        var keys = batch.changes().stream().map(ChatChanges.Change::key).distinct().toList();
+        if (batch.reset() || keys.size() > 256 || batch.changes().stream().anyMatch(ChatChanges.Change::reset)) {
+            ctx.json(Result.success(new ConversationChanges(List.of(), List.of(), batch.cursor(), true)));
+            return;
+        }
+        String query = ctx.queryParam("q");
+        var items = QQChatContentRecord.fetchConversationRecords(keys).stream()
+                .filter(record -> query == null || query.isBlank() || record.matches(query.trim())).toList();
+        var present = items.stream().map(record -> record.type() + ":" + record.openId()).collect(java.util.stream.Collectors.toSet());
+        ctx.json(Result.success(new ConversationChanges(items, keys.stream().filter(key -> !present.contains(key)).toList(), batch.cursor(), false)));
     }
+
+    public static void getChatConversation(Context ctx) {
+        String type = ctx.queryParam("type");
+        String id = ctx.queryParam("openId");
+        ctx.json(Result.success(QQChatContentRecord.fetchConversation(type, id)));
+    }
+
+    public static void groupAvatarMembers(Context ctx) {
+        ctx.json(Result.success(GroupAvatarRepo.members(ctx.pathParam("groupOpenId"))));
+    }
+
+    public record ConversationListResult(List<QQChatContentRecord.ConversationRecord> items, boolean hasMore, String cursor) {}
+    public record ConversationChanges(List<QQChatContentRecord.ConversationRecord> items, List<String> removed, String cursor, boolean reset) {}
 
     public static void listChatPinned(Context ctx) {
         ctx.json(Result.success(ChatPinnedRepo.list()));
@@ -111,9 +146,14 @@ public class GroupController {
 
     public static void fetchGroupMessages(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
+        if (ctx.queryParam("since") != null) {
+            ctx.json(Result.success(QQChatContentRecord.fetchMessageChanges("group", groupOpenId, ctx.queryParam("since"))));
+            return;
+        }
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
-        ctx.json(Result.success(QQChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize)));
+        ctx.json(Result.success(QQChatContentRecord.fetchGroupMessages(groupOpenId, page, pageSize,
+                ctx.queryParam("before") == null ? null : parseLong(ctx.queryParam("before"), 0))));
     }
 
     public static void clearGroupMessages(Context ctx) {

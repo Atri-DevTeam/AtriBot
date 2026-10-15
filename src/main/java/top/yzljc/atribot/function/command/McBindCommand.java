@@ -2,7 +2,6 @@ package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.auth.AtriAccount;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
-import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;

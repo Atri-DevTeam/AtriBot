@@ -48,7 +48,20 @@
                   </option>
                 </optgroup>
               </select>
+              <a class="debug-doc-link" :href="presetDocumentation" target="_blank" rel="noopener noreferrer">官方文档 ↗</a>
               <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
+            </div>
+
+            <div v-if="currentPreset?.samples?.length" class="debug-preset-line">
+              <span class="debug-preset-label">样例</span>
+              <select v-model="selectedSample" class="debug-preset" aria-label="请求样例" @change="applySample">
+                <option :value="-1">默认请求</option>
+                <option v-for="(sample, index) in currentPreset.samples" :key="sample.label" :value="index">{{ sample.label }}</option>
+              </select>
+            </div>
+            <div v-if="currentPreset" class="debug-preset-note">
+              <span v-if="presetNote">{{ presetNote }}<br/></span>
+              路径占位符自动替换；Headers 和 Body 原样发送，示例中的 ID、文件数据和时间需手动填写
             </div>
 
             <div class="debug-template-line">
@@ -215,390 +228,12 @@ import router from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
 import {useBotConfig} from '../../shared/lib/botConfig.js'
 
-import {officialApiPresets} from './data/officialApiPresets.js'
+import {officialApiPresets, officialApiDocsUrl} from './data/officialApiPresets.js'
+import {messageExamples} from './data/messageExamples.js'
 
 const {loadBotConfig} = useBotConfig()
 
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
-const sampleKeyboard = {
-  content: {
-    rows: [
-      {
-        buttons: [
-          {
-            id: 'button-1',
-            render_data: {
-              label: '按钮',
-              visited_label: '已点击',
-              style: 1
-            },
-            action: {
-              type: 2,
-              data: '/help',
-              enter: true,
-              permission: {
-                type: 2
-              },
-              unsupport_tips: '当前客户端版本不支持此按钮'
-            }
-          }
-        ]
-      }
-    ]
-  }
-}
-const messageExamples = [
-  {
-    key: 'share-link',
-    label: '机器人分享链接',
-    method: 'POST',
-    path: '/v2/generate_url_link',
-    body: {
-      callback_data: 'atrimeow'
-    }
-  },
-  {
-    key: 'bot-profile',
-    label: '机器人详情',
-    method: 'GET',
-    path: '/users/@me',
-    body: null
-  },
-  {
-    key: 'group-info',
-    label: '群聊 /info - 获取群基础信息',
-    method: 'GET',
-    path: '/v2/groups/{group_openid}/info',
-    body: null
-  },
-  {
-    key: 'group-bot-state',
-    label: '群聊 /bot_state - 获取机器人群内状态',
-    method: 'GET',
-    path: '/v2/groups/{group_openid}/bot_state',
-    body: null
-  },
-  {
-    key: 'group-active-text',
-    label: '群聊 /messages - 主动文本',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 0,
-      content: 'hello'
-    }
-  },
-  {
-    key: 'private-active-text',
-    label: '私聊 /messages - 主动文本',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 0,
-      content: 'hello'
-    }
-  },
-  {
-    key: 'group-active-ref-text',
-    label: '群聊 /messages - 引用文本',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 0,
-      content: 'hello',
-      message_reference: {
-        message_id: 'REFIDX_xxx'
-      }
-    }
-  },
-  {
-    key: 'group-active-markdown',
-    label: '群聊 /messages - 主动 Markdown',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      markdown: {
-        content: '# hello'
-      }
-    }
-  },
-  {
-    key: 'private-active-markdown',
-    label: '私聊 /messages - 主动 Markdown',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 2,
-      markdown: {
-        content: '# hello'
-      }
-    }
-  },
-  {
-    key: 'group-active-markdown-keyboard',
-    label: '群聊 /messages - Markdown + 按钮',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      markdown: {
-        content: '# hello'
-      },
-      keyboard: sampleKeyboard
-    }
-  },
-  {
-    key: 'private-active-markdown-keyboard',
-    label: '私聊 /messages - Markdown + 按钮',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 2,
-      markdown: {
-        content: '# hello'
-      },
-      keyboard: sampleKeyboard
-    }
-  },
-  {
-    key: 'group-reply-text',
-    label: '群聊 /messages - 被动回复文本',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 0,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      content: 'reply'
-    }
-  },
-  {
-    key: 'private-reply-text',
-    label: '私聊 /messages - 被动回复文本',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 0,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      content: 'reply'
-    }
-  },
-  {
-    key: 'group-reply-markdown',
-    label: '群聊 /messages - 被动回复 Markdown',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      markdown: {
-        content: '<qqbot-at-user id="{user_openid}" />\n# reply'
-      }
-    }
-  },
-  {
-    key: 'private-reply-markdown',
-    label: '私聊 /messages - 被动回复 Markdown',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 2,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      markdown: {
-        content: '# reply'
-      }
-    }
-  },
-  {
-    key: 'group-reply-markdown-keyboard',
-    label: '群聊 /messages - 回复 Markdown + 按钮',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      markdown: {
-        content: '<qqbot-at-user id="{user_openid}" />\n# reply'
-      },
-      keyboard: sampleKeyboard
-    }
-  },
-  {
-    key: 'private-reply-markdown-keyboard',
-    label: '私聊 /messages - 回复 Markdown + 按钮',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 2,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      markdown: {
-        content: '# reply'
-      },
-      keyboard: sampleKeyboard
-    }
-  },
-  {
-    key: 'group-event-markdown',
-    label: '群聊 /messages - 事件 Markdown',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      event_id: 'EVENT_ID',
-      markdown: {
-        content: '# event reply'
-      }
-    }
-  },
-  {
-    key: 'group-event-markdown-keyboard',
-    label: '群聊 /messages - 事件 Markdown + 按钮',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 2,
-      event_id: 'EVENT_ID',
-      markdown: {
-        content: '# event reply'
-      },
-      keyboard: sampleKeyboard
-    }
-  },
-  {
-    key: 'private-upload-image-url',
-    label: '私聊 /files - 上传图片 URL',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/files',
-    body: {
-      file_type: 1,
-      url: 'https://example.com/a.png',
-      srv_send_msg: false
-    }
-  },
-  {
-    key: 'private-upload-image-base64',
-    label: '私聊 /files - 上传图片 Base64',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/files',
-    body: {
-      file_type: 1,
-      file_data: 'BASE64_DATA',
-      srv_send_msg: false
-    }
-  },
-  {
-    key: 'group-upload-image-url',
-    label: '群聊 /files - 上传图片 URL',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/files',
-    body: {
-      file_type: 1,
-      url: 'https://example.com/a.png',
-      srv_send_msg: false
-    }
-  },
-  {
-    key: 'group-upload-image-base64',
-    label: '群聊 /files - 上传图片 Base64',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/files',
-    body: {
-      file_type: 1,
-      file_data: 'BASE64_DATA',
-      srv_send_msg: false
-    }
-  },
-  {
-    key: 'group-upload-file-url',
-    label: '群聊 /files - 上传文件 URL',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/files',
-    body: {
-      file_type: 1,
-      url: 'https://example.com/file.zip',
-      srv_send_msg: false
-    }
-  },
-  {
-    key: 'private-send-media',
-    label: '私聊 /messages - 发送媒体 file_info',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 7,
-      media: {
-        file_info: 'FILE_INFO'
-      }
-    }
-  },
-  {
-    key: 'group-send-media',
-    label: '群聊 /messages - 发送媒体 file_info',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 7,
-      media: {
-        file_info: 'FILE_INFO'
-      }
-    }
-  },
-  {
-    key: 'private-reply-media',
-    label: '私聊 /messages - 回复媒体 file_info',
-    method: 'POST',
-    path: '/v2/users/{user_openid}/messages',
-    body: {
-      msg_type: 7,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      media: {
-        file_info: 'FILE_INFO'
-      }
-    }
-  },
-  {
-    key: 'group-reply-media',
-    label: '群聊 /messages - 回复媒体 file_info',
-    method: 'POST',
-    path: '/v2/groups/{group_openid}/messages',
-    body: {
-      msg_type: 7,
-      msg_id: 'MESSAGE_ID',
-      msg_seq: 1,
-      media: {
-        file_info: 'FILE_INFO'
-      }
-    }
-  },
-  {
-    key: 'private-recall-message',
-    label: '私聊 /messages - 撤回消息',
-    method: 'DELETE',
-    path: '/v2/users/{user_openid}/messages/{message_id}',
-    body: null
-  },
-  {
-    key: 'group-recall-message',
-    label: '群聊 /messages - 撤回消息',
-    method: 'DELETE',
-    path: '/v2/groups/{group_openid}/messages/{message_id}',
-    body: null
-  },
-  {
-    key: 'group-member-info',
-    label: '群聊 /members - 获取成员信息',
-    method: 'GET',
-    path: '/v2/groups/{group_openid}/members/{user_openid}',
-    body: null
-  }
-]
 
 const debugPresets = [
   ...officialApiPresets,
@@ -609,6 +244,7 @@ const debugPresets = [
 
 const sidebarOpen = ref(false)
 const selectedPreset = ref('')
+const selectedSample = ref(-1)
 const method = ref('GET')
 const path = ref('/gateway')
 const headers = ref('')
@@ -625,6 +261,13 @@ const queryParams = ref([])
 const templateGroupOpenId = ref('')
 const templateUserOpenId = ref('')
 const templateValues = ref({})
+
+const currentPreset = computed(() => debugPresets.find(item => item.key === selectedPreset.value))
+const currentOfficialPreset = computed(() => officialApiPresets.find(item =>
+    item.method === currentPreset.value?.method && item.path.split('?')[0] === currentPreset.value?.path.split('?')[0]))
+const presetDocumentation = computed(() => currentPreset.value?.samples?.[selectedSample.value]?.documentation
+    || currentOfficialPreset.value?.documentation || officialApiDocsUrl)
+const presetNote = computed(() => currentPreset.value?.note || currentOfficialPreset.value?.note || '')
 
 const groupedPresets = computed(() => {
   const groups = new Map()
@@ -881,8 +524,9 @@ function closeEditor() {
 }
 
 function applyPreset() {
-  const preset = debugPresets.find(item => item.key === selectedPreset.value)
+  const preset = currentPreset.value
   if (!preset) return
+  selectedSample.value = -1
   method.value = preset.method
   path.value = preset.path
   body.value = preset.body == null ? '' : JSON.stringify(preset.body, null, 2)
@@ -893,8 +537,19 @@ function applyPreset() {
   result.value = null
 }
 
+function applySample() {
+  const preset = currentPreset.value
+  if (!preset) return
+  const sample = selectedSample.value < 0 ? preset : preset.samples[selectedSample.value]
+  if (!sample) return
+  body.value = sample.body == null ? '' : JSON.stringify(sample.body, null, 2)
+  requestTab.value = sample.body == null ? 'params' : 'body'
+  error.value = ''
+}
+
 function resetRequest() {
   selectedPreset.value = ''
+  selectedSample.value = -1
   method.value = 'GET'
   path.value = '/gateway'
   headers.value = ''

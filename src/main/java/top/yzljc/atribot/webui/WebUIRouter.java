@@ -75,6 +75,9 @@ public class WebUIRouter {
         server.post("/webui/api/auth/logout", AuthController::logout);
         server.get("/webui/api/auth/verify", AuthController::verifyToken);
         server.get("/webui/api/chat/conversations", GroupController::listChatConversations);
+        server.get("/webui/api/chat/conversation", GroupController::getChatConversation);
+        server.get("/webui/api/chat/changes", GroupController::listChatChanges);
+        server.get("/webui/api/groups/{groupOpenId}/avatar-members", GroupController::groupAvatarMembers);
         server.get("/webui/api/chat/pinned", GroupController::listChatPinned);
         server.post("/webui/api/chat/pinned", GroupController::setChatPinned);
         server.post("/webui/api/chat/cleanup/orphaned-groups", GroupController::startOrphanedGroupRecordCleanup);

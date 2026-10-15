@@ -45,11 +45,11 @@ ugc-api-url: "https://images.example.com"
 | --- | --- |
 | `qq` | `enabled`、`app-id`、`client-secret`、`api-base-url`、`connection-mode`、`webhook-path` |
 | `napcat` | `enabled`、`server-url`、`bot-uin`、`admin-uins` |
-| `discord` | `enabled`、`bot-token`、`api-base-url`、`intents` |
-| `kook` | `enabled`、`bot-token`、`verify-token`、`encrypt-key`、`webhook-path`、`admin-ids` |
 | `tencent-channel` | `enabled`、`cli-path`、`login-token`、`timeout-seconds` |
 
 平台接入详见 [平台与消息](framework/platforms.md)。`tencent-channel` 使用外部 CLI 登录第二账号，单独说明见 [QQ 频道第二账号](integrations/tencent-channel.md)
+
+Discord 与 KOOK 已移至独立插件，主配置不再读取 `discord`、`kook` 节点。分别使用 `plugins/platform-discord/config.yml` 和 `plugins/platform-kook/config.yml`，迁移步骤见 [Discord](../platform-discord/README.md)、[KOOK](../platform-kook/README.md)
 
 ## 页面与服务
 

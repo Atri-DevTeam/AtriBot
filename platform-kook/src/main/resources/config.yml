@@ -1,0 +1,8 @@
+bot-token: ""
+verify-token: ""
+encrypt-key: ""
+api-base-url: "https://www.kookapp.cn/api/v3"
+# 完整回调路径为 /plugins/platform-kook/webhook
+webhook-path: "/webhook"
+# 机器人管理员的 KOOK 用户 ID，与服务器角色无关
+admin-ids: []

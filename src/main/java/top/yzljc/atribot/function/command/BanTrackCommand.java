@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,7 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.chat.official.button.Button;
@@ -15,6 +15,7 @@ import top.yzljc.atribot.chat.official.button.ButtonStyle;
 import top.yzljc.atribot.chat.official.button.ButtonType;
 import top.yzljc.atribot.chat.official.button.Keyboard;
 import top.yzljc.atribot.command.*;
+import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.platform.Platform;
@@ -27,29 +28,11 @@ import top.yzljc.atribot.service.request.OpenApi;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.general
  */
-public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label, SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        return handle(sender, args);
-    }
+public class BanTrackCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (sender instanceof KookCommandSender kook) {
-            if (isCoolingDown(kook)) return true;
-            String window = resolveType(args);
-            if (args.length > 1 || !isValidType(window)) {
-                kook.sendMessage("用法: /bantrack [10min 至 3mo 之间的时间范围]");
-                return true;
-            }
-            ImageDTO data = requestData(window, kook.getPlatform());
-            if (data.isError() || data.url() == null) {
-                kook.sendMessage(data.isError() ? data.errorMessage() : "图片地址无效，请稍后重试。");
-            } else kook.sendMessage(ImageComponent.imageOf(data.url()).setText("当前查询范围: " + window));
-            return true;
-        }
 
         if (sender instanceof QQGuildCommandSender guildSender) {
             return handle(guildSender, args);
@@ -80,7 +63,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
             return true;
         }
 
-        ImageDTO data = requestData(resolveType(args));
+        ImageDTO data = requestData(resolveType(args), null, sender.getUserId());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;
@@ -147,36 +130,6 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
         return true;
     }
 
-    public static boolean handle(DiscordCommandSender sender, SlashCommandArguments args) {
-        if (isCoolingDown(sender)) {
-            return true;
-        }
-
-        String window = "30min";
-        if (args.getOption("window") != null) {
-            window = args.getString("window");
-        }
-
-        if (!isValidType(window)) {
-            sender.sendMessage("参数错误: 查询时长必须为 10 分钟至 3 个月之间的时间段，支持的单位包括分钟 (min/m)、小时 (h)、天 (d)、周 (w) 和月 (mo)");
-            return true;
-        }
-
-        ImageDTO data = requestData(window, sender.getPlatform());
-        if (data.isError()) {
-            sender.sendMessage(data.errorMessage());
-            return true;
-        }
-        if (data.url() == null) {
-            sender.sendMessage("数据获取失败: 发生未知错误!");
-            return true;
-        }
-
-        String tip = "当前查询范围: " + window
-                + "\n调用方式: /bantracker <30min|1h|3h|24h|7d|30d>";
-        sender.sendEmbed(new DiscordEmbed().image(data.url()).title(tip));
-        return true;
-    }
 
     private static String resolveType(String[] args) {
         if (args.length < 1) {
@@ -185,7 +138,7 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
         return args[0].toLowerCase();
     }
 
-    private static boolean isValidType(String window) {
+    public static boolean isValidType(String window) {
 
         String type = window.toLowerCase();
 
@@ -227,11 +180,18 @@ public class BanTrackCommand implements CommandExecutor, SlashCommandExecutor {
     }
 
     private static ImageDTO requestData(String type, Platform platform) {
-        String url = OpenApi.get("bot.hypixel.bantracker") + "?" + System.currentTimeMillis();
-        return PreImageGenerate.dump(url, Map.of("window", type), platform);
+        return requestData(type, platform, null);
     }
 
-    private static boolean isCoolingDown(CommandSender sender) {
+    private static ImageDTO requestData(String type, Platform platform, String userId) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("window", type);
+        BackgroundService.applyApprovedBackground(request, userId);
+        String url = OpenApi.get("bot.hypixel.bantracker") + "?" + System.currentTimeMillis();
+        return PreImageGenerate.dump(url, request, platform);
+    }
+
+    public static boolean isCoolingDown(CommandSender sender) {
         if (sender.hasPermission()) return false;
         long now = System.currentTimeMillis();
         AtomicLong remainingMillis = new AtomicLong();

@@ -12,6 +12,12 @@ import top.yzljc.atribot.service.request.HttpService;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.time.Duration;
 
 @Slf4j
 final class OfficialMediaUploader {
@@ -67,6 +73,41 @@ final class OfficialMediaUploader {
 
     public MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt) {
         return buildFileRequest(uploadUrl, fileType, value, logLabel, rt, false);
+    }
+
+    /**
+     * @param uploadUrl 群聊或单聊的 files 接口地址
+     * @param fileType  文件类型
+     * @param file      本地文件；上传完成前不得修改或删除
+     * @param logLabel  日志场景
+     * @param rt        回复来源，主动消息传入 null
+     * @return 媒体消息体，上传失败时返回 null
+     */
+    public MessageBody buildFileRequest(String uploadUrl, FileType fileType, Path file, String logLabel, RT rt) {
+        if (ChatService.isEmergencyPaused()) return pausedMediaFallback(uploadUrl, logLabel, rt);
+        try {
+            String filename = file.getFileName().toString();
+            JsonNode uploaded = transfer(logLabel).upload(uploadUrl, fileType, file, filename);
+            MessageBody request = bodyFactory.media(fileInfo(uploaded), rt);
+            var attachments = objectMapper.createArrayNode();
+            var attachment = attachments.addObject();
+            attachment.put("filename", filename);
+            attachment.put("content_type", switch (fileType) {
+                case IMAGE -> guessImageContentType(filename);
+                case AUDIO -> "voice";
+                case VIDEO -> "video/mp4";
+                case FILE -> "file";
+            });
+            if (uploaded.hasNonNull("raw_url")) attachment.put("url", uploaded.get("raw_url").asText());
+            request.setRecordAttachments(attachments.toString());
+            return request;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (Exception e) {
+            log.error("{}本地文件上传失败: {}", logLabel, e.getMessage());
+            return null;
+        }
     }
 
     public MessageBody buildFileRequest(String uploadUrl, FileType fileType, String value, String logLabel, RT rt,
@@ -130,6 +171,19 @@ final class OfficialMediaUploader {
     }
 
     private String uploadImageFile(String uploadUrl, ImageType type, String value, String logLabel) {
+        if (type == ImageType.BASE64) {
+            try {
+                String base64 = OfficialFileTransfer.normalizeBase64(value);
+                String filename = filenameForImage(type, value, guessBase64ImageContentType(base64));
+                return fileInfo(transfer(logLabel).uploadBase64(uploadUrl, FileType.IMAGE, value, filename));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            } catch (Exception e) {
+                log.error("{}图片数据上传失败: {}", logLabel, e.getMessage());
+                return null;
+            }
+        }
         Map<String, Object> uploadData = new HashMap<>();
         uploadData.put("file_type", 1);
         uploadData.put(type.getDataKey(), value);
@@ -151,53 +205,106 @@ final class OfficialMediaUploader {
 
     private String uploadAndGetFileInfo(String uploadUrl, Map<String, Object> uploadData, String logLabel,
                                         boolean requireMedia) {
-        String uploadJson = null;
-        String traceId = null;
         try {
-            uploadJson = objectMapper.writeValueAsString(uploadData);
-            traceId = OfficialSendLogRepository.recordSend(logLabel + "上传", "POST", uploadUrl, uploadJson);
-            String uploadRes;
-            if (requireMedia) {
-                var response = HttpService.postJsonDetailed(uploadUrl, uploadJson,
-                        "Authorization", "QQBot " + tokenManager.getAccessToken());
-                uploadRes = response.body();
-                if (response.status() < 200 || response.status() >= 300) {
-                    OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
-                            response.status(), uploadRes, "音频上传 HTTP 状态异常");
-                    throw QQMessageSendException.fromResponse(objectMapper, uploadRes,
-                            "音频上传失败，HTTP " + response.status());
-                }
-            } else {
-                uploadRes = HttpService.postJsonForString(uploadUrl, uploadJson,
-                        "Authorization", "QQBot " + tokenManager.getAccessToken());
-            }
-
-            if (uploadRes == null || uploadRes.isBlank()) {
-                OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
-                        null, uploadRes, "服务器返回为空");
-                log.error("{}上传失败，服务器返回为空", logLabel);
-                return null;
-            }
-
-            JsonNode resNode = objectMapper.readTree(uploadRes);
-            if (!resNode.has("file_info")) {
-                OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
-                        null, uploadRes, "未返回 file_info");
-                log.error("{}上传失败，未返回 file_info: {}", logLabel, uploadRes);
-                if (requireMedia)
-                    throw QQMessageSendException.fromResponse(objectMapper, uploadRes, "音频上传未返回 file_info");
-                return null;
-            }
-            OfficialSendLogRepository.recordResponse(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
-                    null, uploadRes);
-            return resNode.get("file_info").asText();
+            return fileInfo(postUpload(uploadUrl, uploadData, logLabel));
         } catch (QQMessageSendException e) {
-            throw e;
+            if (requireMedia) throw e;
+            log.error("{}上传失败: {}", logLabel, e.getMessage());
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
         } catch (Exception e) {
-            OfficialSendLogRepository.recordError(traceId, logLabel + "上传", "POST", uploadUrl, uploadJson,
-                    null, null, "上传异常: " + e.getMessage());
             log.error("{}上传异常", logLabel, e);
             return null;
+        }
+    }
+
+    private OfficialFileTransfer transfer(String logLabel) {
+        return new OfficialFileTransfer((url, data) -> postUpload(url, data, logLabel),
+                (file, part, timeout) -> putPart(file, part, timeout, logLabel));
+    }
+
+    private String fileInfo(JsonNode response) {
+        String value = response.path("file_info").asText("");
+        if (value.isBlank()) {
+            throw QQMessageSendException.fromResponse(objectMapper, response.toString(), "上传未返回 file_info");
+        }
+        return value;
+    }
+
+    private JsonNode postUpload(String url, Map<String, Object> data, String logLabel)
+            throws IOException, InterruptedException {
+        return postUpload(url, data, logLabel, "file_info");
+    }
+
+    JsonNode postUpload(String url, Map<String, Object> data, String logLabel, String resultField)
+            throws IOException, InterruptedException {
+        if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+        String json = objectMapper.writeValueAsString(data);
+        Map<String, Object> summary = new HashMap<>(data);
+        if (summary.containsKey("file_data")) {
+            summary.put("file_data", "[Base64 数据，长度 " + ((String) data.get("file_data")).length() + "]");
+        }
+        String loggedJson = objectMapper.writeValueAsString(summary);
+        String scene = logLabel + "上传";
+        String traceId = OfficialSendLogRepository.recordSend(scene, "POST", url, loggedJson);
+        Integer status = null;
+        String responseBody = null;
+        try {
+            var response = HttpService.postJsonDetailed(url, json, "Authorization", "QQBot " + tokenManager.getAccessToken());
+            status = response.status();
+            responseBody = response.body();
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+            if (status < 200 || status >= 300) {
+                throw QQMessageSendException.fromResponse(objectMapper, responseBody, "上传失败，HTTP " + status);
+            }
+            JsonNode result = responseBody == null || responseBody.isBlank()
+                    ? objectMapper.createObjectNode() : objectMapper.readTree(responseBody);
+            if (result == null || !result.isObject()) throw new IOException("上传响应格式无效");
+            if (result.path("code").asLong(0) != 0 || result.path("err_code").asLong(0) != 0) {
+                throw QQMessageSendException.fromResponse(objectMapper, responseBody, "上传失败");
+            }
+            if (url.endsWith("/files") && result.path(resultField).asText("").isBlank()) {
+                throw QQMessageSendException.fromResponse(objectMapper, responseBody, "上传未返回 " + resultField);
+            }
+            OfficialSendLogRepository.recordResponse(traceId, scene, "POST", url, loggedJson, status, responseBody);
+            return result;
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            OfficialSendLogRepository.recordError(traceId, scene, "POST", url, loggedJson, status, responseBody, e.getMessage());
+            throw e;
+        }
+    }
+
+    private int putPart(Path file, OfficialFileTransfer.Part part, Duration timeout, String logLabel)
+            throws IOException, InterruptedException {
+        return putBody(part.uri(), OfficialFileTransfer.partBody(file, part), timeout, logLabel + "分片上传",
+                Map.of("part_index", part.index(), "block_size", part.size()));
+    }
+
+    int putImage(URI uri, byte[] image, String scene) throws IOException, InterruptedException {
+        return putBody(uri, HttpRequest.BodyPublishers.ofByteArray(image), Duration.ofMinutes(5), scene,
+                Map.of("size", image.length));
+    }
+
+    private int putBody(URI uri, HttpRequest.BodyPublisher body, Duration timeout, String scene,
+                        Map<String, Object> metadata) throws IOException, InterruptedException {
+        String url = uri.getScheme() + "://" + uri.getAuthority() + uri.getPath();
+        String summary = objectMapper.writeValueAsString(metadata);
+        String traceId = OfficialSendLogRepository.recordSend(scene, "PUT", url, summary);
+        try {
+            HttpRequest request = HttpRequest.newBuilder(uri).timeout(timeout).PUT(body).build();
+            var response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            int status = response.statusCode();
+            if (status >= 200 && status < 300) {
+                OfficialSendLogRepository.recordResponse(traceId, scene, "PUT", url, summary, status, null);
+            } else {
+                OfficialSendLogRepository.recordError(traceId, scene, "PUT", url, summary, status, null, "分片上传失败");
+            }
+            return status;
+        } catch (IOException | InterruptedException e) {
+            OfficialSendLogRepository.recordError(traceId, scene, "PUT", url, summary, null, null, e.getMessage());
+            throw e;
         }
     }
 
@@ -255,7 +362,7 @@ final class OfficialMediaUploader {
 
     private String guessBase64ImageContentType(String base64) {
         try {
-            byte[] bytes = Base64.getDecoder().decode(base64);
+            byte[] bytes = Base64.getDecoder().decode(base64.substring(0, Math.min(base64.length(), 16)));
             if (bytes.length >= 8
                     && bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
                 return "image/png";

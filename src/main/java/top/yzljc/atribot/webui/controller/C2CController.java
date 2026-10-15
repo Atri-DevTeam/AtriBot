@@ -213,9 +213,14 @@ public class C2CController {
 
     public static void fetchC2CMessages(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
+        if (ctx.queryParam("since") != null) {
+            ctx.json(Result.success(QQChatContentRecord.fetchMessageChanges("c2c", userOpenId, ctx.queryParam("since"))));
+            return;
+        }
         int page = parseInt(ctx.queryParam("page"), 1);
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
-        ctx.json(Result.success(QQChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize)));
+        ctx.json(Result.success(QQChatContentRecord.fetchC2CMessages(userOpenId, page, pageSize,
+                ctx.queryParam("before") == null ? null : parseLong(ctx.queryParam("before"), 0))));
     }
 
     public static void clearC2CMessages(Context ctx) {

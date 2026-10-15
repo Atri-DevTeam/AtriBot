@@ -3,6 +3,7 @@ package top.yzljc.atribot.event.events;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -12,12 +13,14 @@ import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.RT;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.event.Cancellable;
 import top.yzljc.atribot.event.impl.AnswerCode;
 import top.yzljc.atribot.event.impl.UnknownButtonInteractionScene;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.service.runtime.ThreadManager;
 
-import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * @Author YZ_Ljc_
@@ -27,6 +30,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.event.impl
  */
 @Getter
+@Slf4j
 public class OfficialButtonInteractionEvent extends OfficialInteractionEvents implements Cancellable {
     private final int chatType;
     private final Data data;
@@ -59,9 +63,32 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (this.cancelled) {
             status = AnswerCode.FAIL;
         }
-        Map<String, Integer> body = Map.of("code", status.getCode());
-        JsonNode response = HttpService.putJson(Config.getInstance().getQqApiBaseUrl() + "/interactions/" + id, body, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
-        return response != null;
+        if (this.shouldIgnore()) {
+            status = AnswerCode.IGNORED;
+        }
+        String url = Config.getInstance().getQqApiBaseUrl() + "/interactions/" + id;
+        String requestJson = "{\"code\":" + status.getCode() + "}";
+        var response = HttpService.putJsonDetailed(url, requestJson,
+                "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
+        boolean success = response.status() >= 200 && response.status() < 300;
+        try {
+            ThreadManager.execute(() -> {
+                String scene = "交互回应";
+                String traceId = OfficialSendLogRepository.recordSend(scene, "PUT", url, requestJson);
+                if (success) {
+                    OfficialSendLogRepository.recordResponse(traceId, scene, "PUT", url, requestJson,
+                            response.status(), response.body());
+                } else {
+                    String reason = response.status() == 0 ? "请求异常: " + response.body()
+                            : "接口返回状态异常 " + response.status();
+                    OfficialSendLogRepository.recordError(traceId, scene, "PUT", url, requestJson,
+                            response.status(), response.body(), reason);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            log.warn("交互回应日志任务被拒绝, interactionId: {}, status: {}", id, response.status(), e);
+        }
+        return success;
     }
 
     public String getButtonValue() {
@@ -176,14 +203,9 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     public boolean shouldIgnore() {
         if (this.groupOpenId != null) {
             if (OfficialGroups.isGroupBlacklisted(this.groupOpenId)) {
-                answer(AnswerCode.FAIL);
                 return true;
             }
         }
-        if (OfficialUsers.isBlocked(this.userOpenId) || OfficialUsers.isIgnored(this.userOpenId)) {
-            answer(AnswerCode.FAIL);
-            return true;
-        }
-        return false;
+        return OfficialUsers.isBlocked(this.userOpenId) || OfficialUsers.isIgnored(this.userOpenId);
     }
 }

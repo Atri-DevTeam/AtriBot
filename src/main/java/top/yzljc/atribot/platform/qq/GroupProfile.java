@@ -28,8 +28,6 @@ public record GroupProfile(
         String groupClassText,
         List<String> groupTags,
         int groupMemberNum
-
-
 ) {
     @Getter
     @AllArgsConstructor

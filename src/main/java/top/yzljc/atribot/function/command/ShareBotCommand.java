@@ -12,7 +12,6 @@ import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.event.EventHandler;
 import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialFriendAddEvent;
-import top.yzljc.atribot.event.events.OfficialFriendDelEvent;
 import top.yzljc.atribot.platform.qq.QQBot;
 
 /**

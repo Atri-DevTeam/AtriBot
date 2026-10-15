@@ -5,7 +5,6 @@ import top.yzljc.atribot.configuration.RS;
 
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.function.minecraft.DiceImpl;
 import top.yzljc.atribot.function.minecraft.McLocationBarColorImpl;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.utils.tools.FetchMinecraftProfile;

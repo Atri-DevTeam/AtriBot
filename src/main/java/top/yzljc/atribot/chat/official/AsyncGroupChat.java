@@ -1,5 +1,7 @@
 package top.yzljc.atribot.chat.official;
 
+import java.nio.file.Path;
+
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.ark.Ark;
@@ -23,6 +25,39 @@ import java.util.Objects;
  * 底层 HTTP 传输由 {@link ChatService} 提供
  */
 public final class AsyncGroupChat {
+
+    /**
+     * 异步主动发送群聊本地文件，按文件大小自动选择直传或分片上传
+     *
+     * @param openId 群 openId
+     * @param fileType 图片、视频、语音或文件类型
+     * @param file 本地文件，调用完成前不得修改或删除
+     * @return 消息 ID 的 Future，上传或发送失败时结果为 null
+     */
+    public static CompletableFuture<String> sendMessage(String openId, FileType fileType, Path file) {
+        return ThreadManager.supplyAsync(() -> service().getMediaUploader().buildFileRequest(
+                        service().groupFileUrl(openId), fileType, file, "群聊文件", null))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null)
+                        : service().sendGroupMessageAsync(openId, request));
+    }
+
+    /**
+     * 异步回复群聊本地文件，按文件大小自动选择直传或分片上传
+     *
+     * @param openId 群 openId
+     * @param rt 消息或事件回复来源
+     * @param fileType 图片、视频、语音或文件类型
+     * @param file 本地文件，调用完成前不得修改或删除
+     * @return 消息 ID 的 Future，上传或发送失败时结果为 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, FileType fileType, Path file) {
+        Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
+        return ThreadManager.supplyAsync(() -> service().getMediaUploader().buildFileRequest(
+                        service().groupFileUrl(openId), fileType, file, "群聊文件", rt))
+                .thenCompose(request -> request == null ? CompletableFuture.completedFuture(null)
+                        : service().sendGroupMessageAsync(openId, request));
+    }
+
 
     /**
      * 异步撤回群聊消息

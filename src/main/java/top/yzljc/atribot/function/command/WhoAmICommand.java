@@ -3,7 +3,6 @@ package top.yzljc.atribot.function.command;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.discord.DiscordEmbed;
 import top.yzljc.atribot.command.*;
 import top.yzljc.atribot.platform.Platform;
 
@@ -15,17 +14,9 @@ import top.yzljc.atribot.platform.Platform;
  * @Package top.yzljc.atribot.function.command
  * @Description 信息查询命令
  */
-public class WhoAmICommand implements CommandExecutor, SlashCommandExecutor {
+public class WhoAmICommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof KookCommandSender kook) {
-            String scene = kook.getPlatform() == Platform.KOOK_CHANNEL
-                    ? "服务器 ID: " + kook.getGuildId() + "\n频道 ID: " + kook.getChannelId()
-                    : "场景: KOOK 私信";
-            kook.sendMessage("当前用户信息\n用户 ID: " + kook.getUserId() + "\n" + scene
-                    + "\n机器人管理员: " + kook.hasPermission());
-            return true;
-        }
 
         if (sender instanceof QQCommandSender user) {
             String title = "**当前场景下用户信息**\n\n";
@@ -58,21 +49,6 @@ public class WhoAmICommand implements CommandExecutor, SlashCommandExecutor {
             }
         }
 
-        return true;
-    }
-
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
-                                  SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        DiscordEmbed embed = new DiscordEmbed()
-                .title("当前场景下用户信息")
-                .field("Discord 用户", sender.getUsername(), true)
-                .field("Discord 用户 ID", sender.getUserId(), true)
-                .field("文字频道 ID", sender.getChannelId(), false)
-                .field("用户身份", String.valueOf(sender.getRole()), true)
-                .footer("相关信息仅供问题排查和鉴权使用");
-        sender.sendEmbed(embed);
         return true;
     }
 }

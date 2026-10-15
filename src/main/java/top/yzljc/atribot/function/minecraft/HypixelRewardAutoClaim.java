@@ -42,11 +42,17 @@ public class HypixelRewardAutoClaim {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    /** 用户偏好设置在 user_settings 中的根键 */
+    /**
+     * 用户偏好设置在 user_settings 中的根键
+     */
     public static final String SETTING_KEY = "hypixel_reward";
-    /** first_claim 取值：稀有度优先 */
+    /**
+     * first_claim 取值：稀有度优先
+     */
     public static final String MODE_RARITY = "rarity";
-    /** first_claim 取值：奖励内容优先级优先 */
+    /**
+     * first_claim 取值：奖励内容优先级优先
+     */
     public static final String MODE_PRIORITY = "priority";
 
     private static final Pattern QUANTITY_PATTERN = Pattern.compile("\\d[\\d,]*");
@@ -58,13 +64,19 @@ public class HypixelRewardAutoClaim {
             "LEGENDARY", 3
     );
 
-    /** 物品规范键索引：key 为 itemNamespace 键的小写形式，value 为规范键本身 */
+    /**
+     * 物品规范键索引：key 为 itemNamespace 键的小写形式，value 为规范键本身
+     */
     private static final Map<String, String> CANONICAL_ITEM_KEYS;
 
-    /** 仅用于展示翻译、不能代表具体游戏模式的泛用奖励键。 */
+    /**
+     * 仅用于展示翻译、不能代表具体游戏模式的泛用奖励键。
+     */
     public static final Set<String> GENERIC_REWARD_KEYS = Set.of("coins", "tokens");
 
-    /** 已上报过的未知物品签名，避免同一新物品反复上报刷屏 */
+    /**
+     * 已上报过的未知物品签名，避免同一新物品反复上报刷屏
+     */
     private static final Set<String> reportedUnknownItems = ConcurrentHashMap.newKeySet();
 
     static {
@@ -84,7 +96,9 @@ public class HypixelRewardAutoClaim {
             return new Settings(false, MODE_RARITY, Map.of());
         }
 
-        /** 查询某物品的用户优先级，未设置返回 0 */
+        /**
+         * 查询某物品的用户优先级，未设置返回 0
+         */
         public int priorityOf(String itemKey) {
             if (itemKey == null) {
                 return 0;
@@ -130,7 +144,9 @@ public class HypixelRewardAutoClaim {
         return updateSettings(userOpenId, root -> root.put("enabled", enabled));
     }
 
-    /** 设置优先判定模式，mode 只能是 MODE_RARITY / MODE_PRIORITY */
+    /**
+     * 设置优先判定模式，mode 只能是 MODE_RARITY / MODE_PRIORITY
+     */
     public static boolean setFirstClaim(String userOpenId, String mode) {
         if (!MODE_RARITY.equals(mode) && !MODE_PRIORITY.equals(mode)) {
             return false;
@@ -154,7 +170,9 @@ public class HypixelRewardAutoClaim {
         });
     }
 
-    /** 清除某物品的优先级（回到未设置状态，视为 0） */
+    /**
+     * 清除某物品的优先级（回到未设置状态，视为 0）
+     */
     public static boolean removeItemPriority(String userOpenId, String itemKey) {
         String canonicalKey = canonicalItemKey(itemKey);
         if (canonicalKey == null) {
@@ -233,7 +251,9 @@ public class HypixelRewardAutoClaim {
         }
     }
 
-    /** 从奖励内容中提取第一个命中 itemNamespace 的词，返回其规范键，无命中返回 null */
+    /**
+     * 从奖励内容中提取第一个命中 itemNamespace 的词，返回其规范键，无命中返回 null
+     */
     public static String extractItemKey(String content) {
         if (content == null || content.isBlank()) {
             return null;
@@ -248,7 +268,9 @@ public class HypixelRewardAutoClaim {
         return null;
     }
 
-    /** 提取内容中的第一个数字作为数量（兼容千分位逗号），无数字返回 null */
+    /**
+     * 提取内容中的第一个数字作为数量（兼容千分位逗号），无数字返回 null
+     */
     private static Long extractQuantity(String content) {
         if (content == null) {
             return null;
@@ -264,7 +286,9 @@ public class HypixelRewardAutoClaim {
         return null;
     }
 
-    /** 可供设置优先级的全部物品规范键 */
+    /**
+     * 可供设置优先级的全部物品规范键
+     */
     public static Set<String> knownItemKeys() {
         return Set.copyOf(CANONICAL_ITEM_KEYS.values());
     }
@@ -326,7 +350,9 @@ public class HypixelRewardAutoClaim {
         return RARITY_RANK.getOrDefault(option.rarity(), 0);
     }
 
-    /** 保留 key 值最大的元素，其余丢弃 */
+    /**
+     * 保留 key 值最大的元素，其余丢弃
+     */
     private static List<RewardOption> filterMax(List<RewardOption> options, ToLongFunction<RewardOption> key) {
         long max = Long.MIN_VALUE;
         for (RewardOption option : options) {

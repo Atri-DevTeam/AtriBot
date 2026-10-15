@@ -10,7 +10,6 @@ import top.yzljc.atribot.platform.qq.QQUser;
 import top.yzljc.atribot.platform.qq.QQMessage;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @Author YZ_Ljc_

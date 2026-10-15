@@ -7,8 +7,8 @@ import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
 import top.yzljc.atribot.command.NapcatCommandSender
-import top.yzljc.atribot.configuration.LoadIllegalWords
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
+import top.yzljc.atribot.service.textreview.TextReviewService
 
 /**
  * @Author YZ_Ljc_
@@ -30,16 +30,18 @@ object PinYin : CommandExecutor {
                 return true
             }
         }
-        val rawText = args?.joinToString(" ") ?: return true
+        var rawText = args?.joinToString(" ") ?: return true
         if (rawText.contains("$")) {
             nc.sendMessage("在转换为拼音时出现问题: 含有无效字符")
             return true
         }
 
-        if (LoadIllegalWords.containsSensitiveWord(rawText)) {
-            nc.sendMessage("在转换为拼音时出现问题: 含有违规内容")
-            return true
-        }
+        rawText = TextReviewService.review(rawText)
+
+//        if (LoadIllegalWords.containsSensitiveWord(rawText)) {
+//            nc.sendMessage("在转换为拼音时出现问题: 含有违规内容")
+//            return true
+//        }
 
         when (val pinyin = getPinYin(rawText)) {
             "" -> nc.sendMessage("在转换为拼音时出现问题: 无效内容")

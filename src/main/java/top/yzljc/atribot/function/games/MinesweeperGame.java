@@ -313,13 +313,9 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         // 四舍五入尾差归操作最多者
         int diff = pool - allocated;
         if (diff != 0) {
-            String top = game.operations.entrySet().stream()
+            game.operations.entrySet().stream()
                     .max(Map.Entry.comparingByValue())
-                    .map(Map.Entry::getKey)
-                    .orElse(null);
-            if (top != null) {
-                rewards.put(top, rewards.getOrDefault(top, 0) + diff);
-            }
+                    .map(Map.Entry::getKey).ifPresent(top -> rewards.put(top, rewards.getOrDefault(top, 0) + diff));
         }
 
         for (Map.Entry<String, Integer> entry : rewards.entrySet()) {

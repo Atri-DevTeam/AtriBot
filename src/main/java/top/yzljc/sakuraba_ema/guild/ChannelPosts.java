@@ -7,8 +7,6 @@ import top.yzljc.sakuraba_ema.ChannelCalls;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliOptions;
 import top.yzljc.sakuraba_ema.internal.PostTools;
 
-import java.util.List;
-
 /**
  * @Author YZ_Ljc_
  * @ClassName ChannelPosts

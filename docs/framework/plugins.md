@@ -78,7 +78,7 @@ commands:
 | `main` | 继承 `AtriPlugin` 的完整类名，提供公共无参构造 |
 | `api-version` | 当前为 `1` |
 | `depend` | 必需插件名称列表 |
-| `commands` | 插件文本指令声明 |
+| `commands` | 插件指令声明，支持文本与 Slash 执行器 |
 
 ## 主类
 
@@ -111,7 +111,7 @@ public final class HelloPlugin extends AtriPlugin {
 
 加载按依赖关系排序，停用按相反顺序执行。必需依赖缺失、失败或存在无效依赖关系时，相应插件不能正常启用
 
-插件在核心初始化之后、平台连接启动之前启用。加载器不提供热重载，替换 JAR 后重启宿主
+插件在核心初始化之后、QQ 连接启动之前启用。平台插件自行管理连接。加载器不提供热重载，替换 JAR 后重启宿主
 
 ## 上下文
 
@@ -123,6 +123,7 @@ public final class HelloPlugin extends AtriPlugin {
 | `getDataDirectory()` | 插件数据目录 |
 | `saveDefaultConfig()` | 从插件资源复制默认 `config.yml`，已有文件不覆盖 |
 | `registerEvents(listener)` | 注册事件，停用时注销 |
+| `registerPostRoute(path, handler)` | 注册插件命名空间下的 POST 回调，停用时移除处理器 |
 | `getScheduler()` | 插件专用单线程调度器，首次使用时创建 |
 | `manage(resource)` | 登记 `AutoCloseable`，停用时逆序关闭 |
 | `getConnection()` | 从宿主连接池借用数据库连接 |
@@ -135,11 +136,35 @@ public final class HelloPlugin extends AtriPlugin {
 
 ## 指令名称与平台
 
-插件命令始终可通过 `插件名:命令名` 定位。短名称和别名发生冲突时，核心命令优先，插件应保留带命名空间的用法
+插件命令通过 `插件名:命令名` 定位。未声明平台范围时，短名称和别名冲突仍由核心命令优先
 
-插件命令挂接当前文本分发，不自动注册为 Discord Slash Command。是否支持某个平台还取决于执行器使用的发送能力
+平台插件可声明 `platforms`，同名指令仅在指定平台优先匹配，带命名空间调用也受平台范围限制。同一平台的多个插件占用相同名称或别名时拒绝注册：
+
+```yaml
+commands:
+  query:
+    description: 查询玩家
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    options:
+      - name: player
+        type: 3
+        description: 玩家名称
+        required: true
+```
+
+使用 `getCommand("query").setSlashExecutor(...)` 绑定结构化执行器。Discord 插件启动连接时收集当前已注册的 Slash 命令并同步到平台；后续加载的插件不会自动再次同步，新增 Slash 指令目前应在平台插件内注册
 
 `prefixless-aliases` 提供跨文本场景的无前缀入口，支持中文触发词，匹配规则见 [无前缀触发词](commands.md#无前缀触发词)。该入口仍检查插件指令权限，卸载时移除映射；触发词与其他指令冲突时拒绝注册
+
+## 平台插件与回调
+
+内置适配保留 QQ 和 Napcat；[KOOK](../../platform-kook/README.md)、[Discord](../../platform-discord/README.md) 独立打包。使用其专有事件或发送类型的插件，需要将对应平台插件作为编译期依赖，并在 `plugin.yml` 中声明 `depend: [platform-kook]` 或 `depend: [platform-discord]`
+
+```java
+String route = getContext().registerPostRoute("/webhook", ctx -> ctx.result("ok"));
+```
+
+返回路径为 `/plugins/<插件名>/webhook`，处理器负责校验平台凭据。插件停用或启用失败时移除处理器，此后请求返回 404。连接、队列等资源通过 `manage(...)` 登记关闭
 
 ## 隔离范围
 

@@ -26,6 +26,7 @@ import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 
 /** Napcat 平台 + 官方 API 调试 */
 public class NapcatController {
+    private static final String ACCESS_TOKEN_URL = "https://api.bot.qq.com/app/getAppAccessToken";
 
     public static void listNapcatGroups(Context ctx) {
         List<NapcatGroupDTO> groups = new ArrayList<>();
@@ -116,7 +117,7 @@ public class NapcatController {
 
         String targetUrl;
         try {
-            targetUrl = buildOfficialApiUrl(dto.getPath());
+            targetUrl = buildOfficialApiUrl(dto.getPath(), method);
         } catch (IllegalArgumentException e) {
             ctx.json(Result.fail(400, e.getMessage()));
             return;
@@ -131,8 +132,10 @@ public class NapcatController {
         HttpResponse<String> response;
         try {
             HttpRequest.Builder builder = HttpService.newRequestBuilder()
-                    .uri(URI.create(targetUrl))
-                    .header("Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
+                    .uri(URI.create(targetUrl));
+            if (!ACCESS_TOKEN_URL.equals(targetUrl)) {
+                builder.header("Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
+            }
 
             boolean hasBody = dto.getBody() != null && !dto.getBody().isBlank();
             if (hasBody && !hasDebugHeader(dto.getHeaders(), "content-type")) {
@@ -177,13 +180,19 @@ public class NapcatController {
         return allowed.contains(value) ? value : null;
     }
 
-    private static String buildOfficialApiUrl(String path) {
+    static String buildOfficialApiUrl(String path, String method) {
         String value = path.trim();
         if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("//")) {
             throw new IllegalArgumentException("只允许填写相对 API 路径");
         }
         if (!value.startsWith("/")) {
             value = "/" + value;
+        }
+        if (value.equals("/app/getAppAccessToken")) {
+            if (!"POST".equals(method)) {
+                throw new IllegalArgumentException("获取访问凭证仅支持 POST 请求");
+            }
+            return ACCESS_TOKEN_URL;
         }
         String base = Config.getInstance().getQqApiBaseUrl();
         while (base.endsWith("/")) {

@@ -27,6 +27,7 @@ public enum RequestType {
     FETCH_PTT_TEXT("/fetch_ptt_text"),
     BOT_UIN_RANGE("/get_robot_uin_range"),
     GET_STRANGER_INFO("/get_stranger_info"),
+    CLICK_INLINE_KEYBOARD_BUTTON("/click_inline_keyboard_button"), // 操作官机内联键盘
     RECALL_MESSAGE("/delete_msg");
 
     private final String requestLink;

@@ -54,6 +54,12 @@ bin/
 /data.json
 /webui/dist/
 /webui/node_modules/
+!/webui/tests/
+/webui/tests/*
+!/webui/tests/officialApiPresets.test.js
+!/webui/tests/fixtures/
+/webui/tests/fixtures/*
+!/webui/tests/fixtures/officialApiInventory.json
 /miniapp/node_modules/
 /miniapp/test-results/
 /miniapp/.env.local

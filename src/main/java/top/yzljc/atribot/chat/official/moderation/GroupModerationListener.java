@@ -10,7 +10,6 @@ import top.yzljc.atribot.event.Listener;
 import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
 import top.yzljc.atribot.platform.qq.QQMessage;
 import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.utils.tools.Alert;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

@@ -106,7 +106,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
     @EventHandler(ignoreCancelled = true)
     public void onCellCallback(OfficialButtonInteractionEvent event) {
-        if (event.shouldIgnore()) return;
+//        if (event.shouldIgnore()) return;
         String callbackValue = event.getButtonValue();
         String valuePrefix = CALLBACK_VALUE + ":";
         if (callbackValue == null || !callbackValue.startsWith(valuePrefix)) return;

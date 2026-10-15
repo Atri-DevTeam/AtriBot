@@ -8,7 +8,6 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.qq.QQBot;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;

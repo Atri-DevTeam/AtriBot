@@ -5,10 +5,10 @@ import top.yzljc.atribot.command.Command
 import top.yzljc.atribot.command.CommandExecutor
 import top.yzljc.atribot.command.CommandSender
 import top.yzljc.atribot.command.NapcatCommandSender
-import top.yzljc.atribot.configuration.LoadIllegalWords
 import top.yzljc.atribot.function.impl.PreImageGenerate
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
 import top.yzljc.atribot.service.request.OpenApi
+import top.yzljc.atribot.service.textreview.TextReviewService
 
 /**
  * @Author YZ_Ljc_
@@ -56,16 +56,18 @@ object AnAnGirlEmoji : CommandExecutor {
             modeParam = "开心"
         }
 
-        val text = argsList.joinToString(" ")
+        var text = argsList.joinToString(" ")
         if (text.isBlank()) {
             nc.sendMessage("无效文字内容，请输入文字参数！")
             return true
         }
 
-        if (LoadIllegalWords.containsSensitiveWord(text)) {
-            nc.sendMessage("文字内容包含敏感内容，无法生图！")
-            return true
-        }
+        text = TextReviewService.review(text)
+
+//        if (LoadIllegalWords.containsSensitiveWord(text)) {
+//            nc.sendMessage("文字内容包含敏感内容，无法生图！")
+//            return true
+//        }
 
         val req = mutableMapOf("text" to text)
         modeParam.let {

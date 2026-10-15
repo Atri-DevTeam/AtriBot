@@ -46,6 +46,16 @@ CommandManager.getCommand("example").setExecutor(new ExampleCommand());
 
 ## 文本指令
 
+`MinecraftToolsCommand` 的二级菜单使用有序注册表，每项包含名称、说明、可选图标资源键及处理方法。新增子命令时，在 `createSubCommands()` 注册并实现对应方法，菜单与路由共用该注册表：
+
+```java
+register(commands, new SubCommand("example", "示例查询", null, MinecraftToolsCommand::handleExample));
+```
+
+处理方法签名为 `boolean handleExample(CommandSender sender, String[] args)`，`args` 不包含子命令名称。例如 `/mctool pf FlyMode` 传入 `["FlyMode"]`。图标资源键在渲染 QQ 菜单时通过 `RS.get` 读取；传入 `null` 时不显示图标
+
+玩家查询可参考 `handleProfile`：`getPlayer` 优先使用显式参数，QQ 无参数时读取统一账号中的绑定；`withQueryProgress` 在 `finally` 中撤回等待提示，随后通过 `sendImageResult` 返回图片或错误。`requestImage` 统一携带已审核背景及平台取图参数
+
 ```java
 package example;
 
@@ -141,7 +151,7 @@ CommandManager.getCommand("example").setSlashExecutor((sender, command, label, a
 
 `options` 当前使用 Discord 参数类型编号，`3` 为字符串。完整字段见 [CommandOptionDefinition](../../src/main/java/top/yzljc/atribot/command/CommandOptionDefinition.java)，包括子命令、候选值、数值范围和频道类型
 
-Discord 分发直接调用 Slash 执行器，不经过 `CommandMap.dispatch()`。因此文本入口的参数拆分、`UserRunCommandEvent`、群禁用检查和自动用法提示不能推定为 Slash 入口也具备；权限和参数错误由执行器处理
+Discord 插件通过 `CommandManager.dispatchSlash(sender, label, args)` 分发，不经过文本入口的参数拆分、`UserRunCommandEvent` 和 QQ 群禁用检查。插件指令在执行前统一检查启用状态、平台范围及 `permission`；返回 `false` 时按声明发送用法提示。核心 Slash 执行器仍自行检查业务权限
 
 `SlashCommandArguments.toArray()` 只提供兼容性转换，会丢失名称和类型。平台专有交互数据由对应平台的参数和发送者类型提供
 
@@ -158,6 +168,8 @@ if (sender instanceof KookCommandSender kook) {
 ```
 
 常用接口包括 `QQCommandSender`、`QQGuildCommandSender`、`NapcatCommandSender`、`DiscordCommandSender`、`KookCommandSender`。共享业务逻辑可复用，平台输出保留各自实现
+
+`DiscordCommandSender`、`KookCommandSender` 及对应输出代码位于平台插件，主项目业务不引用这些类型。平台插件通过 `CommandManager.resolveCommandLine(sender, text)`、`dispatch(sender, line)` 或 `dispatchSlash(...)` 接入公共分发器；同名指令可通过插件声明的 `platforms` 限定作用范围，QQ 和 Napcat 仍使用原执行器
 
 ## 权限
 

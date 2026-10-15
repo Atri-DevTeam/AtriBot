@@ -36,14 +36,12 @@ import top.yzljc.atribot.function.admin.*;
 import top.yzljc.atribot.function.admin.ema.EmaCommand;
 import top.yzljc.atribot.function.command.*;
 import top.yzljc.atribot.function.reminder.ReminderService;
-import top.yzljc.atribot.function.command.HelpCommand;
 import top.yzljc.atribot.function.games.ClickTrainGame;
 import top.yzljc.atribot.function.games.DailyFishingGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
 import top.yzljc.atribot.function.games.RockPaperScissorsGame;
-import top.yzljc.atribot.function.command.SoundCommand;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.function.minecraft.PackVersion;
 import top.yzljc.atribot.function.minecraft.SkyblockPackCheckImpl;
@@ -52,13 +50,8 @@ import top.yzljc.atribot.function.qqguild.HypixelTNTWizardsCommand;
 import top.yzljc.atribot.function.qqguild.HypixelZombiesCommand;
 import top.yzljc.atribot.function.tasks.*;
 import top.yzljc.atribot.function.utils.*;
-import top.yzljc.atribot.function.utils.general.*;
 import top.yzljc.atribot.function.utils.napcat.*;
 import top.yzljc.atribot.function.utils.official.*;
-import top.yzljc.atribot.function.command.PicStatsCommand;
-import top.yzljc.atribot.function.command.PicSubmitCommand;
-import top.yzljc.atribot.function.command.BackgroundCommand;
-import top.yzljc.atribot.function.command.DrawCommand;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.utils.personal.*;
 import top.yzljc.atribot.platform.qq.QQBot;
@@ -73,9 +66,6 @@ import top.yzljc.atribot.platform.napcat.NapcatEventQueue;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
-import top.yzljc.atribot.platform.discord.DiscordManager;
-import top.yzljc.atribot.platform.kook.KookApiClient;
-import top.yzljc.atribot.platform.kook.KookManager;
 import top.yzljc.atribot.platform.qq.OfficialManager;
 import top.yzljc.atribot.platform.qq.QQWebhookHandler;
 import top.yzljc.atribot.platform.qq.TokenManager;
@@ -94,6 +84,7 @@ import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.webui.WebUIRouter;
 import top.yzljc.atribot.webui.WebUISessionManager;
 import top.yzljc.atribot.plugin.PluginManager;
+import top.yzljc.atribot.plugin.PluginHttpRoutes;
 import top.yzljc.sakuraba_ema.ChannelCliClient;
 
 import java.nio.file.Path;
@@ -141,9 +132,6 @@ public class Atri {
     private final HypixelAlphaForums hypixelAlphaForums;
     @Getter
     private final SkyblockPackCheckImpl skyblockPackCheck;
-    private final DiscordManager discordManager;
-    @Getter
-    private final KookManager kookManager;
     @Getter
     private final ChannelCliClient tencentChannelCliClient;
     @Getter
@@ -192,10 +180,6 @@ public class Atri {
                 objectMapper
         );
         this.calendarTask = new CalendarTask();
-        this.discordManager = config.isDiscordEnabled() && config.getDiscordBotToken() != null && !config.getDiscordBotToken().isBlank()
-                ? new DiscordManager(config.getDiscordApiBaseUrl(), config.getDiscordBotToken(), config.getDiscordIntents())
-                : null;
-        this.kookManager = createKookManager(config);
 
         int qqBotPort = config.getListenPort();
 
@@ -254,10 +238,7 @@ public class Atri {
         }
 
         WebUIRouter.register(server);
-        if (kookManager != null) {
-            server.post(config.getKookWebhookPath(), kookManager.getWebhookHandler()::handle);
-            log.info("KOOK Webhook 回调已启用: POST {}", config.getKookWebhookPath());
-        }
+        PluginHttpRoutes.attach(server);
         MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
 
         log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
@@ -288,7 +269,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new BotRuntimeData());
         EventManager.getInstance().registerEvents(new Test());
         EventManager.getInstance().registerEvents(new QQEventRecord());
-        EventManager.getInstance().registerEvents(new KookEventRecord());
         EventManager.getInstance().registerEvents(new QQChatContentRecord());
         EventManager.getInstance().registerEvents(new FeedbackCommand());
         EventManager.getInstance().registerEvents(new ReminderCommand());
@@ -311,7 +291,6 @@ public class Atri {
         EventManager.getInstance().registerEvents(new WhatFuckingPing());
         EventManager.getInstance().registerEvents(new GroupJoinWelcome());
         EventManager.getInstance().registerEvents(new ShareBotCommand());
-        EventManager.getInstance().registerEvents(new HypixelCommand());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -527,14 +506,12 @@ public class Atri {
         }
 
         qqWebhookHandler.close();
-        if (kookManager != null) {
-            kookManager.close();
-        }
         miniappSessions.close();
         napcatEventQueue.close();
         soundCommand.close();
         groupProfileRefreshBatcher.close();
         pluginManager.close();
+        ChatService.shutdownGroupRecallQueue();
         if (scheduler != null) {
             scheduler.cancelTask(BotRuntimeData.getTask());
         }
@@ -545,9 +522,6 @@ public class Atri {
         if (imap != null) {
             imap.close();
             imap = null;
-        }
-        if (discordManager != null) {
-            discordManager.stop();
         }
         if (taskScheduler != null) {
             taskScheduler.shutdown();
@@ -564,31 +538,10 @@ public class Atri {
         System.out.println("==== AtriBot Disabled ====");
     }
 
-    private static KookManager createKookManager(Config config) {
-        if (!config.isKookEnabled()) return null;
-        try {
-            String path = config.getKookWebhookPath();
-            if (path == null || !path.matches("/kook/[a-zA-Z0-9/_-]+")) {
-                throw new IllegalArgumentException("KOOK 回调路径必须位于 /kook/ 下且不得包含通配符");
-            }
-            if (path.equals(config.getQqWebhookPath()) || path.equals(config.getGithubWebhookPath())) {
-                throw new IllegalArgumentException("KOOK 回调路径与其他 Webhook 路径冲突");
-            }
-            return new KookManager(new KookApiClient(config.getKookApiBaseUrl(), config.getKookBotToken(),
-                    Duration.ofSeconds(20)), config.getKookVerifyToken(), config.getKookEncryptKey(),
-                    new java.util.HashSet<>(config.getKookAdminIds()));
-        } catch (IllegalArgumentException e) {
-            log.error("KOOK 配置无效，适配器未启用，请检查 kook 配置项");
-            return null;
-        }
-    }
 
     public static void main(String[] args) {
         Atri bot = new Atri();
         bot.onEnable();
-        if (bot.kookManager != null) {
-            bot.kookManager.start();
-        }
 
         try {
             bot.qqBotManagerService.start();
@@ -596,13 +549,6 @@ public class Atri {
             log.error("QQ Bot 初始化失败: {}", e.getMessage());
         }
 
-        if (bot.discordManager != null) {
-            try {
-                bot.discordManager.start();
-            } catch (Exception e) {
-                log.error("Discord Bot 初始化失败: {}", e.getMessage(), e);
-            }
-        }
 
         ConsoleManager.start();
     }

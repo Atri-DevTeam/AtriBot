@@ -5,7 +5,6 @@ import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
 import top.yzljc.atribot.command.ConsoleCommandSender;
-import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.NapcatCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
 import top.yzljc.atribot.command.SlashCommandExecutor;

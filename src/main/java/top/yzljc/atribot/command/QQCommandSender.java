@@ -2,7 +2,6 @@ package top.yzljc.atribot.command;
 
 import top.yzljc.atribot.chat.ImageComponent;
 import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.event.EventType;
 import top.yzljc.atribot.platform.Platform;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.platform.qq.QQMessage;

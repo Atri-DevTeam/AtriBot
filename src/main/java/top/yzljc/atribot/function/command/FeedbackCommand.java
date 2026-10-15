@@ -5,7 +5,6 @@ import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.Command;
 import top.yzljc.atribot.command.CommandExecutor;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.DiscordCommandSender;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.QQGuildCommandSender;
 import top.yzljc.atribot.command.SlashCommandArguments;
@@ -38,7 +37,7 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.atribot.function.general
  */
 @Slf4j
-public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, Listener {
+public class FeedbackCommand implements CommandExecutor, Listener {
 
     private static final Pattern contentFormat = Pattern.compile("\\[CQ:[^\\]]*\\]");
     private static final String SOURCE = "feedback";
@@ -63,36 +62,32 @@ public class FeedbackCommand implements CommandExecutor, SlashCommandExecutor, L
         return handleSubmitFeedback(sender, args);
     }
 
-    @Override
-    public boolean onCommand(SlashCommandSender slashSender, Command command, String label,
-                                  SlashCommandArguments args) {
-        if (!(slashSender instanceof DiscordCommandSender sender)) return true;
-        String content = args.getString("content", "").trim();
-        if (content.isBlank()) {
-            sender.sendEphemeralMessage("请提供反馈或建议的内容。");
-            return true;
-        }
-        return handleSubmitFeedback(sender, new String[]{content});
-    }
 
     private boolean handleSubmitFeedback(CommandSender sender, String[] args) {
-        String platformName;
         String groupId;
-        if (sender instanceof QQCommandSender qq) {
-            platformName = qq.getPlatform().name();
-            groupId = qq.getGroupId();
-        } else if (sender instanceof QQGuildCommandSender guildSender) {
-            platformName = guildSender.getPlatform().name();
-            groupId = guildSender.getGuildId();
-        } else if (sender instanceof DiscordCommandSender discordSender) {
-            platformName = discordSender.getPlatform().name();
-            groupId = discordSender.getChannelId();
-        } else {
-            platformName = null;
-            groupId = null;
+        switch (sender) {
+            case QQCommandSender qq -> {
+                groupId = qq.getGroupId();
+            }
+            case QQGuildCommandSender guildSender -> {
+                groupId = guildSender.getGuildId();
+            }
+            case null, default -> {
+                groupId = null;
+            }
         }
+        return submitFeedback(sender, groupId, String.join(" ", args));
+    }
+
+    /**
+     * @param sender 提交者，平台和用户标识来自发送者
+     * @param groupId 来源会话标识，私聊允许为 null
+     * @param content 反馈正文，沿用待处理反馈限制和通知流程
+     * @return 是否已处理提交
+     */
+    public static boolean submitFeedback(CommandSender sender, String groupId, String content) {
+        String platformName = sender.getPlatform() == null ? null : sender.getPlatform().name();
         String userId = sender.getUserId();
-        String content = String.join(" ", args);
 
         // 检查 CQ 码
         Matcher check = contentFormat.matcher(content);

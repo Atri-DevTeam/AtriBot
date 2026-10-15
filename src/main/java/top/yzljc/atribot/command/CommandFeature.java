@@ -56,4 +56,9 @@ public class CommandFeature extends Command {
         }
         return false;
     }
+
+    public boolean executeSlash(SlashCommandSender sender, String commandLabel, SlashCommandArguments args) {
+        var slash = getSlashExecutor();
+        return slash != null && slash.onCommand(sender, this, commandLabel, args);
+    }
 }

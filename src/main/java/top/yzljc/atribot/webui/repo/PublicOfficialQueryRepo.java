@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlank;
-
 @Slf4j
 public class PublicOfficialQueryRepo {
     private static final DateTimeFormatter SQL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

@@ -1,0 +1,128 @@
+name: platform-discord
+version: "1.0.0"
+main: top.yzljc.atribot.plugins.discord.DiscordPlugin
+api-version: 1
+commands:
+  help:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 显示帮助菜单
+    usage: /help
+    prefixless-aliases: [指令功能一览♪]
+  hitokoto:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 随机一言
+    aliases:
+      - 一言
+      - yiyan
+    usage: /hitokoto 获取随机一言，群授权获取全部消息后可用“一言”触发
+  today:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 每日日历
+  newyear:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    aliases:
+      - 新年快乐
+      - happynewyear
+      - 新年
+      - 新年倒计时
+      - 过年
+    description: 发送新年快乐
+  mojang:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 查询Mojang服务器状态
+  mcv:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 查询最新的 Minecraft 版本
+    usage: /mcv
+  mccape:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 查询 Minecraft 披风状态
+    usage: /mccape
+  skbpack:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 查询 Hypixel Skyblock 资源包版本
+    usage: /skbpack
+  whoami:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 用户场景信息
+  feedback:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 提交反馈
+    usage: /feedback <反馈内容>
+    prefixless-aliases: [反馈与建议]
+    aliases:
+      - 反馈
+      - 举报
+      - 建议
+    options:
+      - name: content
+        type: 3
+        description: 反馈内容
+        required: true
+  hypstatus:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: Hypixel Server Status
+    usage: /hypstatus
+    aliases:
+      - hs
+      - hypixelstatus
+      - hypixel-status
+  wz:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: Hypixel法师掘战数据查询
+    usage: /wz <玩家名或 UUID>
+    aliases:
+      - wizard
+      - hypwizard
+      - hypixelwizard
+      - hypixel-wizard
+      - wd
+      - wi
+    options:
+      - name: player
+        type: 3
+        description: Minecraft 玩家名或 UUID
+        required: true
+  zs:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: Hypixel僵尸末日数据查询
+    usage: /zs <玩家名或 UUID>
+    aliases:
+      - zombies
+      - zombie
+      - hypixelzombies
+      - hypixel-zombies
+      - hypzombies
+    options:
+      - name: player
+        type: 3
+        description: Minecraft 玩家名或 UUID
+        required: true
+  bantrack:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: Hypixel BanTracker
+    usage: "/bantrack [时间参数]"
+    aliases:
+      - bt
+      - bantracker
+    options:
+      - name: window
+        type: 3
+        description: 时间范围，单位为m/h/d/w/mo
+        required: false
+  time:
+    platforms: [DISCORD_GUILD, DISCORD_DM]
+    description: 查询指定国家/地区的当前时间，不带参数默认查询北京时间
+    usage: /time <国家代称/中文名/城市名/时区ID>
+    aliases:
+      - 时区
+      - timezone
+      - tz
+      - 世界时间
+      - 当前时间
+    options:
+      - name: zone
+        type: 3
+        description: 地区
+        required: false
+

@@ -6,7 +6,6 @@ import top.yzljc.atribot.chat.official.Markdown;
 import top.yzljc.atribot.chat.official.TC;
 import top.yzljc.atribot.command.QQCommandSender;
 import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.KookCommandSender;
 
 public final class McPackMetaImpl {
 
@@ -42,12 +41,21 @@ public final class McPackMetaImpl {
             return;
         }
 
-        String versionInput = args[1].replace("v", "").toLowerCase();
+        String result = describe(args[1], sender instanceof QQCommandSender);
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(result));
+    }
+
+    /**
+     * @param versionName Minecraft 版本名称
+     * @param withIcon 是否包含 QQ Markdown 草方块图标
+     * @return 资源包格式说明，未找到版本时返回错误提示
+     */
+    public static String describe(String versionName, boolean withIcon) {
+        String versionInput = versionName.replace("v", "").toLowerCase();
         PackVersion version = PackVersion.getPackVersion(versionInput);
 
         if (version == null) {
-            sender.sendMessage("未找到版本相关版本的的格式信息，请尝试重新输入！");
-            return;
+            return "未找到版本相关版本的的格式信息，请尝试重新输入！";
         }
 
         int resourcePack = version.resourcePackVersion();
@@ -72,8 +80,8 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    sender instanceof QQCommandSender ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
-                    args[1],
+                    withIcon ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
+                    versionName,
                     resourcePack,
                     rpJson
             );
@@ -93,15 +101,14 @@ public final class McPackMetaImpl {
                     ```json
                     %s
                     ```""".formatted(
-                    sender instanceof QQCommandSender ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
-                    args[1],
+                    withIcon ? Markdown.img(RS.get("resource.image.grass-block"), 24, 24) : "",
+                    versionName,
                     resourcePack, dataPack,
                     rpJson, dpJson
             );
         }
 
-        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(result));
-        else if (sender instanceof KookCommandSender kook) kook.sendKMarkdown(result);
+        return result;
     }
 
     private static String formatJson(String description, int minFormat, int maxFormat, boolean isNew) {

@@ -10,11 +10,11 @@ import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
 import top.yzljc.atribot.event.impl.ErrorCode;
 import top.yzljc.atribot.platform.PlatformRole;
 import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atribot.utils.concurrent.SlidingWindowRateLimiter;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.util.ArrayList;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -59,9 +59,9 @@ public final class QQBot {
 
     private static final String GROUP_INFO_URL = Config.getInstance().getQqApiBaseUrl() + "/v2/groups/{group_openid}/info";
 
-    private static final EndpointRateLimiter BOT_GROUP_STATE_LIMITER = new EndpointRateLimiter("群聊 /bot_state", 30);
+    private static final SlidingWindowRateLimiter BOT_GROUP_STATE_LIMITER = new SlidingWindowRateLimiter(30, Duration.ofMinutes(1));
 
-    private static final EndpointRateLimiter GROUP_INFO_LIMITER = new EndpointRateLimiter("群聊 /info", 30);
+    private static final SlidingWindowRateLimiter GROUP_INFO_LIMITER = new SlidingWindowRateLimiter(30, Duration.ofMinutes(1));
 
     public static void fetchBotInfo() {
         var url = Config.getInstance().getQqApiBaseUrl() + "/users/@me";
@@ -124,13 +124,13 @@ public final class QQBot {
         String groupInfoUrl = GROUP_INFO_URL.replace("{group_openid}", groupId);
         String botGroupStateUrl = BOT_GROUP_STATE_URL.replace("{group_openid}", groupId);
 
-        if (!BOT_GROUP_STATE_LIMITER.waitForRateLimit()) {
+        if (!waitForRateLimit(BOT_GROUP_STATE_LIMITER, "群聊 /bot_state")) {
             return new GroupProfileResult(null, null);
         }
         HttpService.GetResult botStateResult = HttpService.sendGetRequestDetailed(botGroupStateUrl, "Authorization", authHeader);
         logGroupProfileCall("群机器人状态", botGroupStateUrl, botStateResult, logOnlyOnError);
 
-        if (!GROUP_INFO_LIMITER.waitForRateLimit()) {
+        if (!waitForRateLimit(GROUP_INFO_LIMITER, "群聊 /info")) {
             return new GroupProfileResult(null, null);
         }
         HttpService.GetResult groupInfoResult = HttpService.sendGetRequestDetailed(groupInfoUrl, "Authorization", authHeader);
@@ -253,50 +253,17 @@ public final class QQBot {
         }
     }
 
-    private static final class EndpointRateLimiter {
-        private static final long WINDOW_MS = 60_000;
-
-        private final String endpointName;
-        private final int qpmLimit;
-        private final Deque<Long> timestamps = new ArrayDeque<>();
-
-        private EndpointRateLimiter(String endpointName, int qpmLimit) {
-            this.endpointName = endpointName;
-            this.qpmLimit = qpmLimit;
-        }
-
-        private synchronized boolean waitForRateLimit() {
-            while (true) {
-                long now = System.currentTimeMillis();
-                pruneExpired(now - WINDOW_MS);
-                if (timestamps.size() < qpmLimit) {
-                    timestamps.offerLast(now);
-                    return true;
-                }
-
-                Long oldest = timestamps.peekFirst();
-                if (oldest != null) {
-                    long waitMs = oldest + WINDOW_MS - now + 50;
-                    if (waitMs > 0) {
-                        log.info("{} 已达 {} QPM 限制，等待 {}ms", endpointName, qpmLimit, waitMs);
-                        try {
-                            wait(waitMs);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            log.warn("{} 频控等待被中断", endpointName);
-                            return false;
-                        }
-                    }
-                }
+    private static boolean waitForRateLimit(SlidingWindowRateLimiter limiter, String endpointName) {
+        try {
+            if (!limiter.tryAcquire()) {
+                log.info("{} 已达频控限制，等待可用额度", endpointName);
+                limiter.acquire();
             }
-        }
-
-        private void pruneExpired(long cutoff) {
-            while (true) {
-                Long oldest = timestamps.peekFirst();
-                if (oldest == null || oldest >= cutoff) break;
-                timestamps.pollFirst();
-            }
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("{} 频控等待被中断", endpointName);
+            return false;
         }
     }
 }

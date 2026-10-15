@@ -341,11 +341,11 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ## Discord
 
-Gateway 入口将消息与指令交互提交到工作线程后分发，事件中的用户类型为 `DiscordUser`
+由 `platform-discord` 插件提供。Gateway 入口将消息与指令交互提交到工作线程后分发，事件中的用户类型为 `DiscordUser`。监听这些事件的插件需声明 `depend: [platform-discord]`
 
 ### DiscordMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/DiscordMessageCreateEvent.java) · 收到 Gateway 的 `MESSAGE_CREATE` 时触发
+[源码](../../platform-discord/src/main/java/top/yzljc/atribot/event/events/DiscordMessageCreateEvent.java) · 收到 Gateway 的 `MESSAGE_CREATE` 时触发
 
 - 数据：`user`、`DiscordMessage message`、`guildId`、`channelId`；私信的 `guildId` 可为空
 - 操作：事件不提供回复快捷方法，通过用户或平台聊天接口发送
@@ -353,7 +353,7 @@ Gateway 入口将消息与指令交互提交到工作线程后分发，事件中
 
 ### DiscordSlashCommandEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/DiscordSlashCommandEvent.java) · 收到 `INTERACTION_CREATE` 且 `type = 2` 的应用指令交互时触发
+[源码](../../platform-discord/src/main/java/top/yzljc/atribot/event/events/DiscordSlashCommandEvent.java) · 收到 `INTERACTION_CREATE` 且 `type = 2` 的应用指令交互时触发
 
 - 数据：`user`、`applicationId`、`interactionId`、`token`、`guildId`、`channelId`、`commandName`、`timestamp`、原始 `raw` 数据
 - 参数：`options`、`resolved` 保留平台参数，`getArgs()` 提供 `DiscordSlashCommandArguments` 的结构化读取
@@ -362,32 +362,32 @@ Gateway 入口将消息与指令交互提交到工作线程后分发，事件中
 
 ## KOOK
 
-事件由 [KookManager](../../src/main/java/top/yzljc/atribot/platform/kook/KookManager.java) 处理 Webhook 数据后构建。普通消息入口过滤机器人用户及当前机器人自身的消息
+事件由 `platform-kook` 插件的 [KookManager](../../platform-kook/src/main/java/top/yzljc/atribot/platform/kook/KookManager.java) 处理 Webhook 数据后构建。普通消息入口过滤机器人用户及当前机器人自身的消息。监听这些事件的插件需声明 `depend: [platform-kook]`
 
 ### KookChannelMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/KookChannelMessageCreateEvent.java) · 收到非系统消息且 `channel_type = GROUP` 时触发
+[源码](../../platform-kook/src/main/java/top/yzljc/atribot/event/events/KookChannelMessageCreateEvent.java) · 收到非系统消息且 `channel_type = GROUP` 时触发
 
 - 数据：`KookUser user`、`KookMessage message`、`KookCommandSender sender`；频道及服务器信息由消息对象提供
 - 操作：`replyMessage(text)` 委托 `sender.sendMessage(text)` 向当前频道发送文本；图片、卡片等通过 `getSender()` 使用
 
 ### KookDirectMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/KookDirectMessageCreateEvent.java) · 收到非系统消息且 `channel_type = PERSON` 时触发
+[源码](../../platform-kook/src/main/java/top/yzljc/atribot/event/events/KookDirectMessageCreateEvent.java) · 收到非系统消息且 `channel_type = PERSON` 时触发
 
 - 数据：`KookUser user`、`KookMessage message`、`KookCommandSender sender`
 - 操作：`replyMessage(text)` 委托 `sender.sendMessage(text)` 向当前私信对象发送文本；其他发送能力通过 `getSender()` 使用
 
 ### KookButtonClickEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/KookButtonClickEvent.java) · 收到系统消息 `type = 255` 且 `extra.type = message_btn_click` 时触发
+[源码](../../platform-kook/src/main/java/top/yzljc/atribot/event/events/KookButtonClickEvent.java) · 收到系统消息 `type = 255` 且 `extra.type = message_btn_click` 时触发
 
 - 数据：`raw` 保留上报的 `d` 对象；`getUserId()`、`getMessageId()`、`getTargetId()`、`getValue()` 从 `extra.body` 读取点击者、消息、目标和值
 - 范围：回调按钮交由监听器处理，不会自动将按钮值作为文本指令执行，也不会再分发一次 `KookSystemEvent`
 
 ### KookSystemEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/KookSystemEvent.java) · 收到 `type = 255` 的其他系统通知时触发
+[源码](../../platform-kook/src/main/java/top/yzljc/atribot/event/events/KookSystemEvent.java) · 收到 `type = 255` 的其他系统通知时触发
 
 - 数据：`type` 为 `extra.type` 字符串，`raw` 为上报的 `d` 对象
 - 用途：处理尚未独立封装的系统通知；监听器根据 `type` 识别事件，再读取对应的 `extra.body`

@@ -69,6 +69,7 @@ tasks.withType<JavaExec> {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs = listOf("--enable-preview")
+    dependsOn(":platform-kook:jar", ":platform-discord:jar")
 }
 
 val generateGitProperties by tasks.registering {
