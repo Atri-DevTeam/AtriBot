@@ -1,12 +1,14 @@
 package top.yzljc.atribot.miniapp.service;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.RS;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.database.repo.GroupBindingRepository;
 import top.yzljc.atribot.miniapp.MiniappSessions;
-import top.yzljc.atribot.platform.PlatformRole;
+import top.yzljc.atricore.platform.PlatformRole;
 
 import java.security.SecureRandom;
 import java.sql.SQLException;
@@ -28,7 +30,7 @@ import java.util.function.Supplier;
  */
 public final class MiniappGroupService {
     public static final MiniappGroupService INSTANCE = new MiniappGroupService(new GroupBindingRepository(), Clock.systemUTC(),
-            () -> Config.getInstance().getCommandPrefix());
+            () -> CoreConfig.getInstance().getSettings().getCommandPrefix());
     private static final long TTL = 10 * 60_000L;
     private final GroupBindingRepository repository;
     private final Clock clock;

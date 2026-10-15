@@ -2,21 +2,32 @@ package top.yzljc.atribot.function.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.platform.napcat.PostRequest;
-import top.yzljc.atribot.platform.napcat.RequestType;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
+import top.yzljc.atricore.platform.napcat.PostRequest;
+import top.yzljc.atricore.platform.napcat.RequestType;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.timer.Schedule;
-import top.yzljc.atribot.service.timer.ScheduleType;
+import top.yzljc.atricore.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
+import java.time.LocalTime;
 import java.util.Set;
 
-public class AutoSign implements CommandExecutor {
+/**
+ * @Author YZ_Ljc_
+ * @ClassName AutoSign
+ * @Created_at 2026/10/15
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.task
+ */
+public class AutoSign implements CommandExecutor, ScheduledTask {
+    public static final AutoSign INSTANCE = new AutoSign();
 
     private static final Logger log = LoggerFactory.getLogger(AutoSign.class);
 
@@ -28,7 +39,7 @@ public class AutoSign implements CommandExecutor {
             nc.sendMessage("你没有权限执行此命令");
             return true;
         }
-        processAutoSign();
+        ThreadManager.execute(this::run);
         nc.sendMessage("已开始全局自动打卡");
         return true;
     }
@@ -60,8 +71,13 @@ public class AutoSign implements CommandExecutor {
         PostRequest.sendSimplePost(RequestType.SEND_SIGN, "group_id", groupId);
     }
 
-    @Schedule(time = "00:00:00", type = ScheduleType.DAILY)
-    public static void processAutoSign() {
-        ThreadManager.execute(AutoSign::signAllGroups);
+    @Override
+    public TaskSchedule schedule() {
+        return new TaskPlan(ScheduleMode.daily, LocalTime.MIDNIGHT);
+    }
+
+    @Override
+    public void run() {
+        signAllGroups();
     }
 }

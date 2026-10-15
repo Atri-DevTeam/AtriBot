@@ -1,5 +1,7 @@
 package top.yzljc.atribot.miniapp;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import io.javalin.Javalin;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
@@ -94,7 +96,7 @@ public final class MiniappRouter {
             Config config = Config.getInstance();
             ctx.json(new About(GetProjectInfo.getVersion(), GetProjectInfo.getBuildTime(),
                     GetProjectInfo.getBranch(), GetProjectInfo.getCommitId(),
-                    MiniappProfileService.avatarUrl(config.getQqAppId(), config.getSuperAdminId())));
+                    MiniappProfileService.avatarUrl(CoreConfig.getInstance().getSettings().getQqAppId(), config.getSuperAdminId())));
         });
         server.get("/atrimeow/profile/api/profile", ctx -> ctx.json(profiles.apply(requireIdentity(ctx, sessions))));
         server.get("/atrimeow/profile/api/activity", ctx -> ctx.json(activity.load(requireIdentity(ctx, sessions))));

@@ -2,8 +2,8 @@ package top.yzljc.atribot.webui.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
-import top.yzljc.atribot.chat.official.management.JoinApprovalStrategy;
-import top.yzljc.atribot.chat.official.management.JoinRequestApproval;
+import top.yzljc.atricore.chat.official.management.JoinApprovalStrategy;
+import top.yzljc.atricore.chat.official.management.JoinRequestApproval;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.JoinApprovalSnapshotRepo;
 import top.yzljc.atribot.webui.repo.JoinApprovalWhitelistRepo;

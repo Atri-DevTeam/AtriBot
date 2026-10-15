@@ -1,14 +1,16 @@
 package top.yzljc.atribot.webui.controller;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.QQMessageSendException;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.QQMessageSendException;
+import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.function.tasks.GroupJoinWelcome;
@@ -76,7 +78,7 @@ public final class JoinWelcomeController {
     public static void sendTest(Context ctx) {
         ObjectNode config = readConfig(ctx);
         if (config == null) return;
-        String debugGroupId = Config.getInstance().getDebugGroupOpenId();
+        String debugGroupId = CoreConfig.getInstance().getSettings().getDebugGroupOpenId();
         if (debugGroupId == null || debugGroupId.isBlank() || "null".equalsIgnoreCase(debugGroupId.trim())) {
             ctx.status(400).json(Result.fail(400, "请先在机器人设置中配置 QQ 调试群 OpenId（qq.debug-group-openId）"));
             return;

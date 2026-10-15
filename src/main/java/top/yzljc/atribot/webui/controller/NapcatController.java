@@ -1,15 +1,17 @@
 package top.yzljc.atribot.webui.controller;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.official.OfficialMessageSendNotifier;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.official.OfficialMessageSendNotifier;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.webui.Result;
 
 import java.net.URI;
@@ -79,7 +81,7 @@ public class NapcatController {
             ctx.json(Result.fail(400, "groupId 必须是数字"));
             return;
         }
-        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(dto.getGroupId())) {
+        if (!CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(dto.getGroupId())) {
             ctx.json(Result.fail(404, "未开启该群的消息监听"));
             return;
         }
@@ -194,7 +196,7 @@ public class NapcatController {
             }
             return ACCESS_TOKEN_URL;
         }
-        String base = Config.getInstance().getQqApiBaseUrl();
+        String base = CoreConfig.getInstance().getSettings().getQqApiBaseUrl();
         while (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
         }

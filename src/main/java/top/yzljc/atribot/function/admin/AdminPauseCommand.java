@@ -1,12 +1,12 @@
 package top.yzljc.atribot.function.admin;
 
-import top.yzljc.atribot.chat.official.ChatService;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.chat.official.ChatService;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.platform.Identifier;
+import top.yzljc.atricore.platform.qq.QQBot;
 
 /**
  * @Author YZ_Ljc_

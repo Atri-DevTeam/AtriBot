@@ -1,0 +1,37 @@
+# Atri Core 框架配置，首次运行复制到工作目录，已有文件不覆盖
+# 平台回调与运行服务业务共用的 HTTP 端口；修改后需要重启
+listen-port: 1234
+command-prefix: "/"
+debug-mode: false
+
+qq:
+  enabled: false
+  app-id: ""
+  client-secret: ""
+  api-base-url: "https://api.bot.qq.com"
+  # ws 或 webhook；切换连接方式、凭据或回调路径后需要重启
+  connection-mode: "ws"
+  # 由 Provider 挂载到共享 HTTP 服务
+  webhook-path: "/qq/webhook"
+  debug-group-openId: ""
+  webhook-queue-capacity: 1024
+
+napcat:
+  enabled: false
+  # Napcat 的 HTTP API 地址，事件上报地址在 Napcat 端配置
+  server-url: "http://127.0.0.1:3000"
+  token: ""
+  bot-uin: ""
+  debug-group-uin: ""
+  admin-uins: []
+  message-spy-groups: []
+  queue-capacity: 1024
+  queue-bytes: 16777216
+  workers: 8
+
+# 线程和队列参数修改后需要重启；已有 atribot.* JVM 属性优先
+thread:
+  # 0 按 CPU 数量计算，默认范围为 16～128
+  max-concurrency: 0
+  queue-capacity: 4096
+  schedule-capacity: 4096

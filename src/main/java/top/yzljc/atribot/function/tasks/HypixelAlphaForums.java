@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,22 +13,22 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.utils.AtomicFiles;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
@@ -161,8 +163,8 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             );
 
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), a.title(), forumsMarkdown);
-//            GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), text.trim());
-//            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), md);
+//            GroupMessage.chatMessage(CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin(), text.trim());
+//            GroupChat.sendMessage(CoreConfig.getInstance().getSettings().getDebugGroupOpenId(), md);
         }
         return true;
     }

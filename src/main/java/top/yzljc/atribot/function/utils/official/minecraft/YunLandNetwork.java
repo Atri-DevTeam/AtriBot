@@ -1,9 +1,9 @@
 package top.yzljc.atribot.function.utils.official.minecraft;
 
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 
 import java.util.List;

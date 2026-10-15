@@ -1,9 +1,11 @@
 package top.yzljc.atribot.function.admin;
 
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.core.CoreConfig;
+
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.qq.QQConnectionLatency;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.platform.qq.QQConnectionLatency;
 import top.yzljc.atribot.utils.debug.NapcatPacket;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,7 +96,7 @@ public class DebugCommand implements CommandExecutor {
 
             if (args.length == 1 && args[0].equals("-o")) return true;
 
-            String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
+            String debugGroupId = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
             String currentGroupId = nc.getGroupId();
             String statusMsg;
 

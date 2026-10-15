@@ -6,7 +6,7 @@ import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
 

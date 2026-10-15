@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.management.JoinApprovalStrategy;
+import top.yzljc.atricore.chat.official.management.JoinApprovalStrategy;
 import top.yzljc.atribot.configuration.Properties;
 
 import java.io.File;

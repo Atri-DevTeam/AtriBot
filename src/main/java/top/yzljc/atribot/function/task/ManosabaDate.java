@@ -5,20 +5,32 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.service.timer.Schedule;
-import top.yzljc.atribot.service.timer.ScheduleType;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
-public class ManosabaDate implements CommandExecutor {
+import java.time.LocalTime;
+
+/**
+ * @Author YZ_Ljc_
+ * @ClassName ManosabaDate
+ * @Created_at 2026/10/15
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.task
+ */
+public class ManosabaDate implements CommandExecutor, ScheduledTask {
+    public static final ManosabaDate INSTANCE = new ManosabaDate();
 
     private static final Logger log = LoggerFactory.getLogger(ManosabaDate.class);
     private static final String GROUP_ID = String.valueOf(Config.getInstance().getManosabaGroupId());
@@ -40,8 +52,13 @@ public class ManosabaDate implements CommandExecutor {
         return true;
     }
 
-    @Schedule(time = "00:00:10", type = ScheduleType.DAILY)
-    public static void sendAndNotifyToGroup() {
+    @Override
+    public TaskSchedule schedule() {
+        return new TaskPlan(ScheduleMode.daily, LocalTime.of(0, 0, 10));
+    }
+
+    @Override
+    public void run() {
         var data = PreImageGenerate.dump(OpenApi.get("bot.manosaba-date"), Map.of(), Platform.NAPCAT_GROUP);
         if (data.isError() || data.url() == null) {
             String errMsg = data.errorMessage();

@@ -24,6 +24,7 @@
     </appender>
 
     <logger name="top.yzljc.atribot" level="DEBUG"/>
+    <logger name="top.yzljc.atricore" level="DEBUG"/>
     <logger name="com.fasterxml.jackson" level="WARN"/>
 
     <root level="INFO">

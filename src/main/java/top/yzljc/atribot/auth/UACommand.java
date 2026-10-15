@@ -1,18 +1,20 @@
 package top.yzljc.atribot.auth;
 
+import top.yzljc.atricore.auth.*;
+
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.management.JoinApprovalStrategy;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.management.JoinApprovalStrategy;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialGroupJoinRequestEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialGroupJoinRequestEvent;
 import top.yzljc.atribot.webui.repo.JoinApprovalWhitelistRepo;
 
 import java.util.HashMap;

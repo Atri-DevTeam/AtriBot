@@ -6,10 +6,10 @@
 
 | 目录 | 职责 |
 | --- | --- |
-| `src/main/java/top/yzljc/atribot/platform` | 平台连接、协议解析、用户和消息类型 |
-| `src/main/java/top/yzljc/atribot/chat` | 平台消息 API 与内容组件 |
-| `src/main/java/top/yzljc/atribot/event` | 事件系统与具体事件 |
-| `src/main/java/top/yzljc/atribot/command` | 命令定义、发送者、执行器与分发 |
+| `atri-core/src/main/java/top/yzljc/atricore/platform` | 平台连接、协议解析、用户和消息类型 |
+| `atri-core/src/main/java/top/yzljc/atricore/chat` | 平台消息 API 与内容组件 |
+| `atri-core/src/main/java/top/yzljc/atricore/event` | 事件系统与具体事件 |
+| `atri-core/src/main/java/top/yzljc/atricore/command` | 命令定义、发送者、执行器与分发 |
 | `src/main/java/top/yzljc/atribot/auth` | 平台权限、账号绑定、登录验证 |
 | `src/main/java/top/yzljc/atribot/plugin` | 插件加载与上下文 |
 | `src/main/java/top/yzljc/atribot/service` | 请求、AI、调度、线程与公共服务 |
@@ -29,13 +29,24 @@
 ./gradlew build
 ```
 
+`atri-core` 是独立 Java 库，根项目通过 `api(project(":atri-core"))` 引用。修改框架后直接执行 `./gradlew run` 或运行 IDE 中的主类，无需发布依赖。
+
 主类为 `top.yzljc.atribot.Atri`。启动会初始化数据库和启用的外部连接，运行配置按进程工作目录读取
 
 筛选测试可使用：
 
 ```sh
-./gradlew test --tests 'top.yzljc.atribot.auth.*'
+./gradlew :atri-core:test --tests '*OfficialFileTransferTest'
 ```
+
+## 框架产物
+
+```sh
+./gradlew :atri-core:build
+./gradlew :atri-core:publishToMavenLocal
+```
+
+发布坐标为 `top.yzljc:atri-core:<项目版本>`，包含普通 JAR 和源码 JAR。此任务仅发布到本机 Maven 缓存；未配置远端发布仓库。核心库不包含数据库驱动、业务配置或前端资源。使用完整运行服务插件 API 的插件仍需主项目编译产物，详见 [插件开发](framework/plugins.md)
 
 ## 前端
 
@@ -75,7 +86,7 @@ Miniapp 构建包含 TypeScript 检查，浏览器测试入口为 `npm --prefix 
 - 添加核心命令：声明 `atribot.yml`，编写执行器，在 `Atri.onEnable()` 注册
 - 添加事件处理：实现 `Listener`，注册到 `EventManager`
 - 添加平台：实现平台协议、用户和消息类型、发送者及事件入口，保留平台专有字段
-- 添加独立功能：使用 [插件 API](framework/plugins.md)，避免将宿主类打入插件 JAR
+- 添加独立功能：使用 [插件 API](framework/plugins.md)，避免将运行服务类打入插件 JAR
 
 具体约束分别见 [事件](framework/events.md)、[指令](framework/commands.md) 和 [平台与消息](framework/platforms.md)
 
@@ -85,10 +96,4 @@ Miniapp 构建包含 TypeScript 检查，浏览器测试入口为 `npm --prefix 
 
 ### 网站文档同步
 
-[Sync Documentation](../.github/workflows/sync-docs.yml) 在 `AtriMeow` 分支的 README、文档或同步配置变更后运行，也可在 Actions 页面手动触发，分支选择 `AtriMeow`
-
-目标为 `Atri-DevTeam/Atri-Website-Content` 仓库的 `main` 分支，仅更新 `亚托莉喵/`。项目 README 导出为 `介绍.md`，其余文件名由 [文档映射](../.github/docs-map.json) 指定，分类目录最多一层。新增、删除或重命名文档时需同步维护映射
-
-导出时重写文档间的相对链接，源码链接指向源仓库的对应提交。目标目录中的 `.atrimeow-docs.json` 记录已同步文件；下次同步只删除清单中已不再导出的文件，其他手工添加的文件保留。同名导出文件以源项目为准，应在本项目修改
-
-在本项目仓库的 `Settings → Secrets and variables → Actions` 中添加 `DOCS_SYNC_TOKEN`。Token 仅授权目标仓库，`Contents` 权限设为 `Read and write`。工作流无变更时不提交，也不强制推送；目标分支拒绝推送时需处理分支规则或并发更新后重新运行
+网站文档由 atri-core 维护，主项目 README 和 docs 不再参与同步。同步范围、映射和配置见 [core 文档同步说明](../atri-core/docs/development.md#网站文档同步)

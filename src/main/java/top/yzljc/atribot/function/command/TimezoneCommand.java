@@ -3,16 +3,16 @@ package top.yzljc.atribot.function.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.platform.Identifier;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
+import top.yzljc.atricore.platform.Identifier;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.service.ai.AiService;
 import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -31,7 +31,7 @@ import java.util.Set;
  * @Package top.yzljc.atribot.function.command
  */
 @Slf4j
-public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
+public class TimezoneCommand implements CommandExecutor {
 
     /** 默认时区，北京时间 */
     private static final String DEFAULT_ZONE_ID = "Asia/Shanghai";
@@ -85,30 +85,6 @@ public class TimezoneCommand implements CommandExecutor, SlashCommandExecutor {
         return true;
     }
 
-
-    @Override
-    public boolean onCommand(SlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
-        String query = args.getString("zone", "zh").trim();
-
-        ThreadManager.execute(() -> {
-            try {
-                ResolvedZone zone = resolveZone(query);
-                if (zone == null) {
-                    sender.sendMessage("亚托莉没能理解你输入的时区，请换个写法再试试～");
-                    return;
-                }
-
-                String text = buildTimeReply(zone);
-
-                sender.sendMessage(text);
-
-            } catch (Exception e) {
-                log.error("TimezoneCommand 执行失败, query='{}'", query, e);
-                sender.sendMessage(Identifier.HANDLER_ERROR);
-            }
-        });
-        return true;
-    }
 
     private static ResolvedZone resolveZone(String query) {
         if (query == null || query.isBlank()) {

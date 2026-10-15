@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -17,9 +19,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
@@ -27,14 +29,14 @@ import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
-import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.platform.Identifier;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.service.textreview.TextReviewException;
 import top.yzljc.atribot.service.textreview.TextReviewResult;
 import top.yzljc.atribot.service.textreview.TextReviewService;
@@ -317,9 +319,9 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
         String url = data.url();
 
         try {
-//            String messageId = GroupMessage.chatMessage(Config.getInstance().getNapcatDebugGroupUin(), ImageComponent.imageOf(url));
+//            String messageId = GroupMessage.chatMessage(CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin(), ImageComponent.imageOf(url));
 //            for (var gid : TARGET_GROUPS) {
-//                if (Objects.equals(gid, Config.getInstance().getNapcatDebugGroupUin())) continue;
+//                if (Objects.equals(gid, CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin())) continue;
 //                if (!GroupConfigManager.isFeatureEnabled(gid, "mc_news")) continue;
 //                GroupMessage.forwardTo(gid, messageId);
 //            }

@@ -1,7 +1,17 @@
 package top.yzljc.atribot;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import cn.dev33.satoken.sign.SaSignManager;
-import com.fasterxml.jackson.databind.JsonNode;
+import top.yzljc.atricore.AtriProvider;
+import top.yzljc.atribot.bootstrap.ApplicationAccessService;
+import top.yzljc.atribot.bootstrap.ApplicationBotCommand;
+import top.yzljc.atribot.bootstrap.ApplicationLogRecorder;
+import top.yzljc.atribot.configuration.RS;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.core.AccessService;
+import top.yzljc.atricore.core.BotCommand;
+import top.yzljc.atricore.core.LogRecorder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
@@ -17,11 +27,10 @@ import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.napcat.FriendList;
-import top.yzljc.atribot.chat.official.ChatService;
+import top.yzljc.atricore.chat.napcat.FriendList;
 import top.yzljc.atribot.chat.official.moderation.GroupJoinReviewListener;
 import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
-import top.yzljc.atribot.command.CommandManager;
+import top.yzljc.atricore.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.DailyFishingRepository;
@@ -54,28 +63,21 @@ import top.yzljc.atribot.function.utils.napcat.*;
 import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.utils.personal.*;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.test.*;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
 import top.yzljc.atribot.database.repo.SignRepository;
-import top.yzljc.atribot.event.EventManager;
+import top.yzljc.atricore.event.EventManager;
 import top.yzljc.atribot.function.utils.like.AutoLikeCommand;
 import top.yzljc.atribot.function.utils.like.CardLike;
 import top.yzljc.atribot.function.task.*;
-import top.yzljc.atribot.platform.napcat.NapcatEventQueue;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigInfo;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupModeManager;
-import top.yzljc.atribot.platform.qq.OfficialManager;
-import top.yzljc.atribot.platform.qq.QQWebhookHandler;
-import top.yzljc.atribot.platform.qq.TokenManager;
 import top.yzljc.atribot.service.ai.AiService;
-import top.yzljc.atribot.service.Scheduler;
 import top.yzljc.atribot.service.email.IMAP;
 import top.yzljc.atribot.service.runtime.ConsoleManager;
-import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.timer.RunScheduleTask;
-import top.yzljc.atribot.service.taskscheduler.TaskScheduler;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.service.taskscheduler.TaskSchedulerRegistry;
 import top.yzljc.atribot.function.admin.update.UpdatePushCommand;
 import top.yzljc.atribot.utils.socket.MinecraftSocket;
@@ -94,22 +96,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
-public class Atri {
+public class Atri extends AtriProvider {
+    private final AccessService accessService = new ApplicationAccessService();
+    private final LogRecorder logRecorder = new ApplicationLogRecorder();
+    private final BotCommand botCommand = new ApplicationBotCommand();
     private final SoundCommand soundCommand = new SoundCommand();
 
     @Getter
     private static Atri instance;
     @Getter
-    private TokenManager tokenManager;
-    @Getter
-    private ChatService chatService;
-    @Getter
-    private Scheduler scheduler;
-    @Getter
     private final GroupProfileRefreshBatcher groupProfileRefreshBatcher = new GroupProfileRefreshBatcher(
-            (task, delayMillis) -> scheduler.runTaskLaterAsynchronously(task, delayMillis),
+            (task, delayMillis) -> getScheduler().runTaskLaterAsynchronously(task, delayMillis),
             QQEventRecord::fetchAndSaveGroupProfile);
-    private TaskScheduler taskScheduler;
     @Getter
     private AiService aiService;
     @Getter
@@ -136,10 +134,6 @@ public class Atri {
     private final ChannelCliClient tencentChannelCliClient;
     @Getter
     private final CalendarTask calendarTask;
-    private final Javalin server;
-    private final OfficialManager qqBotManagerService;
-    private final QQWebhookHandler qqWebhookHandler;
-    private final NapcatEventQueue napcatEventQueue = new NapcatEventQueue();
     private IMAP imap;
     @Getter
     public static final ObjectMapper objectMapper = new ObjectMapper();
@@ -158,37 +152,7 @@ public class Atri {
         }
         instance = this;
         Config config = Config.getInstance();
-        this.aiService = new AiService(config.getAiPropertiesMap(), objectMapper);
-        this.tokenManager = new TokenManager(config.getQqAppId(), config.getQqClientSecret());
-        this.qqBotManagerService = new OfficialManager(config.getQqApiBaseUrl(), tokenManager, config.getQqConnectionMode());
-        this.qqWebhookHandler = new QQWebhookHandler(config.getQqAppId(), config.getQqClientSecret());
-        this.chatService = new ChatService(config.getQqApiBaseUrl(), tokenManager);
-        this.checkMojira = new MojiraStatus();
-        this.cardLike = new CardLike();
-        this.reboot = new RebootCommand();
-        this.minecraftVersionCheck = new McVersionImpl();
-        this.minecraftNews = new MinecraftNews();
-        this.hypixelAnnouncements = new HypixelAnnouncements();
-        this.hypixelSkyblockAnnouncements = new SkyblockAnnouncements();
-        this.hypixelAlphaForums = new HypixelAlphaForums();
-        this.skyblockPackCheck = new SkyblockPackCheckImpl();
-        this.tencentChannelCliClient = new ChannelCliClient(
-                config.isTencentChannelEnabled(),
-                config.getTencentChannelCliPath(),
-                config.getTencentChannelLoginToken(),
-                Duration.ofSeconds(config.getTencentChannelTimeoutSeconds()),
-                objectMapper
-        );
-        this.calendarTask = new CalendarTask();
-
-        int qqBotPort = config.getListenPort();
-
-        QQBot.fetchBotInfo();
-
-        server = Javalin.create(cfg -> {
-            if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
-                QQWebhookHandler.configureResponseCompletion(cfg);
-            }
+        initialize(cfg -> {
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
             cfg.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/webui";
@@ -201,56 +165,75 @@ public class Atri {
                 staticFiles.directory = "/miniapp";
                 staticFiles.location = Location.CLASSPATH;
             });
-            cfg.jetty.modifyHttpConfiguration(http -> http.addCustomizer(
-                    new org.eclipse.jetty.server.ForwardedRequestCustomizer()
-            ));
-            cfg.http.maxRequestSize = 10_000_000;
             cfg.requestLogger.http((ctx, executionTimeMs) -> {
                 if (ctx.path().equals("/openapi") || ctx.path().startsWith("/openapi/")) {
                     log.info("[!] 开放API访问记录 -> IP位置: {} 状态: {} 连接用时: {}",
                             ctx.ip(), ctx.res().getStatus(), Math.round(executionTimeMs));
                 }
             });
-        }).start(qqBotPort);
-
-        server.before("/webui/api/*", ctx -> {
-            String ip = ctx.ip();
-            if (seenWebuiApiIps.add(ip)) {
-                log.info("[!] 检测到新 IP 访问 WebUI API: {} {} from {}", ctx.method(), ctx.fullUrl(), ip);
-            }
         });
+        try {
+            this.aiService = new AiService(config.getAiPropertiesMap(), objectMapper);
+            this.checkMojira = new MojiraStatus();
+            this.cardLike = new CardLike();
+            this.reboot = new RebootCommand();
+            this.minecraftVersionCheck = new McVersionImpl();
+            this.minecraftNews = new MinecraftNews();
+            this.hypixelAnnouncements = new HypixelAnnouncements();
+            this.hypixelSkyblockAnnouncements = new SkyblockAnnouncements();
+            this.hypixelAlphaForums = new HypixelAlphaForums();
+            this.skyblockPackCheck = new SkyblockPackCheckImpl();
+            this.tencentChannelCliClient = new ChannelCliClient(
+                    config.isTencentChannelEnabled(),
+                    config.getTencentChannelCliPath(),
+                    config.getTencentChannelLoginToken(),
+                    Duration.ofSeconds(config.getTencentChannelTimeoutSeconds()),
+                    objectMapper
+            );
+            this.calendarTask = new CalendarTask();
 
-        server.post("/", ctx -> {
-            JsonNode body = ctx.bodyAsClass(JsonNode.class);
-            if (body == null || !body.isObject()) {
-                ctx.status(400).json(java.util.Map.of("status", 432, "message", "请求体格式无效。"));
-            } else if (napcatEventQueue.offer(body, ctx.bodyAsBytes().length)) {
-                ctx.result("{\"status\":\"ok\"}").contentType("application/json");
-            } else {
-                ctx.header("Retry-After", "1").status(503)
-                        .json(java.util.Map.of("status", 432, "message", "事件处理队列繁忙，请稍后重试。"));
+            Javalin server = getServer();
+
+            server.before("/webui/api/*", ctx -> {
+                String ip = ctx.ip();
+                if (seenWebuiApiIps.add(ip)) {
+                    log.info("[!] 检测到新 IP 访问 WebUI API: {} {} from {}", ctx.method(), ctx.fullUrl(), ip);
+                }
+            });
+
+            WebUIRouter.register(server);
+            PluginHttpRoutes.attach(server);
+            MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
+
+            SaSignManager.getConfig().setSecretKey(Config.getInstance().getSaSignSecretKey());
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
             }
-        });
-
-        if (config.isOfficialBotEnabled() && "webhook".equals(config.getQqConnectionMode())) {
-            server.post(config.getQqWebhookPath(), qqWebhookHandler::handle);
-            log.info("QQ Webhook 回调已启用: POST {}", config.getQqWebhookPath());
+            throw failure;
         }
+    }
 
-        WebUIRouter.register(server);
-        PluginHttpRoutes.attach(server);
-        MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
+    @Override
+    public AccessService getAccessService() { return accessService; }
 
-        log.info("HTTP 服务器已在端口 {} 上启动", qqBotPort);
+    @Override
+    public LogRecorder getLogRecorder() { return logRecorder; }
 
-        SaSignManager.getConfig().setSecretKey(Config.getInstance().getSaSignSecretKey());
+    @Override
+    public BotCommand getBotCommand() { return botCommand; }
+
+    @Override
+    public ImageComponent getMaintenanceMessage() {
+        return ImageComponent.imageOf(RS.get("resource.image.maintenance")).setText("开发者暂且维护中，马上回来！");
     }
 
     public void onEnable() {
         System.out.println("====== ATRI IS STARTING ======");
         EventManager.getInstance().registerEvents(new HitokotoCommand());
 //        EventManager.getInstance().registerEvents(new AutoAcceptFriend()); // disabled
-        EventManager.getInstance().registerEvents(new CommandManager());
 //        EventManager.getInstance().registerEvents(new DenyFuckGuys());
         EventManager.getInstance().registerEvents(new UnknownInvitation());
         EventManager.getInstance().registerEvents(this.cardLike);
@@ -305,10 +288,10 @@ public class Atri {
         CommandManager.getCommand("cl").setExecutor(new HypixelRewardCommand());
         CommandManager.getCommand("preferences").setExecutor(new PreferencesSettingsCommand());
         CommandManager.getCommand("check-mc").setExecutor(this.minecraftNews);
-        CommandManager.getCommand("manodate").setExecutor(new ManosabaDate());
+        CommandManager.getCommand("manodate").setExecutor(ManosabaDate.INSTANCE);
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
-        CommandManager.getCommand("signall").setExecutor(new AutoSign());
-        CommandManager.getCommand("chat").setExecutor(new MessageStats());
+        CommandManager.getCommand("signall").setExecutor(AutoSign.INSTANCE);
+        CommandManager.getCommand("chat").setExecutor(MessageStats.INSTANCE);
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
 //        CommandManager.getCommand("calendar").setExecutor(new Calendar());
         CommandManager.getCommand("check-mojira").setExecutor(this.checkMojira);
@@ -391,7 +374,6 @@ public class Atri {
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
         CommandManager.getCommand("test-markdown").setExecutor(new MarkdownDisplayTest());
 
-        this.scheduler = new Scheduler();
         try {
             BotRuntimeData.init();
         } catch (Exception e) {
@@ -418,7 +400,7 @@ public class Atri {
         FeedbackRepository.init();
         try {
             ReminderService.getInstance().init();
-            ReminderService.getInstance().start(scheduler);
+            ReminderService.getInstance().start(getScheduler());
         } catch (Exception e) {
             log.warn("提醒功能初始化失败: errorType={}", e.getClass().getSimpleName());
         }
@@ -431,18 +413,16 @@ public class Atri {
         UnifiedAuthentication.init();
         PackVersion.initAsync();
 
-        RunScheduleTask.runAllTasks();
-        this.taskScheduler = new TaskScheduler();
-        TaskSchedulerRegistry.registerAll(taskScheduler);
+        TaskSchedulerRegistry.registerAll(AtriProvider.getInstance().getTaskScheduler());
 
         String webhookPath = settings.getGithubWebhookPath();
         String webhookSecret = settings.getGithubWebhookSecret();
 
-        if (settings.isNapcatEnabled()) {
+        if (CoreConfig.getInstance().getSettings().isNapcatEnabled()) {
             GroupConfigManager.refreshAllConfigs();
             FriendList.updateFriendList();
             SetProjectInfo.setInfo();
-            GithubCommitNotify.register(server, webhookPath, webhookSecret);
+            GithubCommitNotify.register(AtriProvider.getInstance().getServer(), webhookPath, webhookSecret);
 
             GroupConfigManager.registerFeature("auto_sign", true);
 //            GroupConfigManager.registerFeature("mc_news", false);
@@ -490,13 +470,15 @@ public class Atri {
                 String pubKey = settings.getVerifyKey();
 
                 minecraftSocket = new MinecraftSocket(mcIp, mcPort, pubKey);
-                MinecraftRemote.connect("atri", mcIp, mcPort, Config.getInstance().getNapcatDebugGroupUin(), pubKey);
+                MinecraftRemote.connect("atri", mcIp, mcPort, CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin(), pubKey);
             }
         } catch (Exception e) {
             log.error("MinecraftVerify 初始化失败: {}", e.getMessage());
         }
 
         pluginManager.loadPlugins();
+        start();
+        log.info("HTTP 服务器已在端口 {} 上启动", getServer().port());
         BotRuntimeData.callStartUp();
     }
 
@@ -505,34 +487,18 @@ public class Atri {
             return;
         }
 
-        qqWebhookHandler.close();
+        close();
         miniappSessions.close();
-        napcatEventQueue.close();
         soundCommand.close();
         groupProfileRefreshBatcher.close();
         pluginManager.close();
-        ChatService.shutdownGroupRecallQueue();
-        if (scheduler != null) {
-            scheduler.cancelTask(BotRuntimeData.getTask());
-        }
         MinecraftRemote.disconnect();
-        qqBotManagerService.stop();
         HypixelRewardCommand.shutdown();
-        RunScheduleTask.shutdown();
         if (imap != null) {
             imap.close();
             imap = null;
         }
-        if (taskScheduler != null) {
-            taskScheduler.shutdown();
-        }
-        if (server != null) {
-            LoginService.getInstance().close();
-            server.stop();
-        }
-        if (scheduler != null) {
-            scheduler.shutdown();
-        }
+        LoginService.getInstance().close();
         tencentChannelCliClient.close();
         ThreadManager.shutdown();
         System.out.println("==== AtriBot Disabled ====");
@@ -541,12 +507,15 @@ public class Atri {
 
     public static void main(String[] args) {
         Atri bot = new Atri();
-        bot.onEnable();
-
         try {
-            bot.qqBotManagerService.start();
-        } catch (Exception e) {
-            log.error("QQ Bot 初始化失败: {}", e.getMessage());
+            bot.onEnable();
+        } catch (RuntimeException | Error failure) {
+            try {
+                bot.onDisable();
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
         }
 
 

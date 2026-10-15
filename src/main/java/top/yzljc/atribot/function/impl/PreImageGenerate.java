@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;

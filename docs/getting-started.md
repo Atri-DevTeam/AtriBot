@@ -38,7 +38,7 @@ Windows 将 `./gradlew` 替换为 `./gradlew.bat`。只修改后端时，可直�
 ## 首次运行
 
 1. 创建固定运行目录，将部署包放入该目录
-2. 将 [config.yml 模板](../src/main/resources/config.yml) 复制到运行目录的 `config.yml`
+2. 将 [框架模板](../atri-core/src/main/resources/atri-core.yml) 和 [业务模板](../src/main/resources/config.yml) 分别复制到运行目录的 `atri-core.yml`、`config.yml`，填写平台凭据与业务配置。文件缺失时程序会生成默认模板
 3. 填写 `mysql`、平台配置和需要使用的外部服务地址
 4. 在运行目录启动程序
 
@@ -52,7 +52,7 @@ java --enable-preview -jar AtriMeow-3.3.0-SNAPSHOT.jar
 
 ## 网络入口
 
-Javalin 监听 `listen-port`，默认 `1234`。平台回调、WebUI 和 Miniapp 共用该服务
+Provider 创建的 Javalin 监听 `atri-core.yml` 的 `listen-port`，默认 `1234`。平台回调、WebUI 和 Miniapp 共用该服务
 
 | 路径 | 用途 |
 | --- | --- |
@@ -71,11 +71,11 @@ WebUI 在生产配置下需先开启，操作方式见 [WebUI 与 Miniapp](web.m
 停止进程后替换部署包，保留原运行目录。更新前备份：
 
 - MySQL 数据库
-- `config.yml`、`groupconfig.json`、`request.json`、`filter.yml` 等运行配置
+- `atri-core.yml`、`config.yml`、`groupconfig.json`、`request.json`、`filter.yml` 等运行配置
 - `data/`、业务历史文件和缓存中需要保留的数据
 - `plugins/` 中的插件及插件数据
 
-通过退出流程关闭程序，使插件、任务和平台连接完成清理。配置字段与初始化逻辑以当前版本源码为准，发布包中的模板不会覆盖已有 `config.yml`
+通过退出流程关闭程序，使插件、任务和平台连接完成清理。配置字段与初始化逻辑以当前版本源码为准，发布包中的模板不会覆盖已有 `atri-core.yml` 或 `config.yml`
 
 ## 常见启动问题
 

@@ -1,15 +1,17 @@
 package top.yzljc.atribot.function.utils;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.impl.MessageSegment;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -188,7 +190,7 @@ public class BiliBiliResolver implements Listener {
                 if (statRoot != null && statRoot.path("code").asLong() == 0L) {
                     totalViews = statRoot.path("data").path("archive").path("view").asLong();
                     if (totalViews <= 0) {
-                        GroupMessage.atUser("3199590352", Config.getInstance().getNapcatDebugGroupUin(), "登陆状态已过期，无法获取播放量，请及时处理！");
+                        GroupMessage.atUser("3199590352", CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin(), "登陆状态已过期，无法获取播放量，请及时处理！");
                         log.warn("登陆状态已过期，无法获取播放量，请及时处理！");
                     }
                 } else {

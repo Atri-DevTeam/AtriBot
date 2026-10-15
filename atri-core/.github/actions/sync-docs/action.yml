@@ -1,0 +1,73 @@
+name: Sync atri-core documentation
+description: 导出 core 文档并更新网站内容仓库
+
+inputs:
+  source-root:
+    description: core 源目录，相对于工作区
+    required: true
+  source-prefix:
+    description: core 源目录在 Git 仓库中的相对路径，独立仓库留空
+    default: ''
+  token:
+    description: 目标内容仓库的写入 Token
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Test documentation export
+      shell: bash
+      env:
+        SOURCE_ROOT: ${{ inputs.source-root }}
+      run: python3 -B -m unittest discover -s "$SOURCE_ROOT/.github/scripts" -p 'test_sync_docs.py' -v
+
+    - name: Check synchronization token
+      shell: bash
+      env:
+        DOCS_SYNC_TOKEN: ${{ inputs.token }}
+      run: |
+        if [ -z "$DOCS_SYNC_TOKEN" ]; then
+          echo '::error::请在当前仓库的 Actions Secrets 中设置 DOCS_SYNC_TOKEN'
+          exit 1
+        fi
+
+    - name: Checkout website content
+      uses: actions/checkout@v7
+      with:
+        repository: Atri-DevTeam/Atri-Website-Content
+        ref: main
+        token: ${{ inputs.token }}
+        path: website
+
+    - name: Export documentation
+      shell: bash
+      env:
+        SOURCE_ROOT: ${{ inputs.source-root }}
+        SOURCE_PREFIX: ${{ inputs.source-prefix }}
+        SOURCE_REPOSITORY: ${{ github.repository }}
+        SOURCE_REVISION: ${{ github.sha }}
+      run: |
+        python3 -B "$SOURCE_ROOT/.github/scripts/sync_docs.py" \
+          --source-root "$SOURCE_ROOT" \
+          --source-prefix "$SOURCE_PREFIX" \
+          --target-root website \
+          --repository "$SOURCE_REPOSITORY" \
+          --revision "$SOURCE_REVISION"
+
+    - name: Commit documentation changes
+      shell: bash
+      working-directory: website
+      run: |
+        git add -- '亚托莉喵/'
+        if git diff --cached --quiet; then
+          echo '文档没有变化'
+          exit 0
+        fi
+        if [ -n "$(git diff --cached --name-only -- . ':(exclude)亚托莉喵/**')" ]; then
+          echo '::error::暂存区包含目标目录之外的修改'
+          exit 1
+        fi
+        git config user.name 'github-actions[bot]'
+        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git commit -m 'docs: 同步 atri-core 文档'
+        git push origin HEAD:main

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.event.events.NapcatPrivateMessageEvent;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.events.NapcatPrivateMessageEvent;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.File;

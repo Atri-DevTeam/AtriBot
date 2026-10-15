@@ -1,15 +1,15 @@
 package top.yzljc.atribot.utils.notify;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.database.PendingNoticeDTO;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialC2CMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupAtMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
 
 /**
  * 被动队列排空器：目标下一次与 Bot 交互时补发欠他的通知。

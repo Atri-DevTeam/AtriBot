@@ -1,0 +1,127 @@
+package top.yzljc.atricore.chat.official.button;
+
+import lombok.Getter;
+import top.yzljc.atricore.platform.Identifier;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * @Author YZ_Ljc_
+ * @ClassName Button
+ * @Created_at 2026/06/11
+ * @Project AtriBot
+ * @Package top.yzljc.atricore.chat.official.button
+ */
+@Getter
+public class Button {
+    private final String buttonId;
+    private final String displayText;
+    private String visitedDisplayText;
+    private final String data;
+    private boolean enter = true;
+    private boolean reply = false;
+    private final ButtonStyle style;
+    private final ButtonType actionType;
+    private PermissionType permissionType = PermissionType.ALL;
+    private List<String> allowedOpenIds = Collections.emptyList();
+    private Modal modal;
+    private String buttonGroupId;
+    private String unsupportedTip = "当前客户端版本不支持此按钮";
+
+    public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
+        this.buttonId = buttonId;
+        this.displayText = displayText;
+        this.visitedDisplayText = displayText;
+        this.data = data;
+        this.style = style;
+        this.actionType = actionType;
+        this.modal = new Modal(Identifier.UNDEFINED);
+    }
+
+    public Button(String buttonId, String displayText, String data, boolean enter, ButtonStyle style, ButtonType actionType) {
+        this.buttonId = buttonId;
+        this.displayText = displayText;
+        this.visitedDisplayText = displayText;
+        this.data = data;
+        this.enter = enter;
+        this.style = style;
+        this.actionType = actionType;
+        this.modal = new Modal(Identifier.UNDEFINED);
+    }
+
+    public Button setReply(boolean reply) {
+        this.reply = reply;
+        return this;
+    }
+
+    public Button setVisitedDisplayText(String visitedDisplayText) {
+        this.visitedDisplayText = visitedDisplayText;
+        return this;
+    }
+
+    public Button setPermissionType(PermissionType permissionType) {
+        this.permissionType = permissionType;
+        return this;
+    }
+
+    /**
+     * 使用此方法默认将 permissionType 设置为 SPECIFIC_USER
+     */
+    public Button setAllowedOpenIds(List<String> allowedOpenIds) {
+        this.allowedOpenIds = allowedOpenIds;
+
+        if (this.permissionType != PermissionType.SPECIFIC_USER) {
+            this.permissionType = PermissionType.SPECIFIC_USER;
+        }
+
+        return this;
+    }
+
+    public Button setEnter(boolean enter) {
+        this.enter = enter;
+        return this;
+    }
+
+    public Button setModal(String content) {
+        this.modal.content = content;
+        return this;
+    }
+
+    public Button setUnsupportedTip(String unsupportedTip) {
+        this.unsupportedTip = unsupportedTip;
+        return this;
+    }
+
+    /**
+     * @param content 提示文本
+     * @param confirmText 确认按钮文本，最多4个字
+     * @param cancelText 取消按钮文本，最多4个字
+     * @return Button 对象
+     */
+    public Button setModal(String content, String confirmText, String cancelText) {
+        if (confirmText.length() > 4 || cancelText.length() > 4) {
+            throw new IllegalArgumentException("键盘按钮的Modal参数中，确认和取消按钮的字数不能超过4个");
+        }
+        this.modal.content = content;
+        this.modal.confirmText = confirmText;
+        this.modal.cancelText = cancelText;
+        return this;
+    }
+
+    public Button setButtonGroupId(String buttonGroupId) {
+        this.buttonGroupId = buttonGroupId;
+        return this;
+    }
+
+    @Getter
+    public static class Modal {
+        private String content;
+        private String confirmText;
+        private String cancelText;
+
+        public Modal(String content) {
+            this.content = content;
+        }
+    }
+}

@@ -1,7 +1,7 @@
 package top.yzljc.atribot.utils.notify;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atribot.database.PendingNoticeDTO;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 

@@ -1,7 +1,7 @@
 package top.yzljc.atribot.plugin;
 
-import top.yzljc.atribot.command.CommandDefinition;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.command.CommandDefinition;
+import top.yzljc.atricore.platform.Platform;
 
 import java.util.ArrayList;
 import java.util.HashSet;

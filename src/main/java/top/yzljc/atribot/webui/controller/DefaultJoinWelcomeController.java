@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.chat.official.welcome.DefaultJoinWelcomeStore;
 import top.yzljc.atribot.webui.Result;
 

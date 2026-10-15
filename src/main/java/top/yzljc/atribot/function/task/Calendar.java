@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.task;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -7,19 +9,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
 
 @Deprecated(since = "3.2.2")
@@ -32,7 +34,7 @@ public class Calendar implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof NapcatCommandSender nc)) return true;
         if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "calendar")) return true;
-        if (Config.getInstance().isDebugMode() && nc.hasPermission()) {
+        if (CoreConfig.getInstance().getSettings().isDebugMode() && nc.hasPermission()) {
             sendToAllGroups();
         } else {
             sendToSingleGroup(nc.getGroupId());
@@ -72,7 +74,7 @@ public class Calendar implements CommandExecutor {
                     return;
                 }
 
-                String debugGroupUin = Config.getInstance().getNapcatDebugGroupUin();
+                String debugGroupUin = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
                 String messageId = GroupMessage.chatMessage(debugGroupUin, ImageComponent.imageOf(data.url()));
                 if (messageId != null) {
                     log.info("日历已发送至Debug群 ({})，MessageID: {}，开始执行广播转发...", debugGroupUin, messageId);

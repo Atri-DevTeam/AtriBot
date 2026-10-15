@@ -1,5 +1,7 @@
 package top.yzljc.atribot.auth;
 
+import top.yzljc.atricore.auth.*;
+
 /**
  * API 授权范围：精确路径或末尾 /*（包含该目录本身及所有后代）。
  *

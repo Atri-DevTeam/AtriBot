@@ -5,18 +5,18 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.tools.Alert;
 

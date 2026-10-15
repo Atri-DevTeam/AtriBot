@@ -1,27 +1,29 @@
 package top.yzljc.atribot.function.admin;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
 import java.time.LocalTime;
 
 public class RebootCommand implements CommandExecutor, ScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(RebootCommand.class);
-    private static final String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
+    private static final String debugGroupId = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof ConsoleCommandSender console) {
             console.sendMessage("[!] 正在重启AtriMeow服务端...");
-            processReboot(console.getUserId(), Config.getInstance().getNapcatDebugGroupUin());
+            processReboot(console.getUserId(), CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin());
             return true;
         }
 

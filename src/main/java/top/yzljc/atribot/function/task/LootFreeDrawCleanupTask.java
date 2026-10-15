@@ -2,8 +2,12 @@ package top.yzljc.atribot.function.task;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.function.impl.drawitem.LootService;
-import top.yzljc.atribot.service.timer.Schedule;
-import top.yzljc.atribot.service.timer.ScheduleType;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
+
+import java.time.LocalTime;
 
 /**
  * @Author YZ_Ljc_
@@ -13,10 +17,16 @@ import top.yzljc.atribot.service.timer.ScheduleType;
  * @Package top.yzljc.atribot.function.task
  */
 @Slf4j
-public class LootFreeDrawCleanupTask {
+public class LootFreeDrawCleanupTask implements ScheduledTask {
+    public static final LootFreeDrawCleanupTask INSTANCE = new LootFreeDrawCleanupTask();
 
-    @Schedule(time = "23:55:00", type = ScheduleType.DAILY)
-    public static void clearDailyFreeDrawRecord() {
+    @Override
+    public TaskSchedule schedule() {
+        return new TaskPlan(ScheduleMode.daily, LocalTime.of(23, 55));
+    }
+
+    @Override
+    public void run() {
         log.info("开始清理每日免费抽卡记录...");
         LootService.clearDailyFreeDrawRecord();
     }

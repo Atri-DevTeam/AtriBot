@@ -1,15 +1,15 @@
 package top.yzljc.atribot.chat.official.moderation;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.management.Mute;
+import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.management.Mute;
 import top.yzljc.atribot.database.repo.ModerationLogRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.platform.qq.QQMessage;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.platform.qq.QQMessage;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

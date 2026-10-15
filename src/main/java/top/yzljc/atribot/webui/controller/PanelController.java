@@ -2,7 +2,7 @@ package top.yzljc.atribot.webui.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
-import top.yzljc.atribot.chat.official.panel.Panel;
+import top.yzljc.atricore.chat.official.panel.Panel;
 import top.yzljc.atribot.webui.Result;
 
 import java.util.ArrayList;

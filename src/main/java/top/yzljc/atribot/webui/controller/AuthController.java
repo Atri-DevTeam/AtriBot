@@ -1,10 +1,12 @@
 package top.yzljc.atribot.webui.controller;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.WebUIAuthRateLimiter;
 import top.yzljc.atribot.webui.WebUISessionManager;
@@ -20,11 +22,11 @@ public class AuthController {
 
     public static void getConfig(Context ctx) {
         ctx.json(Result.success(new ConfigDTO(
-                Config.getInstance().getQqAppId(),
+                CoreConfig.getInstance().getSettings().getQqAppId(),
                 Config.getInstance().getOfficialOpenId(),
                 QQBot.BOT_NAME,
-                Config.getInstance().getQqApiBaseUrl(),
-                Config.getInstance().getDebugGroupOpenId(),
+                CoreConfig.getInstance().getSettings().getQqApiBaseUrl(),
+                CoreConfig.getInstance().getSettings().getDebugGroupOpenId(),
                 Config.getInstance().getSuperAdminId()
         )));
     }

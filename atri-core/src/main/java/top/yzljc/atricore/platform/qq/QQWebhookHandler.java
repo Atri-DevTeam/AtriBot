@@ -1,0 +1,209 @@
+package top.yzljc.atricore.platform.qq;
+
+import top.yzljc.atricore.AtriProvider;
+import top.yzljc.atricore.core.CoreConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.config.JavalinConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.LifeCycle;
+import top.yzljc.atricore.service.runtime.ThreadManager;
+
+import io.javalin.http.Context;
+
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.spec.EdECPrivateKeySpec;
+import java.security.spec.NamedParameterSpec;
+import java.util.Map;
+
+/**
+ * @Author YZ_Ljc_
+ * @ClassName QQWebhookHandler
+ * @Created_at 2026/08/20
+ * @Project AtriBot
+ * @Package top.yzljc.atricore.platform.qq
+ */
+@Slf4j
+public final class QQWebhookHandler implements AutoCloseable {
+
+    private static final int ED25519_SEED_SIZE = 32;
+
+    private final String appId;
+    private final String clientSecret;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final QQWebhookEventQueue eventQueue;
+
+    public QQWebhookHandler(String appId, String clientSecret) {
+        this(appId, clientSecret, new QQWebhookEventQueue(
+                Math.max(1, Integer.getInteger("atribot.qq.webhook.queueCapacity", CoreConfig.getInstance().getSettings().getQqWebhookQueueCapacity())),
+                ThreadManager::execute,
+                event -> {
+                    AtriProvider.getInstance().getLogRecorder().recordEvent(event.type(), event.id(), null, event.rawPayload());
+                    WebSocketClient.dispatchEvent(event.type(), event.id(), event.data());
+                }
+        ));
+    }
+
+    QQWebhookHandler(String appId, String clientSecret, QQWebhookEventQueue eventQueue) {
+        this.appId = appId == null ? "" : appId;
+        this.clientSecret = clientSecret == null ? "" : clientSecret;
+        this.eventQueue = eventQueue;
+    }
+
+    /** 在 Javalin 启动前启用每个请求的响应完成回调 */
+    public static void configureResponseCompletion(JavalinConfig config) {
+        config.jetty.modifyServer(server -> server.addEventListener(new LifeCycle.Listener() {
+            @Override
+            public void lifeCycleStarting(LifeCycle event) {
+                // 此时 Javalin 已创建 Connector，Jetty 尚未开始接收请求
+                server.addBeanToAllConnectors(new HttpChannel.TransientListeners());
+            }
+        }));
+    }
+
+    public void handle(Context ctx) {
+        long receivedNanos = System.nanoTime();
+        String callbackAppId = ctx.header("X-Bot-Appid");
+        if (callbackAppId != null && !callbackAppId.isBlank() && !appId.equals(callbackAppId)) {
+            ctx.status(403).result("forbidden");
+            return;
+        }
+
+        try {
+            JsonNode payload = ctx.bodyAsClass(JsonNode.class);
+            int op = payload.path("op").asInt(-1);
+            if (op == 13) {
+                handleValidation(ctx, payload.path("d"));
+                return;
+            }
+            if (op == 0) {
+                handleEvent(ctx, payload, receivedNanos);
+                return;
+            } else {
+                log.debug("[!] 未被处理的官机Webhook操作码: {}", op);
+            }
+            writeEmptyResponse(ctx);
+        } catch (Exception e) {
+            log.error("[!] 处理官机Webhook回调失败", e);
+            ctx.status(400).result("bad request");
+        }
+    }
+
+    private void handleValidation(Context ctx, JsonNode validationData) throws Exception {
+        String plainToken = validationData.path("plain_token").asText(null);
+        String eventTs = validationData.path("event_ts").asText(null);
+        if (plainToken == null || eventTs == null || clientSecret.isBlank()) {
+            ctx.status(400).result("invalid validation payload");
+            return;
+        }
+
+        byte[] seed = deriveSeed(clientSecret);
+        EdECPrivateKeySpec privateKeySpec = new EdECPrivateKeySpec(
+                NamedParameterSpec.ED25519,
+                seed
+        );
+        PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(privateKeySpec);
+
+        Signature signer = Signature.getInstance("Ed25519");
+        signer.initSign(privateKey);
+        signer.update((eventTs + plainToken).getBytes(StandardCharsets.UTF_8));
+        String signature = toHex(signer.sign());
+
+        ctx.result(objectMapper.writeValueAsString(Map.of(
+                        "plain_token", plainToken,
+                        "signature", signature
+                )))
+                .contentType("application/json");
+    }
+
+    private void handleEvent(Context ctx, JsonNode payload, long receivedNanos) {
+        String eventType = payload.path("t").asText(null);
+        JsonNode eventData = payload.path("d");
+        if (eventType == null || eventType.isBlank() || eventData.isMissingNode() || eventData.isNull()) {
+            log.debug("QQ Webhook 事件缺少 t 或 d: {}", payload);
+            writeEventAck(ctx, 400, false);
+            return;
+        }
+
+        String eventId = payload.path("id").asText(null);
+        String rawPayload = payload.toString();
+        QQWebhookEventQueue.Receipt receipt = eventQueue.reserve(new QQWebhookEventQueue.Event(
+                eventType, eventId, eventData, rawPayload));
+        if (receipt == null) {
+            writeEventAck(ctx, 503, false);
+            return;
+        }
+
+        try {
+            // ctx.result() 仅设置待发送的响应。等 Jetty 完整写出 ACK 后才允许分发事件
+            Request.getBaseRequest(ctx.req()).getHttpChannel().addListener(new HttpChannel.Listener() {
+                @Override
+                public void onResponseEnd(Request request) {
+                    if (request.getResponse().getStatus() == 200) {
+                        QQConnectionLatency.received(eventType, eventData, "Webhook", receivedNanos);
+                        receipt.acknowledge();
+                    } else {
+                        receipt.fail();
+                    }
+                }
+
+                @Override
+                public void onResponseFailure(Request request, Throwable failure) {
+                    receipt.fail();
+                }
+
+                @Override
+                public void onComplete(Request request) {
+                    // 未正常写完响应时释放预留位置，允许腾讯重新投递
+                    receipt.fail();
+                }
+            });
+            writeEventAck(ctx, 200, true);
+        } catch (RuntimeException e) {
+            receipt.fail();
+            throw e;
+        }
+    }
+
+    private static void writeEventAck(Context ctx, int status, boolean accepted) {
+        ctx.status(status).contentType("application/json")
+                .result(accepted ? "{\"op\":12,\"d\":0}" : "{\"op\":12,\"d\":1}");
+    }
+
+    @Override
+    public void close() {
+        eventQueue.close();
+    }
+
+    private static byte[] deriveSeed(String secret) {
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length == 0) {
+            throw new IllegalArgumentException("QQ client secret cannot be empty");
+        }
+        byte[] seed = new byte[ED25519_SEED_SIZE];
+        for (int i = 0; i < seed.length; i++) {
+            seed[i] = secretBytes[i % secretBytes.length];
+        }
+        return seed;
+    }
+
+    private static String toHex(byte[] bytes) {
+        char[] digits = "0123456789abcdef".toCharArray();
+        char[] result = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int value = bytes[i] & 0xff;
+            result[i * 2] = digits[value >>> 4];
+            result[i * 2 + 1] = digits[value & 0x0f];
+        }
+        return new String(result);
+    }
+
+    private static void writeEmptyResponse(Context ctx) {
+        ctx.result("{}").contentType("application/json");
+    }
+}

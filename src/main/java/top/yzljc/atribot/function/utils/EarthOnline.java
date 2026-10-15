@@ -2,11 +2,11 @@ package top.yzljc.atribot.function.utils;
 
 import java.util.Map;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
 

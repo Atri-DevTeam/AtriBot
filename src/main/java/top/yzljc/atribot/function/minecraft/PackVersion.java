@@ -3,8 +3,8 @@ package top.yzljc.atribot.function.minecraft;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.request.HttpService;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.HashMap;
 import java.util.Map;

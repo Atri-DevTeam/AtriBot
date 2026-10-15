@@ -1,11 +1,11 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
 import top.yzljc.atribot.function.command.ReminderCommand;
-import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialC2CMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupAtMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
 
 import java.util.Set;
 

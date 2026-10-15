@@ -1,8 +1,10 @@
 package top.yzljc.atribot.utils.debug;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.UserInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.UserInformation;
 import top.yzljc.atribot.configuration.Config;
 
 import java.util.Objects;
@@ -18,7 +20,7 @@ public class NapcatPacket {
     private static final AtomicBoolean isDebugEnabled = new AtomicBoolean(false);
     private static volatile String targetFilterGroupId = null;
     private static final String botUid = UserInformation.getBotId();
-    private static final String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
+    private static final String debugGroupId = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
 
     public static void process(JsonNode json) {
         if (!isDebugEnabled.get()) return;

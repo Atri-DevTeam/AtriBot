@@ -1,10 +1,12 @@
 package top.yzljc.atribot.platform.napcat.groupfunction;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atribot.configuration.Config;
 
 import java.io.File;
@@ -41,7 +43,7 @@ public class GroupConfigManager {
 
         Set<String> currentOnlineGroups = GroupInformation.fetchAllGroupIds();
 
-        boolean isDebug = Config.getInstance().isDebugMode();
+        boolean isDebug = CoreConfig.getInstance().getSettings().isDebugMode();
 
         boolean isUpdated = false;
 

@@ -10,7 +10,7 @@ import java.util.concurrent.locks.Lock;
 import com.google.common.util.concurrent.Striped;
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.BackgroundRepository;
 import top.yzljc.atribot.function.background.BackgroundSettings.Submission;
 import top.yzljc.atribot.utils.HashUtils;

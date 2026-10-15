@@ -1,5 +1,7 @@
 package top.yzljc.atribot.test;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import java.net.URI;
 import java.util.*;
 
@@ -9,21 +11,21 @@ import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.function.tasks.MinecraftNews;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
@@ -72,7 +74,7 @@ public class MinecraftNewsDebug implements CommandExecutor {
     }
 
     private static void runDebug(String specifiedUrl) {
-        String debugGroup = Config.getInstance().getNapcatDebugGroupUin();
+        String debugGroup = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
 
         try {
             MinecraftNews.UnifiedArticle article;
@@ -154,7 +156,7 @@ public class MinecraftNewsDebug implements CommandExecutor {
             String markdown = "**Minecraft官方发布了新的文章，点击图片查看详情！**\n\n" + "> 时间: " + "2026-3-5 19:00" + "\n\n" + "![MC #" + data.width() + "px #" + data.height() + "px](" + data.url() + ")\n\n" +
                     "> " + Markdown.enterCommand("/tasks disable mc_news", "关闭此类推送");
 
-            GroupChat.sendMessage(Config.getInstance().getDebugGroupOpenId(), TC.md(markdown));
+            GroupChat.sendMessage(CoreConfig.getInstance().getSettings().getDebugGroupOpenId(), TC.md(markdown));
 
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.MINECRAFT_NEWS.getChannelId(), "[动态] " + article.title, forumsMarkdown);
             GroupMessage.chatMessage(debugGroup,

@@ -2,10 +2,10 @@ package top.yzljc.atribot.plugin;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.LoginService;
-import top.yzljc.atribot.command.CommandManager;
+import top.yzljc.atricore.command.CommandManager;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.event.EventManager;
-import top.yzljc.atribot.event.Listener;
+import top.yzljc.atricore.event.EventManager;
+import top.yzljc.atricore.event.Listener;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +59,7 @@ public final class PluginContext {
 
     public Atri getBot() { return Atri.getInstance(); }
 
-    /** 与宿主 /login 命令共享的验证服务；生命周期由宿主管理。 */
+    /** 与运行服务 /login 命令共享的验证服务；生命周期由运行服务管理。 */
     public synchronized LoginService getLoginService() {
         ensureOpen();
         return LoginService.getInstance();

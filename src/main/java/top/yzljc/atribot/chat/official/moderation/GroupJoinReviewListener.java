@@ -2,10 +2,10 @@ package top.yzljc.atribot.chat.official.moderation;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.ModerationLogRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialGroupJoinRequestEvent;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialGroupJoinRequestEvent;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
 
 /**

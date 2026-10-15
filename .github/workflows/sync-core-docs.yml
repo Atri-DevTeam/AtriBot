@@ -1,0 +1,38 @@
+name: Sync Core Documentation
+
+on:
+  push:
+    branches:
+      - AtriMeow
+    paths:
+      - atri-core/README.md
+      - atri-core/docs/**
+      - atri-core/.github/**
+      - .github/workflows/sync-core-docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-atrimeow-website-docs
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'Atri-DevTeam/AtriBot' && github.ref == 'refs/heads/AtriMeow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          path: source
+          persist-credentials: false
+
+      - name: Sync core documentation
+        uses: ./source/atri-core/.github/actions/sync-docs
+        with:
+          source-root: source/atri-core
+          source-prefix: atri-core
+          token: ${{ secrets.DOCS_SYNC_TOKEN }}

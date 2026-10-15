@@ -1,0 +1,111 @@
+name: Publish atri-core
+
+on:
+  push:
+    branches:
+      - AtriMeow
+    paths:
+      - atri-core/src/**
+      - atri-core/build.gradle.kts
+      - atri-core/gradle.properties
+      - atri-core/gradle.lockfile
+      - build.gradle.kts
+      - settings.gradle.kts
+      - gradle.properties
+      - gradle/**
+      - gradlew
+      - gradlew.bat
+      - LICENSE
+      - .github/workflows/publish-core.yml
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (leave empty for automatic numbering)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-atri-core-${{ inputs.version || format('0.1.{0}', github.run_number) }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Atri-DevTeam/AtriBot' && github.ref == 'refs/heads/AtriMeow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REQUESTED_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Select release version
+        shell: bash
+        run: |
+          CORE_VERSION="${REQUESTED_VERSION:-0.1.$GITHUB_RUN_NUMBER}"
+          if [[ ! "$CORE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+([.-][A-Za-z0-9]+)*)?$ ]] || [[ "${CORE_VERSION^^}" == *SNAPSHOT* ]]; then
+            echo '::error::Specify a release version such as 0.1.0'
+            exit 1
+          fi
+          echo "CORE_VERSION=$CORE_VERSION" >> "$GITHUB_ENV"
+          echo "Release version: $CORE_VERSION"
+
+      - name: Check published version
+        id: release
+        shell: bash
+        run: |
+          url="https://repo.maven.apache.org/maven2/top/yzljc/atricore/atri-core/$CORE_VERSION/atri-core-$CORE_VERSION.pom"
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --connect-timeout 10 --max-time 60 --retry 3 "$url")
+          case "$status" in
+            200)
+              echo 'exists=true' >> "$GITHUB_OUTPUT"
+              echo "Version $CORE_VERSION is already published; no artifacts were uploaded" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            404)
+              echo 'exists=false' >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unable to check published version (HTTP $status)"
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout
+        if: steps.release.outputs.exists == 'false'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        if: steps.release.outputs.exists == 'false'
+        uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        if: steps.release.outputs.exists == 'false'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Test core
+        if: steps.release.outputs.exists == 'false'
+        run: bash ./gradlew :atri-core:test --no-daemon "-PcoreVersion=$CORE_VERSION"
+
+      - name: Publish to Maven Central
+        if: steps.release.outputs.exists == 'false'
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          for name in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey ORG_GRADLE_PROJECT_signingInMemoryKeyPassword; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing secret for $name"
+              exit 1
+            fi
+          done
+          bash ./gradlew :atri-core:publishAndReleaseToMavenCentral --no-daemon --no-configuration-cache "-PcoreVersion=$CORE_VERSION"
+          echo "Published: top.yzljc.atricore:atri-core:$CORE_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

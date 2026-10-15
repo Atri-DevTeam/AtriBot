@@ -1,0 +1,111 @@
+package top.yzljc.atricore.platform.napcat;
+
+import top.yzljc.atricore.AtriProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atricore.service.request.HttpService;
+
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Napcat HTTP API 请求入口
+ *
+ * @Author YZ_Ljc_
+ * @ClassName PostRequest
+ * @Created_at 2026/10/15
+ * @Project AtriMeow
+ * @Package top.yzljc.atricore.platform.napcat
+ */
+@Slf4j
+public class PostRequest {
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * 获取 API 返回结果 (多参)
+     */
+    public static JsonNode getPostResult(RequestType type, Map<String, Object> params) {
+        return executeRequest(type, params, null);
+    }
+
+    /**
+     * 获取 API 返回结果 (多参, 自定义请求超时)
+     */
+    public static JsonNode getPostResult(RequestType type, Map<String, Object> params, Duration timeout) {
+        return executeRequest(type, params, timeout);
+    }
+
+    /**
+     * 获取 API 返回结果 (单参)
+     * 用法: getSimplePostResult(CheckType.GET_GROUP_INFO, "group_id", 123456L)
+     */
+    public static JsonNode getSimplePostResult(RequestType type, String key, Object value) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(key, value);
+        return executeRequest(type, params, null);
+    }
+
+    /**
+     * 获取 API 返回结果 (无参数)
+     */
+    public static JsonNode getPostResult(RequestType type) {
+        return executeRequest(type, null, null);
+    }
+
+    /**
+     * 发送 POST 请求 (无返回值)
+     */
+    public static void sendPost(RequestType type, Map<String, Object> params) {
+        executeRequest(type, params, null);
+    }
+
+    /**
+     * 发送 POST 请求 (忽略返回值, 单参)
+     * 用法: sendSimplePost(CheckType.RECALL_MESSAGE, "message_id", 123L)
+     */
+    public static void sendSimplePost(RequestType type, String key, Object value) {
+        Map<String, Object> params = new HashMap<>();
+        params.put(key, value);
+        executeRequest(type, params, null);
+    }
+
+    private static JsonNode executeRequest(RequestType type, Map<String, Object> params, Duration timeout) {
+        try {
+            String BASEURL = AtriProvider.getInstance().getSettings().getNapcatServerUrl();
+            String postUrl = BASEURL + type.getRequestLink();
+            Map<String, Object> requestBody = params != null ? params : new HashMap<>();
+
+            String json = mapper.writeValueAsString(requestBody);
+            HttpRequest.Builder requestBuilder = HttpService.newRequestBuilder()
+                    .uri(URI.create(postUrl))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + AtriProvider.getInstance().getSettings().getAuthToken())
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            if (timeout != null) {
+                requestBuilder.timeout(timeout);
+            }
+            HttpRequest request = requestBuilder.build();
+
+            HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                if (body != null && !body.isBlank()) {
+                    return mapper.readTree(body);
+                }
+                return null;
+            } else {
+                log.warn("请求失败! 接口: {}, HTTP Code: {}", type.name(), response.statusCode());
+            }
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            log.error("接口请求异常! 类型: {}, 错误: {}", type.name(), e.getMessage());
+        }
+        return null;
+    }
+}

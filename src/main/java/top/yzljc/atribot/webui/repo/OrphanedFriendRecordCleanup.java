@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.webui.ChatChanges;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;

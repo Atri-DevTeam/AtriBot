@@ -1,5 +1,7 @@
 package top.yzljc.atribot.chat.napcat;
 
+import top.yzljc.atricore.chat.napcat.*;
+
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.service.ai.AiProvider;
 import top.yzljc.atribot.service.ai.AiService;

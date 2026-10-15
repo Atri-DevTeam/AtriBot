@@ -50,6 +50,7 @@ bin/
 
 ### Bot Generated Contents ###
 /config.yml
+/atri-core.yml
 /request.json
 /data.json
 /webui/dist/
@@ -74,3 +75,6 @@ bin/
 /errorlogs/
 /sign_data/
 /hypixel_announcements.json
+
+/platform-kook/
+/platform-discord/

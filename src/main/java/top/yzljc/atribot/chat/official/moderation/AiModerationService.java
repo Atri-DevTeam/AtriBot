@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

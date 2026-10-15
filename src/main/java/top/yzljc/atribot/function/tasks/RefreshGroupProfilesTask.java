@@ -2,17 +2,17 @@ package top.yzljc.atribot.function.tasks;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.ConsoleCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.platform.qq.QQBot;
-import top.yzljc.atribot.service.runtime.ThreadManager;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.ConsoleCommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.platform.qq.QQBot;
+import top.yzljc.atricore.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
 import java.time.LocalTime;
 import java.util.Comparator;

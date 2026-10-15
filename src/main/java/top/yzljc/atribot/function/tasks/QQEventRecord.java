@@ -1,28 +1,31 @@
 package top.yzljc.atribot.function.tasks;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import top.yzljc.atribot.Atri;
-import top.yzljc.atribot.chat.official.button.*;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.QQGuildCommandSender;
+import top.yzljc.atricore.chat.official.button.*;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.command.QQGuildCommandSender;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 
-import top.yzljc.atribot.chat.napcat.NapcatDebugGroup;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.EventPriority;
-import top.yzljc.atribot.event.Listener;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.EventPriority;
+import top.yzljc.atricore.event.Listener;
 import top.yzljc.atribot.event.events.*;
+import top.yzljc.atricore.event.events.*;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.command.ReminderCommand;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.utils.tools.Alert;
 import top.yzljc.atribot.webui.SseBroadcaster;
 
@@ -186,7 +189,7 @@ public class QQEventRecord implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void callback(OfficialButtonInteractionEvent event) {
-        if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(Config.getInstance().getDebugGroupOpenId()))
+        if (event.getGroupOpenId() != null && event.getGroupOpenId().equals(CoreConfig.getInstance().getSettings().getDebugGroupOpenId()))
             return;
         if (OfficialUsers.isIgnored(event.getUserOpenId()) || OfficialUsers.isBlocked(event.getUserOpenId())) {
             event.setCancelled(true);
@@ -210,7 +213,7 @@ public class QQEventRecord implements Listener {
     @EventHandler
     public void onRunCommand(UserRunCommandEvent event) {
         if (event.getSender() instanceof QQGuildCommandSender guildSender) {
-            if (!Config.getInstance().isNapcatEnabled()) {
+            if (!CoreConfig.getInstance().getSettings().isNapcatEnabled()) {
                 return;
             }
 
@@ -279,8 +282,8 @@ public class QQEventRecord implements Listener {
             }
         }
 
-        if ((qq.getPlatform() == Platform.OFFICIAL_C2C || qq.getPlatform() == Platform.OFFICIAL_GROUP) && Config.getInstance().isNapcatEnabled()) {
-            if (qq.getPlatform() == Platform.OFFICIAL_GROUP && qq.getUserId().equalsIgnoreCase(Config.getInstance().getDebugGroupOpenId()))
+        if ((qq.getPlatform() == Platform.OFFICIAL_C2C || qq.getPlatform() == Platform.OFFICIAL_GROUP) && CoreConfig.getInstance().getSettings().isNapcatEnabled()) {
+            if (qq.getPlatform() == Platform.OFFICIAL_GROUP && qq.getUserId().equalsIgnoreCase(CoreConfig.getInstance().getSettings().getDebugGroupOpenId()))
                 return;
 
             String info;

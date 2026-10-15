@@ -1,8 +1,8 @@
 package top.yzljc.atribot.function.utils.napcat;
 
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupRequestEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupRequestEvent;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
 
 /**

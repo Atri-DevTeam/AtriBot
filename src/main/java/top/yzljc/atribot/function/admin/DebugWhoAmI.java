@@ -2,17 +2,17 @@ package top.yzljc.atribot.function.admin;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.atribot.auth.AtriAccount;
+import top.yzljc.atricore.auth.AtriAccount;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.QQGuildCommandSender;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.command.QQGuildCommandSender;
+import top.yzljc.atricore.chat.official.TC;
 
 /**
  * @Author YZ_Ljc_

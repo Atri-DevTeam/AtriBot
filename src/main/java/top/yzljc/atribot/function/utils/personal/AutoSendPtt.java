@@ -1,16 +1,18 @@
 package top.yzljc.atribot.function.utils.personal;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
-import top.yzljc.atribot.event.events.NapcatRecallMessageEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.events.NapcatRecallMessageEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +32,7 @@ public class AutoSendPtt implements Listener {
 
 //    @EventHandler
 //    public void onGroupChat(NapcatGroupMessageEvent event) {
-//        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
+//        if (!CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
 //        var data = event.getMessage().getAttachments();
 //        if (data.isArray()) {
 //            ArrayNode messageArray = (ArrayNode) data;
@@ -51,7 +53,7 @@ public class AutoSendPtt implements Listener {
 
     @EventHandler
     public void onGroupChat(NapcatGroupMessageEvent event) {
-        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
+        if (!CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
         var data = event.getMessage().getAttachments();
         if (data.isArray()) {
             ArrayNode messageArray = (ArrayNode) data;
@@ -99,7 +101,7 @@ public class AutoSendPtt implements Listener {
 
     @EventHandler
     public void onGroupRecallMessage(NapcatRecallMessageEvent event) {
-        if (!Config.getInstance().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
+        if (!CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(event.getGroupId())) return;
         var mid = event.getMessageId();
         recordedPtt.values().stream()
                 .filter(e -> e.rawMessageId.equals(mid))

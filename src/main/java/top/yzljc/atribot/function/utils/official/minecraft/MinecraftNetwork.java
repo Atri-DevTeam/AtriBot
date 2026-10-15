@@ -2,11 +2,11 @@ package top.yzljc.atribot.function.utils.official.minecraft;
 
 import top.yzljc.atribot.configuration.RS;
 
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.Arrays;
 import java.util.List;

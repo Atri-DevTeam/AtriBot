@@ -1,8 +1,8 @@
 package top.yzljc.atribot.function.command
 
-import top.yzljc.atribot.command.Command
-import top.yzljc.atribot.command.CommandExecutor
-import top.yzljc.atribot.command.CommandSender
+import top.yzljc.atricore.command.Command
+import top.yzljc.atricore.command.CommandExecutor
+import top.yzljc.atricore.command.CommandSender
 import java.time.LocalDate
 
 object BoopCommand : CommandExecutor {

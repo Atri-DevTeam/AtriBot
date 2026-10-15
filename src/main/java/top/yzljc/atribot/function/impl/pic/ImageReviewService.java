@@ -1,11 +1,11 @@
 package top.yzljc.atribot.function.impl.pic;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.notify.NotificationService;
 

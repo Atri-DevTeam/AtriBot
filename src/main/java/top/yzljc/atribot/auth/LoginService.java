@@ -1,5 +1,7 @@
 package top.yzljc.atribot.auth;
 
+import top.yzljc.atricore.auth.*;
+
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -147,7 +149,7 @@ public final class LoginService implements AutoCloseable {
         expired.forEach(pending -> pending.completion.completeExceptionally(new TimeoutException("验证码已过期")));
     }
 
-    /** 仅供宿主关闭共享服务；插件停用时应 cancel 自己的未完成申请。 */
+    /** 仅供运行服务关闭共享服务；插件停用时应 cancel 自己的未完成申请。 */
     @Override
     public void close() {
         List<Pending> pending;

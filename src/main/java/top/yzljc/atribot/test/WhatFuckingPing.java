@@ -1,12 +1,12 @@
 package top.yzljc.atribot.test;
 
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.UserRunCommandEvent;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.UserRunCommandEvent;
 
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.qq.QQConnectionLatency;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.platform.qq.QQConnectionLatency;
 
 /**
  * @Author YZ_Ljc_

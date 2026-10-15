@@ -1,8 +1,10 @@
 package top.yzljc.atribot.auth.official;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.auth.official.*;
+
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.platform.qq.QQBot;
 
 /**
  * @Author YZ_Ljc_

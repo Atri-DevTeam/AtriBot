@@ -1,16 +1,18 @@
 package top.yzljc.atribot.function.utils.napcat;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.napcat.UserInformation;
+import top.yzljc.atricore.chat.napcat.UserInformation;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,7 +28,7 @@ public class GroupContentRecord implements Listener {
 
     private static final String BASE_TABLE = "qq_group_message_record";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final List<String> groups = Config.getInstance().getNapcatMessageSpyGroups();
+    private static final List<String> groups = CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups();
 
     private static String getTableNameForGroup(long groupId) {
         return BASE_TABLE + "_" + groupId;

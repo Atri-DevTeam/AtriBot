@@ -1,7 +1,7 @@
 package top.yzljc.atribot.function.admin.ema;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.sakuraba_ema.internal.*;
 import top.yzljc.sakuraba_ema.guild.ChannelComments.FeedTarget;
 import top.yzljc.sakuraba_ema.guild.ChannelComments.CommentTarget;

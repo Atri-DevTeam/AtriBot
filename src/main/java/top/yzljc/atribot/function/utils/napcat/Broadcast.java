@@ -1,14 +1,16 @@
 package top.yzljc.atribot.function.utils.napcat;
 
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atricore.core.CoreConfig;
+
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.util.Set;
@@ -16,7 +18,7 @@ import java.util.Set;
 @Deprecated(since = "3.2.2")
 public class Broadcast implements CommandExecutor {
     private static final Set<String> groupList = GroupInformation.fetchAllGroupIds();
-    private static final String debugGroupId = Config.getInstance().getNapcatDebugGroupUin();
+    private static final String debugGroupId = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

@@ -4,10 +4,10 @@ import java.util.Map;
 import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atribot.auth.UnifiedAuthentication;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
 

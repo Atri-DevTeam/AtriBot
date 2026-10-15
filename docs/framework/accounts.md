@@ -14,7 +14,7 @@
 
 ## AtriAccount
 
-[AtriAccount](../../src/main/java/top/yzljc/atribot/auth/AtriAccount.java) 使用 record 表达账号数据：
+[AtriAccount](../../atri-core/src/main/java/top/yzljc/atricore/auth/AtriAccount.java) 使用 record 表达账号数据：
 
 | 字段 | 含义 |
 | --- | --- |
@@ -59,7 +59,7 @@ QQ 官方用户的节点判断为：机器人管理员，或显式拥有该权�
 
 ## 临时登录验证
 
-[LoginService](../../src/main/java/top/yzljc/atribot/auth/LoginService.java) 提供验证码申请与 `/login <验证码>` 确认。插件通过上下文取得宿主的共享实例：
+[LoginService](../../src/main/java/top/yzljc/atribot/auth/LoginService.java) 提供验证码申请与 `/login <验证码>` 确认。插件通过上下文取得运行服务的共享实例：
 
 ```java
 LoginService service = getContext().getLoginService();

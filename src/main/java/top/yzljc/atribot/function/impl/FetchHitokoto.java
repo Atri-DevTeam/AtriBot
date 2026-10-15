@@ -2,7 +2,7 @@ package top.yzljc.atribot.function.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 
 /**
  * @Author YZ_Ljc_

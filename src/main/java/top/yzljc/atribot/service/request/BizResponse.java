@@ -1,5 +1,7 @@
 package top.yzljc.atribot.service.request;
 
+import top.yzljc.atricore.service.request.*;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName BizResponse

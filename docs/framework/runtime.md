@@ -4,7 +4,7 @@
 
 ## 异步任务
 
-[ThreadManager](../../src/main/java/top/yzljc/atribot/service/runtime/ThreadManager.java) 提供共享执行入口：
+[ThreadManager](../../atri-core/src/main/java/top/yzljc/atricore/service/runtime/ThreadManager.java) 提供共享执行入口：
 
 | 方法 | 返回 |
 | --- | --- |
@@ -16,19 +16,19 @@
 
 工作线程使用虚拟线程，但并发和队列仍有上限：
 
-| JVM 属性 | 默认值 |
-| --- | --- |
-| `atribot.thread.maxConcurrency` | CPU 数量 × 8，限制在 16～128 |
-| `atribot.thread.queueCapacity` | 4096 |
-| `atribot.thread.scheduleCapacity` | 4096 |
+| `atri-core.yml` 字段 | JVM 覆盖属性 | 默认值 |
+| --- | --- | --- |
+| `thread.max-concurrency` | `atribot.thread.maxConcurrency` | `0`，按 CPU 数量 × 8 计算，限制在 16～128 |
+| `thread.queue-capacity` | `atribot.thread.queueCapacity` | 4096 |
+| `thread.schedule-capacity` | `atribot.thread.scheduleCapacity` | 4096 |
 
-通过 `-D属性名=值` 在启动时调整。队列满或服务关闭时会拒绝任务，调用方需处理 `RejectedExecutionException`；`supplyAsync` 将拒绝作为失败 Future 返回
+修改配置后重启生效，也可通过 `-D属性名=值` 在启动时覆盖。队列满或服务关闭时会拒绝任务，调用方需处理 `RejectedExecutionException`；`supplyAsync` 将拒绝作为失败 Future 返回
 
 调度容量仅计算尚未交给工作池的任务，交接后由工作池容量约束。已在托管任务中调用 `supplyAsync` 时可能直接在当前线程完成，不应依赖它一定切换线程
 
 ## 周期调度
 
-[TaskScheduler](../../src/main/java/top/yzljc/atribot/service/taskscheduler/TaskScheduler.java) 按时间边界重复调度，支持：
+[TaskScheduler](../../atri-core/src/main/java/top/yzljc/atricore/service/taskscheduler/TaskScheduler.java) 按时间边界重复调度，支持：
 
 | `ScheduleMode` | 周期 |
 | --- | --- |
@@ -41,7 +41,7 @@
 `ScheduledTask` 同时提供 `run()` 和 `schedule()`。也可提交 `Runnable` 与 `TaskSchedule`，返回的 `ScheduledTaskHandle` 支持取消和关闭
 
 ```java
-TaskScheduler scheduler = new TaskScheduler();
+TaskScheduler scheduler = AtriProvider.getInstance().getTaskScheduler();
 ScheduledTaskHandle handle = scheduler.schedule(
         () -> logger.info("周期任务"),
         new TaskPlan(ScheduleMode.daily, LocalTime.of(8, 0))
@@ -50,7 +50,33 @@ ScheduledTaskHandle handle = scheduler.schedule(
 
 按本地时间计算下一次执行；本次任务结束后再安排下次执行。`schedule(ScheduledTask)` 按任务类去重，直接提交 `Runnable` 的重载不做此去重
 
-核心集中注册入口为 [TaskSchedulerRegistry](../../src/main/java/top/yzljc/atribot/service/taskscheduler/TaskSchedulerRegistry.java)。项目另有 `service.Scheduler` 与 `service.timer` 调度实现，已有业务分别使用各自入口
+业务计划类实现 `ScheduledTask`，通过 `schedule()` 返回执行计划，通过 `run()` 执行业务，并加入主项目的 [TaskSchedulerRegistry](../../src/main/java/top/yzljc/atribot/service/taskscheduler/TaskSchedulerRegistry.java) 统一注册。任务类和清单留在运行服务，调度器由 core 的 Provider 创建并持有。运行服务通过 `AtriProvider.getInstance().getTaskScheduler()` 注册任务，关闭 Provider 时统一取消计划任务；已开始的任务不会被中断，但不会再次调度。关闭后不接受新任务
+
+```java
+public final class ExampleTask implements ScheduledTask {
+    @Override
+    public TaskSchedule schedule() {
+        return new TaskPlan(ScheduleMode.daily, LocalTime.of(8, 0));
+    }
+
+    @Override
+    public void run() {
+        // 执行业务任务
+    }
+}
+```
+
+原注解任务已迁入统一注册清单，时间按进程本地时区计算：
+
+| 任务 | 每日执行时间 |
+| --- | --- |
+| `AutoSign` | 00:00:00 |
+| `ManosabaDate` | 00:00:10 |
+| `CheckInExportTask` | 23:55:00 |
+| `LootFreeDrawCleanupTask` | 23:55:00 |
+| `MessageStats` | 23:59:45 |
+
+`@Schedule`、包扫描器及其独立线程池已移除。即时、延迟和固定间隔任务通过 `AtriProvider.getInstance().getScheduler()` 注册，由 Provider 统一创建和关闭；直接异步执行可使用 `ThreadManager`
 
 插件可使用上下文的专用调度器，也可将自建 `TaskScheduler` 交给 `context.manage(...)` 管理
 

@@ -13,7 +13,7 @@ import java.util.ResourceBundle;
  * @Created_at 2026/09/12
  * @Project AtriMeow
  * @Package top.yzljc.atribot.plugin
- * @Description 将插件 System.Logger 接入宿主日志，并自动标注插件名
+ * @Description 将插件 System.Logger 接入运行服务日志，并自动标注插件名
  */
 final class PluginLogger implements System.Logger {
     private static final org.slf4j.Logger DELEGATE = LoggerFactory.getLogger("top.yzljc.atribot.plugin.Plugin");

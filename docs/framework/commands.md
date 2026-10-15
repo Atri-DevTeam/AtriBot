@@ -7,14 +7,13 @@
 | 类型 | 职责 |
 | --- | --- |
 | `Command` | 名称、别名、描述、用法和执行入口 |
-| `CommandFeature` | 核心命令，关联文本和 Slash 执行器 |
+| `CommandFeature` | 核心命令，关联文本执行器 |
 | `CommandSender` | 用户身份、权限检查、文本回复 |
 | `CommandExecutor` | 文本位置参数执行器 |
-| `SlashCommandExecutor` | 结构化 Slash 参数执行器 |
 | `CommandManager` | 加载声明、平台事件到命令的转换 |
 | `CommandMap` | 名称和别名映射、文本分发 |
 
-源码位于 [command](../../src/main/java/top/yzljc/atribot/command)
+源码位于 [command](../../atri-core/src/main/java/top/yzljc/atricore/command)
 
 ## 声明与注册
 
@@ -27,11 +26,6 @@ commands:
     usage: /example <内容>
     aliases:
       - ex
-    options:
-      - name: content
-        type: 3
-        description: 内容
-        required: true
 ```
 
 该文件从 JAR 资源读取，修改后需要重新构建。运行目录放置同名文件不会替换核心声明
@@ -59,9 +53,9 @@ register(commands, new SubCommand("example", "示例查询", null, MinecraftTool
 ```java
 package example;
 
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
 
 public final class ExampleCommand implements CommandExecutor {
     @Override
@@ -105,7 +99,7 @@ commands:
 
 触发词在注册、重载和插件卸载时建立或更新 HashMap 索引，每条消息按首词查表，不遍历所有指令。不同指令重复声明同一触发词会使本次注册或重载失败，原有映射保留
 
-适用于 QQ 官方群聊、C2C、频道 @ 消息、频道私信，Napcat 群聊与私聊，以及 KOOK 频道与私信。QQ 群不带 @ 的触发依赖平台投递全量群消息。Discord 仍使用 Slash Command，业务执行器自身的平台限制仍然有效
+适用于 QQ 官方群聊、C2C、频道 @ 消息、频道私信，Napcat 群聊与私聊。QQ 群不带 @ 的触发依赖平台投递全量群消息。业务执行器自身的平台限制仍然有效
 
 消息原文保持不变，普通消息监听器仍可收到该事件。内置的「指令帮助」和「反馈与建议」已迁入此配置，分别指向 `help` 和 `feedback`
 
@@ -125,36 +119,6 @@ boolean commandInput = CommandManager.isCommand(text);
 
 `QQMessage.isCommand()` 同样调用此入口，并保留原有签到词兼容。需要严格按框架注册规则判断时，使用 `CommandManager.isCommand(text)`。插件注册、卸载或指令重载后，判断使用更新后的索引
 
-## Slash Command
-
-结构化入口保留独立方法：
-
-```java
-boolean onCommand(SlashCommandSender sender, Command command,
-                  String label, SlashCommandArguments args);
-```
-
-通过 `args.getString("content")`、`getInteger`、`getBoolean` 等方法按名称取值。`getCommandPath()` 保存子命令路径，`getOptionList()` 保存选项，缺少值时返回空值或指定默认值
-
-```java
-CommandManager.getCommand("example").setSlashExecutor((sender, command, label, args) -> {
-    if (!sender.hasPermission("example.use")) {
-        sender.sendMessage("权限不足");
-        return true;
-    }
-    sender.sendMessage(args.getString("content", ""));
-    return true;
-});
-```
-
-同一个类也可同时实现两种执行器。未显式绑定 Slash 执行器时，`CommandFeature` 会检查文本执行器是否实现了 `SlashCommandExecutor`
-
-`options` 当前使用 Discord 参数类型编号，`3` 为字符串。完整字段见 [CommandOptionDefinition](../../src/main/java/top/yzljc/atribot/command/CommandOptionDefinition.java)，包括子命令、候选值、数值范围和频道类型
-
-Discord 插件通过 `CommandManager.dispatchSlash(sender, label, args)` 分发，不经过文本入口的参数拆分、`UserRunCommandEvent` 和 QQ 群禁用检查。插件指令在执行前统一检查启用状态、平台范围及 `permission`；返回 `false` 时按声明发送用法提示。核心 Slash 执行器仍自行检查业务权限
-
-`SlashCommandArguments.toArray()` 只提供兼容性转换，会丢失名称和类型。平台专有交互数据由对应平台的参数和发送者类型提供
-
 ## 平台能力
 
 `CommandSender` 提供 `getUserId()`、`getUsername()`、权限判断和文本发送。`getPlatform()` 对控制台等无平台来源返回 `null`
@@ -162,17 +126,17 @@ Discord 插件通过 `CommandManager.dispatchSlash(sender, label, args)` 分发�
 富文本或专有操作通过类型判断调用：
 
 ```java
-if (sender instanceof KookCommandSender kook) {
-    kook.sendKMarkdown("**完成**");
+if (sender instanceof QQCommandSender qq) {
+    qq.sendMessage(TC.md("**完成**"));
 }
 ```
 
-常用接口包括 `QQCommandSender`、`QQGuildCommandSender`、`NapcatCommandSender`、`DiscordCommandSender`、`KookCommandSender`。共享业务逻辑可复用，平台输出保留各自实现
+常用接口包括 `QQCommandSender`、`QQGuildCommandSender`、`NapcatCommandSender`。共享业务逻辑可复用，平台输出保留各自实现
 
-`DiscordCommandSender`、`KookCommandSender` 及对应输出代码位于平台插件，主项目业务不引用这些类型。平台插件通过 `CommandManager.resolveCommandLine(sender, text)`、`dispatch(sender, line)` 或 `dispatchSlash(...)` 接入公共分发器；同名指令可通过插件声明的 `platforms` 限定作用范围，QQ 和 Napcat 仍使用原执行器
+插件可通过 `CommandManager.resolveCommandLine(sender, text)` 和 `dispatch(sender, line)` 接入文本分发器；同名指令可通过插件声明的 `platforms` 限定作用范围
 
 ## 权限
 
-核心声明中的名称、描述和 Slash 选项不自动构成业务授权。执行器应在操作前调用 `sender.hasPermission(...)`
+核心声明中的名称和描述不自动构成业务授权。执行器应在操作前调用 `sender.hasPermission(...)`
 
 插件命令可在 `plugin.yml` 声明 `permission`，由 `PluginCommand` 在执行前检查。具体语义见 [账号与权限](accounts.md)

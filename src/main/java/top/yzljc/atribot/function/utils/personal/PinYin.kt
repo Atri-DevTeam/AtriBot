@@ -3,10 +3,10 @@ package top.yzljc.atribot.function.utils.personal
 import com.github.stuxuhai.jpinyin.ChineseHelper
 import com.github.stuxuhai.jpinyin.PinyinFormat
 import com.github.stuxuhai.jpinyin.PinyinHelper
-import top.yzljc.atribot.command.Command
-import top.yzljc.atribot.command.CommandExecutor
-import top.yzljc.atribot.command.CommandSender
-import top.yzljc.atribot.command.NapcatCommandSender
+import top.yzljc.atricore.command.Command
+import top.yzljc.atricore.command.CommandExecutor
+import top.yzljc.atricore.command.CommandSender
+import top.yzljc.atricore.command.NapcatCommandSender
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager
 import top.yzljc.atribot.service.textreview.TextReviewService
 

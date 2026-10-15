@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.service.minecraft.MinecraftModerationClient;
 import top.yzljc.atribot.service.request.BizResponse;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;
 

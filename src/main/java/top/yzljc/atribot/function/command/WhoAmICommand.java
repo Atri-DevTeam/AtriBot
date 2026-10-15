@@ -1,10 +1,10 @@
 package top.yzljc.atribot.function.command;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.*;
+import top.yzljc.atricore.platform.Platform;
 
 /**
  * @Author YZ_Ljc_

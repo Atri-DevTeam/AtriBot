@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.command;
 
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.RT;
-import top.yzljc.atribot.chat.official.card.Card;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.chat.official.C2CChat;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.chat.official.card.Card;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
 
 import java.time.LocalDate;

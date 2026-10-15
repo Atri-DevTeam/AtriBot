@@ -2,7 +2,7 @@
 
 [文档目录](../README.md) · [平台与消息](platforms.md)
 
-本页说明监听器的注册与分发规则，并列出各事件的触发场景、主要数据和可用操作。事件类位于 [event/events](../../src/main/java/top/yzljc/atribot/event/events)
+本页说明监听器的注册与分发规则，并列出各事件的触发场景、主要数据和可用操作。事件类位于 [event/events](../../atri-core/src/main/java/top/yzljc/atricore/event/events)
 
 | 分类 | 内容 |
 | --- | --- |
@@ -22,9 +22,9 @@
 ```java
 package example;
 
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
 
 public final class GroupListener implements Listener {
     @EventHandler
@@ -47,7 +47,7 @@ EventManager.getInstance().registerEvents(new GroupListener());
 
 ## 分发规则
 
-[EventManager](../../src/main/java/top/yzljc/atribot/event/EventManager.java) 的行为如下：
+[EventManager](../../atri-core/src/main/java/top/yzljc/atricore/event/EventManager.java) 的行为如下：
 
 | 项目 | 行为 |
 | --- | --- |
@@ -101,7 +101,7 @@ public void onCommand(UserRunCommandEvent event) {
 
 ### UserRunCommandEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/UserRunCommandEvent.java) · 文本指令匹配成功、即将交给执行器时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/UserRunCommandEvent.java) · 文本指令匹配成功、即将交给执行器时触发
 
 - 数据：`sender` 为指令发送者，`command` 为匹配到的指令，`label` 为分发标签，`args` 为参数数组。当前 `CommandMap` 为 `commandHeader` 和 `label` 传入相同值
 - 操作：`setCancelled(true)` 阻止本次指令执行
@@ -111,13 +111,13 @@ public void onCommand(UserRunCommandEvent event) {
 
 ## QQ 群聊与 C2C
 
-QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platform/qq/BotEvents.java) 构建，WebSocket 与 Webhook 共用分发入口。是否能收到某类事件取决于平台授权及订阅配置
+QQ 平台上报事件由 [BotEvents](../../atri-core/src/main/java/top/yzljc/atricore/platform/qq/BotEvents.java) 构建，WebSocket 与 Webhook 共用分发入口。是否能收到某类事件取决于平台授权及订阅配置
 
 以下数据项使用事件类的 getter 读取，例如 `groupId` 对应 `getGroupId()`。`user`、`message` 保留平台各自的类型，字段含义见 [平台与消息](platforms.md)
 
 ### OfficialGroupAtMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupAtMessageCreateEvent.java) · 收到 `GROUP_AT_MESSAGE_CREATE`，即群内 @ 机器人的消息时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupAtMessageCreateEvent.java) · 收到 `GROUP_AT_MESSAGE_CREATE`，即群内 @ 机器人的消息时触发
 
 - 数据：`QQUser user`、`QQMessage message`、`groupId`、`timestamp`
 - 操作：`sendMessage()` 使用当前消息 ID 被动回复，支持文本或 Markdown；`shouldIgnore()` 检查群黑名单与用户封禁状态
@@ -125,7 +125,7 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialGroupMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupMessageCreateEvent.java) · 收到全量群消息 `GROUP_MESSAGE_CREATE` 时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupMessageCreateEvent.java) · 收到全量群消息 `GROUP_MESSAGE_CREATE` 时触发
 
 - 数据：`QQUser user`、`QQMessage message`、`groupId`、`timestamp`；`isAtBot()` 表示消息是否 @ 机器人
 - 操作：`sendMessage()` 被动回复文本、图片、Markdown 或附带按钮的 Markdown；`shouldIgnore()` 检查群黑名单与用户封禁状态
@@ -133,7 +133,7 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialC2CMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialC2CMessageCreateEvent.java) · 收到私聊消息 `C2C_MESSAGE_CREATE` 时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialC2CMessageCreateEvent.java) · 收到私聊消息 `C2C_MESSAGE_CREATE` 时触发
 
 - 数据：`QQUser user`、`QQMessage message`、`timestamp`；`switchButtons` 保存解析出的开关按钮状态，未携带时可能为 `null`
 - 操作：`sendMessage()` 被动回复文本或 Markdown，可附带按钮；`sendStreamMarkdownMessageD()`、`sendStreamTextMessageD()` 按增量列表发送流式回复
@@ -141,35 +141,35 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialFriendAddEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialFriendAddEvent.java) · 收到 `FRIEND_ADD`，即用户添加机器人好友时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialFriendAddEvent.java) · 收到 `FRIEND_ADD`，即用户添加机器人好友时触发
 
 - 数据：`eventId`、`userOpenId`、`timestamp`、添加来源 `scene`、来源参数 `sceneParam`、`shortCode`
 - 操作：`sendOpeningMessage()` 使用本次事件 ID 发送文本或 Markdown 开场消息
 
 ### OfficialFriendDelEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialFriendDelEvent.java) · 收到 `FRIEND_DEL`，即用户删除机器人好友时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialFriendDelEvent.java) · 收到 `FRIEND_DEL`，即用户删除机器人好友时触发
 
 - 数据：`userOpenId`、`timestamp`
 - 用途：更新好友关系或清理相关业务状态；事件不提供发送或恢复好友关系的方法
 
 ### OfficialGroupAddRobotEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupAddRobotEvent.java) · 收到 `GROUP_ADD_ROBOT`，即机器人被加入群聊时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupAddRobotEvent.java) · 收到 `GROUP_ADD_ROBOT`，即机器人被加入群聊时触发
 
 - 数据：`eventId`、`groupOpenId`、操作成员 `opMemberOpenId`、`timestamp`
 - 操作：`sendOpeningMessage()` 使用本次事件 ID 向群发送文本、Markdown 或附带按钮的 Markdown
 
 ### OfficialGroupDelRobotEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupDelRobotEvent.java) · 收到 `GROUP_DEL_ROBOT`，即机器人被移出群聊时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupDelRobotEvent.java) · 收到 `GROUP_DEL_ROBOT`，即机器人被移出群聊时触发
 
 - 数据：`groupOpenId`、操作成员 `opMemberOpenId`、`timestamp`
 - 用途：更新机器人所在群列表及群相关业务状态
 
 ### OfficialGroupMemberAddEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupMemberAddEvent.java) · 收到 `GROUP_MEMBER_ADD`，即群成员加入时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupMemberAddEvent.java) · 收到 `GROUP_MEMBER_ADD`，即群成员加入时触发
 
 - 数据：`eventId`、`groupOpenId`、`memberOpenId`、`timestamp`
 - 操作：`sendMessage()` 使用事件 ID 发送 Markdown，可附带按钮或 @ 新成员
@@ -177,14 +177,14 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialGroupMemberRemoveEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupMemberRemoveEvent.java) · 收到 `GROUP_MEMBER_REMOVE`，即群成员离开时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupMemberRemoveEvent.java) · 收到 `GROUP_MEMBER_REMOVE`，即群成员离开时触发
 
 - 数据：`eventId`、`groupOpenId`、`memberOpenId`、`timestamp`
 - 身份：`getUserBotRole()` 返回成员在机器人系统中的角色；事件未封装离群原因或操作人字段
 
 ### OfficialGroupJoinRequestEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupJoinRequestEvent.java) · 收到入群申请 `GROUP_JOIN_REQUEST` 时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupJoinRequestEvent.java) · 收到入群申请 `GROUP_JOIN_REQUEST` 时触发
 
 - 数据：`eventId`、`groupOpenId`、`memberOpenId`、`username`、`joinRequestId`、`applyTime`、申请来源 `applySource`、验证方式 `method`
 - 验证：`invitedBy` 为邀请人，`verifyMessage` 为验证文本，`verifyQAList` 为问答列表，`strategyId` 为自动同意策略 ID；这些字段按上报内容填充
@@ -197,7 +197,7 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialGuildAtMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGuildAtMessageCreateEvent.java) · 收到文字子频道 @ 消息 `AT_MESSAGE_CREATE` 时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGuildAtMessageCreateEvent.java) · 收到文字子频道 @ 消息 `AT_MESSAGE_CREATE` 时触发
 
 - 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、`userOpenId`；其中 `userOpenId` 取自上报的 `union_openid`，不同于频道用户 ID
 - 操作：`replyMessage()` 使用当前子频道和消息 ID 回复文本或图片
@@ -205,14 +205,14 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialGuildDirectMessageCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGuildDirectMessageCreateEvent.java) · 收到频道私信 `DIRECT_MESSAGE_CREATE` 时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGuildDirectMessageCreateEvent.java) · 收到频道私信 `DIRECT_MESSAGE_CREATE` 时触发
 
 - 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、取自 `union_openid` 的 `userOpenId`
 - 操作：`replyMessage()` 使用私信会话的 `guildId` 和当前消息 ID 回复文本或图片
 
 ### OfficialAtForumThreadCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialAtForumThreadCreateEvent.java) · 收到 `AT_FORUM_THREAD_CREATE`，即创建帖子并 @ 机器人时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialAtForumThreadCreateEvent.java) · 收到 `AT_FORUM_THREAD_CREATE`，即创建帖子并 @ 机器人时触发
 
 - 数据：`guildId`、`channelId`、`authorId`、`ThreadInfo threadInfo`；帖子数据包含 `threadId`、`title`、`content`、`dateTime`
 - 解析：`threadInfo.getTitleAsRichText()`、`getContentAsRichText()` 将原始 JSON 字符串解析为 `RichText`；格式不合法时抛出异常
@@ -220,14 +220,14 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialAtForumPostCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialAtForumPostCreateEvent.java) · 收到 `AT_FORUM_POST_CREATE`，即创建帖子评论并 @ 机器人时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialAtForumPostCreateEvent.java) · 收到 `AT_FORUM_POST_CREATE`，即创建帖子评论并 @ 机器人时触发
 
 - 数据：`guildId`、`channelId`、`authorId`、`PostInfo postInfo`；评论数据包含所属 `threadId`、`postId`、`content`、`dateTime`、原帖作者 `threadAuthorId`
 - 解析：`postInfo.getContentAsRichText()` 解析评论正文；事件本身不提供发表评论的方法
 
 ### OfficialAtForumReplyCreateEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialAtForumReplyCreateEvent.java) · 收到 `AT_FORUM_REPLY_CREATE`，即创建评论回复并 @ 机器人时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialAtForumReplyCreateEvent.java) · 收到 `AT_FORUM_REPLY_CREATE`，即创建评论回复并 @ 机器人时触发
 
 - 数据：`guildId`、`channelId`、`authorId`、`ReplyInfo replyInfo`；回复数据包含所属 `threadId`、`postId`、`replyId`、`content`、`dateTime`
 - 解析：`replyInfo.getContentAsRichText()` 解析回复正文；事件本身不提供发送评论回复的方法
@@ -238,14 +238,14 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialInteractionEvents
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialInteractionEvents.java) · QQ 交互事件的抽象基类，不单独分发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialInteractionEvents.java) · QQ 交互事件的抽象基类，不单独分发
 
 - 数据：`applicationId`、上报事件 ID `eventId`、交互 ID `id`、`scene`、`timestamp`、交互类型 `type`、`version`
 - 范围：按钮点击和 C2C 授权变更继承此类。事件管理器按具体类型匹配，监听该基类不能接收两个子类的事件
 
 ### OfficialButtonInteractionEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialButtonInteractionEvent.java) · 收到 `INTERACTION_CREATE` 中的按钮点击交互时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialButtonInteractionEvent.java) · 收到 `INTERACTION_CREATE` 中的按钮点击交互时触发
 
 - 数据：公共交互字段，以及 `chatType`、`groupOpenId`、`userOpenId`、`data`；`data` 保留 `resolved` JSON 与内部类型
 - 操作：`getButtonId()`、`getButtonValue()` 读取按钮标识和值；缺失时返回 `missing_data`。`answer(AnswerCode)` 向平台提交交互应答
@@ -254,7 +254,7 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialC2CAuthorizeModifyEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialC2CAuthorizeModifyEvent.java) · 收到 `INTERACTION_CREATE` 中的用户授权变更时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialC2CAuthorizeModifyEvent.java) · 收到 `INTERACTION_CREATE` 中的用户授权变更时触发
 
 - 数据：公共交互字段，以及 `userOpenId`、`authorizeData`、操作场景 `optScene`、授权范围 `scope`
 - 判断：`authorizeData` 保留 `optScene`、`scope` 原始字符串及 `switchData`；`isAllowedC2CPush()` 读取该开关状态
@@ -262,7 +262,7 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialMessageSendEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialMessageSendEvent.java) · QQ 官方消息请求发出前同步触发，用于发送审核
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialMessageSendEvent.java) · QQ 官方消息请求发出前同步触发，用于发送审核
 
 - 数据：`platform`、目标 `targetId`、请求 `url`、JSON 字符串快照 `requestBody`、流式标记 `stream`
 - 操作：`setCancelled(true)` 阻止本次请求；请求体是只读快照，解析并修改副本不会改变实际发送内容
@@ -270,39 +270,39 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### OfficialGroupSendFailEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialGroupSendFailEvent.java) · 群消息发送接口返回无主动消息权限错误时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialGroupSendFailEvent.java) · 群消息发送接口返回无主动消息权限错误时触发
 
 - 数据：`groupOpenId`、`errorCode`、`errorMessage`；`getErrorCodeEnum()` 将错误码映射为 `ErrorCode`
 - 范围：当前 `ChatService` 仅在错误码为 `40034105` 时分发，不是所有群消息发送失败的统一通知
 
 ### OfficialC2CSendFailEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/OfficialC2CSendFailEvent.java) · C2C 普通消息或流式消息发送失败时，按各自发送入口的条件触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/OfficialC2CSendFailEvent.java) · C2C 普通消息或流式消息发送失败时，按各自发送入口的条件触发
 
 - 数据：`userId`、`errorCode`、`errorMessage`
 - 范围：普通消息入口仅在错误码为 `40034105` 时分发；流式入口会在失败响应可解析且能提取用户 ID 时分发，不限于该错误码。不能据此假定所有网络异常都会产生事件
 
 ## Napcat / OneBot
 
-事件由 [RequestReceiver](../../src/main/java/top/yzljc/atribot/platform/napcat/RequestReceiver.java) 根据 HTTP 上报数据构建，用户与消息类型为 `NapcatUser`、`NapcatMessage`
+事件由 [RequestReceiver](../../atri-core/src/main/java/top/yzljc/atricore/platform/napcat/RequestReceiver.java) 根据 HTTP 上报数据构建，用户与消息类型为 `NapcatUser`、`NapcatMessage`
 
 ### NapcatGroupMessageEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatGroupMessageEvent.java) · 收到 OneBot 群消息上报时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatGroupMessageEvent.java) · 收到 OneBot 群消息上报时触发
 
 - 数据：`user`、`message`、`groupId`、`timestamp`
 - 操作：`sendMessage()` 支持文本或 `List<MessageSegment>`；`recall()` 调用当前消息的撤回方法并返回结果
 
 ### NapcatPrivateMessageEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatPrivateMessageEvent.java) · 收到 OneBot 私聊消息上报时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatPrivateMessageEvent.java) · 收到 OneBot 私聊消息上报时触发
 
 - 数据：`user`、`message`、`timestamp`
 - 操作：事件本身不封装发送方法，通过 `getUser()` 或对应聊天接口回复，通过 `getMessage().recall()` 撤回当前消息
 
 ### NapcatGroupMemberChangeEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatGroupMemberChangeEvent.java) · 用于接收群成员变动通知
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatGroupMemberChangeEvent.java) · 用于接收群成员变动通知
 
 - 数据：`time`、机器人 `selfId`、`groupId`、成员 `userId`、操作人 `operatorId`、`subType`、枚举 `operateType`
 - 判断：枚举区分批准入群、主动退群、被踢、受邀入群、机器人受邀和机器人被踢；机器人受邀的 `subType` 被转换为 `invite_me`
@@ -311,21 +311,21 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### NapcatGroupRequestEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatGroupRequestEvent.java) · 收到 `request_type = group` 的入群申请或群邀请时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatGroupRequestEvent.java) · 收到 `request_type = group` 的入群申请或群邀请时触发
 
 - 数据：`time`、`selfId`、`groupId`、`userId`、请求标识 `flag`、请求子类型 `subType`、附言 `comment`
 - 操作：`reject()` 拒绝请求，可指定原因；事件未封装同意方法
 
 ### NapcatFriendRequestEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatFriendRequestEvent.java) · 收到 `request_type = friend` 的好友申请时触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatFriendRequestEvent.java) · 收到 `request_type = friend` 的好友申请时触发
 
 - 数据：`time`、`selfId`、申请人 `userId`、请求标识 `flag`
 - 操作：`sendMessage()` 向申请人发送私聊文本；该方法不处理好友申请，也不代表同意申请
 
 ### NapcatPokedEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatPokedEvent.java) · 收到 `notice_type = notify`、`sub_type = poke` 的戳一戳通知时触发，入口排除机器人自身发起的操作
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatPokedEvent.java) · 收到 `notice_type = notify`、`sub_type = poke` 的戳一戳通知时触发，入口排除机器人自身发起的操作
 
 - 数据：`time`、`selfId`、被戳目标 `targetId`、发起人 `userId`、`groupId`
 - 操作：`pokeBack()` 戳回发起人，`poke(userId)` 改为戳指定用户
@@ -333,32 +333,11 @@ QQ 平台上报事件由 [BotEvents](../../src/main/java/top/yzljc/atribot/platf
 
 ### NapcatRecallMessageEvent
 
-[源码](../../src/main/java/top/yzljc/atribot/event/events/NapcatRecallMessageEvent.java) · 收到 `group_recall` 或 `friend_recall` 通知时，按配置范围触发
+[源码](../../atri-core/src/main/java/top/yzljc/atricore/event/events/NapcatRecallMessageEvent.java) · 收到 `group_recall` 或 `friend_recall` 通知时，按配置范围触发
 
 - 数据：`time`、`selfId`、`groupId`、原消息用户 `userId`、操作人 `operatorId`、`messageId`、撤回类型 `type`
 - 范围：群撤回只对 `napcatMessageSpyGroups` 配置中的群分发，好友撤回不受该群列表限制
 - 用途：通知消息已经被撤回；事件不包含原始正文，也不能取消已发生的撤回
-
-## Discord
-
-由 `platform-discord` 插件提供。Gateway 入口将消息与指令交互提交到工作线程后分发，事件中的用户类型为 `DiscordUser`。监听这些事件的插件需声明 `depend: [platform-discord]`
-
-### DiscordMessageCreateEvent
-
-[源码](../../platform-discord/src/main/java/top/yzljc/atribot/event/events/DiscordMessageCreateEvent.java) · 收到 Gateway 的 `MESSAGE_CREATE` 时触发
-
-- 数据：`user`、`DiscordMessage message`、`guildId`、`channelId`；私信的 `guildId` 可为空
-- 操作：事件不提供回复快捷方法，通过用户或平台聊天接口发送
-- 范围：消息事件与 Slash Command 分开；收到文本消息本身不等于执行指令
-
-### DiscordSlashCommandEvent
-
-[源码](../../platform-discord/src/main/java/top/yzljc/atribot/event/events/DiscordSlashCommandEvent.java) · 收到 `INTERACTION_CREATE` 且 `type = 2` 的应用指令交互时触发
-
-- 数据：`user`、`applicationId`、`interactionId`、`token`、`guildId`、`channelId`、`commandName`、`timestamp`、原始 `raw` 数据
-- 参数：`options`、`resolved` 保留平台参数，`getArgs()` 提供 `DiscordSlashCommandArguments` 的结构化读取
-- 操作：`reply()` 首次调用发送交互回调，后续调用发送 follow-up；`followUp()` 直接发送后续消息。当前两者返回交互 ID，不是新消息 ID
-- 范围：不支持通过 `Cancellable` 取消；执行逻辑使用 Slash Command 执行器，不经过 `UserRunCommandEvent`
 
 ## KOOK
 

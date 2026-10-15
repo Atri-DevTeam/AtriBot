@@ -4,16 +4,10 @@
 
 # ========== 全局设置区域 ==========
 
-# 指令前缀，OneBot 和官方机器人通用
-command-prefix: "/"
 # Debug 命令后缀
 debug-command-suffix: "--debug"
 # 根目录中字体的文件名，默认使用自带的鸿蒙开源字体
 ttf-file-name: "default.ttf"
-# Debug 模式开关
-debug-mode: false
-# Websocket 服务器监听端口
-listen-port: 1234
 # API
 api-url: null
 
@@ -78,21 +72,6 @@ ai:
 # ========== Napcat 设置区域 ==========
 
 napcat:
-  # 是否启用 Napcat（OneBot）适配器
-  enabled: false
-  # Napcat HTTP 数据来源地址（消息接收入口），格式：http://xxx.xxx.xxx:port
-  server-url: "http://0.0.0.0:12345"
-  # Debug 用的 QQ 群号
-  debug-group-uin: 123456789
-  # Bot 自身的 QQ 号
-  bot-uin: 123456789
-  # 管理员 QQ 号列表
-  admin-uins:
-    - "3199590352"
-  # 启用消息监听的群聊列表
-  message-spy-groups:
-    - "123456"
-    - "234567"
   # 消息撤回监听屏蔽用户列表（仅对开启了消息监听的群有效）
   recall-ignore-user:
     - "123456"
@@ -149,26 +128,12 @@ email:
 # ========== 官方机器人配置参数 ==========
 
 qq:
-  # 是否启用官方机器人
-  enabled: false
-  # 官方的 AppID
-  app-id: ""
-  # 官方的密钥
-  client-secret: ""
-  # API 基础地址：沙箱环境用 https://sandbox.api.sgroup.qq.com，正式环境用 https://api.sgroup.qq.com
-  api-base-url: "https://sandbox.api.sgroup.qq.com"
-  # 连接方式：ws（默认，Gateway WebSocket）或 webhook（HTTP 回调）
-  connection-mode: "ws"
-  # Webhook 回调路径；需要通过 HTTPS 暴露给 QQ 开放平台
-  webhook-path: "/qq/webhook"
   # 官方机器人 WebUI 登录 Token（请改成足够长的随机字符串）
   official-webui-token: "null"
   # 官方机器人 OpenId
   official-openId: "null"
   # 官方机器人用户名
   official-username: "null"
-  # Debug 群 OpenId
-  debug-group-openId: "null"
   # 超级管理员用户 OpenId，用于官方调试页 {user_openid} 模板
   super_admin_id: "null"
 

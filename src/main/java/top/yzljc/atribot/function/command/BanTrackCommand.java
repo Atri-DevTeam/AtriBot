@@ -7,18 +7,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.official.button.Keyboard;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.button.Keyboard;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.service.request.OpenApi;
 
 /**

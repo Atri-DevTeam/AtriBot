@@ -5,11 +5,11 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.command.*;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.function.impl.FetchHitokoto;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;

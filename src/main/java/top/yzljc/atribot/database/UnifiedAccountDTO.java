@@ -3,9 +3,9 @@ package top.yzljc.atribot.database;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import top.yzljc.atribot.auth.AccountStatus;
-import top.yzljc.atribot.auth.AtriAccount;
-import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atricore.auth.AccountStatus;
+import top.yzljc.atricore.auth.AtriAccount;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.utils.FormatTools;
 
 import java.sql.Timestamp;

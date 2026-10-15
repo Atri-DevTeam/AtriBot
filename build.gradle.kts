@@ -5,7 +5,6 @@ import org.gradle.api.file.DuplicatesStrategy
 
 plugins {
     `java-library`
-    `maven-publish`
     application
     id("com.gradleup.shadow") version "9.6.1"
     kotlin("jvm") version "2.4.20"
@@ -14,6 +13,11 @@ plugins {
 group = "top.yzljc"
 version = "3.3.1-SNAPSHOT"
 description = "AtriBot"
+
+application {
+    mainClass.set("top.yzljc.atribot.Atri")
+    applicationDefaultJvmArgs = listOf("--enable-preview")
+}
 
 repositories {
     mavenLocal()
@@ -24,21 +28,14 @@ repositories {
 }
 
 dependencies {
-    api("io.javalin:javalin:6.6.0")
-    api("org.jetbrains.kotlin:kotlin-stdlib:2.1.10")
+    api(project(":atri-core"))
     api("cn.dev33:sa-token-sign:1.46.0")
-    api("com.google.guava:guava:33.7.2-jre")
     api("net.dankito.readability4j:readability4j:1.0.8")
-    api("com.fasterxml.jackson.core:jackson-core:2.22.3")
     api("com.mysql:mysql-connector-j:26.7.0")
-    api("org.yaml:snakeyaml:2.7")
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
-    api("com.fasterxml.jackson.core:jackson-databind:2.22.3")
-    api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("cn.6tail:lunar:1.7.7")
-    api("org.java-websocket:Java-WebSocket:1.6.0")
     api("ch.qos.logback:logback-classic:1.6.4")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
@@ -69,7 +66,6 @@ tasks.withType<JavaExec> {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs = listOf("--enable-preview")
-    dependsOn(":platform-kook:jar", ":platform-discord:jar")
 }
 
 val generateGitProperties by tasks.registering {
@@ -160,11 +156,6 @@ tasks.build {
     dependsOn(tasks.shadowJar)
 }
 
-publishing {
-    publications.create<MavenPublication>("maven") {
-        from(components["java"])
-    }
-}
 
 kotlin {
     jvmToolchain {

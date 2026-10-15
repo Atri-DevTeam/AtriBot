@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.utils.HashUtils;
 
 import java.net.URI;
@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlankOrNullLiteral;
+import static top.yzljc.atricore.utils.StringUtils.isBlankOrNullLiteral;
 
 /**
  * @Author YZ_Ljc_

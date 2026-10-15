@@ -1,24 +1,16 @@
 package top.yzljc.atribot.platform.napcat.groupfunction;
 
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.ConsoleCommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.SlashCommandArguments;
-import top.yzljc.atribot.command.SlashCommandExecutor;
-import top.yzljc.atribot.command.SlashCommandSender;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.ConsoleCommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 
 import java.util.Map;
 
-public class GroupConfigInfo implements CommandExecutor, SlashCommandExecutor {
+public class GroupConfigInfo implements CommandExecutor {
     private static final Map<String, Boolean> registeredFeatures = GroupConfigManager.getRegisteredFeatures();
-
-    @Override
-    public boolean onCommand(SlashCommandSender sender, Command command, String label, SlashCommandArguments args) {
-        return onCommand(sender, command, label, args == null ? new String[0] : args.toArray());
-    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

@@ -2,10 +2,10 @@ package top.yzljc.atribot.function.minecraft;
 
 import top.yzljc.atribot.configuration.RS;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.command.CommandSender;
 
 public final class McPackMetaImpl {
 

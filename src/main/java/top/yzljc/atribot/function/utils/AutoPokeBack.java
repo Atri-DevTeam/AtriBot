@@ -1,12 +1,12 @@
 package top.yzljc.atribot.function.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatPokedEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatPokedEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.util.Objects;

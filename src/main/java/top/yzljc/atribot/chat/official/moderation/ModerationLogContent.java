@@ -1,8 +1,8 @@
 package top.yzljc.atribot.chat.official.moderation;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.atribot.event.events.OfficialGroupJoinRequestEvent;
-import top.yzljc.atribot.platform.qq.QQMessage;
+import top.yzljc.atricore.event.events.OfficialGroupJoinRequestEvent;
+import top.yzljc.atricore.platform.qq.QQMessage;
 
 final class ModerationLogContent {
     private ModerationLogContent() {}

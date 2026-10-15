@@ -3,8 +3,8 @@ package top.yzljc.atribot.database.repo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.auth.AccountStatus;
-import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atricore.auth.AccountStatus;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.database.UnifiedAccountDTO;
 

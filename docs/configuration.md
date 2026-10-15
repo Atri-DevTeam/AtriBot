@@ -2,16 +2,20 @@
 
 [文档目录](README.md) · [部署](getting-started.md)
 
-配置入口为运行目录的 `config.yml`，由 [Config](../src/main/java/top/yzljc/atribot/configuration/Config.java) 加载。完整模板见 [src/main/resources/config.yml](../src/main/resources/config.yml)
+运行目录使用两个配置文件，首次运行分别从 JAR 内的默认模板生成，已有文件不覆盖：
+
+| 文件 | 加载器 | 模板 |
+| --- | --- | --- |
+| `atri-core.yml` | [CoreConfig](../atri-core/src/main/java/top/yzljc/atricore/core/CoreConfig.java) | [框架配置](../atri-core/src/main/resources/atri-core.yml) |
+| `config.yml` | [Config](../src/main/java/top/yzljc/atribot/configuration/Config.java) | [业务配置](../src/main/resources/config.yml) |
+
+框架只读取 `atri-core.yml` 中的平台配置，不回退读取旧 `config.yml`。升级现有部署时，将下表框架字段及 QQ / Napcat 连接参数移到新文件；WebUI 登录密钥和其他业务字段仍保留在 `config.yml`
 
 ## 核心字段
 
 | 字段 | 用途 |
 | --- | --- |
-| `command-prefix` | 文本指令前缀，默认 `/` |
-| `debug-mode` | 调试模式 |
 | `debug-command-suffix` | 指令调试后缀 |
-| `listen-port` | Javalin 监听端口，默认 `1234` |
 | `env` | 默认 `production`；`dev` 在启动时开启 WebUI |
 | `mysql.*` | 数据库连接参数 |
 | `api-url` | 部分业务使用的 API 地址 |
@@ -23,8 +27,6 @@
 `env`、`ugc-api-url` 可在配置中显式添加，当前内置模板未列出这两个字段。`ugc-api-url` 的代码默认值为 `http://localhost:1234`，它不是项目自动提供的生图服务
 
 ```yaml
-listen-port: 1234
-command-prefix: "/"
 env: production
 
 mysql:
@@ -41,11 +43,20 @@ ugc-api-url: "https://images.example.com"
 
 ## 平台配置
 
+以下字段位于 `atri-core.yml`：
+
 | 配置节点 | 主要字段 |
 | --- | --- |
 | `qq` | `enabled`、`app-id`、`client-secret`、`api-base-url`、`connection-mode`、`webhook-path` |
 | `napcat` | `enabled`、`server-url`、`bot-uin`、`admin-uins` |
-| `tencent-channel` | `enabled`、`cli-path`、`login-token`、`timeout-seconds` |
+| `command-prefix` | 文本指令前缀，默认 `/` |
+| `debug-mode` | 框架调试模式 |
+| `listen-port` | 共享 Javalin 监听端口，默认 `1234`；修改后重启 |
+| `thread` | `max-concurrency`、`queue-capacity`、`schedule-capacity` |
+
+`qq.debug-group-openId`、`qq.webhook-queue-capacity` 及 `napcat.token`、`napcat.debug-group-uin`、`napcat.message-spy-groups`、`napcat.queue-capacity`、`napcat.queue-bytes`、`napcat.workers` 也属于框架配置
+
+`config.yml` 中保留 `qq.official-webui-token`、`qq.official-openId`、`qq.official-username`、`qq.super_admin_id`、`napcat.recall-ignore-user` 及 `tencent-channel`。这些字段用于管理页面和运行服务业务。WebUI、Miniapp、QQ Webhook 和 Napcat 上报共用 `atri-core.yml` 的 `listen-port`，旧 `config.yml` 中的端口字段不再读取
 
 平台接入详见 [平台与消息](framework/platforms.md)。`tencent-channel` 使用外部 CLI 登录第二账号，单独说明见 [QQ 频道第二账号](integrations/tencent-channel.md)
 
@@ -66,9 +77,9 @@ Discord 与 KOOK 已移至独立插件，主配置不再读取 `discord`、`kook
 
 ## 修改生效范围
 
-`Config.reload()` 重新读取配置对象，但已经创建的客户端、监听端口、连接池和静态字段不会因此全部重建。平台凭据、连接方式和基础设施配置修改后应重启
+`CoreConfig.getInstance().reload()` 重载框架配置，解析失败时保留旧配置对象。`Config.reload()` 只重载业务配置。已经创建的客户端、监听端口、连接池和静态字段不会因此全部重建。平台开关、凭据、连接方式、回调路径和线程队列参数修改后应重启
 
-WebUI 的设置接口只开放选定字段，各接口负责自己的刷新行为。它不是完整 `config.yml` 编辑器
+WebUI 的设置接口只开放选定字段，按字段归属写入对应配置文件并重载，不改变现有页面布局。它不是完整配置文件编辑器
 
 机器人设置中的「默认加群欢迎」分别配置 `USER`、`ADMIN`、`OWNER` 三种机器人权限身份的正文和按钮，保存后立即用于后续入群事件。群自定义欢迎优先，群的 `member_add_welcome` 开关仍须开启
 
@@ -78,7 +89,8 @@ WebUI 的设置接口只开放选定字段，各接口负责自己的刷新行�
 
 | 位置 | 性质 |
 | --- | --- |
-| 运行目录 `config.yml` | 部署配置 |
+| 运行目录 `atri-core.yml` | 平台与框架配置 |
+| 运行目录 `config.yml` | 运行服务业务配置 |
 | JAR 内 `atribot.yml` | 核心指令声明，构建资源 |
 | 运行目录 `groupconfig.json` | Napcat 群功能配置 |
 | `data/` | 功能设置、群管理规则、提醒、缓存等运行数据 |

@@ -1,10 +1,10 @@
 package top.yzljc.atribot.function.utils;
 
 import top.yzljc.atribot.chat.napcat.AiChat;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atribot.service.ai.AiProvider;
 

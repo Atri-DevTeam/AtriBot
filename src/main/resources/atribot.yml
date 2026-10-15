@@ -114,11 +114,6 @@ commands:
     aliases:
       - bt
       - bantracker
-    options:
-      - name: window
-        type: 3
-        description: 时间范围，单位为m/h/d/w/mo
-        required: false
   test:
     description: 测试命令
   feedback:
@@ -129,11 +124,6 @@ commands:
       - 反馈
       - 举报
       - 建议
-    options:
-      - name: content
-        type: 3
-        description: 反馈内容
-        required: true
   remind:
     description: 私聊设置提醒，查看并管理提醒任务
     usage: /提醒 <时间或周期> 或 /提醒列表 [页码]
@@ -348,11 +338,6 @@ commands:
       - hypixel-wizard
       - wd
       - wi
-    options:
-      - name: player
-        type: 3
-        description: Minecraft 玩家名或 UUID
-        required: true
   zs:
     description: Hypixel僵尸末日数据查询
     usage: /zs <玩家名或 UUID>
@@ -362,11 +347,6 @@ commands:
       - hypixelzombies
       - hypixel-zombies
       - hypzombies
-    options:
-      - name: player
-        type: 3
-        description: Minecraft 玩家名或 UUID
-        required: true
   time:
     description: 查询指定国家/地区的当前时间，不带参数默认查询北京时间
     usage: /time <国家代称/中文名/城市名/时区ID>
@@ -376,11 +356,6 @@ commands:
       - tz
       - 世界时间
       - 当前时间
-    options:
-      - name: zone
-        type: 3
-        description: 地区
-        required: false
 
   hyp:
     description: Hypixel查询二级指令

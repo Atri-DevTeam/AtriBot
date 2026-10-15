@@ -1,5 +1,7 @@
 package top.yzljc.atribot.auth.official;
 
+import top.yzljc.atricore.auth.official.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,8 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
-import top.yzljc.atribot.platform.PlatformRole;
-import top.yzljc.atribot.platform.qq.GroupProfile;
+import top.yzljc.atricore.platform.PlatformRole;
+import top.yzljc.atricore.platform.qq.GroupProfile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

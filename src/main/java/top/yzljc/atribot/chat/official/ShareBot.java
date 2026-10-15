@@ -1,11 +1,15 @@
 package top.yzljc.atribot.chat.official;
 
+import top.yzljc.atricore.core.CoreConfig;
+
+import top.yzljc.atricore.chat.official.*;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -51,7 +55,7 @@ public final class ShareBot {
         // 长度限制32，正好是openId的长度哈哈
         Map<String, String> shareCallBackData = Map.of("callback_data", userOpenId);
 
-        var d = HttpService.postJson(Config.getInstance().getQqApiBaseUrl() + "/v2/generate_url_link", shareCallBackData, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
+        var d = HttpService.postJson(CoreConfig.getInstance().getSettings().getQqApiBaseUrl() + "/v2/generate_url_link", shareCallBackData, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
         if (d == null) return null;
         var url = d.path("data").path("url");
         if (!url.isTextual() || url.textValue().isBlank()) return null;

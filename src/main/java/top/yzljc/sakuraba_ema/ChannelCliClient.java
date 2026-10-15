@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliException;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliOptions;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;

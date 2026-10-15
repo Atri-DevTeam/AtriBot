@@ -26,13 +26,9 @@ public class Config {
 
     // ########## 全局设置区域 ##########
     @Getter
-    private String commandPrefix;
-    @Getter
     private String debugCommandSuffix;
     @Getter
     private String ttfFileName;
-    @Getter
-    private boolean debugMode;
     @Getter
     private String mysqlHost;
     @Getter
@@ -45,8 +41,6 @@ public class Config {
     private String mysqlPassword;
     @Getter
     private Map<AiProvider, AiProperties> aiPropertiesMap;
-    @Getter
-    private int listenPort;
     @Getter
     private String env;
     @Getter
@@ -74,21 +68,7 @@ public class Config {
 
     // ########## Napcat设置区域 ##########
     @Getter
-    private boolean napcatEnabled;
-    @Getter
-    private String napcatServerUrl;
-    @Getter
-    private String napcatDebugGroupUin;
-    @Getter
-    private String napcatBotUin;
-    @Getter
-    private List<String> napcatAdminUins;
-    @Getter
-    private List<String> napcatMessageSpyGroups;
-    @Getter
     private List<String> napcatRecallIgnoredUsers;
-    @Getter
-    private String authToken;
 
     // ########## 功能设置区域 ##########
     private String atribotKeySecret;
@@ -126,26 +106,12 @@ public class Config {
 
     // ########## 官方机器人配置参数 ##########
     @Getter
-    private boolean officialBotEnabled;
-    @Getter
-    private String qqAppId;
-    @Getter
-    private String qqClientSecret;
-    @Getter
-    private String qqApiBaseUrl;
-    @Getter
-    private String qqConnectionMode;
-    @Getter
-    private String qqWebhookPath;
-    @Getter
     private String officialWebuiToken;
     @Getter
     private String officialOpenId;
     @Getter
     @Deprecated(since = "3.1.7") // 直接 /users/@me 拿，硬编码狗都不用
     private String officialUsername;
-    @Getter
-    private String debugGroupOpenId;
     @Getter
     private String superAdminId;
 
@@ -241,17 +207,14 @@ public class Config {
             yaml.load();
 
             // ########## 全局设置区域 ##########
-            this.commandPrefix = yaml.getString("command-prefix", "/");
             this.debugCommandSuffix = yaml.getString("debug-command-suffix", "--debug");
             this.ttfFileName = yaml.getString("ttf-file-name", "default.ttf");
-            this.debugMode = yaml.getBoolean("debug-mode", false);
             this.mysqlHost = yaml.getString("mysql.host", "localhost");
             this.mysqlPort = yaml.getInt("mysql.port", 3306);
             this.mysqlDatabase = yaml.getString("mysql.database", "database");
             this.mysqlUsername = yaml.getString("mysql.username", "root");
             this.mysqlPassword = yaml.getString("mysql.password", "null");
             this.aiPropertiesMap = loadAiConfigs();
-            this.listenPort = yaml.getInt("listen-port", 1234);
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.miniappEnabled = yaml.getBoolean("miniapp.enabled", true);
@@ -266,14 +229,7 @@ public class Config {
             this.censorApiKey = yaml.getString("censor.api-key", "");
 
             // ########## Napcat设置区域 ##########
-            this.napcatEnabled = yaml.getBoolean("napcat.enabled", false);
-            this.napcatServerUrl = yaml.getString("napcat.server-url", "http://0.0.0.0:12345");
-            this.napcatDebugGroupUin = yaml.getString("napcat.debug-group-uin", "123456789");
-            this.napcatBotUin = yaml.getString("napcat.bot-uin", "123456789");
-            this.napcatAdminUins = yaml.getStringList("napcat.admin-uins");
-            this.napcatMessageSpyGroups = yaml.getStringList("napcat.message-spy-groups");
             this.napcatRecallIgnoredUsers = yaml.getStringList("napcat.recall-ignore-user");
-            this.authToken = yaml.getString("napcat.token", "");
 
             // ########## 功能设置区域 ##########
             this.atribotKeySecret = yaml.getString("atribot-key-secret", "null");
@@ -306,32 +262,9 @@ public class Config {
             this.emailProperties = getEmailProperties();
 
             // ########## 官方机器人配置参数 ##########
-            this.officialBotEnabled = yaml.getBoolean("qq.enabled", false);
-            this.qqAppId = yaml.getString("qq.app-id", "");
-            this.qqClientSecret = yaml.getString("qq.client-secret", "");
-            this.qqApiBaseUrl = yaml.getString("qq.api-base-url", "https://sandbox.api.sgroup.qq.com");
-            String configuredQqConnectionMode = yaml.getString("qq.connection-mode", "ws");
-            this.qqConnectionMode = configuredQqConnectionMode == null
-                    ? "ws"
-                    : configuredQqConnectionMode.trim().toLowerCase();
-            if (this.qqConnectionMode.equals("wh")) {
-                this.qqConnectionMode = "webhook";
-            }
-            if (!this.qqConnectionMode.equals("webhook") && !this.qqConnectionMode.equals("ws")) {
-                log.warn("未知的 qq.connection-mode: {}，回退为 ws", this.qqConnectionMode);
-                this.qqConnectionMode = "ws";
-            }
-            String configuredQqWebhookPath = yaml.getString("qq.webhook-path", "/qq/webhook");
-            this.qqWebhookPath = configuredQqWebhookPath == null
-                    ? "/qq/webhook"
-                    : configuredQqWebhookPath.trim();
-            if (this.qqWebhookPath.isEmpty() || !this.qqWebhookPath.startsWith("/") || this.qqWebhookPath.equals("/")) {
-                this.qqWebhookPath = "/qq/webhook";
-            }
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
             this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
-            this.debugGroupOpenId = yaml.getString("qq.debug-group-openId", "null");
             this.superAdminId = yaml.getString("qq.super_admin_id", "null");
 
             // ########## 腾讯频道 CLI（第二账号）配置参数 ##########

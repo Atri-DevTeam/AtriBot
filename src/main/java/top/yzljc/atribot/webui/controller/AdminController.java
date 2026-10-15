@@ -14,7 +14,7 @@ import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings.DisableScope;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 

@@ -2,13 +2,13 @@ package top.yzljc.atribot.function.command;
 
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.BackgroundRepository;
 import top.yzljc.atribot.function.background.BackgroundService;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
 
 /**

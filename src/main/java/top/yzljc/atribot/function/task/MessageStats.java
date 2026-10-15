@@ -1,19 +1,24 @@
 package top.yzljc.atribot.function.task;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.UserInformation;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.UserInformation;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
-import top.yzljc.atribot.service.timer.Schedule;
-import top.yzljc.atribot.service.timer.ScheduleType;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
+
+import java.time.LocalTime;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,16 +31,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MessageStats implements CommandExecutor {
+/**
+ * @Author YZ_Ljc_
+ * @ClassName MessageStats
+ * @Created_at 2026/10/15
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.function.task
+ */
+public class MessageStats implements CommandExecutor, ScheduledTask {
+    public static final MessageStats INSTANCE = new MessageStats();
 
     private static final Logger log = LoggerFactory.getLogger(MessageStats.class);
     private static final Pattern AT_PATTERN = Pattern.compile("\\[CQ:at,qq=(\\d+)]");
     private static final Map<String, CachedNickname> nicknameCache = new ConcurrentHashMap<>();
     private static final long NICKNAME_CACHE_EXPIRE = 60 * 1000L;
-    private static final List<String> spyGroups = Config.getInstance().getNapcatMessageSpyGroups();
+    private static final List<String> spyGroups = CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups();
 
-    @Schedule(time = "23:59:45", type = ScheduleType.DAILY)
-    public static void autoReportAllGroups() {
+    @Override
+    public TaskSchedule schedule() {
+        return new TaskPlan(ScheduleMode.daily, LocalTime.of(23, 59, 45));
+    }
+
+    @Override
+    public void run() {
         Set<String> groups = findAllGroupsWithRecords();
         for (String groupId : groups) {
             String msg = buildGroupStatsMsg(groupId, LocalDate.now(), false, null);

@@ -1,11 +1,13 @@
 package top.yzljc.atribot.miniapp.service;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.miniapp.MiniappSessions;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +65,7 @@ public final class MiniappProfileService {
     }
 
     public MiniappProfileService() {
-        this(DatabaseManager::getConnection, () -> Config.getInstance().getQqAppId(), MiniappProfileService::currentBot);
+        this(DatabaseManager::getConnection, () -> CoreConfig.getInstance().getSettings().getQqAppId(), MiniappProfileService::currentBot);
     }
 
     public MiniappProfileService(Connections connections, Supplier<String> appId) {
@@ -133,7 +135,7 @@ public final class MiniappProfileService {
         String avatar = clean(QQBot.BOT_AVATAR_URL);
         Config config = Config.getInstance();
         if (avatar == null && clean(config.getOfficialOpenId()) != null) {
-            avatar = avatarUrl(config.getQqAppId(), config.getOfficialOpenId());
+            avatar = avatarUrl(CoreConfig.getInstance().getSettings().getQqAppId(), config.getOfficialOpenId());
         }
         return new Bot(name == null ? "机器人" : name, avatar);
     }

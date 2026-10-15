@@ -1,6 +1,8 @@
 package top.yzljc.atribot.command.impl;
 
-import top.yzljc.atribot.command.ConsoleCommandSender;
+import top.yzljc.atricore.command.impl.*;
+
+import top.yzljc.atricore.command.ConsoleCommandSender;
 import top.yzljc.atribot.service.runtime.ConsoleManager;
 
 import java.time.LocalTime;

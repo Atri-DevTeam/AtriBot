@@ -2,8 +2,8 @@ package top.yzljc.atribot.function.admin.ema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.command.*;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
 
 import java.util.*;

@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlank;
+import static top.yzljc.atricore.utils.StringUtils.isBlank;
 
 @Slf4j
 public class WebUISessionManager {

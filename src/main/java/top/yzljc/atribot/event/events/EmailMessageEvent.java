@@ -1,5 +1,7 @@
 package top.yzljc.atribot.event.events;
 
+import top.yzljc.atricore.event.events.*;
+
 import jakarta.mail.Address;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
@@ -9,7 +11,7 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeUtility;
 import lombok.Getter;
 import org.jsoup.Jsoup;
-import top.yzljc.atribot.event.Event;
+import top.yzljc.atricore.event.Event;
 import top.yzljc.atribot.service.email.EmailBodyPreview;
 
 import java.io.IOException;

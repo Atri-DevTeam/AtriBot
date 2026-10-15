@@ -6,9 +6,9 @@ import jakarta.mail.event.MessageCountListener;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.angus.mail.imap.IMAPFolder;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventManager;
+import top.yzljc.atricore.event.EventManager;
 import top.yzljc.atribot.event.events.EmailMessageEvent;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.io.IOException;
 import java.util.Properties;

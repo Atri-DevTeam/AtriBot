@@ -1,8 +1,8 @@
 package top.yzljc.atribot.function.tasks.pushtask;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.platform.Platform;
 
 /**
  * @Author YZ_Ljc_

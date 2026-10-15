@@ -1,26 +1,29 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.QQMessageSendException;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.official.RT;
-import top.yzljc.atribot.chat.official.button.Keyboard;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.C2CChat;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.QQMessageSendException;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.chat.official.button.Keyboard;
+import top.yzljc.atribot.command.CommandDisableService;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.function.games.sound.SoundCatalog;
 import top.yzljc.atribot.function.games.sound.SoundRound;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -240,7 +243,7 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
     }
 
     private String commandPrefix() {
-        return Config.getInstance().getCommandPrefix();
+        return CoreConfig.getInstance().getSettings().getCommandPrefix();
     }
 
     private static String sessionKey(QQCommandSender qq) {

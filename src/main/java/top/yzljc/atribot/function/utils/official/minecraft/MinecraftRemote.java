@@ -2,9 +2,9 @@ package top.yzljc.atribot.function.utils.official.minecraft;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.socket.BindResponse;
 
 import javax.crypto.*;

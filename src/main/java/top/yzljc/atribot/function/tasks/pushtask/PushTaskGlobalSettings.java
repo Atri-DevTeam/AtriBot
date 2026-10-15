@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlank;
+import static top.yzljc.atricore.utils.StringUtils.isBlank;
 
 /**
  * @Author YZ_Ljc_

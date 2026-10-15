@@ -2,13 +2,13 @@ package top.yzljc.atribot.function.utils.official;
 
 import top.yzljc.atribot.configuration.RS;
 
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.RT;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.platform.qq.FileType;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.platform.qq.FileType;
 
 import java.util.Map;
 

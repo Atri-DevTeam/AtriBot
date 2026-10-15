@@ -2,8 +2,8 @@ package top.yzljc.atribot.function.command;
 
 import java.util.Map;
 
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
 

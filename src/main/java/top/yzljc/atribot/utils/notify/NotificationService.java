@@ -3,10 +3,10 @@ package top.yzljc.atribot.utils.notify;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.GroupChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.chat.official.C2CChat;
+import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.database.PendingNoticeDTO;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 

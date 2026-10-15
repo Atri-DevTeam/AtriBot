@@ -1,8 +1,8 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atribot.command.*;
+import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.service.taskscheduler.*;
+import top.yzljc.atricore.service.taskscheduler.*;
 
 import java.util.List;
 

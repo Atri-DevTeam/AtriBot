@@ -1,23 +1,22 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.impl.MessageSegment;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.*;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.command.QQGuildCommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.command.SlashCommandArguments;
-import top.yzljc.atribot.command.SlashCommandExecutor;
-import top.yzljc.atribot.command.SlashCommandSender;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.impl.MessageSegment;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.*;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.command.QQGuildCommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.RS;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 
 import java.util.List;
 
@@ -61,7 +60,7 @@ public class HelpCommand implements CommandExecutor {
                             ),
                             List.of(
                                     new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
-                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + Config.getInstance().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
+                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + CoreConfig.getInstance().getSettings().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
                             )
                     )
             );

@@ -1,5 +1,7 @@
 package top.yzljc.atribot.service.runtime;
 
+import top.yzljc.atricore.service.runtime.*;
+
 import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
 import org.jline.reader.EndOfFileException;
@@ -14,10 +16,10 @@ import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.command.CommandDefinition;
-import top.yzljc.atribot.command.CommandFeature;
-import top.yzljc.atribot.command.CommandManager;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atricore.command.CommandDefinition;
+import top.yzljc.atricore.command.CommandFeature;
+import top.yzljc.atricore.command.CommandManager;
+import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atribot.command.impl.ConsoleSenderImpl;
 
 import java.io.BufferedReader;

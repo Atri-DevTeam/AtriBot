@@ -5,7 +5,7 @@ import net.dankito.readability4j.Readability4J;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.service.request.HttpService;
+import top.yzljc.atricore.service.request.HttpService;
 
 import java.net.URI;
 import java.net.http.HttpResponse;

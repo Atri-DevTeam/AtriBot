@@ -4,7 +4,7 @@
 
 ## 平台划分
 
-[Platform](../../src/main/java/top/yzljc/atribot/platform/Platform.java) 按消息场景枚举：
+[Platform](../../atri-core/src/main/java/top/yzljc/atricore/platform/Platform.java) 按消息场景枚举：
 
 | 平台 | 场景 | 用户 | 消息 |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ QQ 群聊 / C2C 与频道 / 频道私信使用不同类型，事件也分别定�
 
 ## User
 
-[User](../../src/main/java/top/yzljc/atribot/platform/User.java) 保存共同身份字段：
+[User](../../atri-core/src/main/java/top/yzljc/atricore/platform/User.java) 保存共同身份字段：
 
 ```java
 Platform getPlatform();
@@ -40,7 +40,7 @@ boolean isBlocked();
 
 ## Message
 
-[Message](../../src/main/java/top/yzljc/atribot/platform/Message.java) 保存平台、消息 ID、文本、时间戳字符串和提及用户列表。附件、引用、消息类型、原始事件等字段由平台子类提供
+[Message](../../atri-core/src/main/java/top/yzljc/atricore/platform/Message.java) 保存平台、消息 ID、文本、时间戳字符串和提及用户列表。附件、引用、消息类型、原始事件等字段由平台子类提供
 
 例如 `QQMessage` 包含：
 
@@ -56,7 +56,7 @@ boolean isBlocked();
 
 ## 发送与撤回
 
-命令回复使用 [CommandSender](../../src/main/java/top/yzljc/atribot/command/CommandSender.java)。`sendMessage(String)` 是公共文本入口；Markdown、键盘、文件和卡片通过具体发送者接口或 `chat` 下的平台 API 发送
+命令回复使用 [CommandSender](../../atri-core/src/main/java/top/yzljc/atricore/command/CommandSender.java)。`sendMessage(String)` 是公共文本入口；Markdown、键盘、文件和卡片通过具体发送者接口或 `chat` 下的平台 API 发送
 
 `Recallable` 提供 `boolean recall()`。当前实现该接口的消息类型为 `QQMessage`、`NapcatMessage`、`KookMessage`；`QQGuildMessage` 和 `DiscordMessage` 未提供该能力
 
@@ -119,7 +119,7 @@ String imageUrl = HackMPUploader.upload(imageBytes);
 
 ### 配置与连接
 
-使用 `qq.enabled` 启用，配置 `app-id`、`client-secret`、`api-base-url`
+在 `atri-core.yml` 中使用 `qq.enabled` 启用，配置 `app-id`、`client-secret`、`api-base-url`
 
 - `connection-mode: ws` 使用 WebSocket
 - `connection-mode: webhook` 使用 Webhook，默认路径 `/qq/webhook`
@@ -129,14 +129,14 @@ String imageUrl = HackMPUploader.upload(imageBytes);
 
 ### 频道帖子
 
-帖子模型位于 [thread](../../src/main/java/top/yzljc/atribot/chat/official/thread)，发送入口为 [GuildChannelChat](../../src/main/java/top/yzljc/atribot/chat/official/GuildChannelChat.java) 和 [AsyncGuildChannelChat](../../src/main/java/top/yzljc/atribot/chat/official/AsyncGuildChannelChat.java)。`channelId` 使用目标子频道板块 ID
+帖子模型位于 [thread](../../atri-core/src/main/java/top/yzljc/atricore/chat/official/thread)，发送入口为 [GuildChannelChat](../../atri-core/src/main/java/top/yzljc/atricore/chat/official/GuildChannelChat.java) 和 [AsyncGuildChannelChat](../../atri-core/src/main/java/top/yzljc/atricore/chat/official/AsyncGuildChannelChat.java)。`channelId` 使用目标子频道板块 ID
 
 #### 富文本构建
 
-[thread](../../src/main/java/top/yzljc/atribot/chat/official/thread) 提供 [RichText](https://bot.q.qq.com/wiki/develop/api-v2/server-inter/channel/content/forum/model.html#RichText) 的 Java 封装：
+[thread](../../atri-core/src/main/java/top/yzljc/atricore/chat/official/thread) 提供 [RichText](https://bot.q.qq.com/wiki/develop/api-v2/server-inter/channel/content/forum/model.html#RichText) 的 Java 封装：
 
 ```java
-import top.yzljc.atribot.chat.official.thread.*;
+import top.yzljc.atricore.chat.official.thread.*;
 
 RichText content = new RichText()
         .paragraph(new Paragraph().alignment(Alignment.MIDDLE).text("公告", TextStyle.BOLD))
@@ -154,7 +154,7 @@ Object body = thread.toObject();
 
 `Format` 提供 `FORMAT_TEXT`、`FORMAT_HTML`、`FORMAT_MARKDOWN`、`FORMAT_JSON`。例如普通文本帖子可使用 `new GuildThread("标题", "正文", Format.FORMAT_TEXT)`
 
-`GuildThread` 实现 [JsonPayload](../../src/main/java/top/yzljc/atribot/utils/JsonPayload.java)，`toObject()` 返回包含 `title`、`content`、`format` 的 Map。发送层用 Jackson 将整个 Map 序列化为请求 JSON；其中 `content` 按接口格式保留为字符串，富文本正文中的引号由 Jackson 转义
+`GuildThread` 实现 [JsonPayload](../../atri-core/src/main/java/top/yzljc/atricore/utils/JsonPayload.java)，`toObject()` 返回包含 `title`、`content`、`format` 的 Map。发送层用 Jackson 将整个 Map 序列化为请求 JSON；其中 `content` 按接口格式保留为字符串，富文本正文中的引号由 Jackson 转义
 
 #### 富文本解析
 
@@ -199,17 +199,15 @@ CompletableFuture<Boolean> deletion = AsyncGuildChannelChat.deleteThread(channel
 
 ## Napcat / OneBot
 
-`napcat.server-url` 指向 Napcat HTTP API。Napcat 的事件上报地址指向 AtriMeow 的 `POST /`，端口为 `listen-port`
+`atri-core.yml` 中的 `napcat.server-url` 指向 Napcat HTTP API。Napcat 的事件上报地址指向 Provider 注册的 `POST /`，端口由同一文件的 `listen-port` 决定
 
 `bot-uin` 为机器人 QQ 号，`admin-uins` 为配置的管理员列表。群功能配置保存在 `groupconfig.json`
 
-协议入口位于 [platform/napcat](../../src/main/java/top/yzljc/atribot/platform/napcat)，消息 API 位于 [chat/napcat](../../src/main/java/top/yzljc/atribot/chat/napcat)
+协议入口位于 [platform/napcat](../../atri-core/src/main/java/top/yzljc/atricore/platform/napcat)，消息 API 位于 [chat/napcat](../../atri-core/src/main/java/top/yzljc/atricore/chat/napcat)
 
 ## Discord
 
-安装 [platform-discord](../../platform-discord/README.md) 插件，在 `plugins/platform-discord/config.yml` 配置 `bot-token`、`api-base-url` 与 `intents`。连接和交互处理位于 [platform/discord](../../platform-discord/src/main/java/top/yzljc/atribot/platform/discord)
-
-当前命令入口为结构化 Slash Command，插件命令及参数在自身的 `plugin.yml` 声明，由 `SlashCommandExecutor` 处理。连接启动时按 Discord 平台选取已注册的 Slash 执行器，详见 [指令](commands.md)
+Discord 适配已移出主项目，当前 core 不提供结构化应用指令接口。原平台插件需要另行适配，不属于当前构建范围
 
 ## KOOK
 
@@ -224,7 +222,7 @@ webhook-path: "/webhook"
 admin-ids: []
 ```
 
-Callback URL 默认指向外部地址的 `/plugins/platform-kook/webhook`。`webhook-path` 是插件命名空间下的相对路径，前缀 `/plugins/platform-kook` 由宿主添加。支持 zlib 压缩，回调 URL 也可附加 `?compress=0`
+Callback URL 默认指向外部地址的 `/plugins/platform-kook/webhook`。`webhook-path` 是插件命名空间下的相对路径，前缀 `/plugins/platform-kook` 由运行服务添加。支持 zlib 压缩，回调 URL 也可附加 `?compress=0`
 
 `bot-token` 用于出站 API，`verify-token` 用于回调校验。启用加密时，`encrypt-key` 必须与平台配置一致；启用后拒绝未加密回调
 

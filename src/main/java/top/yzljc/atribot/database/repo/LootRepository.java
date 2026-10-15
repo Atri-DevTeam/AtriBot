@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlank;
+import static top.yzljc.atricore.utils.StringUtils.isBlank;
 
 /**
  * 抽卡系统数据库访问层：用户金粒余额与已获得的物品卡列表

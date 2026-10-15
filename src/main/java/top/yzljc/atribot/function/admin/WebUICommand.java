@@ -1,16 +1,16 @@
 package top.yzljc.atribot.function.admin;
 
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.*;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialButtonInteractionEvent;
-import top.yzljc.atribot.event.impl.AnswerCode;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.command.*;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialButtonInteractionEvent;
+import top.yzljc.atricore.event.impl.AnswerCode;
 import top.yzljc.atribot.webui.WebUISessionManager;
 
 import java.util.List;

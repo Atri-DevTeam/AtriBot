@@ -3,10 +3,10 @@ package top.yzljc.atribot.function.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.atribot.chat.napcat.FriendList;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.platform.napcat.PostRequest;
-import top.yzljc.atribot.platform.napcat.RequestType;
+import top.yzljc.atricore.chat.napcat.FriendList;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.platform.napcat.PostRequest;
+import top.yzljc.atricore.platform.napcat.RequestType;
 import top.yzljc.atribot.utils.GetProjectInfo;
 
 import java.nio.file.Path;

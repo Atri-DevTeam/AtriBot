@@ -1,11 +1,13 @@
 package top.yzljc.atribot.webui;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.utils.SizeNtUid;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.webui.controller.*;
 
 import java.io.InputStream;
@@ -49,7 +51,7 @@ public class WebUIRouter {
         // 必须登录
         server.before("/webui/meta/*", WebUIRouter::auth);
         server.get("/webui/meta/avatar", ctx -> ctx.json(new MetaDTO(
-                Config.getInstance().getQqAppId(),
+                CoreConfig.getInstance().getSettings().getQqAppId(),
                 Config.getInstance().getOfficialOpenId()
         )));
         server.get("/webui/meta/name", ctx -> ctx.result(QQBot.BOT_NAME));

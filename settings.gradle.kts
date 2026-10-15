@@ -7,4 +7,4 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 rootProject.name = "AtriMeow"
-include("platform-kook", "platform-discord")
+include("atri-core")

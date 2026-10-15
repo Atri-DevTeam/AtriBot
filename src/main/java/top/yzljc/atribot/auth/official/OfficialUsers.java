@@ -1,5 +1,7 @@
 package top.yzljc.atribot.auth.official;
 
+import top.yzljc.atricore.auth.official.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

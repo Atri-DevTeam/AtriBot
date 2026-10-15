@@ -1,18 +1,20 @@
 package top.yzljc.atribot.utils.tools;
 
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
+import top.yzljc.atricore.core.CoreConfig;
+
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RM implements CommandExecutor {
     private static final Map<String, String> latestGroupMessageMap = new ConcurrentHashMap<>();
-    private static final String DEBUG_GROUP = Config.getInstance().getNapcatDebugGroupUin();
+    private static final String DEBUG_GROUP = CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin();
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

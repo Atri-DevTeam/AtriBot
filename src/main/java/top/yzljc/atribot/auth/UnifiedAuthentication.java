@@ -1,7 +1,9 @@
 package top.yzljc.atribot.auth;
 
+import top.yzljc.atricore.auth.*;
+
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.database.UnifiedAccountDTO;
 import top.yzljc.atribot.database.repo.UnifiedAccountRepository;
 

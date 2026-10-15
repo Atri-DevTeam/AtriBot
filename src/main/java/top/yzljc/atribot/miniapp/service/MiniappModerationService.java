@@ -3,7 +3,7 @@ package top.yzljc.atribot.miniapp.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.management.GroupMember;
+import top.yzljc.atricore.chat.official.management.GroupMember;
 import top.yzljc.atribot.chat.official.moderation.*;
 import top.yzljc.atribot.database.repo.GroupBindingRepository;
 import top.yzljc.atribot.miniapp.MiniappSessions;

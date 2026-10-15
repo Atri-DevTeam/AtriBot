@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.utils.napcat;
 
 import com.zaxxer.hikari.HikariDataSource;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
-import top.yzljc.atribot.chat.napcat.UserInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.UserInformation;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

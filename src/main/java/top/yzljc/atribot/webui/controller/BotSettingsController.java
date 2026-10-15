@@ -1,10 +1,12 @@
 package top.yzljc.atribot.webui.controller;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.utils.CommentPreservingYaml;
 import top.yzljc.atribot.webui.Result;
 
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @Author YZ_Ljc_
@@ -23,6 +26,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.webui.controller
  */
 public final class BotSettingsController {
+    private static final Set<String> CORE_SETTINGS = Set.of("command-prefix", "debug-mode", "qq.debug-group-openId");
 
     private record SettingDescriptor(String key, String label, String description, String type, boolean restartRequired) {
     }
@@ -37,9 +41,10 @@ public final class BotSettingsController {
 
     public static void getProfile(Context ctx) {
         Config config = Config.getInstance();
-        String appId = normalize(config.getQqAppId());
+        var coreSettings = CoreConfig.getInstance().getSettings();
+        String appId = normalize(coreSettings.getQqAppId());
         String openId = normalize(config.getOfficialOpenId());
-        String apiBaseUrl = config.getQqApiBaseUrl();
+        String apiBaseUrl = coreSettings.getQqApiBaseUrl();
         String avatarUrl = appId != null && openId != null
                 ? "https://thirdqq.qlogo.cn/qqapp/" + appId + "/" + openId + "/100"
                 : normalize(QQBot.BOT_AVATAR_URL);
@@ -52,7 +57,7 @@ public final class BotSettingsController {
                 apiBaseUrl,
                 config.getEnv(),
                 apiBaseUrl != null && apiBaseUrl.contains("sandbox"),
-                config.getQqConnectionMode(),
+                coreSettings.getQqConnectionMode(),
                 normalize(QQBot.BOT_SHARE_LINK),
                 normalize(QQBot.BOT_UIN)
         )));
@@ -86,13 +91,19 @@ public final class BotSettingsController {
             changes.put(descriptor.key(), converted);
         }
 
+        Map<String, Object> coreChanges = new LinkedHashMap<>();
+        Map<String, Object> applicationChanges = new LinkedHashMap<>();
+        changes.forEach((key, value) -> (CORE_SETTINGS.contains(key) ? coreChanges : applicationChanges).put(key, value));
         try {
-            CommentPreservingYaml.update(Paths.get(Properties.CONFIG), changes);
-        } catch (IOException e) {
+            CommentPreservingYaml.updateAll(Map.of(
+                    CoreConfig.getInstance().getPath(), coreChanges,
+                    Paths.get(Properties.CONFIG), applicationChanges));
+            if (!coreChanges.isEmpty()) CoreConfig.getInstance().reload();
+            if (!applicationChanges.isEmpty()) Config.getInstance().reload();
+        } catch (IOException | IllegalStateException e) {
             ctx.json(Result.fail(500, "写入配置文件失败: " + e.getMessage()));
             return;
         }
-        Config.getInstance().reload();
         ctx.json(Result.success(currentItems()));
     }
 
@@ -113,11 +124,12 @@ public final class BotSettingsController {
 
     private static Object currentValue(String key) {
         Config config = Config.getInstance();
+        var coreSettings = CoreConfig.getInstance().getSettings();
         return switch (key) {
-            case "command-prefix" -> normalize(config.getCommandPrefix());
+            case "command-prefix" -> normalize(coreSettings.getCommandPrefix());
             case "debug-command-suffix" -> normalize(config.getDebugCommandSuffix());
-            case "debug-mode" -> config.isDebugMode();
-            case "qq.debug-group-openId" -> normalize(config.getDebugGroupOpenId());
+            case "debug-mode" -> coreSettings.isDebugMode();
+            case "qq.debug-group-openId" -> normalize(coreSettings.getDebugGroupOpenId());
             case "qq.super_admin_id" -> normalize(config.getSuperAdminId());
             default -> null;
         };

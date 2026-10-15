@@ -1,0 +1,366 @@
+package top.yzljc.atricore.chat.napcat.impl;
+
+import top.yzljc.atricore.AtriProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.platform.napcat.PostRequest;
+import top.yzljc.atricore.platform.napcat.RequestType;
+
+import java.util.*;
+
+/**
+ * OneBot 消息段与 CQ 码处理工具
+ *
+ * @Author YZ_Ljc_
+ * @ClassName MessageUtils
+ * @Created_at 2026/10/15
+ * @Project AtriMeow
+ * @Package top.yzljc.atricore.chat.napcat.impl
+ */
+@Slf4j
+public class MessageUtils {
+    private static final String FAKE_UIN = "970717559";
+    private static final String FAKE_NAME = "高性能全自动家庭闯祸机";
+    private static final MessageSegment AT_GAP = new MessageSegment("text", Map.of("text", " "));
+
+    public static String groupMessage(String groupId, Collection<MessageSegment> data) {
+        if (data == null || data.isEmpty()) return null;
+        try {
+            JsonNode resp = PostRequest.getPostResult(
+                    RequestType.SEND_GROUP_MSG,
+                    Map.of("group_id", groupId, "message", data)
+            );
+
+            String messageId = resp.path("data").path("message_id").asText(null);
+
+            if (messageId != null && !messageId.isEmpty()) {
+                AtriProvider.getInstance().getLogRecorder().recordLastMsg(groupId, messageId);
+                return messageId;
+            }
+
+            log.error("消息发送失败，返回内容: {}", resp);
+        } catch (Exception e) {
+            log.error("推送异常：{}", e.getMessage(), e);
+        }
+
+        return null;
+    }
+
+    public static String privateMessage(String userId, Collection<MessageSegment> data) {
+        if (data == null || data.isEmpty()) return null;
+        try {
+            JsonNode resp = PostRequest.getPostResult(
+                    RequestType.SEND_PRIVATE_MSG,
+                    Map.of("user_id", userId, "message", data)
+            );
+            String messageId = resp.path("data").path("message_id").asText(null);
+            if (messageId != null && !messageId.isEmpty()) return messageId;
+            log.error("私聊消息发送失败，返回内容: {}", resp);
+        } catch (Exception e) {
+            log.error("私聊推送异常：{}", e.getMessage(), e);
+        }
+        return null;
+    }
+
+    public static String privateMessage(String userId, String text) {
+        return privateMessage(userId, List.of(textSegment(text)));
+    }
+
+    public static String privateMessage(String userId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return privateMessage(userId, imageSegments(image));
+    }
+
+    public static String replyPrivateMessage(String userId, String messageId, String text) {
+        return replyPrivateMessage(
+                userId,
+                messageId,
+                List.of(textSegment(text))
+        );
+    }
+
+    public static String replyPrivateMessage(String userId, String messageId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return replyPrivateMessage(userId, messageId, imageSegments(image));
+    }
+
+    public static String replyPrivateMessage(String userId, String messageId, Collection<MessageSegment> messageSegments) {
+        List<MessageSegment> replyContent = new ArrayList<>();
+        replyContent.add(replySegment(messageId));
+        if (messageSegments != null && !messageSegments.isEmpty()) {
+            replyContent.addAll(messageSegments);
+        }
+        return privateMessage(userId, replyContent);
+    }
+
+    public static String chatMessage(String userId, String groupId, String text, boolean whetherAt) {
+        if (!whetherAt) {
+            return groupMessage(groupId, List.of(textSegment(text)));
+        }
+        return groupMessage(groupId, buildWithAtPrefix(userId, List.of(textSegment(text))));
+    }
+
+    public static String chatMessage(String userId, String groupId, Collection<MessageSegment> data, boolean whetherAt) {
+        if (!whetherAt) return groupMessage(groupId, data);
+        return groupMessage(groupId, buildWithAtPrefix(userId, data));
+    }
+
+    public static String chatMessage(String userId, String groupId, ImageComponent image, boolean whetherAt) {
+        if (!whetherAt) return sendSingleImageGroupMessage(groupId, image);
+        if (!isValidImage(image)) return null;
+        return groupMessage(groupId, buildWithAtPrefix(userId, imageSegments(image)));
+    }
+
+    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, String text) {
+        return replyMessage(
+                userId,
+                groupId,
+                messageId,
+                whetherAt,
+                List.of(textSegment(text))
+        );
+    }
+
+    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, Collection<MessageSegment> messageSegments) {
+        List<MessageSegment> replyContent = whetherAt ? buildWithAtPrefix(userId, null) : new ArrayList<>();
+        replyContent.add(replySegment(messageId));
+        if (messageSegments != null && !messageSegments.isEmpty()) {
+            replyContent.addAll(messageSegments);
+        }
+        return groupMessage(groupId, replyContent);
+    }
+
+    public static String replyMessage(String userId, String groupId, String messageId, boolean whetherAt, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return replyMessage(userId, groupId, messageId, whetherAt, imageSegments(image));
+    }
+
+    public static String sendPrivateForwardMessage(String userId, Collection<MessageSegment> nodes, String title, String summary, String... textVars) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("user_id", userId);
+            payload.put("messages", nodes);
+            payload.put("news", buildNews(textVars));
+            payload.put("source", title);
+            payload.put("summary", summary);
+
+            JsonNode resp = PostRequest.getPostResult(RequestType.SEND_PRIVATE_FORWARD_MSG, payload);
+            return resp.path("data").path("message_id").asText(null);
+        } catch (Exception e) {
+            log.warn("发送好友转发消息失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    public static String sendGroupForwardMessage(String groupId, Collection<MessageSegment> nodes, String title, String summary, String... textVars) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("group_id", groupId);
+            payload.put("messages", nodes);
+            payload.put("news", buildNews(textVars));
+            payload.put("source", title);
+            payload.put("summary", summary);
+
+            JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_FORWARD_MSG, payload);
+            String forwardMessageId = resp.path("data").path("message_id").asText(null);
+            if (forwardMessageId != null && !forwardMessageId.isEmpty()) {
+                AtriProvider.getInstance().getLogRecorder().recordLastMsg(groupId, forwardMessageId);
+            }
+            return forwardMessageId;
+        } catch (Exception e) {
+            log.warn("发送群转发消息失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    public static String forwardSingleGroupMsg(String groupId, String messageId) {
+        Map<String, Object> forwardMsg = new HashMap<>();
+        forwardMsg.put("message_id", messageId);
+        forwardMsg.put("group_id", groupId);
+        JsonNode result = PostRequest.getPostResult(RequestType.FORWARD_SINGLE_MSG, forwardMsg);
+        if (result != null) {
+            String newMessageId = result.path("data").path("message_id").asText(null);
+            if (newMessageId != null && !newMessageId.isEmpty()) {
+                AtriProvider.getInstance().getLogRecorder().recordLastMsg(groupId, newMessageId);
+                return newMessageId;
+            }
+        }
+        return messageId;
+    }
+
+    public static String sendSingleImageGroupMessage(String groupId, ImageComponent image) {
+        if (!isValidImage(image)) return null;
+        return groupMessage(groupId, imageSegments(image));
+    }
+
+    public static void atUser(String userId, String groupId, String text) {
+        List<MessageSegment> replyContent = buildWithAtPrefix(userId, List.of(textSegment(text)));
+        groupMessage(groupId, replyContent);
+    }
+
+    // ──────────────────────────────────
+    // Node segment constructors (for forward messages)
+    // ──────────────────────────────────
+
+    public static MessageSegment createTextNodeSegment(String text) {
+        return createTextNodeSegment(text, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createTextNodeSegment(String text, String uin, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uin);
+        data.put("name", name);
+        data.put("content", List.of(textSegment(text)));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createTextNodeSegment(MessageSegment rawMessage) {
+        return createTextNodeSegment(rawMessage, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createTextNodeSegment(MessageSegment rawMessage, String uid, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uid);
+        data.put("name", name);
+        data.put("content", List.of(rawMessage));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createTextNodeSegment(LinkedList<MessageSegment> arrayMessage) {
+        return createTextNodeSegment(arrayMessage, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createTextNodeSegment(LinkedList<MessageSegment> arrayMessage, String uid, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uid);
+        data.put("name", name);
+        data.put("content", arrayMessage);
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createImageNodeSegment(String url) {
+        return createImageNodeSegment(url, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createImageNodeSegment(String url, String uin, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uin);
+        data.put("name", name);
+        data.put("content", List.of(new MessageSegment("image", Map.of("file", url))));
+        return new MessageSegment("node", data);
+    }
+
+    public static MessageSegment createVideoNodeSegment(String url) {
+        return createVideoNodeSegment(url, FAKE_UIN, FAKE_NAME);
+    }
+
+    public static MessageSegment createVideoNodeSegment(String url, String uin, String name) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uin", uin);
+        data.put("name", name);
+        data.put("content", List.of(new MessageSegment("video", Map.of("file", url))));
+        return new MessageSegment("node", data);
+    }
+
+    // ──────────────────────────────────
+    // Internal segment builders
+    // ──────────────────────────────────
+
+    private static MessageSegment textSegment(String text) {
+        return new MessageSegment("text", Map.of("text", text));
+    }
+
+    private static MessageSegment atSegment(String userId) {
+        return new MessageSegment("at", Map.of("qq", userId));
+    }
+
+    private static MessageSegment replySegment(String messageId) {
+        return new MessageSegment("reply", Map.of("id", messageId));
+    }
+
+    private static boolean isValidImage(ImageComponent image) {
+        return image != null && image.getType() != null
+                && image.getData() != null && !image.getData().isBlank();
+    }
+
+    private static MessageSegment imageSegment(ImageComponent image) {
+        String value = image.getData().trim();
+        Map<String, Object> imageDataMap = switch (image.getType()) {
+            case URL -> Map.of("url", value);
+            case BASE64 -> Map.of("file", value.startsWith("base64://") ? value : "base64://" + value);
+        };
+        return new MessageSegment("image", imageDataMap);
+    }
+
+    private static List<MessageSegment> imageSegments(ImageComponent image) {
+        List<MessageSegment> segments = new ArrayList<>();
+        if (image.getText() != null && !image.getText().isBlank()) {
+            segments.add(textSegment(image.getText()));
+        }
+        segments.add(imageSegment(image));
+        return segments;
+    }
+
+    private static List<MessageSegment> buildWithAtPrefix(String userId, Collection<MessageSegment> content) {
+        List<MessageSegment> segments = new ArrayList<>();
+        segments.add(atSegment(userId));
+        segments.add(AT_GAP);
+        if (content != null && !content.isEmpty()) {
+            segments.addAll(content);
+        }
+        return segments;
+    }
+
+    private static List<Map<String, String>> buildNews(String... textVars) {
+        List<Map<String, String>> news = new ArrayList<>();
+        if (textVars == null) return news;
+        for (String textVar : textVars) {
+            if (textVar != null && !textVar.isEmpty()) {
+                news.add(Map.of("text", textVar));
+            }
+        }
+        return news;
+    }
+
+    // ──────────────────────────────────
+    // Request handling
+    // ──────────────────────────────────
+
+    public static void handleGroupRequest(boolean approve, String flag, String reason) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("flag", flag);
+        payload.put("sub_type", "add");
+        payload.put("approve", approve);
+        if (reason != null) {
+            payload.put("reason", reason);
+        }
+        PostRequest.sendPost(RequestType.HANDLE_GROUP_PENDING_REQUEST, payload);
+        log.info("已{}群请求，flag: {}", approve ? "批准" : "拒绝", flag);
+    }
+
+    public static boolean recallMessage(String messageId) {
+        if (messageId == null || messageId.isBlank()) return false;
+        JsonNode response = PostRequest.getSimplePostResult(RequestType.RECALL_MESSAGE, "message_id", messageId);
+        return isRecallSuccessful(response);
+    }
+
+
+    static boolean isRecallSuccessful(JsonNode response) {
+        return response != null && "ok".equals(response.path("status").asText())
+                && response.path("retcode").isIntegralNumber()
+                && response.path("retcode").asLong(-1) == 0;
+    }
+
+    public static void setEmoji(String msgId, int emojiId, boolean set) {
+        try {
+            Map<String, Object> req = new HashMap<>(4);
+            req.put("message_id", msgId);
+            req.put("emoji_id", emojiId);
+            req.put("set", set);
+            PostRequest.sendPost(RequestType.PUT_EMOJI, req);
+        } catch (Exception e) {
+            log.warn("Emoji API fail: {}", e.getMessage());
+        }
+    }
+}

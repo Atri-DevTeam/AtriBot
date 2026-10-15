@@ -1,12 +1,12 @@
 package top.yzljc.atribot.function.command;
 
 import com.sun.management.OperatingSystemMXBean;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.platform.Platform;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;

@@ -11,7 +11,7 @@ import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;
 
-import static top.yzljc.atribot.utils.StringUtils.isBlankOrNullLiteral;
+import static top.yzljc.atricore.utils.StringUtils.isBlankOrNullLiteral;
 
 /**
  * @Author YZ_Ljc_

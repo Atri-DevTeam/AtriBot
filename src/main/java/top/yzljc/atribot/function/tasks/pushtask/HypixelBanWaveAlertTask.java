@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.tasks.pushtask;
 
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.configuration.ResourcesProperties;
 import top.yzljc.atribot.configuration.RS;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.service.request.HttpService;
-import top.yzljc.atribot.service.taskscheduler.ScheduleMode;
-import top.yzljc.atribot.service.taskscheduler.ScheduledTask;
-import top.yzljc.atribot.service.taskscheduler.TaskPlan;
-import top.yzljc.atribot.service.taskscheduler.TaskSchedule;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.service.request.HttpService;
+import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
+import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
+import top.yzljc.atricore.service.taskscheduler.TaskPlan;
+import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
 import java.time.Duration;
 

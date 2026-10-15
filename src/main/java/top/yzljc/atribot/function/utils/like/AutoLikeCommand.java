@@ -1,10 +1,10 @@
 package top.yzljc.atribot.function.utils.like;
 
-import top.yzljc.atribot.chat.napcat.UserInformation;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.NapcatCommandSender;
+import top.yzljc.atricore.chat.napcat.UserInformation;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.NapcatCommandSender;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,5 +1,7 @@
 package top.yzljc.atribot.auth;
 
+import top.yzljc.atricore.auth.*;
+
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;

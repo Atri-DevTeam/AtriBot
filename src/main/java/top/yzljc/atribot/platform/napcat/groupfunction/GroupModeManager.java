@@ -1,12 +1,14 @@
 package top.yzljc.atribot.platform.napcat.groupfunction;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
-import top.yzljc.atribot.chat.napcat.GroupMessage;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class GroupModeManager implements Listener {
 
-    private static final List<String> ADMIN_LIST = Config.getInstance().getNapcatAdminUins();
+    private static final List<String> ADMIN_LIST = CoreConfig.getInstance().getSettings().getNapcatAdminUins();
     private static final Map<String, String> userSession = new ConcurrentHashMap<>();
     private static final Map<String, List<?>> selectionCache = new ConcurrentHashMap<>();
 

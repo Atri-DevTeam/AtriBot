@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.utils.tools.Alert;
 
 /**

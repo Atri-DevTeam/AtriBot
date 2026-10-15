@@ -4,9 +4,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.C2CChat;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.service.Scheduler;
+import top.yzljc.atricore.chat.official.C2CChat;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.service.Scheduler;
 import top.yzljc.atribot.service.textreview.TextReviewService;
 
 import java.text.Normalizer;

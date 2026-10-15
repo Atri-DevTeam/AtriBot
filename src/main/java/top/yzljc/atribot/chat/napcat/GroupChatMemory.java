@@ -1,5 +1,7 @@
 package top.yzljc.atribot.chat.napcat;
 
+import top.yzljc.atricore.chat.napcat.*;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.utils.AtomicFiles;

@@ -1,11 +1,9 @@
 package top.yzljc.atribot.plugin;
 
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandFeature;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.SlashCommandSender;
-import top.yzljc.atribot.command.SlashCommandArguments;
-import top.yzljc.atribot.platform.Platform;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.ScopedCommand;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.platform.Platform;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -17,7 +15,7 @@ import java.util.function.BooleanSupplier;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.plugin
  */
-public final class PluginCommand extends CommandFeature {
+public final class PluginCommand extends ScopedCommand {
     private final AtriPlugin plugin;
     private final String qualifiedName;
     private final String permission;
@@ -55,13 +53,6 @@ public final class PluginCommand extends CommandFeature {
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
         return invoke(sender, commandLabel, () -> executor.onCommand(sender, this, commandLabel, args));
-    }
-
-    @Override
-    public boolean executeSlash(SlashCommandSender sender, String commandLabel, SlashCommandArguments args) {
-        var slash = getSlashExecutor();
-        if (slash == null) return false;
-        return invoke(sender, commandLabel, () -> slash.onCommand(sender, this, commandLabel, args));
     }
 
     private boolean invoke(CommandSender sender, String commandLabel, BooleanSupplier action) {

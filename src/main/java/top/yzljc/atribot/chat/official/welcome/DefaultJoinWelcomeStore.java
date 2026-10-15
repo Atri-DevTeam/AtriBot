@@ -3,11 +3,11 @@ package top.yzljc.atribot.chat.official.welcome;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.atribot.auth.official.UnifiedRole;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.function.impl.JoinWelcomeDAO;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.utils.AtomicFiles;
 
 import java.io.IOException;

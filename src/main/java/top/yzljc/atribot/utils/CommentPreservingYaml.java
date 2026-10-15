@@ -1,5 +1,7 @@
 package top.yzljc.atribot.utils;
 
+import top.yzljc.atricore.utils.*;
+
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -37,7 +39,43 @@ public final class CommentPreservingYaml {
      * @throws IOException 任一键不存在、目标值不是单行标量，或文件不可读（此时一律不写盘）
      */
     public static void update(Path file, Map<String, Object> changes) throws IOException {
-        String original = Files.readString(file, StandardCharsets.UTF_8);
+        updateAll(Map.of(file, changes));
+    }
+
+    /**
+     * 校验全部文件的修改后写入；写入失败时尝试恢复本次已写入的文件
+     *
+     * @param changes 按文件路径分组的配置修改
+     * @throws IOException 文件无法读写或修改项无效
+     */
+    public static synchronized void updateAll(Map<Path, Map<String, Object>> changes) throws IOException {
+        Map<Path, String> originals = new LinkedHashMap<>();
+        Map<Path, String> replacements = new LinkedHashMap<>();
+        for (var entry : changes.entrySet()) {
+            if (entry.getValue().isEmpty()) continue;
+            String original = Files.readString(entry.getKey(), StandardCharsets.UTF_8);
+            originals.put(entry.getKey(), original);
+            replacements.put(entry.getKey(), render(original, entry.getValue()));
+        }
+        List<Path> attempted = new ArrayList<>();
+        try {
+            for (var entry : replacements.entrySet()) {
+                attempted.add(entry.getKey());
+                Files.writeString(entry.getKey(), entry.getValue(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException failure) {
+            for (Path path : attempted) {
+                try {
+                    Files.writeString(path, originals.get(path), StandardCharsets.UTF_8);
+                } catch (IOException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+            }
+            throw failure;
+        }
+    }
+
+    private static String render(String original, Map<String, Object> changes) throws IOException {
         String eol = original.contains("\r\n") ? "\r\n" : "\n";
         List<String> lines = new ArrayList<>(Arrays.asList(original.split("\r\n|\n", -1)));
 
@@ -84,7 +122,7 @@ public final class CommentPreservingYaml {
         if (!remaining.isEmpty()) {
             throw new IOException("配置文件中不存在以下配置项: " + String.join(", ", remaining.keySet()));
         }
-        Files.writeString(file, String.join(eol, lines), StandardCharsets.UTF_8);
+        return String.join(eol, lines);
     }
 
     /** 按新值序列化；字符串且旧行带引号时沿用原引号风格，其余交给 snakeyaml 按需加引号 */

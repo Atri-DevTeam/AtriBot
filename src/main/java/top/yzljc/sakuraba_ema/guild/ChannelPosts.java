@@ -1,8 +1,8 @@
 package top.yzljc.sakuraba_ema.guild;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import top.yzljc.atribot.chat.ImageComponent;
-import top.yzljc.atribot.chat.official.Markdown;
+import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.sakuraba_ema.ChannelCalls;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliOptions;
 import top.yzljc.sakuraba_ema.internal.PostTools;

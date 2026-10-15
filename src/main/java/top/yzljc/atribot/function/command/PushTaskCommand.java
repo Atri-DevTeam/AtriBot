@@ -2,20 +2,20 @@ package top.yzljc.atribot.function.command;
 
 import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialGroups;
-import top.yzljc.atribot.chat.official.Markdown;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.chat.official.button.Button;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.function.tasks.pushtask.*;
 import top.yzljc.atribot.function.tasks.pushtask.CalendarTask;
-import top.yzljc.atribot.platform.Platform;
-import top.yzljc.atribot.platform.PlatformRole;
-import top.yzljc.atribot.platform.UnsupportedPlatform;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.platform.PlatformRole;
+import top.yzljc.atricore.platform.UnsupportedPlatform;
 
 import java.util.List;
 

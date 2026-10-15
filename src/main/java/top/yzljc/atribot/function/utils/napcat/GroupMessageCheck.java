@@ -1,12 +1,14 @@
 package top.yzljc.atribot.function.utils.napcat;
 
+import top.yzljc.atricore.core.CoreConfig;
+
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.chat.napcat.GroupInformation;
+import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatGroupMessageEvent;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 
 import java.util.Objects;
@@ -19,7 +21,7 @@ public class GroupMessageCheck implements Listener {
         if (!GroupConfigManager.isFeatureEnabled(event.getGroupId(), "illegal_words_check") || event.getUser().isBot()) return;
 
         if (LoadIllegalWords.containsSensitiveWord(event.getMessage().getContent())) {
-            if (Objects.equals(event.getGroupId(), Config.getInstance().getNapcatDebugGroupUin())) return;
+            if (Objects.equals(event.getGroupId(), CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin())) return;
             event.recall();
 
             String detectedWord = LoadIllegalWords.findSensitiveWord(event.getMessage().getContent());

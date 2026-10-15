@@ -1,7 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import top.yzljc.atribot.platform.User;
+import top.yzljc.atricore.platform.User;
 import top.yzljc.atribot.webui.ChatPreview;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,17 +10,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.chat.official.MessageBody;
+import top.yzljc.atricore.chat.official.MessageBody;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.EventPriority;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialC2CMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupAtMessageCreateEvent;
-import top.yzljc.atribot.event.events.OfficialGroupMessageCreateEvent;
-import top.yzljc.atribot.platform.qq.MessageReference;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.EventPriority;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialC2CMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupAtMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.platform.qq.MessageReference;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.webui.ChatChanges;
 import top.yzljc.atribot.webui.repo.ChatConversationRepo;
 import top.yzljc.atribot.webui.repo.ChatStatsSnapshotRepo;
@@ -35,8 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static top.yzljc.atribot.utils.StringUtils.firstNonBlank;
-import static top.yzljc.atribot.utils.StringUtils.isBlank;
+import static top.yzljc.atricore.utils.StringUtils.firstNonBlank;
+import static top.yzljc.atricore.utils.StringUtils.isBlank;
 
 @Slf4j
 public class QQChatContentRecord implements Listener {

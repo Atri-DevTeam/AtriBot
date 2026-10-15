@@ -2,17 +2,17 @@ package top.yzljc.atribot.function.command;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.chat.official.ShareBot;
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.OfficialFriendAddEvent;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialFriendAddEvent;
+import top.yzljc.atricore.platform.qq.QQBot;
 
 /**
  * @Author YZ_Ljc_

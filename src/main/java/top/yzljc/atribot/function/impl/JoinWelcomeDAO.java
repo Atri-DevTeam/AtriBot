@@ -2,10 +2,10 @@ package top.yzljc.atribot.function.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import top.yzljc.atribot.chat.official.button.ButtonSize;
-import top.yzljc.atribot.chat.official.button.ButtonStyle;
-import top.yzljc.atribot.chat.official.button.ButtonType;
-import top.yzljc.atribot.chat.official.button.PermissionType;
+import top.yzljc.atricore.chat.official.button.ButtonSize;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.button.PermissionType;
 
 import java.net.URI;
 import java.util.HashSet;

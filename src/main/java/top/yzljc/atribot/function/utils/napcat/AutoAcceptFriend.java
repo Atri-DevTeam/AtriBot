@@ -1,12 +1,12 @@
 package top.yzljc.atribot.function.utils.napcat;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.NapcatFriendRequestEvent;
-import top.yzljc.atribot.platform.napcat.PostRequest;
-import top.yzljc.atribot.platform.napcat.RequestType;
-import top.yzljc.atribot.service.runtime.ThreadManager;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.NapcatFriendRequestEvent;
+import top.yzljc.atricore.platform.napcat.PostRequest;
+import top.yzljc.atricore.platform.napcat.RequestType;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.HashMap;
 import java.util.Map;

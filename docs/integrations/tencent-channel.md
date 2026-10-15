@@ -14,7 +14,7 @@ tencent-channel:
   timeout-seconds: 90
 ```
 
-在宿主运行环境安装并登录 CLI，`cli-path` 填可执行文件或可从 PATH 查找的命令。显式配置的登录 Token 可由环境变量 `TENCENT_CHANNEL_LOGIN_TOKEN` 覆盖
+在运行服务运行环境安装并登录 CLI，`cli-path` 填可执行文件或可从 PATH 查找的命令。显式配置的登录 Token 可由环境变量 `TENCENT_CHANNEL_LOGIN_TOKEN` 覆盖
 
 未配置显式 Token 时使用 CLI 自身的登录状态。已配置显式 Token 时，本机重新扫码不会替换该配置，应同步更新对应 Token
 

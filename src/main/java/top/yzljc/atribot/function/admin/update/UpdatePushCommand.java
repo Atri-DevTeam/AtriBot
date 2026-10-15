@@ -1,15 +1,15 @@
 package top.yzljc.atribot.function.admin.update;
 
-import top.yzljc.atribot.chat.official.TC;
-import top.yzljc.atribot.command.Command;
-import top.yzljc.atribot.command.CommandExecutor;
-import top.yzljc.atribot.command.CommandSender;
-import top.yzljc.atribot.command.QQCommandSender;
-import top.yzljc.atribot.event.EventHandler;
-import top.yzljc.atribot.event.Listener;
-import top.yzljc.atribot.event.events.UserRunCommandEvent;
-import top.yzljc.atribot.platform.Identifier;
-import top.yzljc.atribot.platform.qq.QQBot;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.UserRunCommandEvent;
+import top.yzljc.atricore.platform.Identifier;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
