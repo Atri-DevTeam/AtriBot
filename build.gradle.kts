@@ -7,7 +7,7 @@ plugins {
     `java-library`
     application
     id("com.gradleup.shadow") version "9.6.1"
-    kotlin("jvm") version "2.4.20"
+    kotlin("jvm") version "2.4.21"
 }
 
 group = "top.yzljc"
@@ -36,10 +36,10 @@ dependencies {
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
     api("cn.6tail:lunar:1.7.7")
-    api("ch.qos.logback:logback-classic:1.6.4")
+    api("ch.qos.logback:logback-classic:1.6.5")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
-    api("org.jline:jline:4.4.6")
+    api("org.jline:jline:4.4.8")
 
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
