@@ -22,7 +22,7 @@
 | [Markdown](components/markdown.md) | 文字格式、图片、提及、指令标签 |
 | [按钮键盘](components/buttons.md) | 布局、样式、权限、确认框 |
 | [图文卡片](components/cards.md) | TuWen 内容与发送 |
-| [Ark 模板](components/ark.md) | 模板 23、24、37 |
+| [Ark 模板](components/ark.md) | 模板 23、24、37，被动消息需私域机器人 |
 | [频道 Embed](components/embed.md) | 标题、缩略图和字段 |
 
 ## QQ 交互配置
@@ -34,6 +34,10 @@
 | [按钮交互](interaction/callback.md) | 接收回调、状态应答、回复消息 |
 
 ## QQ 群管理
+
+::: important 群管理授权
+群禁言、加群审批和群踢人需要开放平台和群主同时授权才可使用
+:::
 
 | 功能 | 内容 |
 | --- | --- |

@@ -186,7 +186,8 @@ public class QQSenderImpl implements QQCommandSender {
         return switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, image, this.message.getRefIdx());
             case OFFICIAL_C2C -> this.user.sendMessage(rt, image, this.message.getRefIdx());
-            default -> throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image, boolean ref)");
+            default ->
+                    throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image, boolean ref)");
         };
     }
 
@@ -202,9 +203,11 @@ public class QQSenderImpl implements QQCommandSender {
         }
         RT rt = RT.message(this.message.getMessageId());
         return switch (this.user.getPlatform()) {
-            case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, markdown, buttons, at, this.message.getRefIdx());
+            case OFFICIAL_GROUP ->
+                    this.user.sendMessage(this.groupId, rt, markdown, buttons, at, this.message.getRefIdx());
             case OFFICIAL_C2C -> this.user.sendMessage(rt, markdown, buttons, this.message.getRefIdx());
-            default -> throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref)");
+            default ->
+                    throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref)");
         };
     }
 

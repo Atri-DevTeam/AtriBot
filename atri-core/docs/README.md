@@ -20,7 +20,6 @@
 | [用户与消息](messages.md) | 平台对象、会话标识与功能入口 |
 | [任务调度](scheduling.md) | 计划任务、延迟任务、共享执行器 |
 | [构建与开发](development.md) | 本地联调、测试和 JavaDoc |
-| [Maven Central 发布](publishing.md) | 签名、发布凭据和正式版本 |
 
 ## QQ 消息
 
@@ -42,7 +41,7 @@
 | [Markdown](qq/components/markdown.md) | 文字格式、图片、提及、指令标签 |
 | [按钮键盘](qq/components/buttons.md) | 布局、样式、权限、确认框 |
 | [图文卡片](qq/components/cards.md) | TuWen 内容与发送 |
-| [Ark 模板](qq/components/ark.md) | 模板 23、24、37 |
+| [Ark 模板](qq/components/ark.md) | 模板 23、24、37，被动消息需私域机器人 |
 | [频道 Embed](qq/components/embed.md) | 标题、缩略图和字段 |
 
 ## QQ 交互配置
@@ -54,6 +53,10 @@
 | [按钮交互](qq/interaction/callback.md) | 接收回调、状态应答、回复消息 |
 
 ## QQ 群管理
+
+::: important 群管理授权
+群禁言、加群审批和群踢人需要开放平台和群主同时授权才可使用
+:::
 
 | 功能 | 内容 |
 | --- | --- |

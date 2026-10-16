@@ -58,4 +58,4 @@ QQ 群聊 / C2C 与 QQ 频道分别提供用户、消息和事件类型，保留
 
 Maven 坐标：`top.yzljc.atricore:atri-core:<版本>`，core 独立版本默认 `0.1.0-SNAPSHOT`，通过 `-PcoreVersion=<版本>` 指定
 
-本地联调使用 `publishToMavenLocal`，正式版本的发布流程见 [Maven Central 发布](docs/publishing.md)
+本地联调使用 `publishToMavenLocal`

@@ -13,6 +13,11 @@ commands:
   profile:
     description: 获取个人空间一次性入口（仅官机私聊）
     usage: /profile
+  dashboard:
+    aliases:
+      - dash
+    description: 通过 QQ 互联绑定个人面板（仅官机私聊）
+    usage: /dashboard
   ema:
     description: 频道第二账号管理（仅机器人管理员）
     usage: '/ema help；/ema <分类> <动作> [可选项] <参数> [正文...]'

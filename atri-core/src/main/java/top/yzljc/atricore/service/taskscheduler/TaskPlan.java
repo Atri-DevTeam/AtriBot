@@ -44,7 +44,7 @@ public class TaskPlan implements TaskSchedule {
      * @param mode 周期类型
      * @param time 每日时刻或周期内偏移
      * @throws IllegalArgumentException 时间偏移超出周期范围
-     * @throws NullPointerException 模式或时间为 null
+     * @throws NullPointerException     模式或时间为 null
      */
     public TaskPlan(ScheduleMode mode, LocalTime time) {
         setMode(mode);

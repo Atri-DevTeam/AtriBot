@@ -38,6 +38,8 @@ String sentId = GroupMessage.forwardMessage(groupId, nodes,
 | `createImageNode(url)` / `createImageNode(url, uin, name)` | 图片节点 |
 | `GroupMessage.createVideoNode(url)` / `(url, uin, name)` | 视频节点 |
 
+::: tip 指定转发节点的作者
 GroupMessage 另有消息段与 LinkedList 版本的指定作者重载。未指定作者的工厂使用 core 内置展示身份，不会自动使用当前消息发送者；实际业务应显式传入 uin 和 name
+:::
 
 所有重载见 [消息方法索引](messages.md)，节点底层实现见 [消息段](segments.md)

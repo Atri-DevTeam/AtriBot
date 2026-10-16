@@ -52,7 +52,9 @@ AsyncGroupChat.replyMessage(groupOpenId, RT.message(messageId), "处理完成")
         });
 ```
 
+::: important 异步发送的结果判断
 Future 已创建不代表平台已接收消息。参数校验可能在创建 Future 前抛出异常；后台请求失败可能异常完成，也可能得到 null / false
+:::
 
 ## 异常与发送记录
 

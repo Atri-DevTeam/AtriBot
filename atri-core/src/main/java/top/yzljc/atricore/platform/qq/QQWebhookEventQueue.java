@@ -27,7 +27,8 @@ import java.util.function.Consumer;
  */
 @Slf4j
 final class QQWebhookEventQueue implements AutoCloseable {
-    record Event(String type, String id, JsonNode data, String rawPayload) { }
+    record Event(String type, String id, JsonNode data, String rawPayload) {
+    }
 
     private final ArrayBlockingQueue<PendingEvent> queue;
     private final Semaphore capacity;
@@ -51,7 +52,9 @@ final class QQWebhookEventQueue implements AutoCloseable {
         this.dispatcher = Thread.ofVirtual().name("qq-webhook-dispatcher").start(this::dispatch);
     }
 
-    /** 只预留容量，不分发；每次 HTTP 投递都必须报告它自己的 ACK 结果 */
+    /**
+     * 只预留容量，不分发；每次 HTTP 投递都必须报告它自己的 ACK 结果
+     */
     synchronized Receipt reserve(Event event) {
         if (closed) {
             return null;

@@ -24,6 +24,13 @@ public record AtriAccount(
         List<String> permissions,
         AccountStatus status,
         String createTime,
-        String lastUpdateTime
+        String lastUpdateTime,
+        String qqConnectOpenId
 ) {
+    public AtriAccount(UUID uuid, String username, String qqUserOpenId, String qqUserUin,
+                       String minecraftUuid, UnifiedRole role, List<String> permissions,
+                       AccountStatus status, String createTime, String lastUpdateTime) {
+        this(uuid, username, qqUserOpenId, qqUserUin, minecraftUuid, role, permissions, status,
+                createTime, lastUpdateTime, null);
+    }
 }

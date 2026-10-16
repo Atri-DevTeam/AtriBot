@@ -53,7 +53,9 @@ Paragraph 提供与 Elem 工厂对应的链式方法
 
 无效 JSON、缺少 paragraphs 数组或结构类型错误会抛出 IllegalArgumentException，不返回 null；String 入口传 null 会抛出 NullPointerException。读取段落和元素得到列表副本，但其中的对象仍是原对象；追加段落后对该段落的修改会反映到文档中
 
+::: important 对象结构与 JSON 字符串
 三个层级的 `toObject()` 返回可序列化 Map；RichText 的 `toJson()` 和 `toString()` 返回 JSON 字符串。普通 MessageBody 对象字段应使用对象结构，GuildThread 的 content 则按平台约定保存字符串
+:::
 
 ## 方法与数据类型索引
 

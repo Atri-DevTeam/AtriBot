@@ -36,6 +36,10 @@ if (member != null) {
 
 ## 移除及部分失败
 
+::: important 使用前提
+群踢人需要开放平台和群主同时授权才可使用，单人移除和批量移除均适用
+:::
+
 ```java
 import java.util.List;
 
@@ -52,7 +56,7 @@ List<String> blacklistFailures = result.addToMemberBlacklistFailOpenIds();
 `success()` 要求移除结果为 `success`，且加入黑名单的失败列表为空。成员已移除但黑名单添加失败时仍返回 false，不能据此认定成员仍在群中
 :::
 
-批量方法不会回滚已成功批次；需要展示失败详情时自行按 20 人切分并调用详细方法。接口是否可用取决于机器人在开放平台获得的权限
+批量方法不会回滚已成功批次；需要展示失败详情时自行按 20 人切分并调用详细方法
 
 ## 方法与数据类型索引
 

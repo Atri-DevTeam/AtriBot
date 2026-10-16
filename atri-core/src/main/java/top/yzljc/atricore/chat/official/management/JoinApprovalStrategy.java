@@ -20,7 +20,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atricore.chat.official.management
  * @Description 入群自动审批策略管理
- *
+ * <p>
  * 将关联群中命中白名单 QQ 号码的入群申请自动审批通过
  * 一个机器人最多创建 20 个策略，策略仅在机器人拥有对应群管理员身份时生效
  * 接口频率限制 60 QPM
@@ -30,11 +30,15 @@ public final class JoinApprovalStrategy {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    /** 列表分页：默认单页条数与最大条数 */
+    /**
+     * 列表分页：默认单页条数与最大条数
+     */
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 100;
 
-    /** 白名单号码操作类型 */
+    /**
+     * 白名单号码操作类型
+     */
     public enum WhitelistOp {
         ADD("add"),
         DEL("del");
@@ -50,7 +54,9 @@ public final class JoinApprovalStrategy {
         }
     }
 
-    /** 关联群增删操作（修改策略时使用） */
+    /**
+     * 关联群增删操作（修改策略时使用）
+     */
     public enum GroupActionOp {
         ADD("add"),
         DEL("del");
@@ -356,8 +362,8 @@ public final class JoinApprovalStrategy {
     /**
      * 修改策略白名单号码（新增或删除）
      *
-     * @param strategyId    策略 ID
-     * @param op            白名单操作
+     * @param strategyId     策略 ID
+     * @param op             白名单操作
      * @param whitelistUsers QQ 号码列表（字符串避免精度问题），单次最多 10000 个
      * @return 是否成功
      */
@@ -415,11 +421,17 @@ public final class JoinApprovalStrategy {
                 node.path("remark").asText(null));
     }
 
-    /** 策略列表查询结果，nextCursor 为空字符串表示已到末页 */
-    public record StrategyListResult(List<StrategyData> strategies, String nextCursor) {}
+    /**
+     * 策略列表查询结果，nextCursor 为空字符串表示已到末页
+     */
+    public record StrategyListResult(List<StrategyData> strategies, String nextCursor) {
+    }
 
-    /** 单条入群审批策略，关联群列表按创建时使用的标识形式返回 */
+    /**
+     * 单条入群审批策略，关联群列表按创建时使用的标识形式返回
+     */
     public record StrategyData(String strategyId, List<String> groupOpenIds, List<String> groupIds,
                                int whitelistUserCount, boolean enable, String expireAt,
-                               String createdAt, String updatedAt, String remark) {}
+                               String createdAt, String updatedAt, String remark) {
+    }
 }

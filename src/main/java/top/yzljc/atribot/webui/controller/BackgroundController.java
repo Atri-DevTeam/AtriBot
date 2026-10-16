@@ -4,7 +4,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
 
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,6 @@ import top.yzljc.atribot.webui.Result;
  */
 @Slf4j
 public final class BackgroundController {
-    private static final Semaphore PREVIEWS = new Semaphore(4);
     private BackgroundController() {}
 
     public static void list(Context ctx) {
@@ -81,18 +79,21 @@ public final class BackgroundController {
     }
 
     public static void image(Context ctx) {
-        if (!PREVIEWS.tryAcquire()) { ctx.status(429); return; }
+        ctx.header("Cache-Control", "no-store");
         try {
             String userId = ctx.pathParam("userId"), id = ctx.pathParam("id");
             key(userId + "~" + id);
             if (!BackgroundRepository.get(userId).retainedIds().contains(id)) { ctx.status(404); return; }
             byte[] image = BackgroundClient.image(userId, id, !"false".equals(ctx.queryParam("thumbnail")));
-            ctx.header("Cache-Control", "no-store").header("X-Content-Type-Options", "nosniff")
+            ctx.header("X-Content-Type-Options", "nosniff")
                     .contentType("image/jpeg").result(image);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            ctx.status(503);
         } catch (Exception e) {
             log.warn("背景审核预览失败", e);
             ctx.status(502);
-        } finally { PREVIEWS.release(); }
+        }
     }
 
     private static Map<String, Object> item(BackgroundRepository.Entry entry) {

@@ -34,6 +34,7 @@ public class UnifiedAccountDTO {
     private String status;
     private Timestamp createTime;
     private Timestamp lastUpdateTime;
+    private String qqConnectOpenId;
 
     /**
      * 转回业务侧 record（role 反查枚举，时间戳转字符串）。
@@ -49,7 +50,8 @@ public class UnifiedAccountDTO {
                 permissions,
                 AccountStatus.fromString(status),
                 FormatTools.formatTimestamp(createTime, null),
-                FormatTools.formatTimestamp(lastUpdateTime, null)
+                FormatTools.formatTimestamp(lastUpdateTime, null),
+                qqConnectOpenId
         );
     }
 

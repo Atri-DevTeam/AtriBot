@@ -25,7 +25,9 @@ String base64Id = GroupChat.replyMessage(groupOpenId, RT.message(messageId), enc
 | `setData` / `setType` / `setText` | 链式设置数据、类型和附加文本 |
 | `getData` / `getType` / `getText` | 读取字段 |
 
+::: warning 上传失败时的返回值
 普通图片上传失败时，部分入口会发送错误文字回退；拿到消息 ID 不一定代表发送了原图片。`replyAudioMessage` 则在上传失败时直接返回 null
+:::
 
 ## 本地文件
 

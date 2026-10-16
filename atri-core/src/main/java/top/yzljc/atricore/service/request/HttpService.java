@@ -100,7 +100,7 @@ public class HttpService {
     }
 
     /**
-     * @param url 完整请求地址
+     * @param url     完整请求地址
      * @param headers 交替排列的请求头名称和值
      * @return 成功响应的 JSON，非 2xx 或解析失败时返回 null；需要错误响应时使用 {@link #sendGetRequestDetailed}
      */
@@ -193,9 +193,9 @@ public class HttpService {
     }
 
     /**
-     * @param url 完整请求地址
+     * @param url      完整请求地址
      * @param jsonBody 已序列化的 JSON 请求体
-     * @param headers 交替排列的请求头名称和值
+     * @param headers  交替排列的请求头名称和值
      * @return 成功响应的 JSON，非 2xx 或解析失败时返回 null；需要错误响应时使用 {@link #postJsonDetailed(String, String, String...)}
      */
     public static JsonNode postJson(String url, String jsonBody, String... headers) {
@@ -230,7 +230,7 @@ public class HttpService {
     }
 
     /**
-     * @param url 完整请求地址
+     * @param url     完整请求地址
      * @param bodyObj 待序列化的请求数据
      * @param headers 交替排列的请求头名称和值
      * @return 原始 HTTP 状态码与响应体，包含非 2xx 响应；请求未完成时状态码为 0
@@ -262,7 +262,9 @@ public class HttpService {
         }
     }
 
-    /** PATCH 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    /**
+     * PATCH 请求，返回状态码与响应体（用于需要判断成功与否的接口）
+     */
     public static PostResult patchJsonDetailed(String url, String jsonBody, String... headers) {
         try {
             Builder builder = newRequestBuilder().uri(URI.create(url))
@@ -280,7 +282,9 @@ public class HttpService {
         }
     }
 
-    /** PUT 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    /**
+     * PUT 请求，返回状态码与响应体（用于需要判断成功与否的接口）
+     */
     public static PostResult putJsonDetailed(String url, String jsonBody, String... headers) {
         try {
             Builder builder = newRequestBuilder().uri(URI.create(url))
@@ -482,7 +486,9 @@ public class HttpService {
         return null;
     }
 
-    /** DELETE 请求，返回状态码与响应体（用于需要判断成功与否的接口） */
+    /**
+     * DELETE 请求，返回状态码与响应体（用于需要判断成功与否的接口）
+     */
     public static GetResult deleteRequestDetailed(String url, String... headers) {
         try {
             HttpRequest.Builder builder = newRequestBuilder()

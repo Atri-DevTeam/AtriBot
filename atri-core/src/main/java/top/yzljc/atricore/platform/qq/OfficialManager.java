@@ -31,7 +31,7 @@ public class OfficialManager {
     /**
      * 创建使用 WebSocket 的 QQ 连接管理器
      *
-     * @param apiBaseUrl QQ API 根地址
+     * @param apiBaseUrl   QQ API 根地址
      * @param tokenManager 共享令牌服务
      */
     public OfficialManager(String apiBaseUrl, TokenManager tokenManager) {
@@ -41,8 +41,8 @@ public class OfficialManager {
     /**
      * 创建指定接入模式的 QQ 连接管理器
      *
-     * @param apiBaseUrl QQ API 根地址
-     * @param tokenManager 共享令牌服务
+     * @param apiBaseUrl     QQ API 根地址
+     * @param tokenManager   共享令牌服务
      * @param connectionMode webhook 使用 HTTP 回调，其余值使用 WebSocket
      */
     public OfficialManager(String apiBaseUrl, TokenManager tokenManager, String connectionMode) {

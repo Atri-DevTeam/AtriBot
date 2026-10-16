@@ -19,7 +19,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atricore.chat.official.management
  * @Description 群成员黑名单管理
- *
+ * <p>
  * 查询接口频率限制 30 QPM，操作接口频率限制 60 QPM，单次最多操作 20 个成员
  */
 @Slf4j
@@ -31,7 +31,9 @@ public final class GroupMemberBlacklist {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    /** 黑名单操作类型：add 加入黑名单，del 移出黑名单 */
+    /**
+     * 黑名单操作类型：add 加入黑名单，del 移出黑名单
+     */
     public enum Op {
         ADD("add"),
         DEL("del");
@@ -155,7 +157,7 @@ public final class GroupMemberBlacklist {
      * @return 操作结果，请求失败或参数无效为 null；failOpenIds 为空表示全部成功
      */
     public static BlacklistOperationResult setMemberBlacklistDetailed(String groupOpenId, Op op,
-                                                                       List<String> memberOpenIds) {
+                                                                      List<String> memberOpenIds) {
         if (groupOpenId == null || groupOpenId.isBlank() || op == null || !validMembers(memberOpenIds)
                 || memberOpenIds.size() > MAX_MEMBERS_PER_CALL) {
             return null;
@@ -218,12 +220,22 @@ public final class GroupMemberBlacklist {
         return new BlacklistOperationResult(failOpenIds);
     }
 
-    /** 群黑名单查询结果，nextCursor 为空串表示已到末页 */
-    public record BlacklistListResult(List<BlacklistUser> users, String nextCursor) {}
+    /**
+     * 群黑名单查询结果，nextCursor 为空串表示已到末页
+     */
+    public record BlacklistListResult(List<BlacklistUser> users, String nextCursor) {
+    }
 
-    /** 群黑名单成员，bannedAt 为 RFC3339 时间，unionOpenId 可能为空 */
-    public record BlacklistUser(String unionOpenId, String memberOpenId, String username, String bannedAt, boolean bot) {}
+    /**
+     * 群黑名单成员，bannedAt 为 RFC3339 时间，unionOpenId 可能为空
+     */
+    public record BlacklistUser(String unionOpenId, String memberOpenId, String username, String bannedAt,
+                                boolean bot) {
+    }
 
-    /** 群黑名单操作结果，failOpenIds 为空表示全部成功 */
-    public record BlacklistOperationResult(List<String> failOpenIds) {}
+    /**
+     * 群黑名单操作结果，failOpenIds 为空表示全部成功
+     */
+    public record BlacklistOperationResult(List<String> failOpenIds) {
+    }
 }

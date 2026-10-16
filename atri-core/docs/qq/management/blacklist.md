@@ -13,7 +13,9 @@ boolean added = GroupMemberBlacklist.addMember(groupOpenId, memberOpenId);
 boolean removed = GroupMemberBlacklist.removeMember(groupOpenId, memberOpenId);
 ```
 
+::: tip 同时移除成员
 添加黑名单不会替代踢出成员；需要同时移除成员时使用 [GroupMember](members.md) 的 `addToMemberBlacklist` 参数
+:::
 
 | 方法 | 返回 | 说明 |
 | --- | --- | --- |
@@ -29,7 +31,9 @@ boolean removed = GroupMemberBlacklist.removeMember(groupOpenId, memberOpenId);
 
 `BlacklistListResult.users()` 返回当前页，`nextCursor()` 为空表示结束。每个 `BlacklistUser` 包含 `unionOpenId`、`memberOpenId`、`username`、`bannedAt` 和 `bot`
 
+::: caution 批量操作的部分失败
 详细操作结果的 `failOpenIds()` 列出失败成员；返回 null 表示请求或解析失败。批量 boolean 方法只有每批结果均存在且失败列表为空才返回 true，已成功的操作不会回滚
+:::
 
 ```java
 import java.util.List;

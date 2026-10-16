@@ -24,12 +24,17 @@ String replyId = GroupChat.replyMessage(groupOpenId, RT.message(messageId),
 | Markdown | `sendMessage(target, markdown)` | `replyMessage(target, rt, markdown)` |
 | Markdown 与键盘 | `sendMessage(target, markdown, keyboard)` | `replyMessage(target, rt, markdown, keyboard)` |
 | ImageComponent 图片 | `sendMessage(target, image)` | `replyMessage(target, rt, image)` |
-| Ark / Card | `sendMessage(target, card)` | `replyMessage(target, rt, card)` |
+| Ark | `sendMessage(target, ark)` | `replyMessage(target, rt, ark)`，需私域机器人 |
+| Card | `sendMessage(target, card)` | `replyMessage(target, rt, card)` |
 | 本地媒体文件 | `sendMessage(target, fileType, path)` | `replyMessage(target, rt, fileType, path)` |
 | 媒体地址 | — | `replyMessage(target, rt, fileType, value)` |
 | 语音地址 | — | `replyAudioMessage(target, rt, url)` |
 
 以上发送方法返回 String 消息 ID，异步类使用相同参数返回 CompletableFuture。媒体与图片上传见 [文件上传](media.md)
+
+::: danger Ark 被动消息使用条件
+Ark 被动消息需要私域机器人才能使用，同步与异步重载均适用，详见 [Ark 卡片](../components/ark.md)
+:::
 
 ## 提及与引用
 

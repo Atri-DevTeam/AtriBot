@@ -1,6 +1,7 @@
 package top.yzljc.atricore.command;
 
 import top.yzljc.atricore.platform.Platform;
+
 import java.util.Set;
 
 /**
@@ -21,6 +22,7 @@ public abstract class ScopedCommand extends CommandFeature {
      * @return 包含所有者的限定名称，与注册使用的 owner:name 一致
      */
     public abstract String getQualifiedName();
+
     /**
      * 声明指令适用的平台
      *

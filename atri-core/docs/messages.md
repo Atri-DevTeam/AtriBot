@@ -17,9 +17,13 @@
 
 平台消息中缺失的数据不会由框架保证补全，时间戳保持平台来源格式，不是统一的时间对象
 
+::: important 频道用户标识
 QQ 频道用户的 `getUserId()` 是频道用户 ID，`getUserOpenId()` 是事件提供的统一用户标识，可能为空，两者不能替换使用
+:::
 
+::: note 平台角色与机器人权限
 `isPlatformAdmin()` 查询平台角色，`hasPermission()` 查询机器人管理权限，群主身份不会自动等同于机器人管理员
+:::
 
 `QQUser.isBlocked()` 合并封禁与忽略状态，`QQGuildUser` 和 `NapcatUser` 当前默认返回 false，业务限制需要由运行服务补充
 

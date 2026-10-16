@@ -59,22 +59,26 @@ public final class NapcatUser extends User {
     }
 
     public String sendMessage(String messageId, String text) {
-        if (platform != Platform.NAPCAT_PRIVATE) throw new UnsupportedPlatform(platform, "sendMessage(messageId, text)");
+        if (platform != Platform.NAPCAT_PRIVATE)
+            throw new UnsupportedPlatform(platform, "sendMessage(messageId, text)");
         return PrivateMessage.replyMessage(userId, messageId, text);
     }
 
     public String sendMessage(String groupId, String messageId, String text) {
-        if (platform != Platform.NAPCAT_GROUP) throw new UnsupportedPlatform(platform, "sendMessage(groupId, messageId, text)");
+        if (platform != Platform.NAPCAT_GROUP)
+            throw new UnsupportedPlatform(platform, "sendMessage(groupId, messageId, text)");
         return GroupMessage.replyMessage(userId, groupId, messageId, false, text);
     }
 
     public String sendMessage(String messageId, ImageComponent image) {
-        if (platform != Platform.NAPCAT_PRIVATE) throw new UnsupportedPlatform(platform, "sendMessage(messageId, image)");
+        if (platform != Platform.NAPCAT_PRIVATE)
+            throw new UnsupportedPlatform(platform, "sendMessage(messageId, image)");
         return PrivateMessage.replyMessage(userId, messageId, image);
     }
 
     public String sendMessage(String groupId, String messageId, ImageComponent image) {
-        if (platform != Platform.NAPCAT_GROUP) throw new UnsupportedPlatform(platform, "sendMessage(groupId, messageId, image)");
+        if (platform != Platform.NAPCAT_GROUP)
+            throw new UnsupportedPlatform(platform, "sendMessage(groupId, messageId, image)");
         return GroupMessage.replyMessage(groupId, messageId, image);
     }
 }

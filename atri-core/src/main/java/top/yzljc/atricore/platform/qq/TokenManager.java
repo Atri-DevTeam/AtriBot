@@ -31,7 +31,7 @@ public class TokenManager {
     /**
      * 创建令牌服务，构造时不请求平台
      *
-     * @param appId 机器人 AppID
+     * @param appId        机器人 AppID
      * @param clientSecret 机器人访问凭据
      */
     public TokenManager(String appId, String clientSecret) {

@@ -47,7 +47,7 @@ public class Scheduler {
     /**
      * 提交一次延迟任务
      *
-     * @param task 执行内容
+     * @param task        执行内容
      * @param delayMillis 延迟毫秒数，负数按零处理
      * @return 用于跟踪结果或取消的任务句柄
      * @throws RejectedExecutionException 当前调度器已关闭
@@ -59,7 +59,7 @@ public class Scheduler {
     /**
      * 提交一次延迟任务，与 runTaskLater 行为相同
      *
-     * @param task 执行内容
+     * @param task        执行内容
      * @param delayMillis 延迟毫秒数，负数按零处理
      * @return 用于跟踪结果或取消的任务句柄
      * @throws RejectedExecutionException 当前调度器已关闭
@@ -71,8 +71,8 @@ public class Scheduler {
     /**
      * 按计划间隔重复执行，执行超时则跳过错过的时点
      *
-     * @param task 执行内容
-     * @param delayMillis 首次执行延迟，单位为毫秒
+     * @param task         执行内容
+     * @param delayMillis  首次执行延迟，单位为毫秒
      * @param periodMillis 重复执行间隔，单位为毫秒，必须大于零
      * @return 用于跟踪结果或取消的任务句柄
      * @throws RejectedExecutionException 当前调度器已关闭
@@ -85,8 +85,8 @@ public class Scheduler {
     /**
      * 提交重复任务，与 runTaskTimer 行为相同
      *
-     * @param task 执行内容
-     * @param delayMillis 首次执行延迟，单位为毫秒
+     * @param task         执行内容
+     * @param delayMillis  首次执行延迟，单位为毫秒
      * @param periodMillis 重复执行间隔，单位为毫秒，必须大于零
      * @return 用于跟踪结果或取消的任务句柄
      * @throws RejectedExecutionException 当前调度器已关闭
@@ -125,7 +125,9 @@ public class Scheduler {
         return handle;
     }
 
-    /** 句柄跟踪实际执行与拥塞重试，取消后不能再触发业务任务 */
+    /**
+     * 句柄跟踪实际执行与拥塞重试，取消后不能再触发业务任务
+     */
     private final class TaskHandle implements ScheduledFuture<Void>, Runnable {
         private final Runnable task;
         private final long periodNanos;

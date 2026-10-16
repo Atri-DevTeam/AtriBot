@@ -83,7 +83,7 @@ public class ThreadManager {
     /**
      * 提交有返回值的任务并记录执行异常
      *
-     * @param <T> 返回值类型
+     * @param <T>  返回值类型
      * @param task 执行内容
      * @return 承载结果或异常的 Future
      * @throws RejectedExecutionException 队列已满或执行器已关闭
@@ -95,7 +95,7 @@ public class ThreadManager {
     /**
      * 提交可组合的任务，已在框架工作线程中时直接在当前线程执行
      *
-     * @param <T> 返回值类型
+     * @param <T>  返回值类型
      * @param task 执行内容
      * @return 承载结果的 Future，执行失败或提交被拒绝时以异常完成
      */
@@ -118,9 +118,9 @@ public class ThreadManager {
     /**
      * 提交一次延迟任务，不保留取消句柄
      *
-     * @param task 执行内容
+     * @param task  执行内容
      * @param delay 延迟时长
-     * @param unit 时间单位
+     * @param unit  时间单位
      * @throws RejectedExecutionException 调度容量不足或线程服务已关闭
      */
     public static void schedule(Runnable task, long delay, TimeUnit unit) {
@@ -130,9 +130,9 @@ public class ThreadManager {
     /**
      * 提交一次延迟任务，到期后转交共享工作池
      *
-     * @param task 执行内容
+     * @param task  执行内容
      * @param delay 延迟时长
-     * @param unit 时间单位
+     * @param unit  时间单位
      * @return 覆盖等待与实际执行阶段的任务句柄
      * @throws RejectedExecutionException 调度容量不足或线程服务已关闭
      */
@@ -280,7 +280,9 @@ public class ThreadManager {
         }
     }
 
-    /** 队列拥塞时保留定时任务并稍后重试，调度线程只负责提交 */
+    /**
+     * 队列拥塞时保留定时任务并稍后重试，调度线程只负责提交
+     */
     private static final class ScheduledDispatch implements ScheduledFuture<Void>, Runnable {
         private final Runnable task;
         private final CompletableFuture<Void> completion = new CompletableFuture<>();

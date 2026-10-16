@@ -18,13 +18,17 @@ String sentId = C2CChat.replyMessage(userOpenId, RT.message(messageId),
 | 方法族 | 内容 |
 | --- | --- |
 | `sendMessage(openId, content)` | String、Markdown、ImageComponent、Ark、Card |
-| `replyMessage(openId, rt, content)` | 上述五种内容，必须有被动回复来源 |
+| `replyMessage(openId, rt, content)` | 上述五种内容，必须有被动回复来源；Ark 需私域机器人 |
 | `sendMessage(openId, markdown, keyboard)` | 主动发送 Markdown 与键盘 |
 | `replyMessage(openId, rt, markdown, keyboard)` | 被动回复 Markdown 与键盘 |
 | `sendMessage(openId, fileType, path)` | 上传并发送本地文件 |
 | `replyMessage(openId, rt, fileType, path)` | 上传并回复本地文件 |
 | `replyAudioMessage(openId, rt, url)` | 语音地址，上传失败不发送文本回退 |
 | `recallMessage(openId, messageId)` | 撤回，返回 boolean 或 Future<Boolean> |
+
+::: danger Ark 被动消息使用条件
+Ark 被动消息需要私域机器人才能使用，同步与异步重载均适用，详见 [Ark 卡片](../components/ark.md)
+:::
 
 引用重载与群聊类似：`refMessage(openId, refIdx, text / image / markdown)`，以及附带 keyboard 的版本。文本、图片、Markdown 回复还有 refIdx 参数，完整重载见下方签名
 

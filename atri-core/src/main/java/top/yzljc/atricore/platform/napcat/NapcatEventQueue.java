@@ -61,7 +61,9 @@ public final class NapcatEventQueue implements AutoCloseable {
         }
     }
 
-    /** 拒收时不登记去重记录，调用方可返回 503 让上游重试 */
+    /**
+     * 拒收时不登记去重记录，调用方可返回 503 让上游重试
+     */
     public synchronized boolean offer(JsonNode payload, int payloadBytes) {
         if (!accepting) return false;
         String id = eventId(payload);
@@ -209,5 +211,6 @@ public final class NapcatEventQueue implements AutoCloseable {
         workers.forEach(Thread::interrupt);
     }
 
-    private record QueuedEvent(String session, String id, JsonNode payload, int payloadBytes) {}
+    private record QueuedEvent(String session, String id, JsonNode payload, int payloadBytes) {
+    }
 }

@@ -16,7 +16,9 @@
 
 `GroupMessage.handleRequest(approve, flag, reason)` 处理申请，flag 来自事件，reason 可为 null。返回 void，不提供平台成功确认；该辅助方法固定提交 sub_type=add
 
+::: important 区分申请与邀请
 邀请事件的 sub_type=invite 不适合直接复用该辅助方法，应使用原始请求并保留事件的 sub_type
+:::
 
 ```java
 import top.yzljc.atricore.platform.napcat.PostRequest;

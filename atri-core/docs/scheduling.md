@@ -42,7 +42,9 @@ public final class DailyTask implements ScheduledTask {
 
 注册使用 `provider.getTaskScheduler().schedule(new DailyTask())`
 
+::: tip 同一任务类的多个计划
 `ScheduledTask` 重载按任务类去重，同一类多次注册会返回原句柄，即使原句柄已取消也不会创建新任务，需要独立实例计划时使用 `schedule(Runnable, TaskSchedule)` 重载
+:::
 
 任务采用显式注册，由运行服务统一维护注册清单
 
@@ -112,7 +114,9 @@ scheduler.runTaskLater(() -> System.getLogger("reminder")
 
 已经在框架工作线程中调用 `supplyAsync()` 时可能直接在当前线程完成，不应假定它总会切换线程
 
+::: warning 共享线程服务的关闭
 `ThreadManager.shutdown()` 用于整个运行服务退出，不属于单个业务模块的清理操作，关闭后不能重新启动
+:::
 
 ## 限流工具
 

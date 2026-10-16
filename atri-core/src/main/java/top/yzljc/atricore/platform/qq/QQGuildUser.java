@@ -69,9 +69,9 @@ public final class QQGuildUser extends User {
     /**
      * 被动回复 QQ 频道或频道私信中的文本
      *
-     * @param targetId 文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
+     * @param targetId  文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
      * @param messageId 用于被动回复的来源消息 ID
-     * @param text 回复内容
+     * @param text      回复内容
      * @return 消息 ID，发送失败返回 {@code null}
      */
     public String sendMessage(String targetId, String messageId, String text) {
@@ -83,9 +83,9 @@ public final class QQGuildUser extends User {
     /**
      * 被动回复 QQ 频道或频道私信中的图片
      *
-     * @param targetId 文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
+     * @param targetId  文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
      * @param messageId 用于被动回复的来源消息 ID
-     * @param image 回复内容
+     * @param image     回复内容
      * @return 消息 ID，发送失败返回 {@code null}
      */
     public String sendMessage(String targetId, String messageId, ImageComponent image) {
@@ -97,9 +97,9 @@ public final class QQGuildUser extends User {
     /**
      * 被动回复 QQ 频道或频道私信中的嵌入消息
      *
-     * @param targetId 文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
+     * @param targetId  文字子频道的 {@code channelId}，或私信会话的 {@code guildId}
      * @param messageId 用于被动回复的来源消息 ID
-     * @param embed 回复内容
+     * @param embed     回复内容
      * @return 消息 ID，发送失败返回 {@code null}
      */
     public String sendMessage(String targetId, String messageId, Embed embed) {

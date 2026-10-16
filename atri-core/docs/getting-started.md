@@ -8,15 +8,8 @@
 
 - JDK 25
 - 编译和运行时启用 `--enable-preview`
-- 使用源码仓库提供的 Gradle Wrapper 构建框架
 
 ## 1. 安装依赖
-
-在框架仓库根目录发布到本地 Maven 仓库
-
-```sh
-./gradlew :atri-core:publishToMavenLocal
-```
 
 在运行服务中创建 `settings.gradle.kts`
 
@@ -24,7 +17,7 @@
 rootProject.name = "bot-example"
 ```
 
-创建 `build.gradle.kts`，依赖版本应与本地发布版本一致
+创建 `build.gradle.kts`，将 `<版本>` 替换为需要使用的已发布版本
 
 ```kotlin
 plugins {
@@ -32,12 +25,11 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    implementation("top.yzljc.atricore:atri-core:0.1.0-SNAPSHOT")
+    implementation("top.yzljc.atricore:atri-core:<版本>")
 }
 
 java {
@@ -57,7 +49,9 @@ tasks.withType<JavaCompile>().configureEach {
 
 同一 Gradle 工程内可使用 `implementation(project(":atri-core"))` 直接引用源码模块
 
-正式版本发布至 Maven Central 后，可将依赖版本替换为已发布版本，仅保留 `mavenCentral()`，使用方无需配置发布凭据
+::: tip 获取依赖
+依赖从 Maven Central 获取，无需配置访问凭据。需要修改框架源码时，参见 [本地联调](development.md#源码联调)
+:::
 
 ## 2. 编写入口
 
@@ -93,7 +87,9 @@ public final class BotApplication extends AtriProvider {
 
 ## 3. 配置平台
 
+::: info 首次启动
 首次初始化会在工作目录生成 `atri-core.yml`，默认端口为 `1234`，两个平台默认关闭
+:::
 
 QQ Webhook 配置示例，修改对应字段后重启运行服务
 

@@ -128,7 +128,8 @@ public class CommandMap {
                 if (command instanceof ScopedCommand plugin && !plugin.getPlatforms().isEmpty()) {
                     for (Platform platform : plugin.getPlatforms()) {
                         String previous = scopedPrefixless.computeIfAbsent(platform, _ -> new HashMap<>()).putIfAbsent(alias, label);
-                        if (previous != null && !previous.equals(label)) throw new IllegalArgumentException("无前缀触发词冲突: " + alias);
+                        if (previous != null && !previous.equals(label))
+                            throw new IllegalArgumentException("无前缀触发词冲突: " + alias);
                     }
                     continue;
                 }
@@ -161,7 +162,7 @@ public class CommandMap {
     /**
      * 将平台文本转换为现有分发器使用的指令行，显式前缀优先于无前缀触发词
      *
-     * @param input 已去除平台提及标记的消息文本
+     * @param input  已去除平台提及标记的消息文本
      * @param prefix 当前配置的指令前缀
      * @return 去除前缀或替换触发词后的指令行，普通消息返回 null
      */
@@ -185,7 +186,7 @@ public class CommandMap {
     /**
      * 按文本分发规则判断指令输入，不执行指令或触发事件
      *
-     * @param input 已去除平台提及标记的消息文本，允许为 null
+     * @param input  已去除平台提及标记的消息文本，允许为 null
      * @param prefix 当前配置的指令前缀
      * @return 包含显式前缀或命中无前缀触发词时返回 true；显式前缀后的指令可以未注册
      */
@@ -195,7 +196,8 @@ public class CommandMap {
 
     private record Registry(Map<String, Command> commands, Map<String, String> prefixlessAliases,
                             Map<Platform, Map<String, Command>> scoped,
-                            Map<Platform, Map<String, String>> scopedPrefixless) {}
+                            Map<Platform, Map<String, String>> scopedPrefixless) {
+    }
 
     public synchronized Map<String, CommandExecutor> snapshotExecutors() {
         Map<String, CommandExecutor> executors = new LinkedHashMap<>();

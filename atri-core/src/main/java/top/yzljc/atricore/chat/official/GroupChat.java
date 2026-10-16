@@ -25,9 +25,9 @@ public final class GroupChat {
     /**
      * 主动发送群聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 群 openId
+     * @param openId   群 openId
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID，上传或发送失败时返回 null
      */
     public static String sendMessage(String openId, FileType fileType, Path file) {
@@ -37,10 +37,10 @@ public final class GroupChat {
     /**
      * 回复群聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 群 openId
-     * @param rt 消息或事件回复来源
+     * @param openId   群 openId
+     * @param rt       消息或事件回复来源
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID，上传或发送失败时返回 null
      */
     public static String replyMessage(String openId, RT rt, FileType fileType, Path file) {

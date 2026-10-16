@@ -33,21 +33,36 @@ public final class Menu {
         return "QQBot " + AtriProvider.getInstance().getChatService().getTokenManager().getAccessToken();
     }
 
-    /** 开关配置，switchId 唯一标识，defaultOn 对应接口字段 default */
-    public record Switch(String switchId, boolean defaultOn) {}
+    /**
+     * 开关配置，switchId 唯一标识，defaultOn 对应接口字段 default
+     */
+    public record Switch(String switchId, boolean defaultOn) {
+    }
 
-    /** 二级菜单项，type 仅支持 send_message / link */
-    public record SubMenuItem(String name, String type, String sendMessage, String link) {}
+    /**
+     * 二级菜单项，type 仅支持 send_message / link
+     */
+    public record SubMenuItem(String name, String type, String sendMessage, String link) {
+    }
 
-    /** 一级菜单项，type 支持 switch / send_message / link / menu */
+    /**
+     * 一级菜单项，type 支持 switch / send_message / link / menu
+     */
     public record MenuItem(String name, String type, List<SubMenuItem> subMenuItems,
-                           String sendMessage, String link, Switch switchConfig, String align) {}
+                           String sendMessage, String link, Switch switchConfig, String align) {
+    }
 
-    /** 菜单配置，items 最多 10 个 */
-    public record MenuData(List<MenuItem> items) {}
+    /**
+     * 菜单配置，items 最多 10 个
+     */
+    public record MenuData(List<MenuItem> items) {
+    }
 
-    /** 查询结果，未设置过菜单时 menu 为 null */
-    public record MenuQueryResult(MenuData menu, int version) {}
+    /**
+     * 查询结果，未设置过菜单时 menu 为 null
+     */
+    public record MenuQueryResult(MenuData menu, int version) {
+    }
 
     /**
      * 查询全局自定义菜单，失败返回 null

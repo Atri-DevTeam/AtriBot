@@ -26,7 +26,9 @@ public final class ButtonListener implements Listener {
 }
 ```
 
+::: important 交互应答与消息回复
 监听器需要按 [事件文档](../../events.md) 注册。`answer` 只应答交互状态，`replyMessage` 才发送聊天消息，两者分别调用
+:::
 
 ## 字段
 
@@ -57,15 +59,17 @@ public final class ButtonListener implements Listener {
 
 未知场景的聊天辅助方法抛出 `UnknownButtonInteractionScene`。`answer` 的请求同步执行，发送日志另行提交到共享执行器
 
-| AnswerCode | 值 | 用途 |
-| --- | --- | --- |
-| SUCCESS | 0 | 成功 |
-| FAIL | 1 | 失败 |
+| AnswerCode | 值 | 用途   |
+| --- | --- |------|
+| SUCCESS | 0 | 成功   |
+| FAIL | 1 | 失败   |
 | TOO_FAST | 2 | 操作过快 |
 | REPEAT | 3 | 重复操作 |
-| NO_PERMISSION | 4 | 无权限 |
+| NO_PERMISSION | 4 | 无权限  |
 | ONLY_ADMIN | 5 | 仅管理员 |
-| IGNORED | 66 | 当前实现使用的忽略状态 |
-| IGNORE_FAILED | 99 | 当前实现保留的忽略失败状态 |
+| IGNORED | 66 | 已屏蔽  |
+| IGNORE_FAILED | 99 | 屏蔽失败 |
 
 `AnswerCode.fromCode` 对未知数值返回 FAIL。上表描述 core 当前枚举，客户端提示与非标准状态的可用性以平台响应为准
+
+已被屏蔽/拉黑的用户默认返回 `AnswerCode.IGNORED`

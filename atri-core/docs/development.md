@@ -20,7 +20,7 @@
 | API 文档 | `atri-core/build/docs/javadoc/index.html` |
 | 测试报告 | `atri-core/build/reports/tests/test/index.html` |
 
-core 使用独立版本，默认 `0.1.0-SNAPSHOT`，通过 `-PcoreVersion=<版本>` 指定，不修改运行服务的版本。正式发布见 [Maven Central 发布](publishing.md)
+core 使用独立版本，默认 `0.1.0-SNAPSHOT`，通过 `-PcoreVersion=<版本>` 指定，不修改运行服务的版本
 
 ## 源码联调
 

@@ -50,6 +50,16 @@ public class Config {
     @Getter
     private String miniappBaseUrl;
     @Getter
+    private boolean dashboardEnabled;
+    @Getter
+    private String dashboardBaseUrl;
+    @Getter
+    private String dashboardCallbackUrl;
+    @Getter
+    private String qqConnectAppId;
+    @Getter
+    private String qqConnectAppKey;
+    @Getter
     private String ugcApiUrl;
     @Getter
     private String ossDumpBaseUrl;
@@ -161,12 +171,6 @@ public class Config {
     @Getter
     private boolean imageSourceEnabled;
     @Getter
-    private String imageSourceApiUrl;
-    @Getter
-    private String imageSourceViewBaseUrl;
-    @Getter
-    private String imageSourceToken;
-    @Getter
     private int imageSourcePendingLimit;
 
     // ########## 抽卡(Loots)设置区域 ##########
@@ -219,6 +223,11 @@ public class Config {
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.miniappEnabled = yaml.getBoolean("miniapp.enabled", true);
             this.miniappBaseUrl = yaml.getString("miniapp.base-url", "");
+            this.dashboardEnabled = yaml.getBoolean("dashboard.enabled", false);
+            this.dashboardBaseUrl = yaml.getString("dashboard.base-url", "");
+            this.dashboardCallbackUrl = yaml.getString("dashboard.callback-url", "");
+            this.qqConnectAppId = yaml.getString("dashboard.qq-connect.app-id", "");
+            this.qqConnectAppKey = yaml.getString("dashboard.qq-connect.app-key", "");
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
             this.soundResourceBaseUrl = yaml.getString("sound.resource-base-url", "");
@@ -293,9 +302,6 @@ public class Config {
 
             // ########## 图源投稿设置区域 ##########
             this.imageSourceEnabled = yaml.getBoolean("image-source.enabled", false);
-            this.imageSourceApiUrl = yaml.getString("image-source.api-url", "null");
-            this.imageSourceViewBaseUrl = yaml.getString("image-source.view-base-url", "null");
-            this.imageSourceToken = yaml.getString("image-source.token", "null");
             this.imageSourcePendingLimit = yaml.getInt("image-source.pending-limit", 3);
 
             // ########## 抽卡(Loots)设置区域 ##########

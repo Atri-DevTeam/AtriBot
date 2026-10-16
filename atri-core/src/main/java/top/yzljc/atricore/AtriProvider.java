@@ -87,7 +87,8 @@ public abstract class AtriProvider implements AutoCloseable {
      * @throws IllegalStateException 当前实例已初始化、已关闭或已有其他 Provider
      */
     public final void initialize() {
-        initialize(config -> {});
+        initialize(config -> {
+        });
     }
 
     /**
@@ -156,8 +157,12 @@ public abstract class AtriProvider implements AutoCloseable {
         }
     }
 
-    /** @return 平台连接及框架配置，不得为 null */
-    public AtriSettings getSettings() { return CoreConfig.getInstance().getSettings(); }
+    /**
+     * @return 平台连接及框架配置，不得为 null
+     */
+    public AtriSettings getSettings() {
+        return CoreConfig.getInstance().getSettings();
+    }
 
     private void initializeServer(Consumer<JavalinConfig> configure) {
         AtriSettings settings = getSettings();
@@ -262,14 +267,26 @@ public abstract class AtriProvider implements AutoCloseable {
         }
     }
 
-    /** @return 账号查询与访问控制实现，不得为 null */
-    public AccessService getAccessService() { return accessService; }
+    /**
+     * @return 账号查询与访问控制实现，不得为 null
+     */
+    public AccessService getAccessService() {
+        return accessService;
+    }
 
-    /** @return 日志、消息记录及运行通知实现，不得为 null */
-    public LogRecorder getLogRecorder() { return logRecorder; }
+    /**
+     * @return 日志、消息记录及运行通知实现，不得为 null
+     */
+    public LogRecorder getLogRecorder() {
+        return logRecorder;
+    }
 
-    /** @return 指令资源与运行服务策略，不得为 null */
-    public BotCommand getBotCommand() { return botCommand; }
+    /**
+     * @return 指令资源与运行服务策略，不得为 null
+     */
+    public BotCommand getBotCommand() {
+        return botCommand;
+    }
 
     /**
      * 获取框架创建的 QQ 聊天服务，与平台连接共用令牌缓存
@@ -292,6 +309,10 @@ public abstract class AtriProvider implements AutoCloseable {
         return getChatService().getTokenManager();
     }
 
-    /** @return 被动回复的维护图片；未配置时返回 null，暂停期间不发送替代消息 */
-    public ImageComponent getMaintenanceMessage() { return null; }
+    /**
+     * @return 被动回复的维护图片；未配置时返回 null，暂停期间不发送替代消息
+     */
+    public ImageComponent getMaintenanceMessage() {
+        return null;
+    }
 }

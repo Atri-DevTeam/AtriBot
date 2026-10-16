@@ -55,7 +55,9 @@ public final class QQWebhookHandler implements AutoCloseable {
         this.eventQueue = eventQueue;
     }
 
-    /** 在 Javalin 启动前启用每个请求的响应完成回调 */
+    /**
+     * 在 Javalin 启动前启用每个请求的响应完成回调
+     */
     public static void configureResponseCompletion(JavalinConfig config) {
         config.jetty.modifyServer(server -> server.addEventListener(new LifeCycle.Listener() {
             @Override

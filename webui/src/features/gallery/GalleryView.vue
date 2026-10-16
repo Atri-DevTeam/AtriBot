@@ -118,6 +118,8 @@
                       <path d="M21 15l-5-5L5 21"/>
                     </svg>
                     <span>图片不可用</span>
+                    <button v-if="visibleUrl(item.displayUrl)" type="button" class="ghost-button"
+                            @click.stop="failed.delete(item.id)">重新加载</button>
                   </div>
                   <span class="gallery-status" :class="`gallery-status--${item.reviewStatus.toLowerCase()}`">
                     {{ statusText(item.reviewStatus) }}
@@ -202,10 +204,12 @@
       </button>
 
       <figure class="gallery-viewer-stage" @click.self="closeViewer">
-        <img v-if="visibleUrl(viewer.fullUrl || viewer.displayUrl) && !failed.has(viewer.id)" :src="visibleUrl(viewer.fullUrl || viewer.displayUrl)"
-             :alt="viewer.fileName || ''"/>
+        <img v-if="visibleUrl(viewer.fullUrl || viewer.displayUrl) && !viewerFailed" :key="viewer.id" :src="visibleUrl(viewer.fullUrl || viewer.displayUrl)"
+             :alt="viewer.fileName || ''" @error="viewerFailed = true"/>
         <div v-else class="gallery-broken large">
           <span>图片不可用（原始链接可能已过期）</span>
+          <button v-if="visibleUrl(viewer.fullUrl || viewer.displayUrl)" type="button" class="ghost-button"
+                  @click.stop="viewerFailed = false">重新加载</button>
         </div>
       </figure>
 
@@ -383,6 +387,7 @@ const busy = ref('')
 const bulkBusy = ref(false)
 
 const viewer = ref(null)
+const viewerFailed = ref(false)
 const denyTarget = ref(null)
 const denyRemark = ref('')
 const submitting = ref(false)
@@ -539,6 +544,7 @@ async function deleteImage(item) {
 }
 
 function openViewer(item) {
+  viewerFailed.value = false
   viewer.value = item
 }
 
@@ -549,6 +555,7 @@ function closeViewer() {
 function step(delta) {
   const next = viewerIndex.value + delta
   if (next < 0 || next >= items.value.length) return
+  viewerFailed.value = false
   viewer.value = items.value[next]
 }
 

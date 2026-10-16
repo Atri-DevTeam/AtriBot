@@ -23,7 +23,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atricore.chat.official.management
  * @Description 群成员禁言管理
- *
+ * <p>
  * 机器人需拥有群管理员身份，单次最多设置 10 个成员，接口频率限制 60 QPM
  */
 @Slf4j
@@ -33,7 +33,9 @@ public final class Mute {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    /** 禁言操作类型：add 增加禁言，update 更新禁言到期时间，del 解除禁言 */
+    /**
+     * 禁言操作类型：add 增加禁言，update 更新禁言到期时间，del 解除禁言
+     */
     public enum Op {
         ADD("add"),
         UPDATE("update"),
@@ -50,9 +52,13 @@ public final class Mute {
         }
     }
 
-    /** 单条禁言设置 */
+    /**
+     * 单条禁言设置
+     */
     public record MuteItem(Op op, String memberOpenId, String muteExpireAt) {
-        /** 不解禁/不改期时（如仅 del）可省略到期时间 */
+        /**
+         * 不解禁/不改期时（如仅 del）可省略到期时间
+         */
         public MuteItem(Op op, String memberOpenId) {
             this(op, memberOpenId, null);
         }
@@ -256,18 +262,35 @@ public final class Mute {
         return members;
     }
 
-    /** 群禁言状态查询结果，globalRule 无全员禁言配置时可能为 null */
-    public record MuteStateResult(GlobalMuteRule globalRule, List<MemberMuteState> members) {}
+    /**
+     * 群禁言状态查询结果，globalRule 无全员禁言配置时可能为 null
+     */
+    public record MuteStateResult(GlobalMuteRule globalRule, List<MemberMuteState> members) {
+    }
 
-    /** 群级禁言规则（全员禁言配置） */
-    public record GlobalMuteRule(String mode, List<MuteScheduleRule> scheduleRules, List<MuteRecurringRule> recurringRules) {}
+    /**
+     * 群级禁言规则（全员禁言配置）
+     */
+    public record GlobalMuteRule(String mode, List<MuteScheduleRule> scheduleRules,
+                                 List<MuteRecurringRule> recurringRules) {
+    }
 
-    /** 定时禁言规则 */
-    public record MuteScheduleRule(String taskId, String startAt, String endAt, boolean enabled) {}
+    /**
+     * 定时禁言规则
+     */
+    public record MuteScheduleRule(String taskId, String startAt, String endAt, boolean enabled) {
+    }
 
-    /** 周期禁言规则 */
-    public record MuteRecurringRule(String taskId, List<Integer> weekdays, String startTime, String endTime, boolean enabled) {}
+    /**
+     * 周期禁言规则
+     */
+    public record MuteRecurringRule(String taskId, List<Integer> weekdays, String startTime, String endTime,
+                                    boolean enabled) {
+    }
 
-    /** 被禁言成员状态 */
-    public record MemberMuteState(String memberOpenId, String muteExpireAt, String username, String unionOpenId) {}
+    /**
+     * 被禁言成员状态
+     */
+    public record MemberMuteState(String memberOpenId, String muteExpireAt, String username, String unionOpenId) {
+    }
 }

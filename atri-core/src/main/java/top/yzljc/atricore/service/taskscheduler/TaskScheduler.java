@@ -34,8 +34,8 @@ public final class TaskScheduler implements AutoCloseable {
      *
      * @param task 业务任务
      * @return 任务取消句柄
-     * @throws IllegalStateException 调度器已经关闭
-     * @throws NullPointerException 任务或其计划为 null
+     * @throws IllegalStateException                           调度器已经关闭
+     * @throws NullPointerException                            任务或其计划为 null
      * @throws java.util.concurrent.RejectedExecutionException 共享调度容量不足或线程服务已关闭
      */
     public synchronized ScheduledTaskHandle schedule(ScheduledTask task) {
@@ -47,11 +47,11 @@ public final class TaskScheduler implements AutoCloseable {
     /**
      * 注册独立的周期任务，此重载不按任务类去重
      *
-     * @param task 业务执行内容
+     * @param task     业务执行内容
      * @param schedule 周期计划，任务存续期间不应并发修改
      * @return 任务取消句柄
-     * @throws IllegalStateException 调度器已经关闭
-     * @throws NullPointerException 任务或计划为 null
+     * @throws IllegalStateException                           调度器已经关闭
+     * @throws NullPointerException                            任务或计划为 null
      * @throws java.util.concurrent.RejectedExecutionException 共享调度容量不足或线程服务已关闭
      */
     public synchronized ScheduledTaskHandle schedule(Runnable task, TaskSchedule schedule) {

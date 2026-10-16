@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch} from 'vue'
-import {PageSession, takeEntry, type State} from './session'
+import {PageSession, takeEntry, type State, type Grant} from './session'
 import type {Profile} from './profile'
 import Icon from './components/Icon.vue'
 import ActivityPanel from './components/ActivityPanel.vue'
@@ -10,6 +10,8 @@ import AboutPage from './components/AboutPage.vue'
 import introIllustration from '../../src/main/resources/official-webui/img/atri-main.png'
 import goldIcon from './assets/gold.png'
 
+const props = defineProps<{dashboardGrant?: Grant}>()
+const emit = defineEmits<{logout: []; renew: []}>()
 const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
 const apiBase = (import.meta.env.VITE_API_BASE || '/atrimeow/profile/api').replace(/\/+$/, '')
 const readPrivate = <T, >(path: string) => session.get<T>(path)
@@ -188,7 +190,8 @@ onMounted(() => {
   timer = setInterval(() => {
     void session.heartbeat()
   }, 20_000)
-  void session.open(entry.userId, entry.ticket)
+  if (props.dashboardGrant) session.openAuthenticated(props.dashboardGrant)
+  else void session.open(entry.userId, entry.ticket)
 })
 onBeforeUnmount(() => {
   clearIntroTimers()
@@ -228,6 +231,7 @@ onBeforeUnmount(() => {
               activePage === 'groups' ? '群管理' : activePage === 'about' ? '关于' : '用户档案'
             }}</span></h1>
         </div>
+        <button v-if="dashboardGrant" class="text-button dashboard-logout" @click="emit('logout')">退出登录</button>
       </div>
     </header>
 
@@ -364,8 +368,16 @@ onBeforeUnmount(() => {
           <Icon name="lock"/>
         </div>
         <h2>当前会话已过期</h2>
-        <p class="entry-description">请私聊{{ bot.name }}发送 <code>/profile</code><br>获取新的会话</p></section>
+        <template v-if="dashboardGrant">
+          <p class="entry-description">请重新进入个人面板</p>
+          <button class="text-button" @click="emit('renew')">重新进入</button>
+        </template>
+        <p v-else class="entry-description">请私聊{{ bot.name }}发送 <code>/profile</code><br>获取新的会话</p></section>
     </main>
     <div v-if="copyNotice && state.phase === 'ready'" class="toast glass" role="status">{{ copyNotice }}</div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-logout { margin-left: auto; flex-shrink: 0; }
+</style>

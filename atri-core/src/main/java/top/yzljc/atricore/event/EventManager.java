@@ -97,13 +97,14 @@ public class EventManager {
         }
     }
 
-    private record RegisteredListener(Listener listener, Method method, EventPriority priority, boolean ignoreCancelled) {
-            private RegisteredListener(Listener listener, Method method, EventPriority priority, boolean ignoreCancelled) {
-                this.listener = listener;
-                this.method = method;
-                this.priority = priority;
-                this.ignoreCancelled = ignoreCancelled;
-                this.method.setAccessible(true);
-            }
+    private record RegisteredListener(Listener listener, Method method, EventPriority priority,
+                                      boolean ignoreCancelled) {
+        private RegisteredListener(Listener listener, Method method, EventPriority priority, boolean ignoreCancelled) {
+            this.listener = listener;
+            this.method = method;
+            this.priority = priority;
+            this.ignoreCancelled = ignoreCancelled;
+            this.method.setAccessible(true);
         }
+    }
 }

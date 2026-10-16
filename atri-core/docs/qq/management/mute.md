@@ -2,6 +2,10 @@
 
 [API 目录](../../README.md) · `top.yzljc.atricore.chat.official.management.Mute`
 
+::: important 使用前提
+群禁言需要开放平台和群主同时授权才可使用
+:::
+
 ## 禁言与解除
 
 ```java

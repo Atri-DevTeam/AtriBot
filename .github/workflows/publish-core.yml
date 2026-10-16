@@ -1,22 +1,6 @@
 name: Publish atri-core
 
 on:
-  push:
-    branches:
-      - AtriMeow
-    paths:
-      - atri-core/src/**
-      - atri-core/build.gradle.kts
-      - atri-core/gradle.properties
-      - atri-core/gradle.lockfile
-      - build.gradle.kts
-      - settings.gradle.kts
-      - gradle.properties
-      - gradle/**
-      - gradlew
-      - gradlew.bat
-      - LICENSE
-      - .github/workflows/publish-core.yml
   workflow_dispatch:
     inputs:
       version:

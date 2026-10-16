@@ -43,7 +43,9 @@ void start()
 
 重复调用不重复启动，已关闭或同步启动步骤失败时抛出 `IllegalStateException`，失败时释放框架资源
 
+::: note 启动与连接状态
 WebSocket 连接握手异步执行，方法返回不表示连接已建立
+:::
 
 ### close
 
@@ -104,7 +106,9 @@ public final class ServiceProvider extends AtriProvider {
 }
 ```
 
+::: important 扩展对象的生命周期
 扩展对象应在 Provider 生命周期内复用，`getSettings()`、`getAccessService()`、`getLogRecorder()`、`getBotCommand()` 不得返回 null
+:::
 
 ### AccessService
 

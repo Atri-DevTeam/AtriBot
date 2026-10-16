@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 /**
  * @Author YZ_Ljc_
@@ -35,7 +36,7 @@ public final class MiniappSessions implements AutoCloseable {
     public record Access(String token, Identity user, long expiresAt, long idleTimeoutMillis) {}
     private record Client(String ip, String userAgent) {}
     private record Ticket(Identity user, long expiresAt, Client client) {}
-    private record Session(Identity user, long expiresAt, long lastSeen) {}
+    private record Session(Identity user, long expiresAt, long lastSeen, BooleanSupplier active) {}
 
     public MiniappSessions() { this(Clock.systemUTC(), true); }
 
@@ -71,9 +72,26 @@ public final class MiniappSessions implements AutoCloseable {
         long now = clock.millis();
         String sessionToken = token();
         long expiresAt = now + SESSION_TTL.toMillis();
-        sessions.put(sessionToken, new Session(ticket.user(), expiresAt, now));
+        sessions.put(sessionToken, new Session(ticket.user(), expiresAt, now, () -> true));
         if (ticket.client() == null) tickets.put(ticketToken, new Ticket(ticket.user(), ticket.expiresAt(), client));
         return new Access(sessionToken, ticket.user(), expiresAt, IDLE_TTL.toMillis());
+    }
+
+    /**
+     * 为已通过服务端认证的身份签发页面会话
+     *
+     * @param identity 已验证的官机用户
+     * @param active 上级登录会话的有效性检查，退出登录后使页面会话同步失效
+     * @return 页面访问凭证，服务关闭或容量已满时返回 null
+     */
+    public synchronized Access createAccess(Identity identity, BooleanSupplier active) {
+        cleanup();
+        if (closed || identity == null || active == null || !active.getAsBoolean() || sessions.size() >= CAPACITY) return null;
+        long now = clock.millis();
+        String token = token();
+        long expiresAt = now + SESSION_TTL.toMillis();
+        sessions.put(token, new Session(identity, expiresAt, now, active));
+        return new Access(token, identity, expiresAt, IDLE_TTL.toMillis());
     }
 
     public synchronized Identity authenticate(String token) {
@@ -81,11 +99,11 @@ public final class MiniappSessions implements AutoCloseable {
         Session session = sessions.get(token);
         long now = clock.millis();
         if (session == null) return null;
-        if (now >= session.expiresAt() || now - session.lastSeen() >= IDLE_TTL.toMillis()) {
+        if (now >= session.expiresAt() || now - session.lastSeen() >= IDLE_TTL.toMillis() || !session.active().getAsBoolean()) {
             sessions.remove(token);
             return null;
         }
-        sessions.put(token, new Session(session.user(), session.expiresAt(), now));
+        sessions.put(token, new Session(session.user(), session.expiresAt(), now, session.active()));
         return session.user();
     }
 

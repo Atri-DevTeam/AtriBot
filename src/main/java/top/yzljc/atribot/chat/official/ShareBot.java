@@ -1,20 +1,15 @@
 package top.yzljc.atribot.chat.official;
 
-import top.yzljc.atricore.core.CoreConfig;
-
-import top.yzljc.atricore.chat.official.*;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.official.OfficialUsers;
-import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atricore.service.request.HttpService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import static top.yzljc.atricore.chat.official.ShareBot.generateShareLink;
+import static top.yzljc.atricore.chat.official.ShareBot.getShareShortCode;
 
 /**
  * @Author YZ_Ljc_
@@ -51,19 +46,12 @@ public final class ShareBot {
             return settings.shareLink();
         }
 
-        // {"msg":"invalid GetCustomShareJumpUrlReq.CallbackData: value contains invalid strings","retcode":51}
-        // 长度限制32，正好是openId的长度哈哈
-        Map<String, String> shareCallBackData = Map.of("callback_data", userOpenId);
-
-        var d = HttpService.postJson(CoreConfig.getInstance().getSettings().getQqApiBaseUrl() + "/v2/generate_url_link", shareCallBackData, "Authorization", "QQBot " + Atri.getInstance().getTokenManager().getAccessToken());
-        if (d == null) return null;
-        var url = d.path("data").path("url");
-        if (!url.isTextual() || url.textValue().isBlank()) return null;
-        return saveGeneratedLink(userOpenId, url.textValue());
+        String shareLink = generateShareLink(userOpenId);
+        return shareLink == null ? null : saveGeneratedLink(userOpenId, shareLink);
     }
 
     private static synchronized String saveGeneratedLink(String userOpenId, String shareLink) {
-        // 请求期间可能收到邀请事件，重新读取并保留邀请字段。
+        // 请求期间可能收到邀请事件，重新读取并保留邀请字段
         var settings = getShareSettings(userOpenId);
         if (settings.shareLink() != null && !settings.shareLink().isBlank()) return settings.shareLink();
         var updated = new ShareSettings(shareLink, settings.users(), settings.inviterOpenId(),
@@ -100,17 +88,6 @@ public final class ShareBot {
      * @return 分享链接短码，若获取失败则返回 null
      */
     public static String getUserShareShortCode(String userOpenId) {
-        String shareLink = getShareLink(userOpenId);
-        if (shareLink == null) {
-            return null;
-        }
-
-        // 解析短码
-        int lastSlashIndex = shareLink.lastIndexOf('/');
-        if (lastSlashIndex == -1 || lastSlashIndex == shareLink.length() - 1) {
-            return null; // 无效的链接格式
-        }
-
-        return shareLink.substring(lastSlashIndex + 1);
+        return getShareShortCode(getShareLink(userOpenId));
     }
 }

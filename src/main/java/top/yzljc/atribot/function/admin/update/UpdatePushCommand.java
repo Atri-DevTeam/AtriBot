@@ -25,7 +25,7 @@ import java.util.Arrays;
  */
 public class UpdatePushCommand implements Listener, CommandExecutor {
 
-    private static final String layout = QQBot.BOT_NAME + "近期更新日志:\n";
+//    private static final String layout = QQBot.BOT_NAME + "近期更新日志:\n";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -112,6 +112,8 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
         }
 
         if (groupId != null && UpdateNoticeRecord.shouldNotify(groupId)) {
+            String layout = QQBot.BOT_NAME + "近期更新日志:\n";
+
             String pushContent = layout + "> " + FormatTools.formatTimestampMilli(UpdateNoticeRecord.getCreatedAt()) + "\n\n"
                     + UpdateNoticeRecord.getText() + "\n\n遇到了一些问题？使用/feedback向开发者反馈！";
             event.getSender().sendMessage(pushContent);

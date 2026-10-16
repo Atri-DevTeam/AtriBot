@@ -9,6 +9,7 @@ import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.database.UnifiedAccountDTO;
 
 import java.sql.PreparedStatement;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -32,11 +33,27 @@ public class UnifiedAccountRepository {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void init() {
+        try (var con = DatabaseManager.getConnection()) {
+            init(con);
+            log.info("统一账号表初始化完成");
+        } catch (Exception e) {
+            throw new IllegalStateException("初始化统一账号表失败", e);
+        }
+    }
+
+    /**
+     * 初始化统一账号表，并补充 QQ 互联身份字段及唯一索引
+     *
+     * @param con 数据库连接，由调用方关闭
+     * @throws SQLException 表结构初始化失败
+     */
+    public static void init(Connection con) throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS `" + TABLE + "` (" +
                 "  `uuid` CHAR(36) NOT NULL," +
                 "  `username` VARCHAR(64) NULL," +
                 "  `qq_user_open_id` VARCHAR(128) NULL," +
                 "  `qq_user_uin` VARCHAR(64) NULL," +
+                "  `qq_connect_open_id` VARCHAR(128) NULL," +
                 "  `minecraft_uuid` VARCHAR(64) NULL," +
                 "  `role` VARCHAR(32) NOT NULL DEFAULT 'USER'," +
                 "  `permissions` TEXT NULL," +
@@ -46,22 +63,24 @@ public class UnifiedAccountRepository {
                 "  PRIMARY KEY (`uuid`)," +
                 "  UNIQUE KEY `uk_qq_user_open_id` (`qq_user_open_id`)," +
                 "  UNIQUE KEY `uk_qq_user_uin` (`qq_user_uin`)," +
+                "  UNIQUE KEY `uk_qq_connect_open_id` (`qq_connect_open_id`)," +
                 "  KEY `idx_username` (`username`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        try (var con = DatabaseManager.getConnection()) {
-            try (var ps = con.prepareStatement(sql)) {
-                ps.execute();
+        try (var ps = con.prepareStatement(sql)) {
+            ps.execute();
+        }
+        var columns = new java.util.HashSet<String>();
+        try (var ps = con.prepareStatement("SELECT * FROM `" + TABLE + "` WHERE 1=0"); var rs = ps.executeQuery()) {
+            var metadata = rs.getMetaData();
+            for (int i = 1; i <= metadata.getColumnCount(); i++) {
+                columns.add(metadata.getColumnName(i).toLowerCase(java.util.Locale.ROOT));
             }
-//            // 同一个正版 Minecraft 账号允许绑定多个统一账号。
-//            try (var ps = con.prepareStatement("ALTER TABLE `" + TABLE + "` DROP INDEX `uk_minecraft_uuid`")) {
-//                ps.execute();
-//            } catch (SQLException ignored) {
-//                // 新表没有该索引，或数据库已完成迁移。
-//            }
-            log.info("统一账号表初始化完成");
-        } catch (Exception e) {
-            log.error("初始化统一账号表失败", e);
+        }
+        if (!columns.contains("qq_connect_open_id")) {
+            try (var statement = con.createStatement()) {
+                statement.execute("ALTER TABLE `" + TABLE + "` ADD COLUMN `qq_connect_open_id` VARCHAR(128) NULL UNIQUE");
+            }
         }
     }
 
@@ -96,7 +115,7 @@ public class UnifiedAccountRepository {
             ps.setTimestamp(10, now);
             ps.executeUpdate();
             return new UnifiedAccountDTO(uuid, username, qqUserOpenId, qqUserUin, minecraftUuid, roleName,
-                    permissions, statusName, now, now);
+                    permissions, statusName, now, now, null);
         } catch (Exception e) {
             log.error("创建统一账号失败: openId={}, uin={}, mcUuid={}", qqUserOpenId, qqUserUin, minecraftUuid, e);
             return null;
@@ -118,6 +137,63 @@ public class UnifiedAccountRepository {
 
     public static UnifiedAccountDTO findByQqUserUin(String uin) {
         return findByColumn("qq_user_uin", uin);
+    }
+
+    public static UnifiedAccountDTO findByQqConnect(String openId) throws SQLException {
+        try (var con = DatabaseManager.getConnection()) {
+            return findByQqConnect(con, openId);
+        }
+    }
+
+    /**
+     * 按 QQ 互联 OpenID 查询统一账号
+     *
+     * @param con 数据库连接，由调用方关闭
+     * @param openId 经 QQ 互联服务端确认的 OpenID
+     * @return 对应的统一账号，未绑定时返回 null
+     * @throws SQLException 查询失败
+     */
+    public static UnifiedAccountDTO findByQqConnect(Connection con, String openId) throws SQLException {
+        if (openId == null || openId.isBlank()) return null;
+        try (var ps = con.prepareStatement("SELECT * FROM `" + TABLE + "` WHERE `qq_connect_open_id`=?")) {
+            ps.setString(1, openId);
+            try (var rs = ps.executeQuery()) {
+                return rs.next() ? rowToDTO(rs) : null;
+            }
+        }
+    }
+
+    public static boolean bindQqConnect(UUID uuid, String openId) throws SQLException {
+        try (var con = DatabaseManager.getConnection()) {
+            return bindQqConnect(con, uuid, openId);
+        }
+    }
+
+    /**
+     * 为统一账号绑定 QQ 互联身份，不覆盖已有的不同绑定
+     *
+     * @param con 数据库连接，由调用方关闭
+     * @param uuid 统一账号 UUID
+     * @param openId 经 QQ 互联服务端确认的 OpenID
+     * @return 新建或已存在相同绑定时返回 true，账号不存在或绑定冲突时返回 false
+     * @throws SQLException 数据库操作失败
+     */
+    public static boolean bindQqConnect(Connection con, UUID uuid, String openId) throws SQLException {
+        if (uuid == null || openId == null || openId.isBlank() || openId.length() > 128) return false;
+        String sql = "UPDATE `" + TABLE + "` SET `qq_connect_open_id`=?, `last_update_time`=? "
+                + "WHERE `uuid`=? AND (`qq_connect_open_id` IS NULL OR `qq_connect_open_id`=?)";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, openId);
+            ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+            ps.setString(3, uuid.toString());
+            ps.setString(4, openId);
+            if (ps.executeUpdate() > 0) return true;
+        } catch (SQLException failure) {
+            if ("23000".equals(failure.getSQLState()) || "23505".equals(failure.getSQLState())) return false;
+            throw failure;
+        }
+        var existing = findByQqConnect(con, openId);
+        return existing != null && uuid.equals(existing.getUuid());
     }
 
     public static UnifiedAccountDTO findByMinecraftUuid(String mcUuid) {
@@ -279,7 +355,8 @@ public class UnifiedAccountRepository {
                 parseJson(rs.getString("permissions")),
                 rs.getString("status"),
                 rs.getTimestamp("create_time"),
-                rs.getTimestamp("last_update_time")
+                rs.getTimestamp("last_update_time"),
+                rs.getString("qq_connect_open_id")
         );
     }
 

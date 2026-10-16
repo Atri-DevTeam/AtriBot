@@ -9,7 +9,6 @@
   "docs/messages.md": "框架/用户与消息.md",
   "docs/scheduling.md": "框架/任务调度.md",
   "docs/development.md": "框架/构建与开发.md",
-  "docs/publishing.md": "框架/Maven发布.md",
   "docs/qq/README.md": "QQ官方机器人/目录.md",
   "docs/qq/bot.md": "QQ官方机器人/机器人与群资料.md",
   "docs/qq/messages/README.md": "QQ消息/目录.md",

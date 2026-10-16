@@ -47,7 +47,7 @@ public class CommandManager implements Listener {
     /**
      * 按平台查询指令，优先使用该平台的限定指令
      *
-     * @param name 指令名称，不包含前缀
+     * @param name     指令名称，不包含前缀
      * @param platform 来源平台，无平台来源可为 null
      * @return 匹配且支持该平台的指令，未找到时返回 null
      */
@@ -68,7 +68,7 @@ public class CommandManager implements Listener {
     /**
      * 同步分发已经解析的指令行
      *
-     * @param sender 指令发送者
+     * @param sender      指令发送者
      * @param commandLine 已去除前缀或完成触发词映射的指令行
      * @return 找到分发目标时返回 true，包括取消、业务禁用及执行异常；未匹配时返回 false
      */
@@ -80,7 +80,7 @@ public class CommandManager implements Listener {
      * 按当前配置和发送者平台解析文本，不执行指令
      *
      * @param sender 指令发送者
-     * @param input 已去除平台提及标记的文本，可为 null
+     * @param input  已去除平台提及标记的文本，可为 null
      * @return 可交给 dispatch 的指令行，普通消息返回 null
      */
     public static String resolveCommandLine(CommandSender sender, String input) {
@@ -100,7 +100,7 @@ public class CommandManager implements Listener {
     /**
      * 重新加载类路径中的指令声明，按主指令名保留已绑定的执行器
      *
-     * @throws IllegalStateException 指令声明读取或解析失败
+     * @throws IllegalStateException    指令声明读取或解析失败
      * @throws IllegalArgumentException 无前缀触发词等注册信息发生冲突
      */
     public static synchronized void reload() {
@@ -134,9 +134,9 @@ public class CommandManager implements Listener {
     /**
      * 注册指定所有者的扩展指令
      *
-     * @param owner 指令所有者，用于构造 owner:name 限定名称
+     * @param owner    指令所有者，用于构造 owner:name 限定名称
      * @param commands 本次注册的全部指令
-     * @throws IllegalStateException 该所有者已注册
+     * @throws IllegalStateException    该所有者已注册
      * @throws IllegalArgumentException 平台标签或无前缀触发词冲突
      */
     public static void registerPluginCommands(String owner, List<? extends ScopedCommand> commands) {
@@ -146,7 +146,7 @@ public class CommandManager implements Listener {
     /**
      * 移除指定所有者的指令，仅在清单与注册时相同时生效
      *
-     * @param owner 注册时使用的所有者
+     * @param owner    注册时使用的所有者
      * @param commands 注册时的指令清单
      */
     public static void unregisterPluginCommands(String owner, List<? extends ScopedCommand> commands) {
@@ -196,7 +196,8 @@ public class CommandManager implements Listener {
         if (commandLine == null) return;
         boolean executed = commandMap.dispatch(sender, commandLine);
         AtriProvider.getInstance().getLogRecorder().callCommandExecuted();
-        if (!executed && replyUnknown) sender.sendMessage(AtriProvider.getInstance().getBotCommand().unknownCommandMessage());
+        if (!executed && replyUnknown)
+            sender.sendMessage(AtriProvider.getInstance().getBotCommand().unknownCommandMessage());
     }
 
     @EventHandler
@@ -217,7 +218,8 @@ public class CommandManager implements Listener {
     @EventHandler
     public void onNapcatPrivateCommand(NapcatPrivateMessageEvent event) {
         if (event.getUser().isBot()
-                || Objects.equals(event.getUser().getUserId(), AtriProvider.getInstance().getSettings().getNapcatBotUin())) return;
+                || Objects.equals(event.getUser().getUserId(), AtriProvider.getInstance().getSettings().getNapcatBotUin()))
+            return;
         var sender = new NapcatSenderImpl(event.getUser(), null, event.getMessage());
         dispatchTextCommand(sender, event.getMessage().getContent(), false);
     }
@@ -253,6 +255,7 @@ public class CommandManager implements Listener {
         QQCommandSender senderUser = new QQSenderImpl(eventUser, event.getGroupId(), event.getMessage());
         dispatchTextCommand(senderUser, userInput, event.isAtBot());
     }
+
     @EventHandler
     public void onOfficialGuildAtMessageCreate(OfficialGuildAtMessageCreateEvent event) {
         if (event.getUser().isBot()) return;

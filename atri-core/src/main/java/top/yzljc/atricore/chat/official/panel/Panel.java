@@ -30,7 +30,9 @@ public final class Panel {
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 50;
 
-    /** 关联对象操作类型：add 添加，del 移除 */
+    /**
+     * 关联对象操作类型：add 添加，del 移除
+     */
     public enum TargetOp {
         ADD("add"),
         DEL("del");
@@ -46,23 +48,38 @@ public final class Panel {
         }
     }
 
-    /** 面板元素，type 支持 command / link */
-    public record PanelItem(String name, String desc, String type, boolean onlyAdmin, String link) {}
+    /**
+     * 面板元素，type 支持 command / link
+     */
+    public record PanelItem(String name, String desc, String type, boolean onlyAdmin, String link) {
+    }
 
-    /** 面板配置内容，items 最多 20 个 */
-    public record PanelData(List<PanelItem> items, String remark) {}
+    /**
+     * 面板配置内容，items 最多 20 个
+     */
+    public record PanelData(List<PanelItem> items, String remark) {
+    }
 
-    /** 面板列表项 */
+    /**
+     * 面板列表项
+     */
     public record PanelRecord(String panelId, String scope, String targetType, PanelData panel,
-                              String createdAt, String updatedAt, int version) {}
+                              String createdAt, String updatedAt, int version) {
+    }
 
-    /** 面板列表查询结果，nextCursor 为空串表示已到末页 */
-    public record PanelListResult(List<PanelRecord> records, String nextCursor, boolean isEnd) {}
+    /**
+     * 面板列表查询结果，nextCursor 为空串表示已到末页
+     */
+    public record PanelListResult(List<PanelRecord> records, String nextCursor, boolean isEnd) {
+    }
 
-    /** 面板详情，userOpenIds / groupOpenIds 仅 targetType=specific 时返回 */
+    /**
+     * 面板详情，userOpenIds / groupOpenIds 仅 targetType=specific 时返回
+     */
     public record PanelDetail(String panelId, String scope, String targetType, PanelData panel,
                               String createdAt, String updatedAt, int version,
-                              List<String> userOpenIds, List<String> groupOpenIds) {}
+                              List<String> userOpenIds, List<String> groupOpenIds) {
+    }
 
     private static String baseUrl() {
         return AtriProvider.getInstance().getSettings().getQqApiBaseUrl() + "/v2/panels";

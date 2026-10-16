@@ -10,7 +10,7 @@ export class ApiError extends Error {
     }
 }
 
-type Grant = { token: string; user: User; expiresAt: number; idleTimeoutMillis: number }
+export type Grant = { token: string; user: User; expiresAt: number; idleTimeoutMillis: number }
 type Options = {
     request: typeof fetch
     release: (token: string) => void
@@ -87,6 +87,22 @@ export class PageSession {
         } catch {
             this.end()
         }
+    }
+
+    openAuthenticated(grant: Grant) {
+        if (this.#opened || this.#ended) return
+        this.#opened = true
+        if (!grant || !/^[\w-]{43}$/.test(grant.token) || !grant.user?.userId ||
+            !Number.isFinite(grant.expiresAt) || grant.expiresAt <= this.#now() ||
+            !Number.isFinite(grant.idleTimeoutMillis) || grant.idleTimeoutMillis <= 0) {
+            this.end()
+            return
+        }
+        this.#token = grant.token
+        this.#expiresAt = grant.expiresAt
+        this.#idleMillis = grant.idleTimeoutMillis
+        this.#deadline = this.#now() + this.#idleMillis
+        this.#options.changed({phase: 'ready', user: grant.user})
     }
 
     async heartbeat() {

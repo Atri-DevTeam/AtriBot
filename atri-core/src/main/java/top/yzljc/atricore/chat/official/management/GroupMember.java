@@ -19,7 +19,7 @@ import java.util.Map;
  * @Project AtriMeow
  * @Package top.yzljc.atricore.chat.official.management
  * @Description 群成员查询与移除管理
- *
+ * <p>
  * 成员列表每页最多 30 条，接口频率限制 60 QPM；
  * 成员信息查询与批量移除接口频率限制 30 QPM，单次最多移除 20 个成员
  */
@@ -153,7 +153,7 @@ public final class GroupMember {
      * @return 移除结果，请求失败或参数无效为 null；部分失败需检查结果字段
      */
     public static RemoveMembersResult removeMembersDetailed(String groupOpenId, List<String> memberOpenIds,
-                                                             boolean addToMemberBlacklist) {
+                                                            boolean addToMemberBlacklist) {
         if (groupOpenId == null || groupOpenId.isBlank() || !validMembers(memberOpenIds)
                 || memberOpenIds.size() > MAX_MEMBERS_PER_CALL) {
             return null;
@@ -227,16 +227,26 @@ public final class GroupMember {
         return new RemoveMembersResult(response.path("remove_members_result").asText(), failOpenIds);
     }
 
-    /** 群成员列表查询结果，nextCursor 为空串表示已到末页 */
-    public record MemberListResult(List<MemberInfo> members, String nextCursor) {}
+    /**
+     * 群成员列表查询结果，nextCursor 为空串表示已到末页
+     */
+    public record MemberListResult(List<MemberInfo> members, String nextCursor) {
+    }
 
-    /** 群成员信息，memberRole 为 member/owner/admin，joinedAt 为 RFC3339 时间，unionOpenId 可能为空 */
+    /**
+     * 群成员信息，memberRole 为 member/owner/admin，joinedAt 为 RFC3339 时间，unionOpenId 可能为空
+     */
     public record MemberInfo(String memberOpenId, String username, String memberRole,
-                             boolean bot, String joinedAt, String unionOpenId) {}
+                             boolean bot, String joinedAt, String unionOpenId) {
+    }
 
-    /** 群成员移除结果，移除成功但拉黑失败时仍会保留失败的 OpenID */
+    /**
+     * 群成员移除结果，移除成功但拉黑失败时仍会保留失败的 OpenID
+     */
     public record RemoveMembersResult(String removeMembersResult, List<String> addToMemberBlacklistFailOpenIds) {
-        /** 是否移除成功且没有拉黑失败的成员 */
+        /**
+         * 是否移除成功且没有拉黑失败的成员
+         */
         public boolean success() {
             return "success".equals(removeMembersResult) && addToMemberBlacklistFailOpenIds.isEmpty();
         }

@@ -2,6 +2,10 @@
 
 [API 目录](../../README.md) · `top.yzljc.atricore.chat.official.management.JoinRequestApproval`
 
+::: important 使用前提
+加群审批需要开放平台和群主同时授权才可使用
+:::
+
 ## 处理申请
 
 ```java

@@ -82,7 +82,8 @@ public class RequestReceiver {
 
                     java.util.LinkedList<MessageSegment> segmentList = MAPPER.convertValue(
                             root.path("message"),
-                            new TypeReference<>() {}
+                            new TypeReference<>() {
+                            }
                     );
 
                     NapcatMessage message = new NapcatMessage(platform, messageId, rawMessage, time, mentionList, attachments, segmentList, root);

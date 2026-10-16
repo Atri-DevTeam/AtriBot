@@ -4,6 +4,10 @@
 
 策略管理与 [逐条审批](join-requests.md) 分开使用，策略保存、关联群、白名单更新及执行均有独立入口
 
+::: important 使用前提
+加群审批需要开放平台和群主同时授权才可使用，使用审核策略处理入群申请时同样适用
+:::
+
 ## 创建策略
 
 ```java
@@ -40,7 +44,9 @@ boolean saved = JoinApprovalStrategy.updateWhitelist(strategyId,
 | `WhitelistOp.ADD` / `DEL` | 添加或移除白名单用户 |
 | `whitelistUsers` | **QQ 号码**列表，不是用户 OpenID |
 
+::: important 标识类型与字段更新
 创建时必须且只能提供一种群标识列表，更新关联群时也应保持同一种标识。当前更新方法省略空时间及空备注，不能通过空串表达清空字段
+:::
 
 ## 查询结果
 

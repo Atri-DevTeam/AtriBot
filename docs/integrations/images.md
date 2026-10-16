@@ -21,6 +21,24 @@ String method = OpenApi.method("bot.hypixel.bedwars");
 
 `OpenApi.refresh()` 主动刷新目录，失败时抛异常并保留旧缓存。目录刷新不重发业务请求。`availableServices()` 返回服务声明的分发方式，不表示服务健康状态
 
+## 图源投稿与审核
+
+图源投稿、审核、删除和图片分发使用 UGC pic 服务，接口由 OpenAPI 目录解析，不在客户端固定版本路径
+
+| 业务键 | 用途 |
+| --- | --- |
+| `pic.upload` | 提交 `uuid`、`sourceUrl`，读取处理后的 `width`、`height`、`file_size` |
+| `pic.status` | 同步 `PENDING`、`REVIEWED`、`DENIED` 审核状态 |
+| `pic.delete` | 删除图片 |
+| `pic.delivery` | 查询当前可用的分发地址 |
+| `pic.image` | 获取图片本体，与响应中的 `api_url` 对应 |
+
+鉴权使用项目统一的 `atribot-key-secret`，对应 UGC 的 `atri.atribot-key.secret`。`image-source.enabled` 控制投稿入口，`pending-limit` 控制每位用户的待审数量。原 `image-source.token`、`api-url`、`view-base-url` 不再使用，服务统一由 `ugc-api-url` 指定，该地址需要能被 WebUI 浏览器访问
+
+机器人默认按 UGC 返回的 COS → CNB → API 顺序选用已就绪地址，不缓存 COS 签名或 CNB 地址前缀。传入非 QQ 官方平台时直接使用 API 地址。WebUI 列表、预览和原图链接始终使用 `pic.image`，不调用分发查询，也不使用 COS/CNB 地址
+
+本地审核记录仍保存在原图源表，远端操作确认成功后才更新本地状态。历史图片需在 UGC 的 pic 存储目录中保留原 UUID，本次接口调整不迁移图片文件。个人背景继续使用独立的 `bot.background.*` 接口
+
 ## 本地资源配置
 
 [RS](../../src/main/java/top/yzljc/atribot/configuration/RS.java) 按完整键名读取 `request.json` 中的资源地址：

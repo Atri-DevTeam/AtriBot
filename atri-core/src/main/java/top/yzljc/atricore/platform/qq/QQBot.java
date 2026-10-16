@@ -26,8 +26,11 @@ import java.util.regex.Pattern;
 @Slf4j
 public final class QQBot {
 
-    /** 注意，这个B玩意是union_id不是user_openid，可能为null */
-    @Nullable public static String BOT_UNIONID;
+    /**
+     * 注意，这个B玩意是union_id不是user_openid，可能为null
+     */
+    @Nullable
+    public static String BOT_UNIONID;
 
     public static String BOT_AVATAR_URL;
 
@@ -37,7 +40,8 @@ public final class QQBot {
 
     public static String BOT_WELCOME_MSG;
 
-    @Nullable public static String BOT_UIN;
+    @Nullable
+    public static String BOT_UIN;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 

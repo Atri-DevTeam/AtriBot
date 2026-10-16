@@ -54,7 +54,9 @@ Webhook 路径必须以 `/` 开头且不能等于 `/`，无效值回退到默认
 | `napcat.queue-bytes` | `16777216` | 待处理事件字节预算 |
 | `napcat.workers` | `8` | 消费工作线程数，范围为 1～64 |
 
+::: important Napcat 开关与回调路由
 `napcat.enabled` 不控制 Provider 的 `POST /` 路由是否挂载，该路由始终用于接收 Napcat HTTP 上报
+:::
 
 ## 线程与队列
 
@@ -87,8 +89,12 @@ var latest = AtriProvider.getInstance().getSettings();
 
 全部解析成功后替换配置对象，读取或校验失败时抛出 `IllegalStateException` 并保留旧对象，重复 YAML 键不被接受
 
+::: note 配置对象与文件
 `AtriSettings` 是可修改的数据对象，链式设置只影响内存，不保存到 YAML，也不会重建既有服务，调用方不应长期缓存重载前的对象
+:::
 
+::: warning 重载不等于重启
 连接参数、端口、平台开关、回调路径及线程队列容量变更后需要重启，配置重载本身不切换现有连接或路由
+:::
 
 Provider 默认返回 `CoreConfig` 的当前对象，线程与事件队列也直接读取默认配置；只覆盖 `getSettings()` 不能替代所有底层配置来源

@@ -47,7 +47,9 @@ future.whenComplete((sentId, failure) -> {
 
 ## 结果与错误
 
+::: important 消息 ID 与结束状态
 返回值是最近一次成功发送得到的消息 ID。某次发送返回空结果时可能返回此前的 ID，因此非 null 不能单独证明结束状态已提交
+:::
 
 平台拒绝可能抛出 `QQMessageSendException`，异步入口以异常完成表示；空内容、缺少来源或部分解析失败可以返回 null。应同时处理异常和空结果，错误类型见 [发送约定](conventions.md)
 

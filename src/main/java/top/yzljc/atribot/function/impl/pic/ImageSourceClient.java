@@ -1,21 +1,23 @@
 package top.yzljc.atribot.function.impl.pic;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.ImageSourceRepository;
-import top.yzljc.atricore.service.request.HttpService;
+import top.yzljc.atribot.service.request.BizResponse;
+import top.yzljc.atribot.service.request.OpenApi;
+import top.yzljc.atribot.service.request.Requests;
 import top.yzljc.atribot.utils.HashUtils;
-
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import static top.yzljc.atricore.utils.StringUtils.isBlankOrNullLiteral;
 
@@ -24,38 +26,30 @@ import static top.yzljc.atricore.utils.StringUtils.isBlankOrNullLiteral;
  * @ClassName ImageSourceClient
  * @Created_at 2026/07/21
  * @Project AtriMeow
- * @Package top.yzljc.atribot.function.official.imagesource
+ * @Package top.yzljc.atribot.function.impl.pic
  */
 @Slf4j
 public class ImageSourceClient {
-
-    /** 单张投稿允许读取的最大字节数，超过直接判失败，避免撑爆内存 */
     private static final long MAX_BYTES = 20L * 1024 * 1024;
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
-    private static volatile String cnbImageBaseUrl;
 
     public static String fetchAndHash(String url) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(TIMEOUT)
-                    .GET()
-                    .build();
-            HttpResponse<byte[]> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            var request = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT).GET().build();
+            var response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.warn("拉取投稿图片失败: status={}, url={}", response.statusCode(), url);
                 return null;
             }
             byte[] body = response.body();
-            if (body == null || body.length == 0) {
-                log.warn("拉取投稿图片得到空响应: url={}", url);
-                return null;
-            }
-            if (body.length > MAX_BYTES) {
-                log.warn("投稿图片超过大小上限: size={}, url={}", body.length, url);
+            if (body == null || body.length == 0 || body.length > MAX_BYTES) {
+                log.warn("投稿图片为空或超过大小上限: url={}", url);
                 return null;
             }
             return HashUtils.sha256Hex(body);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
         } catch (Exception e) {
             log.warn("拉取投稿图片异常: url={}", url, e);
             return null;
@@ -63,283 +57,144 @@ public class ImageSourceClient {
     }
 
     /**
-     * 把投稿上报给远端图床。
+     * 将投稿交给 UGC pic 服务下载并保存，上传成功后仍处于待审核状态
      *
-     * <p>uuid 由上传端（也就是这里）生成并先行落库，远端只做接收，不回传 uuid。
-     * body 约定：{@code {uuid, uploader, time, hash, ...}} —— <b>不带审核状态</b>，
-     * 库里的 review_status 只服务于 Bot 端 WebUI 展示与审核。
-     *
-     * <p>响应体与本项目的 {@code Result} 同构，以 {@code status} 判定：200 成功，400 上传失败。
-     *
-     * @return 上报结果；远端未启用时视为成功，便于本地独立调试
+     * @param dto 已生成图片 UUID 的投稿记录
+     * @return UGC 处理后的尺寸和文件大小，服务未启用或请求失败时返回失败结果
      */
     public static UploadResult upload(ImageSourceDTO dto) {
-        Config config = Config.getInstance();
-        String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base)) {
-            log.info("图源远端未启用，跳过上报: id={}", dto.getId());
-            return UploadResult.success();
-        }
-        String url = joinPath(base, "upload");
-
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("uuid", dto.getImageUuid());
-        body.put("uploader", dto.getUploaderId());
-        body.put("time", dto.getCreateTime() != null ? dto.getCreateTime().getTime() : System.currentTimeMillis());
-        body.put("hash", dto.getHash());
-        body.put("uploaderName", dto.getUploaderName());
-        body.put("platform", dto.getPlatform());
-        body.put("groupId", dto.getGroupId());
-        body.put("sourceUrl", dto.getSourceUrl());
-        body.put("fileName", dto.getFileName());
-        body.put("contentType", dto.getContentType());
-        body.put("width", dto.getWidth());
-        body.put("height", dto.getHeight());
-        body.put("size", dto.getFileSize());
-
+        if (!Config.getInstance().isImageSourceEnabled()) return UploadResult.fail("图源投稿未启用");
         try {
-            JsonNode response = HttpService.postJson(url, body, authHeaders(config));
-            if (response == null) {
-                log.warn("图源上报无响应: id={}, uuid={}", dto.getId(), dto.getImageUuid());
-                return UploadResult.fail("远端无响应");
-            }
-            int status = response.path("status").asInt(-1);
-            if (status == 200) {
-                log.info("图源上报成功: id={}, uuid={}", dto.getId(), dto.getImageUuid());
-                JsonNode data = response.path("data");
-                return UploadResult.success(
-                        firstPositiveInt(data, "weight", "width"),
-                        firstPositiveInt(data, "height"),
-                        firstPositiveLong(data, "filesize", "fileSize", "size")
-                );
-            }
-            String message = response.path("message").asText("");
-            log.warn("图源上报被远端拒绝: id={}, uuid={}, status={}, message={}",
-                    dto.getId(), dto.getImageUuid(), status, message);
-            return UploadResult.fail(isBlankOrNullLiteral(message) ? "远端拒绝接收图片" : message);
+            return upload(dto, OpenApi.get("pic.upload"), authHeaders());
         } catch (Exception e) {
-            log.warn("图源上报异常: id={}", dto.getId(), e);
-            return UploadResult.fail("远端连接失败");
+            log.warn("图源上传失败: id={}", dto.getId(), e);
+            return UploadResult.fail("图源服务暂不可用");
         }
+    }
+
+    static UploadResult upload(ImageSourceDTO dto, String endpoint, String... headers) {
+        var response = Requests.post(endpoint, Map.of("uuid", dto.getImageUuid(), "sourceUrl", dto.getSourceUrl()), headers);
+        if (!response.isSuccess()) {
+            log.warn("图源上传失败: id={}, code={}", dto.getId(), response.bizCode());
+            return UploadResult.fail(response.message());
+        }
+        JsonNode data = response.data();
+        if (data == null || !dto.getImageUuid().equals(data.path("uuid").asText())
+                || data.path("width").asInt() <= 0 || data.path("height").asInt() <= 0 || data.path("file_size").asLong() <= 0) {
+            return UploadResult.fail("图源服务返回的图片信息无效");
+        }
+        return new UploadResult(true, "", data.path("width").asInt(), data.path("height").asInt(), data.path("file_size").asLong());
     }
 
     public record UploadResult(boolean ok, String message, int width, int height, long fileSize) {
-        public static UploadResult success() {
-            return success(0, 0, 0L);
-        }
-
-        public static UploadResult success(int width, int height, long fileSize) {
-            return new UploadResult(true, "", width, height, fileSize);
-        }
-
-        public static UploadResult fail(String message) {
-            return new UploadResult(false, message, 0, 0, 0L);
-        }
+        public static UploadResult fail(String message) { return new UploadResult(false, message, 0, 0, 0L); }
     }
 
     public static RemoteResult delete(ImageSourceDTO dto) {
-        Config config = Config.getInstance();
-        String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base) || isBlankOrNullLiteral(dto.getImageUuid())) {
-            return RemoteResult.success();
-        }
-
+        if (isBlankOrNullLiteral(dto.getImageUuid())) return RemoteResult.fail("图片 UUID 缺失");
         try {
-            JsonNode response = HttpService.sendDeleteRequest(
-                    joinPath(joinPath(base, "delete"), dto.getImageUuid()), authHeaders(config));
-            if (response == null) {
-                log.warn("远端图源删除无响应: id={}, uuid={}", dto.getId(), dto.getImageUuid());
-                return RemoteResult.fail("远端无响应");
-            }
-            int status = response.path("status").asInt(-1);
-            if (status == 200) {
-                log.info("远端图源删除成功: id={}, uuid={}", dto.getId(), dto.getImageUuid());
-                return RemoteResult.success();
-            }
-            String message = response.path("message").asText("");
-            log.warn("远端图源删除失败: id={}, uuid={}, status={}, message={}",
-                    dto.getId(), dto.getImageUuid(), status, message);
-            return RemoteResult.fail(isBlankOrNullLiteral(message) ? "远端拒绝删除图片" : message);
+            return remoteResult(Requests.delete(OpenApi.get("pic.delete", "uuid", dto.getImageUuid()), authHeaders()));
         } catch (Exception e) {
-            log.warn("远端图源删除异常: id={}, uuid={}", dto.getId(), dto.getImageUuid(), e);
-            return RemoteResult.fail("远端连接失败");
+            log.warn("远端图源删除失败: id={}", dto.getId(), e);
+            return RemoteResult.fail("图源服务暂不可用");
         }
     }
 
     /**
-     * 审核状态变更：POST {@code <api-url>/status/<uuid>}，body {@code {"status": ...}}。
+     * 同步 UGC 审核状态，由远端控制图片是否进入随机图池
      *
-     * <p>远端据此把图片移动到对应目录：PENDING -> pending/，REVIEWED -> 主目录，
-     * DENIED -> reject/。审核通过/拒绝/撤销统一走这里，主目录只保留过审图，
-     * {@code /public/acg} 随机取图自然只命中已通过审核的图。
+     * @param dto 待变更的投稿记录
+     * @param status 目标审核状态
+     * @return 远端确认结果，失败时调用方不得更新本地审核状态
      */
     public static RemoteResult setStatus(ImageSourceDTO dto, ImageReviewStatus status) {
-        Config config = Config.getInstance();
-        String base = config.getImageSourceApiUrl();
-        if (!config.isImageSourceEnabled() || isBlankOrNullLiteral(base) || isBlankOrNullLiteral(dto.getImageUuid())) {
-            return RemoteResult.success();
-        }
-
+        if (isBlankOrNullLiteral(dto.getImageUuid())) return RemoteResult.fail("图片 UUID 缺失");
         try {
-            JsonNode response = HttpService.postJson(joinPath(joinPath(base, "status"), dto.getImageUuid()),
-                    Map.of("status", status.name()), authHeaders(config));
-            if (response == null) {
-                log.warn("远端图源审核状态变更无响应: id={}, uuid={}, status={}",
-                        dto.getId(), dto.getImageUuid(), status);
-                return RemoteResult.fail("远端无响应");
-            }
-            int code = response.path("status").asInt(-1);
-            if (code == 200) {
-                log.info("远端图源审核状态已变更: id={}, uuid={}, status={}",
-                        dto.getId(), dto.getImageUuid(), status);
-                return RemoteResult.success();
-            }
-            String message = response.path("message").asText("");
-            log.warn("远端图源审核状态变更失败: id={}, uuid={}, status={}, code={}, message={}",
-                    dto.getId(), dto.getImageUuid(), status, code, message);
-            return RemoteResult.fail(isBlankOrNullLiteral(message) ? "远端审核状态变更失败" : message);
+            return remoteResult(Requests.post(OpenApi.get("pic.status", "uuid", dto.getImageUuid()),
+                    Map.of("status", status.name()), authHeaders()));
         } catch (Exception e) {
-            log.warn("远端图源审核状态变更异常: id={}, uuid={}", dto.getId(), dto.getImageUuid(), e);
-            return RemoteResult.fail("远端连接失败");
+            log.warn("远端图源审核状态变更失败: id={}", dto.getId(), e);
+            return RemoteResult.fail("图源服务暂不可用");
         }
+    }
+
+    static RemoteResult remoteResult(BizResponse<JsonNode> response) {
+        return response.isSuccess() ? new RemoteResult(true, "") : RemoteResult.fail(response.message());
     }
 
     public record RemoteResult(boolean ok, String message) {
-        public static RemoteResult success() {
-            return new RemoteResult(true, "");
-        }
-
-        public static RemoteResult fail(String message) {
-            return new RemoteResult(false, message);
-        }
+        public static RemoteResult fail(String message) { return new RemoteResult(false, message); }
     }
 
-//    /**
-//     * 调试用迁移函数
-//     */
-//    public static void migrateUnreviewedToDirs() {
-//        List<ImageSourceDTO> unreviewed = ImageSourceRepository.findUnreviewedWithUuid();
-//        if (unreviewed.isEmpty()) {
-//            log.info("没有未审核/已拒绝的投稿需要迁移");
-//            return;
-//        }
-//
-//        log.info("开始迁移未审核/已拒绝图源: 共 {} 张", unreviewed.size());
-//        int ok = 0;
-//        int failed = 0;
-//        for (ImageSourceDTO dto : unreviewed) {
-//            ImageReviewStatus status = ImageReviewStatus.of(dto.getReviewStatus());
-//            RemoteResult result = setStatus(dto, status);
-//            if (result.ok()) {
-//                ok++;
-//                log.info("迁移成功: id={}, uuid={}, status={}", dto.getId(), dto.getImageUuid(), status);
-//            } else {
-//                failed++;
-//                log.warn("迁移失败: id={}, uuid={}, status={}, reason={}",
-//                        dto.getId(), dto.getImageUuid(), status, result.message());
-//            }
-//        }
-//        log.info("未审核/已拒绝图源迁移完成: 共 {} 张，成功 {} 张，失败 {} 张", unreviewed.size(), ok, failed);
-//    }
+    public static ImageDAO randomImage() { return randomImage(null); }
 
-    public static ImageDAO randomImage() {
+    public static ImageDAO randomImage(Platform platform) {
         ImageSourceDTO dto = ImageSourceRepository.findRandomReviewed();
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
         int width = dto.getProcessedWidth() > 0 ? dto.getProcessedWidth() : dto.getWidth();
         int height = dto.getProcessedHeight() > 0 ? dto.getProcessedHeight() : dto.getHeight();
-        return new ImageDAO(deliveryUrl(dto), width, height);
+        boolean apiOnly = platform != null && !platform.isOfficialQQPlatform();
+        return new ImageDAO(apiOnly ? viewUrl(dto) : deliveryUrl(dto), width, height);
     }
 
-    public static ImageDAO getRandomImage() {
-        return randomImage();
+    public static ImageDAO getRandomImage() { return randomImage(); }
+
+    public static ImageDAO getRandomImage(Platform platform) { return randomImage(platform); }
+
+    /**
+     * 查询当前可用的分发地址，不缓存可能过期的 COS 签名或远端副本状态
+     *
+     * @param dto 已审核的投稿记录
+     * @return UGC 选定的分发地址，查询失败时使用图片 API 地址
+     */
+    public static String deliveryUrl(ImageSourceDTO dto) {
+        String fallback = viewUrl(dto);
+        if (isBlankOrNullLiteral(dto.getImageUuid())) return fallback;
+        try {
+            var response = Requests.get(OpenApi.get("pic.delivery", "uuid", dto.getImageUuid()), authHeaders());
+            if (response.isSuccess() && response.data() != null) {
+                return deliveryUrl(response.data(), Config.getInstance().getUgcApiUrl(), fallback);
+            }
+            log.warn("查询图源分发失败，使用 API 地址: uuid={}, code={}", dto.getImageUuid(), response.bizCode());
+        } catch (Exception e) {
+            log.warn("查询图源分发失败，使用 API 地址: uuid={}", dto.getImageUuid(), e);
+        }
+        return fallback;
+    }
+
+    static String deliveryUrl(JsonNode data, String baseUrl, String fallback) {
+        for (String field : new String[]{"url", "api_url"}) {
+            String value = data.path(field).asText("");
+            if (isBlankOrNullLiteral(value)) continue;
+            try {
+                URI uri = URI.create(value.startsWith("/") && !value.startsWith("//")
+                        ? baseUrl.replaceAll("/+$", "") + value : value);
+                if (("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                        && uri.getHost() != null && uri.getUserInfo() == null) return uri.toString();
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return fallback;
     }
 
     /**
-     * 远端请求地址标识
+     * 获取与 UGC api_url 对应的图片本体接口，不调用分发查询
+     *
+     * @param dto 投稿记录
+     * @return WebUI 使用的 API 地址，无图片 UUID 或目录不可用时返回 null
      */
-    public static String deliveryUrl(ImageSourceDTO dto) {
-        Config config = Config.getInstance();
-        String base = config.getImageSourceApiUrl();
-        String uuid = dto.getImageUuid();
-        if (isBlankOrNullLiteral(uuid)) {
-            return viewUrl(dto);
-        }
-
-        String cnbBaseUrl = cnbImageBaseUrl;
-        if (!isBlankOrNullLiteral(cnbBaseUrl)) {
-            return cnbBaseUrl + uuid;
-        }
-        if (isBlankOrNullLiteral(base)) {
-            return viewUrl(dto);
-        }
-
-        try {
-            JsonNode resp = HttpService.sendGetRequest(
-                    joinPath(joinPath(base, "deliver"), uuid), authHeaders(config));
-            if (resp != null && resp.path("status").asInt() == 200) {
-                JsonNode data = resp.path("data");
-                String url = data.path("url").asText(null);
-                String way = data.path("way").asText(null);
-                if ("cnb".equalsIgnoreCase(way)) {
-                    String baseUrl = data.path("base_url").asText(null);
-                    if (!isBlankOrNullLiteral(baseUrl)) {
-                        cnbImageBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-                    }
-                    if (!isBlankOrNullLiteral(url)) {
-                        return url;
-                    }
-                }
-                if ("oss".equalsIgnoreCase(way) && !isBlankOrNullLiteral(url)) {
-                    return url;
-                }
-            }
-        } catch (Exception e) {
-            log.warn("查询图源下发路线失败，按本机地址发送: uuid={}", uuid, e);
-        }
-        return viewUrl(dto);
-    }
-
-    /** 本机图源地址。WebUI 列表用它，不走调度也不该为每张缩略图多打一次请求 */
     public static String viewUrl(ImageSourceDTO dto) {
-        String base = Config.getInstance().getImageSourceViewBaseUrl();
-        if (!isBlankOrNullLiteral(base) && !isBlankOrNullLiteral(dto.getImageUuid())) {
-            return base.endsWith("/") ? base + dto.getImageUuid() : base + "/" + dto.getImageUuid();
+        if (isBlankOrNullLiteral(dto.getImageUuid())) return null;
+        try {
+            return OpenApi.get("pic.image", "uuid", dto.getImageUuid());
+        } catch (Exception e) {
+            log.warn("图源图片接口不可用: uuid={}", dto.getImageUuid(), e);
+            return null;
         }
-        return dto.getSourceUrl();
     }
 
-    private static String[] authHeaders(Config config) {
-        String token = config.getImageSourceToken();
-        if (isBlankOrNullLiteral(token)) {
-            return new String[0];
-        }
-        return new String[]{"Authorization", "Bearer " + token};
-    }
-
-    private static String joinPath(String base, String value) {
-        String encoded = URLEncoder.encode(value, StandardCharsets.UTF_8);
-        return base.endsWith("/") ? base + encoded : base + "/" + encoded;
-    }
-
-    private static int firstPositiveInt(JsonNode node, String... fields) {
-        for (String field : fields) {
-            int value = node.path(field).asInt(0);
-            if (value > 0) {
-                return value;
-            }
-        }
-        return 0;
-    }
-
-    private static long firstPositiveLong(JsonNode node, String... fields) {
-        for (String field : fields) {
-            long value = node.path(field).asLong(0L);
-            if (value > 0) {
-                return value;
-            }
-        }
-        return 0L;
+    private static String[] authHeaders() {
+        String token = Config.getInstance().getAtribotKeySecret();
+        return isBlankOrNullLiteral(token) ? new String[0] : new String[]{"Authorization", "Bearer " + token};
     }
 }

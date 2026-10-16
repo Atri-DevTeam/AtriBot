@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLException;
 
 /**
  * @Author YZ_Ljc_
@@ -89,6 +90,25 @@ public class UnifiedAuthentication {
             }
         }
         return cachePut(UnifiedAccountRepository.findByQqUserUin(uin));
+    }
+
+    public static AtriAccount findByQqConnect(String openId) throws SQLException {
+        return cachePut(UnifiedAccountRepository.findByQqConnect(openId));
+    }
+
+    /**
+     * 将已验证的 QQ 互联身份绑定到官机用户的统一账号
+     *
+     * @param userOpenId 通过私聊一次性凭证确认的官机用户 OpenID
+     * @param username 新建统一账号时使用的用户名
+     * @param openId 经 QQ 互联服务端确认的 OpenID
+     * @return 新建或已存在相同绑定时返回 true，绑定冲突时返回 false
+     * @throws SQLException 统一账号创建或绑定失败
+     */
+    public static synchronized boolean bindQqConnect(String userOpenId, String username, String openId) throws SQLException {
+        var account = ensureByQqUserOpenId(userOpenId, username);
+        if (account == null) throw new SQLException("统一账号创建失败");
+        return refreshAfterUpdate(account.uuid(), UnifiedAccountRepository.bindQqConnect(account.uuid(), openId));
     }
 
     public static AtriAccount findByMinecraftUuid(String mcUuid) {
@@ -207,6 +227,7 @@ public class UnifiedAuthentication {
                 || query.equals(account.username())
                 || query.equals(account.qqUserOpenId())
                 || query.equals(account.qqUserUin())
+                || query.equals(account.qqConnectOpenId())
                 || query.equalsIgnoreCase(account.minecraftUuid());
     }
 

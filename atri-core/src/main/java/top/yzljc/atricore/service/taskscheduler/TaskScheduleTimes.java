@@ -33,7 +33,7 @@ public final class TaskScheduleTimes {
      * 计算严格晚于当前基准时间的下一执行时点
      *
      * @param schedule 周期计划
-     * @param now 用于计算的本地时间
+     * @param now      用于计算的本地时间
      * @return 下一执行时点，恰好位于边界时选择下一个周期
      */
     public static LocalDateTime nextRunTime(TaskSchedule schedule, LocalDateTime now) {

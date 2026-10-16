@@ -18,7 +18,9 @@ var future = AtriProvider.getInstance().getChatService()
         .sendGroupMessageAsync(groupOpenId, request);
 ```
 
+::: caution 手动管理回复序号
 手动构造请求时由调用方负责消息类型、回复来源、序号和组件之间的配合。同一来源重复回复不应始终使用固定序号，常规回复优先使用 GroupChat 等高层方法
+:::
 
 ## MessageBody 字段
 
@@ -31,7 +33,8 @@ var future = AtriProvider.getInstance().getChatService()
 | markdown | markdown | Markdown 对象 |
 | keyboard | keyboard | 按钮键盘对象 |
 | promptKeyboard | prompt_keyboard | C2C 提示键盘对象 |
-| ark / card | ark / card | 对应卡片对象 |
+| ark | ark | Ark 卡片对象，被动消息需私域机器人 |
+| card | card | 图文卡片对象 |
 | media | media | 上传后的媒体信息 |
 | inputNotify | input_notify | 输入状态对象 |
 | messageReference | message_reference | 可见引用对象 |
@@ -43,7 +46,9 @@ var future = AtriProvider.getInstance().getChatService()
 | recordAttachments | 不发送 | 供记录层使用的附件信息 |
 | maintenanceReply | 不发送 | 维护提示内部标记，普通业务不应设置 |
 
+::: important 对象字段的序列化
 Object 字段可使用 DTO 或 Map；已经序列化的 JSON 字符串仍会作为字符串发送。Card 和 Ark 放入字段时使用各自 `toObject()`，Embed 使用 `toPayload()`，键盘使用 `toKeyboardObject()`
+:::
 
 ## ChatService 方法
 

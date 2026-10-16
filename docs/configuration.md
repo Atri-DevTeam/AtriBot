@@ -68,9 +68,10 @@ Discord 与 KOOK 已移至独立插件，主配置不再读取 `discord`、`kook
 | --- | --- | --- |
 | `qq.official-webui-token` | WebUI 登录密钥 | [WebUI 与 Miniapp](web.md) |
 | `miniapp.enabled`、`miniapp.base-url` | Miniapp 开关与外部访问地址 | [WebUI 与 Miniapp](web.md) |
+| `dashboard.enabled`、`dashboard.base-url`、`dashboard.callback-url`、`dashboard.qq-connect.*` | QQ 互联个人面板开关、页面域名、独立回调地址和网站应用凭据，依赖 `miniapp.enabled` | [QQ 互联登录](web.md#qq-互联登录) |
 | `ai.<provider>.*` | AI 模型、地址、密钥与超时 | [AI 与文本审查](integrations/ai.md) |
 | `censor.*`、`minecraft-moderation.*` | 外部审查服务 | [功能索引](features.md) |
-| `image-source.*` | 图片投稿与图源 | [功能索引](features.md) |
+| `image-source.*` | 图源投稿开关、待审数量，复用 `ugc-api-url` 和 `atribot-key-secret` | [图源投稿与审核](integrations/images.md#图源投稿与审核) |
 | `function.*` | 推送及业务服务 | [功能索引](features.md) |
 | `sound.*` | Minecraft 音效资源与答题时间 | [功能索引](features.md) |
 | `email.*`、`verify.*` | 邮件监听、Minecraft 验证 | [功能索引](features.md) |

@@ -1,10 +1,52 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PageSession, takeEntry, type State } from '../src/session.ts'
+import { takeDashboardEntry } from '../src/dashboard.ts'
 
 const ticket = 'a'.repeat(43)
 const token = 'b'.repeat(43)
 const grant = () => ({ token, user: { userId: 'owner', displayName: '名字' }, expiresAt: Date.now() + 7200000, idleTimeoutMillis: 90000 })
+
+test('dashboard binding parameters are removed while navigation survives and duplicate proofs are rejected', () => {
+  const url = new URL(`https://bot.example.com/dashboard/?userOpenId=owner&ticket=${ticket}&_nav=0&_nav_alpha=0`)
+  const entry = takeDashboardEntry(url)
+  assert.equal(entry.valid, true)
+  assert.equal(entry.binding, true)
+  assert.equal(entry.userOpenId, 'owner')
+  assert.equal(entry.ticket, ticket)
+  assert.equal(url.search, '?_nav=0&_nav_alpha=0')
+  assert.equal(takeDashboardEntry(new URL(`https://bot.example.com/dashboard/?userOpenId=owner&ticket=${ticket}&ticket=${ticket}`)).valid, false)
+  assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/?userOpenId=owner')).valid, false)
+  assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/')).binding, false)
+})
+
+test('dashboard grants use private APIs without exchanging a bot ticket and are revoked on exit', async () => {
+  let phase = '', revoked = ''
+  const session = new PageSession({
+    request: async (url, init) => {
+      assert.equal(String(url).endsWith('/profile'), true)
+      assert.equal((init?.headers as Record<string, string>).Authorization, `Bearer ${token}`)
+      return Response.json({name: 'owner'})
+    }, changed: state => { phase = state.phase }, release: token => { revoked = token }
+  })
+  session.openAuthenticated(grant())
+  await session.open('owner', ticket)
+  assert.equal(phase, 'ready')
+  assert.deepEqual(await session.get('profile'), {name: 'owner'})
+  session.end()
+  assert.equal(revoked, token)
+  session.openAuthenticated(grant())
+  assert.equal(phase, 'expired')
+  assert.equal(await session.get('profile'), null)
+})
+
+test('expired dashboard grants never expose an identity or make private requests', () => {
+  let phase = ''
+  const session = new PageSession({request: async () => { throw new Error('Unexpected request') },
+    changed: state => { phase = state.phase }, release: () => {}})
+  session.openAuthenticated({...grant(), expiresAt: Date.now() - 1})
+  assert.equal(phase, 'expired')
+})
 
 test('moderation permission denial preserves the session while session failures still expire it', async () => {
   let code = 'MODERATION_FORBIDDEN', phase = '', status = 403

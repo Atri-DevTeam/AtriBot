@@ -48,19 +48,27 @@ public final class CoreConfig {
      *
      * @return 共享配置服务，首次访问时加载配置
      */
-    public static CoreConfig getInstance() { return Holder.INSTANCE; }
+    public static CoreConfig getInstance() {
+        return Holder.INSTANCE;
+    }
+
     /**
      * 获取最近一次成功加载的配置对象
      *
      * @return 当前配置对象，重载后应重新获取；修改该对象不会写回文件
      */
-    public AtriSettings getSettings() { return settings; }
+    public AtriSettings getSettings() {
+        return settings;
+    }
+
     /**
      * 获取配置文件路径
      *
      * @return 经过规范化的绝对路径
      */
-    public Path getPath() { return file; }
+    public Path getPath() {
+        return file;
+    }
 
     /**
      * 重新读取框架配置，全部解析成功后替换配置对象；失败时保留原配置

@@ -24,6 +24,9 @@ import top.yzljc.atribot.auth.LoginService;
 import top.yzljc.atribot.miniapp.MiniappCommand;
 import top.yzljc.atribot.miniapp.MiniappRouter;
 import top.yzljc.atribot.miniapp.MiniappSessions;
+import top.yzljc.atribot.dashboard.DashboardCommand;
+import top.yzljc.atribot.dashboard.DashboardRouter;
+import top.yzljc.atribot.dashboard.DashboardSessions;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -139,6 +142,7 @@ public class Atri extends AtriProvider {
     public static final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean disabled = new AtomicBoolean(false);
     private final MiniappSessions miniappSessions = new MiniappSessions();
+    private final DashboardSessions dashboardSessions = new DashboardSessions();
     @Getter
     private final PluginManager pluginManager = new PluginManager(Path.of("plugins"));
     /**
@@ -204,6 +208,7 @@ public class Atri extends AtriProvider {
             WebUIRouter.register(server);
             PluginHttpRoutes.attach(server);
             MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
+            DashboardRouter.register(server, dashboardSessions, miniappSessions);
 
             SaSignManager.getConfig().setSecretKey(Config.getInstance().getSaSignSecretKey());
         } catch (RuntimeException | Error failure) {
@@ -351,6 +356,7 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("ua").setExecutor(new UACommand());
         CommandManager.getCommand("login").setExecutor(new LoginCommand());
         CommandManager.getCommand("profile").setExecutor(new MiniappCommand(miniappSessions));
+        CommandManager.getCommand("dashboard").setExecutor(new DashboardCommand(dashboardSessions));
         CommandManager.getCommand("bind").setExecutor(new McBindCommand());
         CommandManager.getCommand("bvbind").setExecutor(new BilibiliBindCommand());
         CommandManager.getCommand("wz").setExecutor(new HypixelTNTWizardsCommand());
@@ -488,6 +494,7 @@ public class Atri extends AtriProvider {
         }
 
         close();
+        dashboardSessions.close();
         miniappSessions.close();
         soundCommand.close();
         groupProfileRefreshBatcher.close();

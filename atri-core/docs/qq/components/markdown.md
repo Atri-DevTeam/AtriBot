@@ -32,7 +32,11 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), conte
 | `enterCommand(command, display, reference)` | 显式指定引用标记 |
 | `colored(color, text)` | 以 `media.HexColor` 指定颜色的文字 |
 
-这些方法返回 `String`，不发送消息。指令和显示文字长度分别不能超过 100 个 Java 字符；方法不负责对任意输入进行 HTML 属性转义或 URL 编码
+这些方法返回 `String`，不发送消息
+
+::: caution 指令标签的输入处理
+指令和显示文字长度分别不能超过 100 个 Java 字符；方法不负责对任意输入进行 HTML 属性转义或 URL 编码
+:::
 
 `HexColor` 是保存颜色字符串的 record，可使用 `new HexColor("#336699")` 或预定义的 `RED`、`BLUE`、`GRAY` 等常量，`value()` 读取颜色值；构造器不验证颜色格式
 

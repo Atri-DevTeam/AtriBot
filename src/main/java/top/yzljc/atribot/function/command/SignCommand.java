@@ -100,7 +100,7 @@ public class SignCommand implements CommandExecutor, Listener {
                 return;
             }
 
-            var image = ImageSourceClient.getRandomImage();
+            var image = ImageSourceClient.getRandomImage(sender.getPlatform());
             if (image == null || image.url() == null || image.url().isBlank()) {
                 String text = "打卡成功\n" +
                         "你已累计打卡 " + result.totalCount() + " 次！\n" +

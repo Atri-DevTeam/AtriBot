@@ -36,7 +36,8 @@ public class BotEvents {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private record ParsedMessageReference(String msgIdx, MessageReference reference) {}
+    private record ParsedMessageReference(String msgIdx, MessageReference reference) {
+    }
 
     // 获取引用消息索引
     private static ParsedMessageReference parseMessageReference(JsonNode eventData) {
@@ -149,7 +150,7 @@ public class BotEvents {
                     }
                 }
 
-                if  (!btns.isEmpty()) {
+                if (!btns.isEmpty()) {
                     sbs = new OfficialC2CMessageCreateEvent.SwitchButtons(btns);
                 }
             }
@@ -391,7 +392,8 @@ public class BotEvents {
                     verifyMethod
             );
 
-            if (applySource != null && applySource.equals(RequestSource.INVITED) && invitedBy != null) event.setInvitedBy(invitedBy);
+            if (applySource != null && applySource.equals(RequestSource.INVITED) && invitedBy != null)
+                event.setInvitedBy(invitedBy);
             if (verifyMethod == VerifyMethod.VERIFY_MESSAGE) event.setVerifyMessage(verifyMessage);
             if (verifyMethod == VerifyMethod.ADMIN_REVIEW_QA) event.setVerifyQAList(reviewQas);
             var t = eventData.path("auto_approved").path("strategy_id").asText(null);

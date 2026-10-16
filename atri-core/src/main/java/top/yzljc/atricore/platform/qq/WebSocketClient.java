@@ -28,7 +28,9 @@ import java.util.TimerTask;
 @Slf4j
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
-    /** 两种接入方式共用事件 ID 去重缓存，保留 1 分钟后自动过期 */
+    /**
+     * 两种接入方式共用事件 ID 去重缓存，保留 1 分钟后自动过期
+     */
     private static final Cache<String, Boolean> EVENT_ID_CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(1))
             .build();

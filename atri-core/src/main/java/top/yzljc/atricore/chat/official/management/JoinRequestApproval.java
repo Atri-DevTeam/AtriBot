@@ -27,7 +27,9 @@ public final class JoinRequestApproval {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    /** 审批动作：approve 通过，decline 拒绝 */
+    /**
+     * 审批动作：approve 通过，decline 拒绝
+     */
     public enum Op {
         APPROVE("approve"),
         DECLINE("decline");
@@ -43,7 +45,9 @@ public final class JoinRequestApproval {
         }
     }
 
-    /** 列表分页：默认单页条数与最大条数 */
+    /**
+     * 列表分页：默认单页条数与最大条数
+     */
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 100;
 
@@ -213,17 +217,29 @@ public final class JoinRequestApproval {
                 verifyInfo);
     }
 
-    /** 入群申请列表查询结果，nextCursor 为空串表示已到末页 */
-    public record JoinRequestListResult(List<JoinRequestData> list, String nextCursor) {}
+    /**
+     * 入群申请列表查询结果，nextCursor 为空串表示已到末页
+     */
+    public record JoinRequestListResult(List<JoinRequestData> list, String nextCursor) {
+    }
 
-    /** 单条入群申请，applySource 取值 self_apply 主动申请 / invited 被邀请 */
+    /**
+     * 单条入群申请，applySource 取值 self_apply 主动申请 / invited 被邀请
+     */
     public record JoinRequestData(String joinRequestId, String riskTips, String unionOpenId, String memberOpenId,
                                   String username, String applyAt, String applySource, String invitedBy,
-                                  boolean bot, VerifyInfoData verifyInfo) {}
+                                  boolean bot, VerifyInfoData verifyInfo) {
+    }
 
-    /** 用户入群验证方式，method 取值 verify_message / admin_review_qa */
-    public record VerifyInfoData(String method, String verifyMessage, List<ReviewQa> reviewQaList) {}
+    /**
+     * 用户入群验证方式，method 取值 verify_message / admin_review_qa
+     */
+    public record VerifyInfoData(String method, String verifyMessage, List<ReviewQa> reviewQaList) {
+    }
 
-    /** 管理员设置的问答 */
-    public record ReviewQa(String question, String answer) {}
+    /**
+     * 管理员设置的问答
+     */
+    public record ReviewQa(String question, String answer) {
+    }
 }

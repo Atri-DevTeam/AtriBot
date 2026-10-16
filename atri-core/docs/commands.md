@@ -23,7 +23,9 @@ commands:
 | `aliases` | 带指令前缀的别名 |
 | `prefixless-aliases` | 无需前缀的完整触发词，不允许包含空白字符 |
 
+::: info 无前缀指令的匹配方式
 无前缀触发词按消息的第一个空白分隔词查找，不执行全量正则匹配，重复触发词冲突会使注册失败
+:::
 
 声明资源必须对 `CommandManager` 的类加载器可见，外部文件不会自动按路径读取
 
@@ -60,11 +62,15 @@ boolean onCommand(CommandSender sender, Command command, String label, String[] 
 
 `/p one two` 对应主指令 `ping`、标签 `p` 和参数 `[one, two]`
 
+::: note 参数拆分
 参数按空白字符拆分，引号不会将多个词合并为一个参数
+:::
 
 执行器返回 true 表示已经处理，返回 false 时 `CommandFeature` 发送非空的 `usage` 提示
 
+::: important 分发结果与业务结果
 `CommandManager.dispatch()` 的返回值含义不同：true 表示已找到并处理分发入口，也包括业务禁用、事件取消或执行异常，不代表业务成功
+:::
 
 ## 判断与主动分发
 

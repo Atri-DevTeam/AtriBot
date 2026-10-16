@@ -31,7 +31,13 @@ import top.yzljc.atricore.platform.Identifier;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @Author YZ_Ljc_
@@ -44,6 +50,78 @@ import java.util.List;
 public class GroupJoinWelcome implements Listener, CommandExecutor {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final long MERGE_WINDOW_MILLIS = 5_000;
+    private static final int MAX_MEMBERS_PER_MESSAGE = 20;
+    private final Map<WelcomeKey, LinkedHashMap<String, OfficialGroupMemberAddEvent>> pending = new HashMap<>();
+    private final BiConsumer<Runnable, Long> schedule;
+    private final Consumer<WelcomeBatch> send;
+
+    public GroupJoinWelcome() {
+        this((task, delay) -> Atri.getInstance().getScheduler().runTaskLaterAsynchronously(task, delay),
+                GroupJoinWelcome::sendWelcome);
+    }
+
+    GroupJoinWelcome(BiConsumer<Runnable, Long> schedule, Consumer<WelcomeBatch> send) {
+        this.schedule = schedule;
+        this.send = send;
+    }
+
+    private record WelcomeKey(String groupId, ObjectNode config) {}
+
+    record WelcomeBatch(ObjectNode config, List<OfficialGroupMemberAddEvent> events) {}
+
+    /**
+     * 同群、同配置的成员在首条事件后的固定窗口内合并，重复成员只保留最新事件
+     *
+     * @param event 成员入群事件
+     * @param config 已解析的欢迎正文和按钮配置
+     */
+    void enqueueWelcome(OfficialGroupMemberAddEvent event, ObjectNode config) {
+        WelcomeKey key = new WelcomeKey(event.getGroupOpenId(), config.deepCopy());
+        synchronized (pending) {
+            var members = pending.get(key);
+            if (members != null) {
+                members.put(event.getMemberOpenId(), event);
+                return;
+            }
+            members = new LinkedHashMap<>();
+            members.put(event.getMemberOpenId(), event);
+            pending.put(key, members);
+            try {
+                schedule.accept(() -> flushWelcome(key), MERGE_WINDOW_MILLIS);
+            } catch (RuntimeException e) {
+                pending.remove(key);
+                log.error("调度加群欢迎失败，群ID {}", key.groupId(), e);
+            }
+        }
+    }
+
+    private void flushWelcome(WelcomeKey key) {
+        List<OfficialGroupMemberAddEvent> events;
+        synchronized (pending) {
+            var members = pending.remove(key);
+            if (members == null) return;
+            events = List.copyOf(members.values());
+        }
+        for (int start = 0; start < events.size(); start += MAX_MEMBERS_PER_MESSAGE) {
+            var batch = events.subList(start, Math.min(start + MAX_MEMBERS_PER_MESSAGE, events.size()));
+            try {
+                send.accept(new WelcomeBatch(key.config(), batch));
+            } catch (Exception e) {
+                log.error("发送合并加群欢迎失败，群ID {}", key.groupId(), e);
+            }
+        }
+    }
+
+    private static void sendWelcome(WelcomeBatch batch) {
+        var event = batch.events().getLast();
+        if (!OfficialGroups.isFunctionEnabled(event.getGroupOpenId(), "member_add_welcome")) return;
+        String mentions = batch.events().stream().map(member -> Markdown.at(member.getMemberOpenId()))
+                .collect(Collectors.joining(" "));
+        String text = batch.config().path("text").asText("");
+        String message = mentions + (text.isBlank() ? "" : " " + text);
+        event.sendMessage(TC.md(message), buildWelcomeKeyboard(batch.config()));
+    }
 
     private static boolean hasCustomWelcome(ObjectNode config) {
         if (config == null) {
@@ -283,10 +361,7 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
                 return;
             }
         }
-        String text = welcomeConfig.path("text").asText("");
-        Object keyboard = buildWelcomeKeyboard(welcomeConfig);
-        String message = Markdown.at(event.getMemberOpenId()) + (text.isBlank() ? "" : " " + text);
-        event.sendMessage(TC.md(message), keyboard);
+        enqueueWelcome(event, welcomeConfig);
     }
 
     @Override

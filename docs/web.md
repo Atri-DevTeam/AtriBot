@@ -1,4 +1,4 @@
-# WebUI 与 Miniapp
+# WebUI、Miniapp 与个人面板
 
 [文档目录](README.md) · [开发与构建](development.md)
 
@@ -14,6 +14,70 @@
 | 认证 | 管理密钥验证后签发 Cookie 会话 | 入口票据交换内存 Bearer Token |
 
 两套认证独立。页面隐藏控件不能代替后端授权
+
+`/dashboard/` 为 Miniapp 的 QQ 互联登录入口，复用个人资料、互动记录和群管理页面，不使用 WebUI 管理会话
+
+## QQ 互联登录
+
+在 QQ 互联中创建网站应用，使用网站应用的 AppID 和 AppKey。此处的凭据与 QQ 机器人的 AppID、Secret 相互独立
+
+在运行目录的 `config.yml` 中添加以下配置，修改后重启服务：
+
+```yaml
+miniapp:
+  enabled: true
+  base-url: "https://bot.example.com"
+
+dashboard:
+  enabled: true
+  base-url: "https://bot.example.com"
+  callback-url: "https://api.bot.example.com/auth/qq/callback"
+  qq-connect:
+    app-id: "网站应用 AppID"
+    app-key: "网站应用 AppKey"
+```
+
+| 项目 | 地址 |
+| --- | --- |
+| 页面入口 | `https://bot.example.com/dashboard/` |
+| QQ 互联回调地址 | `https://api.bot.example.com/auth/qq/callback` |
+| 页面域名下的授权完成接口 | `https://bot.example.com/dashboard/auth/complete` |
+| 登录接口前缀 | `/dashboard/api/auth` |
+| 页面资源及业务接口 | `/atrimeow/profile/` |
+
+将示例域名替换为实际域名。`base-url` 填写页面域名，`callback-url` 填写与 QQ 互联后台登记一致的完整回调 URL，路径固定为 `/auth/qq/callback`，不带尾斜杠或查询参数。`callback-url` 留空时使用页面域名下的 `/auth/qq/callback`
+
+两个域名的上述路径均需转发至同一个机器人服务实例，保留原始路径；登录接口不得缓存。独立回调域名收到授权结果后，以 302 跳转至页面域名的 `/dashboard/auth/complete`，在此校验发起授权的浏览器 Cookie、交换授权码并签发登录 Cookie，最后返回 `/dashboard/`。无需设置跨子域 Cookie
+
+### 绑定与登录
+
+1. 用户在 QQ 机器人私聊中发送 `/dash` 或 `/dashboard`
+2. 机器人返回带 `userOpenId` 和一次性 `ticket` 的入口链接，默认保留 `_nav_alpha=0`
+3. 用户点击页面中的「QQ 登录并绑定」，跳转 QQ 互联授权
+4. 服务端验证授权结果后建立绑定，返回 `/dashboard/`
+5. 后续可直接访问 `/dashboard/`，使用同一 QQ 账号登录
+
+入口票据有效期为 5 分钟，在用户点击登录时消费，仅可使用一次。页面读取票据后从地址栏移除；QQ 授权状态由服务端随机生成，有效期 10 分钟，并校验发起授权时的浏览器 Cookie。`_nav` 和 `_nav_alpha` 会在授权完成后保留，不能用于指定跳转地址
+
+QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接比较。绑定写入现有 `unified_account` 统一账号表：`qq_user_open_id` 保存官机用户标识，`qq_connect_open_id` 保存 QQ 互联 OpenID。绑定时优先使用已有统一账号，没有账号时自动创建，保留原有 UUID、权限及其他账号关联
+
+一个统一账号绑定一个 QQ 互联身份，同一 OpenID 不能绑定多个统一账号。重复确认相同绑定允许通过，其他冲突不覆盖原记录。现有数据库启动时补充 `qq_connect_open_id` 字段及唯一索引，无需新增绑定表。AppID 和 AppKey 只在网站配置中填写
+
+未绑定的 QQ 账号只能查看绑定指引。用户 ID 不作为独立登录凭据，个人资料与群配置均从已验证会话读取身份；群主身份、`group.moderation` 和自定义审查词权限仍由原业务接口检查
+
+### 会话
+
+登录 Cookie 使用 HttpOnly、SameSite=Lax 和 HTTPS Secure 属性，最长有效期 12 小时。页面通过同源 POST 接口领取内存 Bearer Token，复用 Miniapp 的 2 小时页面会话及 90 秒空闲限制。退出 QQ 登录会同步使该登录签发的页面会话失效
+
+重启服务后需要重新登录，数据库中的绑定关系保留。AppKey 仅在服务端使用，前端不持有 QQ access_token，也不将登录凭证写入 localStorage 或 sessionStorage
+
+`/profile` 仍使用原来的临时票据，不要求 QQ 互联登录
+
+### 本地验证
+
+在 `miniapp/` 执行 `npm run dev`，可分别访问 `/dashboard/` 和 `/atrimeow/profile/`。开发服务器将登录、回调和 Miniapp API 转发至 `VITE_API_TARGET`，默认 `http://127.0.0.1:1234`。本地页面会话测试要求 `dashboard.base-url` 与浏览器访问地址一致；真实 QQ 授权使用互联后台登记的公开域名与回调地址
+
+授权流程参考 [QQ 互联 Authorization Code](https://wiki.connect.qq.com/使用authorization_code获取access_token) 与 [获取用户 OpenID](https://wiki.connect.qq.com/获取用户openid_oauth2-0)。登录按钮使用 [QQ 互联官方标识](https://wiki.connect.qq.com/wp-content/uploads/2016/12/Connect_logo_1.png)
 
 ## WebUI
 

@@ -8,7 +8,7 @@ import lombok.Getter;
  * @Created_at 2026/07/24
  * @Project AtriMeow
  * @Package top.yzljc.atricore.platform.qq
- *
+ * <p>
  * QQ 官方 API 富媒体文件类型
  */
 @Getter

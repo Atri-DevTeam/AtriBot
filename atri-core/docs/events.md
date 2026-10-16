@@ -58,7 +58,9 @@ EventManager.getInstance().registerEvents(listener);
 | 异常 | 反射调用中的处理器异常被记录，继续处理后续监听器 |
 | 业务过滤 | 由监听器检查，例如 `shouldIgnore()` |
 
+::: important 事件类型精确匹配
 监听 `Event` 基类不会收到全部子类事件。同一优先级下不要依赖处理器的先后次序
+:::
 
 ## 优先级与取消
 
@@ -84,7 +86,9 @@ public void onCommand(UserRunCommandEvent event) {
 
 上述方法放入 `Listener` 实现类，示例限制 `restricted` 指令仅供拥有指定权限的用户执行
 
+::: note 取消标记的作用
 取消标记由事件生产者决定如何处理。例如文本指令分发检查 `UserRunCommandEvent` 的取消状态后决定是否执行命令；取消某个事件不会自动撤回消息或停止所有业务
+:::
 
 当前支持取消的事件如下，其余事件不实现 `Cancellable`：
 
@@ -98,7 +102,9 @@ public void onCommand(UserRunCommandEvent event) {
 
 事件管理器不切换线程，也不保证所有事件都在同一线程执行。平台入口可能先将数据提交到工作队列，再调用 `callEvent()`；同一监听器可能同时处理多个事件
 
+::: warning 耗时处理与事件取消
 网络请求、长时间计算和数据库批处理会阻塞当前事件线程。需要异步处理时，先提取必要数据，再提交到受控执行器。不能在异步任务中延迟修改取消状态，并期望影响已经结束的同步分发
+:::
 
 任务异常、队列容量及生命周期见 [任务调度](scheduling.md)
 
