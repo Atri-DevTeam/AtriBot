@@ -71,6 +71,7 @@ public final class MiniappRouter {
                          MiniappGroupService groups, MiniappModerationService moderation) {
         server.before("/atrimeow/profile", ctx -> guard(ctx, enabled));
         server.before("/atrimeow/profile/*", ctx -> guard(ctx, enabled));
+        MiniappPriceAlertRoutes.register(server, sessions);
         server.get("/atrimeow/profile", MiniappRouter::index);
         server.get("/atrimeow/profile/", MiniappRouter::index);
 

@@ -25,4 +25,8 @@ import './features/chat/styles/chat.css'
 import './features/loot/styles/loots.css'
 import './features/settings/styles/bot-settings.css'
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App).use(router)
+router.isReady().then(() => app.mount('#app')).catch(error => {
+    console.error('WebUI 初始化失败', error)
+    window.dispatchEvent(new Event('webui:startup-error'))
+})

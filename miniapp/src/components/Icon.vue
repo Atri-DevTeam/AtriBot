@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{ name: string }>()
 const paths: Record<string, string> = {
+  check: 'M5 12l4 4L19 6',
+  search: 'M21 21l-4.5-4.5M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 10v7M12 7h.01',
   mail: 'M3 5h18v14H3zM3 7l9 7 9-7',
   book: 'M12 6a8 8 0 0 0-9-1v15a8 8 0 0 1 9 1 8 8 0 0 1 9-1V5a8 8 0 0 0-9 1ZM12 6v15',

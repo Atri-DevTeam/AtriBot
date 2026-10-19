@@ -1,4 +1,5 @@
 import { createServer } from 'vite'
+import {fileURLToPath} from 'node:url'
 
 // In-process Vite avoids leaving npm/cmd server children running on Windows.
 export default async function setup() {
@@ -16,5 +17,9 @@ export default async function setup() {
     }]
   })
   await server.listen()
-  return async () => { await server.close() }
+  const webuiRoot = fileURLToPath(new URL('../../../webui', import.meta.url))
+  const webui = await createServer({root: webuiRoot, configFile: `${webuiRoot}/vite.config.js`,
+    server: {host: '127.0.0.1', port: 5175, strictPort: true}})
+  await webui.listen()
+  return async () => { await Promise.all([server.close(), webui.close()]) }
 }

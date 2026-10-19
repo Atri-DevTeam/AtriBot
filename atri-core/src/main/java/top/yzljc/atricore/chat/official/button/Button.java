@@ -5,6 +5,7 @@ import top.yzljc.atricore.platform.Identifier;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @Author YZ_Ljc_
@@ -28,6 +29,16 @@ public class Button {
     private Modal modal;
     private String buttonGroupId;
     private String unsupportedTip = "当前客户端版本不支持此按钮";
+
+    public Button(String displayText, String data, ButtonStyle style) {
+        this.buttonId = "btn_" + UUID.randomUUID().toString().replace("-", "").substring(0, 5);
+        this.displayText = displayText;
+        this.visitedDisplayText = displayText;
+        this.data = data;
+        this.style = style;
+        this.actionType = ButtonType.COMMAND;
+        this.modal = new Modal(Identifier.UNDEFINED);
+    }
 
     public Button(String buttonId, String displayText, String data, ButtonStyle style, ButtonType actionType) {
         this.buttonId = buttonId;

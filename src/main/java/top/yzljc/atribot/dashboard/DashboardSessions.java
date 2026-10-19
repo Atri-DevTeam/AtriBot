@@ -1,6 +1,8 @@
 package top.yzljc.atribot.dashboard;
 
 import top.yzljc.atribot.miniapp.MiniappSessions;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atricore.auth.AccountStatus;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,6 +12,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 一次性绑定凭证、OAuth 状态与 Dashboard 登录会话
@@ -21,6 +24,7 @@ import java.util.Map;
  * @Package top.yzljc.atribot.dashboard
  */
 public final class DashboardSessions implements AutoCloseable {
+    public static final String SESSION_COOKIE = "dashboard_session";
     public static final int LOGIN_SECONDS = 12 * 60 * 60;
     public static final int STATE_SECONDS = 10 * 60;
     private static final int CAPACITY = 4096;
@@ -34,7 +38,7 @@ public final class DashboardSessions implements AutoCloseable {
 
     private record Ticket(MiniappSessions.Identity identity, String appId, String botAppId, long expiresAt) {}
     public record Pending(MiniappSessions.Identity binding, String appId, String botAppId, String navigation, long expiresAt) {}
-    public record Login(MiniappSessions.Identity identity, String appId, String botAppId, long expiresAt) {}
+    public record Login(MiniappSessions.Identity identity, String qqConnectOpenId, String avatarUrl, String appId, String botAppId, long expiresAt) {}
 
     public DashboardSessions() { this(Clock.systemUTC()); }
     DashboardSessions(Clock clock) { this.clock = clock; }
@@ -51,7 +55,7 @@ public final class DashboardSessions implements AutoCloseable {
     }
 
     /**
-     * 在用户主动发起授权时消费绑定凭证，并建立独立的 OAuth 状态
+     * 在发起授权时消费绑定凭证，并建立独立的 OAuth 状态
      *
      * @param userOpenId 待绑定的官机用户标识，普通登录时为 null
      * @param ticket 一次性绑定凭证，普通登录时为 null
@@ -83,18 +87,29 @@ public final class DashboardSessions implements AutoCloseable {
         return states.remove(state);
     }
 
-    public synchronized String login(MiniappSessions.Identity identity, DashboardSettings settings) {
+    public synchronized String login(MiniappSessions.Identity identity, String qqConnectOpenId, String avatarUrl, DashboardSettings settings) {
         cleanup();
+        if (qqConnectOpenId == null || !qqConnectOpenId.matches("[A-Za-z0-9_-]{1,128}"))
+            throw new IllegalArgumentException("QQ identity response invalid");
         if (closed || logins.size() >= CAPACITY) throw new IllegalStateException("LOGIN_BUSY");
         String token = token();
-        logins.put(token, new Login(identity, settings.appId(), settings.botAppId(), clock.millis() + LOGIN_SECONDS * 1000L));
+        logins.put(token, new Login(identity, qqConnectOpenId, avatarUrl, settings.appId(), settings.botAppId(), clock.millis() + LOGIN_SECONDS * 1000L));
         return token;
     }
 
     public synchronized Login authenticate(String token, DashboardSettings settings) {
         cleanup();
         Login login = token == null || closed || !settings.available() ? null : logins.get(token);
-        return login != null && login.appId().equals(settings.appId()) && login.botAppId().equals(settings.botAppId()) ? login : null;
+        if (login == null || !login.appId().equals(settings.appId()) || !login.botAppId().equals(settings.botAppId())) return null;
+        if (login.identity() != null) {
+            var account = UnifiedAuthentication.getCachedQqUserAccount(login.identity().userId());
+            if (account == null || account.status() != AccountStatus.ACTIVE
+                    || !Objects.equals(account.qqConnectOpenId(), login.qqConnectOpenId())) {
+                logins.remove(token);
+                return null;
+            }
+        }
+        return login;
     }
 
     public synchronized void revoke(String token) { if (token != null) logins.remove(token); }

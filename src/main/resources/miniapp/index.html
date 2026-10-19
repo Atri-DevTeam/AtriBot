@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#F4F5F0" />
-    <title>&#8203;</title>
-    <script type="module" crossorigin src="/atrimeow/profile/assets/index-Cg8eIkKO.js"></script>
-    <link rel="stylesheet" crossorigin href="/atrimeow/profile/assets/index-CFPz9K9A.css">
+    <title>个人中心</title>
+    <script>
+      (() => {
+        const qq = new URLSearchParams(location.search).getAll('qq')
+        const title = /^\/dashboard\/?$/.test(location.pathname) ? '个人中心' : '个人面板'
+        document.title = qq.length === 1 && qq[0] === '1' ? '\u200b' : title
+      })()
+    </script>
+    <script type="module" crossorigin src="/atrimeow/profile/assets/index-BHsUwyMN.js"></script>
+    <link rel="stylesheet" crossorigin href="/atrimeow/profile/assets/index-Bu6jldV5.css">
   </head>
   <body>
     <div id="app"></div>

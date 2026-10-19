@@ -99,7 +99,9 @@ public class OfficialSendLogRepository {
         }
     }
 
-    /** Neighbours use the same (create_time, id) ordering as the list, without search filters. */
+    /**
+     * Neighbours use the same (create_time, id) ordering as the list, without search filters.
+     */
     public static SendLogContext findContext(long id, int radius) throws SQLException {
         try (var con = DatabaseManager.getConnection()) {
             OfficialSendLogDTO anchor;
@@ -124,7 +126,7 @@ public class OfficialSendLogRepository {
     }
 
     private static List<OfficialSendLogDTO> findNeighbours(java.sql.Connection con, OfficialSendLogDTO anchor,
-                                                          int limit, boolean newer) throws SQLException {
+                                                           int limit, boolean newer) throws SQLException {
         String comparison = newer ? ">" : "<";
         String direction = newer ? "ASC" : "DESC";
         String sql = "SELECT " + SUMMARY_COLUMNS + " FROM `official_send_log` WHERE `create_time` " + comparison +
@@ -143,7 +145,8 @@ public class OfficialSendLogRepository {
         }
     }
 
-    public record SendLogContext(List<OfficialSendLogDTO> items, boolean hasNewer, boolean hasOlder) {}
+    public record SendLogContext(List<OfficialSendLogDTO> items, boolean hasNewer, boolean hasOlder) {
+    }
 
     public static OfficialSendLogDTO findById(long id) {
         String sql = "SELECT * FROM `official_send_log` WHERE `id` = ?";

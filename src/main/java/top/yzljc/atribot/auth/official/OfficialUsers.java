@@ -1,20 +1,21 @@
 package top.yzljc.atribot.auth.official;
 
 import top.yzljc.atricore.auth.official.*;
+import top.yzljc.atricore.auth.AccountStatus;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.repo.C2CRepository;
-import top.yzljc.atribot.database.repo.UserGameDataRepository;
+import top.yzljc.atribot.database.repo.BotUserDataRepository;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * @Author YZ_Ljc_
@@ -36,17 +37,10 @@ public class OfficialUsers {
 
     public static void init() {
         unsupportedKeyboardCache.clear();
-        // 建表
         C2CRepository.initTable();
-        UserGameDataRepository.init();
-
-        // 加载缓存
-        List<C2CRepository.PermissionRow> rows = C2CRepository.loadAll();
-        for (C2CRepository.PermissionRow row : rows) {
-            UnifiedRole role = UnifiedRole.fromString(row.role());
-            Set<String> permissions = parsePermissions(row.permissions());
-            cache.put(row.userOpenId(), new UserData(row.userOpenId(), role, permissions,
-                    row.isBlocked(), row.isIgnored(), row.c2cPush()));
+        cache.clear();
+        for (var row : C2CRepository.loadAll()) {
+            cache.put(row.userOpenId(), new UserData(row.userOpenId(), row.c2cPush()));
         }
         log.info("OfficialUsers 缓存加载完成，共 {} 条", cache.size());
     }
@@ -55,7 +49,7 @@ public class OfficialUsers {
      * 获取权限数据（缓存中没有则返回默认值，不写库）
      */
     public static UserData getData(String userOpenId) {
-        return cache.getOrDefault(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, false, true));
+        return cache.getOrDefault(userOpenId, new UserData(userOpenId, true));
     }
 
     /**
@@ -73,54 +67,59 @@ public class OfficialUsers {
     }
 
     /**
-     * 注册 C2C 用户到缓存和数据库（默认 USER 角色，空权限）
+     * 注册私聊用户并补全统一账号，已有权限与状态保持不变
+     *
+     * @param userOpenId QQ 用户 OpenID
      */
     public static void registerUser(String userOpenId) {
-        setPermissionGroup(userOpenId, UnifiedRole.USER, Set.of());
+        if (UnifiedAuthentication.ensureByQqUserOpenId(userOpenId, null) != null && C2CRepository.registerUser(userOpenId)) {
+            cache.putIfAbsent(userOpenId, new UserData(userOpenId, true));
+        }
     }
 
     /**
-     * 查询 is_blocked，仅读缓存，没有就返回 false
+     * 从统一账号缓存判断用户是否处于拉黑状态
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 状态为 SUSPENDED 时返回 true
      */
     public static boolean isBlocked(String userOpenId) {
-        UserData data = cache.get(userOpenId);
-        return data != null && data.isBlocked();
+        return UnifiedAuthentication.getQqUserStatus(userOpenId) == AccountStatus.SUSPENDED;
     }
 
     /**
-     * 查询 is_ignored，仅读缓存，没有就返回 false
+     * 从统一账号缓存判断是否应静默忽略用户交互，已注销账号同样忽略
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 状态为 BANNED 或 DELETED 时返回 true
      */
     public static boolean isIgnored(String userOpenId) {
-        UserData data = cache.get(userOpenId);
-        return data != null && data.isIgnored();
+        AccountStatus status = UnifiedAuthentication.getQqUserStatus(userOpenId);
+        return status == AccountStatus.BANNED || status == AccountStatus.DELETED;
     }
 
     /**
-     * 设置 is_blocked。如果用户不在缓存中则自动补全并写入数据库
+     * 设置统一账号的拉黑状态，解除时仅恢复当前处于拉黑状态的账号
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @param blocked 是否拉黑
+     * @return 状态保存成功时返回 true
      */
-    public static void setBlocked(String userOpenId, boolean blocked) {
-        if (C2CRepository.setBlocked(userOpenId, blocked)) {
-            UserData existing = cache.get(userOpenId);
-            if (existing != null) {
-                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), blocked, existing.isIgnored(), existing.c2cPush()));
-            } else {
-                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), blocked, false, true));
-            }
-        }
+    public static boolean setBlocked(String userOpenId, boolean blocked) {
+        return UnifiedAuthentication.setQqUserStatus(userOpenId,
+                blocked ? AccountStatus.SUSPENDED : AccountStatus.ACTIVE, blocked ? null : AccountStatus.SUSPENDED);
     }
 
     /**
-     * 设置 is_ignored。如果用户不在缓存中则自动补全并写入数据库
+     * 设置统一账号的屏蔽状态，解除时仅恢复当前处于屏蔽状态的账号
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @param ignored 是否屏蔽
+     * @return 状态保存成功时返回 true
      */
-    public static void setIgnored(String userOpenId, boolean ignored) {
-        if (C2CRepository.setIgnored(userOpenId, ignored)) {
-            UserData existing = cache.get(userOpenId);
-            if (existing != null) {
-                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(), existing.isBlocked(), ignored, existing.c2cPush()));
-            } else {
-                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, ignored, true));
-            }
-        }
+    public static boolean setIgnored(String userOpenId, boolean ignored) {
+        return UnifiedAuthentication.setQqUserStatus(userOpenId,
+                ignored ? AccountStatus.BANNED : AccountStatus.ACTIVE, ignored ? null : AccountStatus.BANNED);
     }
 
     /**
@@ -131,17 +130,11 @@ public class OfficialUsers {
     }
 
     /**
-     * 设置私聊主动消息授权状态。如果用户不在缓存中则自动补全并写入数据库
+     * 更新已有私聊用户的主动消息授权，不创建私聊记录
      */
     public static void setC2CPush(String userOpenId, boolean c2cPush) {
         if (C2CRepository.setC2CPush(userOpenId, c2cPush)) {
-            UserData existing = cache.get(userOpenId);
-            if (existing != null) {
-                cache.put(userOpenId, new UserData(userOpenId, existing.role(), existing.permissions(),
-                        existing.isBlocked(), existing.isIgnored(), c2cPush));
-            } else {
-                cache.put(userOpenId, new UserData(userOpenId, UnifiedRole.USER, Set.of(), false, false, c2cPush));
-            }
+            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush));
         }
     }
 
@@ -149,48 +142,56 @@ public class OfficialUsers {
      * 是否拥有权限节点
      */
     public static boolean hasPermission(String userOpenId, String permission) {
-        UserData data = getData(userOpenId);
-        return data.permissions().contains("*") || data.permissions().contains(permission);
+        var account = UnifiedAuthentication.getCachedQqUserAccount(userOpenId);
+        return account != null && (account.permissions().contains("*") || account.permissions().contains(permission));
     }
 
     /**
      * 是否拥有角色
      */
     public static boolean hasRole(String userOpenId, UnifiedRole role) {
-        return getData(userOpenId).role() == role;
+        return getRole(userOpenId) == role;
     }
 
     public static boolean isAdmin(String userOpenId) {
-        return getData(userOpenId).role() == UnifiedRole.ADMIN || getData(userOpenId).role == UnifiedRole.OWNER;
+        UnifiedRole role = getRole(userOpenId);
+        return role == UnifiedRole.ADMIN || role == UnifiedRole.OWNER;
     }
 
     /**
      * 获取角色
      */
     public static UnifiedRole getRole(String userOpenId) {
-        return getData(userOpenId).role();
+        var account = UnifiedAuthentication.getCachedQqUserAccount(userOpenId);
+        return account == null ? UnifiedRole.USER : account.role();
     }
 
     /**
      * 设置权限组
      */
     public static boolean setPermissionGroup(String userOpenId, UnifiedRole role, Set<String> permissions) {
-        UserData existing = cache.get(userOpenId);
-        boolean blocked = existing != null && existing.isBlocked();
-        boolean ignored = existing != null && existing.isIgnored();
-        boolean c2cPush = existing == null || existing.c2cPush();
-
-        return setProfile(userOpenId, role, permissions, blocked, ignored, c2cPush);
-    }
-
-    /** 一次保存完整用户档案；群成员无需先建立私聊关系，首次保存时自动创建用户行。 */
-    public static boolean setProfile(String userOpenId, UnifiedRole role, Set<String> permissions,
-                                     boolean blocked, boolean ignored, boolean c2cPush) {
         if (userOpenId == null || userOpenId.isBlank()) return false;
         Set<String> savedPermissions = Set.copyOf(permissions);
-        String permissionsString = String.join(",", savedPermissions);
-        if (C2CRepository.upsertFull(userOpenId, role.name(), permissionsString, blocked, ignored, c2cPush)) {
-            cache.put(userOpenId, new UserData(userOpenId, role, savedPermissions, blocked, ignored, c2cPush));
+        if (!UnifiedAuthentication.saveOfficialUserPermissions(userOpenId, role, savedPermissions)) return false;
+        return true;
+    }
+
+    /**
+     * 保存统一账号权限、状态及已有私聊授权，仅补全统一账号，不创建私聊记录
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @param role 统一账号权限组
+     * @param permissions 统一账号权限节点
+     * @param status 统一账号状态
+     * @param c2cPush 私聊主动消息设置
+     * @return 所有字段保存成功时返回 true
+     */
+    public static boolean setProfile(String userOpenId, UnifiedRole role, Set<String> permissions,
+                                     AccountStatus status, boolean c2cPush) {
+        if (userOpenId == null || userOpenId.isBlank() || status == null) return false;
+        Set<String> savedPermissions = Set.copyOf(permissions);
+        if (UnifiedAuthentication.saveOfficialUserProfile(userOpenId, role, savedPermissions, status, c2cPush)) {
+            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush));
             return true;
         }
         return false;
@@ -219,20 +220,18 @@ public class OfficialUsers {
     }
 
     /**
-     * 删除用户资料及私聊功能配置；拉黑和忽略用户保留数据。
+     * 移除私聊记录、功能订阅及对应好友缓存，保留统一账号及其他业务数据
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 私聊记录删除成功时返回 true
      */
     public static boolean removeUser(String userOpenId) {
         if (userOpenId == null || userOpenId.isBlank()) {
             log.warn("拒绝删除用户数据：用户 OpenID 为空");
             return false;
         }
-        if (isIgnored(userOpenId) || isBlocked(userOpenId)) {
-            log.warn("用户 {} 已被拉黑，保留相关数据不再清除", userOpenId);
-            return false;
-        }
         if (C2CRepository.delete(userOpenId)) {
             cache.remove(userOpenId);
-            unsupportedKeyboardCache.remove(userOpenId);
             return true;
         }
         return false;
@@ -242,7 +241,7 @@ public class OfficialUsers {
      * 获取私聊用户的功能配置 JSON（直接从数据库读取，不使用缓存）。
      */
     private static ObjectNode getFunctionConfig(String userOpenId) {
-        String jsonStr = C2CRepository.getFunctionConfigJson(userOpenId);
+        String jsonStr = BotUserDataRepository.getFunctionConfigJson(userOpenId);
         if (jsonStr != null && !jsonStr.isBlank()) {
             try {
                 return (ObjectNode) objectMapper.readTree(jsonStr);
@@ -264,7 +263,7 @@ public class OfficialUsers {
     private static boolean saveFunctionConfig(String userOpenId, ObjectNode config) {
         try {
             String jsonStr = objectMapper.writeValueAsString(config);
-            return C2CRepository.saveFunctionConfigJson(userOpenId, jsonStr);
+            return BotUserDataRepository.saveFunctionConfigJson(userOpenId, jsonStr);
         } catch (Exception e) {
             log.error("保存私聊用户 {} 的功能配置失败: {}", userOpenId, e.getMessage());
             return false;
@@ -323,7 +322,7 @@ public class OfficialUsers {
         if (PushTaskGlobalSettings.isDisabledForC2C(functionKey)) {
             return List.of();
         }
-        return C2CRepository.queryEnabledUsers(functionKey);
+        return BotUserDataRepository.queryEnabledUsers(functionKey);
     }
 
     public static FunctionInfo getFunctionInfo(String userOpenId, String functionKey) {
@@ -349,7 +348,7 @@ public class OfficialUsers {
      * 返回 JsonNode，可通过 asText()/asInt()/asBoolean() 等取值。
      */
     public static JsonNode getUserSetting(String userOpenId, String setting) {
-        String jsonStr = C2CRepository.getUserSettingsJson(userOpenId);
+        String jsonStr = BotUserDataRepository.getUserSettingsJson(userOpenId);
         if (jsonStr == null || jsonStr.isBlank()) {
             return null;
         }
@@ -370,8 +369,8 @@ public class OfficialUsers {
      */
     public static boolean setUserSetting(String userOpenId, String setting, Object data) {
         try {
-            boolean saved = C2CRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
-                    BILIBILI_UID_SETTING.equals(setting)) == C2CRepository.SettingWriteResult.SAVED;
+            boolean saved = BotUserDataRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
+                    BILIBILI_UID_SETTING.equals(setting)) == BotUserDataRepository.SettingWriteResult.SAVED;
             if (saved && UNSUPPORTED_KEYBOARD_SETTING.equals(setting)) {
                 // 写入成功后失效，下一次查询重新加载，兼容通用设置入口及并发写入
                 unsupportedKeyboardCache.remove(userOpenId);
@@ -381,13 +380,6 @@ public class OfficialUsers {
             log.error("保存用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
             return false;
         }
-    }
-
-    /**
-     * 从 game_data 读取某个游戏的 JSON；不存在返回 null，读取失败抛出异常
-     */
-    public static JsonNode getGameData(String userOpenId, String game) throws java.sql.SQLException {
-        return UserGameDataRepository.instance().read(userOpenId).get(game);
     }
 
     /**
@@ -410,23 +402,25 @@ public class OfficialUsers {
     /**
      * 关注校验通过后调用；一个用户只能首次绑定，同一个 UID 只能绑定一个用户。
      */
-    public static C2CRepository.SettingWriteResult bindBilibiliUid(String userOpenId, long uid) {
-        if (uid <= 0) return C2CRepository.SettingWriteResult.FAILED;
-        return C2CRepository.setUserSetting(userOpenId, BILIBILI_UID_SETTING, Long.toString(uid), true);
+    public static BotUserDataRepository.SettingWriteResult bindBilibiliUid(String userOpenId, long uid) {
+        if (uid <= 0) return BotUserDataRepository.SettingWriteResult.FAILED;
+        return BotUserDataRepository.setUserSetting(userOpenId, BILIBILI_UID_SETTING, Long.toString(uid), true);
     }
 
-    private static Set<String> parsePermissions(String permissionsString) {
-        if (permissionsString == null || permissionsString.isBlank()) {
-            return Set.of();
+    public record UserData(String userOpenId, boolean c2cPush) {
+        public UnifiedRole role() {
+            var account = UnifiedAuthentication.getCachedQqUserAccount(userOpenId);
+            return account == null ? UnifiedRole.USER : account.role();
         }
-        return Arrays.stream(permissionsString.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.toSet());
-    }
 
-    public record UserData(String userOpenId, UnifiedRole role, Set<String> permissions,
-                           boolean isBlocked, boolean isIgnored, boolean c2cPush) {
+        public Set<String> permissions() {
+            var account = UnifiedAuthentication.getCachedQqUserAccount(userOpenId);
+            return account == null ? Set.of() : Set.copyOf(account.permissions());
+        }
+
+        public AccountStatus status() {
+            return UnifiedAuthentication.getQqUserStatus(userOpenId);
+        }
     }
 
     public record FunctionInfo(boolean enabled, String operator, String time) {

@@ -9,7 +9,7 @@ import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
-import top.yzljc.atribot.database.repo.ImageSourceRepository;
+import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
@@ -49,7 +49,7 @@ public class PicSubmitCommand implements CommandExecutor {
         String uploaderId = qq.getUserId();
         int pendingLimit = Config.getInstance().getImageSourcePendingLimit();
         int submitCount = qq.hasPermission("atri.submit.multiple") ? images.size() : 1;
-        int pendingCount = ImageSourceRepository.countPendingByUploader(uploaderId);
+        int pendingCount = PicRepository.countPendingByUploader(uploaderId);
         if (!qq.hasPermission("atri.submit.multiple") && pendingCount + submitCount > pendingLimit) {
             qq.sendMessage("你已有 " + pendingCount + " 张投稿正在等待审核，本次投稿 " + submitCount
                     + " 张会超过 " + pendingLimit + " 张的待审上限，请减少图片或等审核后再试~");
@@ -108,13 +108,13 @@ public class PicSubmitCommand implements CommandExecutor {
             }
             dto.setHash(hash);
 
-            ImageSourceDTO duplicate = ImageSourceRepository.findByHash(hash);
+            ImageSourceDTO duplicate = PicRepository.findByHash(hash);
             if (duplicate != null) {
                 return new SubmissionResult("这张图片已经被投过稿啦（编号 " + shortId(duplicate.getId()) + "），换一张试试吧~", false);
             }
 
             // uuid 由本端生成，先落库再上报，保证 WebUI 能立即看到这条待审记录
-            String id = ImageSourceRepository.insert(dto);
+            String id = PicRepository.insert(dto);
             if (id == null) {
                 return new SubmissionResult("投稿保存失败了呢，请稍后再试！", false);
             }
@@ -123,13 +123,13 @@ public class PicSubmitCommand implements CommandExecutor {
             ImageSourceClient.UploadResult uploadResult = ImageSourceClient.upload(dto);
             if (!uploadResult.ok()) {
                 // 远端没收下，本地记录也一并回滚，否则这张图的 hash 会挡住用户重试
-                ImageSourceRepository.delete(id);
+                PicRepository.delete(id);
                 return new SubmissionResult("图片上传失败了呢" + reasonSuffix(uploadResult.message()) + "，请稍后再试一次 /投稿~", false);
             }
             dto.setProcessedWidth(uploadResult.width());
             dto.setProcessedHeight(uploadResult.height());
             dto.setProcessedFileSize(uploadResult.fileSize());
-            ImageSourceRepository.updateProcessedInfo(id, dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize());
+            PicRepository.updateProcessedInfo(id, dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize());
 
             return new SubmissionResult("投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id), true);
         } catch (Exception e) {

@@ -11,9 +11,42 @@
     <meta name="referrer" content="no-referrer" />
     <link id="webui-favicon" rel="icon" type="image/svg+xml" href="/src/assets/bot-blue.svg" />
     <title>AtriBot WebUI</title>
+    <style>
+      #webui-startup { min-height: 100dvh; display: grid; place-content: center; gap: 14px; padding: 24px; background: #f7f8fa; color: #5c6573; text-align: center; font: 14px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif }
+      #webui-startup p { margin: 0 }
+      #webui-startup a { color: #0099ff; margin: 0 10px }
+      #webui-startup [hidden] { display: none }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div id="webui-startup" role="status">
+        <p id="webui-startup-message">正在加载管理界面…</p>
+        <p id="webui-startup-actions" hidden><a href="">重新加载</a><a href="/dashboard/">返回工作台</a></p>
+        <noscript>请启用 JavaScript 后重新加载</noscript>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const qq = new URLSearchParams(location.search).getAll('qq')
+        if (qq.length === 1 && qq[0] === '1') {
+          document.documentElement.classList.add('qq-page')
+          document.title = '\u200b'
+          document.querySelector('#webui-startup-actions a[href="/dashboard/"]').href = '/dashboard/?qq=1'
+        }
+        function failed() {
+          const message = document.getElementById('webui-startup-message')
+          if (!message) return
+          message.textContent = '页面资源加载失败，请重新加载'
+          document.getElementById('webui-startup-actions').hidden = false
+        }
+        window.addEventListener('webui:startup-error', failed)
+        window.addEventListener('vite:preloadError', failed)
+        window.addEventListener('error', event => {
+          if (event.target instanceof HTMLScriptElement) failed()
+        }, true)
+      })()
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

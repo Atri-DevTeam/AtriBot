@@ -48,8 +48,6 @@ public class Config {
     @Getter
     private boolean miniappEnabled;
     @Getter
-    private String miniappBaseUrl;
-    @Getter
     private boolean dashboardEnabled;
     @Getter
     private String dashboardBaseUrl;
@@ -115,8 +113,6 @@ public class Config {
     private String verifyStrategyId;
 
     // ########## 官方机器人配置参数 ##########
-    @Getter
-    private String officialWebuiToken;
     @Getter
     private String officialOpenId;
     @Getter
@@ -222,7 +218,6 @@ public class Config {
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
             this.miniappEnabled = yaml.getBoolean("miniapp.enabled", true);
-            this.miniappBaseUrl = yaml.getString("miniapp.base-url", "");
             this.dashboardEnabled = yaml.getBoolean("dashboard.enabled", false);
             this.dashboardBaseUrl = yaml.getString("dashboard.base-url", "");
             this.dashboardCallbackUrl = yaml.getString("dashboard.callback-url", "");
@@ -273,7 +268,6 @@ public class Config {
             // ########## 官方机器人配置参数 ##########
             this.officialOpenId = yaml.getString("qq.official-openId", "null");
             this.officialUsername = yaml.getString("qq.official-username", "null");
-            this.officialWebuiToken = yaml.getString("qq.official-webui-token", "null");
             this.superAdminId = yaml.getString("qq.super_admin_id", "null");
 
             // ########## 腾讯频道 CLI（第二账号）配置参数 ##########

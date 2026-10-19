@@ -109,7 +109,7 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
     @EventHandler
     public void onC2CPushFail(OfficialC2CSendFailEvent event) {
         String userId = event.getUserId();
-        if (event.getErrorCode() == ErrorCode.NO_ACTIVE_MESSAGE_PERMISSION.getErrorCode() && userId != null) {
+        if (event.getErrorCode() == ErrorCode.NO_ACTIVE_MESSAGE_PERMISSION.getErrorCode() && userId != null && OfficialUsers.isCached(userId)) {
             OfficialUsers.setC2CPush(userId, false);
             for (var task : PushTaskCommand.getTasks()) {
                 if (task.isUserEnabled(userId)) {

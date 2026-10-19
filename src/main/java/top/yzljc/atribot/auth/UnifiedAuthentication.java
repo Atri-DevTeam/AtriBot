@@ -5,6 +5,8 @@ import top.yzljc.atricore.auth.*;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.database.UnifiedAccountDTO;
+import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.database.repo.C2CRepository;
 import top.yzljc.atribot.database.repo.UnifiedAccountRepository;
 
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.SQLException;
 
@@ -27,17 +30,133 @@ import java.sql.SQLException;
 public class UnifiedAuthentication {
 
     private static final Map<UUID, AtriAccount> cache = new ConcurrentHashMap<>();
+    private static final Map<String, AtriAccount> qqOpenIdCache = new ConcurrentHashMap<>();
 
     public static void init() {
-        UnifiedAccountRepository.init();
-        for (UnifiedAccountDTO dto : UnifiedAccountRepository.findAll()) {
-            cache.put(dto.getUuid(), dto.toAccount());
+        try (var con = DatabaseManager.getConnection()) {
+            UnifiedAccountRepository.init(con);
+            replaceCache(UnifiedAccountRepository.findAll(con));
+        } catch (SQLException e) {
+            throw new IllegalStateException("统一账号状态初始化失败", e);
         }
         log.info("[!] 统一账号缓存数据加载完成，共 {} 条", cache.size());
     }
 
+    static synchronized void replaceCache(List<UnifiedAccountDTO> accounts) {
+        cache.clear();
+        qqOpenIdCache.clear();
+        accounts.forEach(UnifiedAuthentication::cachePut);
+    }
+
+    /**
+     * 读取启动时加载并随账号更新刷新的状态索引，不触发数据库查询
+     *
+     * @param openId QQ 用户 OpenID
+     * @return 统一账号状态，未注册的用户按 ACTIVE 处理
+     */
+    public static AccountStatus getQqUserStatus(String openId) {
+        var account = getCachedQqUserAccount(openId);
+        return account == null ? AccountStatus.ACTIVE : account.status();
+    }
+
+    /**
+     * 查询已加载的 QQ 统一账号，不查询数据库
+     *
+     * @param openId QQ 用户 OpenID
+     * @return 缓存中的统一账号，未注册时返回 null
+     */
+    public static AtriAccount getCachedQqUserAccount(String openId) {
+        return openId == null ? null : qqOpenIdCache.get(openId);
+    }
+
+    /**
+     * 保存统一账号状态，事务提交后更新缓存；原状态不符合约束时保留当前状态
+     *
+     * @param openId QQ 用户 OpenID
+     * @param status 目标账号状态
+     * @param expected 原状态约束，为 null 时直接设置
+     * @return 数据库操作成功时返回 true，包括无需更改的情况
+     */
+    public static synchronized boolean setQqUserStatus(String openId, AccountStatus status, AccountStatus expected) {
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                var account = UnifiedAccountRepository.setQqUserStatus(con, openId, status, expected);
+                con.commit();
+                cachePut(account);
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                try { con.rollback(); }
+                catch (SQLException rollback) { e.addSuppressed(rollback); }
+                throw e;
+            }
+        } catch (SQLException | RuntimeException e) {
+            log.error("保存统一账号状态失败，用户 {}", openId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存统一账号权限和状态，并更新已有私聊用户的授权，不创建私聊记录
+     *
+     * @param openId QQ 用户 OpenID
+     * @param role 统一账号权限组
+     * @param permissions 统一账号权限节点
+     * @param status 统一账号状态
+     * @param c2cPush 私聊主动消息设置
+     * @return 所有字段保存成功时返回 true
+     */
+    public static synchronized boolean saveOfficialUserProfile(String openId, UnifiedRole role, Set<String> permissions,
+                                                               AccountStatus status, boolean c2cPush) {
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                C2CRepository.setC2CPush(con, openId, c2cPush);
+                UnifiedAccountRepository.setQqUserPermissions(con, openId, role, permissions);
+                var account = UnifiedAccountRepository.setQqUserStatus(con, openId, status, null);
+                con.commit();
+                cachePut(account);
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                try { con.rollback(); }
+                catch (SQLException rollback) { e.addSuppressed(rollback); }
+                throw e;
+            }
+        } catch (SQLException | RuntimeException e) {
+            log.error("保存官机用户档案及统一账号状态失败，用户 {}", openId, e);
+            return false;
+        }
+    }
+
     public static AtriAccount register(String qqUserOpenId) {
         return register(null, qqUserOpenId, null, null, UnifiedRole.USER, List.of(), AccountStatus.ACTIVE);
+    }
+
+    /**
+     * 保存统一账号权限，保留账号状态与其他平台绑定，不创建私聊记录
+     *
+     * @param openId QQ 用户 OpenID
+     * @param role 权限组
+     * @param permissions 权限节点
+     * @return 事务提交成功时返回 true
+     */
+    public static synchronized boolean saveOfficialUserPermissions(String openId, UnifiedRole role, Set<String> permissions) {
+        try (var con = DatabaseManager.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                var account = UnifiedAccountRepository.setQqUserPermissions(con, openId, role, permissions);
+                con.commit();
+                cachePut(account);
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                try { con.rollback(); }
+                catch (SQLException rollback) { e.addSuppressed(rollback); }
+                throw e;
+            }
+        } catch (SQLException | RuntimeException e) {
+            log.error("保存统一账号权限失败，用户 {}", openId, e);
+            return false;
+        }
     }
 
     public static AtriAccount register(String qqUserOpenId, String username) {
@@ -72,11 +191,8 @@ public class UnifiedAuthentication {
         if (openId == null || openId.isBlank()) {
             return null;
         }
-        for (AtriAccount account : cache.values()) {
-            if (openId.equals(account.qqUserOpenId())) {
-                return account;
-            }
-        }
+        var account = qqOpenIdCache.get(openId);
+        if (account != null) return account;
         return cachePut(UnifiedAccountRepository.findByQqUserOpenId(openId));
     }
 
@@ -193,32 +309,37 @@ public class UnifiedAuthentication {
         return refreshAfterUpdate(uuid, UnifiedAccountRepository.updateMinecraftUuid(uuid, mcUuid));
     }
 
-    public static boolean updateRole(UUID uuid, UnifiedRole role) {
+    public static synchronized boolean updateRole(UUID uuid, UnifiedRole role) {
         return refreshAfterUpdate(uuid, UnifiedAccountRepository.updateRole(uuid, role));
     }
 
-    public static boolean updatePermissions(UUID uuid, List<String> permissions) {
+    public static synchronized boolean updatePermissions(UUID uuid, List<String> permissions) {
         return refreshAfterUpdate(uuid, UnifiedAccountRepository.updatePermissions(uuid, permissions));
     }
 
-    public static boolean updateStatus(UUID uuid, AccountStatus status) {
+    public static synchronized boolean updateStatus(UUID uuid, AccountStatus status) {
         return refreshAfterUpdate(uuid, UnifiedAccountRepository.updateStatus(uuid, status));
     }
 
-    public static boolean delete(UUID uuid) {
+    public static synchronized boolean delete(UUID uuid) {
         if (UnifiedAccountRepository.delete(uuid)) {
-            cache.remove(uuid);
+            var removed = cache.remove(uuid);
+            if (removed != null && removed.qqUserOpenId() != null) qqOpenIdCache.remove(removed.qqUserOpenId(), removed);
             return true;
         }
         return false;
     }
 
-    private static AtriAccount cachePut(UnifiedAccountDTO dto) {
+    private static synchronized AtriAccount cachePut(UnifiedAccountDTO dto) {
         if (dto == null) {
             return null;
         }
         AtriAccount account = dto.toAccount();
-        cache.put(account.uuid(), account);
+        var old = cache.put(account.uuid(), account);
+        if (old != null && old.qqUserOpenId() != null && !old.qqUserOpenId().equals(account.qqUserOpenId()))
+            qqOpenIdCache.remove(old.qqUserOpenId(), old);
+        if (account.qqUserOpenId() != null && !account.qqUserOpenId().isBlank())
+            qqOpenIdCache.put(account.qqUserOpenId(), account);
         return account;
     }
 

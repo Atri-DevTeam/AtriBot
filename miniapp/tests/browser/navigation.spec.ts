@@ -24,7 +24,7 @@ test('dock switches sections without reopening the session or losing cached prof
     if (path.endsWith('/inventory/image')) { imageCalls++; return route.fulfill({ contentType: 'image/png', body: inventoryImage }) }
     return route.fulfill({ status: 204 })
   })
-  await page.goto(`/atrimeow/profile/?_nav_alpha=0&userId=owner&ticket=${'a'.repeat(43)}`)
+  await page.goto(`/atrimeow/profile/?_wwv=9983&userId=owner&ticket=${'a'.repeat(43)}`)
   const dock = page.getByRole('navigation', { name: '栏目导航' })
   const profileTab = dock.getByRole('button', { name: '我的档案' })
   const groupsTab = dock.getByRole('button', { name: '群管理' })

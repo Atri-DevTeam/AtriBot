@@ -14,7 +14,6 @@ import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.command.QQGuildCommandSender;
 import top.yzljc.atricore.command.NapcatCommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atricore.platform.qq.QQBot;
 
@@ -36,16 +35,16 @@ public class HelpCommand implements CommandExecutor {
                     "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
                     "---\n\n" +
                     "> " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡签到") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.console-logo"), 16, 16) + Markdown.enterCommand("/drawitem", "抽取随机Minecraft物品") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.grass-block"), 16, 16) + Markdown.enterCommand("/mctool", "Minecraft工具二级菜单") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.dice-result-template").replace("<id>", "6"), 16, 16) + Markdown.enterCommand("/hyp dice", "Skyblock运气测试") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + Markdown.enterCommand("/hyp", "Hypixel数据查询二级菜单") + "\n" +
-                    "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取Hypixel每日签到奖励") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.console-logo"), 16, 16) + Markdown.enterCommand("/drawitem", "抽取随机ᴍɪɴᴇᴄʀᴀғᴛ物品") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.grass-block"), 16, 16) + Markdown.enterCommand("/mctool", "ᴍɪɴᴇᴄʀᴀғᴛ工具二级菜单") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.dice-result-template").replace("<id>", "6"), 16, 16) + Markdown.enterCommand("/hyp dice", "sᴋʏʙʟᴏᴄᴋ运气测试") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + Markdown.enterCommand("/hyp", "ʜʏᴘɪxᴇʟ数据查询二级菜单") + "\n" +
+                    "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取ʜʏᴘɪxᴇʟ每日签到奖励") + "\n" +
                     "> " + Markdown.enterCommand("/rsp", "✊一场酣畅淋漓的石头剪刀布") + "\n" +
-                    "> " + Markdown.enterCommand("/mojang", "\uD83D\uDEE0查询MC验证服务器状态") + "\n" +
+                    "> " + Markdown.enterCommand("/mojang", "\uD83D\uDEE0查询ᴍᴄ验证服务器状态") + "\n" +
                     "> " + Markdown.enterCommand("/newyear", "\uD83E\uDDE8查看新年倒计时") + "\n" +
                     "> " + Markdown.enterCommand("/tasks", "\uD83D\uDD14设置推送任务") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.minecraft-cape-example"), 16, 16) + Markdown.enterCommand("/mctool cape", "查看MC披风拥有情况") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.minecraft-cape-example"), 16, 16) + Markdown.enterCommand("/mctool cape", "查看ᴍᴄ披风拥有情况") + "\n" +
                     "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABHypixel Ban Track") + "\n" +
                     "> " + Markdown.enterCommand("/games", "\uD83E\uDDE9游玩更多经典小游戏"));
 

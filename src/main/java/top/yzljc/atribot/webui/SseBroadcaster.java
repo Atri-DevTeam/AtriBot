@@ -2,6 +2,7 @@ package top.yzljc.atribot.webui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
+import top.yzljc.atribot.dashboard.DashboardSessions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.PrintWriter;
@@ -18,11 +19,19 @@ public class SseBroadcaster {
     private static final Set<BlockingQueue<String>> clients = ConcurrentHashMap.newKeySet();
 
     public static void handle(Context ctx) {
+        var authorized = WebUISessionManager.authorization(ctx.cookie(DashboardSessions.SESSION_COOKIE));
+        if (!authorized.getAsBoolean()) {
+            ctx.status(403);
+            return;
+        }
         var resp = ctx.res();
         resp.setContentType("text/event-stream");
         resp.setHeader("Cache-Control", "no-cache");
         resp.setHeader("Connection", "keep-alive");
-        try { resp.flushBuffer(); } catch (Exception ignored) {}
+        try {
+            resp.flushBuffer();
+        } catch (Exception ignored) {
+        }
 
         BlockingQueue<String> queue = new LinkedBlockingQueue<>();
         clients.add(queue);
@@ -35,6 +44,7 @@ public class SseBroadcaster {
 
             while (true) {
                 String data = queue.poll(15, TimeUnit.SECONDS);
+                if (!authorized.getAsBoolean()) break;
                 if (data != null) {
                     if ("__CLOSE__".equals(data)) break;
                     w.write("data: " + data + "\n\n");

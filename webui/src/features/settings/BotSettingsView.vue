@@ -2,10 +2,6 @@
   <AppShell ref="sidebarRef" v-model:open="sidebarOpen" :app-id="profile.appId || ''"
             :bot-open-id="profile.openId || ''"
             :bot-name="profile.botName || 'AtriBot'">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loading" @click="refreshAll">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace">
       <header class="topbar">

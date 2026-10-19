@@ -151,13 +151,11 @@ public class QQEventRecord implements Listener {
         }
         log.info("Friend removed: {}", userOpenId);
         c2cNotifiedUsers.remove(userOpenId);
-        if (OfficialUsers.isIgnored(userOpenId) || OfficialUsers.isBlocked(userOpenId)) {
-            log.info("已删除好友 {} 处于拉黑或忽略状态，按规则保留用户数据", userOpenId);
-        } else if (OfficialUsers.removeUser(userOpenId)) {
-            log.info("Removed official user data for deleted friend: {}", userOpenId);
+        if (OfficialUsers.removeUser(userOpenId)) {
+            log.info("Removed official friend record: {}", userOpenId);
         } else {
-            log.error("Failed to remove official user data for deleted friend: {}", userOpenId);
-            Alert.notify("好友已删除，但清理用户资料及私聊功能配置失败，OpenID: " + userOpenId);
+            log.error("Failed to remove official friend record: {}", userOpenId);
+            Alert.notify("好友已删除，但删除私聊记录失败，OpenID: " + userOpenId);
             return;
         }
         Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
@@ -173,6 +171,7 @@ public class QQEventRecord implements Listener {
                 log.warn("收到 C2C 主动消息授权变更，但缺少用户 OpenID，eventId: {}", event.getEventId());
                 return;
             }
+            if (!OfficialUsers.isCached(userOpenId)) OfficialUsers.registerUser(userOpenId);
             OfficialUsers.setC2CPush(userOpenId, c2cPushStatus);
             SseBroadcaster.broadcastC2CPushStatus(userOpenId, c2cPushStatus);
             log.info("C2C 主动消息授权变更: userOpenId={}, enabled={}", userOpenId, c2cPushStatus);
@@ -246,7 +245,7 @@ public class QQEventRecord implements Listener {
             }
         }
 
-        if (qq.getPlatform() == Platform.OFFICIAL_C2C && OfficialUsers.isBlocked(qq.getUserId())) {
+        if (qq.getPlatform() == Platform.OFFICIAL_C2C && (OfficialUsers.isBlocked(qq.getUserId()) || OfficialUsers.isIgnored(qq.getUserId()))) {
             if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                     Object key = TC.keyboard(List.of(
@@ -264,7 +263,7 @@ public class QQEventRecord implements Listener {
             }
         }
 
-        if (qq.getPlatform() == Platform.OFFICIAL_GROUP && OfficialUsers.isBlocked(qq.getUserId())) {
+        if (qq.getPlatform() == Platform.OFFICIAL_GROUP && (OfficialUsers.isBlocked(qq.getUserId()) || OfficialUsers.isIgnored(qq.getUserId()))) {
             if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
                     Object key = TC.keyboard(List.of(

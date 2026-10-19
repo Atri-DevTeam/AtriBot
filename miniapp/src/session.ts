@@ -43,7 +43,7 @@ export class PageSession {
 
     async #request(path: string, init: RequestInit, timeoutMillis = 10_000) {
         const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), timeoutMillis)
+        const timeout = setTimeout(() => controller.abort(), path.startsWith('price-alerts/') ? 45_000 : timeoutMillis)
         try {
             const base = (this.#options.apiBase || '/atrimeow/profile/api').replace(/\/+$/, '')
             return await this.#options.request(`${base}/${path}`, {
@@ -173,7 +173,8 @@ export class PageSession {
         const error = await response.json().catch(() => ({})) as { error?: string }
         if (this.#ended) return
         const permissionDenied = /^groups\/[^/]+\/moderation$/.test(path) &&
-            ['MODERATION_FORBIDDEN', 'CUSTOM_PROMPT_FORBIDDEN'].includes(error.error || '')
+            ['MODERATION_FORBIDDEN', 'CUSTOM_PROMPT_FORBIDDEN'].includes(error.error || '') ||
+            path.startsWith('price-alerts') && ['PRICE_PERMISSION_REQUIRED', 'PRICE_ALERT_TEST_FORBIDDEN'].includes(error.error || '')
         if (response.status === 401 || response.status === 503 || response.status === 403 && !permissionDenied) {
             this.end()
             return

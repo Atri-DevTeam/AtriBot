@@ -1,10 +1,6 @@
 <template>
   <AppShell v-model:open="sidebarOpen" class="image-review-page"
             :gallery-badge="pendingTotal">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loading" @click="refresh">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace image-review-workspace">
       <header class="topbar gallery-topbar">

@@ -1,8 +1,7 @@
 <template>
   <AppShell v-model:open="sidebarOpen">
     <template #toolbar>
-      <button class="ghost-button" @click="resetRequest">重置</button>
-      <button class="ghost-button" @click="logout">退出</button>
+      <button class="ghost-button" @click="resetRequest">重置请求</button>
     </template>
 
     <main class="workspace">

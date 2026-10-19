@@ -3,6 +3,9 @@ package top.yzljc.atribot.webui.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import lombok.Data;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atricore.auth.AccountStatus;
+import top.yzljc.atricore.auth.AtriAccount;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atricore.chat.official.C2CChat;
@@ -22,8 +25,10 @@ import top.yzljc.atribot.webui.repo.OrphanedFriendRecordCleanup;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseArk;
@@ -74,7 +79,7 @@ public class C2CController {
     public static void getC2CUserPermissions(Context ctx) {
         var data = OfficialUsers.getData(ctx.pathParam("userOpenId"));
         String username = QQChatContentRecord.findLatestKnownUsername(data.userOpenId());
-        ctx.json(Result.success(toC2CUserDTO(data, username)));
+        ctx.json(Result.success(toC2CUserProfileDTO(data, username)));
     }
 
     public static void getC2CUserPushTasks(Context ctx) {
@@ -111,7 +116,19 @@ public class C2CController {
 
     private static C2CUserDTO toC2CUserDTO(OfficialUsers.UserData data, String username) {
         return new C2CUserDTO(data.userOpenId(), data.role().name(), data.permissions(),
-                data.isBlocked(), data.isIgnored(), data.c2cPush(), username);
+                data.status().name(), data.c2cPush(), OfficialUsers.isCached(data.userOpenId()), username);
+    }
+
+    private static C2CUserProfileDTO toC2CUserProfileDTO(OfficialUsers.UserData data, String username) {
+        return new C2CUserProfileDTO(toC2CUserDTO(data, username),
+                toAccountInfo(UnifiedAuthentication.getCachedQqUserAccount(data.userOpenId())));
+    }
+
+    static UnifiedAccountInfoDTO toAccountInfo(AtriAccount account) {
+        if (account == null) return null;
+        return new UnifiedAccountInfoDTO(account.uuid(), account.username(), account.qqUserOpenId(),
+                account.qqUserUin(), account.qqConnectOpenId(), account.minecraftUuid(),
+                account.createTime(), account.lastUpdateTime());
     }
 
     public static void setC2CUserRole(Context ctx) {
@@ -142,22 +159,29 @@ public class C2CController {
         ctx.json(Result.success("ok"));
     }
 
-    public static void setC2CUserBlocked(Context ctx) {
+    public static void setC2CUserStatus(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
-        boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
-        OfficialUsers.setBlocked(userOpenId, value);
-        ctx.json(Result.success("ok"));
-    }
-
-    public static void setC2CUserIgnored(Context ctx) {
-        String userOpenId = ctx.pathParam("userOpenId");
-        boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
-        OfficialUsers.setIgnored(userOpenId, value);
+        AccountStatus status;
+        try {
+            String value = ctx.queryParam("status");
+            status = AccountStatus.valueOf(value == null ? "" : value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            ctx.status(400).json(Result.fail(400, "无效的账号状态"));
+            return;
+        }
+        if (!UnifiedAuthentication.setQqUserStatus(userOpenId, status, null)) {
+            ctx.status(500).json(Result.fail(500, "保存账号状态失败，请检查数据库日志"));
+            return;
+        }
         ctx.json(Result.success("ok"));
     }
 
     public static void setC2CUserPush(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
+        if (!OfficialUsers.isCached(userOpenId)) {
+            ctx.status(404).json(Result.fail(404, "该用户没有私聊记录"));
+            return;
+        }
         boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
         OfficialUsers.setC2CPush(userOpenId, value);
         SseBroadcaster.broadcastC2CPushStatus(userOpenId, value);
@@ -194,12 +218,19 @@ public class C2CController {
             }
         }
 
-        boolean blocked = dto.isBlocked();
-        boolean ignored = dto.isIgnored();
+        AccountStatus status = OfficialUsers.getData(userOpenId).status();
+        if (dto.getStatus() != null) {
+            try {
+                status = AccountStatus.valueOf(dto.getStatus().trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                ctx.status(400).json(Result.fail(400, "无效的账号状态: " + dto.getStatus()));
+                return;
+            }
+        }
         boolean c2cPush = dto.isC2cPush();
-        boolean pushChanged = OfficialUsers.getData(userOpenId).c2cPush() != c2cPush;
+        boolean pushChanged = OfficialUsers.isCached(userOpenId) && OfficialUsers.getData(userOpenId).c2cPush() != c2cPush;
 
-        if (!OfficialUsers.setProfile(userOpenId, role, permissions, blocked, ignored, c2cPush)) {
+        if (!OfficialUsers.setProfile(userOpenId, role, permissions, status, c2cPush)) {
             ctx.status(500).json(Result.fail(500, "保存用户档案失败，请检查数据库日志"));
             return;
         }
@@ -208,7 +239,7 @@ public class C2CController {
         }
 
         var updated = OfficialUsers.getData(userOpenId);
-        ctx.json(Result.success(toC2CUserDTO(updated, QQChatContentRecord.findLatestKnownUsername(updated.userOpenId()))));
+        ctx.json(Result.success(toC2CUserProfileDTO(updated, QQChatContentRecord.findLatestKnownUsername(updated.userOpenId()))));
     }
 
     public static void fetchC2CMessages(Context ctx) {
@@ -466,7 +497,13 @@ public class C2CController {
     }
 
     public record C2CUserDTO(String userOpenId, String role, java.util.Set<String> permissions,
-                             boolean isBlocked, boolean isIgnored, boolean c2cPush, String username) {}
+                             String status, boolean c2cPush, boolean c2cRegistered, String username) {}
+
+    public record C2CUserProfileDTO(C2CUserDTO user, UnifiedAccountInfoDTO account) {}
+
+    public record UnifiedAccountInfoDTO(UUID uuid, String username, String qqUserOpenId, String qqUserUin,
+                                       String qqConnectOpenId, String minecraftUuid,
+                                       String createTime, String lastUpdateTime) {}
 
     public record C2CPushTaskDTO(String functionId, String displayName, boolean enabled, boolean configured) {}
 
@@ -491,8 +528,7 @@ public class C2CController {
     public static class UpdateC2CUserProfileDTO {
         private String role;
         private java.util.List<String> permissions;
-        private boolean blocked;
-        private boolean ignored;
+        private String status;
         private boolean c2cPush;
     }
 

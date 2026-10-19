@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.command.component;
 
 import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
@@ -17,6 +18,7 @@ import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.service.request.Requests;
 import top.yzljc.atricore.utils.StringUtils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -43,7 +45,7 @@ public final class QueryTemplate {
                         List.of(
                                 new Button("t1", "再次查询", commandHeader+ " " + subCommand + " ", false, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 // new Button("t2", "加白审核", "/feedback 白名单审查 " + queriedPlayer, false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("你确定要提交当前被查询玩家的名称和皮肤进行审查吗？", "提交", "取消")
-                                new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK)
+                                new Button("l2", "自定义背景", "/bg", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND)
                         )
 //                        List.of(
 //                                new Button("t1", "再次查询", "/hyp " + subCommand + " ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
@@ -55,7 +57,7 @@ public final class QueryTemplate {
     public static List<Button> getQueryButtonTemplate(String commandHeader, String subCommand) {
         return List.of(
                 new Button("t1", "再次查询", commandHeader + " " + subCommand + " ", false, ButtonStyle.BLUE, ButtonType.COMMAND),
-                new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK)
+                new Button("l2", "自定义背景", "/bg", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND)
         );
     }
 
@@ -104,6 +106,14 @@ public final class QueryTemplate {
                 user.recall(messageId);
             }
         }
+    }
+
+    public static Map<String, Object> getRequestBody(String userOpenId, String queriedPlayer) {
+        Map<String, Object> r = new LinkedHashMap<>();
+
+        r.put("player", queriedPlayer);
+        BackgroundService.applyApprovedBackground(r, userOpenId);
+        return r;
     }
 
     private static String bearer() {

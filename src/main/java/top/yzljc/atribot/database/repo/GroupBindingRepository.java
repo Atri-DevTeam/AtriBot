@@ -23,21 +23,36 @@ public class GroupBindingRepository {
     public static final String SETTING = "bound_groups";
     private static final ObjectMapper JSON = new ObjectMapper();
     private final Connections connections;
-    @FunctionalInterface public interface Connections { Connection open() throws SQLException; }
-    public record Binding(String groupId, String groupNumber, String name, String boundAt) {}
-    public record WelcomeData(ObjectNode config, Boolean enabled) {}
+
+    @FunctionalInterface
+    public interface Connections {
+        Connection open() throws SQLException;
+    }
+
+    public record Binding(String groupId, String groupNumber, String name, String boundAt) {
+    }
+
+    public record WelcomeData(ObjectNode config, Boolean enabled) {
+    }
 
     public record Group(String groupId, String groupNumber, String name, String description, String category,
                         List<String> tags, Integer memberCount, String joinedAt, String botRole,
-                        String receiveMode, boolean proactive, boolean restricted, String boundAt, boolean available) {}
+                        String receiveMode, boolean proactive, boolean restricted, String boundAt, boolean available) {
+    }
 
-    public GroupBindingRepository() { this(DatabaseManager::getConnection); }
-    public GroupBindingRepository(Connections connections) { this.connections = connections; }
+    public GroupBindingRepository() {
+        this(DatabaseManager::getConnection);
+    }
+
+    public GroupBindingRepository(Connections connections) {
+        this.connections = connections;
+    }
 
     public String resolve(String input) throws SQLException {
         try (var con = connections.open(); var ps = con.prepareStatement(
                 "SELECT group_openId FROM official_groups WHERE group_openId = ? OR CAST(real_group_id AS CHAR) = ? LIMIT 2")) {
-            ps.setString(1, input); ps.setString(2, input);
+            ps.setString(1, input);
+            ps.setString(2, input);
             try (var rows = ps.executeQuery()) {
                 if (!rows.next()) return null;
                 String id = rows.getString(1);
@@ -60,7 +75,9 @@ public class GroupBindingRepository {
         }
     }
 
-    /** Fetch details for one owned binding, only when its detail page is opened. */
+    /**
+     * Fetch details for one owned binding, only when its detail page is opened.
+     */
     public Group detail(String userId, String groupId) throws SQLException {
         try (var con = connections.open()) {
             JsonNode binding = bindings(readSettings(con, userId, false)).get(groupId);
@@ -75,8 +92,12 @@ public class GroupBindingRepository {
                     List<String> tags = new ArrayList<>();
                     String rawTags = rows.getString("group_tags");
                     if (rawTags != null) {
-                        try { var parsed = JSON.readTree(rawTags); if (parsed.isArray()) parsed.forEach(tag -> { if (tag.isTextual()) tags.add(tag.asText()); }); }
-                        catch (Exception ignored) { /* Other group fields remain usable. */ }
+                        try {
+                            var parsed = JSON.readTree(rawTags);
+                            if (parsed.isArray()) parsed.forEach(tag -> {
+                                if (tag.isTextual()) tags.add(tag.asText());
+                            });
+                        } catch (Exception ignored) { /* Other group fields remain usable. */ }
                     }
                     int count = rows.getInt("group_member_num");
                     Integer memberCount = rows.wasNull() ? null : count;
@@ -89,29 +110,19 @@ public class GroupBindingRepository {
         }
     }
 
-    /** Read the welcome configuration only after checking the authenticated user's binding. */
+    /**
+     * Read the welcome configuration only after checking the authenticated user's binding.
+     */
     public WelcomeData welcome(String userId, String groupId) throws SQLException {
         try (var con = connections.open()) {
             if (!bindings(readSettings(con, userId, false)).has(groupId)) return null;
-            ObjectNode config = null;
-            try (var ps = con.prepareStatement("SELECT config FROM group_join_welcome WHERE group_openId = ?")) {
-                ps.setString(1, groupId);
-                try (var rows = ps.executeQuery()) {
-                    if (rows.next()) {
-                        String raw = rows.getString(1);
-                        if (raw != null && !raw.isBlank()) config = parseSettings(raw);
-                    }
-                }
-            }
+            String rawConfig = GroupRepository.getJoinWelcomeConfigJson(con, groupId);
+            ObjectNode config = rawConfig == null ? null : parseSettings(rawConfig);
             Boolean enabled = null;
-            try (var ps = con.prepareStatement("SELECT functions FROM group_function_list WHERE group_openId = ?")) {
-                ps.setString(1, groupId);
-                try (var rows = ps.executeQuery()) {
-                    if (rows.next()) {
-                        var flag = parseSettings(rows.getString(1)).path("member_add_welcome").path("enabled");
-                        if (flag.isBoolean()) enabled = flag.asBoolean();
-                    }
-                }
+            String rawFunctions = GroupRepository.getFunctionConfigJson(con, groupId);
+            if (rawFunctions != null) {
+                var flag = parseSettings(rawFunctions).path("member_add_welcome").path("enabled");
+                if (flag.isBoolean()) enabled = flag.asBoolean();
             }
             return new WelcomeData(config, enabled);
         }
@@ -125,27 +136,39 @@ public class GroupBindingRepository {
                 ObjectNode owned = bindings(settings);
                 if (owned.remove(groupId) != null) {
                     settings.set(SETTING, owned);
-                    try (var ps = con.prepareStatement("UPDATE official_users SET user_settings = ? WHERE user_openId = ?")) {
-                        ps.setString(1, settings.toString()); ps.setString(2, userId); ps.executeUpdate();
+                    try (var ps = con.prepareStatement("UPDATE bot_userdata SET user_settings = ? WHERE user_id = ?")) {
+                        ps.setString(1, settings.toString());
+                        ps.setString(2, userId);
+                        ps.executeUpdate();
                     }
                 }
                 con.commit();
             } catch (Exception e) {
-                try { con.rollback(); } catch (SQLException rollback) { e.addSuppressed(rollback); }
+                try {
+                    con.rollback();
+                } catch (SQLException rollback) {
+                    e.addSuppressed(rollback);
+                }
                 if (e instanceof SQLException sql) throw sql;
                 throw new SQLException("Cannot remove group binding", e);
-            } finally { con.setAutoCommit(true); }
+            } finally {
+                con.setAutoCommit(true);
+            }
         }
     }
 
     private static ObjectNode readSettings(Connection con, String userId, boolean lock) throws SQLException {
-        try (var ps = con.prepareStatement("SELECT user_settings FROM official_users WHERE user_openId = ?" + (lock ? " FOR UPDATE" : ""))) {
+        try (var ps = con.prepareStatement("SELECT user_settings FROM bot_userdata WHERE user_id = ?" + (lock ? " FOR UPDATE" : ""))) {
             ps.setString(1, userId);
-            try (var rows = ps.executeQuery()) { return parseSettings(rows.next() ? rows.getString(1) : null); }
+            try (var rows = ps.executeQuery()) {
+                return parseSettings(rows.next() ? rows.getString(1) : null);
+            }
         }
     }
 
-    /** Only called after a verified official-group OWNER message. Row locks preserve unrelated settings. */
+    /**
+     * Only called after a verified official-group OWNER message. Row locks preserve unrelated settings.
+     */
     public void bind(String userId, String groupId, String boundAt) throws SQLException {
         if (groupId == null || !groupId.matches("[A-Za-z0-9_-]{1,256}")) throw new SQLException("Invalid group ID");
         String path = "$." + SETTING + ".\"" + groupId + "\"";
@@ -158,24 +181,26 @@ public class GroupBindingRepository {
                     ps.setString(1, groupId);
                     try (var rows = ps.executeQuery()) {
                         if (!rows.next()) throw new SQLException("Group no longer available");
-                        groupName = rows.getString("group_name"); groupNumber = rows.getString("real_group_id");
+                        groupName = rows.getString("group_name");
+                        groupNumber = rows.getString("real_group_id");
                     }
                 }
-                try (var ps = con.prepareStatement("INSERT INTO official_users (user_openId, role, permissions) VALUES (?, 'USER', '') ON DUPLICATE KEY UPDATE user_openId = user_openId")) {
-                    ps.setString(1, userId); ps.executeUpdate();
-                }
+                BotUserDataRepository.ensureUser(con, userId);
                 Map<String, ObjectNode> users = new LinkedHashMap<>();
-                try (var ps = con.prepareStatement("SELECT user_openId, user_settings FROM official_users WHERE user_openId = ? OR JSON_CONTAINS_PATH(user_settings, 'one', ?) = 1 ORDER BY user_openId FOR UPDATE")) {
-                    ps.setString(1, userId); ps.setString(2, path);
+                try (var ps = con.prepareStatement("SELECT user_id, user_settings FROM bot_userdata WHERE user_id = ? OR JSON_CONTAINS_PATH(user_settings, 'one', ?) = 1 ORDER BY user_id FOR UPDATE")) {
+                    ps.setString(1, userId);
+                    ps.setString(2, path);
                     try (var rows = ps.executeQuery()) {
-                        while (rows.next()) users.put(rows.getString("user_openId"), parseSettings(rows.getString("user_settings")));
+                        while (rows.next())
+                            users.put(rows.getString("user_id"), parseSettings(rows.getString("user_settings")));
                     }
                 }
                 if (!users.containsKey(userId)) throw new SQLException("User settings unavailable");
                 for (var entry : users.entrySet()) {
                     ObjectNode owned = bindings(entry.getValue());
                     if (entry.getKey().equals(userId)) {
-                        if (!owned.has(groupId) && owned.size() >= 100) throw new SQLException("Group binding limit reached");
+                        if (!owned.has(groupId) && owned.size() >= 100)
+                            throw new SQLException("Group binding limit reached");
                         ObjectNode binding = owned.path(groupId) instanceof ObjectNode old ? old : JSON.createObjectNode();
                         binding.put("group_name", groupName);
                         binding.put("group_number", groupNumber);
@@ -183,16 +208,24 @@ public class GroupBindingRepository {
                         owned.set(groupId, binding);
                     } else owned.remove(groupId); // A newly verified owner replaces a previous owner's binding.
                     entry.getValue().set(SETTING, owned);
-                    try (var ps = con.prepareStatement("UPDATE official_users SET user_settings = ? WHERE user_openId = ?")) {
-                        ps.setString(1, entry.getValue().toString()); ps.setString(2, entry.getKey()); ps.executeUpdate();
+                    try (var ps = con.prepareStatement("UPDATE bot_userdata SET user_settings = ? WHERE user_id = ?")) {
+                        ps.setString(1, entry.getValue().toString());
+                        ps.setString(2, entry.getKey());
+                        ps.executeUpdate();
                     }
                 }
                 con.commit();
             } catch (Exception e) {
-                try { con.rollback(); } catch (SQLException rollback) { e.addSuppressed(rollback); }
+                try {
+                    con.rollback();
+                } catch (SQLException rollback) {
+                    e.addSuppressed(rollback);
+                }
                 if (e instanceof SQLException sql) throw sql;
                 throw new SQLException("Cannot save group binding", e);
-            } finally { con.setAutoCommit(true); }
+            } finally {
+                con.setAutoCommit(true);
+            }
         }
     }
 
@@ -200,7 +233,9 @@ public class GroupBindingRepository {
         try {
             JsonNode value = raw == null || raw.isBlank() ? JSON.createObjectNode() : JSON.readTree(raw);
             if (value instanceof ObjectNode object) return object;
-        } catch (Exception e) { throw new SQLException("Invalid user settings", e); }
+        } catch (Exception e) {
+            throw new SQLException("Invalid user settings", e);
+        }
         throw new SQLException("Invalid user settings");
     }
 

@@ -1,23 +1,29 @@
 <script setup lang="ts">
+import {computed} from 'vue'
 import profileIcon from '../assets/dock-profile.png'
 import groupsIcon from '../assets/dock-groups.png'
+import pricesIcon from '../assets/dock-prices.png'
 import Icon from './Icon.vue'
 
-type Page = 'profile' | 'groups' | 'about'
-defineProps<{ active: Page }>()
+type Page = 'profile' | 'groups' | 'prices' | 'about'
+const props = defineProps<{ active: Page; canUsePrices?: boolean }>()
 const emit = defineEmits<{ select: [page: Page] }>()
 // Pixel icons reused from atriwebsite/src/lib/mcMobileDockIcons.js.
 const items = [
   {key: 'profile', label: '我的档案', icon: profileIcon},
   {key: 'groups', label: '群管理', icon: groupsIcon},
+  {key: 'prices', label: '价格提醒', icon: pricesIcon},
   {key: 'about', label: '关于', icon: null}
 ] as const
+const visibleItems = computed(() => items.filter(item => item.key !== 'prices' || props.canUsePrices))
+const selectedIndex = computed(() => Math.max(0, visibleItems.value.findIndex(item => item.key === props.active)))
 </script>
 
 <template>
-  <nav class="navigation-dock glass" aria-label="栏目导航" :class="`${active}-active`">
+  <nav class="navigation-dock glass" aria-label="栏目导航"
+       :style="{ '--dock-count': visibleItems.length, '--dock-index': selectedIndex }">
     <span class="dock-selection" aria-hidden="true"></span>
-    <button v-for="item in items" :key="item.key" type="button" class="dock-item"
+    <button v-for="item in visibleItems" :key="item.key" type="button" class="dock-item"
             :class="{ active: active === item.key }" :aria-current="active === item.key ? 'page' : undefined"
             :aria-controls="`${item.key}-page`" @click="emit('select', item.key)">
       <img v-if="item.icon" :src="item.icon" alt="" width="16" height="16" draggable="false"/>
@@ -35,8 +41,8 @@ const items = [
   bottom: max(10px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(320px, calc(100% - 40px));
+  grid-template-columns: repeat(var(--dock-count), minmax(0, 1fr));
+  width: min(400px, calc(100% - 24px));
   padding: 3px;
   border-radius: 22px;
   background: #f4f5f0c9;
@@ -51,21 +57,14 @@ const items = [
   left: 3px;
   top: 3px;
   bottom: 3px;
-  width: calc((100% - 6px) / 3);
+  width: calc((100% - 6px) / var(--dock-count));
+  transform: translateX(calc(var(--dock-index) * 100%));
   border-radius: 18px;
   background: #ffffffa8;
   border: 1px solid #fff;
   box-shadow: 0 3px 10px #44573c07;
   transition: transform .36s cubic-bezier(.22, 1, .36, 1);
   pointer-events: none;
-}
-
-.groups-active .dock-selection {
-  transform: translateX(100%);
-}
-
-.about-active .dock-selection {
-  transform: translateX(200%);
 }
 
 .dock-item {
@@ -76,11 +75,11 @@ const items = [
   justify-content: center;
   gap: 6px;
   min-height: 36px;
-  padding: 4px 10px;
+  padding: 4px 5px;
   border: 0;
   border-radius: 18px;
   background: transparent;
-  color: #8b9683;
+  color: var(--dock-muted, #8b9683);
   font-size: 11px;
   line-height: 1.4;
   letter-spacing: .5px;
@@ -105,7 +104,7 @@ const items = [
 }
 
 .dock-item.active {
-  color: #53634d;
+  color: var(--dock-active, #53634d);
   font-weight: 600;
 }
 

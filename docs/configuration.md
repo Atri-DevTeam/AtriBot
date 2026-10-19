@@ -9,7 +9,7 @@
 | `atri-core.yml` | [CoreConfig](../atri-core/src/main/java/top/yzljc/atricore/core/CoreConfig.java) | [框架配置](../atri-core/src/main/resources/atri-core.yml) |
 | `config.yml` | [Config](../src/main/java/top/yzljc/atribot/configuration/Config.java) | [业务配置](../src/main/resources/config.yml) |
 
-框架只读取 `atri-core.yml` 中的平台配置，不回退读取旧 `config.yml`。升级现有部署时，将下表框架字段及 QQ / Napcat 连接参数移到新文件；WebUI 登录密钥和其他业务字段仍保留在 `config.yml`
+框架只读取 `atri-core.yml` 中的平台配置，不回退读取旧 `config.yml`。升级现有部署时，将下表框架字段及 QQ / Napcat 连接参数移到新文件；QQ 互联登录和其他业务配置仍保留在 `config.yml`
 
 ## 核心字段
 
@@ -56,7 +56,7 @@ ugc-api-url: "https://images.example.com"
 
 `qq.debug-group-openId`、`qq.webhook-queue-capacity` 及 `napcat.token`、`napcat.debug-group-uin`、`napcat.message-spy-groups`、`napcat.queue-capacity`、`napcat.queue-bytes`、`napcat.workers` 也属于框架配置
 
-`config.yml` 中保留 `qq.official-webui-token`、`qq.official-openId`、`qq.official-username`、`qq.super_admin_id`、`napcat.recall-ignore-user` 及 `tencent-channel`。这些字段用于管理页面和运行服务业务。WebUI、Miniapp、QQ Webhook 和 Napcat 上报共用 `atri-core.yml` 的 `listen-port`，旧 `config.yml` 中的端口字段不再读取
+`config.yml` 中保留 `qq.official-openId`、`qq.official-username`、`qq.super_admin_id`、`napcat.recall-ignore-user` 及 `tencent-channel`。这些字段用于管理页面和运行服务业务。WebUI、Miniapp、QQ Webhook 和 Napcat 上报共用 `atri-core.yml` 的 `listen-port`，旧 `config.yml` 中的端口字段不再读取
 
 平台接入详见 [平台与消息](framework/platforms.md)。`tencent-channel` 使用外部 CLI 登录第二账号，单独说明见 [QQ 频道第二账号](integrations/tencent-channel.md)
 
@@ -66,8 +66,7 @@ Discord 与 KOOK 已移至独立插件，主配置不再读取 `discord`、`kook
 
 | 配置 | 用途 | 文档 |
 | --- | --- | --- |
-| `qq.official-webui-token` | WebUI 登录密钥 | [WebUI 与 Miniapp](web.md) |
-| `miniapp.enabled`、`miniapp.base-url` | Miniapp 开关与外部访问地址 | [WebUI 与 Miniapp](web.md) |
+| `miniapp.enabled` | Miniapp 功能开关 | [WebUI 与 Miniapp](web.md) |
 | `dashboard.enabled`、`dashboard.base-url`、`dashboard.callback-url`、`dashboard.qq-connect.*` | QQ 互联个人面板开关、页面域名、独立回调地址和网站应用凭据，依赖 `miniapp.enabled` | [QQ 互联登录](web.md#qq-互联登录) |
 | `ai.<provider>.*` | AI 模型、地址、密钥与超时 | [AI 与文本审查](integrations/ai.md) |
 | `censor.*`、`minecraft-moderation.*` | 外部审查服务 | [功能索引](features.md) |
@@ -85,6 +84,16 @@ WebUI 的设置接口只开放选定字段，按字段归属写入对应配置�
 机器人设置中的「默认加群欢迎」分别配置 `USER`、`ADMIN`、`OWNER` 三种机器人权限身份的正文和按钮，保存后立即用于后续入群事件。群自定义欢迎优先，群的 `member_add_welcome` 开关仍须开启
 
 配置保存在 `data/join-welcome-defaults.json`，首次使用从 JAR 内同名模板初始化。WebUI 的「恢复初始模板」只替换当前身份的配置。直接修改运行目录文件后需要重启进程重新加载
+
+群自定义欢迎保存在 `official_groups.group_settings.join_text`，包含正文、按钮和按钮字号；功能开关保存在同级的 `functions` 对象中，保留启用状态、操作人和操作时间。保存或清除只更新对应字段，不影响其他群设置。升级时自动迁移原 `group_join_welcome` 和 `group_function_list` 表，内容冲突时回滚并保留旧表，迁移成功后删除旧表
+
+用户限制统一使用 `unified_account.status`：`ACTIVE` 为正常，`SUSPENDED` 为拉黑，`BANNED` 为静默屏蔽。WebUI 的账号状态选择与管理指令使用同一状态，消息处理仅读缓存。升级时自动迁移 `official_users.is_blocked`、`is_ignored`，两者同时开启时按屏蔽处理，已有屏蔽或注销状态不降级，迁移成功后删除旧列
+
+用户业务数据统一保存在 `bot_userdata`，以用户标识 `user_id` 为主键，`user_settings`、`game_data`、`functions` 分别保存个人设置、累计游戏数据和私聊功能配置。升级时迁入原 `official_users` 的个人设置与游戏数据、`c2c_function_list` 的订阅配置，以及已拆分的 `user_game_data`；校验一致后删除旧列与旧表，冲突时回滚并保留旧存储
+
+`official_users` 仅保存私聊用户记录和 `c2c_push` 授权。权限组与权限节点统一使用 `unified_account.role`、`permissions`，迁移时保留较高的权限组并合并权限节点，完成后删除原权限列
+
+删除好友时移除 `official_users` 中的对应记录，并清空 `bot_userdata.functions` 中的私聊功能订阅，统一账号、限制状态、个人设置和游戏数据保留
 
 ## 配置、资源与数据
 

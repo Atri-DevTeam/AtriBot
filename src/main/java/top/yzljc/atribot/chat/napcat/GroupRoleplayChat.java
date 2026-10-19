@@ -25,7 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** 群内共享历史、按发言者识别、带持久化经历的亚托莉聊天。 */
+/**
+ * 群内共享历史、按发言者识别、带持久化经历的亚托莉聊天。
+ */
 final class GroupRoleplayChat {
     private static final Logger log = LoggerFactory.getLogger(GroupRoleplayChat.class);
     private static final int MAX_MESSAGE_LENGTH = 1200;
@@ -84,8 +86,8 @@ final class GroupRoleplayChat {
                         .findFirst().orElseThrow();
                 GroupChatMemory.Entry quoted = current.replyToMessageId().isEmpty() ? null
                         : conversation.messages.stream()
-                                .filter(entry -> current.replyToMessageId().equals(entry.messageId()))
-                                .findFirst().orElse(null);
+                        .filter(entry -> current.replyToMessageId().equals(entry.messageId()))
+                        .findFirst().orElse(null);
                 String prompt = persona + "\n\n# 当前时间\n" + OffsetDateTime.now();
                 String input = buildInput(conversation, current, quoted);
                 conversation.lastChatNanos = System.nanoTime();
@@ -204,7 +206,9 @@ final class GroupRoleplayChat {
         }
     }
 
-    /** 在业务层标明历史身份，保持 AiService 的单次调用协议不变。 */
+    /**
+     * 在业务层标明历史身份，保持 AiService 的单次调用协议不变。
+     */
     private String buildInput(GroupChatMemory.Conversation conversation, GroupChatMemory.Entry current,
                               GroupChatMemory.Entry quoted) throws IOException {
         List<GroupChatMemory.Entry> selected = new ArrayList<>();
@@ -227,7 +231,9 @@ final class GroupRoleplayChat {
         return GroupChatMemory.JSON.writeValueAsString(input);
     }
 
-    /** 经历压缩在回复完成后执行，不再让群消息等待第二次模型调用。 */
+    /**
+     * 经历压缩在回复完成后执行，不再让群消息等待第二次模型调用。
+     */
     private void scheduleSummary(AiService ai, AiProvider provider, GroupChatMemory.Conversation conversation) {
         if (conversation.messages.size() <= SUMMARY_THRESHOLD
                 || !summarizingGroups.add(conversation.groupId)) return;

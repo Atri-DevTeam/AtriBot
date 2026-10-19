@@ -9,11 +9,11 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
+import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.ImageSourceDTO;
-import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.service.request.Requests;
@@ -129,7 +129,7 @@ public class ImageSourceClient {
     public static ImageDAO randomImage() { return randomImage(null); }
 
     public static ImageDAO randomImage(Platform platform) {
-        ImageSourceDTO dto = ImageSourceRepository.findRandomReviewed();
+        ImageSourceDTO dto = PicRepository.findRandomReviewed();
         if (dto == null) return null;
         int width = dto.getProcessedWidth() > 0 ? dto.getProcessedWidth() : dto.getWidth();
         int height = dto.getProcessedHeight() > 0 ? dto.getProcessedHeight() : dto.getHeight();

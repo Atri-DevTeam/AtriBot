@@ -1,9 +1,5 @@
 <template>
   <AppShell v-model:open="sidebarOpen" class="userlist-page">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loading" @click="refreshAll">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace">
       <header class="topbar">
@@ -157,8 +153,8 @@
                   <div class="dir-tile-line">
                     <span v-if="u.role" class="dir-role-chip" :class="uRoleCls(u.role)">{{ uRoleLabel(u.role) }}</span>
                     <span class="dir-chips">
-                      <span v-if="u.isBlocked" class="dir-chip dir-chip-red">拉黑</span>
-                      <span v-if="u.isIgnored" class="dir-chip dir-chip-gray">屏蔽</span>
+                      <span v-if="u.status === 'SUSPENDED'" class="dir-chip dir-chip-red">拉黑</span>
+                      <span v-if="u.status === 'BANNED' || u.status === 'DELETED'" class="dir-chip dir-chip-gray">{{ accountStatusLabel(u.status) }}</span>
                       <span v-if="u.c2cPush" class="dir-chip dir-chip-blue">主动推送</span>
                     </span>
                   </div>
@@ -174,7 +170,7 @@
     <div v-if="showPermModal" class="modal-backdrop" @click="closePermModal">
       <div class="modal" @click.stop>
         <div class="modal-head">
-          <h2>更改信息</h2>
+          <h2>用户设置</h2>
           <button class="icon-button" @click="closePermModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -188,31 +184,32 @@
           <p v-if="permError" class="perm-error" role="alert">{{ permError }}</p>
           <button v-if="!permLoading && !permReady" class="ghost-button" @click="openPermModal(permTarget)">重新加载
           </button>
-          <div class="perm-roles">
-            <button v-for="r in roles" :key="r"
-                    :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
-                    :disabled="permLocked" @click="pendingPermRole = r">{{ r }}
-            </button>
-          </div>
-          <h4 style="margin:10px 0 4px">权限节点</h4>
-          <div v-for="p in pendingPermNodes" :key="p" class="func-row">
-            <span class="func-name">{{ p }}</span>
-            <button class="perm-del" :disabled="permLocked" @click="removePermNode(p)">×</button>
-          </div>
-          <form class="perm-add" @submit.prevent="addPermNode(newPermNode)">
-            <input v-model="newPermNode" :disabled="permLocked" placeholder="新权限节点"/>
-            <button class="primary-button" :disabled="permLocked || !newPermNode.trim()">添加</button>
-          </form>
-          <h4 style="margin:10px 0 4px">状态</h4>
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="pendingIsBlocked" :disabled="permLocked"/>
-            拉黑（禁止使用指令）
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="pendingIsIgnored" :disabled="permLocked"/>
-            屏蔽（静默忽略所有交互）
-          </label>
-          <label class="checkbox-label">
+          <section class="perm-account-section" aria-label="统一账号信息">
+            <h3 class="perm-section-title">统一账号信息</h3>
+            <UnifiedAccountDetails :account="permProfile.account" :loading="permLoading"/>
+            <h4 class="perm-field-title">权限组</h4>
+            <div class="perm-roles">
+              <button v-for="r in roles" :key="r"
+                      :class="['badge', 'clickable', pendingPermRole === r ? 'green' : 'gray']"
+                      :disabled="permLocked" @click="pendingPermRole = r">{{ r }}
+              </button>
+            </div>
+            <h4 class="perm-field-title">权限节点</h4>
+            <div v-for="p in pendingPermNodes" :key="p" class="func-row">
+              <span class="func-name">{{ p }}</span>
+              <button class="perm-del" :disabled="permLocked" @click="removePermNode(p)">×</button>
+            </div>
+            <form class="perm-add" @submit.prevent="addPermNode(newPermNode)">
+              <input v-model="newPermNode" :disabled="permLocked" placeholder="新权限节点"/>
+              <button class="primary-button" :disabled="permLocked || !newPermNode.trim()">添加</button>
+            </form>
+            <div class="perm-status">
+              <span>账号状态</span>
+              <AccountStatusSelect v-model="pendingStatus" :disabled="permLocked"/>
+            </div>
+          </section>
+          <h3 v-if="permProfile.c2cRegistered" class="perm-section-title perm-private-title">私聊设置</h3>
+          <label v-if="permProfile.c2cRegistered" class="checkbox-label">
             <input type="checkbox" v-model="pendingC2CPush" :disabled="permLocked"/>
             主动消息
           </label>
@@ -453,7 +450,9 @@
 <script setup>
 import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, toRefs} from 'vue'
-import {emptyUserProfile, loadUserProfile, saveUserProfile} from './lib/userProfile.js'
+import {accountStatusLabel, emptyUserProfile, loadUserProfile, saveUserProfile} from './lib/userProfile.js'
+import AccountStatusSelect from './components/AccountStatusSelect.vue'
+import UnifiedAccountDetails from './components/UnifiedAccountDetails.vue'
 import {useLatestRequest} from '../../shared/lib/latestRequest.js'
 import {parseTime, formatTime} from '../../shared/lib/time.js'
 import {useRouter} from 'vue-router'
@@ -942,8 +941,7 @@ const showPermModal = ref(false)
 const permTarget = ref('')
 const permProfile = reactive(emptyUserProfile())
 const {
-  role: pendingPermRole, permissions: pendingPermNodes, blocked: pendingIsBlocked,
-  ignored: pendingIsIgnored, c2cPush: pendingC2CPush
+  role: pendingPermRole, permissions: pendingPermNodes, status: pendingStatus, c2cPush: pendingC2CPush
 } = toRefs(permProfile)
 const permRequests = useLatestRequest()
 let permRequest = null
@@ -995,8 +993,7 @@ async function confirmPerm() {
     if (!request.isCurrent()) return
     users.value = users.value.map(user => user.userOpenId === target
         ? {
-          ...user, role: saved.role, permissions: saved.permissions, isBlocked: saved.blocked,
-          isIgnored: saved.ignored, c2cPush: saved.c2cPush
+          ...user, role: saved.role, permissions: saved.permissions, status: saved.status, c2cPush: saved.c2cPush
         } : user)
     closePermModal()
   } catch (e) {
@@ -1131,6 +1128,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.perm-account-section { margin-top: 16px; }
+.perm-section-title { margin: 0 0 10px; color: var(--color-text-secondary); font-size: 13px; font-weight: 600; }
+.perm-field-title { margin: 16px 0 8px; color: var(--color-text-muted); font-size: 12px; font-weight: 500; }
+.perm-private-title { margin-top: 22px; }
+
+.perm-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+
 .perm-error {
   color: var(--color-danger, #dc2626);
   overflow-wrap: anywhere;

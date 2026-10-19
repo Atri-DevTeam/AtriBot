@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.command;
 
 import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialGroups;
+import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
@@ -38,7 +39,9 @@ public class PushTaskCommand implements CommandExecutor {
             new MemerAddWelcomeTask(),
 //            new SkyblockResourcePackTask(),
             new HypixelAlphaTask(),
-            new OpenPlatformDocTask().setPrivateFunction(true)
+            new OpenPlatformDocTask().setPrivateFunction(true),
+            new NewYearCountdownTask(),
+            SkyblockPriceAlertTask.INSTANCE
     );
 
     @Override
@@ -57,6 +60,8 @@ public class PushTaskCommand implements CommandExecutor {
         if (args.length < 1) {
             StringBuilder markdown = new StringBuilder("**推送任务列表**\n\n");
             for (PushTask task : tasks) {
+                if (task.getFunctionId().equals(SkyblockPriceAlertTask.FUNCTION_ID)
+                        && !qq.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) continue;
                 if (platform.equals(Platform.OFFICIAL_GROUP)) {
                     if (task.isGroupEnable()) {
                         if (task.isPrivateFunction() && !OfficialGroups.isWhitelist(groupOpenId)) continue;
@@ -92,6 +97,11 @@ public class PushTaskCommand implements CommandExecutor {
                 return true;
             }
 
+            if (task.getFunctionId().equals(SkyblockPriceAlertTask.FUNCTION_ID)
+                    && !qq.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) {
+                qq.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
+                return true;
+            }
             if (task.isPrivateFunction() && !OfficialGroups.isWhitelist(groupOpenId)) {
                 qq.sendMessage("该推送任务暂不对外开放！");
                 return true;

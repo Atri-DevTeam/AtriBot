@@ -1,10 +1,17 @@
 package top.yzljc.atribot.function.command;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.function.minecraft.BedwarsProfileImpl;
+import top.yzljc.atribot.function.minecraft.SkywarsProfileImpl;
+import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -36,6 +43,10 @@ import static top.yzljc.atribot.function.command.component.QueryTemplate.customQ
  * @Description Hypixel -> 综合查询二级菜单
  */
 public class HypixelCommand implements CommandExecutor {
+
+    private static final long QUERY_COOLDOWN_NANOS = TimeUnit.SECONDS.toNanos(10);
+    private static final Cache<String, Long> QUERY_TIMES = CacheBuilder.newBuilder()
+            .expireAfterWrite(10, TimeUnit.SECONDS).build();
 
     private static final Map<String, String> GAME_IDS_BY_ALIAS = Map.ofEntries(
             Map.entry("sb", "SKYBLOCK"),
@@ -70,6 +81,7 @@ public class HypixelCommand implements CommandExecutor {
 
     private static Map<String, SubCommand> createSubCommands() {
         Map<String, SubCommand> commands = new LinkedHashMap<>();
+        register(commands, new SubCommand("lb", Category.GENERAL, "查询玩家大厅总览数据", RS.get("resource.image.icon-compass"), HypixelCommand::handleLobbyStats));
         register(commands, new SubCommand("wz", Category.GENERAL, "查询玩家法师掘战详细数据", RS.get("resource.image.icon-tnt"), HypixelCommand::handleWizards));
         register(commands, new SubCommand("zs", Category.GENERAL, "查询玩家僵尸末日详细数据", RS.get("resource.image.icon-zombie-head"), HypixelCommand::handleZombies));
         register(commands, new SubCommand("gs", Category.GENERAL, "全服小游戏在线情况", RS.get("resource.image.hypixel-header"), HypixelCommand::handleGameStatus));
@@ -87,6 +99,8 @@ public class HypixelCommand implements CommandExecutor {
         register(commands, new SubCommand("ip", Category.SKYBLOCK, "查询sᴋʏʙʟᴏᴄᴋ物品价格信息", RS.get("resource.image.skyblock-bank-logo"), HypixelCommand::handleSearchSkyblockItemPrice));
         register(commands, new SubCommand("hotm", Category.SKYBLOCK, "查询玩家sᴋʏʙʟᴏᴄᴋ山之心数据", RS.get("resource.image.icon-skyblock-hotm"), HypixelCommand::handleHotm));
         register(commands, new SubCommand("rift", Category.SKYBLOCK, "查询玩家sᴋʏʙʟᴏᴄᴋ ʀɪғᴛ数据", RS.get("resource.image.icon-skyblock-rift"), HypixelCommand::handleRift));
+        register(commands, new SubCommand("sw", Category.GENERAL, "查询玩家空岛战争详细数据", RS.get("resource.image.icon-skywars"), HypixelCommand::handleSkywars));
+        register(commands, new SubCommand("angels", Category.GENERAL, "查询玩家空岛战争天使血统进度", RS.get("resource.image.icon-skywars-angels"), HypixelCommand::handleSkywarsAngels));
         return Collections.unmodifiableMap(commands);
     }
 
@@ -105,11 +119,7 @@ public class HypixelCommand implements CommandExecutor {
             )
     );
 
-    private static Markdown getSubCommands() {
-        return getSubCommands(Category.GENERAL);
-    }
-
-    private static Markdown getSubCommands(Category category) {
+    private static Markdown getSubCommands(QQCommandSender sender, Category category) {
         StringBuilder s = new StringBuilder();
         String title = category == Category.GENERAL ? "**ʜʏᴘɪxᴇʟ 综合查询菜单**\n\n" : "**ʜʏᴘɪxᴇʟ " + category.title + " 指令菜单**\n\n";
         String cmdPrefix = "/hyp ";
@@ -125,6 +135,7 @@ public class HypixelCommand implements CommandExecutor {
         }
         for (var cmd : SUB_COMMANDS.values()) {
             if (cmd.category() != category) continue;
+            if (cmd.prefix().equals("ip") && !sender.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) continue;
             s.append("> ").append(Markdown.img(cmd.icon(), 16, 16)).append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmd.description())).append("\n");
         }
         return new Markdown(s.toString());
@@ -155,11 +166,27 @@ public class HypixelCommand implements CommandExecutor {
             user.sendMessage("未知的子命令，请使用 /hyp 查看可用的子命令列表");
             return true;
         }
+//        if (prefix.equals("ip") && !user.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) {
+//            user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
+//            return true;
+//        }
+        if (isCoolingDown(user)) return true;
         return sub.handler().execute(user, Arrays.copyOfRange(args, 1, args.length));
     }
 
+    private static boolean isCoolingDown(QQCommandSender user) {
+        if (user.hasPermission()) return false;
+        long now = System.nanoTime();
+        Long previous = QUERY_TIMES.asMap().putIfAbsent(user.getUserId(), now);
+        if (previous == null) return false;
+
+        long remaining = Math.max(1, (long) Math.ceil((QUERY_COOLDOWN_NANOS - (now - previous)) / 1_000_000_000.0));
+        user.sendMessage("查询过于频繁，请在 " + remaining + " 秒后重试喵");
+        return true;
+    }
+
     private static void sendMenu(QQCommandSender sender, Category category) {
-        sender.sendMessage(getSubCommands(category), keyboard);
+        sender.sendMessage(getSubCommands(sender, category), keyboard);
     }
 
     private static void sendMissingPlayer(QQCommandSender sender) {
@@ -228,11 +255,54 @@ public class HypixelCommand implements CommandExecutor {
     }
 
     private static boolean handleSlumberHotel(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars.slumber"), "sh");
+        String player = args.length > 0 ? args[0] : null;
+
+        String p = QueryTemplate.getPlayerOrNull(user.getUserId(), player);
+        if (p == null) {
+            user.sendMessage(I18N.text("command.mc.noplayer"));
+            return true;
+        }
+        return BedwarsProfileImpl.slumberHotelProfile(user, p);
     }
 
     private static boolean handleBedwars(QQCommandSender user, String[] args) {
-        return queryPlayer(user, args, OpenApi.get("bot.hypixel.bedwars"), "bw");
+        String player = args.length > 0 ? args[0] : null;
+
+        String p = QueryTemplate.getPlayerOrNull(user.getUserId(), player);
+        if (p == null) {
+            user.sendMessage(I18N.text("command.mc.noplayer"));
+            return true;
+        }
+        return BedwarsProfileImpl.bedwarsProfile(user, p);
+    }
+
+    private static boolean handleSkywars(QQCommandSender user, String[] args) {
+        String player = args.length > 0 ? args[0] : null;
+
+        String p = QueryTemplate.getPlayerOrNull(user.getUserId(), player);
+        if (p == null) {
+            user.sendMessage(I18N.text("command.mc.noplayer"));
+            return true;
+        }
+
+        if (args.length >= 2) {
+            String mode = args[1].toLowerCase();
+            return SkywarsProfileImpl.getSkywarsKit(user, p, mode);
+        }
+
+        return SkywarsProfileImpl.getSkywarsGeneralProfile(user, p);
+    }
+
+    private static boolean handleSkywarsAngels(QQCommandSender user, String[] args) {
+        String player = args.length > 0 ? args[0] : null;
+
+        String p = QueryTemplate.getPlayerOrNull(user.getUserId(), player);
+        if (p == null) {
+            user.sendMessage(I18N.text("command.mc.noplayer"));
+            return true;
+        }
+
+        return SkywarsProfileImpl.getSkywarsAngels(user, p);
     }
 
     private static boolean handleSkyblockCalendar(QQCommandSender user, String[] args) {
@@ -342,6 +412,10 @@ public class HypixelCommand implements CommandExecutor {
         }
 
 
+        if (!user.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) {
+            user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
+            return true;
+        }
         String nextCursor = result.d().path("next_cursor").asText(null);
         String previousCursor = result.d().path("pre_cursor").asText(null);
 
@@ -493,5 +567,37 @@ public class HypixelCommand implements CommandExecutor {
                         )
                 )
         );
+    }
+
+    private static boolean handleLobbyStats(QQCommandSender sender, String[] args) {
+        String player = args.length > 0 ? args[0] : null;
+
+        String p = QueryTemplate.getPlayerOrNull(sender.getUserId(), player);
+        if (p == null) {
+            sender.sendMessage(I18N.text("command.mc.noplayer"));
+            return true;
+        }
+
+        String userOpenId = sender.getUserId();
+        var r = QueryTemplate.getRequestBody(userOpenId, p);
+        var api = OpenApi.get("bot.hypixel.profile");
+
+        var q = withQueryProgress(sender, I18N.text("command.mc.querying"), () -> customQueryRequest(api, r));
+
+        if (!q.success()) {
+            sender.sendMessage(q.message());
+            return true;
+        }
+
+        List<List<Button>> btns = List.of(
+                List.of(
+                        new Button("在线情况", "/hyp gs", ButtonStyle.GRAY),
+                        new Button("大厅钓鱼", "/hyp lf " + p, ButtonStyle.GRAY),
+                        new Button("大厅跑酷", "/hyp pr " + p, ButtonStyle.GRAY)
+                )
+        );
+
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, p)).setKeyboard(QueryTemplate.getKeyboard("/hyp", "lb").append(btns, true)), false);
+        return true;
     }
 }

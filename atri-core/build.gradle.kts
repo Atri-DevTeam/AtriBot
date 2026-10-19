@@ -21,7 +21,6 @@ dependencies {
     api("org.yaml:snakeyaml:2.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
     api("org.slf4j:slf4j-api:2.0.20")
-    implementation("org.jline:jline:4.4.8")
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
     testImplementation(platform("org.junit:junit-bom:6.1.3"))

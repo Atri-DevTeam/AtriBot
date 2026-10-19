@@ -317,6 +317,22 @@ public class BotEvents {
                     );
                     EventManager.getInstance().callEvent(event);
                 }
+                case PROMPT_FEEDBACK -> {
+                    OfficialC2CPromptFeedbackEvent event = new OfficialC2CPromptFeedbackEvent(
+                            application_id,
+                            eventId,
+                            id,
+                            scene,
+                            timestamp,
+                            type,
+                            version,
+                            dataNode.path("type").asInt(0),
+                            chatType,
+                            userId,
+                            dataNode.path("resolved")
+                    );
+                    EventManager.getInstance().callEvent(event);
+                }
                 case GROUP_AUTHORIZE_STATUS -> log.info("收到群开发者设置事件，内容: {}", eventData);
                 default -> log.warn("收到非常牛逼的新的交互事件类型: {}, 内容: {}", type, eventData);
             }

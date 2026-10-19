@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atricore.platform.qq.QQBot;
 
@@ -61,7 +62,7 @@ public final class MiniappProfileService {
 
     public record Profile(String userId, String username, String avatarUrl, Account account,
                           Messages privateMessages, Messages groupMessages, SignIn signIn,
-                          Integer coins, Collection collection, List<String> unavailable, String updatedAt, Bot bot) {
+                          Integer coins, Collection collection, List<String> unavailable, String updatedAt, Bot bot, boolean skyblockPrice) {
     }
 
     public MiniappProfileService() {
@@ -127,10 +128,13 @@ public final class MiniappProfileService {
         }
         // Do not invent a username from an OpenID or create a unified account just to show a page.
         return new Profile(userId, username, avatarUrl(appId.get(), userId), account, privateMessages, groupMessages,
-                signIn, coins, collection, List.copyOf(unavailable), Instant.now().toString(), bot.get());
+                signIn, coins, collection, List.copyOf(unavailable), Instant.now().toString(), bot.get(), SkyblockPriceAlertService.canUse(userId));
     }
 
-    private static Bot currentBot() {
+    /**
+     * @return 当前机器人名称和头像地址，仅读取已缓存的机器人资料及配置
+     */
+    public static Bot currentBot() {
         String name = clean(QQBot.BOT_NAME);
         String avatar = clean(QQBot.BOT_AVATAR_URL);
         Config config = Config.getInstance();

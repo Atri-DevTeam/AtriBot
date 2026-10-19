@@ -30,6 +30,7 @@ public class MiniGameCommand implements CommandExecutor {
 
         Markdown md = TC.md("**小游戏列表**\n\n" +
                 "> " + Markdown.enterCommand("/扫雷", "\uD83D\uDCA3 扫雷小游戏(5x6)") + "\n" +
+                "> " + Markdown.enterCommand("/井字棋", "❌ 井字棋小游戏(3x3)") + "\n" +
                 "> " + Markdown.enterCommand("/反应力测试", "⚡ 反应力小测试") + "\n" +
                 "> " + Markdown.enterCommand("/四子棋", "\uD83D\uDD34 四子棋小游戏") + "\n" +
                 "> " + Markdown.enterCommand("/幸运轮盘", "\uD83C\uDFA1 幸运轮盘(2-5人)") + "\n" +

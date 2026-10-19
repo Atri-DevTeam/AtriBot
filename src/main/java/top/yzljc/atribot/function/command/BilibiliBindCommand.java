@@ -14,7 +14,7 @@ import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ResourcesProperties;
-import top.yzljc.atribot.database.repo.C2CRepository;
+import top.yzljc.atribot.database.repo.BotUserDataRepository;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atricore.service.request.HttpService;
@@ -40,7 +40,7 @@ public class BilibiliBindCommand implements CommandExecutor {
                 return OfficialUsers.getUserSetting(user, OfficialUsers.BILIBILI_UID_SETTING);
             }
 
-            public C2CRepository.SettingWriteResult bind(String user, long uid) {
+            public BotUserDataRepository.SettingWriteResult bind(String user, long uid) {
                 return OfficialUsers.bindBilibiliUid(user, uid);
             }
         }, uid -> HttpService.postJsonDetailed(ResourcesProperties.BILIBILI_BIND_API, Map.of("uid", uid),
@@ -55,7 +55,7 @@ public class BilibiliBindCommand implements CommandExecutor {
     interface BindingStore {
         JsonNode get(String user);
 
-        C2CRepository.SettingWriteResult bind(String user, long uid);
+        BotUserDataRepository.SettingWriteResult bind(String user, long uid);
     }
 
     @FunctionalInterface

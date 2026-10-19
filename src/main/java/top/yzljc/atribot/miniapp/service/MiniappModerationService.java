@@ -44,7 +44,8 @@ public final class MiniappModerationService {
     public MiniappModerationService() {
         this(new GroupBindingRepository(), GroupMember::getMemberInfo,
                 user -> hasPermission(user, "group.moderation"),
-                user -> hasPermission(user, "atri.custom_prompt"), OfficialUsers::isBlocked, new Store() {
+                user -> hasPermission(user, "atri.custom_prompt"),
+                user -> OfficialUsers.isBlocked(user) || OfficialUsers.isIgnored(user), new Store() {
                     public GroupModerationSettings read(String groupId) { return GroupModerationStore.snapshot(groupId); }
                     public GroupModerationSettings update(String groupId, UnaryOperator<GroupModerationSettings> edit) {
                         return GroupModerationStore.update(groupId, edit);

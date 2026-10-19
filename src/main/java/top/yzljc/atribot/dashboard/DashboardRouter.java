@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.miniapp.MiniappSessions;
+import top.yzljc.atribot.miniapp.service.MiniappProfileService;
+import top.yzljc.atribot.webui.WebUISessionManager;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -30,12 +32,12 @@ import java.util.function.Supplier;
 public final class DashboardRouter {
     private static final Logger LOG = LoggerFactory.getLogger(DashboardRouter.class);
     private static final String STATE_COOKIE = "dashboard_qq_state";
-    private static final String SESSION_COOKIE = "dashboard_session";
+    private static final String SESSION_COOKIE = DashboardSessions.SESSION_COOKIE;
     private DashboardRouter() {}
 
-    record StartRequest(String userOpenId, String ticket, String nav, String navAlpha, boolean mobile) {}
+    record StartRequest(String userOpenId, String ticket, String nav, String wwv, boolean mobile, boolean qq) {}
     @FunctionalInterface
-    interface IdentityExchange { String openId(DashboardSettings settings, String code) throws IOException, InterruptedException; }
+    interface IdentityExchange { QqConnectClient.Profile profile(DashboardSettings settings, String code) throws IOException, InterruptedException; }
 
     interface AccountBindings {
         MiniappSessions.Identity find(DashboardSettings settings, String openId) throws SQLException;
@@ -54,19 +56,21 @@ public final class DashboardRouter {
                 return UnifiedAuthentication.bindQqConnect(identity.userId(), identity.displayName(), openId);
             }
         };
-        register(server, sessions, pages, bindings, DashboardSettings::current, new QqConnectClient()::openId,
+        register(server, sessions, pages, bindings, DashboardSettings::current, new QqConnectClient()::profile,
                 userId -> !OfficialUsers.isBlocked(userId) && !OfficialUsers.isIgnored(userId));
     }
 
     static void register(Javalin server, DashboardSessions sessions, MiniappSessions pages,
                          AccountBindings bindings, Supplier<DashboardSettings> configuration,
                          IdentityExchange exchange, Predicate<String> allowed) {
-        server.get("/", ctx -> ctx.header("Cache-Control", "no-store").redirect("/dashboard/"));
+        server.get("/", ctx -> ctx.header("Cache-Control", "no-store")
+                .redirect("/dashboard/" + ("1".equals(singleQuery(ctx, "qq")) ? "?qq=1" : "")));
         server.before("/dashboard", ctx -> guard(ctx, configuration.get()));
         server.before("/dashboard/*", ctx -> guard(ctx, configuration.get()));
         server.before("/auth/qq/callback", ctx -> guard(ctx, configuration.get()));
         server.get("/dashboard", DashboardRouter::index);
         server.get("/dashboard/", DashboardRouter::index);
+        server.get("/dashboard/api/bot", ctx -> ctx.json(MiniappProfileService.currentBot()));
 
         server.post("/dashboard/api/auth/start", ctx -> {
             DashboardSettings settings = configuration.get();
@@ -74,7 +78,7 @@ public final class DashboardRouter {
             StartRequest request = ctx.bodyAsClass(StartRequest.class);
             if (request == null || request.userOpenId() != null && request.userOpenId().length() > 128
                     || request.ticket() != null && request.ticket().length() > 128) throw new BadRequestResponse();
-            String navigation = navigation(request.nav(), request.navAlpha());
+            String navigation = navigation(request.nav(), request.wwv(), request.qq());
             try {
                 String state = sessions.begin(request.userOpenId(), request.ticket(), settings, navigation);
                 cookie(ctx, STATE_COOKIE, state, "/", DashboardSessions.STATE_SECONDS, settings);
@@ -101,7 +105,8 @@ public final class DashboardRouter {
                 if (code == null || code.isBlank() || code.length() > 512 || ctx.queryParam("error") != null) {
                     error = "LOGIN_CANCELLED";
                 } else {
-                    String qqOpenId = exchange.openId(settings, code);
+                    var profile = exchange.profile(settings, code);
+                    String qqOpenId = profile.openId();
                     if (pending.binding() != null && !allowed.test(pending.binding().userId())) error = "ACCOUNT_RESTRICTED";
                     else if (pending.binding() != null && !bindings.bind(settings, qqOpenId, pending.binding())) error = "BINDING_CONFLICT";
                     else {
@@ -109,7 +114,7 @@ public final class DashboardRouter {
                         if (identity != null && !allowed.test(identity.userId())) error = "ACCOUNT_RESTRICTED";
                         else {
                             sessions.revoke(ctx.cookie(SESSION_COOKIE));
-                            String token = sessions.login(identity, settings);
+                            String token = sessions.login(identity, qqOpenId, profile.avatarUrl(), settings);
                             cookie(ctx, SESSION_COOKIE, token, "/", DashboardSessions.LOGIN_SECONDS, settings);
                         }
                     }
@@ -161,7 +166,9 @@ public final class DashboardRouter {
             var access = pages.createAccess(login.identity(), () -> sessions.authenticate(token, configuration.get()) != null
                     && allowed.test(login.identity().userId()));
             if (access == null) ctx.status(429).json(Map.of("error", "LOGIN_BUSY"));
-            else ctx.json(Map.of("status", "ready", "access", access));
+            else ctx.json(Map.of("status", "ready", "access", access,
+                    "canManage", WebUISessionManager.isAdministrator(UnifiedAuthentication.getCachedQqUserAccount(login.identity().userId())),
+                    "webuiEnabled", WebUISessionManager.isActive()));
         });
 
         server.post("/dashboard/api/auth/logout", ctx -> {
@@ -198,10 +205,11 @@ public final class DashboardRouter {
         return values.size() == 1 ? values.getFirst() : null;
     }
 
-    private static String navigation(String nav, String alpha) {
+    private static String navigation(String nav, String wwv, boolean qq) {
         String query = "";
         if (nav != null && nav.matches("[A-Za-z0-9_.-]{1,32}")) query = "_nav=" + nav;
-        if (alpha != null && alpha.matches("[A-Za-z0-9_.-]{1,32}")) query += (query.isEmpty() ? "" : "&") + "_nav_alpha=" + alpha;
+        if (wwv != null && wwv.matches("[0-9]{1,10}")) query += (query.isEmpty() ? "" : "&") + "_wwv=" + wwv;
+        if (qq) query += (query.isEmpty() ? "" : "&") + "qq=1";
         return query;
     }
 

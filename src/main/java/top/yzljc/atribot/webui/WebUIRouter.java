@@ -6,6 +6,8 @@ import io.javalin.Javalin;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.configuration.Config;
+import top.yzljc.atribot.dashboard.DashboardSessions;
+import top.yzljc.atribot.dashboard.DashboardSettings;
 import top.yzljc.atribot.function.utils.SizeNtUid;
 import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.webui.controller.*;
@@ -29,7 +31,9 @@ public class WebUIRouter {
     private static final String INDEX_HTML = "/official-webui/index.html";
 
     private static final int NTUID_RATE_LIMIT = 20;
-    /** 公开查询接口频控：按 IP 60 QPM + 全局 600 QPM，滑动窗口 */
+    /**
+     * 公开查询接口频控：按 IP 60 QPM + 全局 600 QPM，滑动窗口
+     */
     private static final int PUBLIC_RATE_LIMIT_PER_IP = 60;
     private static final int PUBLIC_RATE_LIMIT_GLOBAL = 600;
     private static final long RATE_WINDOW_MS = 60_000L;
@@ -37,12 +41,19 @@ public class WebUIRouter {
     private static final Map<String, Deque<Long>> PUBLIC_IP_REQUESTS = new ConcurrentHashMap<>();
     private static final Deque<Long> PUBLIC_GLOBAL_REQUESTS = new ConcurrentLinkedDeque<>();
 
-    private record MetaDTO(String appId, String botOpenId) {}
+    private record MetaDTO(String appId, String botOpenId) {
+    }
 
-    public static void register(Javalin server) {
+    public static void register(Javalin server, DashboardSessions sessions) {
+        WebUISessionManager.configure(sessions, DashboardSettings::current);
         // 关闭状态下，静态资源/API/SPA fallback 一律不给任何响应体
         server.before("/webui", WebUIRouter::activeGuard);
         server.before("/webui/*", WebUIRouter::activeGuard);
+        server.before("/webui", WebUIRouter::pageAuth);
+        server.before("/webui/*", WebUIRouter::pageAuth);
+        server.get("/webui", WebUIRouter::entryPage);
+        server.get("/webui/", WebUIRouter::entryPage);
+        server.get("/webui/index.html", WebUIRouter::entryPage);
 
         // 禁止被 iframe 嵌套，防点击劫持
         server.before("/webui", ctx -> ctx.header("X-Frame-Options", "DENY"));
@@ -58,8 +69,12 @@ public class WebUIRouter {
 
         // Auth middleware for webui paths.
         server.before("/webui/api/*", WebUIRouter::auth);
+        server.beforeMatched(ctx -> {
+            String route = ctx.endpointHandlerPath();
+            if (route.startsWith("/webui/api/") || route.startsWith("/webui/meta/")) auth(ctx);
+        });
 
-        registerPublicUtilityRoutes(server, "/webui/api/public/official");
+        registerUtilityRoutes(server, "/webui/api/public/official");
 
         server.before("/openapi/bot_stats", WebUIRouter::publicRateLimit);
         server.get("/openapi/bot_stats", BotStatsController::query);
@@ -72,8 +87,6 @@ public class WebUIRouter {
         server.get("/webui/api/stats/series", StatsQueryController::series);
         server.get("/webui/api/stats/users/{userOpenId}", StatsQueryController::officialUserInfo);
         server.get("/webui/api/stats/groups/{groupOpenId}", StatsQueryController::officialGroupInfo);
-        server.get("/webui/api/auth/challenge", AuthController::createChallenge);
-        server.post("/webui/api/auth/verify", AuthController::login);
         server.post("/webui/api/auth/logout", AuthController::logout);
         server.get("/webui/api/auth/verify", AuthController::verifyToken);
         server.get("/webui/api/chat/conversations", GroupController::listChatConversations);
@@ -179,8 +192,7 @@ public class WebUIRouter {
         server.post("/webui/api/c2c/{userOpenId}/profile", C2CController::updateC2CUserProfile);
         server.post("/webui/api/c2c/{userOpenId}/role", C2CController::setC2CUserRole);
         server.post("/webui/api/c2c/{userOpenId}/permissions/{permission}", C2CController::toggleC2CUserPermission);
-        server.post("/webui/api/c2c/{userOpenId}/blocked", C2CController::setC2CUserBlocked);
-        server.post("/webui/api/c2c/{userOpenId}/ignored", C2CController::setC2CUserIgnored);
+        server.post("/webui/api/c2c/{userOpenId}/status", C2CController::setC2CUserStatus);
         server.post("/webui/api/c2c/{userOpenId}/push", C2CController::setC2CUserPush);
         server.get("/webui/api/c2c/{userOpenId}/messages", C2CController::fetchC2CMessages);
         server.delete("/webui/api/c2c/{userOpenId}/messages", C2CController::clearC2CMessages);
@@ -260,7 +272,9 @@ public class WebUIRouter {
         cleanupRateBuckets(NTUID_REQUESTS, System.currentTimeMillis());
     }
 
-    /** 公开查询接口双层频控：先全局后按 IP；超限的全局请求不触碰 per-IP 表，防止伪造 IP 撑大内存 */
+    /**
+     * 公开查询接口双层频控：先全局后按 IP；超限的全局请求不触碰 per-IP 表，防止伪造 IP 撑大内存
+     */
     private static void publicRateLimit(Context ctx) {
         long now = System.currentTimeMillis();
         if (!tryAcquireRateSlot(PUBLIC_GLOBAL_REQUESTS, PUBLIC_RATE_LIMIT_GLOBAL, RATE_WINDOW_MS, now)) {
@@ -280,7 +294,9 @@ public class WebUIRouter {
         ctx.skipRemainingHandlers();
     }
 
-    /** 滑动窗口取一个频控名额；窗口内已满则返回 false 且不占用名额 */
+    /**
+     * 滑动窗口取一个频控名额；窗口内已满则返回 false 且不占用名额
+     */
     private static boolean tryAcquireRateSlot(Deque<Long> timestamps, int limit, long windowMs, long now) {
         while (!timestamps.isEmpty() && now - timestamps.peekFirst() > windowMs) {
             timestamps.pollFirst();
@@ -292,7 +308,9 @@ public class WebUIRouter {
         return true;
     }
 
-    /** 频控桶总量超过阈值时，移除整个窗口内无请求的 IP，防止伪造 IP 无限撑大内存 */
+    /**
+     * 频控桶总量超过阈值时，移除整个窗口内无请求的 IP，防止伪造 IP 无限撑大内存
+     */
     private static void cleanupRateBuckets(Map<String, Deque<Long>> buckets, long now) {
         if (buckets.size() < 10_000) {
             return;
@@ -305,37 +323,28 @@ public class WebUIRouter {
     }
 
     private static void activeGuard(Context ctx) {
-        if (ctx.path().contains("/api/public/")) {
-            return;
-        }
         if (!WebUISessionManager.isActive()) {
             if (!ctx.path().contains("event")) {
                 log.warn("WebUI 未开启，拦截请求: {}", ctx.path());
             }
             ctx.status(503).result("");
+            ctx.header("Cache-Control", "no-store");
             ctx.skipRemainingHandlers();
         }
     }
 
     private static void auth(io.javalin.http.Context ctx) {
-        String path = ctx.path();
-        String method = ctx.method().toString();
-        if (path.endsWith("/api/auth/challenge") || (path.endsWith("/api/auth/verify") && "POST".equalsIgnoreCase(method))) {
-            return;
-        }
-        if (path.contains("/api/public/")) {
-            return;
-        }
+        WebUISessionManager.require(ctx);
+    }
 
-        String token = Config.getInstance().getOfficialWebuiToken();
-        if (token == null || token.isBlank() || "null".equalsIgnoreCase(token)) {
-            ctx.status(401).json(Result.fail(401, "Official WebUI Token 未配置"));
-            ctx.skipRemainingHandlers();
-            return;
-        }
-
-        if (!WebUISessionManager.verifySession(ctx.cookie(WebUISessionManager.SESSION_COOKIE))) {
-            ctx.status(401).json(Result.fail(401, "未授权"));
+    private static void pageAuth(Context ctx) {
+        if (ctx.path().startsWith("/webui/api/") || ctx.path().startsWith("/webui/meta/")) return;
+        var account = WebUISessionManager.currentAccount(ctx.cookie(DashboardSessions.SESSION_COOKIE));
+        if (!WebUISessionManager.isAdministrator(account)) {
+            var settings = DashboardSettings.current();
+            ctx.header("Cache-Control", "no-store");
+            String entry = settings.origin() == null ? "/dashboard/" : settings.entryUrl();
+            ctx.redirect(entry + (ctx.queryParams("qq").size() == 1 && "1".equals(ctx.queryParam("qq")) ? "?qq=1" : ""));
             ctx.skipRemainingHandlers();
         }
     }
@@ -344,10 +353,21 @@ public class WebUIRouter {
         String path = ctx.path();
         if (!path.startsWith("/webui/")) return;
         if (path.contains("/api/")) return;
+        ctx.header("Cache-Control", "no-store");
+        if (path.startsWith("/webui/assets/") || path.startsWith("/webui/img/")
+                || path.substring(path.lastIndexOf('/') + 1).contains(".")) {
+            ctx.status(404).result("");
+            return;
+        }
         if (!WebUISessionManager.isActive()) {
             ctx.status(503).result("");
             return;
         }
+        entryPage(ctx);
+    }
+
+    private static void entryPage(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
         InputStream in = WebUIRouter.class.getResourceAsStream(INDEX_HTML);
         if (in != null) {
             ctx.status(200);
@@ -356,7 +376,7 @@ public class WebUIRouter {
         }
     }
 
-    private static void registerPublicUtilityRoutes(Javalin server, String prefix) {
+    private static void registerUtilityRoutes(Javalin server, String prefix) {
         server.before(prefix + "/*", WebUIRouter::publicRateLimit);
         server.before(prefix + "/ntuid", WebUIRouter::ntUidRateLimit);
         server.post(prefix + "/ntuid", SizeNtUid::ntUidController);

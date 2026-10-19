@@ -1,9 +1,5 @@
 <template>
   <AppShell v-model:open="sidebarOpen" class="legacy-chat">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loadingConvs" @click="loadConversations()">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="chatnt" :class="{ 'chatnt--chat-open': mobileChatOpen }"
           :style="{ '--chat-list-width': listWidth + 'px' }">
@@ -861,6 +857,7 @@
 
 <script setup>
 import {createWebuiApi} from '../../shared/lib/webuiApi.js'
+import {withQqMode} from '../../shared/lib/qqEnvironment.js'
 import {emptyUserProfile, loadUserProfile, saveUserProfile} from '../users/lib/userProfile.js'
 import {createDetailHistory} from '../../shared/lib/detailHistory.js'
 import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
@@ -1377,24 +1374,6 @@ const api = createWebuiApi({
     if (disposed || sseStopped) throw new Error('会话已结束')
   }
 })
-
-async function logout() {
-  if (disposed || sseStopped) return
-  if (!mayLeaveSettings()) return
-  welcomePanelRef.value?.releaseLeaveGuard()
-  moderationPanelRef.value?.releaseLeaveGuard()
-  stopSse()
-  try {
-    await fetch(`${API_BASE}/auth/logout`, {method: 'POST', credentials: 'same-origin'})
-  } catch { /* ignore */
-  }
-  if (disposed) return
-  try {
-    localStorage.removeItem(LEGACY_TOKEN_KEY)
-  } catch { /* 存储不可用不影响退出。 */
-  }
-  window.location.replace(router.resolve('/login').href)
-}
 
 async function loadConfig() {
   try {
@@ -2510,7 +2489,7 @@ function expireSession() {
     localStorage.removeItem(LEGACY_TOKEN_KEY)
   } catch { /* 存储不可用不影响退出。 */
   }
-  window.location.replace(router.resolve('/login').href)
+  window.location.replace(withQqMode('/dashboard/'))
 }
 
 function scheduleSseReconnect() {

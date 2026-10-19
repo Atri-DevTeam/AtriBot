@@ -36,7 +36,7 @@ test('game records and settings use private requests without loading inventory i
   await expect(page.locator('[data-game=connect4] .game-metrics')).toContainText('正常获胜8')
   await expect(page.locator('[data-game=reaction] .game-metrics')).toContainText('平均完成用时20.00 秒')
   await expect(page.getByLabel('用户设置')).toContainText('起床战争30')
-  await expect(page).toHaveTitle('\u200b')
+  await expect(page).toHaveTitle('个人面板')
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
       writeText: async (value: string) => { document.documentElement.dataset.copied = value }

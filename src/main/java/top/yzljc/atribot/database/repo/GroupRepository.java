@@ -1,15 +1,20 @@
 package top.yzljc.atribot.database.repo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
+import java.io.IOException;
+import java.sql.Connection;
 import java.sql.Types;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * official_groups 和 group_function_list 表的纯数据库访问层。
+ * official_groups 表的数据库访问层
  * 缓存和业务逻辑保留在 OfficialGroups 中。
  *
  * @Author YZ_Ljc_
@@ -22,8 +27,7 @@ import java.util.List;
 public class GroupRepository {
 
     private static final String GROUP_TABLE = "official_groups";
-    private static final String GROUP_FUNCTION_TABLE = "group_function_list";
-    private static final String GROUP_JOIN_WELCOME_TABLE = "group_join_welcome";
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     public static void initTables() {
         String sqlGroup = "CREATE TABLE IF NOT EXISTS `" + GROUP_TABLE + "` (" +
@@ -41,19 +45,8 @@ public class GroupRepository {
                 "  `group_finger_memo` VARCHAR(512) NULL," +
                 "  `group_class_text` VARCHAR(256) NULL," +
                 "  `group_tags` JSON NULL," +
+                "  `group_settings` JSON NULL," +
                 "  `group_member_num` INT NOT NULL DEFAULT 0," +
-                "  PRIMARY KEY (`group_openId`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-        String sqlFunc = "CREATE TABLE IF NOT EXISTS `" + GROUP_FUNCTION_TABLE + "` (" +
-                "  `group_openId` VARCHAR(256) NOT NULL," +
-                "  `functions` JSON NOT NULL," +
-                "  PRIMARY KEY (`group_openId`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-        String sqlJoinWelcome = "CREATE TABLE IF NOT EXISTS `" + GROUP_JOIN_WELCOME_TABLE + "` (" +
-                "  `group_openId` VARCHAR(256) NOT NULL," +
-                "  `config` JSON NOT NULL," +
                 "  PRIMARY KEY (`group_openId`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
@@ -61,20 +54,14 @@ public class GroupRepository {
             try (var ps = con.prepareStatement(sqlGroup)) {
                 ps.execute();
             }
-            try (var ps = con.prepareStatement(sqlFunc)) {
-                ps.execute();
-            }
-            try (var ps = con.prepareStatement(sqlJoinWelcome)) {
-                ps.execute();
-            }
+//            migrateGroupSettings(con);
         } catch (Exception e) {
-            log.error("初始化群相关数据库表失败", e);
+            throw new IllegalStateException("初始化或迁移群相关数据库表失败", e);
         }
 
 //        migrateCurrentGroupSchema();
 //        migrateGroupTable("group_whitelist");
 //        migrateGroupTable("group-whiteist");
-//        migrateFunctionTable("function_list");
     }
 
     /**
@@ -136,33 +123,14 @@ public class GroupRepository {
     }
 
     /**
-     * 在同一事务中删除群数据及功能配置。
+     * 删除群资料及其中的功能和欢迎配置
      */
     public static boolean deleteGroup(String groupOpenId) {
         String sql = "DELETE FROM `" + GROUP_TABLE + "` WHERE group_openId = ?";
-        String functionSql = "DELETE FROM `" + GROUP_FUNCTION_TABLE + "` WHERE group_openId = ?";
-
-        try (var con = DatabaseManager.getConnection()) {
-            con.setAutoCommit(false);
-            try {
-                try (var ps = con.prepareStatement(sql)) {
-                    ps.setString(1, groupOpenId);
-                    ps.executeUpdate();
-                }
-                try (var ps = con.prepareStatement(functionSql)) {
-                    ps.setString(1, groupOpenId);
-                    ps.executeUpdate();
-                }
-                con.commit();
-                return true;
-            } catch (SQLException e) {
-                try {
-                    con.rollback();
-                } catch (SQLException rollbackError) {
-                    e.addSuppressed(rollbackError);
-                }
-                throw e;
-            }
+        try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
+            ps.setString(1, groupOpenId);
+            ps.executeUpdate();
+            return true;
         } catch (Exception e) {
             log.error("删除群 {} 的数据及功能配置失败", groupOpenId, e);
             return false;
@@ -308,21 +276,12 @@ public class GroupRepository {
         }
     }
 
-    // ==================== group_function_list CRUD ====================
-
     /**
-     * 读取群的 group_function_list JSON 字符串，不存在返回 null
+     * 读取 group_settings.functions，不存在返回 null
      */
     public static String getFunctionConfigJson(String groupOpenId) {
-        String sql = "SELECT functions FROM `" + GROUP_FUNCTION_TABLE + "` WHERE group_openId = ?";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            var rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getString("functions");
-            }
+        try (var con = DatabaseManager.getConnection()) {
+            return getFunctionConfigJson(con, groupOpenId);
         } catch (Exception e) {
             log.error("读取群 {} 的功能配置失败: {}", groupOpenId, e.getMessage());
         }
@@ -330,17 +289,11 @@ public class GroupRepository {
     }
 
     /**
-     * 保存群的 group_function_list JSON 字符串
+     * 保存 group_settings.functions，保留其他群设置
      */
     public static boolean saveFunctionConfigJson(String groupOpenId, String json) {
-        String sql = "INSERT INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) VALUES (?, ?) " +
-                "ON DUPLICATE KEY UPDATE functions = VALUES(functions)";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            ps.setString(2, json);
-            ps.executeUpdate();
+        try (var con = DatabaseManager.getConnection()) {
+            saveFunctionConfigJson(con, groupOpenId, json);
             return true;
         } catch (Exception e) {
             log.error("保存群 {} 的功能配置失败: {}", groupOpenId, e.getMessage());
@@ -352,19 +305,32 @@ public class GroupRepository {
      * 查询开启某功能的所有群 openId
      */
     public static List<String> queryEnabledGroups(String functionKey) {
-        List<String> groups = new ArrayList<>();
-        String sql = "SELECT group_openId FROM `" + GROUP_FUNCTION_TABLE + "` WHERE JSON_EXTRACT(functions, ?) = true";
-        String jsonPath = "$." + functionKey + ".enabled";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, jsonPath);
-            var rs = ps.executeQuery();
-            while (rs.next()) {
-                groups.add(rs.getString("group_openId"));
-            }
+        try (var con = DatabaseManager.getConnection()) {
+            return queryEnabledGroups(con, functionKey);
         } catch (Exception e) {
             log.error("查询功能 {} 的启用群列表失败: {}", functionKey, e.getMessage());
+            return List.of();
+        }
+    }
+
+    static String getFunctionConfigJson(Connection con, String groupOpenId) throws SQLException {
+        return getGroupSettingJson(con, groupOpenId, "functions");
+    }
+
+    static void saveFunctionConfigJson(Connection con, String groupOpenId, String json) throws SQLException {
+        saveGroupSettingJson(con, groupOpenId, "functions", json);
+    }
+
+    static List<String> queryEnabledGroups(Connection con, String functionKey) throws SQLException {
+        List<String> groups = new ArrayList<>();
+        String sql = "SELECT group_openId FROM official_groups WHERE JSON_EXTRACT(group_settings, ?) = true";
+        String jsonPath = "$.functions." + functionKey + ".enabled";
+
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, jsonPath);
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) groups.add(rs.getString("group_openId"));
+            }
         }
         return groups;
     }
@@ -387,23 +353,6 @@ public class GroupRepository {
 //            log.info("已从旧表 {} 迁移 {} 条群数据到 {}", legacyTable, count, GROUP_TABLE);
 //        } catch (Exception e) {
 //            log.warn("从旧群表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_TABLE, e.getMessage());
-//        }
-//    }
-//
-//    private static void migrateFunctionTable(String legacyTable) {
-//        if (!tableExists(legacyTable)) {
-//            return;
-//        }
-//
-//        String sql = "INSERT IGNORE INTO `" + GROUP_FUNCTION_TABLE + "` (group_openId, functions) " +
-//                "SELECT group_openId, functions FROM `" + legacyTable + "`";
-//
-//        try (var con = DatabaseManager.getConnection();
-//             var ps = con.prepareStatement(sql)) {
-//            int count = ps.executeUpdate();
-//            log.info("已从旧表 {} 迁移 {} 条群功能配置到 {}", legacyTable, count, GROUP_FUNCTION_TABLE);
-//        } catch (Exception e) {
-//            log.warn("从旧群功能表 {} 迁移到 {} 失败: {}", legacyTable, GROUP_FUNCTION_TABLE, e.getMessage());
 //        }
 //    }
 //
@@ -471,8 +420,79 @@ public class GroupRepository {
 //            log.warn("{}: {}", errorMessage, e.getMessage());
 //        }
 //    }
-
-    // ==================== group_join_welcome CRUD ====================
+//
+//    /**
+//     * 启动阶段补充群设置列，分批迁移旧欢迎和功能配置；内容冲突时回滚，成功后删除旧表
+//     *
+//     * @param con 自动提交模式的初始化连接，迁移期间尚未接收群设置写入
+//     * @throws SQLException 扩列、迁移或删除旧表失败
+//     */
+//    static void migrateGroupSettings(Connection con) throws SQLException {
+//        if (!con.getAutoCommit()) throw new SQLException("群设置迁移需要独立的自动提交连接");
+//        boolean hasSettings = false;
+//        try (var columns = con.getMetaData().getColumns(con.getCatalog(), null, GROUP_TABLE, "group_settings")) {
+//            while (columns.next()) {
+//                if (GROUP_TABLE.equalsIgnoreCase(columns.getString("TABLE_NAME"))
+//                        && "group_settings".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) hasSettings = true;
+//            }
+//        }
+//        if (!hasSettings) {
+//            try (var ps = con.createStatement()) {
+//                ps.executeUpdate("ALTER TABLE official_groups ADD COLUMN group_settings JSON NULL");
+//            }
+//        }
+//        List<LegacySource> sources = new ArrayList<>();
+//        for (var source : List.of(new LegacySource("group_join_welcome", "config", "join_text"),
+//                new LegacySource("group_function_list", "functions", "functions"))) {
+//            try (var tables = con.getMetaData().getTables(con.getCatalog(), null, source.table(), null)) {
+//                while (tables.next()) {
+//                    if (source.table().equalsIgnoreCase(tables.getString("TABLE_NAME"))) {
+//                        sources.add(source);
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//        if (sources.isEmpty()) return;
+//        long migrated = 0;
+//        con.setAutoCommit(false);
+//        try {
+//            for (var source : sources) {
+//                String after = null;
+//                while (true) {
+//                    List<LegacySetting> batch = new ArrayList<>();
+//                    String sql = "SELECT group_openId, " + source.column() + " FROM " + source.table()
+//                            + (after == null ? "" : " WHERE group_openId > ?") + " ORDER BY group_openId LIMIT 100";
+//                    try (var ps = con.prepareStatement(sql)) {
+//                        if (after != null) ps.setString(1, after);
+//                        try (var rows = ps.executeQuery()) {
+//                            while (rows.next()) batch.add(new LegacySetting(rows.getString(1), rows.getString(2)));
+//                        }
+//                    }
+//                    if (batch.isEmpty()) break;
+//                    for (var row : batch) {
+//                        writeGroupSetting(con, row.groupId(), source.key(), parseObject(row.config()), true);
+//                    }
+//                    migrated += batch.size();
+//                    after = batch.getLast().groupId();
+//                }
+//            }
+//            con.commit();
+//        } catch (SQLException | RuntimeException e) {
+//            try { con.rollback(); }
+//            catch (SQLException rollback) { e.addSuppressed(rollback); }
+//            throw e;
+//        } finally {
+//            con.setAutoCommit(true);
+//        }
+//        try (var ps = con.createStatement()) {
+//            for (var source : sources) ps.executeUpdate("DROP TABLE " + source.table());
+//        }
+//        log.info("群设置迁移完成，共 {} 条，已合并至 official_groups.group_settings", migrated);
+//    }
+//
+//    private record LegacySource(String table, String column, String key) {}
+//    private record LegacySetting(String groupId, String config) {}
 
     /**
      * 读取群入群欢迎个性化配置 JSON 字符串，不存在返回 null
@@ -487,31 +507,34 @@ public class GroupRepository {
     }
 
     public static String getJoinWelcomeConfigJsonOrThrow(String groupOpenId) throws SQLException {
-        String sql = "SELECT config FROM `" + GROUP_JOIN_WELCOME_TABLE + "` WHERE group_openId = ?";
+        try (var con = DatabaseManager.getConnection()) {
+            return getJoinWelcomeConfigJson(con, groupOpenId);
+        }
+    }
 
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
+    static String getJoinWelcomeConfigJson(Connection con, String groupOpenId) throws SQLException {
+        return getGroupSettingJson(con, groupOpenId, "join_text");
+    }
+
+    private static String getGroupSettingJson(Connection con, String groupOpenId, String key) throws SQLException {
+        try (var ps = con.prepareStatement("SELECT group_settings FROM official_groups WHERE group_openId = ?")) {
             ps.setString(1, groupOpenId);
-            var rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getString("config");
+            try (var rows = ps.executeQuery()) {
+                if (!rows.next()) return null;
+                JsonNode config = parseObject(rows.getString(1)).get(key);
+                if (config == null || config.isNull()) return null;
+                if (!config.isObject()) throw new SQLException("群设置字段 " + key + " 不是 JSON 对象");
+                return config.toString();
             }
         }
-        return null;
     }
 
     /**
      * 保存群入群欢迎个性化配置 JSON 字符串
      */
     public static boolean saveJoinWelcomeConfigJson(String groupOpenId, String json) {
-        String sql = "INSERT INTO `" + GROUP_JOIN_WELCOME_TABLE + "` (group_openId, config) VALUES (?, ?) " +
-                "ON DUPLICATE KEY UPDATE config = VALUES(config)";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            ps.setString(2, json);
-            ps.executeUpdate();
+        try (var con = DatabaseManager.getConnection()) {
+            saveJoinWelcomeConfigJson(con, groupOpenId, json);
             return true;
         } catch (Exception e) {
             log.error("保存群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
@@ -523,16 +546,76 @@ public class GroupRepository {
      * 删除群入群欢迎个性化配置
      */
     public static boolean deleteJoinWelcomeConfig(String groupOpenId) {
-        String sql = "DELETE FROM `" + GROUP_JOIN_WELCOME_TABLE + "` WHERE group_openId = ?";
-
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
-            ps.setString(1, groupOpenId);
-            ps.executeUpdate();
+        try (var con = DatabaseManager.getConnection()) {
+            saveJoinWelcomeConfigJson(con, groupOpenId, null);
             return true;
         } catch (Exception e) {
             log.error("删除群 {} 的入群欢迎配置失败: {}", groupOpenId, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * 在行锁保护下只更新指定设置，保留其他字段；null 表示清除，不创建缺失的群记录
+     *
+     * @param con 调用方的自动提交连接
+     * @param groupOpenId 群 OpenID
+     * @param key 群设置字段
+     * @param json 配置对象的 JSON，清除时为 null
+     * @throws SQLException 数据无效或事务失败
+     */
+    private static void saveGroupSettingJson(Connection con, String groupOpenId, String key, String json) throws SQLException {
+        ObjectNode config = json == null ? null : parseObject(json);
+        if (!con.getAutoCommit()) throw new SQLException("群设置保存需要独立的自动提交连接");
+        con.setAutoCommit(false);
+        try {
+            writeGroupSetting(con, groupOpenId, key, config);
+            con.commit();
+        } catch (SQLException | RuntimeException e) {
+            try { con.rollback(); }
+            catch (SQLException rollback) { e.addSuppressed(rollback); }
+            throw e;
+        } finally {
+            con.setAutoCommit(true);
+        }
+    }
+
+    static void saveJoinWelcomeConfigJson(Connection con, String groupOpenId, String json) throws SQLException {
+        saveGroupSettingJson(con, groupOpenId, "join_text", json);
+    }
+
+    private static void writeGroupSetting(Connection con, String groupOpenId, String key, ObjectNode config) throws SQLException {
+        if (config != null) {
+            try (var ps = con.prepareStatement("INSERT INTO official_groups (group_openId, is_whitelist) VALUES (?, FALSE)"
+                    + " ON DUPLICATE KEY UPDATE group_openId = group_openId")) {
+                ps.setString(1, groupOpenId);
+                ps.executeUpdate();
+            }
+        }
+        ObjectNode settings;
+        try (var ps = con.prepareStatement("SELECT group_settings FROM official_groups WHERE group_openId = ? FOR UPDATE")) {
+            ps.setString(1, groupOpenId);
+            try (var rows = ps.executeQuery()) {
+                if (!rows.next()) return;
+                settings = parseObject(rows.getString(1));
+            }
+        }
+        if (config == null) settings.remove(key);
+        else settings.set(key, config);
+        try (var ps = con.prepareStatement("UPDATE official_groups SET group_settings = ? WHERE group_openId = ?")) {
+            ps.setString(1, settings.toString());
+            ps.setString(2, groupOpenId);
+            ps.executeUpdate();
+        }
+    }
+
+    private static ObjectNode parseObject(String raw) throws SQLException {
+        if (raw == null) return JSON.createObjectNode();
+        try {
+            if (JSON.readTree(raw) instanceof ObjectNode object) return object;
+            throw new SQLException("群设置不是 JSON 对象，拒绝覆盖");
+        } catch (IOException e) {
+            throw new SQLException("群设置 JSON 无效，拒绝覆盖", e);
         }
     }
 

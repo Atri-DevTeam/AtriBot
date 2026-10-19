@@ -11,11 +11,9 @@ ttf-file-name: "default.ttf"
 # API
 api-url: null
 
-# 个人空间：独立于管理后台。公网地址允许带页面路径；仅填域名时默认 /atrimeow/profile/。
-# 未配置 base-url 时不会签发链接；本地开发允许 http://localhost:1234。
+# 个人面板功能开关，入口地址与 QQ 登录通过 dashboard 配置
 miniapp:
   enabled: true
-  base-url: ""
 
 # QQ 互联个人面板，页面域名与回调地址可分别配置
 dashboard:
@@ -138,8 +136,6 @@ email:
 # ========== 官方机器人配置参数 ==========
 
 qq:
-  # 官方机器人 WebUI 登录 Token（请改成足够长的随机字符串）
-  official-webui-token: "null"
   # 官方机器人 OpenId
   official-openId: "null"
   # 官方机器人用户名

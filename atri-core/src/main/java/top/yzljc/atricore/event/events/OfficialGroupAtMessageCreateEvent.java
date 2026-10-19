@@ -38,6 +38,18 @@ public class OfficialGroupAtMessageCreateEvent extends Event {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown);
     }
 
+    public String sendMessage(Markdown markdown, boolean at) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, at);
+    }
+
+    public String sendMessage(Markdown markdown, Object keyboard) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, keyboard);
+    }
+
+    public String sendMessage(Markdown markdown, Object keyboard, boolean at) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, keyboard, at);
+    }
+
     public boolean shouldIgnore() {
         if (AtriProvider.getInstance().getAccessService().isGroupBlacklisted(this.groupId)) return true;
         return this.user.isBlocked();

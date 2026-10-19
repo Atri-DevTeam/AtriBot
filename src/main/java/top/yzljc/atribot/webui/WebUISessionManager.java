@@ -1,166 +1,137 @@
 package top.yzljc.atribot.webui;
 
+import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.dashboard.DashboardSessions;
+import top.yzljc.atribot.dashboard.DashboardSettings;
+import top.yzljc.atricore.auth.AccountStatus;
+import top.yzljc.atricore.auth.AtriAccount;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
-import static top.yzljc.atricore.utils.StringUtils.isBlank;
-
+/**
+ * WebUI 服务开关及 QQ 互联管理员会话校验
+ *
+ * @Author YZ_Ljc_
+ * @ClassName WebUISessionManager
+ * @Created_at 2026/09/11
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.webui
+ */
 @Slf4j
-public class WebUISessionManager {
+public final class WebUISessionManager {
+    private static final AtomicBoolean ACTIVE = new AtomicBoolean();
+    private static final AtomicLong GENERATION = new AtomicLong();
+    private static volatile DashboardSessions sessions;
+    private static volatile Supplier<DashboardSettings> configuration = DashboardSettings::current;
 
-    public static final String SESSION_COOKIE = "webui_session_yzljc_" + System.currentTimeMillis() + "_d";
-    public static final int SESSION_TTL_SECONDS = 24 * 60 * 60;
-    private static final long CHALLENGE_TTL_MILLIS = 2 * 60 * 1000L;
-    private static final long CHALLENGE_TTL_NANOS = TimeUnit.MILLISECONDS.toNanos(CHALLENGE_TTL_MILLIS);
-    private static final long SESSION_TTL_NANOS = TimeUnit.SECONDS.toNanos(SESSION_TTL_SECONDS);
-    private static final int MAX_CHALLENGES = 1024;
-    private static final int MAX_SESSIONS = 256;
-    private static final SecureRandom RANDOM = new SecureRandom();
+    private WebUISessionManager() {
+    }
 
-    private static final Object AUTH_LOCK = new Object();
-    private static final AtomicBoolean active = new AtomicBoolean(false);
-    // 固定有效期与插入顺序一致，清理只需删除队首已过期记录。
-    private static final LinkedHashMap<String, Long> challenges = new LinkedHashMap<>();
-    private static final LinkedHashMap<String, Long> sessions = new LinkedHashMap<>();
+    /**
+     * @param logins   与个人面板共用的 QQ 互联会话，不在本类中关闭
+     * @param settings 当前 QQ 互联配置，配置或绑定变化后旧会话不再有效
+     */
+    public static void configure(DashboardSessions logins, Supplier<DashboardSettings> settings) {
+        sessions = Objects.requireNonNull(logins);
+        configuration = Objects.requireNonNull(settings);
+    }
 
-    public static void start() {
-        synchronized (AUTH_LOCK) {
-            active.set(false);
-            clearAuthState();
-            active.set(true);
-        }
+    public static synchronized void start() {
+        GENERATION.incrementAndGet();
+        SseBroadcaster.closeAll();
+        ACTIVE.set(true);
         log.info("WebUI 服务已开启");
     }
 
-    public static void stop() {
-        synchronized (AUTH_LOCK) {
-            active.set(false);
-            clearAuthState();
-        }
+    public static synchronized void stop() {
+        ACTIVE.set(false);
+        GENERATION.incrementAndGet();
+        SseBroadcaster.closeAll();
         log.info("WebUI 服务已关闭，所有连接已断开");
     }
 
     public static boolean isActive() {
-        return active.get();
+        return ACTIVE.get();
     }
 
-    public static String createChallenge() {
-        synchronized (AUTH_LOCK) {
-            if (!active.get()) return null;
-            long now = System.nanoTime();
-            cleanupExpiredChallenges(now);
-            if (challenges.size() >= MAX_CHALLENGES) return null;
-            String nonce = randomToken(32);
-            challenges.put(nonce, now + CHALLENGE_TTL_NANOS);
-            return nonce;
+    /**
+     * @param account 统一账号当前缓存记录，不接受权限节点替代管理员身份
+     * @return 账号有效且权限组为 ADMIN 或 OWNER 时返回 true
+     */
+    public static boolean isAdministrator(AtriAccount account) {
+        return account != null && account.status() == AccountStatus.ACTIVE
+                && (account.role() == UnifiedRole.ADMIN || account.role() == UnifiedRole.OWNER);
+    }
+
+    public static AtriAccount currentAccount(String token) {
+        var login = currentLogin(token);
+        return login == null || login.identity() == null ? null
+                : UnifiedAuthentication.getCachedQqUserAccount(login.identity().userId());
+    }
+
+    private static DashboardSessions.Login currentLogin(String token) {
+        DashboardSessions current = sessions;
+        return current == null ? null : current.authenticate(token, configuration.get());
+    }
+
+    /**
+     * 每次 API 请求重新检查会话、账号状态和权限组，写请求必须来自配置的页面 Origin
+     *
+     * @param ctx 当前 WebUI 请求
+     */
+    public static void require(Context ctx) {
+        ctx.header("Cache-Control", "no-store");
+        if (!isActive()) {
+            reject(ctx, 503, "WebUI 已关闭");
+            return;
         }
-    }
-
-    /** 挑战消费与会话签发共用生命周期锁，关闭或重新开启后不能沿用旧认证结果。 */
-    public static LoginResult login(String nonce, String proof, String token) {
-        synchronized (AUTH_LOCK) {
-            if (!active.get()) return new LoginResult(LoginStatus.UNAVAILABLE, null);
-            if (nonce == null || nonce.length() != 43 || proof == null || proof.length() != 43 || isBlank(token)) {
-                return new LoginResult(LoginStatus.INVALID, null);
-            }
-            long now = System.nanoTime();
-            Long expiresAt = challenges.remove(nonce);
-            if (expiresAt == null || now - expiresAt >= 0) {
-                return new LoginResult(LoginStatus.INVALID, null);
-            }
-            String expected = hmacSha256Base64Url(token, nonce);
-            if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), proof.getBytes(StandardCharsets.UTF_8))) {
-                return new LoginResult(LoginStatus.INVALID, null);
-            }
-            cleanupExpiredSessions(now);
-            if (sessions.size() >= MAX_SESSIONS) return new LoginResult(LoginStatus.UNAVAILABLE, null);
-            String sessionId = randomToken(32);
-            sessions.put(sessionId, now + SESSION_TTL_NANOS);
-            return new LoginResult(LoginStatus.SUCCESS, sessionId);
+        var settings = configuration.get();
+        String origin = ctx.header("Origin");
+        boolean readOnly = Set.of("GET", "HEAD").contains(ctx.method().toString());
+        if (((!readOnly || origin != null) && !Objects.equals(settings.origin(), origin))
+                || "cross-site".equalsIgnoreCase(ctx.header("Sec-Fetch-Site"))) {
+            reject(ctx, 403, "请求来源不被允许");
+            return;
         }
-    }
-
-    public static boolean verifySession(String sessionId) {
-        if (sessionId == null || sessionId.length() != 43) return false;
-        synchronized (AUTH_LOCK) {
-            if (!active.get()) return false;
-            Long expiresAt = sessions.get(sessionId);
-            if (expiresAt == null) return false;
-            if (System.nanoTime() - expiresAt >= 0) {
-                sessions.remove(sessionId);
-                return false;
-            }
-            // 普通请求不续期，服务端与浏览器 Cookie 使用同一最长有效期
-            return true;
+        var login = currentLogin(ctx.cookie(DashboardSessions.SESSION_COOKIE));
+        var account = login == null || login.identity() == null ? null
+                : UnifiedAuthentication.getCachedQqUserAccount(login.identity().userId());
+        if (account == null) {
+            reject(ctx, 401, "请使用 QQ 登录");
+            return;
         }
-    }
-
-    public static void removeSession(String sessionId) {
-        if (isBlank(sessionId)) return;
-        synchronized (AUTH_LOCK) {
-            sessions.remove(sessionId);
+        if (!isAdministrator(account)) {
+            reject(ctx, 403, "需要 ADMIN 或 OWNER 身份");
+            return;
         }
+        ctx.attribute("webui.account", account);
+        ctx.attribute("webui.login", login);
     }
 
-    public static Instant challengeExpiresAt() {
-        return Instant.ofEpochMilli(System.currentTimeMillis() + CHALLENGE_TTL_MILLIS);
+    /**
+     * @param token 当前浏览器的 QQ 登录会话
+     * @return 持续有效性检查；服务重开后旧检查永久失效，其他情况实时读取当前授权
+     */
+    public static BooleanSupplier authorization(String token) {
+        long generation = GENERATION.get();
+        return () -> isActive() && generation == GENERATION.get() && isAdministrator(currentAccount(token));
     }
 
-    private static void clearAuthState() {
-        challenges.clear();
-        sessions.clear();
-        // 只标记并唤醒旧连接，不在生命周期锁中执行网络写入
-        SseBroadcaster.closeAll();
+    public static void logout(String token) {
+        DashboardSessions current = sessions;
+        if (current != null) current.revoke(token);
     }
 
-    private static void cleanupExpiredChallenges(long now) {
-        var iterator = challenges.entrySet().iterator();
-        while (iterator.hasNext()) {
-            if (now - iterator.next().getValue() < 0) break;
-            iterator.remove();
-        }
-    }
-
-    private static void cleanupExpiredSessions(long now) {
-        var iterator = sessions.entrySet().iterator();
-        while (iterator.hasNext()) {
-            var entry = iterator.next();
-            if (now - entry.getValue() < 0) break;
-            iterator.remove();
-        }
-    }
-
-    private static String hmacSha256Base64Url(String token, String nonce) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(token.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(mac.doFinal(nonce.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException("WebUI HMAC 计算失败", e);
-        }
-    }
-
-    private static String randomToken(int bytes) {
-        byte[] raw = new byte[bytes];
-        RANDOM.nextBytes(raw);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
-    }
-
-    public enum LoginStatus {
-        SUCCESS, INVALID, UNAVAILABLE
-    }
-
-    public record LoginResult(LoginStatus status, String sessionId) {
+    private static void reject(Context ctx, int status, String message) {
+        ctx.status(status).json(Result.fail(status, message));
+        ctx.skipRemainingHandlers();
     }
 }

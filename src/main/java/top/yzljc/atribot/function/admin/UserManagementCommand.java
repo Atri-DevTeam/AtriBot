@@ -120,11 +120,9 @@ public class UserManagementCommand implements CommandExecutor {
             }
             String userid = args[2];
             if (args[1].equalsIgnoreCase("add")) {
-                OfficialUsers.setBlocked(userid, true);
-                qq.sendMessage("已拉黑用户 " + userid);
+                qq.sendMessage(OfficialUsers.setBlocked(userid, true) ? "已拉黑用户 " + userid : "保存账号状态失败");
             } else if (args[1].equalsIgnoreCase("remove")) {
-                OfficialUsers.setBlocked(userid, false);
-                qq.sendMessage("已解除拉黑用户 " + userid);
+                qq.sendMessage(OfficialUsers.setBlocked(userid, false) ? "已解除拉黑用户 " + userid : "保存账号状态失败");
             } else {
                 qq.sendMessage("用法：/perm block <add | remove> <unionOpenId>");
             }
@@ -143,11 +141,9 @@ public class UserManagementCommand implements CommandExecutor {
             }
             String userid = args[2];
             if (args[1].equalsIgnoreCase("add")) {
-                OfficialUsers.setIgnored(userid, true);
-                qq.sendMessage("已屏蔽用户 " + userid);
+                qq.sendMessage(OfficialUsers.setIgnored(userid, true) ? "已屏蔽用户 " + userid : "保存账号状态失败");
             } else if (args[1].equalsIgnoreCase("remove")) {
-                OfficialUsers.setIgnored(userid, false);
-                qq.sendMessage("已解除屏蔽用户 " + userid);
+                qq.sendMessage(OfficialUsers.setIgnored(userid, false) ? "已解除屏蔽用户 " + userid : "保存账号状态失败");
             } else {
                 qq.sendMessage("用法：/perm ignore <add | remove> <unionOpenId>");
             }

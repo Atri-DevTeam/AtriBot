@@ -106,8 +106,7 @@ public class StatsQueryController {
                     user.userOpenId(),
                     user.role().name(),
                     user.permissions(),
-                    user.isBlocked(),
-                    user.isIgnored(),
+                    user.status().name(),
                     user.c2cPush(),
                     stats.c2cReceivedMessages(),
                     stats.c2cSentMessages(),
@@ -267,7 +266,7 @@ public class StatsQueryController {
     }
 
     public record UserInfoDTO(String userOpenId, String role, java.util.Set<String> permissions,
-                                    boolean isBlocked, boolean isIgnored, boolean c2cPush,
+                                    String status, boolean c2cPush,
                                     long c2cReceivedMessages, long c2cSentMessages,
                                     long groupReceivedMessages, String firstSeenAt,
                                     String lastSeenAt, String lastUsername) {

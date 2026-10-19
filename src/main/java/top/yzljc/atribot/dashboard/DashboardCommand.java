@@ -41,7 +41,7 @@ public final class DashboardCommand implements CommandExecutor {
             sender.sendMessage("申请过于频繁，请稍后重试");
             return true;
         }
-        String url = settings.entryUrl() + "?_nav_alpha=0&userOpenId=" + QqConnectClient.encode(qq.getUserId()) + "&ticket=" + ticket;
+        String url = settings.entryUrl() + "?_wwv=9983&qq=1&userOpenId=" + QqConnectClient.encode(qq.getUserId()) + "&ticket=" + ticket;
         qq.sendMessage(TC.md("请使用 QQ 登录并绑定个人面板\n\n绑定链接 5 分钟内有效，请勿转发。绑定后可直接访问个人面板登录。"),
                 TC.keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK)))));
         return true;

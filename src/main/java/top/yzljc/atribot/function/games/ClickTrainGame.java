@@ -16,7 +16,6 @@ import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atricore.event.EventHandler;
@@ -74,18 +73,13 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 qq.sendMessage("当前会话没有正在进行的反应力测试喵！");
                 return true;
             }
-            boolean abandoned;
+            String markdown = null;
             synchronized (game) {
-                abandoned = game.phase == Phase.PLAYING && activeGames.remove(ownerId, game);
-                if (abandoned) {
-                    game.phase = Phase.FINISHED;
-                    long elapsedMs = game.startTime == 0 ? 0 : System.currentTimeMillis() - game.startTime;
-                    updatePersonalRecord(game, UserGameDataRepository.ReactionOutcome.ABANDONED, elapsedMs);
-                }
+                if (game.phase == Phase.PLAYING && activeGames.get(ownerId) == game)
+                    markdown = endGame(game, UserGameDataRepository.ReactionOutcome.ABANDONED);
             }
-            qq.sendMessage(abandoned
-                    ? "已放弃本局反应力测试喵！可以重新开始啦。"
-                    : "这局反应力测试已经结束了喵！");
+            if (markdown != null) qq.sendMessage(TC.md(markdown), buildKeyboard(game));
+            else qq.sendMessage("这局反应力测试已经结束了喵！");
             return true;
         }
 
@@ -138,6 +132,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
             // 已点过的格子再点 → 失误
             if (game.clicked[row][col]) {
+                game.mistaken[row][col] = true;
                 game.missCount++;
                 game.misses.merge(userId, 1, Integer::sum);
                 event.answer(AnswerCode.FAIL);
@@ -148,6 +143,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
             // 顺序不对 → 失误
             if (number != game.nextNumber) {
+                game.mistaken[row][col] = true;
                 game.missCount++;
                 game.misses.merge(userId, 1, Integer::sum);
                 event.answer(AnswerCode.FAIL);
@@ -173,9 +169,9 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
             // 点完 1~25 → 只发一次结算
             if (game.nextNumber > TOTAL_CELLS) {
-                String markdown = endGame(game, true);
+                String markdown = endGame(game, UserGameDataRepository.ReactionOutcome.COMPLETED);
                 event.answer(AnswerCode.SUCCESS);
-                event.replyMessage(TC.md(markdown));
+                event.replyMessage(TC.md(markdown), buildKeyboard(game));
                 return;
             }
 
@@ -204,17 +200,24 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     private Object buildKeyboard(GameState game) {
         List<List<Button>> layout = new ArrayList<>();
 
+        boolean finished = game.phase == Phase.FINISHED;
         boolean needPermissionRestriction = game.platform == Platform.OFFICIAL_GROUP;
         for (int row = 0; row < ROWS; row++) {
             List<Button> buttons = new ArrayList<>();
             for (int col = 0; col < COLS; col++) {
+                ButtonStyle style = ButtonStyle.BLUE;
+                if (finished) {
+                    if (game.mistaken[row][col]) style = ButtonStyle.RED;
+                    else if (!game.clicked[row][col]) style = ButtonStyle.GRAY;
+                }
                 var btn = new Button(
                         cellButtonId(row, col),
                         String.valueOf(game.cellNumbers[row][col]),
-                        CALLBACK_VALUE + ":" + game.ownerOpenId,
+                        finished ? "" : CALLBACK_VALUE + ":" + game.ownerOpenId,
                         true,
-                        ButtonStyle.BLUE,
-                        ButtonType.CALLBACK);
+                        style,
+                        finished ? ButtonType.CUSTOM : ButtonType.CALLBACK);
+                if (finished) btn.setUnsupportedTip("预览内容无法点击");
                 if (needPermissionRestriction)
                     btn.setAllowedOpenIds(List.of(game.ownerOpenId)).setPermissionType(PermissionType.SPECIFIC_USER);
 
@@ -237,11 +240,16 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     }
 
     /**
-     * 结束游戏并发放奖励：每次顺序正确 2 金粒，单人封顶 40；每次失误扣 2 金粒，最低保留 10，防止无脑刷分
+     * 仅完成时发放奖励，放弃和超时保留结算与统计，不更新个人最佳成绩
+     *
+     * @param game    由调用方持有同步锁的游戏状态
+     * @param outcome 完成、主动放弃或超时
+     * @return 本局结算 Markdown
      */
-    private String endGame(GameState game, boolean completed) {
+    private String endGame(GameState game, UserGameDataRepository.ReactionOutcome outcome) {
+        boolean completed = outcome == UserGameDataRepository.ReactionOutcome.COMPLETED;
         game.phase = Phase.FINISHED;
-        activeGames.remove(game.ownerOpenId);
+        activeGames.remove(game.ownerOpenId, game);
 
         Map<String, Integer> rewards = new LinkedHashMap<>();
         if (completed) {
@@ -256,15 +264,16 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         long elapsedMs = game.startTime == 0 ? 0 : System.currentTimeMillis() - game.startTime;
         int intervalCount = Math.max(0, game.completedCount - 1);
         long avgInterval = intervalCount == 0 ? 0 : game.totalIntervalMs / intervalCount;
-        boolean newBest = updatePersonalRecord(game, completed ? UserGameDataRepository.ReactionOutcome.COMPLETED
-                : UserGameDataRepository.ReactionOutcome.TIMED_OUT, elapsedMs);
+        boolean newBest = updatePersonalRecord(game, outcome, elapsedMs);
 
         StringBuilder markdown = new StringBuilder();
-        markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
+//        markdown.append(Markdown.at(game.ownerOpenId)).append("\n\n");
         markdown.append("**反应力测试 - 结算**\n\n");
         if (completed) {
             int roundRank = getRoundRank(game.ownerOpenId, elapsedMs);
             markdown.append("🎉 完成测验，本局排名 #").append(roundRank > 0 ? roundRank : "-").append("\n\n");
+        } else if (outcome == UserGameDataRepository.ReactionOutcome.ABANDONED) {
+            markdown.append("🛑 已放弃本局，进度 ").append(game.completedCount).append("/").append(TOTAL_CELLS).append("\n\n");
         } else {
             markdown.append("❌ 未在规定时间内完成，进度 ").append(game.completedCount).append("/").append(TOTAL_CELLS).append("\n\n");
         }
@@ -295,6 +304,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                     });
         }
 
+        markdown.append("\n> 棋盘：蓝色为正确点击，红色为点错过，灰色为未点击\n");
         markdown.append("\n").append(Markdown.enterCommand("/反应力测试", "再来一次"));
         return markdown.toString();
     }
@@ -311,7 +321,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
     private static String formatBest(String ownerId) {
         try {
-            JsonNode user = OfficialUsers.getGameData(ownerId, "reaction");
+            JsonNode user = UserGameDataRepository.instance().read(ownerId).get("reaction");
             if (user == null || user.path("bestMs").asLong(0) <= 0) return "暂无";
             int rank = UserGameDataRepository.instance().reactionRank(user.path("bestMs").asLong());
             return String.format("%.1f 秒（%d 失误，%s）#%s", user.path("bestMs").asLong() / 1000.0,
@@ -340,7 +350,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
     public static int getUserRank(String ownerId) {
         if (ownerId == null || ownerId.isBlank()) return 0;
         try {
-            JsonNode user = OfficialUsers.getGameData(ownerId, "reaction");
+            JsonNode user = UserGameDataRepository.instance().read(ownerId).get("reaction");
             return user == null ? 0 : UserGameDataRepository.instance().reactionRank(user.path("bestMs").asLong(0));
         } catch (Exception e) {
             log.warn("读取反应力测试排名失败", e);
@@ -356,12 +366,13 @@ public class ClickTrainGame implements Listener, CommandExecutor {
             synchronized (current) {
                 if (current.phase != Phase.PLAYING) return;
 
-                String markdown = endGame(current, false);
+                String markdown = endGame(current, UserGameDataRepository.ReactionOutcome.TIMED_OUT);
+                Object keyboard = buildKeyboard(current);
                 try {
                     if (current.platform == Platform.OFFICIAL_C2C) {
-                        C2CChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown));
+                        C2CChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown), keyboard);
                     } else {
-                        GroupChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown));
+                        GroupChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown), keyboard);
                     }
                 } catch (Exception e) {
                     log.warn("反应力测试结算面板失败: ", e);
@@ -380,6 +391,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
 
         final int[][] cellNumbers = new int[ROWS][COLS];
         final boolean[][] clicked = new boolean[ROWS][COLS];
+        final boolean[][] mistaken = new boolean[ROWS][COLS];
         int nextNumber = 1;
         int completedCount;
 

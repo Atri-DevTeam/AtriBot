@@ -123,7 +123,7 @@ WebUI「图片审核」包含图源审核和背景图审核。背景申请支持
 
 ### 状态与存储
 
-背景设置存于 `official_users.user_settings.background`，无需建表或扩列
+背景设置存于 `bot_userdata.user_settings.background`，与其他个人设置共用 JSON 字段
 
 ```json
 {

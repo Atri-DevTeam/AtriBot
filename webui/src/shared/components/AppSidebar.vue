@@ -155,7 +155,7 @@
     </nav>
 
     <div class="side-toolbar">
-      <slot name="toolbar" />
+      <CurrentUserCard><slot name="toolbar" /></CurrentUserCard>
     </div>
 
     <!-- 桌面端：收窄/展开导航栏（手机端隐藏，手机端用抽屉模式） -->
@@ -173,6 +173,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppBrand from './AppBrand.vue'
+import CurrentUserCard from './CurrentUserCard.vue'
 import { NAV_COLLAPSED_KEY } from '../lib/panelLayout.js'
 
 const collapsed = ref(false)

@@ -1,10 +1,10 @@
 package top.yzljc.atribot.function.impl.pic;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.ImageSourceDTO;
-import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atribot.utils.notify.NotificationService;
@@ -30,7 +30,7 @@ public class ImageReviewService {
      * @return 是否成功
      */
     public static boolean review(String id, ImageReviewStatus status, String reviewer, String remark) {
-        ImageSourceDTO dto = ImageSourceRepository.findById(id);
+        ImageSourceDTO dto = PicRepository.findById(id);
         if (dto == null) {
             log.warn("审核目标不存在: id={}", id);
             return false;
@@ -50,7 +50,7 @@ public class ImageReviewService {
             }
         }
 
-        if (!ImageSourceRepository.review(id, status, reviewer, remark)) {
+        if (!PicRepository.review(id, status, reviewer, remark)) {
             return false;
         }
 
@@ -81,7 +81,7 @@ public class ImageReviewService {
             }
 
             // 入队即视为已交办，后续送达由队列负责，避免审核页反复重推
-            ImageSourceRepository.markNotified(dto.getId());
+            PicRepository.markNotified(dto.getId());
         } catch (Exception e) {
             log.error("推送图源审核结果失败: id={}", dto.getId(), e);
         }

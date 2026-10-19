@@ -245,7 +245,7 @@ public class FeedbackCommand implements CommandExecutor, Listener {
     public void onGroupAtChat(OfficialGroupAtMessageCreateEvent event) {
         FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
         if (reply != null) {
-            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
+            event.sendMessage(TC.md(buildReplyMessage(reply, true)), false);
             log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
     }
@@ -254,7 +254,7 @@ public class FeedbackCommand implements CommandExecutor, Listener {
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
         FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
         if (reply != null) {
-            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
+            event.sendMessage(TC.md(buildReplyMessage(reply, true)), false);
             log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
         }
     }

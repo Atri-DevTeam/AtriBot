@@ -163,7 +163,9 @@ public class EventLogRepository {
         return 0;
     }
 
-    /** 统计全部事件类型的数量分布，按数量降序 */
+    /**
+     * 统计全部事件类型的数量分布，按数量降序
+     */
     private static List<EventTypeCount> topTypes() {
         String sql = "SELECT `event_type`, COUNT(*) AS c FROM `raw_event_log` GROUP BY `event_type` ORDER BY c DESC";
         List<EventTypeCount> result = new ArrayList<>();

@@ -1,5 +1,6 @@
 package top.yzljc.atribot.service.taskscheduler;
 
+import top.yzljc.atribot.function.tasks.pushtask.NewYearCountdownTask;
 import top.yzljc.atricore.service.taskscheduler.*;
 
 import top.yzljc.atribot.Atri;
@@ -11,6 +12,7 @@ import top.yzljc.atribot.function.task.MessageStats;
 import top.yzljc.atribot.function.task.QqBotDocsMonitor;
 import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
 import top.yzljc.atribot.function.tasks.pushtask.HypixelBanWaveAlertTask;
+import top.yzljc.atribot.function.tasks.pushtask.SkyblockPriceAlertTask;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +36,9 @@ public final class TaskSchedulerRegistry {
             CheckInExportTask.INSTANCE,
             LootFreeDrawCleanupTask.INSTANCE,
             ManosabaDate.INSTANCE,
-            MessageStats.INSTANCE
+            MessageStats.INSTANCE,
+            NewYearCountdownTask.INSTANCE,
+            SkyblockPriceAlertTask.INSTANCE
     );
 
     private TaskSchedulerRegistry() {

@@ -1,8 +1,5 @@
 <template>
   <AppShell v-model:open="sidebarOpen" class="menu-panel-page">
-    <template #toolbar>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace">
       <header class="topbar menu-panel-topbar">

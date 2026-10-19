@@ -27,6 +27,10 @@
 
 查询、绑定和缓存服务仍名为 [UnifiedAuthentication](../../src/main/java/top/yzljc/atribot/auth/UnifiedAuthentication.java)，数据库表为 `unified_account`
 
+QQ 官机的权限组、权限节点和账号状态均使用该表，不再在 `official_users` 中重复保存。WebUI 与管理指令修改后刷新同一份账号缓存，消息鉴权不查询数据库。个人设置、累计游戏数据和私聊功能配置另存于 `bot_userdata`
+
+为群成员设置权限或状态只创建所需的统一账号，不新增私聊记录。`official_users` 由好友、私聊消息和私聊授权事件维护
+
 ```java
 Optional<AtriAccount> account = user.getAccount();
 ```

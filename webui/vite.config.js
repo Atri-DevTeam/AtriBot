@@ -24,6 +24,7 @@ export default defineConfig(({ command, mode }) => {
                 '/official-webui/api': { target, changeOrigin: true },
                 '/webui/api': { target, changeOrigin: true },
                 '/webui/meta': { target, changeOrigin: true },
+                '/dashboard/api': { target, changeOrigin: true },
             },
         }
     }

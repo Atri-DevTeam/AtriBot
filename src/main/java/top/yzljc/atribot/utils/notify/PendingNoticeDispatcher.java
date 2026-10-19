@@ -38,7 +38,7 @@ public class PendingNoticeDispatcher implements Listener {
         if (event.getUser().isBot()) return;
         if (!event.shouldIgnore()) GroupLeaveMessageService.deliver(event.getGroupId(),
                 markdown -> event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), markdown, false));
-        deliverToGroup(event.getGroupId(), event.getUser().getUserId(), event::sendMessage);
+        deliverToGroup(event.getGroupId(), event.getUser().getUserId(), markdown -> event.sendMessage(markdown, false));
     }
 
     @EventHandler
@@ -46,7 +46,7 @@ public class PendingNoticeDispatcher implements Listener {
         if (event.getUser().isBot()) return;
         if (!event.shouldIgnore()) GroupLeaveMessageService.deliver(event.getGroupId(),
                 markdown -> event.getUser().sendMessage(event.getGroupId(), event.getMessage().getMessageId(), markdown, false));
-        deliverToGroup(event.getGroupId(), event.getUser().getUserId(), event::sendMessage);
+        deliverToGroup(event.getGroupId(), event.getUser().getUserId(), markdown -> event.sendMessage(markdown, false));
     }
 
     private void deliverToGroup(String groupId, String speakerUserId, MarkdownSink sink) {

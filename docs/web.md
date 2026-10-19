@@ -7,15 +7,15 @@
 | 项目 | WebUI | Miniapp |
 | --- | --- | --- |
 | 面向对象 | 机器人维护者 | 机器人用户与已绑定群的群主 |
-| 页面入口 | `/webui/` | `/atrimeow/profile/` |
+| 页面入口 | `/webui/` | `/dashboard/` |
 | API 前缀 | `/webui/api` | `/atrimeow/profile/api` |
 | 前端目录 | `webui/` | `miniapp/` |
 | 后端入口 | `WebUIRouter` | `MiniappRouter` |
-| 认证 | 管理密钥验证后签发 Cookie 会话 | 入口票据交换内存 Bearer Token |
+| 认证 | QQ 互联会话及统一账号 ADMIN／OWNER 身份 | QQ 互联会话签发页面 Token |
 
-两套认证独立。页面隐藏控件不能代替后端授权
+网页统一从主域名进入，根路径临时跳转至 `/dashboard/`。登录后，ADMIN／OWNER 显示个人面板与 WebUI 的入口选择；其他用户直接进入个人面板。未绑定用户先按页面提示完成绑定
 
-`/dashboard/` 为 Miniapp 的 QQ 互联登录入口，复用个人资料、互动记录和群管理页面，不使用 WebUI 管理会话
+WebUI 与个人面板共用 QQ 登录会话，管理权限由后端根据统一账号的当前状态和权限组校验，不接受客户端声明的角色或通配权限节点
 
 ## QQ 互联登录
 
@@ -26,7 +26,6 @@
 ```yaml
 miniapp:
   enabled: true
-  base-url: "https://bot.example.com"
 
 dashboard:
   enabled: true
@@ -52,12 +51,14 @@ dashboard:
 ### 绑定与登录
 
 1. 用户在 QQ 机器人私聊中发送 `/dash` 或 `/dashboard`
-2. 机器人返回带 `userOpenId` 和一次性 `ticket` 的入口链接，默认保留 `_nav_alpha=0`
-3. 用户点击页面中的「QQ 登录并绑定」，跳转 QQ 互联授权
+2. 机器人返回带 `userOpenId` 和一次性 `ticket` 的入口链接，同时携带 `_wwv=9983&qq=1`
+3. 带 `qq=1` 的入口自动跳转 QQ 互联授权，其他入口点击「QQ 登录并绑定」后跳转
 4. 服务端验证授权结果后建立绑定，返回 `/dashboard/`
 5. 后续可直接访问 `/dashboard/`，使用同一 QQ 账号登录
 
-入口票据有效期为 5 分钟，在用户点击登录时消费，仅可使用一次。页面读取票据后从地址栏移除；QQ 授权状态由服务端随机生成，有效期 10 分钟，并校验发起授权时的浏览器 Cookie。`_nav` 和 `_nav_alpha` 会在授权完成后保留，不能用于指定跳转地址
+入口票据有效期为 5 分钟，在发起授权时消费，仅可使用一次。页面读取票据后从地址栏移除；QQ 授权状态由服务端随机生成，有效期 10 分钟，并校验发起授权时的浏览器 Cookie。`_nav`、`_wwv` 和 `qq=1` 会在授权完成后保留，不能用于指定跳转地址
+
+`qq=1` 仅用于 QQ 网页适配：标题使用零宽空白字符，未登录时自动发起授权。取消或失败后保留手动重试入口。未携带此参数时显示正常标题，不自动发起授权；该参数不参与身份认证和权限判断
 
 QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接比较。绑定写入现有 `unified_account` 统一账号表：`qq_user_open_id` 保存官机用户标识，`qq_connect_open_id` 保存 QQ 互联 OpenID。绑定时优先使用已有统一账号，没有账号时自动创建，保留原有 UUID、权限及其他账号关联
 
@@ -71,19 +72,19 @@ QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接�
 
 重启服务后需要重新登录，数据库中的绑定关系保留。AppKey 仅在服务端使用，前端不持有 QQ access_token，也不将登录凭证写入 localStorage 或 sessionStorage
 
-`/profile` 仍使用原来的临时票据，不要求 QQ 互联登录
-
 ### 本地验证
 
-在 `miniapp/` 执行 `npm run dev`，可分别访问 `/dashboard/` 和 `/atrimeow/profile/`。开发服务器将登录、回调和 Miniapp API 转发至 `VITE_API_TARGET`，默认 `http://127.0.0.1:1234`。本地页面会话测试要求 `dashboard.base-url` 与浏览器访问地址一致；真实 QQ 授权使用互联后台登记的公开域名与回调地址
+在 `miniapp/` 执行 `npm run dev`，通过 `/dashboard/` 访问个人中心。开发服务器将登录、回调和 Miniapp API 转发至 `VITE_API_TARGET`，默认 `http://127.0.0.1:1234`。本地页面会话测试要求 `dashboard.base-url` 与浏览器访问地址一致；真实 QQ 授权使用互联后台登记的公开域名与回调地址
 
 授权流程参考 [QQ 互联 Authorization Code](https://wiki.connect.qq.com/使用authorization_code获取access_token) 与 [获取用户 OpenID](https://wiki.connect.qq.com/获取用户openid_oauth2-0)。登录按钮使用 [QQ 互联官方标识](https://wiki.connect.qq.com/wp-content/uploads/2016/12/Connect_logo_1.png)
 
 ## WebUI
 
-在 `qq.official-webui-token` 配置登录密钥。生产配置默认不自动开启 WebUI，机器人管理员可通过 `/webui` 操作开关；控制台执行 `webui` 切换状态。`env: dev` 在启动时自动开启
+WebUI 使用 QQ 互联登录，不再读取 `qq.official-webui-token`，也不接受旧密钥会话。生产配置默认不自动开启 WebUI，机器人管理员可通过 `/webui` 操作开关；控制台执行 `webui` 切换状态。`env: dev` 在启动时自动开启
 
-登录流程使用挑战值与证明值验证密钥，成功后签发会话 Cookie。会话固定有效期为 24 小时。关闭或重新开启 WebUI 会清除原认证状态并断开旧连接
+QQ 登录会话有效期为 12 小时，Cookie 仅在页面域名签发。每次管理请求校验登录状态、当前 QQ 绑定、账号状态及 ADMIN／OWNER 权限组；写请求校验页面 Origin。实时连接在发送数据前重新鉴权。退出登录、账号受限或解绑后会话失效，权限降级后不能继续管理
+
+WebUI 关闭时管理接口不可用并断开实时连接，个人面板及 QQ 登录状态保留。导航底部的账号框显示当前用户及身份，可进入个人档案、返回工作台、刷新页面或退出登录
 
 主要页面包括聊天与群配置、指令面板、用户和权限、发送及事件记录、频道管理。群管理和加群欢迎从聊天侧栏进入
 
@@ -132,7 +133,7 @@ QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接�
 
 ### 统计接口
 
-原 `/webui/api/public/official` 下的 GET 统计接口已移除，POST `/ntuid` 工具接口保留。WebUI 统计页使用私有的 `/webui/api/stats/overview` 和 `/webui/api/stats/series`，保留日期筛选
+原 `/webui/api/public/official` 下的 GET 统计接口已移除，POST `/ntuid` 工具接口保留路径，但与其他 WebUI API 一样要求有效的 ADMIN 或 OWNER 登录会话，WebUI 关闭时不可访问。WebUI 统计页使用私有的 `/webui/api/stats/overview` 和 `/webui/api/stats/series`，保留日期筛选
 
 用户、群详情仅供 WebUI 使用，接口分别为 `/webui/api/stats/users/{userOpenId}` 和 `/webui/api/stats/groups/{groupOpenId}`，要求后台已开启且登录会话有效。原公开路径不再提供这两个接口
 
@@ -143,14 +144,13 @@ QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接�
 ```yaml
 miniapp:
   enabled: true
-  base-url: "https://bot.example.com"
 ```
 
-`base-url` 可填写外部根地址或完整页面地址，外部地址要求 HTTPS，本机调试允许 localhost / 127.0.0.1 使用 HTTP。留空时不签发页面入口。用户在 QQ 官方 C2C 中执行 `/profile` 获取绑定本人身份的链接
+个人面板统一通过 `/dashboard/` 进入，外部地址填写在 `dashboard.base-url`。官机私聊中执行 `/dash` 或 `/dashboard` 获取 QQ 互联绑定链接
 
-入口票据有效期 5 分钟。GET 页面只加载外壳，POST 交换票据后取得会话，交换绑定 IP 与 User-Agent。Bearer Token 仅保存在前端内存，不写入 localStorage 或 Cookie
+通过 QQ 登录后，由服务端签发页面会话。Bearer Token 仅保存在前端内存，不写入 localStorage 或 Cookie
 
-会话最长 2 小时，空闲 90 秒失效，前端通过心跳维持活动。进程重启后票据与会话全部失效。服务端从会话取得身份，不接受请求中的用户 ID 作为授权依据
+会话最长 2 小时，空闲 90 秒失效，前端通过心跳维持活动。进程重启后页面会话失效。服务端从会话取得身份，不接受请求中的用户 ID 作为授权依据
 
 ### 群管理
 

@@ -252,7 +252,9 @@ public class FeedbackRepository {
         return reply(id, replyContent, isHidden, false);
     }
 
-    /** 静默回复在保存时一并标记为已处理，避免被用户后续交互补发。 */
+    /**
+     * 静默回复在保存时一并标记为已处理，避免被用户后续交互补发。
+     */
     public static boolean reply(String id, String replyContent, boolean isHidden, boolean silent) {
         String sql = "UPDATE `feedback` SET `reply_content` = ?, `reply_time` = ?, `is_hidden` = ?, `is_read` = ? WHERE `id` = ?";
 

@@ -82,13 +82,13 @@ public final class BotStatsRepository {
     private Map<String, BotStatsSection> games() throws Exception {
         Map<String, Map<String, Map<String, Object>>> players = new LinkedHashMap<>();
         GAMES.forEach(game -> players.put(game, new LinkedHashMap<>()));
-        query("SELECT user_openId, game_data FROM official_users WHERE game_data IS NOT NULL", rows -> {
+        query("SELECT user_id, game_data FROM bot_userdata WHERE game_data IS NOT NULL", rows -> {
             var root = UserGameDataRepository.parse(rows.getString("game_data"));
             for (String game : GAMES) {
                 var node = root.get(game);
                 if (node == null) continue;
                 if (!node.isObject()) throw new SQLException("Invalid game statistics");
-                Map<String, Object> player = identity(rows.getString("user_openId"));
+                Map<String, Object> player = identity(rows.getString("user_id"));
                 for (String metric : UserGameDataRepository.counterFields(game))
                     player.put(metric, counter(node, metric));
                 if (game.equals("reaction")) {
@@ -99,7 +99,7 @@ public final class BotStatsRepository {
                 }
                 rates(game, player);
                 if (UserGameDataRepository.counterFields(game).stream().anyMatch(metric -> number(player, metric) > 0) || number(player, "bestMs") > 0) {
-                    players.get(game).put(rows.getString("user_openId"), player);
+                    players.get(game).put(rows.getString("user_id"), player);
                 }
             }
         });

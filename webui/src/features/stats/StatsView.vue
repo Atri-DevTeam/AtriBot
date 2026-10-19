@@ -1,9 +1,5 @@
 <template>
   <AppShell v-model:open="sidebarOpen">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loading || databaseLoading" @click="refreshStats">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace">
       <header class="topbar">
@@ -294,8 +290,7 @@
               <div class="stats-detail-row">
                 <dt>状态</dt>
                 <dd class="stats-flags">
-                  <span class="badge stats-flag" :class="userStats.isBlocked ? 'is-on' : 'is-off'">已封禁</span>
-                  <span class="badge stats-flag" :class="userStats.isIgnored ? 'is-on' : 'is-off'">已忽略</span>
+                  <span class="badge stats-flag" :class="userStats.status === 'ACTIVE' ? 'is-off' : 'is-on'">{{ accountStatusLabel(userStats.status) }}</span>
                   <span class="badge stats-flag" :class="userStats.c2cPush ? 'is-on' : 'is-off'">私聊推送</span>
                 </dd>
               </div>
@@ -360,6 +355,7 @@
 </template>
 
 <script setup>
+import {accountStatusLabel} from '../users/lib/userProfile.js'
 import { useLatestRequest } from '../../shared/lib/latestRequest.js'
 import { createWebuiApi, logoutWebui } from '../../shared/lib/webuiApi.js'
 import {ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount} from 'vue'

@@ -1,9 +1,5 @@
 <template>
   <AppShell v-model:open="sidebarOpen">
-    <template #toolbar>
-      <button class="ghost-button" :disabled="loadingGroups" @click="loadGroups">刷新</button>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="workspace">
       <header class="topbar">

@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
@@ -51,7 +55,7 @@ public class CalendarTask implements CommandExecutor, ScheduledTask {
 
         String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis());
         if (sender instanceof QQCommandSender qq) {
-            qq.sendMessage(TC.md(today));
+            qq.sendMessage(TC.md(today).setKeyboard(getButtons()));
         }
         if (sender instanceof QQGuildCommandSender guildSender) {
             guildSender.sendMessage(data.url());
@@ -74,7 +78,9 @@ public class CalendarTask implements CommandExecutor, ScheduledTask {
             return;
         }
 
-        String today = "![today #1642px #958px](" + data.url() + ")\n\n" + "> 现在是北京时间" + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "  " + Markdown.enterCommand("/sign", "打卡") + "\n> 晨曦已至，世界睁开了眼睛。愿你今日如朝露般清澈，如朝阳般明媚。";
+        String today = "![today #1642px #958px](" + data.url() + ")\n\n"
+                + "> 北京时间 " + FormatTools.formatTimestampMilli(System.currentTimeMillis()) + "\n"
+                + "> 早安，今天也准时见面了。";
 
 //        var groupLists = OfficialGroups.enabledGroups("daily_calendar");
 //        var userLists = OfficialUsers.enabledUsers("daily_calendar");
@@ -84,7 +90,17 @@ public class CalendarTask implements CommandExecutor, ScheduledTask {
 //        for (String uid : userLists) {
 //            C2CChat.sendMessage(uid, TC.md(today));
 //        }
-        PushTask.push("daily_calendar", TC.md(today));
+        PushTask.push("daily_calendar", TC.md(today).setKeyboard(getButtons()));
     }
 
+    private static Keyboard getButtons() {
+        return new Keyboard(
+                List.of(
+                        List.of(
+                                new Button("\uD83D\uDCDD 每日打卡", "/sign", ButtonStyle.BLUE),
+                                new Button("春节还有多久", "/newyear", ButtonStyle.BLUE)
+                        )
+                )
+        );
+    }
 }

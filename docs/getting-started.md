@@ -62,7 +62,7 @@ Provider 创建的 Javalin 监听 `atri-core.yml` 的 `listen-port`，默认 `12
 | `/webui/` | 管理后台 |
 | `/atrimeow/profile/` | Miniapp |
 
-使用反向代理时保留路径与请求体，转发平台回调所需的请求头。外部访问地址与本地监听地址分别配置，Miniapp 的外部地址填写在 `miniapp.base-url`
+使用反向代理时保留路径与请求体，转发平台回调所需的请求头。外部访问地址与本地监听地址分别配置，个人中心的外部地址填写在 `dashboard.base-url`
 
 WebUI 在生产配置下需先开启，操作方式见 [WebUI 与 Miniapp](web.md)。平台接入步骤见 [平台与消息](framework/platforms.md)
 

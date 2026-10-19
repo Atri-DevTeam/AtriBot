@@ -88,7 +88,8 @@ public class BanTrackCommand implements CommandExecutor {
                                 new Button("c6", "30d", "/bantrack 30d", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                         ),
                         List.of(
-                                new Button("c7", "自定义查询时长", "/bantrack ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
+                                new Button("c7", "自定义时长", "/bantrack ", false, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                new Button("自定义背景", "/bg", ButtonStyle.BLUE_WITH_BACKGROUND)
                         )
                 )
         );

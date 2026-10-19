@@ -38,6 +38,14 @@ QQ 官方私聊发送 `提醒 <时间或周期>`，由 AI 解析时间，再发�
 
 默认每人最多保留 10 项任务，每 30 分钟最多发起 30 次设置请求；`test.reminder.unlimit` 豁免这两项限制。沿用现有提醒表，无需修改数据库结构
 
+## SkyBlock 价格提醒
+
+官机私聊用户使用 `/dash` 或 `/dashboard` 打开个人中心，在「价格提醒」中搜索物品，选择报价类型、目标价格及「低于或等于」「高于或等于」条件。支持集市即时买卖、买卖订单和拍卖最低单价，每人最多保存 20 条提醒，可编辑、暂停、删除或重新启用
+
+总开关沿用 `skyblock_price_alert` 私聊推送配置。每 15 分钟按物品变体合并查询已有行情，过期、不可用和缺失报价不触发提醒；每份新行情符合条件时发送一次，同一行情不重复发送，规则持续生效。点击提醒底部的「停用当前规则」，或在官机私聊发送 `/preferences skyblock_price disable <规则ID>`，可停用本人对应规则。好友移除、账号受限、主动消息关闭或全局停用时停止发送，原配置保留
+
+提醒保存在 `bot_userdata.user_settings.skyblock_price_alerts`，不新增表。保存配置不依赖当前行情。搜索及提醒列表异步加载共享图标，同一物品复用加载结果；UGC 在本地目录及 COS 长期保存小图，Miniapp 经 API 读取，官机通知优先使用 COS 地址。搜索名称按品质着色，市场显示为 `Auction House` 或 `Bazaar`。管理员可发送测试提醒，测试不改变配置和完成状态
+
 ## 今日钓鱼
 
 QQ 官方群聊、私聊使用 `/fish`、`/今日钓鱼` 或无前缀的 `今日钓鱼`。每名用户每天一次，按北京时间零点刷新，跨群与私聊共用次数。重复调用返回当天已保存的渔获，不重复发放金粒
@@ -48,13 +56,17 @@ QQ 官方群聊、私聊使用 `/fish`、`/今日钓鱼` 或无前缀的 `今日
 
 `daily_fishing` 表按用户和日期保存完整结果，包括钓点、物品、附魔、耐久及奖励。渔获、金粒余额、来源日志和累计游戏统计在同一事务中提交；数据库唯一键与用户行锁防止并发重复领取。发送失败后再次调用可读取已结算结果，重启不会清除记录
 
-`official_users.game_data.fishing.items` 按物品 ID 累计产出数量，`biomes` 按钓点 ID 累计钓鱼次数，供后续任务条件使用。这些累计记录不代表背包库存
+`bot_userdata.game_data.fishing.items` 按物品 ID 累计产出数量，`biomes` 按钓点 ID 累计钓鱼次数，供后续任务条件使用。这些累计记录不代表背包库存
 
 结算后通过 UGC 接口目录中的 `bot.fishing` 生成 960 × 190 横幅，显示原版物品图标与渔获名称，插入 Markdown 回复。生图失败时回退文字结果，不影响已经提交的金粒和次数；再次查看可重新生成横幅
 
 ## 小游戏统计
 
-用户累计指标保存在 `official_users.game_data`，通过 [UserGameDataRepository](../src/main/java/top/yzljc/atribot/database/repo/UserGameDataRepository.java) 读取和更新，无需新增字段或数据表。游戏键及指标如下
+用户累计指标保存在 `bot_userdata.game_data`，以 QQ 用户 OpenID 对应的 `user_id` 为主键，与个人设置、私聊功能配置分列保存，通过 [UserGameDataRepository](../src/main/java/top/yzljc/atribot/database/repo/UserGameDataRepository.java) 读取和更新
+
+升级时由用户业务数据迁移统一导入原 `official_users.game_data` 或已拆分的 `user_game_data`，校验一致后移除旧存储。内容冲突时停止启动并保留原数据。游戏计分不创建或锁定 `official_users` 记录，事件去重和多人结算仍在同一事务中处理
+
+游戏键及指标如下
 
 | 游戏键 | 指标 |
 | --- | --- |

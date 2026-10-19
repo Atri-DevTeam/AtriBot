@@ -8,10 +8,11 @@ export function takeDashboardEntry(url: URL) {
     const ticket = single('ticket')
     const error = single('auth_error')
     const nav = single('_nav')
-    const navAlpha = single('_nav_alpha')
+    const wwv = single('_wwv')
+    const qq = single('qq') === '1'
     url.searchParams.delete('userOpenId')
     url.searchParams.delete('ticket')
     url.searchParams.delete('auth_error')
     const valid = !binding || !!userOpenId && userOpenId.length <= 128 && !!ticket && /^[\w-]{43}$/.test(ticket)
-    return {binding, valid, userOpenId, ticket, error, nav, navAlpha}
+    return {binding, valid, userOpenId, ticket, error, nav, wwv, qq}
 }

@@ -1,5 +1,6 @@
 package top.yzljc.atribot;
 
+import top.yzljc.atribot.database.repo.*;
 import top.yzljc.atricore.core.CoreConfig;
 
 import cn.dev33.satoken.sign.SaSignManager;
@@ -21,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.UACommand;
 import top.yzljc.atribot.auth.LoginCommand;
 import top.yzljc.atribot.auth.LoginService;
-import top.yzljc.atribot.miniapp.MiniappCommand;
 import top.yzljc.atribot.miniapp.MiniappRouter;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.dashboard.DashboardCommand;
@@ -35,15 +35,7 @@ import top.yzljc.atribot.chat.official.moderation.GroupJoinReviewListener;
 import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atricore.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.database.repo.CoinGainLogRepository;
-import top.yzljc.atribot.database.repo.DailyFishingRepository;
-import top.yzljc.atribot.database.repo.FeedbackRepository;
-import top.yzljc.atribot.database.repo.ImageSourceRepository;
-import top.yzljc.atribot.database.repo.LootRepository;
-import top.yzljc.atribot.database.repo.ModerationLogRepository;
-import top.yzljc.atribot.database.repo.OfficialSendLogRepository;
-import top.yzljc.atribot.database.repo.PendingNoticeRepository;
-import top.yzljc.atribot.database.repo.EventLogRepository;
+import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atribot.function.admin.*;
 import top.yzljc.atribot.function.admin.ema.EmaCommand;
 import top.yzljc.atribot.function.command.*;
@@ -53,6 +45,7 @@ import top.yzljc.atribot.function.games.DailyFishingGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
+import top.yzljc.atribot.function.games.TicTacToeGame;
 import top.yzljc.atribot.function.games.RockPaperScissorsGame;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
 import top.yzljc.atribot.function.minecraft.PackVersion;
@@ -66,10 +59,8 @@ import top.yzljc.atribot.function.utils.napcat.*;
 import top.yzljc.atribot.function.utils.official.*;
 import top.yzljc.atribot.function.utils.official.minecraft.MinecraftRemote;
 import top.yzljc.atribot.function.utils.personal.*;
-import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.test.*;
 import top.yzljc.atribot.utils.notify.PendingNoticeDispatcher;
-import top.yzljc.atribot.database.repo.SignRepository;
 import top.yzljc.atricore.event.EventManager;
 import top.yzljc.atribot.function.utils.like.AutoLikeCommand;
 import top.yzljc.atribot.function.utils.like.CardLike;
@@ -205,7 +196,7 @@ public class Atri extends AtriProvider {
                 }
             });
 
-            WebUIRouter.register(server);
+            WebUIRouter.register(server, dashboardSessions);
             PluginHttpRoutes.attach(server);
             MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
             DashboardRouter.register(server, dashboardSessions, miniappSessions);
@@ -279,6 +270,7 @@ public class Atri extends AtriProvider {
         EventManager.getInstance().registerEvents(new WhatFuckingPing());
         EventManager.getInstance().registerEvents(new GroupJoinWelcome());
         EventManager.getInstance().registerEvents(new ShareBotCommand());
+        EventManager.getInstance().registerEvents(MinesweeperGame.INSTANCE);
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -317,7 +309,8 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("perm").setExecutor(new UserManagementCommand());
         CommandManager.getCommand("today").setExecutor(this.calendarTask);
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
-        CommandManager.getCommand("minesweeper").setExecutor(new MinesweeperGame());
+        CommandManager.getCommand("minesweeper").setExecutor(MinesweeperGame.INSTANCE);
+        CommandManager.getCommand("tictactoe").setExecutor(new TicTacToeGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
         CommandManager.getCommand("clicktrain").setExecutor(clickTrainGame);
         CommandManager.getCommand("roulette").setExecutor(new LuckyRouletteGame());
@@ -355,7 +348,6 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
         CommandManager.getCommand("login").setExecutor(new LoginCommand());
-        CommandManager.getCommand("profile").setExecutor(new MiniappCommand(miniappSessions));
         CommandManager.getCommand("dashboard").setExecutor(new DashboardCommand(dashboardSessions));
         CommandManager.getCommand("bind").setExecutor(new McBindCommand());
         CommandManager.getCommand("bvbind").setExecutor(new BilibiliBindCommand());
@@ -394,7 +386,10 @@ public class Atri extends AtriProvider {
         MinecraftNews.loadHistory();
 
         OfficialGroups.init();
+        UnifiedAuthentication.init();
+        BotUserDataRepository.init();
         OfficialUsers.init();
+        UserGameDataRepository.init();
         SignRepository.init();
         LootRepository.init();
         CoinGainLogRepository.init();
@@ -414,9 +409,8 @@ public class Atri extends AtriProvider {
         OfficialSendLogRepository.init();
         EventLogRepository.init();
         ModerationLogRepository.init();
-        ImageSourceRepository.init();
+        PicRepository.init();
         PendingNoticeRepository.init();
-        UnifiedAuthentication.init();
         PackVersion.initAsync();
 
         TaskSchedulerRegistry.registerAll(AtriProvider.getInstance().getTaskScheduler());

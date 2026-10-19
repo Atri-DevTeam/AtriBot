@@ -42,12 +42,20 @@ public class OfficialGroupMessageCreateEvent extends Event {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown);
     }
 
+    public String sendMessage(Markdown markdown, boolean at) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, at);
+    }
+
     public String sendMessage(ImageComponent image) {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
     }
 
     public String sendMessage(Markdown markdown, Object buttons) {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, buttons);
+    }
+
+    public String sendMessage(Markdown markdown, Object buttons, boolean at) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, buttons, at);
     }
 
     public boolean shouldIgnore() {

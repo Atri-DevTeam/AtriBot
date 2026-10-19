@@ -125,7 +125,7 @@ public final class MiniappActivityService {
             unavailable.add("games");
             log.warn("Miniapp 游戏数据读取失败", e);
         }
-        try (Connection con = connections.open(); var ps = con.prepareStatement("SELECT user_settings FROM official_users WHERE user_openId = ?")) {
+        try (Connection con = connections.open(); var ps = con.prepareStatement("SELECT user_settings FROM bot_userdata WHERE user_id = ?")) {
             ps.setString(1, identity.userId());
             ps.setQueryTimeout(5);
             try (var rows = ps.executeQuery()) {

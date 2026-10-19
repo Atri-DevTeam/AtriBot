@@ -8,16 +8,21 @@ const token = 'b'.repeat(43)
 const grant = () => ({ token, user: { userId: 'owner', displayName: '名字' }, expiresAt: Date.now() + 7200000, idleTimeoutMillis: 90000 })
 
 test('dashboard binding parameters are removed while navigation survives and duplicate proofs are rejected', () => {
-  const url = new URL(`https://bot.example.com/dashboard/?userOpenId=owner&ticket=${ticket}&_nav=0&_nav_alpha=0`)
+  const url = new URL(`https://bot.example.com/dashboard/?userOpenId=owner&ticket=${ticket}&_nav=0&_wwv=9983`)
   const entry = takeDashboardEntry(url)
   assert.equal(entry.valid, true)
   assert.equal(entry.binding, true)
   assert.equal(entry.userOpenId, 'owner')
   assert.equal(entry.ticket, ticket)
-  assert.equal(url.search, '?_nav=0&_nav_alpha=0')
+  assert.equal(entry.wwv, '9983')
+  assert.equal(url.search, '?_nav=0&_wwv=9983')
   assert.equal(takeDashboardEntry(new URL(`https://bot.example.com/dashboard/?userOpenId=owner&ticket=${ticket}&ticket=${ticket}`)).valid, false)
   assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/?userOpenId=owner')).valid, false)
   assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/')).binding, false)
+  assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/?qq=1')).qq, true)
+  for (const query of ['', '?qq=0', '?qq=true', '?qq=1&qq=1']) {
+    assert.equal(takeDashboardEntry(new URL('https://bot.example.com/dashboard/' + query)).qq, false)
+  }
 })
 
 test('dashboard grants use private APIs without exchanging a bot ticket and are revoked on exit', async () => {
@@ -175,9 +180,9 @@ test('configured proxy API prefix applies to exchange, private reads and heartbe
 })
 
 test('entry secrets are stripped while preserving QQ presentation parameters; duplicates rejected', () => {
-  const url = new URL(`https://example.com/atrimeow/profile/?_nav_alpha=0&userId=owner&ticket=${ticket}`)
+  const url = new URL(`https://example.com/atrimeow/profile/?_wwv=9983&userId=owner&ticket=${ticket}`)
   assert.deepEqual(takeEntry(url), { userId: 'owner', ticket })
-  assert.equal(url.search, '?_nav_alpha=0')
+  assert.equal(url.search, '?_wwv=9983')
   assert.equal(takeEntry(new URL(`https://example.com/?userId=a&userId=b&ticket=${ticket}`)).userId, null)
 })
 

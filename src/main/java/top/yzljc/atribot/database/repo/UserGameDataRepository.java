@@ -88,9 +88,6 @@ public final class UserGameDataRepository {
 
     public enum ReactionOutcome {COMPLETED, TIMED_OUT, ABANDONED}
 
-//    public record MigrationResult(int imported, int skipped, int failed) {
-//    }
-
     public UserGameDataRepository(Connections connections) {
         this.connections = connections;
     }
@@ -100,7 +97,7 @@ public final class UserGameDataRepository {
     }
 
     public static void init() {
-        try (var con = DatabaseManager.getConnection(); var ps = con.createStatement()) {
+        try (var con = INSTANCE.connections.open(); var ps = con.createStatement()) {
             ps.executeUpdate("""
                     CREATE TABLE IF NOT EXISTS user_game_stat_events (
                       game VARCHAR(32) NOT NULL,
@@ -111,7 +108,7 @@ public final class UserGameDataRepository {
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """);
         } catch (SQLException e) {
-            throw new IllegalStateException("游戏事件去重表初始化失败", e);
+            throw new IllegalStateException("游戏统计事件表初始化失败", e);
         }
     }
 
@@ -198,7 +195,8 @@ public final class UserGameDataRepository {
                         try {
                             ps.executeUpdate();
                         } catch (SQLException duplicate) {
-                            if (duplicate.getErrorCode() == 1062 && "23000".equals(duplicate.getSQLState())) continue;
+                            if ((duplicate.getErrorCode() == 1062 && "23000".equals(duplicate.getSQLState()))
+                                    || "23505".equals(duplicate.getSQLState())) continue;
                             throw duplicate;
                         }
                     }
@@ -225,29 +223,25 @@ public final class UserGameDataRepository {
     }
 
     /**
-     * @param con 调用方事务连接
+     * @param con    调用方事务连接
      * @param userId 用户标识
-     * @return 持有用户行锁的游戏数据；用户不存在时按默认权限创建
+     * @return 持有玩家游戏数据行锁的 JSON；记录不存在时创建，不创建账号或权限记录
      * @throws SQLException 加锁或读取失败
      */
     static ObjectNode lockData(Connection con, String userId) throws SQLException {
-        try (var ps = con.prepareStatement("INSERT INTO official_users (user_openId, role, permissions) VALUES (?, 'USER', '') ON DUPLICATE KEY UPDATE user_openId = user_openId")) {
-            ps.setQueryTimeout(5);
-            ps.setString(1, userId);
-            ps.executeUpdate();
-        }
-        try (var ps = con.prepareStatement("SELECT game_data FROM official_users WHERE user_openId = ? FOR UPDATE")) {
+        BotUserDataRepository.ensureUser(con, userId);
+        try (var ps = con.prepareStatement("SELECT game_data FROM bot_userdata WHERE user_id = ? FOR UPDATE")) {
             ps.setQueryTimeout(5);
             ps.setString(1, userId);
             try (var rows = ps.executeQuery()) {
-                if (!rows.next()) throw new SQLException("Missing user row");
+                if (!rows.next()) throw new SQLException("Missing player game data row");
                 return parse(rows.getString("game_data"));
             }
         }
     }
 
     static void saveData(Connection con, String userId, ObjectNode root) throws SQLException {
-        try (var ps = con.prepareStatement("UPDATE official_users SET game_data = ? WHERE user_openId = ?")) {
+        try (var ps = con.prepareStatement("UPDATE bot_userdata SET game_data = ? WHERE user_id = ?")) {
             ps.setQueryTimeout(5);
             ps.setString(1, root.toString());
             ps.setString(2, userId);
@@ -256,7 +250,7 @@ public final class UserGameDataRepository {
     }
 
     public ObjectNode read(String userId) throws SQLException {
-        try (var con = connections.open(); var ps = con.prepareStatement("SELECT game_data FROM official_users WHERE user_openId = ?")) {
+        try (var con = connections.open(); var ps = con.prepareStatement("SELECT game_data FROM bot_userdata WHERE user_id = ?")) {
             ps.setQueryTimeout(5);
             ps.setString(1, userId);
             try (var rows = ps.executeQuery()) {
@@ -296,9 +290,9 @@ public final class UserGameDataRepository {
     public int reactionRank(long elapsedMs, String excludedUserId) throws SQLException {
         if (elapsedMs <= 0) return 0;
         String query = """
-                SELECT COUNT(*) AS faster FROM official_users
+                SELECT COUNT(*) AS faster FROM bot_userdata
                 WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(game_data, '$.reaction.bestMs')) AS UNSIGNED) BETWEEN 1 AND ?
-                """ + (excludedUserId == null ? "" : " AND user_openId <> ?");
+                """ + (excludedUserId == null ? "" : " AND user_id <> ?");
         try (var con = connections.open(); var ps = con.prepareStatement(query)) {
             ps.setQueryTimeout(5);
             ps.setLong(1, elapsedMs - 1);

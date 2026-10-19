@@ -39,18 +39,18 @@ public class ContentController {
         String status = ctx.queryParam("status"); // PENDING | REVIEWED | DENIED | all
 
         String filter = ImageReviewStatus.isValid(status) ? status.toUpperCase() : null;
-        int total = ImageSourceRepository.countByStatus(filter);
-        List<ImageSourceDTO> list = ImageSourceRepository.findPaginated(filter, page, pageSize);
+        int total = PicRepository.countByStatus(filter);
+        List<ImageSourceDTO> list = PicRepository.findPaginated(filter, page, pageSize);
 
         List<GalleryItemDTO> items = list.stream().map(ContentController::toGalleryItem).toList();
         ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
     }
 
     public static void countGallery(Context ctx) {
-        int pending = ImageSourceRepository.countByStatus(ImageReviewStatus.PENDING.name());
-        int reviewed = ImageSourceRepository.countByStatus(ImageReviewStatus.REVIEWED.name());
-        int denied = ImageSourceRepository.countByStatus(ImageReviewStatus.DENIED.name());
-        int all = ImageSourceRepository.countByStatus(null);
+        int pending = PicRepository.countByStatus(ImageReviewStatus.PENDING.name());
+        int reviewed = PicRepository.countByStatus(ImageReviewStatus.REVIEWED.name());
+        int denied = PicRepository.countByStatus(ImageReviewStatus.DENIED.name());
+        int all = PicRepository.countByStatus(null);
         ctx.json(Result.success(new GalleryCountDTO(pending, reviewed, denied, all)));
     }
 
@@ -86,7 +86,7 @@ public class ContentController {
             ctx.json(Result.fail(400, "id 不能为空"));
             return;
         }
-        ImageSourceDTO image = ImageSourceRepository.findById(dto.getId());
+        ImageSourceDTO image = PicRepository.findById(dto.getId());
         if (image == null) {
             ctx.json(Result.fail(404, "投稿记录不存在"));
             return;
@@ -96,7 +96,7 @@ public class ContentController {
             ctx.json(Result.fail(500, "远端删除失败：" + remoteResult.message()));
             return;
         }
-        boolean success = ImageSourceRepository.delete(dto.getId());
+        boolean success = PicRepository.delete(dto.getId());
         ctx.json(success ? Result.success("ok") : Result.fail(500, "删除失败，可能该投稿不存在"));
     }
 

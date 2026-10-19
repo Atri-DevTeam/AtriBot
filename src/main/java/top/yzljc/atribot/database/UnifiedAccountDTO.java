@@ -6,9 +6,8 @@ import lombok.NoArgsConstructor;
 import top.yzljc.atricore.auth.AccountStatus;
 import top.yzljc.atricore.auth.AtriAccount;
 import top.yzljc.atricore.auth.official.UnifiedRole;
-import top.yzljc.atribot.utils.FormatTools;
-
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UnifiedAccountDTO {
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private UUID uuid;
     private String username;
@@ -32,12 +32,14 @@ public class UnifiedAccountDTO {
     private String role;
     private List<String> permissions;
     private String status;
-    private Timestamp createTime;
-    private Timestamp lastUpdateTime;
+    private LocalDateTime createTime;
+    private LocalDateTime lastUpdateTime;
     private String qqConnectOpenId;
 
     /**
-     * 转回业务侧 record（role 反查枚举，时间戳转字符串）。
+     * 转为统一账号，保留数据库 DATETIME 的原日期时间，不进行时区换算
+     *
+     * @return 统一账号数据
      */
     public AtriAccount toAccount() {
         return new AtriAccount(
@@ -49,8 +51,8 @@ public class UnifiedAccountDTO {
                 UnifiedRole.fromString(role),
                 permissions,
                 AccountStatus.fromString(status),
-                FormatTools.formatTimestamp(createTime, null),
-                FormatTools.formatTimestamp(lastUpdateTime, null),
+                createTime == null ? null : createTime.format(TIME_FORMAT),
+                lastUpdateTime == null ? null : lastUpdateTime.format(TIME_FORMAT),
                 qqConnectOpenId
         );
     }

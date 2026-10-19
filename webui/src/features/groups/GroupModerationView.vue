@@ -64,9 +64,6 @@ onMounted(() => {
 
 <template>
   <AppShell v-model:open="sidebarOpen">
-    <template #toolbar>
-      <button class="ghost-button" @click="logout">退出</button>
-    </template>
 
     <main class="moderation-page">
       <header class="moderation-page-head">

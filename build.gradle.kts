@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "top.yzljc"
-version = "3.4.1-SNAPSHOT"
+version = "3.4.2-SNAPSHOT"
 description = "AtriBot"
 
 application {

@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.command;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -8,6 +9,9 @@ import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.function.minecraft.HypixelRewardAutoClaim;
+import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
+import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,9 +25,11 @@ import java.util.Locale;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.command
  */
+@Slf4j
 public class PreferencesSettingsCommand implements CommandExecutor {
     private static final String HYPIXEL_REWARD_PREFIX = "/preferences hypixel_reward";
     private static final String UNSUPPORT_MARKDOWN_PREFIX = "/preferences unsupport_keyboard";
+    private static final String SKYBLOCK_PRICE_PREFIX = "/preferences skyblock_price";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -35,6 +41,9 @@ public class PreferencesSettingsCommand implements CommandExecutor {
 
         if ("unsupport_keyboard".equalsIgnoreCase(args[0])) {
             return handleUnsupportedKeyboard(user, args);
+        }
+        if ("skyblock_price".equalsIgnoreCase(args[0])) {
+            return handleSkyblockPrice(user, args);
         }
         if (!"hypixel_reward".equalsIgnoreCase(args[0])) {
             sender.sendMessage("无效的设置参数。");
@@ -92,6 +101,38 @@ public class PreferencesSettingsCommand implements CommandExecutor {
             }
         }
         sendPanel(user);
+        return true;
+    }
+
+    private static boolean handleSkyblockPrice(QQCommandSender user, String[] args) {
+        if (user.getPlatform() != Platform.OFFICIAL_C2C || user.isBot()) {
+            user.sendMessage("[!] 该指令仅可在私聊中使用！");
+            return true;
+        }
+        if (args.length != 3 || !("disable".equalsIgnoreCase(args[1]) || "off".equalsIgnoreCase(args[1]))) {
+            user.sendMessage("用法：" + SKYBLOCK_PRICE_PREFIX + " disable <规则ID>");
+            return true;
+        }
+        try {
+            ThreadManager.execute(() -> {
+                try {
+                    SkyblockPriceAlertService.INSTANCE.stop(user.getUserId(), args[2]);
+                    user.sendMessage("当前价格提醒规则已停用");
+                } catch (SkyblockPriceAlertService.Problem e) {
+                    user.sendMessage(switch (e.code) {
+                        case "PRICE_ALERT_NOT_FOUND" -> "未找到你的这条价格提醒规则";
+                        case "PRICE_PERMISSION_REQUIRED" -> "你没有价格提醒权限";
+                        case "PRICE_ALERT_FRIEND_REQUIRED" -> "请先添加机器人为好友";
+                        default -> "规则参数无效，请从提醒消息中点击停用";
+                    });
+                } catch (Exception e) {
+                    log.warn("价格提醒停用失败: user={}, rule={}", user.getUserId(), args[2], e);
+                    user.sendMessage("价格提醒停用失败，请稍后重试");
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException e) {
+            user.sendMessage("当前操作繁忙，请稍后重试");
+        }
         return true;
     }
 

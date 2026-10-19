@@ -1,3 +1,5 @@
+import {withQqMode} from './qqEnvironment.js'
+
 export function createWebuiApi({
                                    baseUrl, onSessionExpired, assertActive = () => {
     }
@@ -11,12 +13,12 @@ export function createWebuiApi({
         if (!multipart && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
         const response = await fetch(`${baseUrl}${path}`, {credentials: 'same-origin', ...options, headers})
         assertActive()
-        if (response.status === 401 || response.status === 503) {
+        if (response.status === 401 || response.status === 403 || response.status === 503) {
             if (!sessionExpired) {
                 sessionExpired = true
                 onSessionExpired?.(response.status)
             }
-            const error = new Error(response.status === 401 ? '未授权' : 'WebUI 已关闭')
+            const error = new Error(response.status === 503 ? 'WebUI 已关闭' : response.status === 403 ? '没有管理权限' : '未授权')
             error.status = response.status
             throw error
         }
@@ -39,9 +41,10 @@ export function createWebuiApi({
     }
 }
 
-export function logoutWebui(baseUrl, router) {
-    return fetch(`${baseUrl}/auth/logout`, {method: 'POST', credentials: 'same-origin'})
-        .catch(() => {
-        })
-        .finally(() => router.replace('/login'))
+export async function logoutWebui() {
+    const response = await fetch('/dashboard/api/auth/logout', {
+        method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, body: '{}'
+    })
+    if (!response.ok) throw new Error('退出登录失败')
+    window.location.replace(withQqMode('/dashboard/'))
 }

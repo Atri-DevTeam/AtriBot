@@ -4,17 +4,22 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.GroupChat;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atribot.database.repo.UserGameDataRepository;
+import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialButtonInteractionEvent;
+import top.yzljc.atricore.event.impl.AnswerCode;
 import top.yzljc.atricore.platform.Platform;
 
 import java.net.URLEncoder;
@@ -26,6 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MinesweeperGame implements Listener, CommandExecutor {
 
     private static final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
+
+    public static final MinesweeperGame INSTANCE = new MinesweeperGame();
 
     private static final int ROWS = 5;
     private static final int COLS = 6;
@@ -104,7 +111,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         String markdown = """
-                **扫雷小游戏 (6x5)**
+                **🚩 扫雷小游戏 (6x5)**
                 
                 **规则与操作:**
                 1. 使用“扫雷区”按钮挖开格子。
@@ -121,7 +128,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 false, ButtonStyle.GRAY, ButtonType.COMMAND)));
 
         Object keyboard = TC.keyboard(layout);
-        sender.sendMessage(TC.md(markdown), keyboard);
+        sender.sendMessage(TC.md(markdown).setKeyboard(selectDifficultyKeyboard()));
     }
 
     private void handleStartGame(String sessionId, QQCommandSender sender, int minesCount) {
@@ -153,7 +160,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             game.isGameOver = true;
             game.isWin = false;
             revealAllMines(game);
-            finishGame(game, sessionId, sender, "💥 踩到雷了！游戏失败！");
+            finishGame(game, sessionId, sender, "💥 你不慎踩到雷了，游戏失败！");
             return;
         }
 
@@ -245,20 +252,51 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             participantsMarkdown.append("你(+").append(rewards.getOrDefault(uid, 0)).append("金粒) ");
         }
 
+        StringBuilder board = new StringBuilder();
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                String cell = game.revealed[r][c] ? displayCell(game, r, c) : game.flagged[r][c] ? "🚩" : "🔲";
+                board.append(cell).append(' ');
+            }
+            board.append('\n');
+        }
+
         String markdown = String.format("""
-                        **扫雷小游戏 - 结算**
-                        **结果:** %s
+                        **🚩 本局扫雷结束**
+                        
+                        > %s
+                        
                         **雷数:** %d
                         **耗时:** %d 秒
                         **参与者:** %s
                         
-                        %s
-                        
                         最终棋盘如下：
-                        """, resultMsg, game.minesCount, timeTaken, participantsMarkdown,
-                buildInlineCmd("/扫雷", "再来一局"));
+                        %s
+                        """, resultMsg, game.minesCount, timeTaken, participantsMarkdown, board);
 
-        sendKeyboardMessage(game, sender, markdown);
+        sendSettlementMessage(game, sender, markdown);
+    }
+
+    private void sendSettlementMessage(GameState game, QQCommandSender sender, String markdown) {
+
+        Keyboard ks = new Keyboard(
+                List.of(
+                        List.of(
+                                new Button("再来一次", "/扫雷 start " + game.minesCount, ButtonStyle.BLUE),
+                                new Button("custom_count", "换个难度", "bot_custom_minesweeper", true, ButtonStyle.RED, ButtonType.CALLBACK)
+                        ),
+                        List.of(
+                                new Button("其他游戏", "/games", ButtonStyle.BLUE_WITH_BACKGROUND),
+                                new Button("问题反馈", "/feedback", ButtonStyle.BLUE_WITH_BACKGROUND).setEnter(false),
+                                new Button("link", "排行榜", "https://www.yzljc.top/atribot/#games", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK)
+                        )
+                )
+        );
+
+        Markdown settlement = TC.md(markdown).setKeyboard(ks);
+        String messageId = sender.sendMessage(settlement);
+        recallPreviousBoard(game, sender);
+        game.lastMessageId = messageId;
     }
 
     /**
@@ -353,7 +391,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         String markdown = String.format("""
-                **扫雷** | 用时: %d秒
+                **🚩 扫雷** | 已用时: %d秒
                 > **状态: %s**
                 > 旗帜数量: %d/%d
                 
@@ -416,9 +454,12 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         }
 
         Object keyboard = TC.keyboard(layout);
-
         String newMessageId = sender.sendMessage(TC.md(markdown), keyboard);
+        recallPreviousBoard(game, sender);
+        game.lastMessageId = newMessageId;
+    }
 
+    private void recallPreviousBoard(GameState game, QQCommandSender sender) {
         if (game.lastMessageId != null) {
             String recordedMessageId = game.lastMessageId;
             try {
@@ -435,8 +476,6 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                 log.warn("撤回扫雷旧消息失败: ", e);
             }
         }
-
-        game.lastMessageId = newMessageId;
     }
 
     private static class GameState {
@@ -489,6 +528,38 @@ public class MinesweeperGame implements Listener, CommandExecutor {
                     board[r][c] = count;
                 }
             }
+        }
+    }
+
+    private static Markdown selectDifficulty(final String userOpenId) {
+        return TC.md(Markdown.at(userOpenId) + " 选择扫雷难度").setKeyboard(selectDifficultyKeyboard());
+    }
+
+    private static Keyboard selectDifficultyKeyboard() {
+        return new Keyboard(
+                List.of(
+                        List.of(
+                                new Button("0难度", "/扫雷 start 1", ButtonStyle.BLUE),
+                                new Button("简单", "/扫雷 start 3", ButtonStyle.BLUE),
+                                new Button("普通", "/扫雷 start 6", ButtonStyle.BLUE),
+                                new Button("中等", "/扫雷 start 10", ButtonStyle.BLUE)
+                        ),
+                        List.of(
+                                new Button("困难", "/扫雷 start 15", ButtonStyle.RED),
+                                new Button("拼运气", "/扫雷 start 29", ButtonStyle.RED),
+                                new Button("custom", "自定义", "/扫雷 start ", false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND)
+                        )
+                )
+        );
+    }
+
+    @EventHandler
+    public void onButtonClickEvent(OfficialButtonInteractionEvent event) {
+        String data = event.getButtonValue();
+        if (data.equals("bot_custom_minesweeper")) {
+            event.answer(AnswerCode.SUCCESS);
+            String userOpenId = event.getUserOpenId();
+            event.replyMessage(selectDifficulty(userOpenId), false);
         }
     }
 }

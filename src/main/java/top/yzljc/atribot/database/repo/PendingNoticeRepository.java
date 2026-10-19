@@ -127,7 +127,9 @@ public class PendingNoticeRepository {
         return null;
     }
 
-    /** WebUI 留言独立管理，不混入投稿等业务的单条补发队列。 */
+    /**
+     * WebUI 留言独立管理，不混入投稿等业务的单条补发队列。
+     */
     public static List<PendingNoticeDTO> listGroupLeaveMessages(String groupId) {
         String sql = "SELECT * FROM `pending_notice` WHERE `target_type` = 'OFFICIAL_GROUP' " +
                 "AND `target_id` = ? AND `source` = ? AND `is_delivered` = FALSE ORDER BY `create_time`, `source_id`, `id`";

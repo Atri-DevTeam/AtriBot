@@ -5,7 +5,7 @@ import { inventoryImage, activityResponse } from './activity-fixture'
 
 const ticket = 'a'.repeat(43)
 const token = 'b'.repeat(43)
-const url = `/atrimeow/profile/?_nav_alpha=0&userId=owner&ticket=${ticket}`
+const url = `/atrimeow/profile/?_wwv=9983&userId=owner&ticket=${ticket}`
 
 test('responsive entry, in-memory session, refresh and replay rejection', async ({ page, context }, testInfo) => {
   let exchanges = 0
@@ -38,7 +38,7 @@ test('responsive entry, in-memory session, refresh and replay rejection', async 
   await expect(page.locator('[data-game=reaction]')).toContainText('18.24')
   await expect(page.getByRole('img', { name: '物品卡背包总览' })).toHaveCount(0)
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(244, 245, 240)')
-  await expect(page).toHaveURL(/\/atrimeow\/profile\/\?_nav_alpha=0$/)
+  await expect(page).toHaveURL(/\/atrimeow\/profile\/\?_wwv=9983$/)
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0])
   expect(await context.cookies()).toEqual([])
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

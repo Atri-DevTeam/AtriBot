@@ -7,11 +7,13 @@ import ActivityPanel from './components/ActivityPanel.vue'
 import NavigationDock from './components/NavigationDock.vue'
 import GroupManagement from './components/GroupManagement.vue'
 import AboutPage from './components/AboutPage.vue'
-import introIllustration from '../../src/main/resources/official-webui/img/atri-main.png'
+import PriceAlerts from './components/PriceAlerts.vue'
+import {closeCurrentPage} from './closePage'
+import introIllustration from './assets/atri-main.png'
 import goldIcon from './assets/gold.png'
 
 const props = defineProps<{dashboardGrant?: Grant}>()
-const emit = defineEmits<{logout: []; renew: []}>()
+const emit = defineEmits<{renew: []}>()
 const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
 const apiBase = (import.meta.env.VITE_API_BASE || '/atrimeow/profile/api').replace(/\/+$/, '')
 const readPrivate = <T, >(path: string) => session.get<T>(path)
@@ -37,16 +39,27 @@ const bot = shallowRef<Profile['bot']>({name: '机器人', avatarUrl: null})
 const botAvatarFailed = ref(false)
 const copyNotice = ref('')
 const revealed = ref(false)
-type Page = 'profile' | 'groups' | 'about'
+const closeState = ref<'idle' | 'closing' | 'blocked'>('idle')
+type Page = 'profile' | 'groups' | 'prices' | 'about'
 const activePage = ref<Page>('profile')
 const groupsOpened = ref(false)
-const scrollPositions: Record<Page, number> = {profile: 0, groups: 0, about: 0}
+const pricesOpened = ref(false)
+const canUsePrices = computed(() => profile.value?.skyblockPrice === true)
+watch(canUsePrices, allowed => {
+  if (!allowed) {
+    pricesOpened.value = false
+    if (activePage.value === 'prices') activePage.value = 'profile'
+  }
+})
+const scrollPositions: Record<Page, number> = {profile: 0, groups: 0, prices: 0, about: 0}
 
 async function selectPage(page: Page) {
   if (activePage.value === page || state.value.phase !== 'ready' || !revealed.value) return
+  if (page === 'prices' && !canUsePrices.value) return
   scrollPositions[activePage.value] = window.scrollY
   activePage.value = page
   if (page === 'groups') groupsOpened.value = true
+  if (page === 'prices') pricesOpened.value = true
   await nextTick()
   if (state.value.phase === 'ready' && activePage.value === page) window.scrollTo({
     top: scrollPositions[page],
@@ -166,6 +179,13 @@ function leave() {
   if (timer) clearInterval(timer)
 }
 
+async function exitPage() {
+  if (closeState.value === 'closing') return
+  closeState.value = 'closing'
+  leave()
+  if (!await closeCurrentPage()) closeState.value = 'blocked'
+}
+
 function hidePage() {
   document.documentElement.style.visibility = 'hidden'
   leave()
@@ -228,10 +248,10 @@ onBeforeUnmount(() => {
             <Icon v-else name="bot"/>
           </div>
           <h1 class="bot-title"><span class="bot-name">{{ bot.name }}</span><span class="bot-subtitle">{{
-              activePage === 'groups' ? '群管理' : activePage === 'about' ? '关于' : '用户档案'
+                activePage === 'groups' ? '群管理' : activePage === 'prices' ? '价格提醒' : activePage === 'about' ? '关于' : '用户档案'
             }}</span></h1>
         </div>
-        <button v-if="dashboardGrant" class="text-button dashboard-logout" @click="emit('logout')">退出登录</button>
+        <button v-if="state.phase === 'ready'" class="text-button profile-exit" @click="exitPage">退出</button>
       </div>
     </header>
 
@@ -360,24 +380,29 @@ onBeforeUnmount(() => {
           :inert="activePage !== 'about'" :aria-hidden="activePage !== 'about'">
       <AboutPage :bot="bot" :request="readPrivate" :active="activePage === 'about'" @copy="copyText"/>
     </main>
-    <NavigationDock v-if="state.phase === 'ready' && revealed" :active="activePage" @select="selectPage"/>
+    <main v-if="state.phase === 'ready' && canUsePrices" v-show="activePage === 'prices'" id="prices-page" class="groups-page"
+          :inert="activePage !== 'prices'" :aria-hidden="activePage !== 'prices'">
+      <PriceAlerts v-if="pricesOpened" :request="readPrivate" :post="writePrivate" :image="path => session.image(path)"/>
+    </main>
+    <NavigationDock v-if="state.phase === 'ready' && revealed" :active="activePage" :can-use-prices="canUsePrices" @select="selectPage"/>
 
     <main v-if="state.phase === 'expired'" class="entry-layout" aria-live="polite">
       <section class="entry-card glass">
         <div class="entry-status">
           <Icon name="lock"/>
         </div>
-        <h2>当前会话已过期</h2>
-        <template v-if="dashboardGrant">
+        <h2>{{ closeState === 'idle' ? '当前会话已过期' : closeState === 'closing' ? '正在关闭页面' : '已退出当前页面' }}</h2>
+        <p v-if="closeState !== 'idle'" class="entry-description">{{ closeState === 'blocked' ? '当前浏览器不允许自动关闭，请手动关闭此页面' : '正在返回聊天窗口' }}</p>
+        <template v-else-if="dashboardGrant">
           <p class="entry-description">请重新进入个人面板</p>
           <button class="text-button" @click="emit('renew')">重新进入</button>
         </template>
-        <p v-else class="entry-description">请私聊{{ bot.name }}发送 <code>/profile</code><br>获取新的会话</p></section>
+        <p v-else class="entry-description">请私聊{{ bot.name }}发送 <code>/dashboard</code><br>进入个人中心</p></section>
     </main>
     <div v-if="copyNotice && state.phase === 'ready'" class="toast glass" role="status">{{ copyNotice }}</div>
   </div>
 </template>
 
 <style scoped>
-.dashboard-logout { margin-left: auto; flex-shrink: 0; }
+.profile-exit { margin-left: auto; flex-shrink: 0; }
 </style>

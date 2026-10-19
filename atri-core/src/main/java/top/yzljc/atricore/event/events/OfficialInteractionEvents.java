@@ -3,9 +3,10 @@ package top.yzljc.atricore.event.events;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atricore.event.Event;
+import top.yzljc.atricore.event.impl.InteractionType;
 
 /**
- * QQ 交互事件的抽象基类，不单独分发
+ * QQ 交互事件的抽象基类，其下分支请参考 {@link InteractionType}
  *
  * @Author YZ_Ljc_
  * @ClassName OfficialInteractionEvents

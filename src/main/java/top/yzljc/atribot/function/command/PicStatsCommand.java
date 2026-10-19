@@ -1,6 +1,7 @@
 package top.yzljc.atribot.function.command;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
@@ -8,7 +9,6 @@ import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
-import top.yzljc.atribot.database.repo.ImageSourceRepository;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
 import top.yzljc.atribot.utils.FormatTools;
 
@@ -41,16 +41,16 @@ public class PicStatsCommand implements CommandExecutor {
             return handlePendingList(qq);
         }
 
-        int pending = ImageSourceRepository.countByStatus(ImageReviewStatus.PENDING.name());
-        int reviewed = ImageSourceRepository.countByStatus(ImageReviewStatus.REVIEWED.name());
-        int denied = ImageSourceRepository.countByStatus(ImageReviewStatus.DENIED.name());
-        int total = ImageSourceRepository.countByStatus(null);
+        int pending = PicRepository.countByStatus(ImageReviewStatus.PENDING.name());
+        int reviewed = PicRepository.countByStatus(ImageReviewStatus.REVIEWED.name());
+        int denied = PicRepository.countByStatus(ImageReviewStatus.DENIED.name());
+        int total = PicRepository.countByStatus(null);
 
         String userId = qq.getUserId();
-        int myTotal = ImageSourceRepository.countByUploader(userId, null);
-        int myPending = ImageSourceRepository.countByUploader(userId, ImageReviewStatus.PENDING.name());
-        int myReviewed = ImageSourceRepository.countByUploader(userId, ImageReviewStatus.REVIEWED.name());
-        int myDenied = ImageSourceRepository.countByUploader(userId, ImageReviewStatus.DENIED.name());
+        int myTotal = PicRepository.countByUploader(userId, null);
+        int myPending = PicRepository.countByUploader(userId, ImageReviewStatus.PENDING.name());
+        int myReviewed = PicRepository.countByUploader(userId, ImageReviewStatus.REVIEWED.name());
+        int myDenied = PicRepository.countByUploader(userId, ImageReviewStatus.DENIED.name());
 
         StringBuilder sb = new StringBuilder();
         sb.append("**图源数据统计**\n");
@@ -67,7 +67,7 @@ public class PicStatsCommand implements CommandExecutor {
 
         if (admin) {
             sb.append("━━━━━━━━━━━━━━\n");
-            sb.append("近 24h 投稿: ").append(ImageSourceRepository.countSince(DAY_MILLIS)).append(" 张\n");
+            sb.append("近 24h 投稿: ").append(PicRepository.countSince(DAY_MILLIS)).append(" 张\n");
             sb.append("待送达通知: ").append(PendingNoticeRepository.countPending()).append(" 条\n");
             if (pending > 0) {
                 sb.append("查看待审: /图源 list\n");
@@ -82,14 +82,14 @@ public class PicStatsCommand implements CommandExecutor {
     }
 
     private boolean handlePendingList(QQCommandSender sender) {
-        List<ImageSourceDTO> list = ImageSourceRepository.findPaginated(
+        List<ImageSourceDTO> list = PicRepository.findPaginated(
                 ImageReviewStatus.PENDING.name(), 1, PREVIEW_SIZE);
         if (list.isEmpty()) {
             sender.sendMessage("没有待审核的投稿喵~");
             return true;
         }
 
-        int total = ImageSourceRepository.countByStatus(ImageReviewStatus.PENDING.name());
+        int total = PicRepository.countByStatus(ImageReviewStatus.PENDING.name());
 
         StringBuilder sb = new StringBuilder();
         sb.append("**待审核投稿**（共 ").append(total).append(" 张，显示最新 ").append(list.size()).append(" 张）\n");

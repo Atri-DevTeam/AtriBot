@@ -72,9 +72,9 @@ public class CoinGainLogRepository {
     }
 
     /**
-     * @param con 调用方事务连接，本方法不提交事务
+     * @param con    调用方事务连接，本方法不提交事务
      * @param userId 用户标识
-     * @param way 金粒来源
+     * @param way    金粒来源
      * @param amount 增加数量，必须大于零
      * @throws SQLException 日志写入失败
      */

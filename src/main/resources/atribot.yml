@@ -10,9 +10,6 @@ commands:
       - 群绑定
       - 群验证
       - 群主验证
-  profile:
-    description: 获取个人空间一次性入口（仅官机私聊）
-    usage: /profile
   dashboard:
     aliases:
       - dash
@@ -178,6 +175,12 @@ commands:
     aliases:
       - 扫雷
       - sl
+  tictactoe:
+    description: 井字棋游戏
+    aliases:
+      - 井字棋
+      - ttt
+    usage: /井字棋
   connect4:
     description: 四子棋游戏
     aliases:
