@@ -18,6 +18,7 @@
   "docs/qq/messages/guild.md": "QQ消息/频道消息.md",
   "docs/qq/messages/stream.md": "QQ消息/流式消息.md",
   "docs/qq/messages/media.md": "QQ消息/图片与文件上传.md",
+  "docs/qq/messages/materials.md": "QQ消息/Markdown图片素材.md",
   "docs/qq/messages/backup-upload.md": "QQ消息/备用图片上传.md",
   "docs/qq/messages/advanced.md": "QQ消息/自定义消息请求.md",
   "docs/qq/components/README.md": "QQ消息组件/目录.md",

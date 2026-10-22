@@ -85,7 +85,7 @@ public class AutoSendPtt implements Listener {
                 if (t != null) {
                     var text = "[语音]" + event.getUser().getUsername() + ": " + t;
                     log.info("转文字-> {}", text);
-                    String napcatGroupId = recordedPtt.get(md5).getNapcatGroupId();
+                    String napcatGroupId = recordedPtt.get(md5).getNapcatGroupId() != null ? recordedPtt.get(md5).getNapcatGroupId() : String.valueOf(OfficialGroups.getRealGroupId(event.getGroupId()));
                     if (napcatGroupId != null && !napcatGroupId.equals("0")) {
                         var mid = GroupMessage.chatMessage(napcatGroupId, text);
                         if (mid != null && recordedPtt.containsKey(md5)) {
