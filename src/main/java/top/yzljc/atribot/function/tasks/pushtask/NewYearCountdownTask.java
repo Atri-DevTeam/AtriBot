@@ -5,7 +5,6 @@ import com.nlf.calendar.Solar;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atribot.utils.tools.Alert;
-import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
@@ -18,6 +17,7 @@ import top.yzljc.atricore.service.taskscheduler.TaskPlan;
 import top.yzljc.atricore.service.taskscheduler.TaskSchedule;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -41,22 +41,18 @@ public final class NewYearCountdownTask extends PushTask implements ScheduledTas
         super(FUNCTION_ID, "新年倒计时", true);
     }
 
-    /**
-     * 按北京时间获取当前春节周期的刘德华解冻进度，以相邻两次春节之间的天数为一个完整周期
-     *
-     * @return 已过天数占本周期总天数的百分比，范围为 [0, 100)，春节当天归零
-     */
     public static double getThawProgress() {
-        return getThawProgress(LocalDate.now(ZoneId.of("Asia/Shanghai")));
+        return getThawProgress(LocalDateTime.now(ZoneId.of("Asia/Shanghai")));
     }
 
-    static double getThawProgress(LocalDate date) {
+    static double getThawProgress(LocalDateTime dateTime) {
+        LocalDate date = dateTime.toLocalDate();
         int lunarYear = Solar.fromYmd(date.getYear(), date.getMonthValue(), date.getDayOfMonth()).getLunar().getYear();
         LocalDate start = LocalDate.parse(Lunar.fromYmd(lunarYear, 1, 1).getSolar().toYmd());
         LocalDate end = LocalDate.parse(Lunar.fromYmd(lunarYear + 1, 1, 1).getSolar().toYmd());
-        long elapsedDays = ChronoUnit.DAYS.between(start, date);
-        long totalDays = ChronoUnit.DAYS.between(start, end);
-        return elapsedDays * 100.0 / totalDays;
+        long elapsedMinutes = ChronoUnit.MINUTES.between(start.atStartOfDay(), dateTime);
+        long totalMinutes = ChronoUnit.MINUTES.between(start.atStartOfDay(), end.atStartOfDay());
+        return elapsedMinutes * 100.0 / totalMinutes;
     }
 
     @Override

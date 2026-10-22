@@ -12,6 +12,100 @@ test.beforeEach(async ({page}) => {
 })
 
 for (const qq of [false, true]) {
+  test(`external authorization shows unified login before continuing with QQ adaptation ${qq}`, async ({page, isMobile}) => {
+    let privateRequests = 0
+    await page.route('**/dashboard/api/auth/**', route => {
+      privateRequests++
+      return route.fulfill({status: 500, json: {error: 'LOGIN_FAILED'}})
+    })
+    await page.route('**/auth/continue?**', route => {
+      const url = new URL(route.request().url())
+      expect(url.searchParams.get('state')).toBe(ticket)
+      expect(url.searchParams.get('mobile')).toBe(isMobile ? '1' : '0')
+      return route.fulfill({contentType: 'text/html', body: '<h1>Continue authorization</h1>'})
+    })
+    await page.goto(`/dashboard/?authorization=${ticket}${qq ? '&qq=1' : ''}`)
+    await expect(page.getByRole('heading', {name: '统一账号登陆', exact: true})).toBeVisible()
+    await expect(page.getByText('完成登录后将返回发起认证的网站', {exact: true})).toBeVisible()
+    const proceed = page.getByRole('button', {name: '继续认证', exact: true})
+    await expect(proceed).toBeEnabled()
+    await expect(page.getByRole('button', {name: '切换账号', exact: true})).toBeVisible()
+    expect(privateRequests).toBe(0)
+    await proceed.click()
+    await expect(page.getByRole('heading', {name: 'Continue authorization'})).toBeVisible()
+    expect(privateRequests).toBe(0)
+  })
+}
+
+for (const qq of [false, true]) {
+  test(`external authorization switches accounts after clearing the login with QQ adaptation ${qq}`, async ({page, isMobile}) => {
+    let loggedOut = false
+    let releaseLogout!: () => void
+    const pendingLogout = new Promise<void>(resolve => { releaseLogout = resolve })
+    await page.route('**/dashboard/api/auth/**', async route => {
+      expect(route.request().url()).toContain('/logout')
+      expect(route.request().method()).toBe('POST')
+      await pendingLogout
+      loggedOut = true
+      return route.fulfill({status: 204})
+    })
+    await page.route('**/auth/continue?**', route => {
+      expect(loggedOut).toBe(true)
+      const url = new URL(route.request().url())
+      expect(url.searchParams.get('state')).toBe(ticket)
+      expect(url.searchParams.get('mobile')).toBe(isMobile ? '1' : '0')
+      return route.fulfill({contentType: 'text/html', body: '<h1>Choose QQ account</h1>'})
+    })
+    await page.goto(`/dashboard/?authorization=${ticket}${qq ? '&qq=1' : ''}`)
+    const switcher = page.getByRole('button', {name: '切换账号', exact: true})
+    await expect(switcher).toHaveCSS('font-size', '12px')
+    await switcher.click()
+    try {
+      await expect(switcher).toBeDisabled()
+      await expect(page.getByRole('button', {name: '继续认证', exact: true})).toBeDisabled()
+    } finally {
+      releaseLogout()
+    }
+    await expect(page.getByRole('heading', {name: 'Choose QQ account'})).toBeVisible()
+  })
+}
+
+test('failed account switching stays on the external authorization page and can retry', async ({page}) => {
+  let logouts = 0
+  let continued = false
+  await page.route('**/dashboard/api/auth/logout', route => {
+    logouts++
+    return route.fulfill({status: 500, json: {error: 'LOGIN_FAILED'}})
+  })
+  await page.route('**/auth/continue?**', route => {
+    continued = true
+    return route.abort()
+  })
+  await page.goto(`/dashboard/?authorization=${ticket}`)
+  const switcher = page.getByRole('button', {name: '切换账号', exact: true})
+  await switcher.click()
+  await expect(page.getByRole('alert')).toContainText('QQ 登录失败')
+  await expect(switcher).toBeEnabled()
+  expect(continued).toBe(false)
+  await switcher.click()
+  await expect.poll(() => logouts).toBe(2)
+  await expect(switcher).toBeEnabled()
+})
+
+test('malformed external authorization cannot start an ordinary login', async ({page}) => {
+  let requests = 0
+  await page.route('**/dashboard/api/auth/**', route => {
+    requests++
+    return route.fulfill({status: 500, json: {error: 'LOGIN_FAILED'}})
+  })
+  await page.goto('/dashboard/?authorization=invalid&qq=1')
+  await expect(page.getByRole('alert')).toContainText('授权已过期')
+  await expect(page.getByRole('button', {name: '继续认证', exact: true})).toBeDisabled()
+  await expect(page.getByRole('button', {name: '切换账号', exact: true})).toBeDisabled()
+  expect(requests).toBe(0)
+})
+
+for (const qq of [false, true]) {
 test(`QQ adaptation ${qq} starts authorization only when requested and recovers after failure`, async ({page}, testInfo) => {
   let starts = 0
   let releaseStart!: () => void
@@ -25,6 +119,7 @@ test(`QQ adaptation ${qq} starts authorization only when requested and recovers 
   await page.goto(qq ? '/dashboard/?qq=1' : '/dashboard/')
   await expect(page).toHaveTitle(qq ? '\u200b' : '个人中心')
   const login = page.getByRole('button', {name: 'QQ 登录', exact: true})
+  await expect(page.getByRole('button', {name: '切换账号', exact: true})).toBeVisible()
   const card = page.locator('.entry-card')
   if (!qq) await expect(login).toBeEnabled()
   else await expect(login).toBeDisabled()
@@ -83,25 +178,22 @@ test(`binding entry retains navigation with QQ adaptation ${qq}`, async ({page, 
 
 }
 
-for (const nativeClose of [true, false]) {
-test(`profile exit preserves QQ login with native close support ${nativeClose}`, async ({page}) => {
+for (const qq of [false, true]) {
+test(`profile logout revokes the login and stays logged out after reload with QQ adaptation ${qq}`, async ({page}) => {
   let starts = 0
   let loggedOut = false
   let released = 0
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'sendBeacon', {value: () => false})
-    Object.defineProperty(window, 'close', {value: () => {}})
   })
-  if (nativeClose) {
-    await page.addInitScript(() => Object.defineProperty(navigator, 'userAgent', {value: 'QQ/9.2.0'}))
-    await page.route('https://open.mobile.qq.com/sdk/qqapi.js', route => route.fulfill({
-      contentType: 'text/javascript', body:
-        'window.nativeCloseCalls = 0; window.mqq = {ui: {popBack() { window.nativeCloseCalls++ }}}'
-    }))
-  }
   await page.route('**/dashboard/api/auth/**', route => {
     if (route.request().url().endsWith('/start')) starts++
-    if (route.request().url().endsWith('/logout')) loggedOut = true
+    if (route.request().url().endsWith('/logout')) {
+      expect(route.request().method()).toBe('POST')
+      loggedOut = true
+      return route.fulfill({status: 204})
+    }
+    if (loggedOut) return route.fulfill({json: {status: 'anonymous'}})
     return route.fulfill({json: {status: 'ready', access: {token, user: {userId: 'owner', displayName: '亚托利'},
       expiresAt: Date.now() + 7_200_000, idleTimeoutMillis: 90_000}}})
   })
@@ -115,23 +207,77 @@ test(`profile exit preserves QQ login with native close support ${nativeClose}`,
     const activity = activityResponse(route.request().url())
     return activity ? route.fulfill({json: activity}) : route.fulfill({status: 204})
   })
-  await page.goto(nativeClose ? '/dashboard/?qq=1' : '/dashboard/')
+  await page.goto(qq ? '/dashboard/?qq=1' : '/dashboard/')
   await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toBeVisible()
-  await expect(page).toHaveTitle(nativeClose ? '\u200b' : '个人中心')
+  await expect(page).toHaveTitle(qq ? '\u200b' : '个人中心')
   expect(starts).toBe(0)
-  await page.getByRole('button', {name: '退出', exact: true}).click()
-  if (nativeClose) {
-    await expect.poll(() => page.evaluate(() => (window as Window & {nativeCloseCalls?: number}).nativeCloseCalls)).toBe(1)
-  } else {
-    await expect(page.getByRole('heading', {name: '已退出当前页面'})).toBeVisible()
-    await expect(page.getByText('当前浏览器不允许自动关闭，请手动关闭此页面')).toBeVisible()
-  }
+  await page.getByRole('button', {name: '退出登录', exact: true}).click()
+  await expect(page.getByRole('heading', {name: '统一账号登陆'})).toBeVisible()
   await expect.poll(() => released).toBe(1)
-  expect(loggedOut).toBe(false)
+  expect(loggedOut).toBe(true)
   await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toHaveCount(0)
   await page.reload()
-  await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toBeVisible()
+  await expect(page.getByRole('heading', {name: '统一账号登陆'})).toBeVisible()
+  await expect(page.getByRole('button', {name: 'QQ 登录', exact: true})).toBeEnabled()
+  expect(new URL(page.url()).searchParams.get('qq')).toBe(qq ? '1' : null)
   expect(starts).toBe(0)
+})
+}
+
+test('failed profile logout preserves the profile and allows retry', async ({page}) => {
+  let attempts = 0
+  let released = 0
+  await page.addInitScript(() => Object.defineProperty(navigator, 'sendBeacon', {value: () => false}))
+  await page.route('**/dashboard/api/auth/session', route => route.fulfill({json: {
+    status: 'ready', access: {token, user: {userId: 'owner', displayName: '亚托利'},
+      expiresAt: Date.now() + 7_200_000, idleTimeoutMillis: 90_000}
+  }}))
+  await page.route('**/dashboard/api/auth/logout', route => {
+    attempts++
+    return route.fulfill({status: attempts === 1 ? 500 : 204})
+  })
+  await page.route('**/atrimeow/profile/api/**', route => {
+    if (route.request().url().endsWith('/session/close')) released++
+    if (route.request().url().endsWith('/profile')) return route.fulfill({json: {...profile, avatarUrl: null, bot: {...profile.bot, avatarUrl: null}}})
+    const activity = activityResponse(route.request().url())
+    return activity ? route.fulfill({json: activity}) : route.fulfill({status: 204})
+  })
+  await page.goto('/dashboard/')
+  await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toBeVisible()
+  const logout = page.getByRole('button', {name: '退出登录', exact: true})
+  await logout.click()
+  await expect(page.getByRole('alert')).toHaveText('退出登录失败，请稍后重试')
+  await expect(logout).toBeEnabled()
+  await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toBeVisible()
+  expect(released).toBe(0)
+  await logout.click()
+  await expect(page.getByRole('heading', {name: '统一账号登陆'})).toBeVisible()
+  await expect.poll(() => released).toBe(1)
+})
+
+for (const workspace of [false, true]) {
+test(`dashboard switches accounts from ${workspace ? 'workspace selection' : 'login page'}`, async ({page, isMobile}) => {
+  let loggedOut = false
+  await page.route('**/dashboard/api/auth/session', route => route.fulfill({json: workspace ? {
+    status: 'ready', canManage: true, webuiEnabled: true, access: {token,
+      user: {userId: 'owner', displayName: '亚托利'}, expiresAt: Date.now() + 7_200_000, idleTimeoutMillis: 90_000}
+  } : {status: 'anonymous'}}))
+  await page.route('**/dashboard/api/auth/logout', route => {
+    expect(route.request().method()).toBe('POST')
+    loggedOut = true
+    return route.fulfill({status: 204})
+  })
+  await page.route('**/dashboard/api/auth/start', route => {
+    expect(loggedOut).toBe(true)
+    expect(route.request().postDataJSON()).toMatchObject({mobile: isMobile, qq: workspace})
+    return route.fulfill({json: {url: `https://graph.qq.com/oauth2.0/authorize?state=${ticket}`}})
+  })
+  await page.route('**/atrimeow/profile/api/session/close', route => route.fulfill({status: 204}))
+  await page.route('https://graph.qq.com/**', route => route.fulfill({contentType: 'text/html', body: '<h1>Choose QQ account</h1>'}))
+  await page.goto(workspace ? '/dashboard/?qq=1' : '/dashboard/')
+  await expect(page.getByRole('heading', {name: workspace ? '选择工作台' : '统一账号登陆'})).toBeVisible()
+  await page.getByRole('button', {name: '切换账号', exact: true}).click()
+  await expect(page.getByRole('heading', {name: 'Choose QQ account'})).toBeVisible()
 })
 }
 

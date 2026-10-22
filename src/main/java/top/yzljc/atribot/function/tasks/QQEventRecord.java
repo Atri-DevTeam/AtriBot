@@ -14,13 +14,11 @@ import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
 import top.yzljc.atribot.database.repo.LootRepository;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.EventPriority;
 import top.yzljc.atricore.event.Listener;
-import top.yzljc.atribot.event.events.*;
 import top.yzljc.atricore.event.events.*;
 import top.yzljc.atribot.function.command.PushTaskCommand;
 import top.yzljc.atribot.function.command.ReminderCommand;
@@ -69,7 +67,10 @@ public class QQEventRecord implements Listener {
             Alert.notify("Failed to register group: " + event.getGroupOpenId());
         } else {
             log.info("Registered group: {}", event.getGroupOpenId());
-            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵添加到群聊" + event.getGroupOpenId() + "中");
+
+            Alert.notify("[+] 机器人进群：" + event.getGroupOpenId() + "，操作者：" + event.getOpMemberOpenId(), false);
+
+//            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵添加到群聊" + event.getGroupOpenId() + "中"); 2026/10/21 该放下了，哎
             Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
         }
         if (CoinGainLogRepository.countCoinGains(event.getOpMemberOpenId(), "group_invite") < 5) {
@@ -99,7 +100,8 @@ public class QQEventRecord implements Listener {
             Alert.notify("Failed to remove group: " + event.getGroupOpenId());
         } else {
             log.info("Removed group: {}", event.getGroupOpenId());
-            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵移出群聊" + event.getGroupOpenId());
+//            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵移出群聊" + event.getGroupOpenId());
+            Alert.notify("[-] 机器人退群：" + event.getGroupOpenId() + "，操作者：" + event.getOpMemberOpenId(), false);
         }
     }
 
@@ -139,7 +141,8 @@ public class QQEventRecord implements Listener {
             LootRepository.addCoins(event.getUserOpenId(), 100, "friend_add");
             log.info("Added 100 coins to new friend {} for first friend_add event", event.getUserOpenId());
         }
-        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + ")");
+//        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + ")");
+        Alert.notify("[+] 机器人好友添加：" + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + "）", false);
     }
 
     @EventHandler
@@ -158,7 +161,8 @@ public class QQEventRecord implements Listener {
             Alert.notify("好友已删除，但删除私聊记录失败，OpenID: " + userOpenId);
             return;
         }
-        Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
+//        Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
+        Alert.notify("[-] 机器人好友删除：" + userOpenId, false);
     }
 
     @EventHandler
@@ -226,7 +230,7 @@ public class QQEventRecord implements Listener {
                     String.join(" ", event.getArgs()),
                     scene
             );
-            NapcatDebugGroup.sendAsync(info);
+//            NapcatDebugGroup.sendAsync(info);
             log.info(info);
             return;
         }
@@ -303,7 +307,7 @@ public class QQEventRecord implements Listener {
                         String.join(" ", event.getArgs())
                 );
             }
-            NapcatDebugGroup.sendAsync(info);
+//            NapcatDebugGroup.sendAsync(info);
             log.info(info);
         }
     }

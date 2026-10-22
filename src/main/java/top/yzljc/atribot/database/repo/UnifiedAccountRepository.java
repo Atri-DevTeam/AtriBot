@@ -475,6 +475,40 @@ public class UnifiedAccountRepository {
         return updateField(uuid, "username", username);
     }
 
+    /**
+     * 仅为用户名为空的账号写入昵称
+     *
+     * @param uuid 统一账号 UUID
+     * @param username 已验证平台提供的昵称
+     * @return 写入成功返回 true，已有用户名或参数无效时返回 false
+     * @throws SQLException 数据库操作失败
+     */
+    public static boolean fillUsernameIfEmpty(UUID uuid, String username) throws SQLException {
+        try (var con = DatabaseManager.getConnection()) {
+            return fillUsernameIfEmpty(con, uuid, username);
+        }
+    }
+
+    /**
+     * 使用数据库条件更新保证已有用户名不会被覆盖
+     *
+     * @param con 数据库连接，由调用方关闭
+     * @param uuid 统一账号 UUID
+     * @param username 已验证平台提供的昵称
+     * @return 写入成功返回 true，已有用户名或参数无效时返回 false
+     * @throws SQLException 数据库操作失败
+     */
+    public static boolean fillUsernameIfEmpty(Connection con, UUID uuid, String username) throws SQLException {
+        if (uuid == null || username == null || username.isBlank()) return false;
+        String sql = "UPDATE `" + TABLE + "` SET `username`=?, `last_update_time`=CURRENT_TIMESTAMP "
+                + "WHERE `uuid`=? AND (`username` IS NULL OR TRIM(`username`)='')";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, uuid.toString());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public static boolean updateQqUserOpenId(UUID uuid, String openId) {
         return updateField(uuid, "qq_user_open_id", openId);
     }

@@ -17,8 +17,10 @@
 
 平台消息中缺失的数据不会由框架保证补全，时间戳保持平台来源格式，不是统一的时间对象
 
+`QQUser.getUnionOpenId()` 返回 QQ 开放平台绑定的互联 ID，发送者取自 `author.union_openid`，群消息中被 @ 的用户取自对应 mention 的 `union_openid`，未携带时为 `null`。该字段与 `getUserId()` / `getUserOpenId()` 独立保存；后者在群聊中为 `member_openid`，在 C2C 中为 `user_openid`，用于现有消息发送、账号查询和权限判断
+
 ::: important 频道用户标识
-QQ 频道用户的 `getUserId()` 是频道用户 ID，`getUserOpenId()` 是事件提供的统一用户标识，可能为空，两者不能替换使用
+QQ 频道用户的 `getUserId()` / `getChannelUserId()` 是频道用户 ID，`getUnionOpenId()` 是 QQ 开放平台绑定的互联 ID，取自 `union_openid`，可能为空，两者不能替换使用。频道事件及 `QQGuildCommandSender` 同样通过 `getUnionOpenId()` 提供互联 ID
 :::
 
 ::: note 平台角色与机器人权限

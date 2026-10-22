@@ -17,6 +17,7 @@ import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings.DisableS
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,22 +58,22 @@ public class AdminController {
         String functionId = ctx.pathParam("functionId");
         PushTask task = findPushTask(functionId);
         if (task == null) {
-            ctx.json(Result.fail(404, "未找到对应的推送任务"));
+            ctx.json(Result.failure(ApiCode.PUSH_TASK_NOT_FOUND));
             return;
         }
 
         FunctionSettingUpdateDTO dto = ctx.bodyAsClass(FunctionSettingUpdateDTO.class);
         DisableScope scope = parseDisableScope(dto == null ? null : dto.getScope(), defaultScope(task));
         if (scope == DisableScope.GROUP && !task.isGroupEnable()) {
-            ctx.json(Result.fail(400, "该功能不支持群聊场景"));
+            ctx.json(Result.customFailure("该功能不支持群聊场景"));
             return;
         }
         if (scope == DisableScope.C2C && !task.isC2cEnable()) {
-            ctx.json(Result.fail(400, "该功能不支持私聊场景"));
+            ctx.json(Result.customFailure("该功能不支持私聊场景"));
             return;
         }
         if (scope == DisableScope.BOTH && (!task.isGroupEnable() || !task.isC2cEnable())) {
-            ctx.json(Result.fail(400, "该功能不支持同时禁用群聊和私聊"));
+            ctx.json(Result.customFailure("该功能不支持同时禁用群聊和私聊"));
             return;
         }
 
@@ -196,13 +197,13 @@ public class AdminController {
     public static void replyFeedback(Context ctx) {
         ReplyFeedbackDTO dto = ctx.bodyAsClass(ReplyFeedbackDTO.class);
         if (isBlank(dto.getId()) || isBlank(dto.getReplyContent())) {
-            ctx.json(Result.fail(400, "id 和 replyContent 不能为空"));
+            ctx.json(Result.customFailure("id 和 replyContent 不能为空"));
             return;
         }
         FeedbackDTO target = FeedbackRepository.findById(dto.getId());
         if (target != null && target.getPlatform() != null
                 && target.getPlatform().toUpperCase(java.util.Locale.ROOT).startsWith("NAPCAT")) {
-            ctx.json(Result.fail(400, "NapCat 来源反馈已停止回复接入"));
+            ctx.json(Result.customFailure("NapCat 来源反馈已停止回复接入"));
             return;
         }
         boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden(), dto.isSilent());
@@ -213,7 +214,7 @@ public class AdminController {
             }
             ctx.json(Result.success("ok"));
         } else {
-            ctx.json(Result.fail(500, "回复失败，可能该反馈不存在"));
+            ctx.json(Result.customFailure("回复失败，可能该反馈不存在"));
         }
     }
 
@@ -260,13 +261,13 @@ public class AdminController {
 //    public static void getErrorReport(Context ctx) {
 //        String traceId = ctx.pathParam("traceId");
 //        if (isBlank(traceId)) {
-//            ctx.json(Result.fail(400, "traceId 不能为空"));
+//            ctx.json(Result.customFailure("traceId 不能为空"));
 //            return;
 //        }
 //
 //        ErrorReportDTO report = ErrorReportRepository.findByTraceId(traceId.trim());
 //        if (report == null) {
-//            ctx.json(Result.fail(404, "未找到该 traceId 对应的错误报告"));
+//            ctx.json(Result.customFailure("未找到该 traceId 对应的错误报告"));
 //            return;
 //        }
 //
@@ -336,12 +337,12 @@ public class AdminController {
     public static void getOfficialSendLogContext(Context ctx) throws java.sql.SQLException {
         long id = parseLong(ctx.pathParam("id"), -1L);
         if (id <= 0) {
-            ctx.json(Result.fail(400, "日志 id 无效"));
+            ctx.json(Result.customFailure("日志 id 无效"));
             return;
         }
         var context = OfficialSendLogRepository.findContext(id, 10);
         if (context == null) {
-            ctx.json(Result.fail(404, "未找到该发送日志"));
+            ctx.json(Result.customFailure("未找到该发送日志"));
             return;
         }
         ctx.json(Result.success(new SendLogContextDTO(id,
@@ -354,12 +355,12 @@ public class AdminController {
     public static void getOfficialSendLog(Context ctx) {
         long id = parseLong(ctx.pathParam("id"), -1L);
         if (id <= 0) {
-            ctx.json(Result.fail(400, "日志 id 无效"));
+            ctx.json(Result.customFailure("日志 id 无效"));
             return;
         }
         OfficialSendLogDTO log = OfficialSendLogRepository.findById(id);
         if (log == null) {
-            ctx.json(Result.fail(404, "未找到该发送日志"));
+            ctx.json(Result.customFailure("未找到该发送日志"));
             return;
         }
         ctx.json(Result.success(toSendLogDetail(log)));
@@ -460,12 +461,12 @@ public class AdminController {
     public static void getRawEventLog(Context ctx) {
         long id = parseLong(ctx.pathParam("id"), -1L);
         if (id <= 0) {
-            ctx.json(Result.fail(400, "事件 id 无效"));
+            ctx.json(Result.customFailure("事件 id 无效"));
             return;
         }
         EventLogDTO log = EventLogRepository.findById(id);
         if (log == null) {
-            ctx.json(Result.fail(404, "未找到该事件记录"));
+            ctx.json(Result.customFailure("未找到该事件记录"));
             return;
         }
         ctx.json(Result.success(new RawEventLogDetailDTO(
@@ -504,7 +505,7 @@ public class AdminController {
             type = null;
         }
         if (start != null && end != null && start > end) {
-            ctx.json(Result.fail(400, "开始时间不能晚于结束时间"));
+            ctx.json(Result.customFailure("开始时间不能晚于结束时间"));
             return;
         }
         int deleted = EventLogRepository.deleteByRange(start, end, type);

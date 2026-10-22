@@ -262,7 +262,7 @@ public class CommandManager implements Listener {
         String userInput = event.getMessage().getContent().trim();
         String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
         var channelUser = event.getUser();
-        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUserOpenId());
+        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUnionOpenId());
         dispatchTextCommand(senderUser, revPrefixContent, true);
     }
 
@@ -272,7 +272,7 @@ public class CommandManager implements Listener {
         String userInput = event.getMessage().getContent().trim();
         String revPrefixContent = userInput.replaceFirst("^<@[^>]+>\\s*", "").trim();
         var channelUser = event.getUser();
-        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUserOpenId());
+        var senderUser = new QQGuildSenderImpl(channelUser, event.getMessage(), event.getGuildId(), event.getChannelId(), event.getUnionOpenId());
         dispatchTextCommand(senderUser, revPrefixContent, true);
     }
 

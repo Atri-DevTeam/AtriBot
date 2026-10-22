@@ -8,6 +8,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import top.yzljc.atricore.utils.debug.MessageTrace;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName RateLimitedTaskQueue
@@ -44,6 +46,7 @@ public final class RateLimitedTaskQueue implements AutoCloseable {
         Request<T> request = new Request<>(Objects.requireNonNull(operation, "operation"));
         request.result.whenComplete((ignored, failure) -> {
             if (request.result.isCancelled()) executor.remove(request);
+            if (request.traced != null && failure != null) request.traced.cancel("限速队列任务未完成");
         });
         try {
             executor.execute(request);
@@ -68,19 +71,33 @@ public final class RateLimitedTaskQueue implements AutoCloseable {
     private final class Request<T> implements Runnable {
         private final Supplier<T> operation;
         private final CompletableFuture<T> result = new CompletableFuture<>();
+        private final MessageTrace.Task traced;
 
         private Request(Supplier<T> operation) {
             this.operation = operation;
+            traced = MessageTrace.capture(this::execute, "限速任务排队");
         }
 
         @Override
         public void run() {
+            if (traced == null) execute();
+            else traced.run();
+        }
+
+        private void execute() {
             try {
-                if (limiter.acquire(result::isDone) && !result.isDone()) result.complete(operation.get());
+                boolean acquired;
+                try (var span = MessageTrace.span("限速队列等待")) {
+                    acquired = limiter.acquire(result::isDone) && !result.isDone();
+                    span.result(acquired, acquired ? "" : "任务已取消");
+                }
+                if (acquired) result.complete(operation.get());
             } catch (InterruptedException e) {
+                MessageTrace.failed();
                 Thread.currentThread().interrupt();
                 result.completeExceptionally(e);
             } catch (Throwable e) {
+                MessageTrace.failed();
                 result.completeExceptionally(e);
                 if (e instanceof Error error) throw error;
             }

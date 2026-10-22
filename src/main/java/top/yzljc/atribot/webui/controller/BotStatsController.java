@@ -6,6 +6,7 @@ import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 import top.yzljc.atribot.webui.repo.BotStatsRepository;
 import top.yzljc.atribot.webui.repo.BotStatsSection;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
@@ -47,7 +48,7 @@ public final class BotStatsController {
     void handle(Context ctx) {
         ctx.header("Cache-Control", "no-store");
         if (!ctx.queryParamMap().isEmpty()) {
-            ctx.status(400).json(Result.fail(400, "此接口不接受查询参数，请直接请求 /openapi/bot_stats"));
+            ctx.status(400).json(Result.customFailure("此接口不接受查询参数，请直接请求 /openapi/bot_stats"));
             return;
         }
         ctx.future(() -> ThreadManager.supplyAsync(() -> {
@@ -55,7 +56,7 @@ public final class BotStatsController {
                 return Result.success(cache.get("snapshot", () -> response(loader.get())));
             } catch (Exception e) {
                 log.error("聚合统计查询失败", e);
-                return Result.fail(500, "统计查询失败，请稍后重试");
+                return Result.failure(ApiCode.STATISTICS_QUERY_FAILED);
             }
         }).thenAccept(ctx::json));
     }

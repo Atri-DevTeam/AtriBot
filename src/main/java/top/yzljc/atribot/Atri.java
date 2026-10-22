@@ -10,6 +10,7 @@ import top.yzljc.atribot.bootstrap.ApplicationBotCommand;
 import top.yzljc.atribot.bootstrap.ApplicationLogRecorder;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.media.MaterialImages;
 import top.yzljc.atricore.core.AccessService;
 import top.yzljc.atricore.core.BotCommand;
 import top.yzljc.atricore.core.LogRecorder;
@@ -27,6 +28,9 @@ import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.dashboard.DashboardCommand;
 import top.yzljc.atribot.dashboard.DashboardRouter;
 import top.yzljc.atribot.dashboard.DashboardSessions;
+import top.yzljc.atribot.auth.SiteAuthorizationService;
+import top.yzljc.atribot.auth.SiteAuthorizationRouter;
+import top.yzljc.atribot.auth.SiteAccountBroadcaster;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -35,7 +39,6 @@ import top.yzljc.atribot.chat.official.moderation.GroupJoinReviewListener;
 import top.yzljc.atribot.chat.official.moderation.GroupModerationListener;
 import top.yzljc.atricore.command.CommandManager;
 import top.yzljc.atribot.configuration.Config;
-import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atribot.function.admin.*;
 import top.yzljc.atribot.function.admin.ema.EmaCommand;
 import top.yzljc.atribot.function.command.*;
@@ -134,6 +137,11 @@ public class Atri extends AtriProvider {
     private final AtomicBoolean disabled = new AtomicBoolean(false);
     private final MiniappSessions miniappSessions = new MiniappSessions();
     private final DashboardSessions dashboardSessions = new DashboardSessions();
+    private final SiteAccountBroadcaster siteAccountBroadcaster = new SiteAccountBroadcaster(
+            () -> Config.getInstance().getSiteAuthorizationSettings(), () -> Config.getInstance().getQqConnectAppId(),
+            Path.of("data", "site-authorization", "account-updates.json"));
+    private final SiteAuthorizationService siteAuthorization = new SiteAuthorizationService(
+            () -> Config.getInstance().getSiteAuthorizationSettings(), siteAccountBroadcaster);
     @Getter
     private final PluginManager pluginManager = new PluginManager(Path.of("plugins"));
     /**
@@ -148,6 +156,8 @@ public class Atri extends AtriProvider {
         instance = this;
         Config config = Config.getInstance();
         initialize(cfg -> {
+            cfg.http.maxRequestSize = Math.max(cfg.http.maxRequestSize,
+                    MaterialImages.MAX_IMAGE_BYTES + 64 * 1024L);
             cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
             cfg.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/webui";
@@ -199,7 +209,9 @@ public class Atri extends AtriProvider {
             WebUIRouter.register(server, dashboardSessions);
             PluginHttpRoutes.attach(server);
             MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
-            DashboardRouter.register(server, dashboardSessions, miniappSessions);
+            DashboardRouter.register(server, dashboardSessions, miniappSessions, siteAuthorization);
+            SiteAuthorizationRouter.register(server, siteAuthorization, dashboardSessions);
+            UnifiedAuthentication.setAccountChangeListener(siteAccountBroadcaster::changed);
 
             SaSignManager.getConfig().setSecretKey(Config.getInstance().getSaSignSecretKey());
         } catch (RuntimeException | Error failure) {
@@ -289,6 +301,7 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(AutoSign.INSTANCE);
         CommandManager.getCommand("chat").setExecutor(MessageStats.INSTANCE);
+        CommandManager.getCommand("groupreport").setExecutor(new GroupDailyReportCommand());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
 //        CommandManager.getCommand("calendar").setExecutor(new Calendar());
         CommandManager.getCommand("check-mojira").setExecutor(this.checkMojira);
@@ -343,7 +356,7 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("图源").setExecutor(new PicStatsCommand());
         CommandManager.getCommand("pause").setExecutor(new AdminPauseCommand());
         CommandManager.getCommand("地球online").setExecutor(new EarthOnline());
-        CommandManager.getCommand("item").setExecutor(new DrawCommand());
+        CommandManager.getCommand("item").setExecutor(new ItemCommand());
         CommandManager.getCommand("recovergolds").setExecutor(new RecoverLostGolds());
         CommandManager.getCommand("refresh").setExecutor(RefreshGroupProfilesTask.INSTANCE);
         CommandManager.getCommand("ua").setExecutor(new UACommand());
@@ -369,6 +382,7 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("dau").setExecutor(new DauCommand());
 
         // ----------- DEBUG COMMANDS -----------
+        CommandManager.getCommand("test-qqdoc").setExecutor(QqBotDocsMonitor.INSTANCE);
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
         CommandManager.getCommand("test-markdown").setExecutor(new MarkdownDisplayTest());
 
@@ -387,6 +401,7 @@ public class Atri extends AtriProvider {
 
         OfficialGroups.init();
         UnifiedAuthentication.init();
+        siteAccountBroadcaster.start(UnifiedAuthentication.findAll());
         BotUserDataRepository.init();
         OfficialUsers.init();
         UserGameDataRepository.init();
@@ -444,6 +459,7 @@ public class Atri extends AtriProvider {
 //            GroupConfigManager.registerFeature("calendar", true);
             GroupConfigManager.registerFeature("get_hypixel_reward", false);
             GroupConfigManager.registerFeature("atri_chat", false);
+            GroupConfigManager.registerFeature(NapcatChatDailyReport.FEATURE, false);
             GroupConfigManager.registerFeature("tufe_class_alert", false);
             GroupConfigManager.registerFeature("private_func", false);
             GroupConfigManager.registerFeature("illegal_words_check", false);
@@ -489,6 +505,9 @@ public class Atri extends AtriProvider {
 
         close();
         dashboardSessions.close();
+        siteAuthorization.close();
+        UnifiedAuthentication.setAccountChangeListener(null);
+        siteAccountBroadcaster.close();
         miniappSessions.close();
         soundCommand.close();
         groupProfileRefreshBatcher.close();

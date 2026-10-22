@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth;
 
-import top.yzljc.atricore.auth.*;
-
 /**
  * API 授权范围：精确路径或末尾 /*（包含该目录本身及所有后代）。
  *
@@ -12,7 +10,8 @@ import top.yzljc.atricore.auth.*;
  * @Package top.yzljc.atribot.auth
  */
 public final class ApiPathScope {
-    private ApiPathScope() {}
+    private ApiPathScope() {
+    }
 
     public static String validate(String pattern) {
         if (pattern == null) throw new IllegalArgumentException("API 路径不能为空");

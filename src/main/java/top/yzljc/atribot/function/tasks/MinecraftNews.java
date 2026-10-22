@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atricore.core.CoreConfig;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;

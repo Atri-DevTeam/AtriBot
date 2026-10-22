@@ -24,6 +24,9 @@ dashboard:
   qq-connect:
     app-id: ""
     app-key: ""
+  authorization:
+    enabled: false
+    sites: {}
 
 # Minecraft 名字与皮肤远端审核（审核密钥同时具备读取权限）
 minecraft-moderation:

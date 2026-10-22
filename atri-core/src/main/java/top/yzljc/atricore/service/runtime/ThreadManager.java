@@ -1,6 +1,7 @@
 package top.yzljc.atricore.service.runtime;
 
 import top.yzljc.atricore.core.CoreConfig;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -181,6 +182,7 @@ public class ThreadManager {
             try {
                 task.run();
             } catch (Throwable failure) {
+                MessageTrace.failed();
                 log.error("异步任务执行失败", failure);
                 throw failure;
             }
@@ -192,6 +194,7 @@ public class ThreadManager {
             try {
                 return task.call();
             } catch (Throwable failure) {
+                MessageTrace.failed();
                 log.error("异步任务执行失败", failure);
                 throw failure;
             }
@@ -203,6 +206,7 @@ public class ThreadManager {
             try {
                 return task.get();
             } catch (Throwable failure) {
+                MessageTrace.failed();
                 log.error("异步任务执行失败", failure);
                 throw failure;
             }
@@ -225,6 +229,20 @@ public class ThreadManager {
                         }
                         throw new RejectedExecutionException("ThreadManager is shut down or its queue is full");
                     });
+        }
+
+        @Override
+        public void execute(Runnable task) {
+            java.util.Objects.requireNonNull(task, "task");
+            MessageTrace.Task traced = task instanceof ManagedFutureTask<?> ? null
+                    : MessageTrace.capture(task, "工作队列等待");
+            try {
+                super.execute(traced == null ? task : traced);
+            } catch (RejectedExecutionException failure) {
+                if (traced != null) traced.cancel("工作队列已满或已关闭");
+                if (task instanceof ManagedFutureTask<?> future && future.traced != null) future.cancel(false);
+                throw failure;
+            }
         }
 
         @Override
@@ -253,14 +271,34 @@ public class ThreadManager {
             List<Runnable> pending = super.shutdownNow();
             pending.forEach(task -> {
                 if (task instanceof Future<?> future) future.cancel(false);
+                if (task instanceof MessageTrace.Task traced) traced.cancel("工作线程池已关闭");
             });
             if (!pending.isEmpty()) log.warn("工作线程池关闭，取消 {} 个尚未执行的任务", pending.size());
             return pending;
         }
 
         private final class ManagedFutureTask<T> extends FutureTask<T> {
+            private final MessageTrace.Task traced;
+
             private ManagedFutureTask(Callable<T> task) {
                 super(task);
+                traced = MessageTrace.capture(super::run, "工作队列等待");
+            }
+
+            @Override
+            public void run() {
+                if (traced == null) super.run();
+                else traced.run();
+            }
+
+            @Override
+            protected void done() {
+                if (isCancelled() && traced != null) traced.cancel("工作任务已取消");
+                if (traced != null && !isCancelled()) {
+                    try { get(); }
+                    catch (InterruptedException failure) { Thread.currentThread().interrupt(); MessageTrace.failed(); }
+                    catch (ExecutionException failure) { MessageTrace.failed(); }
+                }
             }
 
             @Override

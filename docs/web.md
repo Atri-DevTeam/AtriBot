@@ -68,7 +68,7 @@ QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接�
 
 ### 会话
 
-登录 Cookie 使用 HttpOnly、SameSite=Lax 和 HTTPS Secure 属性，最长有效期 12 小时。页面通过同源 POST 接口领取内存 Bearer Token，复用 Miniapp 的 2 小时页面会话及 90 秒空闲限制。退出 QQ 登录会同步使该登录签发的页面会话失效
+登录 Cookie 使用 HttpOnly、SameSite=Lax 和 HTTPS Secure 属性，最长有效期 12 小时。页面通过同源 POST 接口领取内存 Bearer Token，复用 Miniapp 的 2 小时页面会话及 90 秒空闲限制。个人面板右上角“退出登录”会注销 QQ 登录，同步使该登录签发的页面会话失效，并返回统一登录页；退出后刷新页面也不会自动发起 QQ 授权。登录页及工作台选择页的“切换账号”会先注销当前登录，再进入 QQ 授权；外站授权页切换账号时保留当前外站认证请求。
 
 重启服务后需要重新登录，数据库中的绑定关系保留。AppKey 仅在服务端使用，前端不持有 QQ access_token，也不将登录凭证写入 localStorage 或 sessionStorage
 
@@ -79,6 +79,8 @@ QQ 互联 OpenID 与机器人 `userOpenId` 属于不同应用范围，不直接�
 授权流程参考 [QQ 互联 Authorization Code](https://wiki.connect.qq.com/使用authorization_code获取access_token) 与 [获取用户 OpenID](https://wiki.connect.qq.com/获取用户openid_oauth2-0)。登录按钮使用 [QQ 互联官方标识](https://wiki.connect.qq.com/wp-content/uploads/2016/12/Connect_logo_1.png)
 
 ## WebUI
+
+其他站点复用 QQ 登录的接入方式见[站点授权](integrations/site-authorization.md)。该流程通过独立签名请求和一次性授权码交接身份，不共享 WebUI 或个人中心的页面凭证
 
 WebUI 使用 QQ 互联登录，不再读取 `qq.official-webui-token`，也不接受旧密钥会话。生产配置默认不自动开启 WebUI，机器人管理员可通过 `/webui` 操作开关；控制台执行 `webui` 切换状态。`env: dev` 在启动时自动开启
 

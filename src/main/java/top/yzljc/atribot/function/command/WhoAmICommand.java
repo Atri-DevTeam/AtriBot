@@ -36,11 +36,11 @@ public class WhoAmICommand implements CommandExecutor {
 
         if (sender instanceof QQGuildCommandSender user) {
             String text = "当前场景下用户信息\n\n" +
-                    "开放平台ID: " + user.getUserOpenId() + "\n" +
+                    "QQ开放平台绑定的互联ID: " + user.getUnionOpenId() + "\n" +
                     "用户频道ID: " + user.getUserId() + "\n" +
                     "$channel" +
                     "频道ID: " + user.getGuildId() + "\n" +
-                    "用户机器人身份: " + OfficialUsers.getRole(user.getUserOpenId()) + "\n\n" +
+                    "用户机器人身份: " + OfficialUsers.getRole(user.getUnionOpenId()) + "\n\n" +
                     "相关信息仅供问题排查和鉴权使用！";
             if (user.getPlatform().equals(Platform.OFFICIAL_GUILD_CHANNEL)) {
                 user.sendMessage(text.replace("$channel", "文字子频道ID: " + user.getChannelId() + "\n"));

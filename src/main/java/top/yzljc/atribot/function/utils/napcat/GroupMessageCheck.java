@@ -4,7 +4,6 @@ import top.yzljc.atricore.core.CoreConfig;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.napcat.GroupInformation;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.LoadIllegalWords;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;

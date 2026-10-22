@@ -53,7 +53,7 @@ public class C2CController {
     public static void recallC2CMessage(Context ctx) {
         C2CRecallDTO dto = ctx.bodyAsClass(C2CRecallDTO.class);
         if (isBlank(dto.getUserOpenId()) || isBlank(dto.getMessageId())) {
-            ctx.json(Result.fail(400, "userOpenId 和 messageId 不能为空"));
+            ctx.json(Result.customFailure("userOpenId 和 messageId 不能为空"));
             return;
         }
         C2CChat.recallMessage(dto.getUserOpenId(), dto.getMessageId());
@@ -103,12 +103,12 @@ public class C2CController {
         String userOpenId = ctx.pathParam("userOpenId");
         String functionKey = ctx.pathParam("functionKey");
         if (PushTaskCommand.getTasks().stream().noneMatch(task -> task.isC2cEnable() && task.getFunctionId().equals(functionKey))) {
-            ctx.status(400).json(Result.fail(400, "无效的私聊推送任务"));
+            ctx.status(400).json(Result.customFailure("无效的私聊推送任务"));
             return;
         }
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
         if (!OfficialUsers.setFunctionEnabled(userOpenId, functionKey, enabled, "webui")) {
-            ctx.status(500).json(Result.fail(500, "保存功能配置失败"));
+            ctx.status(500).json(Result.customFailure("保存功能配置失败"));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -137,12 +137,12 @@ public class C2CController {
         try {
             var r = role != null ? UnifiedRole.valueOf(role.toUpperCase()) : data.role();
             if (!OfficialUsers.setPermissionGroup(ctx.pathParam("userOpenId"), r, data.permissions())) {
-                ctx.status(500).json(Result.fail(500, "保存用户权限失败，请检查数据库日志"));
+                ctx.status(500).json(Result.customFailure("保存用户权限失败，请检查数据库日志"));
                 return;
             }
             ctx.json(Result.success("ok"));
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, "无效的角色: " + role));
+            ctx.json(Result.customFailure("无效的角色: " + role));
         }
     }
 
@@ -153,7 +153,7 @@ public class C2CController {
         boolean saved = enabled ? OfficialUsers.addPermission(userOpenId, perm)
                 : OfficialUsers.removePermission(userOpenId, perm);
         if (!saved) {
-            ctx.status(500).json(Result.fail(500, "保存用户权限失败，请检查数据库日志"));
+            ctx.status(500).json(Result.customFailure("保存用户权限失败，请检查数据库日志"));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -166,11 +166,11 @@ public class C2CController {
             String value = ctx.queryParam("status");
             status = AccountStatus.valueOf(value == null ? "" : value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            ctx.status(400).json(Result.fail(400, "无效的账号状态"));
+            ctx.status(400).json(Result.customFailure("无效的账号状态"));
             return;
         }
         if (!UnifiedAuthentication.setQqUserStatus(userOpenId, status, null)) {
-            ctx.status(500).json(Result.fail(500, "保存账号状态失败，请检查数据库日志"));
+            ctx.status(500).json(Result.customFailure("保存账号状态失败，请检查数据库日志"));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -179,7 +179,7 @@ public class C2CController {
     public static void setC2CUserPush(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
         if (!OfficialUsers.isCached(userOpenId)) {
-            ctx.status(404).json(Result.fail(404, "该用户没有私聊记录"));
+            ctx.status(404).json(Result.customFailure("该用户没有私聊记录"));
             return;
         }
         boolean value = Boolean.parseBoolean(ctx.queryParam("value"));
@@ -195,7 +195,7 @@ public class C2CController {
             dto = new UpdateC2CUserProfileDTO();
         }
         if (isBlank(userOpenId)) {
-            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("userOpenId 不能为空"));
             return;
         }
 
@@ -204,7 +204,7 @@ public class C2CController {
             try {
                 role = UnifiedRole.valueOf(dto.getRole().trim().toUpperCase());
             } catch (IllegalArgumentException e) {
-                ctx.json(Result.fail(400, "无效的角色: " + dto.getRole()));
+                ctx.json(Result.customFailure("无效的角色: " + dto.getRole()));
                 return;
             }
         }
@@ -223,7 +223,7 @@ public class C2CController {
             try {
                 status = AccountStatus.valueOf(dto.getStatus().trim().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
-                ctx.status(400).json(Result.fail(400, "无效的账号状态: " + dto.getStatus()));
+                ctx.status(400).json(Result.customFailure("无效的账号状态: " + dto.getStatus()));
                 return;
             }
         }
@@ -231,7 +231,7 @@ public class C2CController {
         boolean pushChanged = OfficialUsers.isCached(userOpenId) && OfficialUsers.getData(userOpenId).c2cPush() != c2cPush;
 
         if (!OfficialUsers.setProfile(userOpenId, role, permissions, status, c2cPush)) {
-            ctx.status(500).json(Result.fail(500, "保存用户档案失败，请检查数据库日志"));
+            ctx.status(500).json(Result.customFailure("保存用户档案失败，请检查数据库日志"));
             return;
         }
         if (pushChanged) {
@@ -265,9 +265,9 @@ public class C2CController {
                     body == null ? null : body.path("end").asText(null));
             ctx.json(Result.success(result));
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
         } catch (IllegalStateException e) {
-            ctx.json(Result.fail(500, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
         }
     }
 
@@ -281,13 +281,13 @@ public class C2CController {
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
         if (isBlank(msgIdx) && isBlank(refContent) && isBlank(refAttachments)) {
-            ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
+            ctx.json(Result.customFailure("msgIdx 或引用内容不能为空"));
             return;
         }
         var result = QQChatContentRecord.locateC2CMessageByReference(
                 userOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
         if (result == null) {
-            ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
+            ctx.json(Result.customFailure("引用来源消息不存在或尚未记录"));
             return;
         }
         ctx.json(Result.success(result));
@@ -301,53 +301,53 @@ public class C2CController {
     public static void sendC2CInputNotify(Context ctx) {
         String userOpenId = ctx.pathParam("userOpenId");
         if (isBlank(userOpenId)) {
-            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("userOpenId 不能为空"));
             return;
         }
         if (C2CChat.sendInputNotify(userOpenId)) {
             ctx.json(Result.success(true));
         } else {
-            ctx.status(502).json(Result.fail(502, "输入状态通知发送失败，请检查暂停状态或发送日志"));
+            ctx.status(502).json(Result.customFailure("输入状态通知发送失败，请检查暂停状态或发送日志"));
         }
     }
 
     public static void sendC2CMessage(Context ctx) {
         SendC2CMessageDTO dto = ctx.bodyAsClass(SendC2CMessageDTO.class);
         if (isBlank(dto.getUserOpenId())) {
-            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("userOpenId 不能为空"));
             return;
         }
         String msgType = dto.getMsgType() != null ? dto.getMsgType() : "text";
         String replyId = dto.getReplyMessageId();
         String refId = dto.getRefMessageId();
         if (dto.isWakeup() && (!isBlank(replyId) || !isBlank(refId))) {
-            ctx.status(400).json(Result.fail(400, "召回消息不能同时指定被动回复来源或引用"));
+            ctx.status(400).json(Result.customFailure("召回消息不能同时指定被动回复来源或引用"));
             return;
         }
         String messageId;
         try {
             if ("ark".equals(msgType)) {
                 if (!isBlank(replyId) || !isBlank(refId)) {
-                    ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
+                    ctx.status(400).json(Result.customFailure("Ark 仅支持主动发送，请关闭被动消息和引用")); return;
                 }
                 Ark ark;
                 try {
                     ark = parseArk(dto.getArk());
                 } catch (IllegalArgumentException e) {
-                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                    ctx.status(400).json(Result.customFailure(e.getMessage())); return;
                 }
                 messageId = dto.isWakeup()
                         ? C2CChat.wakeupMessage(dto.getUserOpenId(), ark)
                         : C2CChat.sendMessage(dto.getUserOpenId(), ark);
             } else if ("card".equals(msgType)) {
                 if (!isBlank(refId)) {
-                    ctx.status(400).json(Result.fail(400, "卡片暂不支持引用，请关闭引用")); return;
+                    ctx.status(400).json(Result.customFailure("卡片暂不支持引用，请关闭引用")); return;
                 }
                 Card card;
                 try {
                     card = parseCard(dto.getCard());
                 } catch (IllegalArgumentException e) {
-                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                    ctx.status(400).json(Result.customFailure(e.getMessage())); return;
                 }
                 messageId = dto.isWakeup()
                         ? C2CChat.wakeupMessage(dto.getUserOpenId(), card)
@@ -357,7 +357,7 @@ public class C2CController {
             } else if (refId != null && !refId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -366,7 +366,7 @@ public class C2CController {
                             ? C2CChat.refMessage(dto.getUserOpenId(), refId, image)
                             : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), image, refId);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("内容不能为空")); return; }
                     if ("markdown".equals(msgType)) {
                         Markdown markdown = new Markdown(dto.getContent());
                         messageId = isBlank(replyId)
@@ -385,14 +385,14 @@ public class C2CController {
             } else if (replyId != null && !replyId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
                     messageId = C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), image);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("内容不能为空")); return; }
                     messageId = "markdown".equals(msgType)
                             ? C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), new Markdown(dto.getContent()))
                             : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), dto.getContent());
@@ -400,14 +400,14 @@ public class C2CController {
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
-                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("内容不能为空")); yield null; }
                         yield dto.isWakeup()
                                 ? C2CChat.wakeupMessage(dto.getUserOpenId(), new Markdown(dto.getContent()))
                                 : C2CChat.sendMessage(dto.getUserOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                            ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                            ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                         ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -417,7 +417,7 @@ public class C2CController {
                                 : C2CChat.sendMessage(dto.getUserOpenId(), image);
                     }
                     default -> {
-                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("内容不能为空")); yield null; }
                         yield dto.isWakeup()
                                 ? C2CChat.wakeupMessage(dto.getUserOpenId(), dto.getContent())
                                 : C2CChat.sendMessage(dto.getUserOpenId(), dto.getContent());
@@ -425,14 +425,14 @@ public class C2CController {
                 };
             }
         } catch (QQMessageSendException e) {
-            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            ctx.status(502).json(Result.customFailure(e.getMessage()));
             return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "发送失败"));
+            ctx.status(500).json(Result.customFailure("发送失败"));
             return;
         }
         if (messageId == null) {
-            ctx.status(502).json(Result.fail(502, "发送失败：官方接口未返回消息ID"));
+            ctx.status(502).json(Result.customFailure("发送失败：官方接口未返回消息ID"));
             return;
         }
         ctx.json(Result.success(new GroupController.SendGroupMessageResponse(messageId)));
@@ -441,23 +441,23 @@ public class C2CController {
     public static void sendC2CStreamMessage(Context ctx) {
         SendC2CStreamDTO dto = ctx.bodyAsClass(SendC2CStreamDTO.class);
         if (isBlank(dto.getUserOpenId())) {
-            ctx.status(400).json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("userOpenId 不能为空"));
             return;
         }
         if (!isBlank(dto.getRefMessageId())) {
-            ctx.status(400).json(Result.fail(400, "流式消息暂不支持引用"));
+            ctx.status(400).json(Result.customFailure("流式消息暂不支持引用"));
             return;
         }
         if (dto.isWakeup() && !isBlank(dto.getReplyMessageId())) {
-            ctx.status(400).json(Result.fail(400, "召回消息不能同时指定被动回复来源"));
+            ctx.status(400).json(Result.customFailure("召回消息不能同时指定被动回复来源"));
             return;
         }
         if (!dto.isWakeup() && isBlank(dto.getReplyMessageId())) {
-            ctx.status(400).json(Result.fail(400, "流式消息需要指定被动回复的来源消息，或开启召回"));
+            ctx.status(400).json(Result.customFailure("流式消息需要指定被动回复的来源消息，或开启召回"));
             return;
         }
         if (isBlank(dto.getContent())) {
-            ctx.status(400).json(Result.fail(400, "内容不能为空"));
+            ctx.status(400).json(Result.customFailure("内容不能为空"));
             return;
         }
         List<Markdown> deltas = java.util.Arrays.stream(dto.getContent().split("\n"))
@@ -465,7 +465,7 @@ public class C2CController {
                 .map(Markdown::new)
                 .toList();
         if (deltas.isEmpty()) {
-            ctx.status(400).json(Result.fail(400, "内容不能为空"));
+            ctx.status(400).json(Result.customFailure("内容不能为空"));
             return;
         }
         String messageId;
@@ -474,14 +474,14 @@ public class C2CController {
                     ? C2CChat.wakeupStreamDeltas(dto.getUserOpenId(), deltas)
                     : C2CChat.replyStreamDeltas(dto.getUserOpenId(), RT.message(dto.getReplyMessageId()), deltas);
         } catch (QQMessageSendException e) {
-            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            ctx.status(502).json(Result.customFailure(e.getMessage()));
             return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "发送失败"));
+            ctx.status(500).json(Result.customFailure("发送失败"));
             return;
         }
         if (messageId == null) {
-            ctx.status(502).json(Result.fail(502, "发送失败：官方接口未返回消息ID"));
+            ctx.status(502).json(Result.customFailure("发送失败：官方接口未返回消息ID"));
             return;
         }
         ctx.json(Result.success(new GroupController.SendGroupMessageResponse(messageId)));

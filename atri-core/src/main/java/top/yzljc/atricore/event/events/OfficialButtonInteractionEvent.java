@@ -9,6 +9,7 @@ import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.event.Cancellable;
 import top.yzljc.atricore.event.impl.AnswerCode;
@@ -20,6 +21,9 @@ import java.util.concurrent.RejectedExecutionException;
 
 /**
  * 收到 {@code INTERACTION_CREATE} 中的按钮点击交互时触发
+ * <p>{@code replyMessage} 系列方法使用当前事件 ID 发送被动回复，{@code sendMessage} 系列方法发送主动消息。
+ * 群聊消息发送到交互所在群，单聊消息发送给点击按钮的用户。</p>
+ * <p>{@link #answer(AnswerCode)} 用于回执交互处理结果</p>
  *
  * @Author YZ_Ljc_
  * @ClassName OfficialButtonInteractionEvent
@@ -30,25 +34,42 @@ import java.util.concurrent.RejectedExecutionException;
 @Getter
 @Slf4j
 public class OfficialButtonInteractionEvent extends OfficialInteractionEvents implements Cancellable {
+    /**
+     * 聊天类型：1 为群聊，2 为单聊
+     */
     private final int chatType;
     private final Data data;
     private final String groupOpenId;
     private final String userOpenId;
+    /**
+     * QQ 开放平台绑定的互联 ID，仅私聊场景下存在，未携带时为 {@code null}
+     */
+    private final String unionOpenId;
     private boolean cancelled;
 
-    public OfficialButtonInteractionEvent(String applicationId, String eventId, int chatType, Data data, String groupOpenId, String userOpenId, String id, String scene, String timestamp, int type, int version) {
+    public OfficialButtonInteractionEvent(String applicationId, String eventId, int chatType, Data data, String groupOpenId, String userOpenId, String unionOpenId, String id, String scene, String timestamp, int type, int version) {
         super(applicationId, eventId, id, scene, timestamp, type, version);
         this.chatType = chatType;
         this.data = data;
         this.groupOpenId = groupOpenId;
         this.userOpenId = userOpenId;
+        this.unionOpenId = unionOpenId;
     }
 
+    /**
+     * 设置交互的取消状态，取消后 {@link #answer(AnswerCode)} 将优先按失败状态回执
+     * <p>若同时满足 {@link #shouldIgnore()}，则最终按忽略状态回执。</p>
+     *
+     * @param cancel 是否取消交互
+     */
     @Override
     public void setCancelled(boolean cancel) {
         this.cancelled = cancel;
     }
 
+    /**
+     * 按钮交互数据
+     */
     @Getter
     @AllArgsConstructor
     public static class Data {
@@ -56,6 +77,13 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         private final int type;
     }
 
+    /**
+     * 向平台回执按钮交互的处理结果
+     * <p>交互已取消时使用 {@link AnswerCode#FAIL}，应忽略时使用 {@link AnswerCode#IGNORED}，后者优先。</p>
+     *
+     * @param status 交互处理状态
+     * @return 平台返回 2xx 状态码时为 {@code true}，否则为 {@code false}
+     */
     @SuppressWarnings("UnusedReturnValue")
     public boolean answer(AnswerCode status) {
         if (this.cancelled) {
@@ -89,6 +117,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         return success;
     }
 
+    /**
+     * 获取按钮携带的数据
+     *
+     * @return 按钮的 {@code button_data}，非按钮交互或字段缺失时返回 {@code "missing_data"}
+     */
     public String getButtonValue() {
         if (type == 11 && data.resolved.has("button_data")) {
             return data.resolved.get("button_data").asText();
@@ -97,6 +130,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 获取被点击按钮的 ID
+     *
+     * @return 按钮的 {@code button_id}，非按钮交互或字段缺失时返回 {@code "missing_data"}
+     */
     public String getButtonId() {
         if (type == 11 && data.resolved.has("button_id")) {
             return data.resolved.get("button_id").asText();
@@ -105,11 +143,28 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 被动消息回复 - Markdown 消息（默认不自动 @）
+     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置；群聊中如需自动 @ 点击者，请用 {@link #replyMessage(Markdown, boolean)}。</p>
+     *
+     * @param markdown Markdown 消息内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown) {
         return replyMessage(markdown, false);
     }
 
+    /**
+     * 被动消息回复 - Markdown 消息（可控制自动 @）
+     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置。</p>
+     *
+     * @param markdown Markdown 消息内容
+     * @param at       是否自动 @ 点击按钮的用户，仅群聊生效，单聊忽略此参数
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown, boolean at) {
         if (this.chatType == 1) {
@@ -124,11 +179,32 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 被动消息回复 - Markdown 消息 + 自定义键盘（默认不自动 @，已弃用）
+     *
+     * @param markdown Markdown 消息内容
+     * @param keyboard 自定义键盘内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #replyMessage(Markdown)} 发送
+     */
+    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown, Object keyboard) {
         return replyMessage(markdown, keyboard, false);
     }
 
+    /**
+     * 被动消息回复 - Markdown 消息 + 自定义键盘（可控制自动 @，已弃用）
+     *
+     * @param markdown Markdown 消息内容
+     * @param keyboard 自定义键盘内容
+     * @param at       是否自动 @ 点击按钮的用户，仅群聊生效，单聊忽略此参数
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #replyMessage(Markdown, boolean)} 发送
+     */
+    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown, Object keyboard, boolean at) {
         if (this.chatType == 1) {
@@ -143,6 +219,13 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 被动消息回复 - 纯文本消息
+     *
+     * @param text 文本消息内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(String text) {
         if (this.chatType == 1) {
@@ -154,6 +237,13 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 被动消息回复 - 图片消息
+     *
+     * @param image 图片组件
+     * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(ImageComponent image) {
         if (this.chatType == 1) {
@@ -165,6 +255,13 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 主动消息发送 - 纯文本消息
+     *
+     * @param text 文本消息内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text) {
         if (this.chatType == 1) {
@@ -176,6 +273,14 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 主动消息发送 - Markdown 消息
+     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置。</p>
+     *
+     * @param content Markdown 消息内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(Markdown content) {
         if (this.chatType == 1) {
@@ -187,6 +292,34 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 主动消息发送 - 图片消息
+     *
+     * @param image 图片组件
+     * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(ImageComponent image) {
+        if (this.chatType == 1) {
+            return GroupChat.sendMessage(this.groupOpenId, image);
+        } else if (this.chatType == 2) {
+            return C2CChat.sendMessage(this.userOpenId, image);
+        } else {
+            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
+        }
+    }
+
+    /**
+     * 主动消息发送 - Markdown 消息 + 自定义键盘（已弃用）
+     *
+     * @param content  Markdown 消息内容
+     * @param keyboard 自定义键盘内容
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #sendMessage(Markdown)} 发送
+     */
+    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(Markdown content, Object keyboard) {
         if (this.chatType == 1) {
@@ -198,6 +331,11 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         }
     }
 
+    /**
+     * 判断是否应忽略当前交互
+     *
+     * @return 交互所在群在黑名单中，或点击按钮的用户被屏蔽、被忽略时返回 {@code true}
+     */
     public boolean shouldIgnore() {
         if (this.groupOpenId != null) {
             if (AtriProvider.getInstance().getAccessService().isGroupBlacklisted(this.groupOpenId)) {

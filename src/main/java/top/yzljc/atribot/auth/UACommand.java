@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth;
 
-import top.yzljc.atricore.auth.*;
-
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;

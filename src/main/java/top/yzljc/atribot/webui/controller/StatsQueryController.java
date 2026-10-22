@@ -95,7 +95,7 @@ public class StatsQueryController {
     public static void officialUserInfo(Context ctx) {
         String userOpenId = normalizeOpenIdParam(firstNonBlank(ctx.pathParam("userOpenId"), ctx.queryParam("userOpenId"), ctx.queryParam("unionOpenId")));
         if (userOpenId == null) {
-            ctx.json(Result.fail(400, "userOpenId 不能为空"));
+            ctx.json(Result.customFailure("userOpenId 不能为空"));
             return;
         }
         String cacheKey = cacheKey("user_info", null, null, userOpenId);
@@ -121,7 +121,7 @@ public class StatsQueryController {
     public static void officialGroupInfo(Context ctx) {
         String groupOpenId = normalizeOpenIdParam(firstNonBlank(ctx.pathParam("groupOpenId"), ctx.queryParam("groupOpenId")));
         if (groupOpenId == null) {
-            ctx.json(Result.fail(400, "groupOpenId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 不能为空"));
             return;
         }
         String cacheKey = cacheKey("group_info", null, groupOpenId, null);
@@ -168,10 +168,10 @@ public class StatsQueryController {
                         QUERY_CACHE.put(key, result);
                         return result;
                     } catch (IllegalArgumentException e) {
-                        return Result.fail(400, e.getMessage());
+                        return Result.customFailure(e.getMessage());
                     } catch (Exception e) {
                         log.error("统计查询执行失败: {}", e.getMessage(), e);
-                        return Result.fail(500, "统计查询失败，请稍后重试");
+                        return Result.customFailure("统计查询失败，请稍后重试");
                     }
                 }));
         future.whenComplete((ignored, error) -> IN_FLIGHT_QUERIES.remove(cacheKey));
@@ -194,7 +194,7 @@ public class StatsQueryController {
         try {
             return parseQueryWindow(ctx);
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
             return null;
         }
     }

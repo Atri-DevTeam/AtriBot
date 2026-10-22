@@ -5,7 +5,6 @@ import top.yzljc.atricore.core.CoreConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atricore.chat.napcat.UserInformation;
-import top.yzljc.atribot.configuration.Config;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;

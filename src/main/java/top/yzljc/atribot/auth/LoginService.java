@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth;
 
-import top.yzljc.atricore.auth.*;
-
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -46,10 +44,16 @@ public final class LoginService implements AutoCloseable {
         private static final LoginService INSTANCE = new LoginService();
     }
 
-    /** 插件应使用这个共享实例，或 PluginContext.getLoginService()。 */
-    public static LoginService getInstance() { return Holder.INSTANCE; }
+    /**
+     * 插件应使用这个共享实例，或 PluginContext.getLoginService()。
+     */
+    public static LoginService getInstance() {
+        return Holder.INSTANCE;
+    }
 
-    private LoginService() { this(Clock.systemUTC(), true); }
+    private LoginService() {
+        this(Clock.systemUTC(), true);
+    }
 
     LoginService(Clock clock, boolean scheduleCleanup) {
         this.clock = Objects.requireNonNull(clock);
@@ -71,7 +75,9 @@ public final class LoginService implements AutoCloseable {
         return createWithPermission("api.login", apiPaths);
     }
 
-    /** 由插件指定审批权限，不能由外部 HTTP 请求决定。 */
+    /**
+     * 由插件指定审批权限，不能由外部 HTTP 请求决定。
+     */
     public LoginRequest createWithPermission(String permission, String... apiPaths) {
         if (permission == null || !permission.matches("[a-zA-Z0-9_.-]{1,128}")) {
             throw new IllegalArgumentException("登录审批权限无效");
@@ -85,7 +91,9 @@ public final class LoginService implements AutoCloseable {
             if (closed) throw new IllegalStateException("登录服务已关闭");
             if (codes.size() >= MAX_REQUESTS) throw new IllegalStateException("登录申请过多，请稍后再试");
             String code;
-            do { code = Integer.toString(100_000 + random.nextInt(900_000)); } while (codes.containsKey(code));
+            do {
+                code = Integer.toString(100_000 + random.nextInt(900_000));
+            } while (codes.containsKey(code));
             UUID requestId = UUID.randomUUID();
             Pending pending = new Pending(requestId, clock.instant().plus(REQUEST_TTL), scopes, permission);
             requests.put(requestId, pending);
@@ -94,7 +102,9 @@ public final class LoginService implements AutoCloseable {
         }
     }
 
-    /** 返回有效且尚未消费的验证码所要求的权限；无效时返回 null。 */
+    /**
+     * 返回有效且尚未消费的验证码所要求的权限；无效时返回 null。
+     */
     public String requiredPermission(String code) {
         cleanupExpired();
         synchronized (lock) {
@@ -103,12 +113,16 @@ public final class LoginService implements AutoCloseable {
         }
     }
 
-    /** 由 LoginCommand 在权限判断通过后调用；每个请求只能确认一次。 */
+    /**
+     * 由 LoginCommand 在权限判断通过后调用；每个请求只能确认一次。
+     */
     public Approval approve(String code, LoginIdentity identity) {
         return approve(code, identity, null);
     }
 
-    /** 命令端传入刚检查的权限，避免查询与确认之间验证码到期重用时批准另一种权限。 */
+    /**
+     * 命令端传入刚检查的权限，避免查询与确认之间验证码到期重用时批准另一种权限。
+     */
     public Approval approve(String code, LoginIdentity identity, String expectedPermission) {
         Objects.requireNonNull(identity);
         cleanupExpired();
@@ -126,11 +140,15 @@ public final class LoginService implements AutoCloseable {
         return Approval.APPROVED;
     }
 
-    /** 取消尚未完成的申请。已确认的登录会话由插件自行管理。 */
+    /**
+     * 取消尚未完成的申请。已确认的登录会话由插件自行管理。
+     */
     public boolean cancel(UUID requestId) {
         cleanupExpired();
         Pending pending;
-        synchronized (lock) { pending = requests.remove(requestId); }
+        synchronized (lock) {
+            pending = requests.remove(requestId);
+        }
         if (pending == null) return false;
         pending.completion.completeExceptionally(new CancellationException("登录申请已取消"));
         return true;
@@ -149,7 +167,9 @@ public final class LoginService implements AutoCloseable {
         expired.forEach(pending -> pending.completion.completeExceptionally(new TimeoutException("验证码已过期")));
     }
 
-    /** 仅供运行服务关闭共享服务；插件停用时应 cancel 自己的未完成申请。 */
+    /**
+     * 仅供运行服务关闭共享服务；插件停用时应 cancel 自己的未完成申请。
+     */
     @Override
     public void close() {
         List<Pending> pending;
@@ -163,9 +183,11 @@ public final class LoginService implements AutoCloseable {
         pending.forEach(request -> request.completion.completeExceptionally(new CancellationException("登录服务已关闭")));
     }
 
-    public enum Approval { APPROVED, INVALID_CODE }
+    public enum Approval {APPROVED, INVALID_CODE}
 
-    /** senderType 区分不同命令来源；userId 只在对应来源内有意义。 */
+    /**
+     * senderType 区分不同命令来源；userId 只在对应来源内有意义。
+     */
     public record LoginIdentity(String userId, String username, String senderType) {
         public LoginIdentity {
             if (userId == null || userId.isBlank() || senderType == null || senderType.isBlank()) {
@@ -174,17 +196,27 @@ public final class LoginService implements AutoCloseable {
         }
     }
 
-    /** requestId 用于 Java 侧取消申请；不是对外访问凭证。 */
+    /**
+     * requestId 用于 Java 侧取消申请；不是对外访问凭证。
+     */
     public record LoginRequest(UUID requestId, String code, Instant expiresAt, List<String> apiPaths,
                                CompletionStage<LoginResult> completion) {
-        public LoginRequest { apiPaths = List.copyOf(apiPaths); }
+        public LoginRequest {
+            apiPaths = List.copyOf(apiPaths);
+        }
     }
 
-    /** 验证结果，不是登录会话。插件自行决定会话有效期及如何响应原请求。 */
+    /**
+     * 验证结果，不是登录会话。插件自行决定会话有效期及如何响应原请求。
+     */
     public record LoginResult(LoginIdentity identity, List<String> apiPaths, Instant confirmedAt) {
-        public LoginResult { apiPaths = List.copyOf(apiPaths); }
+        public LoginResult {
+            apiPaths = List.copyOf(apiPaths);
+        }
 
-        /** 按申请时的范围匹配路径，不涉及 HTTP 或会话鉴权。 */
+        /**
+         * 按申请时的范围匹配路径，不涉及 HTTP 或会话鉴权。
+         */
         public boolean allows(String path) {
             return apiPaths.stream().anyMatch(scope -> ApiPathScope.matches(scope, path));
         }

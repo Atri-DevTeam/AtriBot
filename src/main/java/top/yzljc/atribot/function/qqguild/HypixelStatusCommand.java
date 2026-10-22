@@ -1,7 +1,6 @@
 package top.yzljc.atribot.function.qqguild;
 
 import java.util.Map;
-import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;

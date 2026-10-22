@@ -39,6 +39,4 @@ public class OfficialC2CPromptFeedbackEvent extends OfficialInteractionEvents {
         this.checked = resolvedData.path("checked").asInt(0);
         this.messageScene = resolvedData.path("message_scene");
     }
-
-
 }

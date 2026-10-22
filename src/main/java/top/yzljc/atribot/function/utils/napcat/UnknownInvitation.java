@@ -3,7 +3,6 @@ package top.yzljc.atribot.function.utils.napcat;
 import top.yzljc.atricore.core.CoreConfig;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.NapcatGroupMemberChangeEvent;

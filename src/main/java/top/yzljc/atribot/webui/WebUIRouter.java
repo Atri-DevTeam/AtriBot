@@ -45,7 +45,8 @@ public class WebUIRouter {
     }
 
     public static void register(Javalin server, DashboardSessions sessions) {
-        WebUISessionManager.configure(sessions, DashboardSettings::current);
+        WebUISessionManager.configure(sessions, DashboardSettings::current,
+                () -> "dev".equals(Config.getInstance().getEnv()));
         // 关闭状态下，静态资源/API/SPA fallback 一律不给任何响应体
         server.before("/webui", WebUIRouter::activeGuard);
         server.before("/webui/*", WebUIRouter::activeGuard);
@@ -232,6 +233,9 @@ public class WebUIRouter {
         server.post("/webui/api/gallery/review", ContentController::reviewGallery);
         server.post("/webui/api/gallery/review-batch", ContentController::reviewGalleryBatch);
         server.post("/webui/api/gallery/delete", ContentController::deleteGallery);
+        server.get("/webui/api/material-images", MaterialImageController::list);
+        server.post("/webui/api/material-images", MaterialImageController::upload);
+        server.delete("/webui/api/material-images/{imageId}", MaterialImageController::delete);
 
         // Minecraft 玩家名审核
         server.post("/webui/api/minecraft-moderation/players", MinecraftWhitelistController::submitPlayer);
@@ -265,7 +269,7 @@ public class WebUIRouter {
     private static void ntUidRateLimit(Context ctx) {
         Deque<Long> timestamps = NTUID_REQUESTS.computeIfAbsent(ctx.ip(), _ -> new ConcurrentLinkedDeque<>());
         if (!tryAcquireRateSlot(timestamps, NTUID_RATE_LIMIT, RATE_WINDOW_MS, System.currentTimeMillis())) {
-            ctx.status(429).json(Result.fail(429, "超出接口频控限制"));
+            ctx.status(429).json(Result.failure(ApiCode.RATE_LIMITED));
             ctx.skipRemainingHandlers();
             return;
         }
@@ -290,7 +294,7 @@ public class WebUIRouter {
     }
 
     private static void rejectTooManyRequests(Context ctx) {
-        ctx.status(429).json(Result.fail(429, "请求过于频繁，请稍后再试"));
+        ctx.status(429).json(Result.failure(ApiCode.RATE_LIMITED));
         ctx.skipRemainingHandlers();
     }
 

@@ -1,7 +1,5 @@
 package top.yzljc.atribot.event.events;
 
-import top.yzljc.atricore.event.events.*;
-
 import jakarta.mail.Address;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;

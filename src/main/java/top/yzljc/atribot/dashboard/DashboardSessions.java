@@ -36,17 +36,30 @@ public final class DashboardSessions implements AutoCloseable {
     private final Map<String, Long> cooldowns = new HashMap<>();
     private boolean closed;
 
-    private record Ticket(MiniappSessions.Identity identity, String appId, String botAppId, long expiresAt) {}
-    public record Pending(MiniappSessions.Identity binding, String appId, String botAppId, String navigation, long expiresAt) {}
-    public record Login(MiniappSessions.Identity identity, String qqConnectOpenId, String avatarUrl, String appId, String botAppId, long expiresAt) {}
+    private record Ticket(MiniappSessions.Identity identity, String appId, String botAppId, long expiresAt) {
+    }
 
-    public DashboardSessions() { this(Clock.systemUTC()); }
-    DashboardSessions(Clock clock) { this.clock = clock; }
+    public record Pending(MiniappSessions.Identity binding, String appId, String botAppId, String navigation,
+                          long expiresAt, String authorizationRequestId) {
+    }
+
+    public record Login(MiniappSessions.Identity identity, String qqConnectOpenId, String avatarUrl, String appId,
+                        String botAppId, long expiresAt) {
+    }
+
+    public DashboardSessions() {
+        this(Clock.systemUTC());
+    }
+
+    DashboardSessions(Clock clock) {
+        this.clock = clock;
+    }
 
     public synchronized String issue(String userOpenId, String displayName, DashboardSettings settings) {
         cleanup();
         if (closed || userOpenId == null || userOpenId.isBlank() || userOpenId.length() > 128
-                || tickets.size() >= CAPACITY || cooldowns.size() >= CAPACITY || cooldowns.containsKey(userOpenId)) return null;
+                || tickets.size() >= CAPACITY || cooldowns.size() >= CAPACITY || cooldowns.containsKey(userOpenId))
+            return null;
         String token = token();
         tickets.put(token, new Ticket(new MiniappSessions.Identity(userOpenId, displayName == null ? "" : displayName), settings.appId(), settings.botAppId(),
                 clock.millis() + Duration.ofMinutes(5).toMillis()));
@@ -58,25 +71,41 @@ public final class DashboardSessions implements AutoCloseable {
      * 在发起授权时消费绑定凭证，并建立独立的 OAuth 状态
      *
      * @param userOpenId 待绑定的官机用户标识，普通登录时为 null
-     * @param ticket 一次性绑定凭证，普通登录时为 null
-     * @param settings 本次授权使用的应用配置
+     * @param ticket     一次性绑定凭证，普通登录时为 null
+     * @param settings   本次授权使用的应用配置
      * @param navigation 已过滤的页面导航查询参数
      * @return OAuth state
      */
     public synchronized String begin(String userOpenId, String ticket, DashboardSettings settings, String navigation) {
+        return begin(userOpenId, ticket, settings, navigation, null);
+    }
+
+    /**
+     * @param requestId 已通过来源签名校验的站点授权请求标识
+     * @param settings 本次授权的 QQ 应用配置
+     * @return 独立的 QQ OAuth state，与普通登录及账号绑定流程隔离
+     */
+    public synchronized String beginAuthorization(String requestId, DashboardSettings settings) {
+        if (!valid(requestId)) throw new IllegalArgumentException("AUTHORIZATION_EXPIRED");
+        return begin(null, null, settings, "", requestId);
+    }
+
+    private String begin(String userOpenId, String ticket, DashboardSettings settings, String navigation,
+                         String authorizationRequestId) {
         cleanup();
         if (closed || states.size() >= CAPACITY) throw new IllegalStateException("LOGIN_BUSY");
         MiniappSessions.Identity binding = null;
         if (userOpenId != null || ticket != null) {
             Ticket stored = ticket == null ? null : tickets.get(ticket);
             if (stored == null || !stored.identity().userId().equals(userOpenId) || !stored.appId().equals(settings.appId())
-                    || !stored.botAppId().equals(settings.botAppId())) throw new IllegalArgumentException("BINDING_EXPIRED");
+                    || !stored.botAppId().equals(settings.botAppId()))
+                throw new IllegalArgumentException("BINDING_EXPIRED");
             binding = stored.identity();
             tickets.remove(ticket);
         }
         String state = token();
         states.put(state, new Pending(binding, settings.appId(), settings.botAppId(), navigation,
-                clock.millis() + STATE_SECONDS * 1000L));
+                clock.millis() + STATE_SECONDS * 1000L, authorizationRequestId));
         return state;
     }
 
@@ -85,6 +114,22 @@ public final class DashboardSessions implements AutoCloseable {
         if (closed || !valid(state) || !valid(cookie) || !MessageDigest.isEqual(
                 state.getBytes(StandardCharsets.US_ASCII), cookie.getBytes(StandardCharsets.US_ASCII))) return null;
         return states.remove(state);
+    }
+
+    /**
+     * 消费当前浏览器的站点授权页面凭证，普通登录与绑定状态不接受此交接
+     *
+     * @param state 页面持有的一次性状态
+     * @param cookie 当前浏览器的状态 Cookie
+     * @param settings 当前 QQ 应用配置
+     * @return 站点授权请求，凭证无效或配置不匹配时为 null
+     */
+    public synchronized Pending consumeAuthorization(String state, String cookie, DashboardSettings settings) {
+        cleanup();
+        Pending pending = states.get(state);
+        if (pending == null || pending.authorizationRequestId() == null || !pending.appId().equals(settings.appId())
+                || !pending.botAppId().equals(settings.botAppId())) return null;
+        return consume(state, cookie);
     }
 
     public synchronized String login(MiniappSessions.Identity identity, String qqConnectOpenId, String avatarUrl, DashboardSettings settings) {
@@ -100,7 +145,8 @@ public final class DashboardSessions implements AutoCloseable {
     public synchronized Login authenticate(String token, DashboardSettings settings) {
         cleanup();
         Login login = token == null || closed || !settings.available() ? null : logins.get(token);
-        if (login == null || !login.appId().equals(settings.appId()) || !login.botAppId().equals(settings.botAppId())) return null;
+        if (login == null || !login.appId().equals(settings.appId()) || !login.botAppId().equals(settings.botAppId()))
+            return null;
         if (login.identity() != null) {
             var account = UnifiedAuthentication.getCachedQqUserAccount(login.identity().userId());
             if (account == null || account.status() != AccountStatus.ACTIVE
@@ -112,7 +158,9 @@ public final class DashboardSessions implements AutoCloseable {
         return login;
     }
 
-    public synchronized void revoke(String token) { if (token != null) logins.remove(token); }
+    public synchronized void revoke(String token) {
+        if (token != null) logins.remove(token);
+    }
 
     private void cleanup() {
         long now = clock.millis();
@@ -128,9 +176,12 @@ public final class DashboardSessions implements AutoCloseable {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    private static boolean valid(String token) { return token != null && token.matches("[A-Za-z0-9_-]{43}"); }
+    private static boolean valid(String token) {
+        return token != null && token.matches("[A-Za-z0-9_-]{43}");
+    }
 
-    @Override public synchronized void close() {
+    @Override
+    public synchronized void close() {
         closed = true;
         tickets.clear();
         states.clear();

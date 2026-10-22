@@ -31,6 +31,7 @@
 | [频道消息](qq/messages/guild.md) | 文字子频道与频道私信 |
 | [流式消息](qq/messages/stream.md) | 文本与 Markdown 增量、结束状态 |
 | [图片与文件](qq/messages/media.md) | URL、Base64、本地文件、自动分片 |
+| [Markdown 图片素材](qq/messages/materials.md) | 素材上传、分页查询、删除与引用 |
 | [备用图片上传](qq/messages/backup-upload.md) | 字节数组上传并返回 URL |
 | [自定义消息请求](qq/messages/advanced.md) | MessageBody、ChatService、JsonPayload |
 

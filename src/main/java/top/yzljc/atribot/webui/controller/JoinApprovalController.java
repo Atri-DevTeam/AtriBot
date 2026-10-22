@@ -30,7 +30,7 @@ public class JoinApprovalController {
         }
         List<JoinApprovalStrategy.StrategyData> list = pullStrategiesFromOfficial();
         if (list == null) {
-            ctx.json(Result.fail(500, "拉取入群审批策略失败"));
+            ctx.json(Result.customFailure("拉取入群审批策略失败"));
             return;
         }
         JoinApprovalSnapshotRepo.saveSnapshot(list);
@@ -41,7 +41,7 @@ public class JoinApprovalController {
     public static void refreshApprovalStrategies(Context ctx) {
         List<JoinApprovalStrategy.StrategyData> list = pullStrategiesFromOfficial();
         if (list == null) {
-            ctx.json(Result.fail(500, "刷新入群审批策略失败"));
+            ctx.json(Result.customFailure("刷新入群审批策略失败"));
             return;
         }
         JoinApprovalSnapshotRepo.saveSnapshot(list);
@@ -56,12 +56,12 @@ public class JoinApprovalController {
         String expireAt = body != null ? body.path("expireAt").asText(null) : null;
         String remark = body != null ? body.path("remark").asText(null) : null;
         if (groupOpenIds.isEmpty()) {
-            ctx.json(Result.fail(400, "至少选择一个关联群"));
+            ctx.json(Result.customFailure("至少选择一个关联群"));
             return;
         }
         String strategyId = JoinApprovalStrategy.createStrategy(groupOpenIds, null, enable, expireAt, remark);
         if (strategyId == null) {
-            ctx.json(Result.fail(500, "创建入群审批策略失败"));
+            ctx.json(Result.customFailure("创建入群审批策略失败"));
             return;
         }
         refreshApprovalSnapshotQuietly();
@@ -73,7 +73,7 @@ public class JoinApprovalController {
         String strategyId = ctx.pathParam("strategyId");
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         if (isBlank(strategyId)) {
-            ctx.json(Result.fail(400, "strategyId 不能为空"));
+            ctx.json(Result.customFailure("strategyId 不能为空"));
             return;
         }
         Boolean enable = body != null && body.has("enable") ? body.path("enable").asBoolean() : null;
@@ -81,7 +81,7 @@ public class JoinApprovalController {
         String remark = body != null ? body.path("remark").asText(null) : null;
         boolean ok = JoinApprovalStrategy.updateStrategy(strategyId, enable, expireAt, remark);
         if (!ok) {
-            ctx.json(Result.fail(500, "修改入群审批策略失败"));
+            ctx.json(Result.customFailure("修改入群审批策略失败"));
             return;
         }
         refreshApprovalSnapshotQuietly();
@@ -95,7 +95,7 @@ public class JoinApprovalController {
         String op = body != null ? body.path("op").asText(null) : null;
         List<String> groupOpenIds = stringList(body, "groupOpenIds");
         if (isBlank(strategyId) || isBlank(op) || groupOpenIds.isEmpty()) {
-            ctx.json(Result.fail(400, "strategyId、op、groupOpenIds 不能为空"));
+            ctx.json(Result.customFailure("strategyId、op、groupOpenIds 不能为空"));
             return;
         }
         JoinApprovalStrategy.GroupActionOp actionOp = "del".equalsIgnoreCase(op)
@@ -103,7 +103,7 @@ public class JoinApprovalController {
                 : JoinApprovalStrategy.GroupActionOp.ADD;
         boolean ok = JoinApprovalStrategy.updateStrategyGroups(strategyId, actionOp, groupOpenIds, null);
         if (!ok) {
-            ctx.json(Result.fail(500, "修改入群审批策略关联群失败"));
+            ctx.json(Result.customFailure("修改入群审批策略关联群失败"));
             return;
         }
         refreshApprovalSnapshotQuietly();
@@ -114,12 +114,12 @@ public class JoinApprovalController {
     public static void deleteApprovalStrategy(Context ctx) {
         String strategyId = ctx.pathParam("strategyId");
         if (isBlank(strategyId)) {
-            ctx.json(Result.fail(400, "strategyId 不能为空"));
+            ctx.json(Result.customFailure("strategyId 不能为空"));
             return;
         }
         boolean ok = JoinApprovalStrategy.deleteStrategy(strategyId);
         if (!ok) {
-            ctx.json(Result.fail(500, "删除入群审批策略失败"));
+            ctx.json(Result.customFailure("删除入群审批策略失败"));
             return;
         }
         refreshApprovalSnapshotQuietly();
@@ -131,12 +131,12 @@ public class JoinApprovalController {
     public static void executeApprovalStrategy(Context ctx) {
         String strategyId = ctx.pathParam("strategyId");
         if (isBlank(strategyId)) {
-            ctx.json(Result.fail(400, "strategyId 不能为空"));
+            ctx.json(Result.customFailure("strategyId 不能为空"));
             return;
         }
         boolean ok = JoinApprovalStrategy.executeStrategy(strategyId);
         if (!ok) {
-            ctx.json(Result.fail(500, "执行入群审批策略失败"));
+            ctx.json(Result.customFailure("执行入群审批策略失败"));
             return;
         }
         ctx.json(Result.success(null));
@@ -149,7 +149,7 @@ public class JoinApprovalController {
         String op = body != null ? body.path("op").asText(null) : null;
         List<String> users = stringList(body, "users");
         if (isBlank(strategyId) || isBlank(op) || users.isEmpty()) {
-            ctx.json(Result.fail(400, "strategyId、op、users 不能为空"));
+            ctx.json(Result.customFailure("strategyId、op、users 不能为空"));
             return;
         }
         JoinApprovalStrategy.WhitelistOp whitelistOp = "del".equalsIgnoreCase(op)
@@ -157,7 +157,7 @@ public class JoinApprovalController {
                 : JoinApprovalStrategy.WhitelistOp.ADD;
         boolean ok = JoinApprovalStrategy.updateWhitelist(strategyId, whitelistOp, users);
         if (!ok) {
-            ctx.json(Result.fail(500, "修改入群审批白名单失败"));
+            ctx.json(Result.customFailure("修改入群审批白名单失败"));
             return;
         }
         // 同步官方成功后，镜像到本地记录，供页面展示已有号码
@@ -173,7 +173,7 @@ public class JoinApprovalController {
     public static void listApprovalWhitelist(Context ctx) {
         String strategyId = ctx.pathParam("strategyId");
         if (isBlank(strategyId)) {
-            ctx.json(Result.fail(400, "strategyId 不能为空"));
+            ctx.json(Result.customFailure("strategyId 不能为空"));
             return;
         }
         ctx.json(Result.success(JoinApprovalWhitelistRepo.list(strategyId)));
@@ -211,12 +211,12 @@ public class JoinApprovalController {
         String cursor = ctx.queryParam("cursor");
         int limit = parseInt(ctx.queryParam("limit"), 20);
         if (isBlank(groupOpenId)) {
-            ctx.json(Result.fail(400, "groupOpenId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 不能为空"));
             return;
         }
         var result = JoinRequestApproval.getJoinRequestList(groupOpenId, cursor, limit);
         if (result == null) {
-            ctx.json(Result.fail(500, "拉取入群申请列表失败"));
+            ctx.json(Result.customFailure("拉取入群申请列表失败"));
             return;
         }
         ctx.json(Result.success(result));
@@ -229,12 +229,12 @@ public class JoinApprovalController {
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         String joinRequestId = body != null ? body.path("joinRequestId").asText(null) : null;
         if (isBlank(groupOpenId) || isBlank(memberOpenId) || isBlank(joinRequestId)) {
-            ctx.json(Result.fail(400, "groupOpenId、memberOpenId、joinRequestId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId、memberOpenId、joinRequestId 不能为空"));
             return;
         }
         boolean ok = JoinRequestApproval.approveJoinRequest(groupOpenId, memberOpenId, joinRequestId);
         if (!ok) {
-            ctx.json(Result.fail(500, "通过入群申请失败"));
+            ctx.json(Result.customFailure("通过入群申请失败"));
             return;
         }
         ctx.json(Result.success(null));
@@ -249,12 +249,12 @@ public class JoinApprovalController {
         String rejectReason = body != null ? body.path("rejectReason").asText(null) : null;
         boolean addToMemberBlacklist = body != null && body.path("addToMemberBlacklist").asBoolean(false);
         if (isBlank(groupOpenId) || isBlank(memberOpenId) || isBlank(joinRequestId)) {
-            ctx.json(Result.fail(400, "groupOpenId、memberOpenId、joinRequestId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId、memberOpenId、joinRequestId 不能为空"));
             return;
         }
         boolean ok = JoinRequestApproval.declineJoinRequest(groupOpenId, memberOpenId, joinRequestId, rejectReason, addToMemberBlacklist);
         if (!ok) {
-            ctx.json(Result.fail(500, "拒绝入群申请失败"));
+            ctx.json(Result.customFailure("拒绝入群申请失败"));
             return;
         }
         ctx.json(Result.success(null));

@@ -86,12 +86,12 @@ public final class MinecraftWhitelistController {
 
     private static void run(Context ctx, Action action) {
         try { action.run(); }
-        catch (IllegalArgumentException e) { ctx.status(400).json(Result.fail(400, e.getMessage())); }
+        catch (IllegalArgumentException e) { ctx.status(400).json(Result.customFailure(e.getMessage())); }
         catch (ModerationException e) {
             int status = e.status() >= 400 && e.status() <= 599 ? e.status() : 502;
-            ctx.status(status).json(Result.fail(status, e.getMessage()));
+            ctx.status(status).json(Result.customFailure(e.getMessage()));
         }
-        catch (Exception e) { ctx.status(500).json(Result.fail(500, "Minecraft 审核操作失败: " + e.getMessage())); }
+        catch (Exception e) { ctx.status(500).json(Result.customFailure("Minecraft 审核操作失败: " + e.getMessage())); }
     }
 
     private interface Action { void run() throws Exception; }

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atricore.event.EventManager;
 import top.yzljc.atricore.event.events.UserRunCommandEvent;
 import top.yzljc.atricore.platform.Platform;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -228,6 +229,14 @@ public class CommandMap {
             return false;
         }
 
+        var recorder = AtriProvider.getInstance().getLogRecorder();
+        try (var trace = recorder.isMessageTraceEnabled(sender, target.getName())
+                ? MessageTrace.open(report -> recorder.recordMessageTrace(sender, report)) : null) {
+            return execute(sender, commandLabel, args, target);
+        }
+    }
+
+    private boolean execute(CommandSender sender, String commandLabel, String[] args, Command target) {
         String groupId = null;
         if (sender instanceof QQCommandSender qqSender && qqSender.getGroupId() != null) {
             groupId = qqSender.getGroupId();
@@ -250,6 +259,7 @@ public class CommandMap {
             target.execute(sender, commandLabel, args);
             return true;
         } catch (Exception e) {
+            MessageTrace.failed();
             log.error("执行命令 {} 时发生异常，问题: ", commandLabel, e);
             sender.sendMessage("执行命令时发生内部错误，请联系开发者处理！");
             return true;

@@ -8,12 +8,11 @@ import NavigationDock from './components/NavigationDock.vue'
 import GroupManagement from './components/GroupManagement.vue'
 import AboutPage from './components/AboutPage.vue'
 import PriceAlerts from './components/PriceAlerts.vue'
-import {closeCurrentPage} from './closePage'
 import introIllustration from './assets/atri-main.png'
 import goldIcon from './assets/gold.png'
 
 const props = defineProps<{dashboardGrant?: Grant}>()
-const emit = defineEmits<{renew: []}>()
+const emit = defineEmits<{renew: []; logout: []}>()
 const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
 const apiBase = (import.meta.env.VITE_API_BASE || '/atrimeow/profile/api').replace(/\/+$/, '')
 const readPrivate = <T, >(path: string) => session.get<T>(path)
@@ -39,7 +38,10 @@ const bot = shallowRef<Profile['bot']>({name: '机器人', avatarUrl: null})
 const botAvatarFailed = ref(false)
 const copyNotice = ref('')
 const revealed = ref(false)
-const closeState = ref<'idle' | 'closing' | 'blocked'>('idle')
+const loggingOut = ref(false)
+const logoutError = ref('')
+let logoutController: AbortController | undefined
+let disposed = false
 type Page = 'profile' | 'groups' | 'prices' | 'about'
 const activePage = ref<Page>('profile')
 const groupsOpened = ref(false)
@@ -179,11 +181,33 @@ function leave() {
   if (timer) clearInterval(timer)
 }
 
-async function exitPage() {
-  if (closeState.value === 'closing') return
-  closeState.value = 'closing'
-  leave()
-  if (!await closeCurrentPage()) closeState.value = 'blocked'
+async function logout() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  logoutError.value = ''
+  logoutController = new AbortController()
+  const timeout = setTimeout(() => logoutController?.abort(), 15_000)
+  try {
+    const response = await fetch('/dashboard/api/auth/logout', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
+      credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer', signal: logoutController.signal
+    })
+    if (!response.ok) throw new Error('LOGOUT_FAILED')
+    if (disposed) return
+    leave()
+    if (props.dashboardGrant) emit('logout')
+    else {
+      const target = new URL('/dashboard/', window.location.origin)
+      target.searchParams.set('logged_out', '1')
+      if (new URL(window.location.href).searchParams.get('qq') === '1') target.searchParams.set('qq', '1')
+      window.location.assign(target.toString())
+    }
+  } catch {
+    if (!disposed) logoutError.value = '退出登录失败，请稍后重试'
+  } finally {
+    clearTimeout(timeout)
+    loggingOut.value = false
+  }
 }
 
 function hidePage() {
@@ -214,6 +238,8 @@ onMounted(() => {
   else void session.open(entry.userId, entry.ticket)
 })
 onBeforeUnmount(() => {
+  disposed = true
+  logoutController?.abort()
   clearIntroTimers()
   leave()
   if (noticeTimer) clearTimeout(noticeTimer)
@@ -251,7 +277,7 @@ onBeforeUnmount(() => {
                 activePage === 'groups' ? '群管理' : activePage === 'prices' ? '价格提醒' : activePage === 'about' ? '关于' : '用户档案'
             }}</span></h1>
         </div>
-        <button v-if="state.phase === 'ready'" class="text-button profile-exit" @click="exitPage">退出</button>
+        <button v-if="state.phase === 'ready'" class="text-button profile-exit" :disabled="loggingOut" @click="logout">{{ loggingOut ? '退出中…' : '退出登录' }}</button>
       </div>
     </header>
 
@@ -391,15 +417,15 @@ onBeforeUnmount(() => {
         <div class="entry-status">
           <Icon name="lock"/>
         </div>
-        <h2>{{ closeState === 'idle' ? '当前会话已过期' : closeState === 'closing' ? '正在关闭页面' : '已退出当前页面' }}</h2>
-        <p v-if="closeState !== 'idle'" class="entry-description">{{ closeState === 'blocked' ? '当前浏览器不允许自动关闭，请手动关闭此页面' : '正在返回聊天窗口' }}</p>
-        <template v-else-if="dashboardGrant">
+        <h2>当前会话已过期</h2>
+        <template v-if="dashboardGrant">
           <p class="entry-description">请重新进入个人面板</p>
           <button class="text-button" @click="emit('renew')">重新进入</button>
         </template>
         <p v-else class="entry-description">请私聊{{ bot.name }}发送 <code>/dashboard</code><br>进入个人中心</p></section>
     </main>
     <div v-if="copyNotice && state.phase === 'ready'" class="toast glass" role="status">{{ copyNotice }}</div>
+    <div v-if="logoutError" class="toast glass" role="alert">{{ logoutError }}</div>
   </div>
 </template>
 

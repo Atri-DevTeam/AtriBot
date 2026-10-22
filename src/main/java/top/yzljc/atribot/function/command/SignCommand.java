@@ -55,7 +55,7 @@ public class SignCommand implements CommandExecutor, Listener {
         }
 
         if (sender instanceof QQGuildCommandSender guildSender) {
-            handleGuildCheckIn(guildSender, guildSender.getUserOpenId());
+            handleGuildCheckIn(guildSender, guildSender.getUnionOpenId());
             return true;
         }
 
@@ -72,9 +72,9 @@ public class SignCommand implements CommandExecutor, Listener {
         return true;
     }
 
-    private static void handleGuildCheckIn(QQGuildCommandSender sender, String userOpenId) {
+    private static void handleGuildCheckIn(QQGuildCommandSender sender, String unionOpenId) {
         ThreadManager.execute(() -> {
-            if (userOpenId == null || userOpenId.isBlank()) {
+            if (unionOpenId == null || unionOpenId.isBlank()) {
                 sender.sendMessage("无法获取频道用户标识，暂时无法打卡");
                 return;
             }
@@ -89,12 +89,12 @@ public class SignCommand implements CommandExecutor, Listener {
                 return;
             }
 
-            if (SignRepository.hasCheckedInToday(userOpenId)) {
+            if (SignRepository.hasCheckedInToday(unionOpenId)) {
                 sender.sendMessage("你今天已经打过卡了哦！");
                 return;
             }
 
-            SignRepository.CheckInResult result = SignRepository.checkIn(userOpenId);
+            SignRepository.CheckInResult result = SignRepository.checkIn(unionOpenId);
             if (result == null) {
                 sender.sendMessage("打卡失败，请稍后重试");
                 return;

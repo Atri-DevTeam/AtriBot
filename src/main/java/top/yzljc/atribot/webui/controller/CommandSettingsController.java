@@ -81,9 +81,9 @@ public final class CommandSettingsController {
             action.run();
             ctx.json(Result.success(null));
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
         } catch (IOException e) {
-            ctx.json(Result.fail(500, "保存指令规则失败: " + e.getMessage()));
+            ctx.json(Result.customFailure("保存指令规则失败: " + e.getMessage()));
         }
     }
 

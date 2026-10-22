@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import top.yzljc.atricore.chat.official.menu.Menu;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class MenuController {
     public static void queryMenu(Context ctx) {
         Menu.MenuQueryResult result = Menu.queryMenu();
         if (result == null) {
-            ctx.json(Result.fail(500, "查询自定义菜单失败"));
+            ctx.json(Result.failure(ApiCode.QQ_API_REQUEST_FAILED));
             return;
         }
         ctx.json(Result.success(result));
@@ -27,12 +28,12 @@ public class MenuController {
         JsonNode menuNode = body != null ? body.path("menu") : null;
         Menu.MenuData menu = parseMenuRequest(menuNode);
         if (menu == null || menu.items() == null || menu.items().isEmpty()) {
-            ctx.json(Result.fail(400, "菜单配置不能为空"));
+            ctx.json(Result.customFailure("菜单配置不能为空"));
             return;
         }
         Integer version = Menu.updateMenu(menu);
         if (version == null) {
-            ctx.json(Result.fail(500, "修改自定义菜单失败"));
+            ctx.json(Result.failure(ApiCode.QQ_API_REQUEST_FAILED));
             return;
         }
         ctx.json(Result.success(version));

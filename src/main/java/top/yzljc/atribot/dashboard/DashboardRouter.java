@@ -9,9 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.auth.SiteAuthorizationService;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.miniapp.service.MiniappProfileService;
 import top.yzljc.atribot.webui.WebUISessionManager;
+import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -33,36 +36,62 @@ public final class DashboardRouter {
     private static final Logger LOG = LoggerFactory.getLogger(DashboardRouter.class);
     private static final String STATE_COOKIE = "dashboard_qq_state";
     private static final String SESSION_COOKIE = DashboardSessions.SESSION_COOKIE;
-    private DashboardRouter() {}
 
-    record StartRequest(String userOpenId, String ticket, String nav, String wwv, boolean mobile, boolean qq) {}
+    private DashboardRouter() {
+    }
+
+    record StartRequest(String userOpenId, String ticket, String nav, String wwv, boolean mobile, boolean qq) {
+    }
+
     @FunctionalInterface
-    interface IdentityExchange { QqConnectClient.Profile profile(DashboardSettings settings, String code) throws IOException, InterruptedException; }
+    interface IdentityExchange {
+        QqConnectClient.Profile profile(DashboardSettings settings, String code) throws IOException, InterruptedException;
+    }
 
     interface AccountBindings {
-        MiniappSessions.Identity find(DashboardSettings settings, String openId) throws SQLException;
+        MiniappSessions.Identity find(DashboardSettings settings, String openId, String nickname) throws SQLException;
+
         boolean bind(DashboardSettings settings, String openId, MiniappSessions.Identity identity) throws SQLException;
     }
 
     public static void register(Javalin server, DashboardSessions sessions, MiniappSessions pages) {
+        register(server, sessions, pages, null);
+    }
+
+    /**
+     * @param server 运行服务 HTTP 实例
+     * @param sessions QQ 登录会话管理
+     * @param pages 个人中心页面会话管理
+     * @param authorization 站点授权结果管理，null 表示不处理其他站点的认证请求
+     */
+    public static void register(Javalin server, DashboardSessions sessions, MiniappSessions pages,
+                                SiteAuthorizationService authorization) {
         AccountBindings bindings = new AccountBindings() {
-            @Override public MiniappSessions.Identity find(DashboardSettings settings, String openId) throws SQLException {
-                var account = UnifiedAuthentication.findByQqConnect(openId);
+            @Override
+            public MiniappSessions.Identity find(DashboardSettings settings, String openId, String nickname) throws SQLException {
+                var account = UnifiedAuthentication.findByQqConnect(openId, nickname);
                 return account == null || account.qqUserOpenId() == null || account.qqUserOpenId().isBlank() ? null
                         : new MiniappSessions.Identity(account.qqUserOpenId(), account.username() == null ? "" : account.username());
             }
 
-            @Override public boolean bind(DashboardSettings settings, String openId, MiniappSessions.Identity identity) throws SQLException {
+            @Override
+            public boolean bind(DashboardSettings settings, String openId, MiniappSessions.Identity identity) throws SQLException {
                 return UnifiedAuthentication.bindQqConnect(identity.userId(), identity.displayName(), openId);
             }
         };
         register(server, sessions, pages, bindings, DashboardSettings::current, new QqConnectClient()::profile,
-                userId -> !OfficialUsers.isBlocked(userId) && !OfficialUsers.isIgnored(userId));
+                userId -> !OfficialUsers.isBlocked(userId) && !OfficialUsers.isIgnored(userId), authorization);
     }
 
     static void register(Javalin server, DashboardSessions sessions, MiniappSessions pages,
                          AccountBindings bindings, Supplier<DashboardSettings> configuration,
                          IdentityExchange exchange, Predicate<String> allowed) {
+        register(server, sessions, pages, bindings, configuration, exchange, allowed, null);
+    }
+
+    static void register(Javalin server, DashboardSessions sessions, MiniappSessions pages,
+                         AccountBindings bindings, Supplier<DashboardSettings> configuration,
+                         IdentityExchange exchange, Predicate<String> allowed, SiteAuthorizationService authorization) {
         server.get("/", ctx -> ctx.header("Cache-Control", "no-store")
                 .redirect("/dashboard/" + ("1".equals(singleQuery(ctx, "qq")) ? "?qq=1" : "")));
         server.before("/dashboard", ctx -> guard(ctx, configuration.get()));
@@ -101,21 +130,34 @@ public final class DashboardRouter {
             cookie(ctx, STATE_COOKIE, "", "/", 0, settings);
             String code = singleQuery(ctx, "code");
             String error = null;
+            QqConnectClient.Profile authorizedProfile = null;
             try {
                 if (code == null || code.isBlank() || code.length() > 512 || ctx.queryParam("error") != null) {
+                    LOG.info("[!] QQ 互联登录授权失败，平台返回如下 -> {}", ctx.body());
                     error = "LOGIN_CANCELLED";
                 } else {
                     var profile = exchange.profile(settings, code);
                     String qqOpenId = profile.openId();
-                    if (pending.binding() != null && !allowed.test(pending.binding().userId())) error = "ACCOUNT_RESTRICTED";
-                    else if (pending.binding() != null && !bindings.bind(settings, qqOpenId, pending.binding())) error = "BINDING_CONFLICT";
+                    if (pending.binding() != null && !allowed.test(pending.binding().userId()))
+                        error = "ACCOUNT_RESTRICTED";
+                    else if (pending.binding() != null && !bindings.bind(settings, qqOpenId,
+                            new MiniappSessions.Identity(pending.binding().userId(), profile.nickname())))
+                        error = "BINDING_CONFLICT";
                     else {
-                        var identity = bindings.find(settings, qqOpenId);
-                        if (identity != null && !allowed.test(identity.userId())) error = "ACCOUNT_RESTRICTED";
+                        var identity = bindings.find(settings, qqOpenId, profile.nickname());
+                        if (identity == null) error = "ACCOUNT_NOT_REGISTERED";
+                        else if (!allowed.test(identity.userId())) error = "ACCOUNT_RESTRICTED";
                         else {
                             sessions.revoke(ctx.cookie(SESSION_COOKIE));
                             String token = sessions.login(identity, qqOpenId, profile.avatarUrl(), settings);
                             cookie(ctx, SESSION_COOKIE, token, "/", DashboardSessions.LOGIN_SECONDS, settings);
+                            authorizedProfile = profile;
+
+                            var account = identity == null ? null : UnifiedAuthentication.getCachedQqUserAccount(identity.userId());
+                            LOG.info("[!] QQ互联登陆授权成功，统一身份用户：{}(权限组：{}), 机器人平台ID：{}，互联平台ID：{}",
+                                    account == null ? "未绑定" : account.uuid(),
+                                    account == null ? "未绑定" : account.role(),
+                                    identity == null ? "未绑定" : identity.userId(), qqOpenId);
                         }
                     }
                 }
@@ -125,6 +167,20 @@ public final class DashboardRouter {
             } catch (Exception failure) {
                 LOG.warn("Dashboard QQ 登录失败: errorType={}", failure.getClass().getSimpleName());
                 error = "LOGIN_FAILED";
+            }
+            if (pending.authorizationRequestId() != null) {
+                if (authorization == null) {
+                    ctx.status(503).json(Result.failure(ApiCode.AUTHORIZATION_DISABLED));
+                    return;
+                }
+                try {
+                    ctx.redirect(authorization.complete(pending.authorizationRequestId(),
+                            authorizedProfile == null ? null : authorizedProfile.openId(),
+                            authorizedProfile == null ? null : authorizedProfile.avatarUrl(), error, settings));
+                } catch (SiteAuthorizationService.Failure failure) {
+                    ctx.status(failure.code().getHttpStatus()).json(Result.failure(failure.code()));
+                }
+                return;
             }
             String query = pending.navigation();
             if (error != null) query += (query.isEmpty() ? "" : "&") + "auth_error=" + error;
@@ -156,8 +212,16 @@ public final class DashboardRouter {
             sameOrigin(ctx, settings);
             String token = ctx.cookie(SESSION_COOKIE);
             var login = sessions.authenticate(token, settings);
-            if (login == null) { ctx.json(Map.of("status", "anonymous")); return; }
-            if (login.identity() == null) { ctx.json(Map.of("status", "unbound")); return; }
+            if (login == null) {
+                ctx.json(Map.of("status", "anonymous"));
+                return;
+            }
+            if (login.identity() == null) {
+                sessions.revoke(token);
+                cookie(ctx, SESSION_COOKIE, "", "/", 0, settings);
+                ctx.status(403).json(Map.of("error", "ACCOUNT_NOT_REGISTERED"));
+                return;
+            }
             if (!allowed.test(login.identity().userId())) {
                 sessions.revoke(token);
                 ctx.status(403).json(Map.of("error", "ACCOUNT_RESTRICTED"));

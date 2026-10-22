@@ -36,20 +36,20 @@ public final class DefaultJoinWelcomeController {
         UnifiedRole role = role(ctx);
         if (role == null) return;
         if (ctx.body().length() > 131072) {
-            ctx.status(413).json(Result.fail(413, "配置不能超过 128 Ki 字符"));
+            ctx.status(413).json(Result.customFailure("配置不能超过 128 Ki 字符"));
             return;
         }
         JsonNode config;
         try {
             config = MAPPER.readTree(ctx.body());
         } catch (IOException e) {
-            ctx.status(400).json(Result.fail(400, "JSON 格式错误"));
+            ctx.status(400).json(Result.customFailure("JSON 格式错误"));
             return;
         }
         try {
             ctx.json(Result.success(DefaultJoinWelcomeStore.getInstance().save(role, config)));
         } catch (IllegalArgumentException e) {
-            ctx.status(400).json(Result.fail(400, e.getMessage()));
+            ctx.status(400).json(Result.customFailure(e.getMessage()));
         } catch (IOException e) {
             failed(ctx, e);
         }
@@ -69,13 +69,13 @@ public final class DefaultJoinWelcomeController {
         try {
             return UnifiedRole.valueOf(ctx.pathParam("role"));
         } catch (IllegalArgumentException e) {
-            ctx.status(400).json(Result.fail(400, "身份必须为 USER、ADMIN 或 OWNER"));
+            ctx.status(400).json(Result.customFailure("身份必须为 USER、ADMIN 或 OWNER"));
             return null;
         }
     }
 
     private static void failed(Context ctx, IOException e) {
         log.error("读写默认加群欢迎配置失败", e);
-        ctx.status(500).json(Result.fail(500, "默认欢迎配置读写失败，请检查配置文件和目录权限"));
+        ctx.status(500).json(Result.customFailure("默认欢迎配置读写失败，请检查配置文件和目录权限"));
     }
 }

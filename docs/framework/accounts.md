@@ -38,7 +38,7 @@ Optional<AtriAccount> account = user.getAccount();
 | 用户类型 | 账号查询方式 |
 | --- | --- |
 | `QQUser` | 按用户 OpenID 查询 |
-| `QQGuildUser` | 按可用的 `userOpenId` 查询，不使用频道用户 ID 代替 |
+| `QQGuildUser` | 按可用的 `unionOpenId`（QQ 开放平台绑定的互联 ID）查询，不使用频道用户 ID 代替 |
 | `NapcatUser` | 按 QQ 号查询 |
 | `DiscordUser`、`KookUser` | 当前返回 `Optional.empty()` |
 

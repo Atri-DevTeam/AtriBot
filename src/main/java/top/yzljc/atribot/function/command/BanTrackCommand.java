@@ -63,7 +63,7 @@ public class BanTrackCommand implements CommandExecutor {
             return true;
         }
 
-        ImageDTO data = requestData(resolveType(args), null, sender.getUserId());
+        ImageDTO data = requestData(resolveType(args), sender.getPlatform(), sender.getUserId());
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;
@@ -115,7 +115,7 @@ public class BanTrackCommand implements CommandExecutor {
         }
 
         String type = resolveType(args);
-        ImageDTO data = requestData(type);
+        ImageDTO data = requestData(type, sender.getPlatform(), null);
         if (data.isError()) {
             sender.sendMessage(data.errorMessage());
             return true;
@@ -176,20 +176,14 @@ public class BanTrackCommand implements CommandExecutor {
         return minutes >= 10 && minutes <= 3L * 30 * 24 * 60;
     }
 
-    private static ImageDTO requestData(String type) {
-        return requestData(type, null);
-    }
-
-    private static ImageDTO requestData(String type, Platform platform) {
-        return requestData(type, platform, null);
-    }
-
     private static ImageDTO requestData(String type, Platform platform, String userId) {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("window", type);
         BackgroundService.applyApprovedBackground(request, userId);
         String url = OpenApi.get("bot.hypixel.bantracker") + "?" + System.currentTimeMillis();
-        return PreImageGenerate.dump(url, request, platform);
+        return platform == Platform.OFFICIAL_GROUP || platform == Platform.OFFICIAL_C2C
+                ? PreImageGenerate.dumpMarkdown(url, request, platform)
+                : PreImageGenerate.dump(url, request, platform);
     }
 
     public static boolean isCoolingDown(CommandSender sender) {

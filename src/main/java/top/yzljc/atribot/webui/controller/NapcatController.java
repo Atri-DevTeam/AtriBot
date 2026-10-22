@@ -8,7 +8,6 @@ import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atricore.chat.official.OfficialMessageSendNotifier;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.utils.napcat.GroupContentRecord;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atricore.service.request.HttpService;
@@ -43,7 +42,7 @@ public class NapcatController {
     public static void getNapcatGroupFeatures(Context ctx) {
         String groupId = ctx.pathParam("groupId");
         if (!GroupInformation.fetchAllGroupIds().contains(groupId)) {
-            ctx.json(Result.fail(404, "群聊不在服务范围内"));
+            ctx.json(Result.customFailure("群聊不在服务范围内"));
             return;
         }
 
@@ -60,7 +59,7 @@ public class NapcatController {
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
 
         if (!GroupConfigManager.getRegisteredFeatures().containsKey(feature)) {
-            ctx.json(Result.fail(404, "未知的功能: " + feature));
+            ctx.json(Result.customFailure("未知的功能: " + feature));
             return;
         }
 
@@ -71,18 +70,18 @@ public class NapcatController {
     public static void fetchNapcatMessages(Context ctx) {
         NapcatMessageRequestDTO dto = ctx.bodyAsClass(NapcatMessageRequestDTO.class);
         if (dto == null || isBlank(dto.getGroupId())) {
-            ctx.json(Result.fail(400, "groupId 不能为空"));
+            ctx.json(Result.customFailure("groupId 不能为空"));
             return;
         }
         long groupId;
         try {
             groupId = Long.parseLong(dto.getGroupId());
         } catch (NumberFormatException ignored) {
-            ctx.json(Result.fail(400, "groupId 必须是数字"));
+            ctx.json(Result.customFailure("groupId 必须是数字"));
             return;
         }
         if (!CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(dto.getGroupId())) {
-            ctx.json(Result.fail(404, "未开启该群的消息监听"));
+            ctx.json(Result.customFailure("未开启该群的消息监听"));
             return;
         }
         int page = Math.max(dto.getPage(), 1);
@@ -92,7 +91,7 @@ public class NapcatController {
     public static void recallNapcatMessages(Context ctx) {
         NapcatRecallDTO dto = ctx.bodyAsClass(NapcatRecallDTO.class);
         if (dto == null || dto.getMessageIds() == null || dto.getMessageIds().isEmpty()) {
-            ctx.json(Result.fail(400, "messageIds 不能为空"));
+            ctx.json(Result.customFailure("messageIds 不能为空"));
             return;
         }
 
@@ -107,13 +106,13 @@ public class NapcatController {
     public static void debugOfficialApi(Context ctx) {
         OfficialApiDebugRequestDTO dto = ctx.bodyAsClass(OfficialApiDebugRequestDTO.class);
         if (dto == null || isBlank(dto.getPath())) {
-            ctx.json(Result.fail(400, "API 路径不能为空"));
+            ctx.json(Result.customFailure("API 路径不能为空"));
             return;
         }
 
         String method = normalizeHttpMethod(dto.getMethod());
         if (method == null) {
-            ctx.json(Result.fail(400, "不支持的请求方法"));
+            ctx.json(Result.customFailure("不支持的请求方法"));
             return;
         }
 
@@ -121,12 +120,12 @@ public class NapcatController {
         try {
             targetUrl = buildOfficialApiUrl(dto.getPath(), method);
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
             return;
         }
 
         if (!OfficialMessageSendNotifier.allowSend(method, targetUrl, dto.getBody())) {
-            ctx.json(Result.fail(403, "消息发送已被取消"));
+            ctx.json(Result.customFailure("消息发送已被取消"));
             return;
         }
 
@@ -163,7 +162,7 @@ public class NapcatController {
             response = HttpService.httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-            ctx.json(Result.fail(500, e.getClass().getSimpleName() + ": " + e.getMessage()));
+            ctx.json(Result.customFailure(e.getClass().getSimpleName() + ": " + e.getMessage()));
             return;
         }
         ctx.json(Result.success(new OfficialApiDebugResponseDTO(

@@ -2,7 +2,6 @@ package top.yzljc.atricore.platform.qq;
 
 import top.yzljc.atricore.AtriProvider;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.official.management.JoinRequestApproval;
 import top.yzljc.atricore.chat.official.thread.PostInfo;
@@ -34,7 +33,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class BotEvents {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
 
     private record ParsedMessageReference(String msgIdx, MessageReference reference) {
     }
@@ -105,7 +103,7 @@ public class BotEvents {
                         isAtBot = true;
                     }
                     PlatformRole roleMentioned = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
-                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
+                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mentionNode));
                 }
             }
 
@@ -194,7 +192,7 @@ public class BotEvents {
                     var user_id = mentionNode.path("member_openid").asText(null);
                     var user_username = mentionNode.path("username").asText(null);
                     PlatformRole roleMentioned = PlatformRole.getPlatformRole(eventData.path("author").get("member_role").asText());
-                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mapper.createObjectNode()));
+                    mentions.add(new QQUser(Platform.OFFICIAL_GROUP, user_isBot, user_id, user_username, roleMentioned, mentionNode));
                 }
             }
 
@@ -236,13 +234,14 @@ public class BotEvents {
     public static void handleFriendAddEvent(String eventId, JsonNode eventData) {
         try {
             String userOpenId = eventData.path("openid").asText(null);
+            String unionOpenId = eventData.path("author").path("union_openid").asText(null);
             String timestamp = eventData.get("timestamp").asText();
             int scene = eventData.path("scene").asInt(-1);
             String sceneParam = eventData.path("scene_param").asText(null);
             String shortCode = eventData.path("short_code").asText(null);
             FriendAddScene sceneEnum = FriendAddScene.fromCode(scene);
 
-            OfficialFriendAddEvent event = new OfficialFriendAddEvent(eventId, userOpenId, timestamp, sceneEnum, sceneParam, shortCode);
+            OfficialFriendAddEvent event = new OfficialFriendAddEvent(eventId, userOpenId, unionOpenId, timestamp, sceneEnum, sceneParam, shortCode);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的好友添加事件时发生错误：", e);
@@ -251,17 +250,15 @@ public class BotEvents {
 
     public static void handleFriendRemoveEvent(JsonNode eventData) {
         try {
-            String userOpenId = eventData.path("author").path("union_openid").asText(null);
-            if (userOpenId == null || userOpenId.isBlank()) {
-                userOpenId = eventData.path("openid").asText(null);
-            }
+            String userOpenId = eventData.path("openid").asText(null);
             if (userOpenId == null || userOpenId.isBlank()) {
                 log.warn("忽略缺少用户 OpenID 的好友删除事件");
                 return;
             }
+            String unionOpenId = eventData.path("author").path("union_openid").asText(null);
             String timestamp = eventData.path("timestamp").asText(null);
 
-            OfficialFriendDelEvent event = new OfficialFriendDelEvent(userOpenId, timestamp);
+            OfficialFriendDelEvent event = new OfficialFriendDelEvent(userOpenId, unionOpenId, timestamp);
             EventManager.getInstance().callEvent(event);
         } catch (Exception e) {
             log.error("在解析官方机器人接收到的好友删除事件时发生错误：", e);
@@ -285,6 +282,7 @@ public class BotEvents {
 
             switch (interactionType) {
                 case BUTTON_CLICK -> {
+                    String unionOpenId = eventData.path("union_openid").asText(null);
                     OfficialButtonInteractionEvent event = new OfficialButtonInteractionEvent(
                             application_id,
                             eventId,
@@ -295,6 +293,7 @@ public class BotEvents {
                             ),
                             groupId,
                             userId,
+                            unionOpenId,
                             id,
                             scene,
                             timestamp,

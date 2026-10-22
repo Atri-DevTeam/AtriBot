@@ -12,7 +12,7 @@ export default defineConfig(({ mode, command }) => {
       port: 5174,
       strictPort: true,
       headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' },
-      proxy: Object.fromEntries([env.VITE_API_BASE || '/atrimeow/profile/api', '/dashboard/api', '/dashboard/auth/complete', '/auth/qq/callback']
+      proxy: Object.fromEntries([env.VITE_API_BASE || '/atrimeow/profile/api', '/dashboard/api', '/dashboard/auth/complete', '/auth/qq/callback', '/auth/authorize', '/auth/continue']
         .map(path => [path, { target: env.VITE_API_TARGET || 'http://127.0.0.1:1234', changeOrigin: true }]))
     }
   }

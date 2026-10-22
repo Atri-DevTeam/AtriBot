@@ -3,19 +3,19 @@ package top.yzljc.atribot.function.admin;
 import top.yzljc.atricore.core.CoreConfig;
 
 import top.yzljc.atricore.command.*;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.platform.qq.QQConnectionLatency;
 import top.yzljc.atribot.utils.debug.NapcatPacket;
+import top.yzljc.atribot.utils.debug.MessageChainDebug;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName OfficialBotDebug
+ * @ClassName DebugCommand
  * @Created_at 2026/05/28
  * @Project AtriBot
- * @Package top.yzljc.atribot.debug
+ * @Package top.yzljc.atribot.function.admin
  */
 public class DebugCommand implements CommandExecutor {
 
@@ -24,6 +24,20 @@ public class DebugCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (args.length == 1 && "-i".equalsIgnoreCase(args[0])) {
+            if (!(sender instanceof QQCommandSender qq)
+                    || (qq.getPlatform() != Platform.OFFICIAL_GROUP && qq.getPlatform() != Platform.OFFICIAL_C2C)) {
+                return true;
+            }
+            if (!qq.hasPermission()) {
+                qq.sendMessage("你没有权限执行此操作！");
+                return true;
+            }
+            boolean enabled = MessageChainDebug.toggle(qq);
+            qq.sendMessage("当前会话的消息链路调试已" + (enabled ? "启用，报告将主动发送至当前会话。" : "关闭。"));
+            return true;
+        }
 
         if (args.length == 1 && "-t".equalsIgnoreCase(args[0])) {
             boolean allowed = sender instanceof ConsoleCommandSender
@@ -43,7 +57,7 @@ public class DebugCommand implements CommandExecutor {
 
         if (sender instanceof ConsoleCommandSender console) {
             if (args.length < 1) {
-                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t");
+                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t；-i 请在官方 QQ 会话中使用");
                 return true;
             }
             if (args.length >1 && args[0].equals("-o")) {
@@ -68,7 +82,7 @@ public class DebugCommand implements CommandExecutor {
                 }
                 return true;
             } else {
-                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t");
+                console.sendMessage("无效的平台参数，可选参数: -n, -o, -t；-i 请在官方 QQ 会话中使用");
                 return true;
             }
 

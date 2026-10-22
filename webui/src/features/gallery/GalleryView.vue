@@ -54,7 +54,11 @@
                 :disabled="mutating" @click="setKind('backgrounds')">
           背景图审核 <span v-if="kindCounts.backgrounds.pending">{{ kindCounts.backgrounds.pending }}</span>
         </button>
+        <button :class="{ active: kind === 'materials' }" :aria-current="kind === 'materials' ? 'page' : undefined"
+                :disabled="mutating" @click="setKind('materials')">图片素材</button>
       </nav>
+      <MaterialImagesPanel v-if="kind === 'materials'" :api="api" :density="density" @busy="materialBusy = $event"/>
+      <template v-else>
       <div class="review-filterbar">
           <div class="feedback-tabs review-status-tabs">
             <button :class="{ active: filter === 'PENDING' }" @click="setFilter('PENDING')">
@@ -175,6 +179,7 @@
           </div>
         </section>
       </section>
+      </template>
     </main>
 
     <!-- 大图查看器 -->
@@ -333,7 +338,7 @@
 <script setup>
 import {useLatestRequest} from '../../shared/lib/latestRequest.js'
 import {createWebuiApi, logoutWebui} from '../../shared/lib/webuiApi.js'
-import {ref, reactive, computed, onMounted, onUnmounted} from 'vue'
+import {ref, reactive, computed, onMounted, onUnmounted, defineAsyncComponent} from 'vue'
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
@@ -343,6 +348,8 @@ import {formatTime} from '../../shared/lib/time.js'
 import {isBlockedCosUrl} from '../../shared/lib/mediaUrl.js'
 
 const {loadBotConfig} = useBotConfig()
+const MaterialImagesPanel = defineAsyncComponent(() => import('./components/MaterialImagesPanel.vue'))
+const materialBusy = ref(false)
 
 function visibleUrl(url) {
   return url && !isBlockedCosUrl(url) ? url : ''
@@ -375,7 +382,7 @@ const kindCounts = reactive({
 })
 const counts = computed(() => kindCounts[kind.value])
 const pendingTotal = computed(() => kindCounts.gallery.pending + kindCounts.backgrounds.pending)
-const mutating = computed(() => !!busy.value || bulkBusy.value || submitting.value)
+const mutating = computed(() => !!busy.value || bulkBusy.value || submitting.value || materialBusy.value)
 
 const failed = reactive(new Set())
 const selection = reactive(new Set())
@@ -448,7 +455,7 @@ async function fetchList() {
 
 async function refresh() {
   await fetchCounts()
-  await fetchList()
+  if (kind.value !== 'materials') await fetchList()
 }
 
 function setKind(value) {

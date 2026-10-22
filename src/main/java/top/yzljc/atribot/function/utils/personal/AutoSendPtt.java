@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.utils.personal;
 
+import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.core.CoreConfig;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -7,7 +8,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
@@ -62,7 +62,7 @@ public class AutoSendPtt implements Listener {
             if (message.path("type").asText().equals("record")) {
                 var md5 = message.path("data").path("file").asText(null);
                 if (md5 != null) {
-                    recordedPtt.put(md5, new PttRecord(event.getMessage().getMessageId(), null));
+                    recordedPtt.put(md5, new PttRecord(event.getMessage().getMessageId(), null, event.getGroupId()));
 //                    log.debug("Recorded PTT message with md5: {}", md5);
                 }
             }
@@ -85,12 +85,16 @@ public class AutoSendPtt implements Listener {
                 if (t != null) {
                     var text = "[语音]" + event.getUser().getUsername() + ": " + t;
                     log.info("转文字-> {}", text);
-                    String napcatGroupId = String.valueOf(OfficialGroups.getRealGroupId(event.getGroupId()));
+                    String napcatGroupId = recordedPtt.get(md5).getNapcatGroupId();
                     if (napcatGroupId != null && !napcatGroupId.equals("0")) {
                         var mid = GroupMessage.chatMessage(napcatGroupId, text);
                         if (mid != null && recordedPtt.containsKey(md5)) {
                             var record = recordedPtt.get(md5);
                             record.setPttMessageId(mid);
+
+                            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(() -> {
+                                recordedPtt.remove(md5);
+                            }, 2 * 60 * 1000);
 //                            log.debug("Updated PTT record for md5 {}: rawMessageId={}, pttMessageId={}", md5, record.getRawMessageId(), record.getPttMessageId());
                         }
                     }
@@ -119,10 +123,12 @@ public class AutoSendPtt implements Listener {
     private class PttRecord {
         private String rawMessageId;
         private String pttMessageId;
+        private String napcatGroupId;
 
-        public PttRecord(String rawMessageId, String pttMessageId) {
+        public PttRecord(String rawMessageId, String pttMessageId, String napcatGroupId) {
             this.rawMessageId = rawMessageId;
             this.pttMessageId = pttMessageId;
+            this.napcatGroupId = napcatGroupId;
         }
     }
 }

@@ -126,6 +126,8 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 
 以下数据项使用事件类的 getter 读取，例如 `groupId` 对应 `getGroupId()`。`user`、`message` 保留平台各自的类型，字段含义见 [平台与消息](messages.md)
 
+群 @ 消息、全量群消息和 C2C 消息事件均可通过 `event.getUser().getUnionOpenId()` 获取 QQ 开放平台绑定的互联 ID，取自 `author.union_openid`，未携带时为 `null`，与用户 OpenID 分别保存。群消息的 mentions 中，`QQUser` 同样提供该字段，取自对应 mention 的 `union_openid`
+
 ### OfficialGroupAtMessageCreateEvent
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialGroupAtMessageCreateEvent.java) · 收到 `GROUP_AT_MESSAGE_CREATE`，即群内 @ 机器人的消息时触发
@@ -154,14 +156,14 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialFriendAddEvent.java) · 收到 `FRIEND_ADD`，即用户添加机器人好友时触发
 
-- 数据：`eventId`、`userOpenId`、`timestamp`、添加来源 `scene`、来源参数 `sceneParam`、`shortCode`
+- 数据：`eventId`、`userOpenId`、`unionOpenId`、`timestamp`、添加来源 `scene`、来源参数 `sceneParam`、`shortCode`；`userOpenId` 取自 `openid`，`unionOpenId` 取自 `author.union_openid`，未携带时为 `null`，两者独立保存
 - 操作：`sendOpeningMessage()` 使用本次事件 ID 发送文本或 Markdown 开场消息
 
 ### OfficialFriendDelEvent
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialFriendDelEvent.java) · 收到 `FRIEND_DEL`，即用户删除机器人好友时触发
 
-- 数据：`userOpenId`、`timestamp`
+- 数据：`userOpenId`、`unionOpenId`、`timestamp`；`userOpenId` 取自 `openid`，`unionOpenId` 取自 `author.union_openid`，未携带时为 `null`；缺少有效 `openid` 的事件不分发
 - 用途：更新好友关系或清理相关业务状态；事件不提供发送或恢复好友关系的方法
 
 ### OfficialGroupAddRobotEvent
@@ -210,7 +212,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialGuildAtMessageCreateEvent.java) · 收到文字子频道 @ 消息 `AT_MESSAGE_CREATE` 时触发
 
-- 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、`userOpenId`；其中 `userOpenId` 取自上报的 `union_openid`，不同于频道用户 ID
+- 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、`unionOpenId`；其中 `unionOpenId` 是 QQ 开放平台绑定的互联 ID，取自 `author.union_openid`，未携带时为 `null`；`user.getUserId()` 为频道用户 ID，mentions 中的 `QQGuildUser` 同样分别保存频道用户 ID 和互联 ID
 - 操作：`replyMessage()` 使用当前子频道和消息 ID 回复文本或图片
 - 判断：`isEmptyMessage()` 检查消息文本是否为空白
 
@@ -218,7 +220,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialGuildDirectMessageCreateEvent.java) · 收到频道私信 `DIRECT_MESSAGE_CREATE` 时触发
 
-- 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、取自 `union_openid` 的 `userOpenId`
+- 数据：`QQGuildUser user`、`QQGuildMessage message`、`guildId`、`channelId`、`unionOpenId`；其中 `unionOpenId` 是 QQ 开放平台绑定的互联 ID，取自 `author.union_openid`，未携带时为 `null`；`user.getUserId()` 为频道用户 ID
 - 操作：`replyMessage()` 使用私信会话的 `guildId` 和当前消息 ID 回复文本或图片
 
 ### OfficialAtForumThreadCreateEvent
@@ -258,7 +260,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialButtonInteractionEvent.java) · 收到 `INTERACTION_CREATE` 中的按钮点击交互时触发
 
-- 数据：公共交互字段，以及 `chatType`、`groupOpenId`、`userOpenId`、`data`；`data` 保留 `resolved` JSON 与内部类型
+- 数据：公共交互字段，以及 `chatType`、`groupOpenId`、`userOpenId`、`unionOpenId`、`data`；`unionOpenId` 是 QQ 开放平台绑定的互联 ID，取自交互报文的 `d.union_openid`，仅私聊场景下存在，未携带时为 `null`；`data` 保留 `resolved` JSON 与内部类型
 - 操作：`getButtonId()`、`getButtonValue()` 读取按钮标识和值；缺失时返回 `missing_data`。`answer(AnswerCode)` 向平台提交交互应答
 - 回复：`replyMessage()` 使用事件 ID 被动回复，`sendMessage()` 主动发送；当前封装处理 `chatType = 1` 的群聊及 `chatType = 2` 的 C2C，其他场景抛出异常
 - 过滤：`shouldIgnore()` 检查群黑名单、用户封禁和忽略状态，命中时同时提交失败应答。`setCancelled(true)` 本身不提交应答，后续调用 `answer()` 时才强制使用失败状态

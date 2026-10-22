@@ -1,50 +1,86 @@
 package top.yzljc.atribot.webui;
 
-import lombok.Data;
+import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
 /**
  * @Author YZ_Ljc_
- * @ClassName ResultData
+ * @ClassName Result
  * @Created_at 2026/05/02
- * @Project AtriData
- * @Package top.yzljc.atri.common
+ * @Project AtriMeow
+ * @Package top.yzljc.atribot.webui
  */
-@Data
-public class Result<T> {
-    public static final int ERROR_STATUS = 432;
-    private static final String DEFAULT_ERROR_MESSAGE = "请求处理失败，请稍后重试。";
+@Getter
+@JsonInclude(JsonInclude.Include.ALWAYS)
+public final class Result<T> {
+    private final int code;
+    private final String message;
+    private final T data;
+    private final long timestamp;
+    private final String requestId;
 
-    private int status;
-    private String message;
-    private T data;
-    private long timestamp ;
-
-
-    public Result(){
+    private Result(ApiCode code, String message, T data, String requestId) {
+        this.code = code.getCode();
+        this.message = message;
+        this.data = data;
         this.timestamp = System.currentTimeMillis();
+        this.requestId = requestId;
     }
 
     public static <T> Result<T> success(T data) {
-        Result<T> resultData = new Result<>();
-        resultData.setStatus(200);
-        resultData.setMessage("ok");
-        resultData.setData(data);
-        return resultData;
+        return success(data, null);
     }
 
-    /** 保留原错误码参数以兼容现有调用；响应体中的错误状态统一为 432。 */
-    public static <T> Result<T> fail(int ignoredCode, String message) {
-        Result<T> resultData = new Result<>();
-        resultData.setStatus(ERROR_STATUS);
-        resultData.setMessage(message == null || message.isBlank() ? DEFAULT_ERROR_MESSAGE : message.trim());
-        return resultData;
+    /**
+     * @param data 业务数据，允许为 null
+     * @param requestId 请求标识，未建立请求追踪时允许为 null
+     * @param <T> 业务数据类型
+     * @return 业务码为 0 的成功响应
+     */
+    public static <T> Result<T> success(T data, String requestId) {
+        return new Result<>(ApiCode.SUCCESS, ApiCode.SUCCESS.getMessage(), data, requestId);
     }
 
-    public static <T> Result<T> custom(int code, String message, T data) {
-        Result<T> resultData = new Result<>();
-        resultData.setStatus(code);
-        resultData.setMessage(message);
-        resultData.setData(data);
-        return resultData;
+    /**
+     * @param code 固定业务错误码，不允许使用 SUCCESS 或 CUSTOM_ERROR
+     * @param requestId 请求标识，未建立请求追踪时允许为 null
+     * @param <T> 业务数据类型
+     * @return data 为 null 的失败响应
+     * @throws NullPointerException code 为 null
+     * @throws IllegalArgumentException code 为 SUCCESS 或 CUSTOM_ERROR
+     */
+    public static <T> Result<T> failure(ApiCode code, String requestId) {
+        Objects.requireNonNull(code, "code must not be null");
+        if (code == ApiCode.SUCCESS || code == ApiCode.CUSTOM_ERROR)
+            throw new IllegalArgumentException("code must be a fixed error code");
+        return new Result<>(code, code.getMessage(), null, requestId);
+    }
+
+    public static <T> Result<T> failure(ApiCode code) {
+        return failure(code, null);
+    }
+
+    /**
+     * @param message 可公开的非空白业务提示，不得直接传入底层异常消息
+     * @param requestId 请求标识，未建立请求追踪时允许为 null
+     * @param <T> 业务数据类型
+     * @return 业务码为 19999、data 为 null 的失败响应，消息保留原文
+     * @throws IllegalArgumentException message 为 null 或空白
+     */
+    public static <T> Result<T> customFailure(String message, String requestId) {
+        if (message == null || message.isBlank()) throw new IllegalArgumentException("message must not be blank");
+        return new Result<>(ApiCode.CUSTOM_ERROR, message, null, requestId);
+    }
+
+    public static <T> Result<T> customFailure(String message) {
+        return customFailure(message, null);
+    }
+
+    @JsonProperty("request_id")
+    public String getRequestId() {
+        return requestId;
     }
 }

@@ -67,6 +67,7 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), conte
 public Markdown(String text);
 public static String img(String url, int width, int height);
 public static String img(String alt, String url, int width, int height);
+public static String materialImage(String reference, int width, int height);
 public static String enterCommand(String command);
 public static String enterCommand(String command, String display);
 public static String enterCommand(String command, String display, boolean reference);

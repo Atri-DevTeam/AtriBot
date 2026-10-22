@@ -39,7 +39,7 @@ public class AutoSign implements CommandExecutor, ScheduledTask {
             nc.sendMessage("你没有权限执行此命令");
             return true;
         }
-        ThreadManager.execute(this::run);
+        ThreadManager.execute(this);
         nc.sendMessage("已开始全局自动打卡");
         return true;
     }

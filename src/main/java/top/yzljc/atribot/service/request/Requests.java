@@ -1,7 +1,5 @@
 package top.yzljc.atribot.service.request;
 
-import top.yzljc.atricore.service.request.*;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,6 +13,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 /**
  * @Author YZ_Ljc_
@@ -62,6 +61,15 @@ public final class Requests {
      * @return 成功时 data 为原始字节，失败时保留业务错误，不跟随重定向
      */
     public static BizResponse<byte[]> getBytes(String url, Duration timeout, String... headers) {
+        if (!MessageTrace.isActive()) return getBytesUntraced(url, timeout, headers);
+        try (var span = MessageTrace.span("读取远端图片")) {
+            var result = getBytesUntraced(url, timeout, headers);
+            describe(span, result);
+            return result;
+        }
+    }
+
+    private static BizResponse<byte[]> getBytesUntraced(String url, Duration timeout, String... headers) {
         if (headers.length % 2 != 0) throw new IllegalArgumentException("请求头必须成对提供");
         try {
             var builder = HttpRequest.newBuilder(URI.create(url)).timeout(timeout).header("Accept", "image/png").GET();
@@ -126,6 +134,34 @@ public final class Requests {
     }
 
     private static BizResponse<JsonNode> send(HttpClient client, String method, String url,
+            HttpRequest.BodyPublisher body, String contentType, Duration timeout, String... headers) {
+        if (!MessageTrace.isActive()) return sendUntraced(client, method, url, body, contentType, timeout, headers);
+        try (var span = MessageTrace.span("请求远端服务")) {
+            var result = sendUntraced(client, method, url, body, contentType, timeout, headers);
+            describe(span, result);
+            if (MessageTrace.isActive() && result.data() != null) {
+                String way = switch (result.data().path("way").asText("")) {
+                    case "qqbot-media" -> "QQ 素材";
+                    case "cos" -> "COS";
+                    case "api" -> "API";
+                    default -> null;
+                };
+                if (way != null) MessageTrace.information("远端图片发布", way);
+            }
+            return result;
+        }
+    }
+
+    private static void describe(MessageTrace.Span span, BizResponse<?> result) {
+        if (!MessageTrace.isActive()) return;
+        String detail = result.httpCode() == 0 ? "未取得 HTTP 响应" : "HTTP " + result.httpCode();
+        detail += " · 业务码 " + result.bizCode();
+        span.result(result.isSuccess(), detail);
+        if (result.requestId() != null && result.requestId().matches("[A-Za-z0-9_-]{1,64}"))
+            MessageTrace.information("远端请求 ID", result.requestId());
+    }
+
+    private static BizResponse<JsonNode> sendUntraced(HttpClient client, String method, String url,
             HttpRequest.BodyPublisher body, String contentType, Duration timeout, String... headers) {
         if (headers.length % 2 != 0) throw new IllegalArgumentException("请求头必须成对提供");
         try {

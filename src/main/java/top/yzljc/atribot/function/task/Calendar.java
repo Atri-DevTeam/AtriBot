@@ -16,7 +16,6 @@ import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.NapcatCommandSender;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;

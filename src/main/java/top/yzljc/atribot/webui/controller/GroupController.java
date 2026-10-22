@@ -131,7 +131,7 @@ public class GroupController {
     public static void setChatPinned(Context ctx) {
         ChatPinnedDTO dto = ctx.bodyAsClass(ChatPinnedDTO.class);
         if (isBlank(dto.getKey())) {
-            ctx.json(Result.fail(400, "key 不能为空"));
+            ctx.json(Result.customFailure("key 不能为空"));
             return;
         }
         ChatPinnedRepo.setPinned(dto.getKey(), dto.isPinned());
@@ -167,9 +167,9 @@ public class GroupController {
                     body == null ? null : body.path("end").asText(null));
             ctx.json(Result.success(result));
         } catch (IllegalArgumentException e) {
-            ctx.json(Result.fail(400, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
         } catch (IllegalStateException e) {
-            ctx.json(Result.fail(500, e.getMessage()));
+            ctx.json(Result.customFailure(e.getMessage()));
         }
     }
 
@@ -192,7 +192,7 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         String memberOpenId = ctx.pathParam("memberOpenId");
         if (isBlank(groupOpenId) || isBlank(memberOpenId)) {
-            ctx.status(400).json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("groupOpenId 或 memberOpenId 不能为空"));
             return;
         }
         var info = GroupMember.getMemberInfo(groupOpenId, memberOpenId);
@@ -206,18 +206,18 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         String memberOpenId = ctx.pathParam("memberOpenId");
         if (isBlank(groupOpenId) || isBlank(memberOpenId)) {
-            ctx.status(400).json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("groupOpenId 或 memberOpenId 不能为空"));
             return;
         }
         if (!canManageGroupMembers(groupOpenId)) {
-            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法踢出成员"));
+            ctx.status(403).json(Result.customFailure("机器人不是本群管理员，无法踢出成员"));
             return;
         }
         JsonNode body = ctx.body().isBlank() ? null : ctx.bodyAsClass(JsonNode.class);
         boolean addToMemberBlacklist = body != null && body.path("addToMemberBlacklist").asBoolean(false);
         var result = GroupMember.removeMembersDetailed(groupOpenId, List.of(memberOpenId), addToMemberBlacklist);
         if (result == null || !"success".equals(result.removeMembersResult())) {
-            ctx.status(502).json(Result.fail(502, "踢出成员失败，请检查官方接口响应"));
+            ctx.status(502).json(Result.customFailure("踢出成员失败，请检查官方接口响应"));
             return;
         }
         // 移除成功但拉黑失败时保留详细结果，前端分别提示。
@@ -237,13 +237,13 @@ public class GroupController {
     public static void getGroupMemberBlacklist(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         if (!canManageGroupMembers(groupOpenId)) {
-            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法查询群黑名单"));
+            ctx.status(403).json(Result.customFailure("机器人不是本群管理员，无法查询群黑名单"));
             return;
         }
         var result = GroupMemberBlacklist.getMemberBlacklist(groupOpenId,
                 ctx.queryParam("cursor"), parseInt(ctx.queryParam("limit"), 20));
         if (result == null) {
-            ctx.status(502).json(Result.fail(502, "查询群黑名单失败，请检查官方接口响应"));
+            ctx.status(502).json(Result.customFailure("查询群黑名单失败，请检查官方接口响应"));
             return;
         }
         ctx.json(Result.success(result));
@@ -253,19 +253,19 @@ public class GroupController {
     public static void addGroupMemberBlacklist(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         if (!canManageGroupMembers(groupOpenId)) {
-            ctx.status(403).json(Result.fail(403, "机器人不是本群管理员，无法添加群黑名单"));
+            ctx.status(403).json(Result.customFailure("机器人不是本群管理员，无法添加群黑名单"));
             return;
         }
         JsonNode body = ctx.body().isBlank() ? null : ctx.bodyAsClass(JsonNode.class);
         String memberOpenId = body == null ? null : body.path("memberOpenId").asText(null);
         if (isBlank(memberOpenId)) {
-            ctx.status(400).json(Result.fail(400, "memberOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("memberOpenId 不能为空"));
             return;
         }
         var result = GroupMemberBlacklist.setMemberBlacklistDetailed(groupOpenId,
                 GroupMemberBlacklist.Op.ADD, List.of(memberOpenId));
         if (result == null || !result.failOpenIds().isEmpty()) {
-            ctx.status(502).json(Result.fail(502, "添加群黑名单失败，请检查官方接口响应"));
+            ctx.status(502).json(Result.customFailure("添加群黑名单失败，请检查官方接口响应"));
             return;
         }
         ctx.json(Result.success(null));
@@ -274,12 +274,12 @@ public class GroupController {
     public static void getGroupMuteState(Context ctx) {
         String groupOpenId = ctx.pathParam("groupOpenId");
         if (groupOpenId == null || groupOpenId.isBlank()) {
-            ctx.json(Result.fail(400, "groupOpenId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 不能为空"));
             return;
         }
         var state = Mute.queryMuteState(groupOpenId);
         if (state == null) {
-            ctx.json(Result.fail(500, "查询群禁言状态失败"));
+            ctx.json(Result.customFailure("查询群禁言状态失败"));
             return;
         }
         ctx.json(Result.success(state));
@@ -291,16 +291,16 @@ public class GroupController {
         String memberOpenId = body != null ? body.path("memberOpenId").asText(null) : null;
         long seconds = body != null ? body.path("seconds").asLong(3600) : 3600;
         if (groupOpenId == null || groupOpenId.isBlank() || memberOpenId == null || memberOpenId.isBlank()) {
-            ctx.json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 或 memberOpenId 不能为空"));
             return;
         }
         if (seconds <= 0) {
-            ctx.json(Result.fail(400, "禁言时长必须大于 0"));
+            ctx.json(Result.customFailure("禁言时长必须大于 0"));
             return;
         }
         boolean ok = Mute.muteMember(groupOpenId, memberOpenId, Duration.ofSeconds(seconds));
         if (!ok) {
-            ctx.json(Result.fail(500, "设置禁言失败"));
+            ctx.json(Result.customFailure("设置禁言失败"));
             return;
         }
         ctx.json(Result.success(null));
@@ -312,12 +312,12 @@ public class GroupController {
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         String memberOpenId = body != null ? body.path("memberOpenId").asText(null) : null;
         if (groupOpenId == null || groupOpenId.isBlank() || memberOpenId == null || memberOpenId.isBlank()) {
-            ctx.json(Result.fail(400, "groupOpenId 或 memberOpenId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 或 memberOpenId 不能为空"));
             return;
         }
         boolean ok = Mute.unmuteMember(groupOpenId, memberOpenId);
         if (!ok) {
-            ctx.json(Result.fail(500, "解除禁言失败"));
+            ctx.json(Result.customFailure("解除禁言失败"));
             return;
         }
         ctx.json(Result.success(null));
@@ -332,13 +332,13 @@ public class GroupController {
         int pageSize = parseInt(ctx.queryParam("pageSize"), 80);
         long excludeId = parseLong(ctx.queryParam("excludeId"), -1L);
         if (isBlank(msgIdx) && isBlank(refContent) && isBlank(refAttachments)) {
-            ctx.json(Result.fail(400, "msgIdx 或引用内容不能为空"));
+            ctx.json(Result.customFailure("msgIdx 或引用内容不能为空"));
             return;
         }
         var result = QQChatContentRecord.locateGroupMessageByReference(
                 groupOpenId, msgIdx, refAuthor, refContent, refAttachments, pageSize, excludeId);
         if (result == null) {
-            ctx.json(Result.fail(404, "引用来源消息不存在或尚未记录"));
+            ctx.json(Result.customFailure("引用来源消息不存在或尚未记录"));
             return;
         }
         ctx.json(Result.success(result));
@@ -347,7 +347,7 @@ public class GroupController {
     public static void sendGroupMessage(Context ctx) {
         SendGroupMessageDTO dto = ctx.bodyAsClass(SendGroupMessageDTO.class);
         if (dto.getGroupOpenId() == null || dto.getGroupOpenId().isBlank()) {
-            ctx.status(400).json(Result.fail(400, "groupOpenId 不能为空"));
+            ctx.status(400).json(Result.customFailure("groupOpenId 不能为空"));
             return;
         }
 
@@ -359,24 +359,24 @@ public class GroupController {
         try {
             if ("ark".equals(msgType)) {
                 if (!isBlank(replyId) || !isBlank(refId)) {
-                    ctx.status(400).json(Result.fail(400, "Ark 仅支持主动发送，请关闭被动消息和引用")); return;
+                    ctx.status(400).json(Result.customFailure("Ark 仅支持主动发送，请关闭被动消息和引用")); return;
                 }
                 Ark ark;
                 try {
                     ark = parseArk(dto.getArk());
                 } catch (IllegalArgumentException e) {
-                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                    ctx.status(400).json(Result.customFailure(e.getMessage())); return;
                 }
                 messageId = GroupChat.sendMessage(dto.getGroupOpenId(), ark);
             } else if ("card".equals(msgType)) {
                 if (!isBlank(refId)) {
-                    ctx.status(400).json(Result.fail(400, "卡片暂不支持引用，请关闭引用")); return;
+                    ctx.status(400).json(Result.customFailure("卡片暂不支持引用，请关闭引用")); return;
                 }
                 Card card;
                 try {
                     card = parseCard(dto.getCard());
                 } catch (IllegalArgumentException e) {
-                    ctx.status(400).json(Result.fail(400, e.getMessage())); return;
+                    ctx.status(400).json(Result.customFailure(e.getMessage())); return;
                 }
                 messageId = isBlank(replyId)
                         ? GroupChat.sendMessage(dto.getGroupOpenId(), card)
@@ -384,7 +384,7 @@ public class GroupController {
             } else if (refId != null && !refId.isBlank()) {
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -393,7 +393,7 @@ public class GroupController {
                             ? GroupChat.refMessage(dto.getGroupOpenId(), refId, image)
                             : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), image, refId);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("消息内容不能为空")); return; }
                     if ("markdown".equals(msgType)) {
                         Markdown markdown = new Markdown(dto.getContent());
                         messageId = isBlank(replyId)
@@ -413,14 +413,14 @@ public class GroupController {
                 // 被动回复
                 if ("image".equals(msgType)) {
                     if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                        ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); return;
+                        ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); return;
                     }
                     ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                     ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
                     if (!isBlank(dto.getContent())) image.setText(dto.getContent());
                     messageId = GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), image);
                 } else {
-                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); return; }
+                    if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("消息内容不能为空")); return; }
                     messageId = "markdown".equals(msgType)
                             ? GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), new Markdown(dto.getContent()))
                             : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), dto.getContent());
@@ -428,12 +428,12 @@ public class GroupController {
             } else {
                 messageId = switch (msgType) {
                     case "markdown" -> {
-                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "Markdown 内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("Markdown 内容不能为空")); yield null; }
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), new Markdown(dto.getContent()));
                     }
                     case "image" -> {
                         if (isBlank(dto.getImageType()) || isBlank(dto.getImageValue())) {
-                            ctx.status(400).json(Result.fail(400, "图片类型和内容不能为空")); yield null;
+                            ctx.status(400).json(Result.customFailure("图片类型和内容不能为空")); yield null;
                         }
                         ImageType type = "base64".equalsIgnoreCase(dto.getImageType()) ? ImageType.BASE64 : ImageType.URL;
                         ImageComponent image = ImageComponent.imageOf(dto.getImageValue(), type);
@@ -441,21 +441,21 @@ public class GroupController {
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), image);
                     }
                     default -> {
-                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.fail(400, "消息内容不能为空")); yield null; }
+                        if (isBlank(dto.getContent())) { ctx.status(400).json(Result.customFailure("消息内容不能为空")); yield null; }
                         yield GroupChat.sendMessage(dto.getGroupOpenId(), dto.getContent());
                     }
                 };
             }
         } catch (QQMessageSendException e) {
-            ctx.status(502).json(Result.fail(502, e.getMessage()));
+            ctx.status(502).json(Result.customFailure(e.getMessage()));
             return;
         } catch (Exception e) {
-            ctx.status(500).json(Result.fail(500, "消息发送失败"));
+            ctx.status(500).json(Result.customFailure("消息发送失败"));
             return;
         }
 
         if (messageId == null) {
-            ctx.status(502).json(Result.fail(502, "消息发送失败：官方接口未返回消息ID"));
+            ctx.status(502).json(Result.customFailure("消息发送失败：官方接口未返回消息ID"));
             return;
         }
         ctx.json(Result.success(new SendGroupMessageResponse(messageId)));
@@ -464,7 +464,7 @@ public class GroupController {
     public static void recallMessage(Context ctx) {
         RecallDTO dto = ctx.bodyAsClass(RecallDTO.class);
         if (isBlank(dto.getGroupOpenId()) || isBlank(dto.getMessageId())) {
-            ctx.json(Result.fail(400, "groupOpenId 和 messageId 不能为空"));
+            ctx.json(Result.customFailure("groupOpenId 和 messageId 不能为空"));
             return;
         }
         GroupChat.recallMessage(dto.getGroupOpenId(), dto.getMessageId());
@@ -523,11 +523,11 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         var profile = QQBot.fetchGroupProfile(groupOpenId);
         if (profile == null) {
-            ctx.json(Result.fail(502, "同步群资料失败，请检查官方接口响应"));
+            ctx.json(Result.customFailure("同步群资料失败，请检查官方接口响应"));
             return;
         }
         if (!OfficialGroups.saveGroupProfile(profile)) {
-            ctx.json(Result.fail(500, "保存群资料失败"));
+            ctx.json(Result.customFailure("保存群资料失败"));
             return;
         }
         ctx.json(Result.success(toGroupDTO(OfficialGroups.getData(groupOpenId))));
@@ -537,12 +537,12 @@ public class GroupController {
         String groupOpenId = ctx.pathParam("groupOpenId");
         String functionKey = ctx.pathParam("functionKey");
         if (PushTaskCommand.getTasks().stream().noneMatch(task -> task.isGroupEnable() && task.getFunctionId().equals(functionKey))) {
-            ctx.status(400).json(Result.fail(400, "无效的群聊推送任务"));
+            ctx.status(400).json(Result.customFailure("无效的群聊推送任务"));
             return;
         }
         boolean enabled = Boolean.parseBoolean(ctx.queryParam("enabled"));
         if (!OfficialGroups.setFunctionEnabled(groupOpenId, functionKey, enabled, "webui")) {
-            ctx.status(500).json(Result.fail(500, "保存功能配置失败"));
+            ctx.status(500).json(Result.customFailure("保存功能配置失败"));
             return;
         }
         ctx.json(Result.success("ok"));

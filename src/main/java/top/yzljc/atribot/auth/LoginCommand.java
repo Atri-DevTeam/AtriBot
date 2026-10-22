@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth;
 
-import top.yzljc.atricore.auth.*;
-
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
@@ -20,9 +18,13 @@ public class LoginCommand implements CommandExecutor {
     private final LoginService service;
     private final AuthRateLimiter attempts = new AuthRateLimiter(Clock.systemUTC());
 
-    public LoginCommand() { this(LoginService.getInstance()); }
+    public LoginCommand() {
+        this(LoginService.getInstance());
+    }
 
-    public LoginCommand(LoginService service) { this.service = service; }
+    public LoginCommand(LoginService service) {
+        this.service = service;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -59,6 +61,7 @@ public class LoginCommand implements CommandExecutor {
     protected boolean canApprove(CommandSender sender) {
         return sender.hasPermission("api.login");
     }
+
     protected boolean canApprove(CommandSender sender, String permission) {
         return "api.login".equals(permission) ? canApprove(sender) : sender.hasPermission(permission);
     }

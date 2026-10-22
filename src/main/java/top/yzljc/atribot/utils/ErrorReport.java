@@ -1,7 +1,5 @@
 package top.yzljc.atribot.utils;
 
-import top.yzljc.atricore.utils.*;
-
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.utils.tools.Alert;

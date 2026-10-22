@@ -1,7 +1,5 @@
 package top.yzljc.atribot.command.impl;
 
-import top.yzljc.atricore.command.impl.*;
-
 import top.yzljc.atricore.command.ConsoleCommandSender;
 import top.yzljc.atribot.service.runtime.ConsoleManager;
 

@@ -18,7 +18,7 @@ const choosing = ref(false)
 const webuiEnabled = ref(false)
 const personalEntry = url.searchParams.get('panel') === 'personal'
 const busy = ref(false)
-const phase = ref<'anonymous' | 'unbound'>('anonymous')
+const phase = ref<'anonymous' | 'unbound'>(entry.error === 'ACCOUNT_NOT_REGISTERED' ? 'unbound' : 'anonymous')
 const bindingCopyState = ref<'idle' | 'copying' | 'copied' | 'failed'>('idle')
 const bot = shallowRef<{name: string; avatarUrl: string | null}>({name: '亚托莉喵', avatarUrl: null})
 const botAvatarFailed = ref(false)
@@ -31,9 +31,10 @@ const errors: Record<string, string> = {
   LOGIN_FAILED: 'QQ 登录失败，请稍后重试',
   LOGIN_BUSY: '当前登录人数较多，请稍后重试',
   ACCOUNT_RESTRICTED: '当前机器人账号无法访问个人面板',
+  ACCOUNT_NOT_REGISTERED: '尚未注册或绑定机器人账号，请私聊机器人发送 /dash 完成注册绑定后再登录',
   DASHBOARD_DISABLED: '个人面板暂未开放'
 }
-const message = ref(!entry.valid ? errors.BINDING_EXPIRED : errors[entry.error || ''] || '')
+const message = ref(!entry.valid ? errors[entry.authorization ? 'LOGIN_EXPIRED' : 'BINDING_EXPIRED'] : errors[entry.error || ''] || '')
 let disposed = false
 let controller: AbortController | undefined
 
@@ -96,6 +97,7 @@ async function copyBindingCommand() {
 }
 
 function showError(error: unknown) {
+  if (error instanceof Error && error.message === 'ACCOUNT_NOT_REGISTERED') phase.value = 'unbound'
   if (!disposed) message.value = errors[error instanceof Error ? error.message : ''] || '暂时无法连接，请稍后重试'
 }
 
@@ -144,11 +146,38 @@ function openWebui() {
   window.location.assign(entry.qq ? '/webui/?qq=1' : '/webui/')
 }
 
+function continueAuthorization() {
+  const continuation = new URL('/auth/continue', window.location.origin)
+  continuation.searchParams.set('state', entry.authorizationState!)
+  continuation.searchParams.set('mobile', mobile.matches ? '1' : '0')
+  window.location.assign(continuation.toString())
+}
+
+async function switchAccount() {
+  if (busy.value || !entry.valid) return
+  busy.value = true
+  message.value = ''
+  try {
+    await request('logout')
+    if (disposed) return
+    finishLogout()
+    busy.value = false
+    await login()
+  } catch (error) {
+    showError(error)
+    busy.value = false
+  }
+}
+
 async function login() {
   if (busy.value || !entry.valid) return
   busy.value = true
   message.value = ''
   try {
+    if (entry.authorization) {
+      continueAuthorization()
+      return
+    }
     const data = await request('start', {
       userOpenId: entry.userOpenId, ticket: entry.ticket, nav: entry.nav, wwv: entry.wwv,
       mobile: mobile.matches, qq: entry.qq
@@ -163,18 +192,25 @@ async function login() {
   }
 }
 
+function finishLogout() {
+  closePending()
+  choosing.value = false
+  grant.value = null
+  phase.value = 'anonymous'
+  message.value = ''
+  const current = new URL(window.location.href)
+  current.searchParams.set('logged_out', '1')
+  window.history.replaceState(null, '', current.pathname + current.search + current.hash)
+}
+
 async function logout() {
   if (busy.value) return
   busy.value = true
   message.value = ''
   try {
     await request('logout')
-    closePending()
-    choosing.value = false
-    grant.value = null
-    phase.value = 'anonymous'
+    if (!disposed) finishLogout()
   } catch (error) {
-    grant.value = null
     showError(error)
   } finally {
     busy.value = false
@@ -182,9 +218,9 @@ async function logout() {
 }
 
 async function initialize() {
-  if (!entry.valid || entry.error) return
+  if (!entry.valid || entry.error || entry.authorization) return
   if (!entry.binding) await enter()
-  if (!disposed && entry.qq && !grant.value && !choosing.value && phase.value === 'anonymous' && !message.value) {
+  if (!disposed && entry.qq && !entry.loggedOut && !grant.value && !choosing.value && phase.value === 'anonymous' && !message.value) {
     await login()
   }
 }
@@ -204,7 +240,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <App v-if="grant" :key="grant.token" :dashboard-grant="grant" @renew="enter(true)"/>
+  <App v-if="grant" :key="grant.token" :dashboard-grant="grant" @renew="enter(true)" @logout="finishLogout"/>
   <div v-else class="dashboard-entry" :class="{'login-entry': !choosing}">
     <header class="entry-header">
       <div class="entry-brand">
@@ -239,18 +275,20 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <button class="entry-logout" :disabled="busy" @click="logout"><Icon name="exit"/>退出登录</button>
+              <button class="entry-switch" :disabled="busy" @click="switchAccount">切换账号</button>
             </div>
             <div v-else :key="entry.binding ? 'binding' : phase" class="entry-content">
               <h1 id="entry-title">{{ entry.binding ? '绑定机器人账号' : phase === 'unbound' ? '尚未绑定机器人账号' : '统一账号登陆' }}</h1>
               <p v-if="entry.binding" class="entry-description">登录 QQ 后，绑定当前私聊中的机器人账号<br>绑定完成后可直接登录查看个人资料与群设置</p>
               <p v-else-if="phase === 'unbound'" class="entry-description">请私聊机器人发送以下指令<br>打开机器人返回的链接完成绑定</p>
+              <p v-else-if="entry.authorization" class="entry-description">完成登录后将返回发起认证的网站</p>
               <p v-else class="entry-description">请通过下方方式完成登陆</p>
               <div v-if="message" class="login-message" role="alert">
                 <Icon name="info"/><span>{{ message }}</span>
               </div>
               <button v-if="phase !== 'unbound'" class="qq-login" :disabled="busy || !entry.valid" :aria-busy="busy" @click="login">
                 <img :src="qqLogo" width="16" height="16" alt=""/>
-                {{ entry.binding ? 'QQ 登录并绑定' : 'QQ 登录' }}
+                {{ entry.binding ? 'QQ 登录并绑定' : entry.authorization ? '继续认证' : 'QQ 登录' }}
                 <span v-if="busy" class="entry-spinner" aria-hidden="true"></span>
               </button>
               <template v-else>
@@ -262,6 +300,7 @@ onBeforeUnmount(() => {
                   <Icon name="exit"/>退出当前 QQ 登录
                 </button>
               </template>
+              <button v-if="phase !== 'unbound'" class="entry-switch" :disabled="busy || !entry.valid" @click="switchAccount">切换账号</button>
               <p v-if="entry.binding" class="entry-footnote">绑定链接有效期为 5 分钟，仅可使用一次</p>
             </div>
           </Transition>
@@ -330,6 +369,10 @@ onBeforeUnmount(() => {
 .entry-logout:hover:not(:disabled) { background: #f4f8fc; color: #247fb4; }
 .entry-logout:disabled { opacity: .45; cursor: not-allowed; }
 .entry-logout svg { width: 15px; height: 15px; }
+.entry-switch { display: block; margin: 12px auto 0; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--entry-muted); font: inherit; font-size: 12px; line-height: 1.5; cursor: pointer; }
+.entry-switch:hover:not(:disabled) { color: #526174; text-decoration: underline; }
+.entry-switch:focus-visible { outline: 2px solid var(--entry-blue); outline-offset: 2px; }
+.entry-switch:disabled { opacity: .45; cursor: not-allowed; }
 .binding-command { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; margin-bottom: 10px; padding: 10px 14px; border: 1px solid #d9e9f6; border-radius: 10px; color: #267fb7; background: #f0f8ff; font: inherit; text-align: left; cursor: pointer; transition: background .18s, border-color .18s; }
 .binding-command:hover:not(:disabled) { background: #e6f4ff; border-color: #aad9f5; }
 .binding-command code { font-size: 14px; user-select: all; }

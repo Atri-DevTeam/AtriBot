@@ -2,6 +2,8 @@ package top.yzljc.atricore.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import top.yzljc.atricore.chat.official.MessageBody;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 /**
  * 运行服务提供的记录与通知扩展点，默认不执行操作
@@ -14,6 +16,26 @@ import top.yzljc.atricore.chat.official.MessageBody;
  * @Package top.yzljc.atricore.core
  */
 public class LogRecorder {
+    /**
+     * 决定是否为本次指令建立消息计时上下文，默认关闭
+     *
+     * @param sender 指令发送者
+     * @param commandName 注册的主指令名，不包含参数
+     * @return 是否启用本次链路计时
+     */
+    public boolean isMessageTraceEnabled(CommandSender sender, String commandName) {
+        return false;
+    }
+
+    /**
+     * 接收已完成的消息链路报告，调用时已经移除计时上下文
+     *
+     * @param sender 本次指令的发送者
+     * @param report 不包含指令正文的计时报告
+     */
+    public void recordMessageTrace(CommandSender sender, MessageTrace.Report report) {
+    }
+
     /**
      * 记录接口请求的开始状态
      *

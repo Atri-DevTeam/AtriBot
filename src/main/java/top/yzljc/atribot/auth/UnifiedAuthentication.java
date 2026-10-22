@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.SQLException;
 
@@ -31,6 +32,15 @@ public class UnifiedAuthentication {
 
     private static final Map<UUID, AtriAccount> cache = new ConcurrentHashMap<>();
     private static final Map<String, AtriAccount> qqOpenIdCache = new ConcurrentHashMap<>();
+    private static final Map<String, AtriAccount> qqConnectCache = new ConcurrentHashMap<>();
+    private static volatile BiConsumer<AtriAccount, AtriAccount> accountChanges = (_, _) -> {};
+
+    /**
+     * @param listener 账号缓存更新后的通知，仅允许执行内存入队，不得在回调中请求远端或写文件
+     */
+    public static void setAccountChangeListener(BiConsumer<AtriAccount, AtriAccount> listener) {
+        accountChanges = listener == null ? (_, _) -> {} : listener;
+    }
 
     public static void init() {
         try (var con = DatabaseManager.getConnection()) {
@@ -45,6 +55,7 @@ public class UnifiedAuthentication {
     static synchronized void replaceCache(List<UnifiedAccountDTO> accounts) {
         cache.clear();
         qqOpenIdCache.clear();
+        qqConnectCache.clear();
         accounts.forEach(UnifiedAuthentication::cachePut);
     }
 
@@ -209,14 +220,35 @@ public class UnifiedAuthentication {
     }
 
     public static AtriAccount findByQqConnect(String openId) throws SQLException {
+        if (openId == null || openId.isBlank()) return null;
+        var cached = qqConnectCache.get(openId);
+        if (cached != null) return cached;
         return cachePut(UnifiedAccountRepository.findByQqConnect(openId));
+    }
+
+    /**
+     * 查询已验证的 QQ 互联身份，并在用户名为空时补入昵称
+     *
+     * @param openId 经 QQ 互联服务端确认的 OpenID
+     * @param nickname QQ 互联返回的昵称
+     * @return 已绑定的统一账号，尚未绑定时返回 null
+     * @throws SQLException 数据库查询或昵称写入失败
+     */
+    public static synchronized AtriAccount findByQqConnect(String openId, String nickname) throws SQLException {
+        var account = findByQqConnect(openId);
+        if (account != null && (account.username() == null || account.username().isBlank())
+                && nickname != null && !nickname.isBlank()) {
+            UnifiedAccountRepository.fillUsernameIfEmpty(account.uuid(), nickname);
+            account = cachePut(UnifiedAccountRepository.findByUuid(account.uuid()));
+        }
+        return account;
     }
 
     /**
      * 将已验证的 QQ 互联身份绑定到官机用户的统一账号
      *
      * @param userOpenId 通过私聊一次性凭证确认的官机用户 OpenID
-     * @param username 新建统一账号时使用的用户名
+     * @param username QQ 互联提供的昵称，仅在新建统一账号时写入
      * @param openId 经 QQ 互联服务端确认的 OpenID
      * @return 新建或已存在相同绑定时返回 true，绑定冲突时返回 false
      * @throws SQLException 统一账号创建或绑定失败
@@ -325,6 +357,8 @@ public class UnifiedAuthentication {
         if (UnifiedAccountRepository.delete(uuid)) {
             var removed = cache.remove(uuid);
             if (removed != null && removed.qqUserOpenId() != null) qqOpenIdCache.remove(removed.qqUserOpenId(), removed);
+            if (removed != null && removed.qqConnectOpenId() != null) qqConnectCache.remove(removed.qqConnectOpenId(), removed);
+            notifyAccountChange(removed, null);
             return true;
         }
         return false;
@@ -340,7 +374,17 @@ public class UnifiedAuthentication {
             qqOpenIdCache.remove(old.qqUserOpenId(), old);
         if (account.qqUserOpenId() != null && !account.qqUserOpenId().isBlank())
             qqOpenIdCache.put(account.qqUserOpenId(), account);
+        if (old != null && old.qqConnectOpenId() != null && !old.qqConnectOpenId().equals(account.qqConnectOpenId()))
+            qqConnectCache.remove(old.qqConnectOpenId(), old);
+        if (account.qqConnectOpenId() != null && !account.qqConnectOpenId().isBlank())
+            qqConnectCache.put(account.qqConnectOpenId(), account);
+        if (!account.equals(old)) notifyAccountChange(old, account);
         return account;
+    }
+
+    private static void notifyAccountChange(AtriAccount before, AtriAccount after) {
+        try { accountChanges.accept(before, after); }
+        catch (RuntimeException failure) { log.error("统一账号变更通知入队失败", failure); }
     }
 
     private static boolean matches(AtriAccount account, String query) {

@@ -47,6 +47,23 @@ public class Markdown {
         return String.format("![%s #%dpx #%dpx](%s)", alt, width, height, url);
     }
 
+    /**
+     * 引用当前机器人已上传的 Markdown 图片素材
+     *
+     * @param reference 素材接口返回的完整 qqbot-media 引用，或 image/v1/ 后的 token
+     * @param width 显示宽度，单位为像素
+     * @param height 显示高度，单位为像素
+     * @return 包含素材引用的 Markdown 图片语法
+     */
+    public static String materialImage(String reference, int width, int height) {
+        if (reference == null || reference.isBlank()) throw new IllegalArgumentException("素材引用不能为空");
+        String prefix = "qqbot-media://image/v1/";
+        String token = reference.startsWith(prefix) ? reference.substring(prefix.length()) : reference;
+        if (!token.matches("[A-Za-z0-9._~%+=/-]+")) throw new IllegalArgumentException("素材引用无效");
+        if (width < 1 || height < 1) throw new IllegalArgumentException("图片宽高必须大于 0");
+        return img(prefix + token, width, height);
+    }
+
     public static String enterCommand(String command) {
         if (isOutOfLimit(command)) {
             throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");

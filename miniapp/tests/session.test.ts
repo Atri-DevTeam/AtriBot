@@ -25,6 +25,20 @@ test('dashboard binding parameters are removed while navigation survives and dup
   }
 })
 
+test('site authorization keeps its browser-bound entry and rejects ambiguous or mixed requests', () => {
+  const url = new URL(`https://bot.example.com/dashboard/?authorization=${ticket}&qq=1`)
+  const entry = takeDashboardEntry(url)
+  assert.equal(entry.valid, true)
+  assert.equal(entry.authorization, true)
+  assert.equal(entry.authorizationState, ticket)
+  assert.equal(entry.binding, false)
+  assert.equal(url.searchParams.get('authorization'), ticket)
+  for (const query of ['authorization=', 'authorization=invalid',
+    `authorization=${ticket}&authorization=${ticket}`, `authorization=${ticket}&userOpenId=owner&ticket=${ticket}`]) {
+    assert.equal(takeDashboardEntry(new URL(`https://bot.example.com/dashboard/?${query}`)).valid, false)
+  }
+})
+
 test('dashboard grants use private APIs without exchanging a bot ticket and are revoked on exit', async () => {
   let phase = '', revoked = ''
   const session = new PageSession({

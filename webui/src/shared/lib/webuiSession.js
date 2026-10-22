@@ -10,7 +10,7 @@ export async function verifyWebuiSession() {
     try {
       const response = await fetch(`${WEBUI_API_BASE}/auth/verify`, {credentials: 'same-origin', cache: 'no-store'})
       const payload = response.ok ? await response.json() : null
-      const user = payload?.status === 200 ? payload.data : null
+      const user = payload?.code === 0 ? payload.data : null
       currentWebuiUser.value = user && ['ADMIN', 'OWNER'].includes(user.role) ? user : null
     } catch {
       currentWebuiUser.value = null

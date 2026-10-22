@@ -1,0 +1,1 @@
+import{J as e,d as a,a as o}from"./index-Z3_g9t6l.js";const t={"aria-live":"polite"},s={__name:"LoginView",setup(i){return window.location.replace(e("/dashboard/")),(n,r)=>(o(),a("main",t,"正在返回个人中心…"))}};export{s as default};

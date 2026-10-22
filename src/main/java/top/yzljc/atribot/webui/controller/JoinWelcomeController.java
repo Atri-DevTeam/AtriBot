@@ -11,11 +11,11 @@ import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.QQMessageSendException;
 import top.yzljc.atricore.chat.official.TC;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.GroupRepository;
 import top.yzljc.atribot.function.tasks.GroupJoinWelcome;
 import top.yzljc.atribot.function.impl.JoinWelcomeDAO;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,7 +46,7 @@ public final class JoinWelcomeController {
             ctx.json(Result.success(response));
         } catch (Exception e) {
             log.error("读取群 {} 的欢迎配置失败", groupId, e);
-            ctx.status(500).json(Result.fail(500, "读取欢迎配置失败，请检查数据库或现有配置，未对配置作任何修改"));
+            ctx.status(500).json(Result.customFailure("读取欢迎配置失败，请检查数据库或现有配置，未对配置作任何修改"));
         }
     }
 
@@ -56,7 +56,7 @@ public final class JoinWelcomeController {
         ObjectNode config = readConfig(ctx);
         if (config == null) return;
         if (!GroupRepository.saveJoinWelcomeConfigJson(groupId, config.toString())) {
-            ctx.status(500).json(Result.fail(500, "保存失败，请检查数据库后重试"));
+            ctx.status(500).json(Result.customFailure("保存失败，请检查数据库后重试"));
             return;
         }
         ctx.json(Result.success(config));
@@ -64,13 +64,13 @@ public final class JoinWelcomeController {
 
     private static ObjectNode readConfig(Context ctx) {
         if (ctx.body().length() > 131072) {
-            ctx.status(413).json(Result.fail(413, "配置不能超过 128 Ki 字符"));
+            ctx.status(413).json(Result.customFailure("配置不能超过 128 Ki 字符"));
             return null;
         }
         try {
             return JoinWelcomeDAO.validate(MAPPER.readTree(ctx.body()));
         } catch (Exception e) {
-            ctx.status(400).json(Result.fail(400, e instanceof IllegalArgumentException ? e.getMessage() : "JSON 格式错误"));
+            ctx.status(400).json(Result.customFailure(e instanceof IllegalArgumentException ? e.getMessage() : "JSON 格式错误"));
             return null;
         }
     }
@@ -80,7 +80,7 @@ public final class JoinWelcomeController {
         if (config == null) return;
         String debugGroupId = CoreConfig.getInstance().getSettings().getDebugGroupOpenId();
         if (debugGroupId == null || debugGroupId.isBlank() || "null".equalsIgnoreCase(debugGroupId.trim())) {
-            ctx.status(400).json(Result.fail(400, "请先在机器人设置中配置 QQ 调试群 OpenId（qq.debug-group-openId）"));
+            ctx.status(400).json(Result.customFailure("请先在机器人设置中配置 QQ 调试群 OpenId（qq.debug-group-openId）"));
             return;
         }
         sendTest(ctx, config, debugGroupId.trim(), "调试群", "debugGroupId");
@@ -97,22 +97,22 @@ public final class JoinWelcomeController {
         long now = System.currentTimeMillis();
         long next = NEXT_TEST_AT.get();
         if (now < next || !NEXT_TEST_AT.compareAndSet(next, now + 3000)) {
-            ctx.status(429).json(Result.fail(429, "测试发送过于频繁，请稍等 3 秒再试"));
+            ctx.status(429).json(Result.customFailure("测试发送过于频繁，请稍等 3 秒再试"));
             return;
         }
         try {
             String text = "@新成员（测试占位） " + config.path("text").asText("");
             String messageId = GroupChat.sendMessage(groupId, TC.md(text), GroupJoinWelcome.buildWelcomeKeyboard(config));
             if (messageId == null || messageId.isBlank()) {
-                ctx.status(502).json(Result.fail(502, targetName + "发送失败：官方接口未返回消息 ID，请检查发送日志和主动消息权限"));
+                ctx.status(502).json(Result.customFailure(targetName + "发送失败：官方接口未返回消息 ID，请检查发送日志和主动消息权限"));
                 return;
             }
             ctx.json(Result.success(Map.of("messageId", messageId, targetKey, groupId)));
         } catch (QQMessageSendException e) {
-            ctx.status(502).json(Result.fail(502, targetName + "发送失败：" + e.getMessage()));
+            ctx.status(502).json(Result.customFailure(targetName + "发送失败：" + e.getMessage()));
         } catch (Exception e) {
             log.error("发送入群欢迎测试失败: groupId={}", groupId, e);
-            ctx.status(502).json(Result.fail(502, targetName + "发送失败，请检查发送日志和主动消息权限"));
+            ctx.status(502).json(Result.failure(ApiCode.WELCOME_SEND_FAILED));
         }
     }
 
@@ -120,7 +120,7 @@ public final class JoinWelcomeController {
         String groupId = groupId(ctx);
         if (groupId == null) return;
         if (!GroupRepository.deleteJoinWelcomeConfig(groupId)) {
-            ctx.status(500).json(Result.fail(500, "恢复默认失败，请检查数据库后重试"));
+            ctx.status(500).json(Result.customFailure("恢复默认失败，请检查数据库后重试"));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -129,7 +129,7 @@ public final class JoinWelcomeController {
     private static String groupId(Context ctx) {
         String id = ctx.pathParam("groupOpenId");
         if (OfficialGroups.listGroups().stream().noneMatch(group -> group.groupOpenId().equals(id))) {
-            ctx.status(404).json(Result.fail(404, "群不存在，请刷新群列表后重试"));
+            ctx.status(404).json(Result.customFailure("群不存在，请刷新群列表后重试"));
             return null;
         }
         return id;

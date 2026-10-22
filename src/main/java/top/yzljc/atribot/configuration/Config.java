@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.service.ai.AiProperties;
 import top.yzljc.atribot.service.ai.AiProvider;
+import top.yzljc.atribot.auth.SiteAuthorizationSettings;
 import top.yzljc.atribot.utils.YamlConfiguration;
 
 import java.io.InputStream;
@@ -53,6 +54,8 @@ public class Config {
     private String dashboardBaseUrl;
     @Getter
     private String dashboardCallbackUrl;
+    @Getter
+    private SiteAuthorizationSettings siteAuthorizationSettings = new SiteAuthorizationSettings(false, Map.of());
     @Getter
     private String qqConnectAppId;
     @Getter
@@ -223,6 +226,12 @@ public class Config {
             this.dashboardCallbackUrl = yaml.getString("dashboard.callback-url", "");
             this.qqConnectAppId = yaml.getString("dashboard.qq-connect.app-id", "");
             this.qqConnectAppKey = yaml.getString("dashboard.qq-connect.app-key", "");
+            this.siteAuthorizationSettings = new SiteAuthorizationSettings(false, Map.of());
+            try {
+                this.siteAuthorizationSettings = SiteAuthorizationSettings.load(yaml);
+            } catch (IllegalArgumentException invalid) {
+                log.warn("站点授权配置无效，已停用站点授权: {}", invalid.getMessage());
+            }
             this.ugcApiUrl = yaml.getString("ugc-api-url", "http://localhost:1234");
             this.ossDumpBaseUrl = yaml.getString("delivery.oss-dump-base-url", "null");
             this.soundResourceBaseUrl = yaml.getString("sound.resource-base-url", "");

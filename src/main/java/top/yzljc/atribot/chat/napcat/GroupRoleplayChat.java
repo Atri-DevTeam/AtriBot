@@ -1,7 +1,5 @@
 package top.yzljc.atribot.chat.napcat;
 
-import top.yzljc.atricore.chat.napcat.*;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

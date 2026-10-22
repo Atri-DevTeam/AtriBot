@@ -1,5 +1,6 @@
 package top.yzljc.atribot.dashboard;
 
+import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
@@ -27,7 +28,12 @@ public final class DashboardCommand implements CommandExecutor {
     public DashboardCommand(DashboardSessions sessions) { this.sessions = sessions; }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender qq) || qq.getPlatform() != Platform.OFFICIAL_C2C || qq.isBot()) {
+
+        if (!(sender instanceof QQCommandSender qq)) {
+            return true;
+        }
+
+        if (qq.getPlatform() != Platform.OFFICIAL_C2C || qq.isBot()) {
             sender.sendMessage("请在机器人私聊中使用 /dashboard");
             return true;
         }
@@ -36,13 +42,20 @@ public final class DashboardCommand implements CommandExecutor {
             sender.sendMessage("个人面板暂未开放");
             return true;
         }
-        String ticket = sessions.issue(qq.getUserId(), qq.getUsername(), settings);
-        if (ticket == null) {
-            sender.sendMessage("申请过于频繁，请稍后重试");
-            return true;
+        var account = UnifiedAuthentication.findByQqUserOpenId(qq.getUserId());
+        boolean bound = account != null && account.qqConnectOpenId() != null && !account.qqConnectOpenId().isBlank();
+        String url = settings.entryUrl() + "?_wwv=9983&qq=1";
+        String text = "使用 QQ 登录个人面板";
+        if (!bound) {
+            String ticket = sessions.issue(qq.getUserId(), qq.getUsername(), settings);
+            if (ticket == null) {
+                sender.sendMessage("申请过于频繁，请稍后重试");
+                return true;
+            }
+            url += "&userOpenId=" + QqConnectClient.encode(qq.getUserId()) + "&ticket=" + ticket;
+            text = "请使用 QQ 登录并绑定个人面板\n\n绑定链接 5 分钟内有效，请勿转发。绑定后可直接访问个人面板登录。";
         }
-        String url = settings.entryUrl() + "?_wwv=9983&qq=1&userOpenId=" + QqConnectClient.encode(qq.getUserId()) + "&ticket=" + ticket;
-        qq.sendMessage(TC.md("请使用 QQ 登录并绑定个人面板\n\n绑定链接 5 分钟内有效，请勿转发。绑定后可直接访问个人面板登录。"),
+        qq.sendMessage(TC.md(text),
                 TC.keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK)))));
         return true;
     }

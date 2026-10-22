@@ -15,6 +15,9 @@ import top.yzljc.atribot.utils.tools.Alert;
 import top.yzljc.atribot.utils.tools.RM;
 import top.yzljc.atribot.utils.debug.NapcatPacket;
 import top.yzljc.atribot.utils.statistic.BotRuntimeData;
+import top.yzljc.atribot.utils.debug.MessageChainDebug;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 /**
  * @Author YZ_Ljc_
@@ -25,6 +28,16 @@ import top.yzljc.atribot.utils.statistic.BotRuntimeData;
  */
 public final class ApplicationLogRecorder extends LogRecorder {
     private static final Logger log = LoggerFactory.getLogger(ApplicationLogRecorder.class);
+
+    @Override
+    public boolean isMessageTraceEnabled(CommandSender sender, String commandName) {
+        return MessageChainDebug.isEnabled(sender, commandName);
+    }
+
+    @Override
+    public void recordMessageTrace(CommandSender sender, MessageTrace.Report report) {
+        MessageChainDebug.publish(sender, report);
+    }
 
     @Override
     public String recordSend(String scene, String method, String url, String requestJson) {

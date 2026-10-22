@@ -23,7 +23,12 @@ public interface QQGuildCommandSender extends CommandSender {
 
     String getChannelId();
 
-    String getUserOpenId();
+    /**
+     * 获取 QQ 开放平台绑定的互联 ID
+     *
+     * @return 互联 ID，未携带时为 {@code null}
+     */
+    String getUnionOpenId();
 
     PlatformRole getRole();
 

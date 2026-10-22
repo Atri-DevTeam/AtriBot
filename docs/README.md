@@ -27,6 +27,8 @@
 | 文档 | 内容 |
 | --- | --- |
 | [WebUI 与 Miniapp](web.md) | 页面入口、构建产物、认证与权限边界 |
+| [响应格式与业务码](integrations/api-response.md) | 统一响应字段、通用错误与本站业务码 |
+| [站点授权](integrations/site-authorization.md) | 站点签名请求、QQ 登录交接与一次性授权码兑换 |
 | [机器人统计接口](integrations/bot-stats.md) | 聚合查询、个人成绩、排行榜与统计口径 |
 | [图片与业务接口](integrations/images.md) | OpenAPI 目录、请求结果、图片分发方式 |
 | [AI 与文本审查](integrations/ai.md) | AI 配置、调用接口、文本替换规则 |

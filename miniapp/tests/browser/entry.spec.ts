@@ -63,7 +63,7 @@ test('pagehide and cached pageshow never restore the previous identity', async (
     window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
   })
   await expect(page.getByRole('heading', { level: 2, name: '当前会话已过期' })).toBeVisible()
-  await expect(page.getByRole('button', { name: '退出' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '退出登录' })).toHaveCount(0)
 })
 
 test('direct entry is locked and makes no authorization request', async ({ page }) => {
@@ -72,4 +72,42 @@ test('direct entry is locked and makes no authorization request', async ({ page 
   await page.goto('/atrimeow/profile/')
   await expect(page.getByRole('heading', { level: 2, name: '当前会话已过期' })).toBeVisible()
   expect(apiRequests).toBe(0)
+})
+
+test('standalone profile logout revokes the page and returns to the dashboard login', async ({ page }) => {
+  let loggedOut = false
+  let released = false
+  await page.addInitScript(() => Object.defineProperty(navigator, 'sendBeacon', {value: () => false}))
+  await page.route('**/atrimeow/profile/api/**', route => {
+    if (route.request().url().endsWith('/exchange')) return route.fulfill({json: {
+      token, user: {userId: 'owner', displayName: '亚托利'}, expiresAt: Date.now() + 7_200_000, idleTimeoutMillis: 90_000
+    }})
+    if (route.request().url().endsWith('/session/close')) {
+      expect(loggedOut).toBe(true)
+      expect(route.request().postData()).toBe(token)
+      released = true
+    }
+    if (route.request().url().endsWith('/profile')) return route.fulfill({json: {...profile, avatarUrl: null, bot: {...profile.bot, avatarUrl: null}}})
+    const activity = activityResponse(route.request().url())
+    return activity ? route.fulfill({json: activity}) : route.fulfill({status: 204})
+  })
+  await page.route('**/dashboard/api/auth/logout', route => {
+    expect(route.request().method()).toBe('POST')
+    expect(route.request().postDataJSON()).toEqual({})
+    loggedOut = true
+    return route.fulfill({status: 204})
+  })
+  await page.route(/\/dashboard\/(?:\?.*)?$/, route => {
+    expect(loggedOut).toBe(true)
+    const target = new URL(route.request().url())
+    expect(target.searchParams.get('logged_out')).toBe('1')
+    expect(target.searchParams.get('qq')).toBe('1')
+    expect(target.searchParams.has('ticket')).toBe(false)
+    return route.fulfill({contentType: 'text/html', body: '<h1>Dashboard login</h1>'})
+  })
+  await page.goto(url + '&qq=1')
+  await expect(page.getByRole('heading', {name: '亚托利', exact: true})).toBeVisible()
+  await page.getByRole('button', {name: '退出登录', exact: true}).click()
+  await expect(page.getByRole('heading', {name: 'Dashboard login'})).toBeVisible()
+  await expect.poll(() => released).toBe(true)
 })

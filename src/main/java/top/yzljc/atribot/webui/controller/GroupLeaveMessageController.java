@@ -30,13 +30,13 @@ public final class GroupLeaveMessageController {
             if (body == null || !body.path("content").isTextual()) throw new IllegalArgumentException();
             content = body.path("content").asText();
         } catch (Exception e) {
-            ctx.status(400).json(Result.fail(400, "请填写 Markdown 留言内容"));
+            ctx.status(400).json(Result.customFailure("请填写 Markdown 留言内容"));
             return;
         }
         try {
             ctx.json(Result.success(Map.of("id", GroupLeaveMessageService.add(groupId, content))));
         } catch (IllegalArgumentException e) {
-            ctx.status(400).json(Result.fail(400, e.getMessage()));
+            ctx.status(400).json(Result.customFailure(e.getMessage()));
         } catch (IllegalStateException e) {
             fail(ctx, e);
         }
@@ -47,7 +47,7 @@ public final class GroupLeaveMessageController {
         if (groupId == null) return;
         try {
             if (!GroupLeaveMessageService.delete(groupId, ctx.pathParam("id"))) {
-                ctx.status(409).json(Result.fail(409, "留言已发送或已删除，请刷新列表"));
+                ctx.status(409).json(Result.customFailure("留言已发送或已删除，请刷新列表"));
                 return;
             }
             ctx.json(Result.success("ok"));
@@ -59,7 +59,7 @@ public final class GroupLeaveMessageController {
     private static String groupId(Context ctx) {
         String id = ctx.pathParam("groupOpenId");
         if (OfficialGroups.listGroups().stream().noneMatch(group -> group.groupOpenId().equals(id))) {
-            ctx.status(404).json(Result.fail(404, "群不存在，请刷新后重试"));
+            ctx.status(404).json(Result.customFailure("群不存在，请刷新后重试"));
             return null;
         }
         return id;
@@ -67,6 +67,6 @@ public final class GroupLeaveMessageController {
 
     private static void fail(Context ctx, IllegalStateException e) {
         log.error("群留言操作失败", e);
-        ctx.status(500).json(Result.fail(500, e.getMessage()));
+        ctx.status(500).json(Result.customFailure(e.getMessage()));
     }
 }

@@ -290,6 +290,8 @@ public final class Mute {
 
     /**
      * 被禁言成员状态
+     *
+     * @param unionOpenId QQ 开放平台绑定的互联 ID，取自查询响应中的 {@code union_openid}，未携带时为 {@code null}
      */
     public record MemberMuteState(String memberOpenId, String muteExpireAt, String username, String unionOpenId) {
     }

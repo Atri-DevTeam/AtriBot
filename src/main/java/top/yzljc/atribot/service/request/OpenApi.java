@@ -1,7 +1,5 @@
 package top.yzljc.atribot.service.request;
 
-import top.yzljc.atricore.service.request.*;
-
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;

@@ -20,6 +20,10 @@ import java.util.Optional;
  */
 @Getter
 public final class QQUser extends User {
+    /**
+     * QQ 开放平台绑定的互联 ID，取自用户数据的 {@code union_openid}，未携带时为 {@code null}
+     */
+    private final String unionOpenId;
     private final PlatformRole role;
     private final JsonNode data;
 
@@ -29,10 +33,16 @@ public final class QQUser extends User {
         if (platform != Platform.OFFICIAL_GROUP && platform != Platform.OFFICIAL_C2C) {
             throw new IllegalArgumentException("QQUser 仅支持 QQ 群聊和 C2C");
         }
+        this.unionOpenId = data == null ? null : data.path("union_openid").asText(null);
         this.role = role;
         this.data = data;
     }
 
+    /**
+     * 获取用户 OpenID，群聊取自 {@code member_openid}，C2C 取自 {@code user_openid}
+     *
+     * @return 用户 OpenID，与 {@link #getUnionOpenId()} 分别保存
+     */
     public String getUserOpenId() {
         return userId;
     }

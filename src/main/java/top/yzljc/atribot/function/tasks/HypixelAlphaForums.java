@@ -1,7 +1,5 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atricore.core.CoreConfig;
-
 import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -6,8 +6,6 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
-import top.yzljc.atricore.chat.ImageComponent;
-import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;

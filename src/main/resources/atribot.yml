@@ -75,10 +75,15 @@ commands:
   signall:
     description: 自动签到
   chat:
-    description: 消息统计
-    usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息'
+    description: 消息统计与群聊日报
+    usage: '/chat 查询当日发言排行信息, /chat [y | overall | @user] 查询昨日/总计/指定用户的发言统计信息, /chat rv 生成昨日群聊分析报告（仅 Napcat 群）'
   groupinfo:
     description: 查看群组配置
+  groupreport:
+    description: 查询当前群昨日发言排行
+    usage: /昨日发言排行
+    aliases:
+      - 昨日发言排行
   hypstatus:
     description: Hypixel Server Status
     usage: /hypstatus
@@ -287,6 +292,9 @@ commands:
     description: 检查 Mojira 漏洞追踪器
   test-mcnews:
     description: 测试获取 MC 新闻
+  test-qqdoc:
+    description: 手动检查 QQ 开放平台文档更新（管理员）
+    usage: /test-qqdoc
   check-hyp-alpha:
     description: 检查 Hypixel Alpha 测试服最新公告
   pause:

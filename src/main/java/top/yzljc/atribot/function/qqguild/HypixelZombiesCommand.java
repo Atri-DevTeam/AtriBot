@@ -1,7 +1,6 @@
 package top.yzljc.atribot.function.qqguild;
 
 import java.util.Map;
-import top.yzljc.atribot.function.command.HypixelCommand;
 
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atricore.chat.ImageComponent;
@@ -31,7 +30,7 @@ public class HypixelZombiesCommand implements CommandExecutor {
         if (sender instanceof QQGuildCommandSender user) {
             String player;
             if (args.length < 1) {
-                var account = UnifiedAuthentication.findByQqUserOpenId(user.getUserOpenId());
+                var account = UnifiedAuthentication.findByQqUserOpenId(user.getUnionOpenId());
                 if (account != null && account.minecraftUuid() != null) {
                     player = account.minecraftUuid();
                 } else {

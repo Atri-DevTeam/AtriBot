@@ -20,7 +20,10 @@ import top.yzljc.atricore.platform.qq.QQGuildUser;
 @AllArgsConstructor
 public class OfficialGuildAtMessageCreateEvent extends Event {
     private final QQGuildUser user;
-    private final String userOpenId;
+    /**
+     * QQ 开放平台绑定的互联 ID，取自 {@code author.union_openid}，未携带时为 {@code null}
+     */
+    private final String unionOpenId;
     private final String guildId;
     private final String channelId;
     private final QQGuildMessage message;

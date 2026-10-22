@@ -228,6 +228,8 @@ public final class GroupMemberBlacklist {
 
     /**
      * 群黑名单成员，bannedAt 为 RFC3339 时间，unionOpenId 可能为空
+     *
+     * @param unionOpenId QQ 开放平台绑定的互联 ID，取自查询响应中的 {@code union_openid}，未携带时为 {@code null}
      */
     public record BlacklistUser(String unionOpenId, String memberOpenId, String username, String bannedAt,
                                 boolean bot) {

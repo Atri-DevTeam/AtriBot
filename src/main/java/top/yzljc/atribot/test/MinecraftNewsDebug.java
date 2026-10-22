@@ -17,7 +17,6 @@ import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.command.*;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
 import top.yzljc.atribot.function.impl.ImageDTO;

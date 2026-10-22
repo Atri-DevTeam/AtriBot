@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth;
 
-import top.yzljc.atricore.auth.*;
-
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +17,9 @@ final class AuthRateLimiter {
     private final Clock clock;
     private final Map<String, Window> windows = new HashMap<>();
 
-    AuthRateLimiter(Clock clock) { this.clock = clock; }
+    AuthRateLimiter(Clock clock) {
+        this.clock = clock;
+    }
 
     synchronized boolean acquire(String key, int limit) {
         long now = clock.millis();
@@ -38,6 +38,9 @@ final class AuthRateLimiter {
     private static final class Window {
         final long expiresAt;
         int count;
-        Window(long expiresAt) { this.expiresAt = expiresAt; }
+
+        Window(long expiresAt) {
+            this.expiresAt = expiresAt;
+        }
     }
 }

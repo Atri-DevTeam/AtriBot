@@ -43,11 +43,11 @@ public final class ChannelController {
         if (write && (!"XMLHttpRequest".equals(ctx.header("X-Requested-With"))
                 || ctx.contentType() == null || !ctx.contentType().startsWith("application/json")
                 || "cross-site".equals(ctx.header("Sec-Fetch-Site")))) {
-            ctx.status(403).json(Result.fail(403, "请通过频道页面提交操作"));
+            ctx.status(403).json(Result.customFailure("请通过频道页面提交操作"));
             return;
         }
         if (!REQUESTS.tryAcquire()) {
-            ctx.status(429).json(Result.fail(429, "频道请求过多，请稍后重试"));
+            ctx.status(429).json(Result.customFailure("频道请求过多，请稍后重试"));
             return;
         }
         try {
@@ -88,15 +88,15 @@ public final class ChannelController {
                     message += "：" + detail.substring(0, Math.min(detail.length(), 500));
                 }
                 if (write) message += "；未自动重试，请刷新确认实际结果后再操作";
-                ctx.status(status).json(Result.fail(status, message));
+                ctx.status(status).json(Result.customFailure(message));
                 return;
             }
             // 只透传业务数据，不暴露 CLI 标准输出、凭据，也不保存 ref 或内容副本。
             ctx.json(Result.success(result.getData().isMissingNode() ? MAPPER.createObjectNode() : result.getData()));
         } catch (IllegalArgumentException e) {
-            ctx.status(400).json(Result.fail(400, e.getMessage()));
+            ctx.status(400).json(Result.customFailure(e.getMessage()));
         } catch (ChannelCliException e) {
-            ctx.status(503).json(Result.fail(503, "EMA 暂不可用，请检查频道 CLI 配置及登录状态"));
+            ctx.status(503).json(Result.customFailure("EMA 暂不可用，请检查频道 CLI 配置及登录状态"));
         } finally {
             REQUESTS.release();
         }

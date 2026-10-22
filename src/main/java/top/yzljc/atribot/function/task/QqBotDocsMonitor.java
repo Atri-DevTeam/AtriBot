@@ -9,6 +9,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
@@ -38,6 +42,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
@@ -49,7 +54,7 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.atribot.function.task
  */
 @Slf4j
-public final class QqBotDocsMonitor implements ScheduledTask {
+public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
     public static final QqBotDocsMonitor INSTANCE = new QqBotDocsMonitor();
     private static final TaskSchedule SCHEDULE = new TaskPlan(ScheduleMode.a_quarter);
     private static final URI INDEX_URI = URI.create("https://bot.q.qq.com/wiki/develop/api-v2/autogen/");
@@ -79,16 +84,53 @@ public final class QqBotDocsMonitor implements ScheduledTask {
         checkForUpdates();
     }
 
+    /** 手动执行完整检查，沿用定时任务的快照、订阅推送及并发保护。 */
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission()) {
+            sender.sendMessage("你没有权限执行此操作！");
+            return true;
+        }
+        if (args.length != 0) return false;
+        if (!RUNNING.compareAndSet(false, true)) {
+            sender.sendMessage("QQ 开放平台文档检查仍在运行，请稍后再试");
+            return true;
+        }
+        try {
+            ThreadManager.execute(() -> runCheck(sender));
+        } catch (RejectedExecutionException e) {
+            RUNNING.set(false);
+            sender.sendMessage("当前任务繁忙，文档检查未启动，请稍后重试");
+        }
+        return true;
+    }
+
     public static void checkForUpdates() {
         if (!RUNNING.compareAndSet(false, true)) {
             log.info("QQ 开放平台文档检查仍在运行，跳过本轮");
             return;
         }
+        runCheck(null);
+    }
+
+    private static void runCheck(CommandSender sender) {
         try {
-            checkNow();
+            if (sender != null) sender.sendMessage("QQ 开放平台文档检查已启动，正在抓取文档，请稍候…");
+            CheckResult result = checkNow();
+            if (sender != null) {
+                if (result.baselineCreated()) {
+                    sender.sendMessage("QQ 开放平台文档检查完成，首次运行已建立基线，本轮不推送更新");
+                } else if (result.added() == 0 && result.modified() == 0 && result.removed() == 0) {
+                    sender.sendMessage("QQ 开放平台文档检查完成，文档无变化");
+                } else {
+                    sender.sendMessage("QQ 开放平台文档检查完成：新增 " + result.added() + " 页，修改 "
+                            + result.modified() + " 页，删除 " + result.removed() + " 页\n完整报告：" + REPORT_FILE);
+                }
+            }
         } catch (Exception e) {
             // 抓取不完整时绝不覆盖快照，否则容易把网络故障误报为页面删除。
             log.warn("QQ 开放平台文档检查失败，本轮快照未更新: {}", e.getMessage(), e);
+            if (sender != null) sender.sendMessage("QQ 开放平台文档检查失败，请查看日志");
         } finally {
             RUNNING.set(false);
         }

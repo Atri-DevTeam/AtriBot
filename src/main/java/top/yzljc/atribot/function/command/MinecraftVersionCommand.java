@@ -6,9 +6,6 @@ import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.command.QQGuildCommandSender;
 import top.yzljc.atribot.function.minecraft.McVersionImpl;
-import top.yzljc.atribot.utils.FormatTools;
-
-import java.util.Map;
 
 public final class MinecraftVersionCommand implements CommandExecutor {
 

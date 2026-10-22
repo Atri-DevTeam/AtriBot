@@ -59,24 +59,26 @@ curl 'https://bot.example.com/openapi/bot_stats'
 
 ```json
 {
-  "status": 200,
-  "message": "ok",
+  "code": 0,
+  "message": "请求成功",
   "data": {
     "schemaVersion": 1,
     "generatedAt": 1791259200000,
     "cacheSeconds": 60,
     "unavailable": []
   },
-  "timestamp": 1791259201000
+  "timestamp": 1791259201000,
+  "request_id": null
 }
 ```
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `status` | integer | 业务状态，成功为 `200`，失败为 `432` |
-| `message` | string | 成功为 `ok`，失败时为错误说明 |
+| `code` | integer | 业务码，成功为 `0`，失败时返回固定业务码或 `19999` |
+| `message` | string | 成功为 `请求成功`，失败时为错误说明 |
 | `data` | object 或 null | 聚合统计；请求整体失败时为 `null` |
 | `timestamp` | integer | 本次响应生成时间，Unix 毫秒时间戳 |
+| `request_id` | string 或 null | 请求追踪标识，未设置时为 `null` |
 
 HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与空值)
 
@@ -728,24 +730,25 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 ### HTTP 状态与业务状态
 
-| 情况 | HTTP 状态 | `status` | `data` |
+| 情况 | HTTP 状态 | `code` | `data` |
 | --- | --- | --- | --- |
-| 聚合成功 | `200` | `200` | 统计对象 |
-| 部分模块不可用 | `200` | `200` | 统计对象，查看 `unavailable` |
-| 携带查询参数 | `400` | `432` | `null` |
-| 控制器捕获到整体聚合失败 | `200` | `432` | `null` |
-| 超过请求频控 | `429` | `432` | `null` |
+| 聚合成功 | `200` | `0` | 统计对象 |
+| 部分模块不可用 | `200` | `0` | 统计对象，查看 `unavailable` |
+| 携带查询参数 | `400` | `19999` | `null` |
+| 控制器捕获到整体聚合失败 | `200` | `73001` | `null` |
+| 超过请求频控 | `429` | `10005` | `null` |
 
-当前控制器捕获整体失败时没有单独设置 HTTP 错误状态，因此接入端必须同时检查响应体中的 `status`
+当前控制器捕获整体失败时没有单独设置 HTTP 错误状态，因此接入端必须同时检查响应体中的 `code`
 
 查询参数错误响应：
 
 ```json
 {
-  "status": 432,
+  "code": 19999,
   "message": "此接口不接受查询参数，请直接请求 /openapi/bot_stats",
   "data": null,
-  "timestamp": 1791259201000
+  "timestamp": 1791259201000,
+  "request_id": null
 }
 ```
 
@@ -753,10 +756,11 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 ```json
 {
-  "status": 432,
-  "message": "请求过于频繁，请稍后再试",
+  "code": 10005,
+  "message": "请求过于频繁",
   "data": null,
-  "timestamp": 1791259201000
+  "timestamp": 1791259201000,
+  "request_id": null
 }
 ```
 
@@ -764,10 +768,11 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 ```json
 {
-  "status": 432,
-  "message": "统计查询失败，请稍后重试",
+  "code": 73001,
+  "message": "统计查询失败",
   "data": null,
-  "timestamp": 1791259201000
+  "timestamp": 1791259201000,
+  "request_id": null
 }
 ```
 
@@ -815,7 +820,7 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 ```javascript
 const response = await fetch('https://bot.example.com/openapi/bot_stats');
 const result = await response.json();
-if (!response.ok || result.status !== 200 || result.data == null) {
+if (!response.ok || result.code !== 0 || result.data == null) {
   throw new Error(result.message || 'HTTP ' + response.status);
 }
 

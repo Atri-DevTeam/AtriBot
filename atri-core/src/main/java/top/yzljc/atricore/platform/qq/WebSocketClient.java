@@ -8,7 +8,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
-import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 
 import java.net.URI;

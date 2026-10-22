@@ -71,7 +71,7 @@ public final class BotSettingsController {
         JsonNode body = ctx.bodyAsClass(JsonNode.class);
         JsonNode updates = body == null ? null : body.path("updates");
         if (body == null || !updates.isObject() || updates.isEmpty()) {
-            ctx.json(Result.fail(400, "缺少 updates 字段"));
+            ctx.json(Result.customFailure("缺少 updates 字段"));
             return;
         }
 
@@ -79,12 +79,12 @@ public final class BotSettingsController {
         for (Map.Entry<String, JsonNode> entry : updates.properties()) {
             SettingDescriptor descriptor = findDescriptor(entry.getKey());
             if (descriptor == null) {
-                ctx.json(Result.fail(400, "不允许修改配置项: " + entry.getKey() + "（仅基础设置白名单内的项可改）"));
+                ctx.json(Result.customFailure("不允许修改配置项: " + entry.getKey() + "（仅基础设置白名单内的项可改）"));
                 return;
             }
             Object converted = convert(descriptor, entry.getValue());
             if (converted instanceof InvalidValue invalid) {
-                ctx.json(Result.fail(400, "配置项 " + descriptor.label() + " 的值类型应为 " + descriptor.type()
+                ctx.json(Result.customFailure("配置项 " + descriptor.label() + " 的值类型应为 " + descriptor.type()
                         + "，收到: " + invalid.received));
                 return;
             }
@@ -101,7 +101,7 @@ public final class BotSettingsController {
             if (!coreChanges.isEmpty()) CoreConfig.getInstance().reload();
             if (!applicationChanges.isEmpty()) Config.getInstance().reload();
         } catch (IOException | IllegalStateException e) {
-            ctx.json(Result.fail(500, "写入配置文件失败: " + e.getMessage()));
+            ctx.json(Result.customFailure("写入配置文件失败: " + e.getMessage()));
             return;
         }
         ctx.json(Result.success(currentItems()));

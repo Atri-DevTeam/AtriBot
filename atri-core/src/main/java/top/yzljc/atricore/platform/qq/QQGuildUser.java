@@ -22,17 +22,18 @@ import java.util.Optional;
  */
 @Getter
 public final class QQGuildUser extends User {
-    private final String userOpenId;
+    /** QQ 开放平台绑定的互联 ID，取自 {@code union_openid}，未携带时为 {@code null} */
+    private final String unionOpenId;
     private final PlatformRole role;
     private final JsonNode data;
 
     public QQGuildUser(Platform platform, boolean bot, String channelUserId, String username,
-                       String userOpenId, PlatformRole role, JsonNode data) {
+                       String unionOpenId, PlatformRole role, JsonNode data) {
         super(platform, bot, channelUserId, username);
         if (platform != Platform.OFFICIAL_GUILD_CHANNEL && platform != Platform.OFFICIAL_GUILD_DM) {
             throw new IllegalArgumentException("QQGuildUser 仅支持 QQ 频道和频道私信");
         }
-        this.userOpenId = userOpenId;
+        this.unionOpenId = unionOpenId;
         this.role = role;
         this.data = data;
     }
@@ -43,18 +44,18 @@ public final class QQGuildUser extends User {
 
     @Override
     public Optional<AtriAccount> getAccount() {
-        return Optional.ofNullable(AtriProvider.getInstance().getAccessService().findByQqUserOpenId(userOpenId));
+        return Optional.ofNullable(AtriProvider.getInstance().getAccessService().findByQqUserOpenId(unionOpenId));
     }
 
     @Override
     public boolean hasPermission() {
-        return userOpenId != null && !userOpenId.isBlank() && AtriProvider.getInstance().getAccessService().isAdmin(userOpenId);
+        return unionOpenId != null && !unionOpenId.isBlank() && AtriProvider.getInstance().getAccessService().isAdmin(unionOpenId);
     }
 
     @Override
     public boolean hasPermission(String permission) {
-        return userOpenId != null && !userOpenId.isBlank()
-                && (hasPermission() || AtriProvider.getInstance().getAccessService().hasPermission(userOpenId, permission));
+        return unionOpenId != null && !unionOpenId.isBlank()
+                && (hasPermission() || AtriProvider.getInstance().getAccessService().hasPermission(unionOpenId, permission));
     }
 
     @Override

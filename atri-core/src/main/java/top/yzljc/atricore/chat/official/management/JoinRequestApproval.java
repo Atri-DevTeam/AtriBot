@@ -225,6 +225,8 @@ public final class JoinRequestApproval {
 
     /**
      * 单条入群申请，applySource 取值 self_apply 主动申请 / invited 被邀请
+     *
+     * @param unionOpenId QQ 开放平台绑定的互联 ID，取自查询响应中的 {@code union_openid}，未携带时为 {@code null}
      */
     public record JoinRequestData(String joinRequestId, String riskTips, String unionOpenId, String memberOpenId,
                                   String username, String applyAt, String applySource, String invitedBy,

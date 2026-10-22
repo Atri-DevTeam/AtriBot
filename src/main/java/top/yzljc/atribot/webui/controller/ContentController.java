@@ -23,6 +23,7 @@ import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
 import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -57,18 +58,18 @@ public class ContentController {
     public static void reviewGallery(Context ctx) {
         ReviewGalleryDTO dto = ctx.bodyAsClass(ReviewGalleryDTO.class);
         if (isBlank(dto.getId()) || !ImageReviewStatus.isValid(dto.getStatus())) {
-            ctx.json(Result.fail(400, "id 与合法的 status 不能为空"));
+            ctx.json(Result.customFailure("id 与合法的 status 不能为空"));
             return;
         }
         boolean success = ImageReviewService.review(dto.getId(), ImageReviewStatus.of(dto.getStatus()),
                 REVIEWER_NAME, dto.getRemark());
-        ctx.json(success ? Result.success("ok") : Result.fail(500, "审核失败，可能该投稿不存在"));
+        ctx.json(success ? Result.success("ok") : Result.customFailure("审核失败，可能该投稿不存在"));
     }
 
     public static void reviewGalleryBatch(Context ctx) {
         ReviewGalleryBatchDTO dto = ctx.bodyAsClass(ReviewGalleryBatchDTO.class);
         if (dto.getIds() == null || dto.getIds().isEmpty() || !ImageReviewStatus.isValid(dto.getStatus())) {
-            ctx.json(Result.fail(400, "ids 与合法的 status 不能为空"));
+            ctx.json(Result.customFailure("ids 与合法的 status 不能为空"));
             return;
         }
         ImageReviewStatus status = ImageReviewStatus.of(dto.getStatus());
@@ -83,21 +84,21 @@ public class ContentController {
     public static void deleteGallery(Context ctx) {
         DeleteGalleryDTO dto = ctx.bodyAsClass(DeleteGalleryDTO.class);
         if (isBlank(dto.getId())) {
-            ctx.json(Result.fail(400, "id 不能为空"));
+            ctx.json(Result.customFailure("id 不能为空"));
             return;
         }
         ImageSourceDTO image = PicRepository.findById(dto.getId());
         if (image == null) {
-            ctx.json(Result.fail(404, "投稿记录不存在"));
+            ctx.json(Result.customFailure("投稿记录不存在"));
             return;
         }
         ImageSourceClient.RemoteResult remoteResult = ImageSourceClient.delete(image);
         if (!remoteResult.ok()) {
-            ctx.json(Result.fail(500, "远端删除失败：" + remoteResult.message()));
+            ctx.json(Result.customFailure("远端删除失败：" + remoteResult.message()));
             return;
         }
         boolean success = PicRepository.delete(dto.getId());
-        ctx.json(success ? Result.success("ok") : Result.fail(500, "删除失败，可能该投稿不存在"));
+        ctx.json(success ? Result.success("ok") : Result.customFailure("删除失败，可能该投稿不存在"));
     }
 
     private static GalleryItemDTO toGalleryItem(ImageSourceDTO dto) {
@@ -158,12 +159,12 @@ public class ContentController {
         int pageSize = Math.min(100, parseInt(ctx.queryParam("pageSize"), 20));
         BizResponse<JsonNode> resp = LootAdminClient.listItems(page, pageSize);
         if (!resp.isSuccess()) {
-            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
+            ctx.json(Result.customFailure(resp.message()));
             return;
         }
         JsonNode data = resp.data();
         if (data == null || !data.isObject()) {
-            ctx.json(Result.fail(502, "物品列表响应格式无效"));
+            ctx.json(Result.failure(ApiCode.UPSTREAM_FAILED));
             return;
         }
         if (data instanceof ObjectNode objectNode) {
@@ -177,7 +178,7 @@ public class ContentController {
         String description = ctx.formParam("description");
         UploadedFile file = ctx.uploadedFile("image");
         if (isBlank(displayName) || file == null) {
-            ctx.json(Result.fail(400, "displayName 与 image 不能为空"));
+            ctx.json(Result.customFailure("displayName 与 image 不能为空"));
             return;
         }
 
@@ -185,14 +186,14 @@ public class ContentController {
         try (InputStream is = file.content()) {
             bytes = is.readAllBytes();
         } catch (IOException e) {
-            ctx.json(Result.fail(400, "读取上传图片失败"));
+            ctx.json(Result.failure(ApiCode.IMAGE_PROCESSING_FAILED));
             return;
         }
 
         boolean special = "true".equalsIgnoreCase(ctx.formParam("special"));
         BizResponse<JsonNode> resp = LootAdminClient.createItem(displayName, description, bytes, file.filename(), file.contentType(), special);
         if (!resp.isSuccess()) {
-            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
+            ctx.json(Result.customFailure(resp.message()));
             return;
         }
         ctx.json(Result.success(resp.data()));
@@ -203,7 +204,7 @@ public class ContentController {
         UpdateLootItemDTO dto = ctx.bodyAsClass(UpdateLootItemDTO.class);
         BizResponse<JsonNode> resp = LootAdminClient.updateItem(itemId, dto.getDisplayName(), dto.getDescription());
         if (!resp.isSuccess()) {
-            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
+            ctx.json(Result.customFailure(resp.message()));
             return;
         }
         ctx.json(Result.success(resp.data()));
@@ -213,7 +214,7 @@ public class ContentController {
         String itemId = ctx.pathParam("itemId");
         UploadedFile file = ctx.uploadedFile("image");
         if (file == null) {
-            ctx.json(Result.fail(400, "image 不能为空"));
+            ctx.json(Result.customFailure("image 不能为空"));
             return;
         }
 
@@ -221,13 +222,13 @@ public class ContentController {
         try (InputStream is = file.content()) {
             bytes = is.readAllBytes();
         } catch (IOException e) {
-            ctx.json(Result.fail(400, "读取上传图片失败"));
+            ctx.json(Result.failure(ApiCode.IMAGE_PROCESSING_FAILED));
             return;
         }
 
         BizResponse<JsonNode> resp = LootAdminClient.replaceItemImage(itemId, bytes, file.filename(), file.contentType());
         if (!resp.isSuccess()) {
-            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
+            ctx.json(Result.customFailure(resp.message()));
             return;
         }
         ctx.json(Result.success(resp.data()));
@@ -237,7 +238,7 @@ public class ContentController {
         String itemId = ctx.pathParam("itemId");
         BizResponse<JsonNode> resp = LootAdminClient.deleteItem(itemId);
         if (!resp.isSuccess()) {
-            ctx.json(Result.fail(resp.httpCode() >= 400 ? resp.httpCode() : 502, resp.message()));
+            ctx.json(Result.customFailure(resp.message()));
             return;
         }
         ctx.json(Result.success("ok"));
@@ -256,7 +257,7 @@ public class ContentController {
         String userId = ctx.pathParam("userId");
         AdjustCoinsDTO dto = ctx.bodyAsClass(AdjustCoinsDTO.class);
         if (isBlank(dto.getOp()) || dto.getAmount() == null) {
-            ctx.json(Result.fail(400, "op 与 amount 不能为空"));
+            ctx.json(Result.customFailure("op 与 amount 不能为空"));
             return;
         }
 
@@ -267,7 +268,7 @@ public class ContentController {
             default -> false;
         };
 
-        ctx.json(success ? Result.success(LootRepository.getCoins(userId)) : Result.fail(400, "操作失败，请检查 op 参数或余额"));
+        ctx.json(success ? Result.success(LootRepository.getCoins(userId)) : Result.customFailure("操作失败，请检查 op 参数或余额"));
     }
 
     public static void listLootUsers(Context ctx) {
@@ -296,27 +297,27 @@ public class ContentController {
         String userId = ctx.pathParam("userId");
         GrantLootDTO dto = ctx.bodyAsClass(GrantLootDTO.class);
         if (isBlank(dto.getItemId()) || isBlank(dto.getDisplayName())) {
-            ctx.json(Result.fail(400, "itemId 与 displayName 不能为空"));
+            ctx.json(Result.customFailure("itemId 与 displayName 不能为空"));
             return;
         }
         String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
         LootRepository.LootRecord record = LootRepository.appendLoot(userId, dto.getItemId(), dto.getDisplayName(), way,
                 Boolean.TRUE.equals(dto.getSpecial()));
-        ctx.json(record != null ? Result.success(record) : Result.fail(500, "赠送物品失败"));
+        ctx.json(record != null ? Result.success(record) : Result.customFailure("赠送物品失败"));
     }
 
     public static void revokeUserLoot(Context ctx) {
         String userId = ctx.pathParam("userId");
         String itemId = ctx.pathParam("itemId");
         boolean success = LootRepository.adminRemoveLoot(userId, itemId);
-        ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
+        ctx.json(success ? Result.success("ok") : Result.customFailure("该用户未持有此物品卡"));
     }
 
     public static void revokeUserLootAll(Context ctx) {
         String userId = ctx.pathParam("userId");
         String itemId = ctx.pathParam("itemId");
         boolean success = LootRepository.adminRemoveAllLoot(userId, itemId);
-        ctx.json(success ? Result.success("ok") : Result.fail(404, "该用户未持有此物品卡"));
+        ctx.json(success ? Result.success("ok") : Result.customFailure("该用户未持有此物品卡"));
     }
 
     public static void grantUserLootBatch(Context ctx) {
@@ -324,7 +325,7 @@ public class ContentController {
         GrantLootBatchDTO dto = ctx.bodyAsClass(GrantLootBatchDTO.class);
         List<GrantLootItemDTO> items = dto.getItems();
         if (items == null || items.isEmpty()) {
-            ctx.json(Result.fail(400, "items 不能为空"));
+            ctx.json(Result.customFailure("items 不能为空"));
             return;
         }
         List<LootRepository.LootGrant> grants = items.stream()
@@ -332,7 +333,7 @@ public class ContentController {
                 .map(item -> new LootRepository.LootGrant(item.getItemId(), item.getDisplayName()))
                 .toList();
         if (grants.isEmpty()) {
-            ctx.json(Result.fail(400, "至少需要一条有效物品卡"));
+            ctx.json(Result.customFailure("至少需要一条有效物品卡"));
             return;
         }
         String way = isBlank(dto.getWay()) ? "管理员赠与" : dto.getWay();
@@ -345,7 +346,7 @@ public class ContentController {
         ItemIdsDTO dto = ctx.bodyAsClass(ItemIdsDTO.class);
         Set<String> itemIds = normalizedItemIds(dto.getItemIds());
         if (itemIds.isEmpty()) {
-            ctx.json(Result.fail(400, "itemIds 不能为空"));
+            ctx.json(Result.customFailure("itemIds 不能为空"));
             return;
         }
         int success = LootRepository.adminRemoveLootsBatch(userId, itemIds);
@@ -357,7 +358,7 @@ public class ContentController {
         SetLootSpecialDTO dto = ctx.bodyAsClass(SetLootSpecialDTO.class);
         Set<String> itemIds = normalizedItemIds(dto.getItemIds());
         if (itemIds.isEmpty() || dto.getSpecial() == null) {
-            ctx.json(Result.fail(400, "itemIds 与 special 不能为空"));
+            ctx.json(Result.customFailure("itemIds 与 special 不能为空"));
             return;
         }
         int success = LootRepository.setLootsSpecial(userId, itemIds, dto.getSpecial());

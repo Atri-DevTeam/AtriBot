@@ -8,8 +8,9 @@ import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atricore.chat.napcat.UserInformation;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
+import top.yzljc.atribot.function.task.NapcatChatDailyReport;
+import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
@@ -20,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
-import java.util.List;
 
 public class GroupContentRecord implements Listener {
 
@@ -28,7 +28,10 @@ public class GroupContentRecord implements Listener {
 
     private static final String BASE_TABLE = "qq_group_message_record";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final List<String> groups = CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups();
+    private static boolean shouldRecord(String groupId) {
+        return CoreConfig.getInstance().getSettings().getNapcatMessageSpyGroups().contains(groupId)
+                || GroupConfigManager.isFeatureEnabled(groupId, NapcatChatDailyReport.FEATURE);
+    }
 
     private static String getTableNameForGroup(long groupId) {
         return BASE_TABLE + "_" + groupId;
@@ -57,7 +60,7 @@ public class GroupContentRecord implements Listener {
     @EventHandler
     public void onGroupMessage(NapcatGroupMessageEvent event) {
         String groupId = event.getGroupId();
-        if (!groups.contains(groupId)) {
+        if (!shouldRecord(groupId)) {
             return;
         }
         long time = Long.parseLong(event.getTimestamp());
@@ -84,7 +87,7 @@ public class GroupContentRecord implements Listener {
             long messageId = jsonInput.path("message_id").asLong();
             long groupId = jsonInput.path("group_id").asLong();
             String rawMessage = jsonInput.path("raw_message").asText("");
-            if (!groups.contains(String.valueOf(groupId))) return;
+            if (!shouldRecord(String.valueOf(groupId))) return;
 
             saveToDatabase(userId, time, messageId, groupId, rawMessage);
         } catch (Exception e) {

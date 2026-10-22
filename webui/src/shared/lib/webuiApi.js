@@ -32,9 +32,11 @@ export function createWebuiApi({
             error.status = response.status
             throw error
         }
-        if (!response.ok || !payload || payload.status !== 200) {
+        if (!response.ok || !payload || payload.code !== 0) {
             const error = new Error(payload?.message || `请求失败（HTTP ${response.status}）`)
             error.status = response.status
+            error.code = payload?.code
+            error.requestId = payload?.request_id
             throw error
         }
         return payload.data

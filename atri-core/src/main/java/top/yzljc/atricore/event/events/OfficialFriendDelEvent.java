@@ -17,5 +17,9 @@ import top.yzljc.atricore.event.Event;
 @AllArgsConstructor
 public class OfficialFriendDelEvent extends Event {
     private final String userOpenId;
+    /**
+     * QQ 开放平台绑定的互联 ID，取自事件的 {@code author.union_openid}，未携带时为 {@code null}
+     */
+    private final String unionOpenId;
     private final String timestamp;
 }

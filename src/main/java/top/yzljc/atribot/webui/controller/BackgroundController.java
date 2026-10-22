@@ -132,10 +132,10 @@ public final class BackgroundController {
 
     private static void execute(Context ctx, Action action) {
         try { ctx.json(Result.success(action.run())); }
-        catch (IllegalArgumentException e) { ctx.json(Result.fail(400, e.getMessage())); }
+        catch (IllegalArgumentException e) { ctx.json(Result.customFailure(e.getMessage())); }
         catch (Exception e) {
             log.error("背景审核操作失败", e);
-            ctx.json(Result.fail(500, "背景操作失败，请稍后重试"));
+            ctx.json(Result.customFailure("背景操作失败，请稍后重试"));
         }
     }
 }

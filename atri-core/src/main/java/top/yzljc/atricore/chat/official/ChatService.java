@@ -22,6 +22,7 @@ import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atricore.utils.JsonPayload;
 import top.yzljc.atricore.utils.concurrent.RateLimitedTaskQueue;
 import top.yzljc.atricore.utils.concurrent.SlidingWindowRateLimiter;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -559,7 +560,7 @@ public class ChatService implements AutoCloseable {
      * @param ok     请求是否成功
      */
     private void recordDeleteLog(String scene, String url, HttpService.GetResult result, boolean ok) {
-        ThreadManager.execute(() -> {
+        MessageTrace.detached(() -> ThreadManager.execute(() -> {
             String traceId = AtriProvider.getInstance().getLogRecorder().recordSend(scene, "DELETE", url, null);
             if (ok) {
                 AtriProvider.getInstance().getLogRecorder().recordResponse(traceId, scene, "DELETE", url, null,
@@ -569,7 +570,7 @@ public class ChatService implements AutoCloseable {
                 AtriProvider.getInstance().getLogRecorder().recordError(traceId, scene, "DELETE", url, null,
                         result.status(), result.body(), reason);
             }
-        });
+        }));
     }
 
     /**

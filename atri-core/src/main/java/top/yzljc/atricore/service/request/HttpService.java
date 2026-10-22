@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 /**
  * 共享 HTTP 客户端与请求辅助方法
@@ -40,6 +41,46 @@ public class HttpService {
 
     public static Builder newRequestBuilder() {
         return HttpRequest.newBuilder().timeout(DEFAULT_REQUEST_TIMEOUT);
+    }
+
+    private static HttpResponse<String> sendTraced(HttpRequest request) throws java.io.IOException, InterruptedException {
+        if (!MessageTrace.isActive()) return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        String path = request.uri().getPath();
+        String name;
+        if (path.matches("/v2/(groups|users)/[^/]+/messages/[^/]+") && "DELETE".equals(request.method()))
+            name = "QQ 撤回消息";
+        else if (path.matches("/v2/(groups|users)/[^/]+/messages")) name = "QQ 发送消息";
+        else if (path.endsWith("/files")) name = "QQ 上传文件";
+        else if (path.endsWith("/upload_prepare")) name = "QQ 准备分片上传";
+        else if (path.endsWith("/upload_part_finish")) name = "QQ 确认上传分片";
+        else name = "HTTP 请求";
+        try (var span = MessageTrace.span(MessageTrace.operationName(name))) {
+            try {
+                var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
+                String detail = "HTTP " + response.statusCode();
+                String traceId = response.headers().firstValue("X-Tps-Trace-Id").orElse(null);
+                try {
+                    JsonNode body = response.body() == null ? null : mapper.readTree(response.body());
+                    if (body != null && body.isObject()) {
+                        JsonNode code = body.hasNonNull("err_code") ? body.get("err_code") : body.get("code");
+                        if (name.startsWith("QQ ") && code != null && code.isIntegralNumber() && code.longValue() != 0) {
+                            success = false;
+                            detail += " · 业务码 " + code.longValue();
+                        }
+                        if (traceId == null) traceId = body.path("trace_id").asText(null);
+                    }
+                } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
+                    // 非 JSON 响应仅记录 HTTP 状态
+                }
+                if (traceId != null && traceId.matches("[A-Za-z0-9_-]{1,128}")) detail += " · trace_id=" + traceId;
+                span.result(success, detail);
+                return response;
+            } catch (java.io.IOException | InterruptedException | RuntimeException failure) {
+                span.result(false, failure.getClass().getSimpleName());
+                throw failure;
+            }
+        }
     }
 
     private static void logHttpFailure(String method, String url, int statusCode, String responseBody) {
@@ -83,7 +124,7 @@ public class HttpService {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 String body = response.body();
                 if (body != null && !body.isBlank()) {
@@ -111,7 +152,7 @@ public class HttpService {
                     .GET();
             applyHeaders(builder, headers);
             HttpRequest request = builder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 String body = response.body();
                 if (body != null && !body.isBlank()) {
@@ -133,7 +174,7 @@ public class HttpService {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             } else {
@@ -206,7 +247,7 @@ public class HttpService {
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             String body = response.body();
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 if (body != null && !body.isBlank()) {
@@ -251,7 +292,7 @@ public class HttpService {
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logHttpFailure("POST(detailed)", url, response.statusCode(), response.body());
             }
@@ -271,7 +312,7 @@ public class HttpService {
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.method("PATCH", HttpRequest.BodyPublishers.ofString(jsonBody));
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logHttpFailure("PATCH(detailed)", url, response.statusCode(), response.body());
             }
@@ -291,7 +332,7 @@ public class HttpService {
                     .header("Content-Type", "application/json");
             applyHeaders(builder, headers);
             builder.method("PUT", HttpRequest.BodyPublishers.ofString(jsonBody));
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logHttpFailure("PUT(detailed)", url, response.statusCode(), response.body());
             }
@@ -309,7 +350,7 @@ public class HttpService {
                     .GET();
             applyHeaders(builder, headers);
             HttpRequest request = builder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logHttpFailure("GET(detailed)", url, response.statusCode(), response.body());
             }
@@ -334,7 +375,7 @@ public class HttpService {
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
 
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             }
@@ -384,7 +425,7 @@ public class HttpService {
             applyHeaders(builder, headers);
             builder.POST(HttpRequest.BodyPublishers.ofByteArrays(bodyParts));
 
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             }
@@ -424,7 +465,7 @@ public class HttpService {
             applyHeaders(builder, headers);
             builder.PUT(HttpRequest.BodyPublishers.ofString(jsonBody));
 
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(builder.build());
             String body = response.body();
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 if (body != null && !body.isBlank()) {
@@ -447,7 +488,7 @@ public class HttpService {
                     .uri(URI.create(url))
                     .DELETE()
                     .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 String body = response.body();
                 if (body != null && !body.isBlank()) {
@@ -470,7 +511,7 @@ public class HttpService {
                     .DELETE();
             applyHeaders(builder, headers);
             HttpRequest request = builder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 String body = response.body();
                 if (body != null && !body.isBlank()) {
@@ -496,7 +537,7 @@ public class HttpService {
                     .DELETE();
             applyHeaders(builder, headers);
             HttpRequest request = builder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logHttpFailure("DELETE(detailed)", url, response.statusCode(), response.body());
             }
@@ -514,7 +555,7 @@ public class HttpService {
                     .DELETE();
             applyHeaders(builder, headers);
             HttpRequest request = builder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendTraced(request);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return response.body();
             } else {

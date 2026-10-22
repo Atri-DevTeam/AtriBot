@@ -31,8 +31,12 @@ public final class ImageDelivery {
      * @return 图片地址，缺少有效地址或图片标识时返回 null
      */
     public static String resolve(JsonNode data, String renderUrl, Platform platform) {
+        if (data == null) return null;
         if (platform != null && !platform.isOfficialQQPlatform()) {
             return resolveApi(data, renderUrl);
+        }
+        if (platform == Platform.OFFICIAL_GUILD_CHANNEL || platform == Platform.OFFICIAL_GUILD_DM) {
+            if ("qqbot-media".equalsIgnoreCase(data.path("way").asText())) return resolveApi(data, renderUrl);
         }
         return resolve(data);
     }
@@ -47,6 +51,7 @@ public final class ImageDelivery {
         if (data == null) {
             return null;
         }
+        if ("qqbot-media".equalsIgnoreCase(data.path("way").asText())) return resolveMaterial(data);
         String url = absoluteUrl(data);
         if (url != null) {
             return url;
@@ -109,6 +114,24 @@ public final class ImageDelivery {
             return null;
         }
         return absoluteUrl(data);
+    }
+
+    /**
+     * @param data 生图响应数据，way 必须为 qqbot-media
+     * @return 可用于 QQ 群聊或私聊 Markdown 的素材引用，响应无效时返回 null
+     */
+    public static String resolveMaterial(JsonNode data) {
+        if (data == null || !"qqbot-media".equalsIgnoreCase(data.path("way").asText())) return null;
+        String value = data.path("url").asText("");
+        try {
+            URI uri = URI.create(value);
+            return "qqbot-media".equals(uri.getScheme()) && "image".equals(uri.getHost())
+                    && uri.getUserInfo() == null && uri.getRawQuery() == null && uri.getRawFragment() == null
+                    && uri.getRawPath() != null && uri.getRawPath().startsWith("/v1/")
+                    && uri.getRawPath().length() > 4 && !value.contains("(") && !value.contains(")") ? value : null;
+        } catch (IllegalArgumentException invalid) {
+            return null;
+        }
     }
 
     public static String resolveDrawCard(JsonNode data) {

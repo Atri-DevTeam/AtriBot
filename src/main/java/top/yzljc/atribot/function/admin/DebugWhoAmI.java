@@ -76,11 +76,11 @@ public class DebugWhoAmI implements CommandExecutor {
                 }
             }
         } else if (sender instanceof QQGuildCommandSender guildSender) {
-            String userOpenId = guildSender.getUserOpenId();
-            String unifiedUuid = getUnifiedUuid(UnifiedAuthentication.findByQqUserOpenId(userOpenId));
+            String unionOpenId = guildSender.getUnionOpenId();
+            String unifiedUuid = getUnifiedUuid(UnifiedAuthentication.findByQqUserOpenId(unionOpenId));
             guildSender.sendMessage(
                     "ua_uuid: " + unifiedUuid + "\n"
-                            + "user_openid: " + userOpenId + "\n"
+                            + "union_openid: " + unionOpenId + "\n"
                             + "guild_id: " + guildSender.getGuildId() + "\n"
                             + "channel_id: " + guildSender.getChannelId() + "\n"
                             + "message_id: " + guildSender.getMessage().getMessageId() + "\n"

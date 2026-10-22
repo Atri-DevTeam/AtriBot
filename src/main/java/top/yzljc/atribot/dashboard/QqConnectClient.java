@@ -40,7 +40,7 @@ public final class QqConnectClient {
      *
      * @param settings 网站应用配置
      * @param code     QQ 回调提供的授权码
-     * @return 当前网站应用范围内的用户 OpenID 和 QQ 头像地址
+     * @return 当前网站应用范围内的用户 OpenID、QQ 头像地址和昵称
      * @throws IOException          平台请求失败或身份响应无效
      * @throws InterruptedException 请求被中断
      */
@@ -55,11 +55,14 @@ public final class QqConnectClient {
         if (identity.has("error") || !settings.appId().equals(identity.path("client_id").asText())
                 || !openId.matches("[A-Za-z0-9_-]{1,128}")) throw new IOException("QQ identity response invalid");
         String avatarUrl = null;
+        String nickname = null;
         try {
             JsonNode profile = request("https://graph.qq.com/user/get_user_info?access_token=" + encode(accessToken)
                     + "&oauth_consumer_key=" + encode(settings.appId()) + "&openid=" + encode(openId));
             if (!profile.path("ret").isIntegralNumber() || profile.path("ret").asInt() != 0)
                 throw new IOException("QQ profile response invalid");
+            String name = profile.path("nickname").asText("");
+            if (!name.isBlank()) nickname = name;
             String avatar = profile.path("figureurl_qq_1").asText("").replaceFirst("/40(?=[?#]|$)", "/0");
             if (!avatar.isBlank()) {
                 URI uri = URI.create(avatar);
@@ -68,12 +71,12 @@ public final class QqConnectClient {
                     avatarUrl = "http".equalsIgnoreCase(uri.getScheme()) ? "https" + avatar.substring(4) : avatar;
             }
         } catch (IOException | IllegalArgumentException failure) {
-            LOG.warn("QQ 互联头像获取失败: errorType={}", failure.getClass().getSimpleName());
+            LOG.warn("QQ 互联用户信息获取失败: errorType={}", failure.getClass().getSimpleName());
         }
-        return new Profile(openId, avatarUrl);
+        return new Profile(openId, avatarUrl, nickname);
     }
 
-    public record Profile(String openId, String avatarUrl) {
+    public record Profile(String openId, String avatarUrl, String nickname) {
     }
 
     private JsonNode request(String url) throws IOException, InterruptedException {

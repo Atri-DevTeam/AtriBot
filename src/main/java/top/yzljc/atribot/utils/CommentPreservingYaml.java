@@ -1,7 +1,5 @@
 package top.yzljc.atribot.utils;
 
-import top.yzljc.atricore.utils.*;
-
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import top.yzljc.atricore.chat.napcat.GroupInformation;
-import top.yzljc.atribot.configuration.Config;
 
 import java.io.File;
 import java.io.IOException;

@@ -56,9 +56,8 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask{
 
     public static AutoCloseable registerPushable(Pushable pushable) {
         Objects.requireNonNull(pushable, "pushable");
-        Pushable subscription = pushable::push;
-        pushables.add(subscription);
-        return () -> pushables.remove(subscription);
+        pushables.add(pushable);
+        return () -> pushables.remove(pushable);
     }
 
     static void pushContent(MojiraIssue issue, String translatedDescription) {

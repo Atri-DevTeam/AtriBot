@@ -53,10 +53,10 @@ public class RecoverLostGolds implements CommandExecutor {
         }
 
         if (sender instanceof QQGuildCommandSender guild) {
-            var userId = guild.getUserOpenId();
+            var unionOpenId = guild.getUnionOpenId();
             if (label.equals("recoverguild")) {
-                if (CoinGainLogRepository.countCoinGains(userId, "join_guild") < 1) {
-                    LootRepository.addCoins(userId, 200, "join_guild");
+                if (CoinGainLogRepository.countCoinGains(unionOpenId, "join_guild") < 1) {
+                    LootRepository.addCoins(unionOpenId, 200, "join_guild");
                     guild.sendMessage("补发join_guild奖励200金粒成功！");
                     return true;
                 } else {

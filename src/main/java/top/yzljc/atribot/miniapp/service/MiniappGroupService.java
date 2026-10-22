@@ -2,7 +2,6 @@ package top.yzljc.atribot.miniapp.service;
 
 import top.yzljc.atricore.core.CoreConfig;
 
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atribot.function.command.PushTaskCommand;

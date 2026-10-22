@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atricore.command.*;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atricore.service.taskscheduler.TaskPlan;
 import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
 import top.yzljc.atricore.service.taskscheduler.ScheduledTask;

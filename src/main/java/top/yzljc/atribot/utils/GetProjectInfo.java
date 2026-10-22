@@ -1,7 +1,5 @@
 package top.yzljc.atribot.utils;
 
-import top.yzljc.atricore.utils.*;
-
 import java.io.InputStream;
 import java.util.Properties;
 import org.slf4j.Logger;

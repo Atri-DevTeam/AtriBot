@@ -16,7 +16,7 @@ public class DatabaseStatsController {
             ctx.json(Result.success(DatabaseStatsRepo.queryUsage()));
         } catch (SQLException e) {
             log.error("查询数据库使用情况失败: {}", e.getMessage(), e);
-            ctx.status(500).json(Result.fail(500, "查询数据库使用情况失败"));
+            ctx.status(500).json(Result.customFailure("查询数据库使用情况失败"));
         }
     }
 }

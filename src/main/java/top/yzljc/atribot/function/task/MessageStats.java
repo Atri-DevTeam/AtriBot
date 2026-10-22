@@ -72,6 +72,9 @@ public class MessageStats implements CommandExecutor, ScheduledTask {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args != null && args.length > 0 && "rv".equalsIgnoreCase(args[0])) {
+            return NapcatChatDailyReport.INSTANCE.onCommand(sender, command, label, args);
+        }
         if (!(sender instanceof NapcatCommandSender nc)) return true;
         String replyMsg;
         if (args == null || args.length == 0) {

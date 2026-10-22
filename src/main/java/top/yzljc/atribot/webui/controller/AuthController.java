@@ -5,6 +5,7 @@ import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.dashboard.DashboardSessions;
 import top.yzljc.atribot.dashboard.DashboardSettings;
 import top.yzljc.atribot.webui.Result;
+import top.yzljc.atribot.webui.ApiCode;
 import top.yzljc.atribot.webui.WebUISessionManager;
 import top.yzljc.atricore.auth.AtriAccount;
 import top.yzljc.atricore.core.CoreConfig;
@@ -37,7 +38,7 @@ public final class AuthController {
     public static void verifyToken(Context ctx) {
         AtriAccount account = ctx.attribute("webui.account");
         if (!WebUISessionManager.isAdministrator(account)) {
-            ctx.status(403).json(Result.fail(403, "需要 ADMIN 或 OWNER 身份"));
+            ctx.status(403).json(Result.failure(ApiCode.ACCESS_DENIED));
             return;
         }
         String name = account.username() == null || account.username().isBlank() ? "管理员" : account.username();

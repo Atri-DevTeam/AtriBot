@@ -20,7 +20,7 @@ import java.util.Map;
  * @Created_at 2026/10/15
  * @Project AtriMeow
  * @Package top.yzljc.atricore.chat.official
- * @Description 使用占位图片申请上传地址的备用图片上传器
+ * @Description 使用占位图片申请上传地址的备用图片上传器，这并不是一个正规的方案，只能作为一种备用存在
  */
 @Slf4j
 public final class HackMPUploader {
@@ -70,7 +70,6 @@ public final class HackMPUploader {
         if (uploadId.isBlank() || !parts.isArray() || parts.size() != 1) throw new IOException("占位预上传响应无效");
         URI uploadUrl = httpUri(parts.get(0).path("presigned_url").asText(""));
         requireSuccess(put.upload(uploadUrl, PLACEHOLDER, "备用图片占位"));
-        // 占位流程沿用调用示例的序号 1，普通分片上传仍使用平台返回的索引
         request.post(baseUrl + "/upload_part_finish", Map.of("upload_id", uploadId, "part_index", 1,
                 "block_size", PLACEHOLDER.length, "md5", "a65c84bc93182dcacb41776f2bd764f5"));
         var completed = request.post(filesUrl, Map.of("upload_id", uploadId, "srv_send_msg", false));

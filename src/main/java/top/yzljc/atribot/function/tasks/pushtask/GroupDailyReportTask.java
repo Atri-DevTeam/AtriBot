@@ -4,11 +4,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.database.repo.GroupDailyReportRepository;
 import top.yzljc.atribot.database.repo.GroupDailyReportRepository.Report;
@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
@@ -83,10 +84,23 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
      * @throws IllegalArgumentException 群 OpenID 为空时抛出
      */
     public static CompletableFuture<String> sendYesterday(String groupOpenId, RT replyTarget) {
+        return submitYesterday(groupOpenId, replyTarget, true);
+    }
+
+    /**
+     * @param groupOpenId 官机群 OpenID
+     * @param replyTarget 被动回复来源
+     * @return 排队查询并回复的消息 ID，无记录返回 null；失败时异常完成，不复用已完成的发送结果
+     */
+    public static CompletableFuture<String> replyYesterday(String groupOpenId, RT replyTarget) {
+        return submitYesterday(groupOpenId, replyTarget, false);
+    }
+
+    private static CompletableFuture<String> submitYesterday(String groupOpenId, RT replyTarget, boolean reuseCompleted) {
         if (groupOpenId == null || groupOpenId.isBlank()) {
             throw new IllegalArgumentException("群 OpenID 不能为空");
         }
-        return Holder.WORKER.submit(groupOpenId.trim(), replyTarget);
+        return Holder.WORKER.submit(groupOpenId.trim(), replyTarget, reuseCompleted);
     }
 
     private static String send(Job job, RT replyTarget) throws Exception {
@@ -95,7 +109,7 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
             report = GroupDailyReportRepository.query(connection, job.groupOpenId(), job.date());
         }
         if (report.entries().isEmpty()) return null;
-        Markdown markdown = new Markdown(render(report));
+        Markdown markdown = new Markdown(render(report, OfficialGroups.getData(job.groupOpenId()).groupMemberNum()));
         String messageId = replyTarget == null
                 ? GroupChat.sendMessage(job.groupOpenId(), markdown, null, null)
                 : GroupChat.replyMessage(job.groupOpenId(), replyTarget, markdown, null, null);
@@ -105,10 +119,9 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
         return messageId;
     }
 
-    static String render(Report report) {
+    static String render(Report report, int totalMembers) {
         StringBuilder text = new StringBuilder("##### 昨日群发言排行\n\n");
-        text.append("> ").append(report.date()).append(" · 共 ").append(report.messages())
-                .append(" 条 · ").append(report.members()).append(" 人参与\n\n");
+        text.append("> ").append(report.date()).append(" - 共 ").append(report.messages()).append(" 条\n\n");
         for (var entry : report.entries()) {
             String icon = switch (entry.position()) {
                 case 1 -> "🥇";
@@ -116,10 +129,14 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
                 case 3 -> "🥉";
                 default -> "▫️ " + entry.position() + ".";
             };
-            text.append(icon).append(' ').append(Markdown.at(entry.userOpenId()))
-                    .append(" · ").append(entry.messages()).append(" 条\n\n");
+            text.append("> ").append(icon).append(' ').append(Markdown.at(entry.userOpenId()))
+                    .append(" - ").append(entry.messages()).append(" 条\n");
         }
-        return text.toString().stripTrailing();
+        text.append("\n活跃人数：").append(report.members()).append('/')
+                .append(totalMembers > 0 ? Integer.toString(totalMembers) : "未知")
+                .append("  活跃度：")
+                .append(totalMembers > 0 ? String.format(Locale.ROOT, "%.2f%%", report.members() * 100.0 / totalMembers) : "未知");
+        return text.toString();
     }
 
     record Job(String groupOpenId, LocalDate date) {
@@ -155,15 +172,19 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
         }
 
         synchronized CompletableFuture<String> submit(String groupOpenId, RT replyTarget) {
+            return submit(groupOpenId, replyTarget, true);
+        }
+
+        synchronized CompletableFuture<String> submit(String groupOpenId, RT replyTarget, boolean reuseCompleted) {
             Job job = new Job(groupOpenId, LocalDate.now(clock.withZone(GroupDailyReportRepository.ZONE)).minusDays(1));
-            Completed previous = completed.getIfPresent(job);
+            Completed previous = reuseCompleted ? completed.getIfPresent(job) : null;
             if (previous != null) return CompletableFuture.completedFuture(previous.messageId());
             CompletableFuture<String> existing = pending.get(job);
             if (existing != null) return existing.copy();
             CompletableFuture<String> future = new CompletableFuture<>();
             pending.put(job, future);
             try {
-                executor.execute(() -> run(job, replyTarget, future));
+                executor.execute(() -> run(job, replyTarget, future, reuseCompleted));
             } catch (RejectedExecutionException e) {
                 pending.remove(job);
                 future.completeExceptionally(e);
@@ -171,13 +192,13 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
             return future.copy();
         }
 
-        private void run(Job job, RT replyTarget, CompletableFuture<String> future) {
+        private void run(Job job, RT replyTarget, CompletableFuture<String> future, boolean reuseCompleted) {
             try {
                 long delay = nextStartNanos - System.nanoTime();
                 if (delay > 0) TimeUnit.NANOSECONDS.sleep(delay);
                 String messageId = operation.run(job, replyTarget);
                 synchronized (this) {
-                    completed.put(job, new Completed(messageId));
+                    if (reuseCompleted) completed.put(job, new Completed(messageId));
                     pending.remove(job);
                 }
                 future.complete(messageId);

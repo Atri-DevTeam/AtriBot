@@ -4,19 +4,17 @@ import org.jetbrains.annotations.Nullable;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.function.background.BackgroundService;
 import top.yzljc.atricore.chat.official.Markdown;
-import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.button.Keyboard;
-import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.configuration.ImageDelivery;
 import top.yzljc.atribot.function.impl.ImageDTO;
-import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.service.request.Requests;
 import top.yzljc.atricore.utils.StringUtils;
+import top.yzljc.atricore.utils.debug.MessageTrace;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,13 +95,14 @@ public final class QueryTemplate {
         String messageId = null;
         // 允许不发消息
         if (message != null && !message.isBlank()) {
-            messageId = user.sendMessage(message);
+            messageId = MessageTrace.named("发送处理中提示", () -> user.sendMessage(message));
         }
         try {
             return query.get();
         } finally {
             if (messageId != null && !messageId.isBlank()) {
-                user.recall(messageId);
+                String pendingMessageId = messageId;
+                MessageTrace.named("撤回处理中提示", () -> user.recall(pendingMessageId));
             }
         }
     }

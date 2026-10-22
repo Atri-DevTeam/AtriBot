@@ -37,9 +37,17 @@ public record DashboardSettings(boolean enabled, String origin, String appId, St
                 && appKey != null && !appKey.isBlank() && botAppId != null && !botAppId.isBlank();
     }
 
-    public String entryUrl() { return origin + "/dashboard/"; }
-    public boolean separateCallbackOrigin() { return !java.util.Objects.equals(callbackUrl, origin + "/auth/qq/callback"); }
-    public boolean secure() { return origin != null && origin.startsWith("https://"); }
+    public String entryUrl() {
+        return origin + "/dashboard/";
+    }
+
+    public boolean separateCallbackOrigin() {
+        return !java.util.Objects.equals(callbackUrl, origin + "/auth/qq/callback");
+    }
+
+    public boolean secure() {
+        return origin != null && origin.startsWith("https://");
+    }
 
     static String publicOrigin(String value) {
         if (value == null || value.isBlank()) return null;
@@ -48,22 +56,29 @@ public record DashboardSettings(boolean enabled, String origin, String appId, St
             boolean local = "localhost".equals(uri.getHost()) || "127.0.0.1".equals(uri.getHost());
             if (!("https".equals(uri.getScheme()) || local && "http".equals(uri.getScheme()))
                     || uri.getHost() == null || uri.getRawUserInfo() != null || uri.getRawQuery() != null
-                    || uri.getRawFragment() != null || !java.util.Set.of("", "/", "/dashboard", "/dashboard/").contains(uri.getRawPath())) return null;
+                    || uri.getRawFragment() != null || !java.util.Set.of("", "/", "/dashboard", "/dashboard/").contains(uri.getRawPath()))
+                return null;
             return uri.getScheme() + "://" + uri.getRawAuthority();
-        } catch (IllegalArgumentException invalid) { return null; }
+        } catch (IllegalArgumentException invalid) {
+            return null;
+        }
     }
 
     static String publicCallbackUrl(String value) {
         if (value == null || value.isBlank()) return null;
         try {
             URI uri = URI.create(value.trim());
-            if (!"/auth/qq/callback".equals(uri.getRawPath()) || uri.getRawQuery() != null || uri.getRawFragment() != null) return null;
+            if (!"/auth/qq/callback".equals(uri.getRawPath()) || uri.getRawQuery() != null || uri.getRawFragment() != null)
+                return null;
             String callbackOrigin = publicOrigin(uri.getScheme() + "://" + uri.getRawAuthority());
             return callbackOrigin == null ? null : callbackOrigin + "/auth/qq/callback";
-        } catch (IllegalArgumentException invalid) { return null; }
+        } catch (IllegalArgumentException invalid) {
+            return null;
+        }
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "DashboardSettings[enabled=" + enabled + ", origin=" + origin + ", appId=" + appId + "]";
     }
 }

@@ -27,7 +27,8 @@ public class QQGuildSenderImpl implements QQGuildCommandSender {
     private final QQGuildMessage message;
     private final String guildId;
     private final String channelId;
-    private final String userOpenId;
+    /** QQ 开放平台绑定的互联 ID，未携带时为 {@code null} */
+    private final String unionOpenId;
 
     @Override
     public Platform getPlatform() {
@@ -50,8 +51,8 @@ public class QQGuildSenderImpl implements QQGuildCommandSender {
     }
 
     @Override
-    public String getUserOpenId() {
-        return this.userOpenId;
+    public String getUnionOpenId() {
+        return this.unionOpenId;
     }
 
     @Override
@@ -76,12 +77,12 @@ public class QQGuildSenderImpl implements QQGuildCommandSender {
 
     @Override
     public boolean hasPermission() {
-        return AtriProvider.getInstance().getAccessService().isAdmin(this.userOpenId);
+        return AtriProvider.getInstance().getAccessService().isAdmin(this.unionOpenId);
     }
 
     @Override
     public boolean hasPermission(String permission) {
-        return AtriProvider.getInstance().getAccessService().hasPermission(this.userOpenId, permission);
+        return AtriProvider.getInstance().getAccessService().hasPermission(this.unionOpenId, permission);
     }
 
     @Override

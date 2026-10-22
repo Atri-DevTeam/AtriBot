@@ -235,6 +235,8 @@ public final class GroupMember {
 
     /**
      * 群成员信息，memberRole 为 member/owner/admin，joinedAt 为 RFC3339 时间，unionOpenId 可能为空
+     *
+     * @param unionOpenId QQ 开放平台绑定的互联 ID，取自查询响应中的 {@code union_openid}，未携带时为 {@code null}
      */
     public record MemberInfo(String memberOpenId, String username, String memberRole,
                              boolean bot, String joinedAt, String unionOpenId) {

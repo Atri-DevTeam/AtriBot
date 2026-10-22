@@ -23,6 +23,11 @@ public class OfficialGroupMemberRemoveEvent extends Event {
     private final String memberOpenId;
     private final String timestamp;
 
+    /**
+     * 获取被移除成员的统一角色对象
+     *
+     * @return 被移除成员的统一角色对象
+     */
     public UnifiedRole getUserBotRole() {
         return AtriProvider.getInstance().getAccessService().getRole(this.memberOpenId);
     }

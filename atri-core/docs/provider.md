@@ -150,10 +150,18 @@ public final class ServiceProvider extends AtriProvider {
 | `callCommandExecuted` | 统计平台消息进入指令分发 |
 | `alert` | 接收框架运行通知 |
 | `recordLastMsg` | 最近消息标识扩展点，当前 core 未调用 |
+| `isMessageTraceEnabled` | 按指令发送者及主指令名决定是否计时，默认 false |
+| `recordMessageTrace` | 接收完成的消息链路报告 |
 
 回调同步执行，可能并发调用，实现需保证线程安全并处理存储异常
 
 请求回调中的 `traceId` 来自 `recordSend()`，与 QQ 响应的 `trace_id` 无关
+
+链路计时从指令分发开始，等待通过 `ThreadManager` 和 `RateLimitedTaskQueue` 提交的关联任务结束后交付报告，包含排队和共享 HTTP 请求耗时，不展开远端服务内部过程
+
+报告不保存指令正文、请求体或凭据，每次最多保留 48 个环节和 8 项附加信息。未启用时不创建计时上下文，报告接收回调在计时上下文之外执行，不应阻塞调用线程
+
+自建线程或其他执行器不会自动传递计时上下文，需要通过 `MessageTrace.capture()` 包装任务；取消或拒绝尚未执行的包装任务时调用 `Task.cancel()` 释放关联。独立后台工作可通过 `MessageTrace.detached()` 提交，使其不计入消息链路
 
 Napcat 调用计数在请求前触发，指令分发计数也不表示业务执行成功，具体参数见 [LogRecorder](../src/main/java/top/yzljc/atricore/core/LogRecorder.java)
 

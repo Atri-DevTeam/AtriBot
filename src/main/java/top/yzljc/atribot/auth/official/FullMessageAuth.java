@@ -1,7 +1,5 @@
 package top.yzljc.atribot.auth.official;
 
-import top.yzljc.atricore.auth.official.*;
-
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.platform.qq.QQBot;

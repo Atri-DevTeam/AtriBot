@@ -6,7 +6,7 @@ for (const resource of ['src/main.js', 'src/features/chat/ChatView.vue']) {
   test(`webui reports a failed ${resource} instead of leaving a blank page`, async ({page}) => {
     await page.route(`**/${resource}`, route => route.abort())
     await page.route('**/webui/api/auth/verify', route => route.fulfill({json: {
-      status: 200, data: {userId: 'owner', displayName: 'YZ_Ljc_', role: 'ADMIN'}
+      code: 0, data: {userId: 'owner', displayName: 'YZ_Ljc_', role: 'ADMIN'}
     }}))
     await page.goto('/webui/')
     await expect(page.getByText('页面资源加载失败，请重新加载', {exact: true})).toBeVisible()
@@ -20,7 +20,7 @@ test('webui displays loading while initial authorization is pending', async ({pa
   const pending = new Promise<void>(resolve => { finish = resolve })
   await page.route('**/webui/api/auth/verify', async route => {
     await pending
-    return route.fulfill({status: 401, json: {status: 401}})
+    return route.fulfill({status: 401, json: {code: 10002}})
   })
   await page.route(/\/dashboard\/(?:\?.*)?$/, route => route.fulfill({contentType: 'text/html; charset=utf-8', body: '<h1>QQ 个人中心</h1>'}))
   await page.goto('/webui/')
@@ -45,7 +45,7 @@ test('webui can enter when browser storage is unavailable', async ({page}) => {
     else if (path.endsWith('/chat/conversations')) data = {items: [], hasMore: false, cursor: '0'}
     else if (path.endsWith('/chat/changes')) data = {changes: [], cursor: '0'}
     else if (path.endsWith('/chat/pinned')) data = []
-    return route.fulfill({json: {status: 200, message: 'ok', data}})
+    return route.fulfill({json: {code: 0, message: '请求成功', data}})
   })
   await page.route('**/webui/meta/**', route => route.fulfill({json: {appId: '', botOpenId: ''}}))
   await page.goto('/webui/')
@@ -68,7 +68,7 @@ for (const role of ['ADMIN', 'OWNER']) {
       else if (path.endsWith('/chat/changes')) data = {changes: [], cursor: '0'}
       else if (path.endsWith('/chat/pinned')) data = []
       else if (path.endsWith('/feedback/count') || path.endsWith('/gallery/count')) data = {pending: 0}
-      return route.fulfill({json: {status: 200, message: 'ok', data}})
+      return route.fulfill({json: {code: 0, message: '请求成功', data}})
     })
     await page.route('**/webui/meta/**', route => route.fulfill({json: {appId: '', botOpenId: ''}}))
     await page.route('https://thirdqq.qlogo.cn/**', route => route.fulfill({contentType: 'image/svg+xml', body:
