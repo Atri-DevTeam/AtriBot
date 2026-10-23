@@ -16,7 +16,7 @@ dependencies {
     api("io.javalin:javalin:6.6.0")
     api("org.jetbrains.kotlin:kotlin-stdlib:2.1.10")
     api("com.google.guava:guava:33.7.2-jre")
-    api("com.fasterxml.jackson.core:jackson-databind:2.22.3")
+    api("com.fasterxml.jackson.core:jackson-databind:2.22.4")
     api("com.fasterxml.jackson.core:jackson-annotations:2.22")
     api("org.yaml:snakeyaml:2.7")
     api("org.java-websocket:Java-WebSocket:1.6.0")
