@@ -67,12 +67,14 @@ public class MinecraftToolsCommand implements CommandExecutor {
         for (var s : SUB_COMMANDS.values()) {
             text.append("> ").append(Markdown.img(RS.get(s.iconKey()), 16, 16)).append(Markdown.enterCommand(COMMAND_HEADER + " " + s.prefix(), s.description())).append("\n");
         }
+        text.append("> ").append(Markdown.img(RS.get("resource.image.icon-ec"), 16, 16))
+                .append(Markdown.enterCommand("/ec", "附魔台物品附魔模拟")).append("\n");
         return new Markdown(text.toString());
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof QQCommandSender) {
+        if (sender instanceof QQCommandSender qq) {
             if (args.length == 0) {
                 sendMenu(sender);
                 return true;

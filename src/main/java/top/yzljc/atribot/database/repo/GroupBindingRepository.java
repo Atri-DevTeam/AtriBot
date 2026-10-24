@@ -7,6 +7,8 @@ import top.yzljc.atribot.database.DatabaseManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +34,80 @@ public class GroupBindingRepository {
     public record Binding(String groupId, String groupNumber, String name, String boundAt) {
     }
 
-    public record WelcomeData(ObjectNode config, Boolean enabled) {
+    public record WelcomeData(ObjectNode config, Boolean enabled, boolean canEdit) {
+    }
+
+    public record FunctionData(ObjectNode functions, boolean proactive, boolean restricted, boolean available) {}
+    public enum FunctionWrite {SAVED, NOT_BOUND, UNAVAILABLE, RESTRICTED, ACTIVE_REQUIRED}
+    public record CommandWrite(FunctionWrite result, ObjectNode commands) {}
+
+    public Map<String, ObjectNode> loadCommandSettings() throws SQLException {
+        var result = new LinkedHashMap<String, ObjectNode>();
+        try (var con = connections.open(); var ps = con.prepareStatement(
+                "SELECT group_openId, group_settings FROM official_groups WHERE group_settings IS NOT NULL")) {
+            ps.setFetchSize(200);
+            ps.setQueryTimeout(15);
+            try (var rows = ps.executeQuery()) {
+                while (rows.next()) {
+                    var commands = parseSettings(rows.getString("group_settings")).get("commands");
+                    if (commands == null || commands.isNull()) continue;
+                    if (!(commands instanceof ObjectNode object)) throw new SQLException("Invalid group command settings");
+                    if (!object.isEmpty()) result.put(rows.getString("group_openId"), object);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 校验群绑定后更新单个指令配置，保留其他指令和群设置
+     *
+     * @param userId 已认证页面用户
+     * @param groupId 群 OpenID
+     * @param command 已登记的指令标识
+     * @param rule 已校验的群指令配置
+     * @param guard 提交前检查会话、账号及高级规则
+     * @return 写入结果及成功保存的完整群指令配置
+     * @throws SQLException 数据读取或事务提交失败
+     */
+    public CommandWrite setCommand(String userId, String groupId, String command, ObjectNode rule, Runnable guard) throws SQLException {
+        try (var con = connections.open()) {
+            con.setAutoCommit(false);
+            try {
+                if (!bindings(readSettings(con, userId, false)).has(groupId)) return new CommandWrite(FunctionWrite.NOT_BOUND, null);
+                ObjectNode settings;
+                try (var ps = con.prepareStatement("SELECT group_settings, is_blacklisted FROM official_groups WHERE group_openId = ? FOR UPDATE")) {
+                    ps.setString(1, groupId);
+                    ps.setQueryTimeout(5);
+                    try (var rows = ps.executeQuery()) {
+                        if (!rows.next()) return new CommandWrite(FunctionWrite.UNAVAILABLE, null);
+                        if (rows.getBoolean("is_blacklisted")) return new CommandWrite(FunctionWrite.RESTRICTED, null);
+                        settings = parseSettings(rows.getString("group_settings"));
+                    }
+                }
+                if (!bindings(readSettings(con, userId, true)).has(groupId)) return new CommandWrite(FunctionWrite.NOT_BOUND, null);
+                var existing = settings.get("commands");
+                if (existing != null && !existing.isNull() && !existing.isObject()) throw new SQLException("Invalid group command settings");
+                ObjectNode commands = existing instanceof ObjectNode object ? object : settings.putObject("commands");
+                commands.set(command, rule.deepCopy());
+                guard.run();
+                try (var ps = con.prepareStatement("UPDATE official_groups SET group_settings = ? WHERE group_openId = ?")) {
+                    ps.setString(1, settings.toString());
+                    ps.setString(2, groupId);
+                    ps.setQueryTimeout(5);
+                    ps.executeUpdate();
+                }
+                con.commit();
+                return new CommandWrite(FunctionWrite.SAVED, commands);
+            } catch (SQLException | RuntimeException failure) {
+                try { con.rollback(); }
+                catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            } finally {
+                con.rollback();
+                con.setAutoCommit(true);
+            }
+        }
     }
 
     public record Group(String groupId, String groupNumber, String name, String description, String category,
@@ -118,13 +193,87 @@ public class GroupBindingRepository {
             if (!bindings(readSettings(con, userId, false)).has(groupId)) return null;
             String rawConfig = GroupRepository.getJoinWelcomeConfigJson(con, groupId);
             ObjectNode config = rawConfig == null ? null : parseSettings(rawConfig);
+            var data = functionData(con, groupId);
             Boolean enabled = null;
-            String rawFunctions = GroupRepository.getFunctionConfigJson(con, groupId);
-            if (rawFunctions != null) {
-                var flag = parseSettings(rawFunctions).path("member_add_welcome").path("enabled");
-                if (flag.isBoolean()) enabled = flag.asBoolean();
+            var flag = data.functions().path("member_add_welcome").path("enabled");
+            if (flag.isBoolean()) enabled = flag.asBoolean();
+            return new WelcomeData(config, enabled, data.available() && !data.restricted());
+        }
+    }
+
+    public FunctionData functions(String userId, String groupId) throws SQLException {
+        try (var con = connections.open()) {
+            if (!bindings(readSettings(con, userId, false)).has(groupId)) return null;
+            return functionData(con, groupId);
+        }
+    }
+
+    private static FunctionData functionData(Connection con, String groupId) throws SQLException {
+        try (var ps = con.prepareStatement("SELECT group_settings, allow_proactive_msg, is_blacklisted FROM official_groups WHERE group_openId = ?")) {
+            ps.setString(1, groupId);
+            try (var rows = ps.executeQuery()) {
+                if (!rows.next()) return new FunctionData(JSON.createObjectNode(), false, false, false);
+                ObjectNode settings = parseSettings(rows.getString("group_settings"));
+                var functions = settings.get("functions");
+                if (functions != null && !functions.isNull() && !functions.isObject()) throw new SQLException("Invalid group functions");
+                return new FunctionData(functions instanceof ObjectNode object ? object : JSON.createObjectNode(),
+                        rows.getBoolean("allow_proactive_msg"), rows.getBoolean("is_blacklisted"), true);
             }
-            return new WelcomeData(config, enabled);
+        }
+    }
+
+    /**
+     * 在绑定和群记录的行锁保护下更新单个推送开关，保留其他群设置
+     *
+     * @param userId 已认证页面用户
+     * @param groupId 群 OpenID
+     * @param functionId 已通过任务白名单校验的功能标识
+     * @param enabled 目标开关状态
+     * @param needsActive 功能是否需要主动消息权限
+     * @param checkSession 写入前的会话有效性检查
+     * @return 写入结果或拒绝原因
+     * @throws SQLException 数据读取、保存或事务提交失败
+     */
+    public FunctionWrite setFunction(String userId, String groupId, String functionId, boolean enabled,
+                                     boolean needsActive, Runnable checkSession) throws SQLException {
+        try (var con = connections.open()) {
+            con.setAutoCommit(false);
+            try {
+                if (!bindings(readSettings(con, userId, false)).has(groupId)) return FunctionWrite.NOT_BOUND;
+                ObjectNode settings;
+                try (var ps = con.prepareStatement("SELECT group_settings, allow_proactive_msg, is_blacklisted FROM official_groups WHERE group_openId = ? FOR UPDATE")) {
+                    ps.setString(1, groupId);
+                    try (var rows = ps.executeQuery()) {
+                        if (!rows.next()) return FunctionWrite.UNAVAILABLE;
+                        if (rows.getBoolean("is_blacklisted")) return FunctionWrite.RESTRICTED;
+                        if (enabled && needsActive && !rows.getBoolean("allow_proactive_msg")) return FunctionWrite.ACTIVE_REQUIRED;
+                        settings = parseSettings(rows.getString("group_settings"));
+                    }
+                }
+                if (!bindings(readSettings(con, userId, true)).has(groupId)) return FunctionWrite.NOT_BOUND;
+                JsonNode existing = settings.get("functions");
+                if (existing != null && !existing.isNull() && !existing.isObject()) throw new SQLException("Invalid group functions");
+                ObjectNode functions = existing instanceof ObjectNode object ? object : settings.putObject("functions");
+                ObjectNode entry = functions.path(functionId) instanceof ObjectNode object ? object : functions.putObject(functionId);
+                entry.put("enabled", enabled);
+                entry.put("operator", userId);
+                entry.put("time", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                checkSession.run();
+                try (var ps = con.prepareStatement("UPDATE official_groups SET group_settings = ? WHERE group_openId = ?")) {
+                    ps.setString(1, settings.toString());
+                    ps.setString(2, groupId);
+                    ps.executeUpdate();
+                }
+                con.commit();
+                return FunctionWrite.SAVED;
+            } catch (SQLException | RuntimeException failure) {
+                try { con.rollback(); }
+                catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            } finally {
+                con.rollback();
+                con.setAutoCommit(true);
+            }
         }
     }
 

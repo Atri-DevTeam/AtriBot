@@ -10,6 +10,82 @@ const group: BoundGroup = { groupId: 'A'.repeat(32), groupNumber: '123456789', n
   memberCount: 328, joinedAt: '2026-06-20T10:00:00+08:00', botRole: 'admin', receiveMode: 'all', proactive: true,
   restricted: false, boundAt: '2026-09-20T10:00:00Z', available: true, canManageModeration: true }
 
+test('group push switches and welcome toggle save separately and retain the current default preview', async ({page}, testInfo) => {
+  let pushEnabled = false, welcomeEnabled = true, fail = false, canEdit = true
+  const commandLabel = '<img src=x onerror="window.badWelcome=true"> & **预览**'
+  const mutations: {path: string; body: unknown}[] = []
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.route('https://images.example.test/new.gif', route => route.fulfill({contentType: 'image/png', body: inventoryImage}))
+  await page.route('**/atrimeow/profile/api/**', route => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/exchange')) return route.fulfill({json: {token: 'b'.repeat(43), user: {userId: 'owner', displayName: ''}, expiresAt: Date.now() + 7200000, idleTimeoutMillis: 90000}})
+    expect(route.request().headers().authorization).toBe(`Bearer ${'b'.repeat(43)}`)
+    if (path.endsWith('/profile')) return route.fulfill({json: {...profile, avatarUrl: null, bot: {...profile.bot, avatarUrl: null}}})
+    if (path.endsWith('/activity')) return route.fulfill({json: activity})
+    if (path.endsWith('/groups')) return route.fulfill({json: {groups: [group], pending: null}})
+    if (path.endsWith('/commands')) return route.fulfill({json: {items: [], canEdit: true}})
+    if (path.endsWith('/functions')) return route.fulfill({json: {canEdit, proactive: true, items: [{key: 'news', name: '游戏新闻', enabled: pushEnabled, needActiveMessage: true}]}})
+    if (path.endsWith('/functions/news') || path.endsWith('/join-welcome') && route.request().method() === 'POST') {
+      const body = route.request().postDataJSON()
+      mutations.push({path, body})
+      expect(Object.keys(body)).toEqual(['enabled'])
+      if (fail) return route.fulfill({status: 502, json: {error: 'GROUP_SETTINGS_UNAVAILABLE'}})
+      if (path.endsWith('/functions/news')) pushEnabled = body.enabled
+      else welcomeEnabled = body.enabled
+      return route.fulfill({json: {enabled: body.enabled}})
+    }
+    if (path.endsWith('/join-welcome')) return route.fulfill({json: {enabled: welcomeEnabled, canEdit, custom: false,
+      text: `最新默认欢迎\n\n![新欢迎图 #500px #519px](https://images.example.test/new.gif)\n\n> <qqbot-cmd-input text="/tasks disable member_add_welcome" show="关闭欢迎提示" reference="false" />\n\n<qqbot-cmd-input text="%2Fhelp" show="${encodeURIComponent(commandLabel)}" />`,
+      buttonSize: 'SMALL', keyboard: [[{label: '默认帮助', style: 'BLUE'}]]}})
+    if (path.endsWith(group.groupId)) return route.fulfill({json: {...group, canManageModeration: false}})
+    return route.fulfill({status: 204})
+  })
+  await page.goto(entry)
+  await page.getByRole('button', {name: '群管理', exact: true}).click()
+  await page.getByRole('button', {name: `查看${group.name}详情`}).click()
+  const push = page.getByRole('region', {name: '群推送功能设置', exact: true})
+  const welcome = page.getByRole('region', {name: '加群欢迎', exact: true})
+  const newsSwitch = push.getByRole('switch', {name: '游戏新闻'})
+  await expect(newsSwitch).toBeEnabled()
+  expect((await push.boundingBox())!.y).toBeLessThan((await welcome.boundingBox())!.y)
+  await expect(welcome.getByRole('button', {name: '加群欢迎', exact: true})).toHaveAttribute('aria-expanded', 'false')
+  await newsSwitch.click()
+  await expect(newsSwitch).toHaveAttribute('aria-checked', 'true')
+  await welcome.getByRole('button', {name: '加群欢迎', exact: true}).click()
+  await expect(welcome).toContainText('最新默认欢迎')
+  await expect(welcome.getByRole('img', {name: '新欢迎图'})).toBeVisible()
+  await expect(welcome.locator('.welcome-command')).toHaveText(['关闭欢迎提示', commandLabel])
+  const mentionColor = await welcome.locator('.welcome-mention').evaluate(element => getComputedStyle(element).color)
+  await expect(welcome.locator('.welcome-command').first()).toHaveCSS('color', mentionColor)
+  await expect(welcome.locator('.welcome-markdown')).not.toContainText('/tasks disable')
+  await expect(welcome.locator('qqbot-cmd-input, .welcome-command img, .welcome-command a, .welcome-command strong')).toHaveCount(0)
+  expect(await page.evaluate(() => (window as any).badWelcome)).toBeUndefined()
+  await expect(welcome.locator('.welcome-qq-button')).toHaveText('默认帮助')
+  const welcomeSwitch = welcome.getByRole('switch', {name: '加群欢迎开关'})
+  await welcomeSwitch.click()
+  await expect(welcomeSwitch).toHaveAttribute('aria-checked', 'false')
+  await expect(welcome).toContainText('已关闭')
+  fail = true
+  await welcomeSwitch.click()
+  await expect(welcome.getByRole('alert')).toHaveText('保存失败，请稍后重试')
+  await expect(welcomeSwitch).toHaveAttribute('aria-checked', 'false')
+  await newsSwitch.click()
+  await expect(push.getByRole('alert')).toHaveText('保存失败，请稍后重试')
+  await expect(newsSwitch).toHaveAttribute('aria-checked', 'true')
+  expect(mutations).toHaveLength(4)
+  fail = false
+  canEdit = false
+  await push.getByRole('button', {name: '刷新群推送设置'}).click()
+  await expect(newsSwitch).toBeDisabled()
+  await welcome.getByRole('button', {name: '刷新加群欢迎'}).click()
+  await expect(welcomeSwitch).toBeDisabled()
+  await page.setViewportSize({width: 320, height: 740})
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({path: testInfo.outputPath('group-settings.png'), fullPage: true, animations: 'disabled'})
+  expect(errors).toEqual([])
+})
+
 test('owner starts binding, copies proof, switches tabs and sees confirmed group data', async ({ page }, testInfo) => {
   let pending: BindingChallenge | null = null, verified = false, requests = 0
   const secondGroup = { ...group, groupId: 'B'.repeat(32), groupNumber: '987654321', name: '建筑交流小组', memberCount: 42, receiveMode: 'only_mention' }
@@ -40,6 +116,8 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
     if (path.endsWith('/groups')) return route.fulfill({ json: { groups: verified ? [group, secondGroup].filter(item => !removed.has(item.groupId)).map(({ groupId, name, groupNumber, boundAt }) => ({ groupId, name, groupNumber, boundAt })) : [], pending: verified ? null : pending } })
     if (path.endsWith('/join-welcome')) return route.fulfill({ json: path.includes(group.groupId) ? welcome : { ...welcome, text: '欢迎来到建筑交流小组', enabled: false, custom: false } })
     if (path.endsWith('/moderation')) return route.fulfill({ json: moderation })
+    if (path.endsWith('/functions')) return route.fulfill({json: {items: [], canEdit: true, proactive: true}})
+    if (path.endsWith('/commands')) return route.fulfill({json: {items: [], canEdit: true}})
     if (path.includes('/groups/')) {
       detailRequests.push(path)
       return route.fulfill({ json: path.endsWith(group.groupId) ? group : secondGroup })
@@ -49,7 +127,7 @@ test('owner starts binding, copies proof, switches tabs and sees confirmed group
   await page.goto(entry)
   const dock = page.getByRole('navigation', { name: '栏目导航' })
   await dock.getByRole('button', { name: '群管理' }).click()
-  await page.getByLabel('群开放平台ID').fill('123456789')
+  await page.getByLabel('群号或群开放平台 ID').fill('123456789')
   await page.getByRole('button', { name: '生成验证指令' }).click()
   await expect(page.locator('.group-command')).toContainText('/群绑定 AABBCCDDEEFF')
   await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => { document.documentElement.dataset.copied = value } } }))
@@ -181,6 +259,7 @@ test('welcome retries independently, renders images and math, and discards respo
     if (path.endsWith('/activity')) return route.fulfill({ json: activity })
     if (path.endsWith('/inventory/image')) return route.fulfill({ contentType: 'image/png', body: inventoryImage })
     if (path.endsWith('/groups')) return route.fulfill({ json: { groups: [group, secondGroup], pending: null } })
+    if (path.endsWith('/commands')) return route.fulfill({json: {items: [], canEdit: true}})
     if (path.endsWith('/join-welcome')) {
       expect(route.request().headers().authorization).toBe(`Bearer ${'b'.repeat(43)}`)
       if (path.includes(group.groupId)) {
@@ -194,6 +273,7 @@ test('welcome retries independently, renders images and math, and discards respo
       return route.fulfill({ json: { enabled: false, custom: true, text: '**第二个群欢迎**\n\n$x^2$\n\n![欢迎图片 #320px #180px](https://images.example.test/welcome.png)\n\n![大图预览 #1858px #846px](https://images.example.test/welcome.png)', buttonSize: 'SMALL', keyboard: [[{ label: '只读按钮', style: 'RED' }]] } })
     }
     if (path.endsWith('/moderation')) return route.fulfill({ json: moderation })
+    if (path.endsWith('/functions')) return route.fulfill({json: {items: [], canEdit: true, proactive: true}})
     if (path.includes('/groups/')) return route.fulfill({ json: path.endsWith(group.groupId) ? group : secondGroup })
     return route.fulfill({ status: 204 })
   })

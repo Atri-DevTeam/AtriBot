@@ -27,6 +27,7 @@ async function setup(page: Page, options: { prompt?: boolean; denied?: boolean; 
     if (path.endsWith('/activity')) return route.fulfill({ json: activity })
     if (path.endsWith('/inventory/image')) return route.fulfill({ contentType: 'image/png', body: inventoryImage })
     if (path.endsWith('/groups')) return route.fulfill({ json: { groups: [group], pending: null } })
+    if (path.endsWith('/commands')) return route.fulfill({json: {items: [], canEdit: true}})
     if (path.endsWith('/moderation')) {
       moderationCalls++
       expect(route.request().headers().authorization).toBe(`Bearer ${'b'.repeat(43)}`)

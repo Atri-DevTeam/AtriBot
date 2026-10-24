@@ -1,0 +1,4778 @@
+{
+  "minecraft_version": "26.3",
+  "sources": {
+    "registry": "https://raw.githubusercontent.com/misode/mcmeta/26.3-summary/registries/data.json",
+    "data": "https://raw.githubusercontent.com/misode/mcmeta/26.3-data/data/minecraft/",
+    "language": "https://raw.githubusercontent.com/misode/mcmeta/26.3-assets/assets/minecraft/lang/zh_cn.json",
+    "components": "https://raw.githubusercontent.com/misode/mcmeta/26.3-summary/item_components/data.json"
+  },
+  "enchantments": {
+    "minecraft:aqua_affinity": {
+      "name": "水下速掘",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_helmet",
+        "minecraft:copper_helmet",
+        "minecraft:diamond_helmet",
+        "minecraft:golden_helmet",
+        "minecraft:iron_helmet",
+        "minecraft:leather_helmet",
+        "minecraft:netherite_helmet",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_helmet",
+        "minecraft:copper_helmet",
+        "minecraft:diamond_helmet",
+        "minecraft:golden_helmet",
+        "minecraft:iron_helmet",
+        "minecraft:leather_helmet",
+        "minecraft:netherite_helmet",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.aqua_affinity"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": 4.0,
+                "per_level_above_first": 4.0
+              },
+              "attribute": "minecraft:submerged_mining_speed",
+              "id": "minecraft:enchantment.aqua_affinity",
+              "operation": "add_multiplied_total"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 41,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "head"
+        ],
+        "supported_items": "#minecraft:enchantable/head_armor",
+        "weight": 2
+      }
+    },
+    "minecraft:bane_of_arthropods": {
+      "name": "节肢杀手",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_axe",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_axe",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.bane_of_arthropods"
+        },
+        "effects": {
+          "minecraft:damage": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.5,
+                  "per_level_above_first": 2.5
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "this",
+                "predicate": {
+                  "minecraft:entity_type": "#minecraft:sensitive_to_bane_of_arthropods"
+                }
+              }
+            }
+          ],
+          "minecraft:post_attack": [
+            {
+              "affected": "victim",
+              "effect": {
+                "type": "minecraft:apply_mob_effect",
+                "max_amplifier": 3.0,
+                "max_duration": {
+                  "type": "minecraft:linear",
+                  "base": 1.5,
+                  "per_level_above_first": 0.5
+                },
+                "min_amplifier": 3.0,
+                "min_duration": 1.5,
+                "to_apply": "minecraft:slowness"
+              },
+              "enchanted": "attacker",
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:entity_type": "#minecraft:sensitive_to_bane_of_arthropods"
+                    }
+                  },
+                  {
+                    "type": "minecraft:damage_source_properties",
+                    "predicate": {
+                      "is_direct": true
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "primary_items": "#minecraft:enchantable/melee_weapon",
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/weapon",
+        "weight": 5
+      }
+    },
+    "minecraft:binding_curse": {
+      "name": "绑定诅咒",
+      "curse": true,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:carved_pumpkin",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:creeper_head",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:dragon_head",
+        "minecraft:elytra",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:piglin_head",
+        "minecraft:player_head",
+        "minecraft:skeleton_skull",
+        "minecraft:turtle_helmet",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:zombie_head"
+      ],
+      "primary_items": [
+        "minecraft:carved_pumpkin",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:creeper_head",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:dragon_head",
+        "minecraft:elytra",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:piglin_head",
+        "minecraft:player_head",
+        "minecraft:skeleton_skull",
+        "minecraft:turtle_helmet",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:zombie_head"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.binding_curse"
+        },
+        "effects": {
+          "minecraft:prevent_armor_change": {}
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/equippable",
+        "weight": 1
+      }
+    },
+    "minecraft:blast_protection": {
+      "name": "爆炸保护",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection",
+        "minecraft:protection"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.blast_protection"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": 0.15,
+                "per_level_above_first": 0.15
+              },
+              "attribute": "minecraft:explosion_knockback_resistance",
+              "id": "minecraft:enchantment.blast_protection",
+              "operation": "add_value"
+            }
+          ],
+          "minecraft:damage_protection": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.0,
+                  "per_level_above_first": 2.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": true,
+                      "id": "#minecraft:is_explosion"
+                    },
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/armor",
+        "max_cost": {
+          "base": 13,
+          "per_level_above_first": 8
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 2
+      }
+    },
+    "minecraft:breach": {
+      "name": "破甲",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:mace"
+      ],
+      "primary_items": [
+        "minecraft:mace"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.breach"
+        },
+        "effects": {
+          "minecraft:armor_effectiveness": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": -0.15,
+                  "per_level_above_first": -0.15
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mace",
+        "weight": 2
+      }
+    },
+    "minecraft:channeling": {
+      "name": "引雷",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:trident"
+      ],
+      "primary_items": [
+        "minecraft:trident"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.channeling"
+        },
+        "effects": {
+          "minecraft:hit_block": [
+            {
+              "effect": {
+                "type": "minecraft:all_of",
+                "effects": [
+                  {
+                    "type": "minecraft:summon_entity",
+                    "entity": "minecraft:lightning_bolt"
+                  },
+                  {
+                    "type": "minecraft:play_sound",
+                    "pitch": 1.0,
+                    "sound": "minecraft:item.trident.thunder",
+                    "volume": 5.0
+                  }
+                ]
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:weather_check",
+                    "thundering": true
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:entity_type": "minecraft:trident"
+                    }
+                  },
+                  {
+                    "type": "minecraft:location_check",
+                    "predicate": {
+                      "block": {
+                        "blocks": "#minecraft:lightning_rods"
+                      },
+                      "can_see_sky": true
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "minecraft:post_attack": [
+            {
+              "affected": "victim",
+              "effect": {
+                "type": "minecraft:all_of",
+                "effects": [
+                  {
+                    "type": "minecraft:summon_entity",
+                    "entity": "minecraft:lightning_bolt"
+                  },
+                  {
+                    "type": "minecraft:play_sound",
+                    "pitch": 1.0,
+                    "sound": "minecraft:item.trident.thunder",
+                    "volume": 5.0
+                  }
+                ]
+              },
+              "enchanted": "attacker",
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:weather_check",
+                    "thundering": true
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:location": {
+                        "can_see_sky": true
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "direct_attacker",
+                    "predicate": {
+                      "minecraft:entity_type": "minecraft:trident"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/trident",
+        "weight": 1
+      }
+    },
+    "minecraft:density": {
+      "name": "致密",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:mace"
+      ],
+      "primary_items": [
+        "minecraft:mace"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.density"
+        },
+        "effects": {
+          "minecraft:smash_damage_per_fallen_block": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 0.5,
+                  "per_level_above_first": 0.5
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mace",
+        "weight": 5
+      }
+    },
+    "minecraft:depth_strider": {
+      "name": "深海探索者",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:depth_strider",
+        "minecraft:frost_walker"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.depth_strider"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": 0.33333334,
+                "per_level_above_first": 0.33333334
+              },
+              "attribute": "minecraft:water_movement_efficiency",
+              "id": "minecraft:enchantment.depth_strider",
+              "operation": "add_value"
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/boots",
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 10
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "feet"
+        ],
+        "supported_items": "#minecraft:enchantable/foot_armor",
+        "weight": 2
+      }
+    },
+    "minecraft:efficiency": {
+      "name": "效率",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:shears",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "primary_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:shears",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "definition": {
+        "anvil_cost": 1,
+        "description": {
+          "translate": "enchantment.minecraft.efficiency"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:levels_squared",
+                "added": 1.0
+              },
+              "attribute": "minecraft:mining_efficiency",
+              "id": "minecraft:enchantment.efficiency",
+              "operation": "add_value"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 51,
+          "per_level_above_first": 10
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mining",
+        "weight": 10
+      }
+    },
+    "minecraft:feather_falling": {
+      "name": "摔落缓冲",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.feather_falling"
+        },
+        "effects": {
+          "minecraft:damage_protection": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 3.0,
+                  "per_level_above_first": 3.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": true,
+                      "id": "#minecraft:is_fall"
+                    },
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 11,
+          "per_level_above_first": 6
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 6
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/foot_armor",
+        "weight": 5
+      }
+    },
+    "minecraft:fire_aspect": {
+      "name": "火焰附加",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:mace",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.fire_aspect"
+        },
+        "effects": {
+          "minecraft:post_attack": [
+            {
+              "affected": "victim",
+              "effect": {
+                "type": "minecraft:ignite",
+                "duration": {
+                  "type": "minecraft:linear",
+                  "base": 4.0,
+                  "per_level_above_first": 4.0
+                }
+              },
+              "enchanted": "attacker",
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "is_direct": true
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 60,
+          "per_level_above_first": 20
+        },
+        "max_level": 2,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 20
+        },
+        "primary_items": "#minecraft:enchantable/melee_weapon",
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fire_aspect",
+        "weight": 2
+      }
+    },
+    "minecraft:fire_protection": {
+      "name": "火焰保护",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection",
+        "minecraft:protection"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.fire_protection"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": -0.15,
+                "per_level_above_first": -0.15
+              },
+              "attribute": "minecraft:burning_time",
+              "id": "minecraft:enchantment.fire_protection",
+              "operation": "add_multiplied_base"
+            }
+          ],
+          "minecraft:damage_protection": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.0,
+                  "per_level_above_first": 2.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": true,
+                      "id": "#minecraft:is_fire"
+                    },
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/armor",
+        "max_cost": {
+          "base": 18,
+          "per_level_above_first": 8
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 5
+      }
+    },
+    "minecraft:flame": {
+      "name": "火矢",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow"
+      ],
+      "primary_items": [
+        "minecraft:bow"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.flame"
+        },
+        "effects": {
+          "minecraft:projectile_spawned": [
+            {
+              "effect": {
+                "type": "minecraft:ignite",
+                "duration": 100.0
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/bow",
+        "weight": 2
+      }
+    },
+    "minecraft:fortune": {
+      "name": "时运",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:fortune",
+        "minecraft:silk_touch"
+      ],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "primary_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.fortune"
+        },
+        "exclusive_set": "#minecraft:exclusive_set/mining",
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mining_loot",
+        "weight": 2
+      }
+    },
+    "minecraft:frost_walker": {
+      "name": "冰霜行者",
+      "curse": false,
+      "treasure": true,
+      "incompatible_with": [
+        "minecraft:depth_strider",
+        "minecraft:frost_walker"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.frost_walker"
+        },
+        "effects": {
+          "minecraft:damage_immunity": [
+            {
+              "effect": {},
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": true,
+                      "id": "#minecraft:burn_from_stepping"
+                    },
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "minecraft:location_changed": [
+            {
+              "effect": {
+                "type": "minecraft:replace_disk",
+                "block_state": {
+                  "id": "minecraft:frosted_ice",
+                  "properties": {
+                    "age": "0"
+                  }
+                },
+                "height": 1.0,
+                "offset": [
+                  0,
+                  -1,
+                  0
+                ],
+                "predicate": {
+                  "type": "minecraft:all_of",
+                  "predicates": [
+                    {
+                      "type": "minecraft:matching_block_tag",
+                      "offset": [
+                        0,
+                        1,
+                        0
+                      ],
+                      "tag": "minecraft:air"
+                    },
+                    {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:water"
+                    },
+                    {
+                      "type": "minecraft:matching_fluids",
+                      "fluids": "minecraft:water"
+                    },
+                    {
+                      "type": "minecraft:unobstructed"
+                    }
+                  ]
+                },
+                "radius": {
+                  "type": "minecraft:clamped",
+                  "max": 16.0,
+                  "min": 0.0,
+                  "value": {
+                    "type": "minecraft:linear",
+                    "base": 3.0,
+                    "per_level_above_first": 1.0
+                  }
+                },
+                "trigger_game_event": "minecraft:block_place"
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:flags": {
+                        "is_on_ground": true
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:inverted",
+                    "term": {
+                      "type": "minecraft:entity_properties",
+                      "entity": "this",
+                      "predicate": {
+                        "minecraft:vehicle": {}
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/boots",
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 10
+        },
+        "max_level": 2,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "feet"
+        ],
+        "supported_items": "#minecraft:enchantable/foot_armor",
+        "weight": 2
+      }
+    },
+    "minecraft:impaling": {
+      "name": "穿刺",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:trident"
+      ],
+      "primary_items": [
+        "minecraft:trident"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.impaling"
+        },
+        "effects": {
+          "minecraft:damage": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.5,
+                  "per_level_above_first": 2.5
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "this",
+                "predicate": {
+                  "minecraft:entity_type": "#minecraft:sensitive_to_impaling"
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 21,
+          "per_level_above_first": 8
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/trident",
+        "weight": 2
+      }
+    },
+    "minecraft:infinity": {
+      "name": "无限",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:infinity",
+        "minecraft:mending"
+      ],
+      "supported_items": [
+        "minecraft:bow"
+      ],
+      "primary_items": [
+        "minecraft:bow"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.infinity"
+        },
+        "effects": {
+          "minecraft:ammo_use": [
+            {
+              "effect": {
+                "type": "minecraft:set",
+                "value": 0.0
+              },
+              "requirements": {
+                "type": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:arrow"
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/bow",
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/bow",
+        "weight": 1
+      }
+    },
+    "minecraft:knockback": {
+      "name": "击退",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.knockback"
+        },
+        "effects": {
+          "minecraft:knockback": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 55,
+          "per_level_above_first": 20
+        },
+        "max_level": 2,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 20
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/melee_weapon",
+        "weight": 5
+      }
+    },
+    "minecraft:looting": {
+      "name": "抢夺",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.looting"
+        },
+        "effects": {
+          "minecraft:equipment_drops": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 0.01,
+                  "per_level_above_first": 0.01
+                }
+              },
+              "enchanted": "attacker",
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "attacker",
+                "predicate": {
+                  "minecraft:entity_type": "minecraft:player"
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/melee_weapon",
+        "weight": 2
+      }
+    },
+    "minecraft:loyalty": {
+      "name": "忠诚",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:trident"
+      ],
+      "primary_items": [
+        "minecraft:trident"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.loyalty"
+        },
+        "effects": {
+          "minecraft:trident_return_acceleration": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 7
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/trident",
+        "weight": 5
+      }
+    },
+    "minecraft:luck_of_the_sea": {
+      "name": "海之眷顾",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:fishing_rod"
+      ],
+      "primary_items": [
+        "minecraft:fishing_rod"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.luck_of_the_sea"
+        },
+        "effects": {
+          "minecraft:fishing_luck_bonus": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fishing",
+        "weight": 2
+      }
+    },
+    "minecraft:lunge": {
+      "name": "突进",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_spear",
+        "minecraft:diamond_spear",
+        "minecraft:golden_spear",
+        "minecraft:iron_spear",
+        "minecraft:netherite_spear",
+        "minecraft:stone_spear",
+        "minecraft:wooden_spear"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:diamond_spear",
+        "minecraft:golden_spear",
+        "minecraft:iron_spear",
+        "minecraft:netherite_spear",
+        "minecraft:stone_spear",
+        "minecraft:wooden_spear"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.lunge"
+        },
+        "effects": {
+          "minecraft:post_piercing_attack": [
+            {
+              "effect": {
+                "type": "minecraft:all_of",
+                "effects": [
+                  {
+                    "type": "minecraft:change_item_damage",
+                    "amount": 1.0
+                  },
+                  {
+                    "type": "minecraft:apply_exhaustion",
+                    "amount": {
+                      "type": "minecraft:linear",
+                      "base": 4.0,
+                      "per_level_above_first": 4.0
+                    }
+                  },
+                  {
+                    "type": "minecraft:apply_impulse",
+                    "coordinate_scale": [
+                      1.0,
+                      0.0,
+                      1.0
+                    ],
+                    "direction": [
+                      0.0,
+                      0.0,
+                      1.0
+                    ],
+                    "magnitude": {
+                      "type": "minecraft:linear",
+                      "base": 0.458,
+                      "per_level_above_first": 0.458
+                    }
+                  },
+                  {
+                    "type": "minecraft:play_sound",
+                    "pitch": 1.0,
+                    "sound": [
+                      "minecraft:item.spear.lunge_1",
+                      "minecraft:item.spear.lunge_2",
+                      "minecraft:item.spear.lunge_3"
+                    ],
+                    "volume": 1.0
+                  }
+                ]
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:inverted",
+                    "term": {
+                      "type": "minecraft:entity_properties",
+                      "entity": "this",
+                      "predicate": {
+                        "minecraft:vehicle": {}
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:flags": {
+                        "is_fall_flying": false
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:flags": {
+                        "is_in_water": false
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:any_of",
+                    "terms": [
+                      {
+                        "type": "minecraft:inverted",
+                        "term": {
+                          "type": "minecraft:entity_properties",
+                          "entity": "this",
+                          "predicate": {
+                            "minecraft:type_specific/player": {}
+                          }
+                        }
+                      },
+                      {
+                        "type": "minecraft:entity_properties",
+                        "entity": "this",
+                        "predicate": {
+                          "minecraft:type_specific/player": {
+                            "gamemode": [
+                              "creative"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "minecraft:entity_properties",
+                        "entity": "this",
+                        "predicate": {
+                          "minecraft:type_specific/player": {
+                            "food": {
+                              "level": {
+                                "min": 7
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "hand"
+        ],
+        "supported_items": "#minecraft:enchantable/lunge",
+        "weight": 5
+      }
+    },
+    "minecraft:lure": {
+      "name": "饵钓",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:fishing_rod"
+      ],
+      "primary_items": [
+        "minecraft:fishing_rod"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.lure"
+        },
+        "effects": {
+          "minecraft:fishing_time_reduction": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 5.0,
+                  "per_level_above_first": 5.0
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fishing",
+        "weight": 2
+      }
+    },
+    "minecraft:mending": {
+      "name": "经验修补",
+      "curse": false,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.mending"
+        },
+        "effects": {
+          "minecraft:repair_with_xp": [
+            {
+              "effect": {
+                "type": "minecraft:multiply",
+                "factor": 2.0
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 75,
+          "per_level_above_first": 25
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 25
+        },
+        "slots": [
+          "any"
+        ],
+        "supported_items": "#minecraft:enchantable/durability",
+        "weight": 2
+      }
+    },
+    "minecraft:multishot": {
+      "name": "多重射击",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:multishot",
+        "minecraft:piercing"
+      ],
+      "supported_items": [
+        "minecraft:crossbow"
+      ],
+      "primary_items": [
+        "minecraft:crossbow"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.multishot"
+        },
+        "effects": {
+          "minecraft:projectile_count": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.0,
+                  "per_level_above_first": 2.0
+                }
+              }
+            }
+          ],
+          "minecraft:projectile_spread": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 10.0,
+                  "per_level_above_first": 10.0
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/crossbow",
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 20,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 2
+      }
+    },
+    "minecraft:piercing": {
+      "name": "穿透",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:multishot",
+        "minecraft:piercing"
+      ],
+      "supported_items": [
+        "minecraft:crossbow"
+      ],
+      "primary_items": [
+        "minecraft:crossbow"
+      ],
+      "definition": {
+        "anvil_cost": 1,
+        "description": {
+          "translate": "enchantment.minecraft.piercing"
+        },
+        "effects": {
+          "minecraft:projectile_piercing": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/crossbow",
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 10
+      }
+    },
+    "minecraft:power": {
+      "name": "力量",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow"
+      ],
+      "primary_items": [
+        "minecraft:bow"
+      ],
+      "definition": {
+        "anvil_cost": 1,
+        "description": {
+          "translate": "enchantment.minecraft.power"
+        },
+        "effects": {
+          "minecraft:damage": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 0.5
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "direct_attacker",
+                "predicate": {
+                  "minecraft:entity_type": "#minecraft:arrows"
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 16,
+          "per_level_above_first": 10
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/bow",
+        "weight": 10
+      }
+    },
+    "minecraft:projectile_protection": {
+      "name": "弹射物保护",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection",
+        "minecraft:protection"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.projectile_protection"
+        },
+        "effects": {
+          "minecraft:damage_protection": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.0,
+                  "per_level_above_first": 2.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": true,
+                      "id": "#minecraft:is_projectile"
+                    },
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/armor",
+        "max_cost": {
+          "base": 9,
+          "per_level_above_first": 6
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 3,
+          "per_level_above_first": 6
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 5
+      }
+    },
+    "minecraft:protection": {
+      "name": "保护",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection",
+        "minecraft:protection"
+      ],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 1,
+        "description": {
+          "translate": "enchantment.minecraft.protection"
+        },
+        "effects": {
+          "minecraft:damage_protection": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:damage_source_properties",
+                "predicate": {
+                  "tags": [
+                    {
+                      "expected": false,
+                      "id": "#minecraft:bypasses_invulnerability"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/armor",
+        "max_cost": {
+          "base": 12,
+          "per_level_above_first": 11
+        },
+        "max_level": 4,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 11
+        },
+        "slots": [
+          "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 10
+      }
+    },
+    "minecraft:punch": {
+      "name": "冲击",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow"
+      ],
+      "primary_items": [
+        "minecraft:bow"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.punch"
+        },
+        "effects": {
+          "minecraft:knockback": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "direct_attacker",
+                "predicate": {
+                  "minecraft:entity_type": "#minecraft:arrows"
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 37,
+          "per_level_above_first": 20
+        },
+        "max_level": 2,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 20
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/bow",
+        "weight": 2
+      }
+    },
+    "minecraft:quick_charge": {
+      "name": "快速装填",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:crossbow"
+      ],
+      "primary_items": [
+        "minecraft:crossbow"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.quick_charge"
+        },
+        "effects": {
+          "minecraft:crossbow_charge_time": {
+            "type": "minecraft:add",
+            "value": {
+              "type": "minecraft:linear",
+              "base": -0.25,
+              "per_level_above_first": -0.25
+            }
+          },
+          "minecraft:crossbow_charging_sounds": [
+            {
+              "end": "minecraft:item.crossbow.loading_end",
+              "start": "minecraft:item.crossbow.quick_charge_1"
+            },
+            {
+              "end": "minecraft:item.crossbow.loading_end",
+              "start": "minecraft:item.crossbow.quick_charge_2"
+            },
+            {
+              "end": "minecraft:item.crossbow.loading_end",
+              "start": "minecraft:item.crossbow.quick_charge_3"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 12,
+          "per_level_above_first": 20
+        },
+        "slots": [
+          "mainhand",
+          "offhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 5
+      }
+    },
+    "minecraft:respiration": {
+      "name": "水下呼吸",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_helmet",
+        "minecraft:copper_helmet",
+        "minecraft:diamond_helmet",
+        "minecraft:golden_helmet",
+        "minecraft:iron_helmet",
+        "minecraft:leather_helmet",
+        "minecraft:netherite_helmet",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_helmet",
+        "minecraft:copper_helmet",
+        "minecraft:diamond_helmet",
+        "minecraft:golden_helmet",
+        "minecraft:iron_helmet",
+        "minecraft:leather_helmet",
+        "minecraft:netherite_helmet",
+        "minecraft:turtle_helmet"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.respiration"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": 1.0,
+                "per_level_above_first": 1.0
+              },
+              "attribute": "minecraft:oxygen_bonus",
+              "id": "minecraft:enchantment.respiration",
+              "operation": "add_value"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 40,
+          "per_level_above_first": 10
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "head"
+        ],
+        "supported_items": "#minecraft:enchantable/head_armor",
+        "weight": 2
+      }
+    },
+    "minecraft:riptide": {
+      "name": "激流",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:channeling",
+        "minecraft:loyalty"
+      ],
+      "supported_items": [
+        "minecraft:trident"
+      ],
+      "primary_items": [
+        "minecraft:trident"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.riptide"
+        },
+        "effects": {
+          "minecraft:trident_sound": [
+            "minecraft:item.trident.riptide_1",
+            "minecraft:item.trident.riptide_2",
+            "minecraft:item.trident.riptide_3"
+          ],
+          "minecraft:trident_spin_attack_strength": {
+            "type": "minecraft:add",
+            "value": {
+              "type": "minecraft:linear",
+              "base": 1.5,
+              "per_level_above_first": 0.75
+            }
+          }
+        },
+        "exclusive_set": "#minecraft:exclusive_set/riptide",
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 17,
+          "per_level_above_first": 7
+        },
+        "slots": [
+          "hand"
+        ],
+        "supported_items": "#minecraft:enchantable/trident",
+        "weight": 2
+      }
+    },
+    "minecraft:sharpness": {
+      "name": "锋利",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_axe",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_axe",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 1,
+        "description": {
+          "translate": "enchantment.minecraft.sharpness"
+        },
+        "effects": {
+          "minecraft:damage": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 0.5
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 21,
+          "per_level_above_first": 11
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 1,
+          "per_level_above_first": 11
+        },
+        "primary_items": "#minecraft:enchantable/melee_weapon",
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sharp_weapon",
+        "weight": 10
+      }
+    },
+    "minecraft:silk_touch": {
+      "name": "精准采集",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:fortune",
+        "minecraft:silk_touch"
+      ],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "primary_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_hoe",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:golden_axe",
+        "minecraft:golden_hoe",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:iron_axe",
+        "minecraft:iron_hoe",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.silk_touch"
+        },
+        "effects": {
+          "minecraft:block_experience": [
+            {
+              "effect": {
+                "type": "minecraft:set",
+                "value": 0.0
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/mining",
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mining_loot",
+        "weight": 1
+      }
+    },
+    "minecraft:smite": {
+      "name": "亡灵杀手",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [
+        "minecraft:bane_of_arthropods",
+        "minecraft:breach",
+        "minecraft:density",
+        "minecraft:impaling",
+        "minecraft:sharpness",
+        "minecraft:smite"
+      ],
+      "supported_items": [
+        "minecraft:copper_axe",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_axe",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_axe",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.smite"
+        },
+        "effects": {
+          "minecraft:damage": [
+            {
+              "effect": {
+                "type": "minecraft:add",
+                "value": {
+                  "type": "minecraft:linear",
+                  "base": 2.5,
+                  "per_level_above_first": 2.5
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "this",
+                "predicate": {
+                  "minecraft:entity_type": "#minecraft:sensitive_to_smite"
+                }
+              }
+            }
+          ]
+        },
+        "exclusive_set": "#minecraft:exclusive_set/damage",
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 8
+        },
+        "max_level": 5,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "primary_items": "#minecraft:enchantable/melee_weapon",
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/weapon",
+        "weight": 5
+      }
+    },
+    "minecraft:soul_speed": {
+      "name": "灵魂疾行",
+      "curse": false,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:copper_boots",
+        "minecraft:diamond_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:leather_boots",
+        "minecraft:netherite_boots"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.soul_speed"
+        },
+        "effects": {
+          "minecraft:location_changed": [
+            {
+              "effect": {
+                "type": "minecraft:all_of",
+                "effects": [
+                  {
+                    "type": "minecraft:attribute",
+                    "amount": {
+                      "type": "minecraft:linear",
+                      "base": 0.0405,
+                      "per_level_above_first": 0.0105
+                    },
+                    "attribute": "minecraft:movement_speed",
+                    "id": "minecraft:enchantment.soul_speed",
+                    "operation": "add_value"
+                  },
+                  {
+                    "type": "minecraft:attribute",
+                    "amount": 1.0,
+                    "attribute": "minecraft:movement_efficiency",
+                    "id": "minecraft:enchantment.soul_speed",
+                    "operation": "add_value"
+                  }
+                ]
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:inverted",
+                    "term": {
+                      "type": "minecraft:entity_properties",
+                      "entity": "this",
+                      "predicate": {
+                        "minecraft:vehicle": {}
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:any_of",
+                    "terms": [
+                      {
+                        "type": "minecraft:all_of",
+                        "terms": [
+                          {
+                            "type": "minecraft:enchantment_active_check",
+                            "active": true
+                          },
+                          {
+                            "type": "minecraft:entity_properties",
+                            "entity": "this",
+                            "predicate": {
+                              "minecraft:flags": {
+                                "is_flying": false
+                              }
+                            }
+                          },
+                          {
+                            "type": "minecraft:any_of",
+                            "terms": [
+                              {
+                                "type": "minecraft:entity_properties",
+                                "entity": "this",
+                                "predicate": {
+                                  "minecraft:movement_affected_by": {
+                                    "block": {
+                                      "blocks": "#minecraft:soul_speed_blocks"
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "minecraft:entity_properties",
+                                "entity": "this",
+                                "predicate": {
+                                  "minecraft:flags": {
+                                    "is_on_ground": false
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "minecraft:all_of",
+                        "terms": [
+                          {
+                            "type": "minecraft:enchantment_active_check",
+                            "active": false
+                          },
+                          {
+                            "type": "minecraft:entity_properties",
+                            "entity": "this",
+                            "predicate": {
+                              "minecraft:flags": {
+                                "is_flying": false
+                              },
+                              "minecraft:movement_affected_by": {
+                                "block": {
+                                  "blocks": "#minecraft:soul_speed_blocks"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "effect": {
+                "type": "minecraft:change_item_damage",
+                "amount": 1.0
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:random_chance",
+                    "chance": {
+                      "type": "minecraft:enchantment_level",
+                      "amount": 0.04
+                    }
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:flags": {
+                        "is_on_ground": true
+                      },
+                      "minecraft:movement_affected_by": {
+                        "block": {
+                          "blocks": "#minecraft:soul_speed_blocks"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "minecraft:tick": [
+            {
+              "effect": {
+                "type": "minecraft:spawn_particles",
+                "horizontal_position": {
+                  "type": "in_bounding_box"
+                },
+                "horizontal_velocity": {
+                  "movement_scale": -0.2
+                },
+                "particle": {
+                  "type": "minecraft:soul"
+                },
+                "speed": 1.0,
+                "vertical_position": {
+                  "type": "entity_position",
+                  "offset": 0.1
+                },
+                "vertical_velocity": {
+                  "base": 0.1
+                }
+              },
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "this",
+                "predicate": {
+                  "minecraft:flags": {
+                    "is_flying": false,
+                    "is_on_ground": true
+                  },
+                  "minecraft:movement": {
+                    "horizontal_speed": {
+                      "min": 9.999999747378752e-06
+                    }
+                  },
+                  "minecraft:movement_affected_by": {
+                    "block": {
+                      "blocks": "#minecraft:soul_speed_blocks"
+                    }
+                  },
+                  "minecraft:periodic_tick": 5
+                }
+              }
+            },
+            {
+              "effect": {
+                "type": "minecraft:play_sound",
+                "pitch": {
+                  "type": "minecraft:uniform",
+                  "max_exclusive": 1.0,
+                  "min_inclusive": 0.6
+                },
+                "sound": "minecraft:particle.soul_escape",
+                "volume": 0.6
+              },
+              "requirements": {
+                "type": "minecraft:all_of",
+                "terms": [
+                  {
+                    "type": "minecraft:random_chance",
+                    "chance": 0.35
+                  },
+                  {
+                    "type": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                      "minecraft:flags": {
+                        "is_flying": false,
+                        "is_on_ground": true
+                      },
+                      "minecraft:movement": {
+                        "horizontal_speed": {
+                          "min": 9.999999747378752e-06
+                        }
+                      },
+                      "minecraft:movement_affected_by": {
+                        "block": {
+                          "blocks": "#minecraft:soul_speed_blocks"
+                        }
+                      },
+                      "minecraft:periodic_tick": 5
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 25,
+          "per_level_above_first": 10
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 10
+        },
+        "slots": [
+          "feet"
+        ],
+        "supported_items": "#minecraft:enchantable/foot_armor",
+        "weight": 1
+      }
+    },
+    "minecraft:sweeping_edge": {
+      "name": "横扫之刃",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:copper_sword",
+        "minecraft:diamond_sword",
+        "minecraft:golden_sword",
+        "minecraft:iron_sword",
+        "minecraft:netherite_sword",
+        "minecraft:stone_sword",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:copper_sword",
+        "minecraft:diamond_sword",
+        "minecraft:golden_sword",
+        "minecraft:iron_sword",
+        "minecraft:netherite_sword",
+        "minecraft:stone_sword",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.sweeping_edge"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:fraction",
+                "denominator": {
+                  "type": "minecraft:linear",
+                  "base": 2.0,
+                  "per_level_above_first": 1.0
+                },
+                "numerator": {
+                  "type": "minecraft:linear",
+                  "base": 1.0,
+                  "per_level_above_first": 1.0
+                }
+              },
+              "attribute": "minecraft:sweeping_damage_ratio",
+              "id": "minecraft:enchantment.sweeping_edge",
+              "operation": "add_value"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 20,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sweeping",
+        "weight": 2
+      }
+    },
+    "minecraft:swift_sneak": {
+      "name": "迅捷潜行",
+      "curse": false,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_leggings",
+        "minecraft:iron_leggings",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_leggings"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_leggings",
+        "minecraft:iron_leggings",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_leggings"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.swift_sneak"
+        },
+        "effects": {
+          "minecraft:attributes": [
+            {
+              "amount": {
+                "type": "minecraft:linear",
+                "base": 0.15,
+                "per_level_above_first": 0.15
+              },
+              "attribute": "minecraft:sneaking_speed",
+              "id": "minecraft:enchantment.swift_sneak",
+              "operation": "add_value"
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 75,
+          "per_level_above_first": 25
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 25
+        },
+        "slots": [
+          "legs"
+        ],
+        "supported_items": "#minecraft:enchantable/leg_armor",
+        "weight": 1
+      }
+    },
+    "minecraft:thorns": {
+      "name": "荆棘",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_leggings",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_leggings",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_leggings",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_leggings",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_leggings",
+        "minecraft:turtle_helmet"
+      ],
+      "primary_items": [
+        "minecraft:chainmail_chestplate",
+        "minecraft:copper_chestplate",
+        "minecraft:diamond_chestplate",
+        "minecraft:golden_chestplate",
+        "minecraft:iron_chestplate",
+        "minecraft:leather_chestplate",
+        "minecraft:netherite_chestplate"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.thorns"
+        },
+        "effects": {
+          "minecraft:post_attack": [
+            {
+              "affected": "attacker",
+              "effect": {
+                "type": "minecraft:all_of",
+                "effects": [
+                  {
+                    "type": "minecraft:damage_entity",
+                    "damage_type": "minecraft:thorns",
+                    "max_damage": 5.0,
+                    "min_damage": 1.0
+                  },
+                  {
+                    "type": "minecraft:change_item_damage",
+                    "amount": 2.0
+                  }
+                ]
+              },
+              "enchanted": "victim",
+              "requirements": {
+                "type": "minecraft:random_chance",
+                "chance": {
+                  "type": "minecraft:enchantment_level",
+                  "amount": {
+                    "type": "minecraft:linear",
+                    "base": 0.15,
+                    "per_level_above_first": 0.15
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 60,
+          "per_level_above_first": 20
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 10,
+          "per_level_above_first": 20
+        },
+        "primary_items": "#minecraft:enchantable/chest_armor",
+        "slots": [
+          "any"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 1
+      }
+    },
+    "minecraft:unbreaking": {
+      "name": "耐久",
+      "curse": false,
+      "treasure": false,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "primary_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword"
+      ],
+      "definition": {
+        "anvil_cost": 2,
+        "description": {
+          "translate": "enchantment.minecraft.unbreaking"
+        },
+        "effects": {
+          "minecraft:item_damage": [
+            {
+              "effect": {
+                "type": "minecraft:remove_binomial",
+                "chance": {
+                  "type": "minecraft:fraction",
+                  "denominator": {
+                    "type": "minecraft:linear",
+                    "base": 10.0,
+                    "per_level_above_first": 5.0
+                  },
+                  "numerator": {
+                    "type": "minecraft:linear",
+                    "base": 2.0,
+                    "per_level_above_first": 2.0
+                  }
+                }
+              },
+              "requirements": {
+                "type": "minecraft:match_tool",
+                "predicate": {
+                  "items": "#minecraft:enchantable/armor"
+                }
+              }
+            },
+            {
+              "effect": {
+                "type": "minecraft:remove_binomial",
+                "chance": {
+                  "type": "minecraft:fraction",
+                  "denominator": {
+                    "type": "minecraft:linear",
+                    "base": 2.0,
+                    "per_level_above_first": 1.0
+                  },
+                  "numerator": {
+                    "type": "minecraft:linear",
+                    "base": 1.0,
+                    "per_level_above_first": 1.0
+                  }
+                }
+              },
+              "requirements": {
+                "type": "minecraft:inverted",
+                "term": {
+                  "type": "minecraft:match_tool",
+                  "predicate": {
+                    "items": "#minecraft:enchantable/armor"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 55,
+          "per_level_above_first": 8
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 5,
+          "per_level_above_first": 8
+        },
+        "slots": [
+          "any"
+        ],
+        "supported_items": "#minecraft:enchantable/durability",
+        "weight": 5
+      }
+    },
+    "minecraft:vanishing_curse": {
+      "name": "消失诅咒",
+      "curse": true,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:carved_pumpkin",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:compass",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:creeper_head",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:dragon_head",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:piglin_head",
+        "minecraft:player_head",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:skeleton_skull",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword",
+        "minecraft:zombie_head"
+      ],
+      "primary_items": [
+        "minecraft:bow",
+        "minecraft:brush",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:carved_pumpkin",
+        "minecraft:chainmail_boots",
+        "minecraft:chainmail_chestplate",
+        "minecraft:chainmail_helmet",
+        "minecraft:chainmail_leggings",
+        "minecraft:compass",
+        "minecraft:copper_axe",
+        "minecraft:copper_boots",
+        "minecraft:copper_chestplate",
+        "minecraft:copper_helmet",
+        "minecraft:copper_hoe",
+        "minecraft:copper_leggings",
+        "minecraft:copper_pickaxe",
+        "minecraft:copper_shovel",
+        "minecraft:copper_spear",
+        "minecraft:copper_sword",
+        "minecraft:creeper_head",
+        "minecraft:crossbow",
+        "minecraft:diamond_axe",
+        "minecraft:diamond_boots",
+        "minecraft:diamond_chestplate",
+        "minecraft:diamond_helmet",
+        "minecraft:diamond_hoe",
+        "minecraft:diamond_leggings",
+        "minecraft:diamond_pickaxe",
+        "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
+        "minecraft:diamond_sword",
+        "minecraft:dragon_head",
+        "minecraft:elytra",
+        "minecraft:fishing_rod",
+        "minecraft:flint_and_steel",
+        "minecraft:golden_axe",
+        "minecraft:golden_boots",
+        "minecraft:golden_chestplate",
+        "minecraft:golden_helmet",
+        "minecraft:golden_hoe",
+        "minecraft:golden_leggings",
+        "minecraft:golden_pickaxe",
+        "minecraft:golden_shovel",
+        "minecraft:golden_spear",
+        "minecraft:golden_sword",
+        "minecraft:iron_axe",
+        "minecraft:iron_boots",
+        "minecraft:iron_chestplate",
+        "minecraft:iron_helmet",
+        "minecraft:iron_hoe",
+        "minecraft:iron_leggings",
+        "minecraft:iron_pickaxe",
+        "minecraft:iron_shovel",
+        "minecraft:iron_spear",
+        "minecraft:iron_sword",
+        "minecraft:leather_boots",
+        "minecraft:leather_chestplate",
+        "minecraft:leather_helmet",
+        "minecraft:leather_leggings",
+        "minecraft:mace",
+        "minecraft:netherite_axe",
+        "minecraft:netherite_boots",
+        "minecraft:netherite_chestplate",
+        "minecraft:netherite_helmet",
+        "minecraft:netherite_hoe",
+        "minecraft:netherite_leggings",
+        "minecraft:netherite_pickaxe",
+        "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
+        "minecraft:netherite_sword",
+        "minecraft:piglin_head",
+        "minecraft:player_head",
+        "minecraft:shears",
+        "minecraft:shield",
+        "minecraft:skeleton_skull",
+        "minecraft:stone_axe",
+        "minecraft:stone_hoe",
+        "minecraft:stone_pickaxe",
+        "minecraft:stone_shovel",
+        "minecraft:stone_spear",
+        "minecraft:stone_sword",
+        "minecraft:trident",
+        "minecraft:turtle_helmet",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:wooden_axe",
+        "minecraft:wooden_hoe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
+        "minecraft:wooden_sword",
+        "minecraft:zombie_head"
+      ],
+      "definition": {
+        "anvil_cost": 8,
+        "description": {
+          "translate": "enchantment.minecraft.vanishing_curse"
+        },
+        "effects": {
+          "minecraft:prevent_equipment_drop": {}
+        },
+        "max_cost": {
+          "base": 50,
+          "per_level_above_first": 0
+        },
+        "max_level": 1,
+        "min_cost": {
+          "base": 25,
+          "per_level_above_first": 0
+        },
+        "slots": [
+          "any"
+        ],
+        "supported_items": "#minecraft:enchantable/vanishing",
+        "weight": 1
+      }
+    },
+    "minecraft:wind_burst": {
+      "name": "风爆",
+      "curse": false,
+      "treasure": true,
+      "incompatible_with": [],
+      "supported_items": [
+        "minecraft:mace"
+      ],
+      "primary_items": [
+        "minecraft:mace"
+      ],
+      "definition": {
+        "anvil_cost": 4,
+        "description": {
+          "translate": "enchantment.minecraft.wind_burst"
+        },
+        "effects": {
+          "minecraft:post_attack": [
+            {
+              "affected": "attacker",
+              "effect": {
+                "type": "minecraft:explode",
+                "block_interaction": "trigger",
+                "immune_blocks": "#minecraft:blocks_wind_charge_explosions",
+                "knockback_multiplier": {
+                  "type": "minecraft:lookup",
+                  "fallback": {
+                    "type": "minecraft:linear",
+                    "base": 1.5,
+                    "per_level_above_first": 0.35
+                  },
+                  "values": [
+                    1.2,
+                    1.75,
+                    2.2
+                  ]
+                },
+                "large_particle": {
+                  "type": "minecraft:gust_emitter_large"
+                },
+                "radius": 3.5,
+                "small_particle": {
+                  "type": "minecraft:gust_emitter_small"
+                },
+                "sound": "minecraft:entity.wind_charge.wind_burst"
+              },
+              "enchanted": "attacker",
+              "requirements": {
+                "type": "minecraft:entity_properties",
+                "entity": "direct_attacker",
+                "predicate": {
+                  "minecraft:flags": {
+                    "is_flying": false
+                  },
+                  "minecraft:movement": {
+                    "fall_distance": {
+                      "min": 1.5
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "max_cost": {
+          "base": 65,
+          "per_level_above_first": 9
+        },
+        "max_level": 3,
+        "min_cost": {
+          "base": 15,
+          "per_level_above_first": 9
+        },
+        "slots": [
+          "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mace",
+        "weight": 2
+      }
+    }
+  },
+  "presets": [
+    {
+      "key": "book",
+      "id": "minecraft:enchanted_book",
+      "name": "附魔书",
+      "enchantability": 1
+    },
+    {
+      "key": "pickaxe",
+      "id": "minecraft:diamond_pickaxe",
+      "name": "钻石镐",
+      "enchantability": 10
+    },
+    {
+      "key": "axe",
+      "id": "minecraft:diamond_axe",
+      "name": "钻石斧",
+      "enchantability": 10
+    },
+    {
+      "key": "shovel",
+      "id": "minecraft:diamond_shovel",
+      "name": "钻石锹",
+      "enchantability": 10
+    },
+    {
+      "key": "hoe",
+      "id": "minecraft:diamond_hoe",
+      "name": "钻石锄",
+      "enchantability": 10
+    },
+    {
+      "key": "sword",
+      "id": "minecraft:diamond_sword",
+      "name": "钻石剑",
+      "enchantability": 10
+    },
+    {
+      "key": "spear",
+      "id": "minecraft:diamond_spear",
+      "name": "钻石矛",
+      "enchantability": 10
+    },
+    {
+      "key": "helmet",
+      "id": "minecraft:diamond_helmet",
+      "name": "钻石头盔",
+      "enchantability": 10
+    },
+    {
+      "key": "chestplate",
+      "id": "minecraft:diamond_chestplate",
+      "name": "钻石胸甲",
+      "enchantability": 10
+    },
+    {
+      "key": "leggings",
+      "id": "minecraft:diamond_leggings",
+      "name": "钻石护腿",
+      "enchantability": 10
+    },
+    {
+      "key": "boots",
+      "id": "minecraft:diamond_boots",
+      "name": "钻石靴子",
+      "enchantability": 10
+    },
+    {
+      "key": "bow",
+      "id": "minecraft:bow",
+      "name": "弓",
+      "enchantability": 1
+    },
+    {
+      "key": "crossbow",
+      "id": "minecraft:crossbow",
+      "name": "弩",
+      "enchantability": 1
+    },
+    {
+      "key": "trident",
+      "id": "minecraft:trident",
+      "name": "三叉戟",
+      "enchantability": 1
+    },
+    {
+      "key": "mace",
+      "id": "minecraft:mace",
+      "name": "重锤",
+      "enchantability": 15
+    },
+    {
+      "key": "fishing_rod",
+      "id": "minecraft:fishing_rod",
+      "name": "钓鱼竿",
+      "enchantability": 1
+    }
+  ],
+  "table_enchantments": [
+    "minecraft:protection",
+    "minecraft:fire_protection",
+    "minecraft:feather_falling",
+    "minecraft:blast_protection",
+    "minecraft:projectile_protection",
+    "minecraft:respiration",
+    "minecraft:aqua_affinity",
+    "minecraft:thorns",
+    "minecraft:depth_strider",
+    "minecraft:sharpness",
+    "minecraft:smite",
+    "minecraft:bane_of_arthropods",
+    "minecraft:knockback",
+    "minecraft:fire_aspect",
+    "minecraft:looting",
+    "minecraft:sweeping_edge",
+    "minecraft:efficiency",
+    "minecraft:silk_touch",
+    "minecraft:unbreaking",
+    "minecraft:fortune",
+    "minecraft:power",
+    "minecraft:punch",
+    "minecraft:flame",
+    "minecraft:infinity",
+    "minecraft:luck_of_the_sea",
+    "minecraft:lure",
+    "minecraft:loyalty",
+    "minecraft:impaling",
+    "minecraft:riptide",
+    "minecraft:channeling",
+    "minecraft:multishot",
+    "minecraft:quick_charge",
+    "minecraft:piercing",
+    "minecraft:density",
+    "minecraft:breach",
+    "minecraft:lunge"
+  ],
+  "tags": {
+    "curse": {
+      "values": [
+        "minecraft:binding_curse",
+        "minecraft:vanishing_curse"
+      ]
+    },
+    "double_trade_price": {
+      "values": [
+        "#minecraft:treasure"
+      ]
+    },
+    "exclusive_set/armor": {
+      "values": [
+        "minecraft:protection",
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection"
+      ]
+    },
+    "exclusive_set/boots": {
+      "values": [
+        "minecraft:frost_walker",
+        "minecraft:depth_strider"
+      ]
+    },
+    "exclusive_set/bow": {
+      "values": [
+        "minecraft:infinity",
+        "minecraft:mending"
+      ]
+    },
+    "exclusive_set/crossbow": {
+      "values": [
+        "minecraft:multishot",
+        "minecraft:piercing"
+      ]
+    },
+    "exclusive_set/damage": {
+      "values": [
+        "minecraft:sharpness",
+        "minecraft:smite",
+        "minecraft:bane_of_arthropods",
+        "minecraft:impaling",
+        "minecraft:density",
+        "minecraft:breach"
+      ]
+    },
+    "exclusive_set/mining": {
+      "values": [
+        "minecraft:fortune",
+        "minecraft:silk_touch"
+      ]
+    },
+    "exclusive_set/riptide": {
+      "values": [
+        "minecraft:loyalty",
+        "minecraft:channeling"
+      ]
+    },
+    "in_enchanting_table": {
+      "values": [
+        "#minecraft:non_treasure"
+      ]
+    },
+    "non_treasure": {
+      "values": [
+        "minecraft:protection",
+        "minecraft:fire_protection",
+        "minecraft:feather_falling",
+        "minecraft:blast_protection",
+        "minecraft:projectile_protection",
+        "minecraft:respiration",
+        "minecraft:aqua_affinity",
+        "minecraft:thorns",
+        "minecraft:depth_strider",
+        "minecraft:sharpness",
+        "minecraft:smite",
+        "minecraft:bane_of_arthropods",
+        "minecraft:knockback",
+        "minecraft:fire_aspect",
+        "minecraft:looting",
+        "minecraft:sweeping_edge",
+        "minecraft:efficiency",
+        "minecraft:silk_touch",
+        "minecraft:unbreaking",
+        "minecraft:fortune",
+        "minecraft:power",
+        "minecraft:punch",
+        "minecraft:flame",
+        "minecraft:infinity",
+        "minecraft:luck_of_the_sea",
+        "minecraft:lure",
+        "minecraft:loyalty",
+        "minecraft:impaling",
+        "minecraft:riptide",
+        "minecraft:channeling",
+        "minecraft:multishot",
+        "minecraft:quick_charge",
+        "minecraft:piercing",
+        "minecraft:density",
+        "minecraft:breach",
+        "minecraft:lunge"
+      ]
+    },
+    "on_mob_spawn_equipment": {
+      "values": [
+        "#minecraft:non_treasure"
+      ]
+    },
+    "on_random_loot": {
+      "values": [
+        "#minecraft:non_treasure",
+        "minecraft:binding_curse",
+        "minecraft:vanishing_curse",
+        "minecraft:frost_walker",
+        "minecraft:mending"
+      ]
+    },
+    "on_traded_equipment": {
+      "values": [
+        "#minecraft:non_treasure"
+      ]
+    },
+    "prevents_bee_spawns_when_mining": {
+      "values": [
+        "minecraft:silk_touch"
+      ]
+    },
+    "prevents_decorated_pot_shattering": {
+      "values": [
+        "minecraft:silk_touch"
+      ]
+    },
+    "prevents_ice_melting": {
+      "values": [
+        "minecraft:silk_touch"
+      ]
+    },
+    "prevents_infested_spawns": {
+      "values": [
+        "minecraft:silk_touch"
+      ]
+    },
+    "smelts_loot": {
+      "values": [
+        "minecraft:fire_aspect"
+      ]
+    },
+    "tooltip_order": {
+      "values": [
+        "minecraft:binding_curse",
+        "minecraft:vanishing_curse",
+        "minecraft:riptide",
+        "minecraft:channeling",
+        "minecraft:wind_burst",
+        "minecraft:frost_walker",
+        "minecraft:lunge",
+        "minecraft:sharpness",
+        "minecraft:smite",
+        "minecraft:bane_of_arthropods",
+        "minecraft:impaling",
+        "minecraft:power",
+        "minecraft:density",
+        "minecraft:breach",
+        "minecraft:piercing",
+        "minecraft:sweeping_edge",
+        "minecraft:multishot",
+        "minecraft:fire_aspect",
+        "minecraft:flame",
+        "minecraft:knockback",
+        "minecraft:punch",
+        "minecraft:protection",
+        "minecraft:blast_protection",
+        "minecraft:fire_protection",
+        "minecraft:projectile_protection",
+        "minecraft:feather_falling",
+        "minecraft:fortune",
+        "minecraft:looting",
+        "minecraft:silk_touch",
+        "minecraft:luck_of_the_sea",
+        "minecraft:efficiency",
+        "minecraft:quick_charge",
+        "minecraft:lure",
+        "minecraft:respiration",
+        "minecraft:aqua_affinity",
+        "minecraft:soul_speed",
+        "minecraft:swift_sneak",
+        "minecraft:depth_strider",
+        "minecraft:thorns",
+        "minecraft:loyalty",
+        "minecraft:unbreaking",
+        "minecraft:infinity",
+        "minecraft:mending"
+      ]
+    },
+    "tradeable": {
+      "values": [
+        "#minecraft:non_treasure",
+        "minecraft:binding_curse",
+        "minecraft:vanishing_curse",
+        "minecraft:frost_walker",
+        "minecraft:mending"
+      ]
+    },
+    "treasure": {
+      "values": [
+        "minecraft:binding_curse",
+        "minecraft:vanishing_curse",
+        "minecraft:swift_sneak",
+        "minecraft:soul_speed",
+        "minecraft:frost_walker",
+        "minecraft:mending",
+        "minecraft:wind_burst"
+      ]
+    }
+  },
+  "item_tags": {
+    "enchantable/head_armor": {
+      "values": [
+        "#minecraft:head_armor"
+      ]
+    },
+    "head_armor": {
+      "values": [
+        "minecraft:leather_helmet",
+        "minecraft:copper_helmet",
+        "minecraft:chainmail_helmet",
+        "minecraft:golden_helmet",
+        "minecraft:iron_helmet",
+        "minecraft:diamond_helmet",
+        "minecraft:netherite_helmet",
+        "minecraft:turtle_helmet"
+      ]
+    },
+    "enchantable/weapon": {
+      "values": [
+        "#minecraft:enchantable/sharp_weapon",
+        "minecraft:mace"
+      ]
+    },
+    "enchantable/sharp_weapon": {
+      "values": [
+        "#minecraft:enchantable/melee_weapon",
+        "#minecraft:axes"
+      ]
+    },
+    "enchantable/melee_weapon": {
+      "values": [
+        "#minecraft:swords",
+        "#minecraft:spears"
+      ]
+    },
+    "swords": {
+      "values": [
+        "minecraft:diamond_sword",
+        "minecraft:stone_sword",
+        "minecraft:golden_sword",
+        "minecraft:netherite_sword",
+        "minecraft:wooden_sword",
+        "minecraft:iron_sword",
+        "minecraft:copper_sword"
+      ]
+    },
+    "spears": {
+      "values": [
+        "minecraft:diamond_spear",
+        "minecraft:stone_spear",
+        "minecraft:golden_spear",
+        "minecraft:netherite_spear",
+        "minecraft:wooden_spear",
+        "minecraft:iron_spear",
+        "minecraft:copper_spear"
+      ]
+    },
+    "axes": {
+      "values": [
+        "minecraft:diamond_axe",
+        "minecraft:stone_axe",
+        "minecraft:golden_axe",
+        "minecraft:netherite_axe",
+        "minecraft:wooden_axe",
+        "minecraft:iron_axe",
+        "minecraft:copper_axe"
+      ]
+    },
+    "enchantable/equippable": {
+      "values": [
+        "#minecraft:foot_armor",
+        "#minecraft:leg_armor",
+        "#minecraft:chest_armor",
+        "#minecraft:head_armor",
+        "minecraft:elytra",
+        "#minecraft:skulls",
+        "minecraft:carved_pumpkin"
+      ]
+    },
+    "foot_armor": {
+      "values": [
+        "minecraft:leather_boots",
+        "minecraft:copper_boots",
+        "minecraft:chainmail_boots",
+        "minecraft:golden_boots",
+        "minecraft:iron_boots",
+        "minecraft:diamond_boots",
+        "minecraft:netherite_boots"
+      ]
+    },
+    "leg_armor": {
+      "values": [
+        "minecraft:leather_leggings",
+        "minecraft:copper_leggings",
+        "minecraft:chainmail_leggings",
+        "minecraft:golden_leggings",
+        "minecraft:iron_leggings",
+        "minecraft:diamond_leggings",
+        "minecraft:netherite_leggings"
+      ]
+    },
+    "chest_armor": {
+      "values": [
+        "minecraft:leather_chestplate",
+        "minecraft:copper_chestplate",
+        "minecraft:chainmail_chestplate",
+        "minecraft:golden_chestplate",
+        "minecraft:iron_chestplate",
+        "minecraft:diamond_chestplate",
+        "minecraft:netherite_chestplate"
+      ]
+    },
+    "skulls": {
+      "values": [
+        "minecraft:player_head",
+        "minecraft:creeper_head",
+        "minecraft:zombie_head",
+        "minecraft:skeleton_skull",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:dragon_head",
+        "minecraft:piglin_head"
+      ]
+    },
+    "enchantable/armor": {
+      "values": [
+        "#minecraft:enchantable/foot_armor",
+        "#minecraft:enchantable/leg_armor",
+        "#minecraft:enchantable/chest_armor",
+        "#minecraft:enchantable/head_armor"
+      ]
+    },
+    "enchantable/foot_armor": {
+      "values": [
+        "#minecraft:foot_armor"
+      ]
+    },
+    "enchantable/leg_armor": {
+      "values": [
+        "#minecraft:leg_armor"
+      ]
+    },
+    "enchantable/chest_armor": {
+      "values": [
+        "#minecraft:chest_armor"
+      ]
+    },
+    "enchantable/mace": {
+      "values": [
+        "minecraft:mace"
+      ]
+    },
+    "enchantable/trident": {
+      "values": [
+        "minecraft:trident"
+      ]
+    },
+    "enchantable/mining": {
+      "values": [
+        "#minecraft:axes",
+        "#minecraft:pickaxes",
+        "#minecraft:shovels",
+        "#minecraft:hoes",
+        "minecraft:shears"
+      ]
+    },
+    "pickaxes": {
+      "values": [
+        "minecraft:diamond_pickaxe",
+        "minecraft:stone_pickaxe",
+        "minecraft:golden_pickaxe",
+        "minecraft:netherite_pickaxe",
+        "minecraft:wooden_pickaxe",
+        "minecraft:iron_pickaxe",
+        "minecraft:copper_pickaxe"
+      ]
+    },
+    "shovels": {
+      "values": [
+        "minecraft:diamond_shovel",
+        "minecraft:stone_shovel",
+        "minecraft:golden_shovel",
+        "minecraft:netherite_shovel",
+        "minecraft:wooden_shovel",
+        "minecraft:iron_shovel",
+        "minecraft:copper_shovel"
+      ]
+    },
+    "hoes": {
+      "values": [
+        "minecraft:diamond_hoe",
+        "minecraft:stone_hoe",
+        "minecraft:golden_hoe",
+        "minecraft:netherite_hoe",
+        "minecraft:wooden_hoe",
+        "minecraft:iron_hoe",
+        "minecraft:copper_hoe"
+      ]
+    },
+    "enchantable/fire_aspect": {
+      "values": [
+        "#minecraft:enchantable/melee_weapon",
+        "minecraft:mace"
+      ]
+    },
+    "enchantable/bow": {
+      "values": [
+        "minecraft:bow"
+      ]
+    },
+    "enchantable/mining_loot": {
+      "values": [
+        "#minecraft:axes",
+        "#minecraft:pickaxes",
+        "#minecraft:shovels",
+        "#minecraft:hoes"
+      ]
+    },
+    "enchantable/fishing": {
+      "values": [
+        "minecraft:fishing_rod"
+      ]
+    },
+    "enchantable/lunge": {
+      "values": [
+        "#minecraft:spears"
+      ]
+    },
+    "enchantable/durability": {
+      "values": [
+        "#minecraft:foot_armor",
+        "#minecraft:leg_armor",
+        "#minecraft:chest_armor",
+        "#minecraft:head_armor",
+        "minecraft:elytra",
+        "minecraft:shield",
+        "#minecraft:swords",
+        "#minecraft:axes",
+        "#minecraft:pickaxes",
+        "#minecraft:shovels",
+        "#minecraft:hoes",
+        "minecraft:bow",
+        "minecraft:crossbow",
+        "minecraft:trident",
+        "minecraft:flint_and_steel",
+        "minecraft:shears",
+        "minecraft:brush",
+        "minecraft:fishing_rod",
+        "minecraft:carrot_on_a_stick",
+        "minecraft:warped_fungus_on_a_stick",
+        "minecraft:mace",
+        "#minecraft:spears"
+      ]
+    },
+    "enchantable/crossbow": {
+      "values": [
+        "minecraft:crossbow"
+      ]
+    },
+    "enchantable/sweeping": {
+      "values": [
+        "#minecraft:swords"
+      ]
+    },
+    "enchantable/vanishing": {
+      "values": [
+        "#minecraft:enchantable/durability",
+        "minecraft:compass",
+        "minecraft:carved_pumpkin",
+        "#minecraft:skulls"
+      ]
+    }
+  }
+}

@@ -13,7 +13,8 @@ export type Activity = {
     games: { game: string; operations: number; correct: number; plays: number; wins: number; metrics?: Record<string, number> }[] | null
     settings: {
         bilibiliUid: string | null
-        reward: { enabled: boolean; mode: string; priorities: { item: string; value: number }[] }
+        reward: { enabled: boolean; mode: string; priorities: { item: string; value: number }[]; items: string[] }
+        unsupportedKeyboard: boolean
         share: { url: string | null; invitedCount: number; invitedBySomeone: boolean; createdAt: string | null }
     } | null
     unavailable: string[]

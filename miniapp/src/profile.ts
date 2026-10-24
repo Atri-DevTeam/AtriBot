@@ -10,7 +10,8 @@ export type Profile = {
         username: string | null;
         createdAt: string | null;
         minecraftUuid: string | null;
-        qqNumber: string | null
+        qqNumber: string | null;
+        qqConnectOpenId: string | null
     } | null
     privateMessages: Messages | null
     groupMessages: Messages | null

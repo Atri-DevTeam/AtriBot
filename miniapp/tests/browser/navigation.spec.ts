@@ -3,7 +3,7 @@ import { profile } from './profile-fixture'
 import { activity, inventoryImage } from './activity-fixture'
 
 test('dock switches sections without reopening the session or losing cached profile data', async ({ page }, testInfo) => {
-  let exchanges = 0, imageCalls = 0, profileCalls = 0, aboutCalls = 0
+  let exchanges = 0, imageCalls = 0, profileCalls = 0, aboutCalls = 0, activityCalls = 0
   await page.route('https://thirdqq.qlogo.cn/**', route => route.fulfill({ contentType: 'image/png', body: inventoryImage }))
   await page.route('**/atrimeow/profile/api/**', route => {
     const path = new URL(route.request().url()).pathname
@@ -13,13 +13,13 @@ test('dock switches sections without reopening the session or losing cached prof
     }
     if (path.endsWith('/profile')) {
       profileCalls++
-      return route.fulfill({ json: { ...profile, avatarUrl: null, bot: { ...profile.bot, avatarUrl: null } } })
+      return route.fulfill({ json: { ...profile, skyblockPrice: true, avatarUrl: null, bot: { ...profile.bot, avatarUrl: null } } })
     }
     if (path.endsWith('/about')) {
       aboutCalls++
       return route.fulfill({ json: { version: '3.2.3-Release', buildTime: '2026-09-26 12:00:00 CST', branch: 'main', commitId: 'abc1234', developerAvatarUrl: 'https://thirdqq.qlogo.cn/qqapp/test/admin/100' } })
     }
-    if (path.endsWith('/activity')) return route.fulfill({ json: activity })
+    if (path.endsWith('/activity')) { activityCalls++; return route.fulfill({ json: activity }) }
     if (path.endsWith('/groups')) return route.fulfill({ json: { groups: [], pending: null } })
     if (path.endsWith('/inventory/image')) { imageCalls++; return route.fulfill({ contentType: 'image/png', body: inventoryImage }) }
     return route.fulfill({ status: 204 })
@@ -27,14 +27,27 @@ test('dock switches sections without reopening the session or losing cached prof
   await page.goto(`/atrimeow/profile/?_wwv=9983&userId=owner&ticket=${'a'.repeat(43)}`)
   const dock = page.getByRole('navigation', { name: '栏目导航' })
   const profileTab = dock.getByRole('button', { name: '我的档案' })
+  const dataTab = dock.getByRole('button', { name: '我的数据' })
   const groupsTab = dock.getByRole('button', { name: '群管理' })
   const aboutTab = dock.getByRole('button', { name: '关于' })
   await expect(dock).toBeVisible()
   await expect(profileTab).toHaveAttribute('aria-current', 'page')
+  await expect(dock.getByRole('button')).toHaveCount(5)
+  await expect(page.locator('#profile-page .settings-card')).toBeVisible()
+  await expect(dataTab.locator('img')).toHaveAttribute('src', /dock-data/)
   expect((await profileTab.boundingBox())!.x).toBeLessThan((await groupsTab.boundingBox())!.x)
   expect((await groupsTab.boundingBox())!.x).toBeLessThan((await aboutTab.boundingBox())!.x)
   await expect(page.getByRole('region', { name: '物品卡背包', exact: true })).toHaveCount(0)
   await page.screenshot({ path: testInfo.outputPath('dock-profile.png'), animations: 'disabled' })
+  await dataTab.click()
+  await expect(dataTab).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('#data-page')).toBeVisible()
+  await expect(page.getByRole('heading', {name: '互动记录', exact: true})).toBeVisible()
+  await expect(page.getByRole('heading', {name: '小游戏', exact: true})).toBeVisible()
+  await expect(page.getByLabel('用户设置')).toBeHidden()
+  await page.screenshot({path: testInfo.outputPath('dock-data.png'), animations: 'disabled', fullPage: true})
+  await profileTab.click()
+  expect(activityCalls).toBe(1)
   await page.evaluate(() => window.scrollTo(0, 600))
   const profileScroll = await page.evaluate(() => scrollY)
   const originalUrl = page.url()

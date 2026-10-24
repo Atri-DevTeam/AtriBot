@@ -163,6 +163,9 @@ public class MessageUtils {
             payload.put("summary", summary);
 
             JsonNode resp = PostRequest.getPostResult(RequestType.SEND_GROUP_FORWARD_MSG, payload);
+            if (resp == null) {
+                return null;
+            }
             String forwardMessageId = resp.path("data").path("message_id").asText(null);
             if (forwardMessageId != null && !forwardMessageId.isEmpty()) {
                 AtriProvider.getInstance().getLogRecorder().recordLastMsg(groupId, forwardMessageId);

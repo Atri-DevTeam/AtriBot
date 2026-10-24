@@ -386,6 +386,9 @@ commands:
       - minecrafttool
       - minecrafttools
       - mc
+  ec:
+    description: 原版附魔台随机附魔
+    usage: /ec [物品]
   sharebot:
     description: 分享机器人
     usage: /sharebot

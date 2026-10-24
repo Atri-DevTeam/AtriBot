@@ -76,7 +76,9 @@ public final class ExampleCommand implements CommandExecutor {
 
 核心文本执行器返回 `false` 时，`CommandFeature` 在配置了用法的情况下发送用法提示；返回 `true` 表示该次调用已处理
 
-分发前触发 `UserRunCommandEvent`，取消后不再执行。QQ 群文本指令还会检查 `CommandDisableService` 的禁用规则
+分发前触发 `UserRunCommandEvent`，取消后不再执行。QQ 群文本指令由运行服务的 `CommandSettingsService` 管理高级停用、群开关和频控，core 不保存业务配置
+
+`GroupCommands` 显式登记群主可配置的指令及 `displayName`，未登记的指令不参与群开关和频控。群规则保存至 `official_groups.group_settings.commands`，高级停用规则保存至 `data/command-settings.json`。全局停用优先于单群停用，生效期间个人面板只读；规则解除后保留原有群设置
 
 ### 无前缀触发词
 

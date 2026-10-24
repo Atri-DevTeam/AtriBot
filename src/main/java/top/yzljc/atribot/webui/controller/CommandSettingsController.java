@@ -3,7 +3,7 @@ package top.yzljc.atribot.webui.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import top.yzljc.atricore.command.CommandDefinition;
-import top.yzljc.atribot.command.CommandDisableService;
+import top.yzljc.atribot.command.CommandSettingsService;
 import top.yzljc.atricore.command.CommandManager;
 import top.yzljc.atribot.webui.Result;
 
@@ -24,22 +24,23 @@ public final class CommandSettingsController {
     private CommandSettingsController() {}
 
     public static void list(Context ctx) {
-        Map<String, CommandDisableService.CommandRules> rules = CommandDisableService.snapshot();
+        Map<String, CommandSettingsService.CommandRules> rules = CommandSettingsService.INSTANCE.snapshot();
         List<CommandItem> items = new ArrayList<>();
         for (CommandDefinition definition : CommandManager.getDefinitions()) {
+            var registration = CommandSettingsService.INSTANCE.registration(definition.name());
             items.add(new CommandItem(definition.name(), definition.description(), definition.usage(),
                     definition.aliases(), CommandManager.getCommand(definition.name()).getExecutor() != null,
-                    rules.get(definition.name().toLowerCase())));
+                    rules.get(definition.name().toLowerCase()), registration == null ? definition.name() : registration.displayName(), registration != null));
         }
         ctx.json(Result.success(items));
     }
 
     public static void setGlobal(Context ctx) {
-        run(ctx, () -> CommandDisableService.setGlobal(ctx.pathParam("commandName"), parseRule(ctx)));
+        run(ctx, () -> CommandSettingsService.INSTANCE.setGlobal(ctx.pathParam("commandName"), parseRule(ctx)));
     }
 
     public static void clearGlobal(Context ctx) {
-        run(ctx, () -> CommandDisableService.clearGlobal(ctx.pathParam("commandName")));
+        run(ctx, () -> CommandSettingsService.INSTANCE.clearGlobal(ctx.pathParam("commandName")));
     }
 
     public static void setGroup(Context ctx) {
@@ -54,21 +55,21 @@ public final class CommandSettingsController {
             if (body != null && body.path("groupId").isTextual() && !body.path("groupId").asText().isBlank()) {
                 groupIds.add(body.path("groupId").asText().trim());
             }
-            CommandDisableService.setGroups(ctx.pathParam("commandName"), groupIds, parseRule(body));
+            CommandSettingsService.INSTANCE.setGroups(ctx.pathParam("commandName"), groupIds, parseRule(body));
         });
     }
 
     public static void clearGroup(Context ctx) {
-        run(ctx, () -> CommandDisableService.clearGroup(ctx.pathParam("commandName"), ctx.pathParam("groupId")));
+        run(ctx, () -> CommandSettingsService.INSTANCE.clearGroup(ctx.pathParam("commandName"), ctx.pathParam("groupId")));
     }
 
-    private static CommandDisableService.DisableRule parseRule(Context ctx) {
+    private static CommandSettingsService.DisableRule parseRule(Context ctx) {
         return parseRule(ctx.bodyAsClass(JsonNode.class));
     }
 
-    private static CommandDisableService.DisableRule parseRule(JsonNode body) {
+    private static CommandSettingsService.DisableRule parseRule(JsonNode body) {
         if (body == null || !body.isObject()) throw new IllegalArgumentException("请求内容不能为空");
-        return new CommandDisableService.DisableRule(text(body, "reason"), text(body, "startsAt"), text(body, "endsAt"));
+        return new CommandSettingsService.DisableRule(text(body, "reason"), text(body, "startsAt"), text(body, "endsAt"));
     }
 
     private static String text(JsonNode body, String key) {
@@ -90,5 +91,5 @@ public final class CommandSettingsController {
     private interface CheckedAction { void run() throws IOException; }
 
     public record CommandItem(String name, String description, String usage, List<String> aliases,
-                              boolean registered, CommandDisableService.CommandRules rules) {}
+                              boolean registered, CommandSettingsService.CommandRules rules, String displayName, boolean groupConfigurable) {}
 }

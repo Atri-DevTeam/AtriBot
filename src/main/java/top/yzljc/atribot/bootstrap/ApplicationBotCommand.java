@@ -2,7 +2,7 @@ package top.yzljc.atribot.bootstrap;
 
 import top.yzljc.atricore.core.BotCommand;
 import top.yzljc.atribot.configuration.Properties;
-import top.yzljc.atribot.command.CommandDisableService;
+import top.yzljc.atribot.command.CommandSettingsService;
 import top.yzljc.atribot.function.command.SignCommand;
 import top.yzljc.atribot.i18n.I18N;
 import java.util.Optional;
@@ -32,7 +32,7 @@ public final class ApplicationBotCommand extends BotCommand {
 
     @Override
     public Optional<String> disabledReason(String commandName, String groupId) {
-        return CommandDisableService.resolve(commandName, groupId).map(CommandDisableService.DisableDecision::reason);
+        return CommandSettingsService.INSTANCE.resolve(commandName, groupId).map(CommandSettingsService.DisableDecision::reason);
     }
 
 }

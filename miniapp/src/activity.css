@@ -186,44 +186,6 @@
     font-weight: 500;
 }
 
-.setting-state {
-    font-size: 10px;
-    padding: 3px 7px;
-    background: #ffffff80;
-    border: 1px solid #fff;
-    border-radius: 7px;
-    color: #9aa38f;
-}
-
-.setting-state.enabled {
-    background: #d9e6c960;
-    color: #7b9368;
-}
-
-.reward-priorities {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.reward-priorities > span {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 10px;
-    border: 1px solid #fff;
-    border-radius: 7px;
-    padding: 4px 7px;
-    background: #ffffff70;
-    color: #87997a;
-}
-
-.reward-priorities b {
-    font-size: 11px;
-    font-weight: 500;
-}
-
 .settings-fields .share-url {
     display: block;
 }
@@ -326,6 +288,34 @@
 
 .profile-details {
     margin-top: 16px;
+}
+
+.profile-details .settings-card {
+    margin-top: 0;
+}
+
+.profile-details .settings-groups {
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.profile-details .settings-group + .settings-group {
+    border-left: 0;
+    padding-left: 0;
+    padding-top: 15px;
+    border-top: 1px solid #b3c1a726;
+}
+
+.data-page .activity-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+}
+
+@media (max-width: 760px) {
+    .data-page .activity-list {
+        grid-template-columns: 1fr;
+    }
 }
 
 .module-heading, .module-heading > div {

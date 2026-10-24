@@ -19,6 +19,7 @@
         <div class="command-main">
           <div class="command-name-line">
             <code>/{{ item.name }}</code>
+            <span v-if="item.groupConfigurable" class="command-badge group">{{ item.displayName }} · 群主可配置</span>
             <span v-if="isTestCommand(item)" class="command-badge test">测试指令</span>
             <span v-if="!item.registered" class="command-badge warn">未绑定执行器</span>
             <span v-if="isActive(item.rules?.global)" class="command-badge off">全局停用中</span>
@@ -72,7 +73,7 @@
                                                :disabled="form.permanent"/></label>
             <label><span>结束时间</span><input v-model="form.endsAt" type="datetime-local" :disabled="form.permanent"/></label>
           </div>
-          <p class="command-time-note">时间留空表示不限制。全局规则生效时，会优先回复全局理由。</p>
+          <p class="command-time-note">时间留空表示不限制。高级停用规则生效期间，个人面板中的对应指令设置只读；全局规则优先于单群规则。</p>
           <p v-if="dialogError" class="command-dialog-error">{{ dialogError }}</p>
           <footer>
             <button v-if="hasCurrentRule" class="ghost-button danger" :disabled="saving" @click="removeRule">清除规则

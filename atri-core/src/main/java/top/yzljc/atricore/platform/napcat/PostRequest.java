@@ -88,6 +88,8 @@ public class PostRequest {
                     .POST(HttpRequest.BodyPublishers.ofString(json));
             if (timeout != null) {
                 requestBuilder.timeout(timeout);
+            } else if (type == RequestType.SEND_GROUP_FORWARD_MSG || type == RequestType.SEND_PRIVATE_FORWARD_MSG) {
+                requestBuilder.timeout(Duration.ofMinutes(3));
             }
             HttpRequest request = requestBuilder.build();
 

@@ -1,34 +1,25 @@
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, reactive, shallowRef} from 'vue'
+import {computed} from 'vue'
 import Icon from './Icon.vue'
-import {number, recordDate, rewardName, type Activity, type PrivateRequest} from '../activity'
+import {number, recordDate, type Activity} from '../activity'
 
-const props = defineProps<{
-  request: PrivateRequest;
-}>()
-const emit = defineEmits<{ ready: []; copy: [value: string] }>()
-const activity = shallowRef<Activity | null>(null)
-let disposed = false
-onBeforeUnmount(() => {
-  disposed = true;
-})
-const busy = reactive({activity: false})
-const failed = reactive({activity: false})
-const problem = (section: string) => failed.activity || Boolean(activity.value?.unavailable.includes(section))
+const props = defineProps<{activity: Activity | null; busy: boolean; failed: boolean}>()
+const emit = defineEmits<{retry: []}>()
+const problem = (section: string) => props.failed || Boolean(props.activity?.unavailable.includes(section))
 const games = computed(() => {
   const ratio = (wins: number, plays: number) => plays ? `${Math.round(wins / plays * 1000) / 10}%` : '—'
   const definitions = [
     {id: 'minesweeper', name: '扫雷', icon: 'mine'}, {id: 'sound', name: '听声辨物', icon: 'sound'},
     {id: 'connect4', name: '四子棋', icon: 'grid'}, {id: 'roulette', name: '幸运轮盘', icon: 'wheel'},
     {id: 'rsp', name: '石头剪刀布', icon: 'scissors'}, {id: 'reaction', name: '反应力测试', icon: 'timer'},
-    {id: 'fishing', name: '今日钓鱼', icon: 'gamepad'}
+    {id: 'fishing', name: '今日钓鱼', icon: 'gamepad'}, {id: 'tictactoe', name: '井字棋', icon: 'grid'}
   ]
   return definitions.map(def => {
-    const r = activity.value?.reaction
-    const s = activity.value?.games?.find(row => row.game === def.id)
+    const r = props.activity?.reaction
+    const s = props.activity?.games?.find(row => row.game === def.id)
     const stats = s || {operations: 0, correct: 0, plays: 0, wins: 0}
     const bad = problem(def.id === 'reaction' ? 'reaction' : 'games')
-    const ready = !!activity.value && !bad
+    const ready = !!props.activity && !bad
     const counters = def.id === 'reaction' ? r?.metrics : s?.metrics
     const count = (key: string, fallback = 0) => counters?.[key] ?? fallback
     const metric = (label: string, key: string, fallback = 0) => ({label, value: ready ? number(count(key, fallback)) : '—'})
@@ -74,6 +65,10 @@ const games = computed(() => {
       metrics.push(metric('败场数', 'losses'), metric('平局数', 'draws'), metric('落子次数', 'moves'),
         metric('正常获胜', 'normalWins'), metric('对手超时获胜', 'timeoutWins'), metric('本人落子超时', 'moveTimeouts'),
         metric('超时结束场次', 'timeoutPlays'), metric('开局参与次数', 'participations'))
+    } else if (def.id === 'tictactoe') {
+      metrics.push(metric('败场数', 'losses'), metric('平局数', 'draws'), metric('落子次数', 'moves'),
+        metric('正常获胜', 'normalWins'), metric('对手放弃获胜', 'forfeitWins'), metric('对手超时获胜', 'timeoutWins'),
+        metric('主动放弃', 'forfeits'), metric('落子超时', 'moveTimeouts'))
     } else if (def.id === 'roulette') {
       metrics[1] = {label: '幸存次数', value: ready ? number(stats.wins) : '—'}
       metrics.push(metric('淘汰次数', 'losses'), metric('手动操作', 'actions'), metric('指定自己', 'selfTargets'),
@@ -89,32 +84,6 @@ const games = computed(() => {
   })
 })
 
-async function loadActivity() {
-  if (busy.activity) return
-  busy.activity = true
-  try {
-    const result = await props.request<Activity>('activity');
-    if (result) {
-      activity.value = result;
-      failed.activity = false
-    }
-  } catch {
-    failed.activity = true
-  } finally {
-    busy.activity = false
-  }
-}
-
-function reload() {
-  return loadActivity()
-}
-
-defineExpose({reload})
-onMounted(() => {
-  void Promise.allSettled([loadActivity()]).then(() => {
-    if (!disposed) emit('ready')
-  })
-})
 </script>
 
 <template>
@@ -123,14 +92,14 @@ onMounted(() => {
       <div>
         <Icon name="gamepad"/>
         <h2>小游戏</h2></div>
-      <button v-if="failed.activity || busy.activity || activity?.unavailable.length" class="text-button"
-              :disabled="busy.activity" @click="loadActivity">重新读取
-        <Icon name="refresh" :class="{ 'refresh-spinning': busy.activity }"/>
+      <button v-if="failed || busy || activity?.unavailable.length" class="text-button"
+              :disabled="busy" @click="emit('retry')">重新读取
+        <Icon name="refresh" :class="{ 'refresh-spinning': busy }"/>
       </button>
     </div>
     <div class="games-grid">
       <section v-for="game in games" :key="game.id" class="game-card glass" :data-game="game.id"
-               :aria-label="game.name + '成绩'" :aria-busy="busy.activity">
+               :aria-label="game.name + '成绩'" :aria-busy="busy">
         <header class="game-card-heading"><span class="game-emblem"><Icon :name="game.icon"/></span>
           <h3>{{ game.name }}</h3><span v-if="game.rank" class="game-rank"
                                         :title="'用时排名 ' + game.rank">排名：#{{ number(game.rank) }}</span></header>
@@ -148,75 +117,5 @@ onMounted(() => {
         </template>
       </section>
     </div>
-    <section class="settings-card glass" aria-label="用户设置" :aria-busy="busy.activity">
-      <header class="module-heading">
-        <div>
-          <Icon name="settings"/>
-          <h2>用户设置</h2></div>
-      </header>
-      <div v-if="problem('settings')" class="section-empty">设置暂时无法读取
-        <button class="text-button" :disabled="busy.activity" @click="loadActivity">重试
-          <Icon name="refresh" :class="{ 'refresh-spinning': busy.activity }"/>
-        </button>
-      </div>
-      <div v-else-if="!activity?.settings" class="section-empty">读取中…</div>
-      <template v-else>
-        <dl class="settings-fields">
-          <div>
-            <dt>B站 UID</dt>
-            <dd>{{ activity.settings.bilibiliUid || '未绑定' }}</dd>
-          </div>
-        </dl>
-        <div class="settings-groups">
-          <div class="settings-group">
-            <h3 class="settings-subtitle">Hypixel 自动领奖</h3>
-            <dl class="settings-fields">
-              <div>
-                <dt>自动领取</dt>
-                <dd><span class="setting-state" :class="{ enabled: activity.settings.reward.enabled }">{{
-                    activity.settings.reward.enabled ? '已开启' : '已关闭'
-                  }}</span></dd>
-              </div>
-              <div>
-                <dt>选择方式</dt>
-                <dd>{{ activity.settings.reward.mode === 'priority' ? '奖励内容优先' : '稀有度优先' }}</dd>
-              </div>
-            </dl>
-            <div v-if="activity.settings.reward.priorities.length" class="reward-priorities"><span
-                v-for="priority in activity.settings.reward.priorities"
-                :key="priority.item">{{ rewardName(priority.item) }}<b>{{ priority.value }}</b></span></div>
-          </div>
-          <div class="settings-group">
-            <h3 class="settings-subtitle">分享与邀请</h3>
-            <dl class="settings-fields">
-              <div>
-                <dt>已邀请用户</dt>
-                <dd>{{ number(activity.settings.share.invitedCount) }} 人</dd>
-              </div>
-              <div>
-                <dt>通过邀请添加</dt>
-                <dd>{{ activity.settings.share.invitedBySomeone ? '是' : '否' }}</dd>
-              </div>
-              <div v-if="activity.settings.share.createdAt">
-                <dt>链接创建日期</dt>
-                <dd>{{ recordDate(activity.settings.share.createdAt) }}</dd>
-              </div>
-              <div class="share-url">
-                <dt>分享链接</dt>
-                <dd>
-                  <template v-if="activity.settings.share.url"><span
-                      class="share-url-text">{{ activity.settings.share.url }}</span>
-                    <button class="copy-button" aria-label="复制分享链接"
-                            @click="emit('copy', activity.settings.share.url)">
-                      <Icon name="copy"/>
-                    </button>
-                  </template>
-                  <span v-else>未生成</span></dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      </template>
-    </section>
   </div>
 </template>

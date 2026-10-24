@@ -1,15 +1,19 @@
 package top.yzljc.atribot.function.games;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.ToIntBiFunction;
+import java.util.function.BiConsumer;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.database.repo.LootRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository;
+import top.yzljc.atribot.database.repo.UserGameDataRepository.Counters;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -42,16 +46,24 @@ public class TicTacToeGame implements CommandExecutor {
     private final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
     private final ToIntBiFunction<String, Integer> reward;
+    private final BiConsumer<String, List<Counters>> statistics;
 
     private enum Phase {WAITING, PLAYING, FINISHED}
+    private enum Outcome {NORMAL, FORFEIT, TIMED_OUT}
 
     public TicTacToeGame() {
         this(Atri.getInstance().getScheduler(), LootRepository::addCoins);
     }
 
     TicTacToeGame(Scheduler scheduler, ToIntBiFunction<String, Integer> reward) {
+        this(scheduler, reward, (eventId, counters) ->
+                UserGameDataRepository.recordCounters(UserGameDataRepository.Game.tictactoe, eventId, counters));
+    }
+
+    TicTacToeGame(Scheduler scheduler, ToIntBiFunction<String, Integer> reward, BiConsumer<String, List<Counters>> statistics) {
         this.scheduler = scheduler;
         this.reward = reward;
+        this.statistics = statistics;
     }
 
     @Override
@@ -150,7 +162,7 @@ public class TicTacToeGame implements CommandExecutor {
         if (game.phase == Phase.WAITING) finish(game, "发起者已取消对局");
         else {
             String winner = game.crossPlayer.equals(userId) ? game.circlePlayer : game.crossPlayer;
-            finish(game, Markdown.at(userId) + " 已放弃，获胜：" + Markdown.at(winner), winner);
+            finish(game, Markdown.at(userId) + " 已放弃，获胜：" + Markdown.at(winner), winner, Outcome.FORFEIT);
         }
         sendBoard(game, sender);
     }
@@ -160,11 +172,20 @@ public class TicTacToeGame implements CommandExecutor {
     }
 
     private void finish(GameState game, String result, String winner) {
+        finish(game, result, winner, Outcome.NORMAL);
+    }
+
+    private void finish(GameState game, String result, String winner, Outcome outcome) {
         if (game.phase == Phase.FINISHED) return;
         game.phase = Phase.FINISHED;
         game.result = result;
         activeGames.remove(game.groupId, game);
         if (game.timeout != null) game.timeout.cancel(false);
+        if (game.circlePlayer != null) {
+            statistics.accept(game.id, List.of(
+                    matchCounters(game, game.crossPlayer, 1, winner, outcome),
+                    matchCounters(game, game.circlePlayer, 2, winner, outcome)));
+        }
         if (winner != null) {
             String loser = game.crossPlayer.equals(winner) ? game.circlePlayer : game.crossPlayer;
             int winnerGolds = reward.applyAsInt(winner, 15);
@@ -172,6 +193,19 @@ public class TicTacToeGame implements CommandExecutor {
             game.result += "\n\n> " + Markdown.at(winner) + rewardText(winnerGolds)
                     + "\n> " + Markdown.at(loser) + rewardText(loserGolds);
         }
+    }
+
+    private Counters matchCounters(GameState game, String userId, int piece, String winner, Outcome outcome) {
+        boolean won = userId.equals(winner);
+        boolean lost = winner != null && !won;
+        return new Counters(userId, Map.of(
+                "plays", 1L, "wins", won ? 1L : 0L, "losses", lost ? 1L : 0L, "draws", winner == null ? 1L : 0L,
+                "moves", Arrays.stream(game.board).filter(value -> value == piece).count(),
+                "normalWins", won && outcome == Outcome.NORMAL ? 1L : 0L,
+                "forfeitWins", won && outcome == Outcome.FORFEIT ? 1L : 0L,
+                "timeoutWins", won && outcome == Outcome.TIMED_OUT ? 1L : 0L,
+                "forfeits", lost && outcome == Outcome.FORFEIT ? 1L : 0L,
+                "moveTimeouts", lost && outcome == Outcome.TIMED_OUT ? 1L : 0L));
     }
 
     private String rewardText(int golds) {
@@ -188,7 +222,7 @@ public class TicTacToeGame implements CommandExecutor {
                 if (phase == Phase.WAITING) finish(game, "等待加入超时，本局已取消");
                 else {
                     String winner = game.moves % 2 == 0 ? game.circlePlayer : game.crossPlayer;
-                    finish(game, Markdown.at(game.currentPlayer()) + " 落子超时，获胜：" + Markdown.at(winner), winner);
+                    finish(game, Markdown.at(game.currentPlayer()) + " 落子超时，获胜：" + Markdown.at(winner), winner, Outcome.TIMED_OUT);
                 }
                 sendBoard(game, game.replyTo);
             }

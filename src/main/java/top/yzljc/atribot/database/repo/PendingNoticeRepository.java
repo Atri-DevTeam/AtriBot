@@ -21,6 +21,7 @@ import java.util.UUID;
 @Slf4j
 public class PendingNoticeRepository {
     public static final String GROUP_LEAVE_MESSAGE_SOURCE = "webui_group_leave_message";
+    public static final String GROUP_LEAVE_MESSAGE_JOIN_SOURCE = "webui_group_leave_message_join";
 
     public static void init() {
         String sql = "CREATE TABLE IF NOT EXISTS `pending_notice` (" +
@@ -111,13 +112,14 @@ public class PendingNoticeRepository {
         if (groupOpenId == null || groupOpenId.isBlank()) return null;
         String sql = "SELECT * FROM `pending_notice` WHERE `is_delivered` = FALSE AND `target_type` = 'OFFICIAL_GROUP' " +
                 "AND `target_id` = ? AND (`mention_user_id` IS NULL OR `mention_user_id` = ?) " +
-                "AND (`source` IS NULL OR `source` <> ?) " +
+                "AND (`source` IS NULL OR `source` NOT IN (?, ?)) " +
                 "ORDER BY `create_time` ASC LIMIT 1";
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupOpenId);
             ps.setString(2, speakerUserId);
             ps.setString(3, GROUP_LEAVE_MESSAGE_SOURCE);
+            ps.setString(4, GROUP_LEAVE_MESSAGE_JOIN_SOURCE);
             try (var rs = ps.executeQuery()) {
                 if (rs.next()) return rowToDTO(rs);
             }
@@ -132,10 +134,11 @@ public class PendingNoticeRepository {
      */
     public static List<PendingNoticeDTO> listGroupLeaveMessages(String groupId) {
         String sql = "SELECT * FROM `pending_notice` WHERE `target_type` = 'OFFICIAL_GROUP' " +
-                "AND `target_id` = ? AND `source` = ? AND `is_delivered` = FALSE ORDER BY `create_time`, `source_id`, `id`";
+                "AND `target_id` = ? AND `source` IN (?, ?) AND `is_delivered` = FALSE ORDER BY `create_time`, `source_id`, `id`";
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
             ps.setString(1, groupId);
             ps.setString(2, GROUP_LEAVE_MESSAGE_SOURCE);
+            ps.setString(3, GROUP_LEAVE_MESSAGE_JOIN_SOURCE);
             try (var rs = ps.executeQuery()) {
                 List<PendingNoticeDTO> result = new ArrayList<>();
                 while (rs.next()) result.add(rowToDTO(rs));
@@ -148,11 +151,12 @@ public class PendingNoticeRepository {
 
     public static boolean deleteGroupLeaveMessage(String groupId, String id) {
         String sql = "DELETE FROM `pending_notice` WHERE `id` = ? AND `target_id` = ? " +
-                "AND `target_type` = 'OFFICIAL_GROUP' AND `source` = ? AND `is_delivered` = FALSE";
+                "AND `target_type` = 'OFFICIAL_GROUP' AND `source` IN (?, ?) AND `is_delivered` = FALSE";
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
             ps.setString(1, id);
             ps.setString(2, groupId);
             ps.setString(3, GROUP_LEAVE_MESSAGE_SOURCE);
+            ps.setString(4, GROUP_LEAVE_MESSAGE_JOIN_SOURCE);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             throw new IllegalStateException("删除群留言失败", e);

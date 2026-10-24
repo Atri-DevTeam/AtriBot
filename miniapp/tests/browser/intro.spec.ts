@@ -21,7 +21,7 @@ test('intro waits for initial records and reveals once without requesting invent
   await page.goto(entry)
   await expect(page.getByLabel('正在加载用户档案')).toBeVisible()
   await expect(page.locator('.intro-caption')).toHaveText('正在读取资料')
-  await expect(page.locator('.dashboard')).toHaveAttribute('inert', '')
+  await expect(page.locator('#profile-page')).toHaveAttribute('inert', '')
   await expect(page.locator('.intro-portrait img')).toBeVisible()
   await expect.poll(() => page.locator('.intro-portrait img').evaluate(img => (img as HTMLImageElement).naturalWidth)).toBe(1024)
   await page.screenshot({ path: testInfo.outputPath('intro.png'), animations: 'disabled' })

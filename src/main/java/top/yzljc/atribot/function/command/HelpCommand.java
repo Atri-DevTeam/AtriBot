@@ -45,7 +45,8 @@ public class HelpCommand implements CommandExecutor {
                     "> " + Markdown.enterCommand("/newyear", "\uD83E\uDDE8查看新年倒计时") + "\n" +
                     "> " + Markdown.enterCommand("/tasks", "\uD83D\uDD14设置推送任务") + "\n" +
                     "> " + Markdown.img(RS.get("resource.image.minecraft-cape-example"), 16, 16) + Markdown.enterCommand("/mctool cape", "查看ᴍᴄ披风拥有情况") + "\n" +
-                    "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABHypixel Ban Track") + "\n" +
+                    "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABʜʏᴘɪxᴇʟ ʙᴀɴ ᴛʀᴀᴄᴋ") + "\n" +
+                    "> " + Markdown.img(RS.get("resource.image.icon-ec"), 16, 16) + Markdown.enterCommand("/ec", "ᴍɪɴᴇᴄʀᴀғᴛ物品附魔模拟") + "\n" +
                     "> " + Markdown.enterCommand("/games", "\uD83E\uDDE9游玩更多经典小游戏"));
 
 //            Object keyboard = TC.keyboard(

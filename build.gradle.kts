@@ -114,7 +114,8 @@ tasks.processResources {
         val isOfficialWebuiAsset = path.startsWith("official-webui/") || path.startsWith("miniapp/")
 
         // JSON 模板中的占位符和转义字符必须原样保留。
-        val isJsonTemplate = path.startsWith("atri-chat/") || path.startsWith("games/") || path == "join-welcome-defaults.json"
+        val isJsonTemplate = path.startsWith("atri-chat/") || path.startsWith("games/")
+                || path.startsWith("minecraft/") || path == "join-welcome-defaults.json"
         if (!isBinary && !isGitProps && !isOfficialWebuiAsset && !isJsonTemplate) {
             expand(
                 "version" to projVersion

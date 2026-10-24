@@ -1,5 +1,6 @@
 package top.yzljc.atribot.auth;
 
+import org.jspecify.annotations.NonNull;
 import top.yzljc.atribot.utils.YamlConfiguration;
 
 import java.net.URI;
@@ -39,7 +40,7 @@ public record SiteAuthorizationSettings(boolean enabled, Map<String, Client> cli
         }
 
         @Override
-        public String toString() {
+        public @NonNull String toString() {
             return "Client[redirectUris=" + redirectUris + ", patchUrl=" + patchUrl + "]";
         }
     }

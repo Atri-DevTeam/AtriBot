@@ -68,6 +68,15 @@ public class ItemCommand implements CommandExecutor {
                     )
             );
 
+            var md = TC.md(Markdown.img(d.image().url(), d.image().width(), d.image().height()) + "\n\n" +
+                    Markdown.at(qq.getUserId()) + "\n\n" +
+                    "> 收集进度: " + collectProgress + "\n" +
+                    "> 收集数量: " + collectCount + "\n" +
+                    "> 收集种类: " + collectTypes
+            );
+
+            qq.sendMessage(md.setKeyboard(ks), false);
+
             return true;
         }
 

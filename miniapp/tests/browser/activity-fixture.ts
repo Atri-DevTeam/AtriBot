@@ -15,9 +15,11 @@ export const activity: Activity = {
     { game: 'roulette', operations: 0, correct: 0, plays: 12, wins: 8 },
     { game: 'rsp', operations: 0, correct: 0, plays: 30, wins: 15 },
     { game: 'fishing', operations: 0, correct: 0, plays: 20, wins: 0,
-      metrics: { plays: 20, fish: 16, junk: 1, treasure: 3, gold: 810, enchanted: 2 } }
+      metrics: { plays: 20, fish: 16, junk: 1, treasure: 3, gold: 810, enchanted: 2 } },
+    { game: 'tictactoe', operations: 0, correct: 0, plays: 10, wins: 6,
+      metrics: { plays: 10, wins: 6, losses: 2, draws: 2, moves: 34, normalWins: 4, forfeitWins: 1, timeoutWins: 1, forfeits: 1, moveTimeouts: 1 } }
   ],
-  settings: { bilibiliUid: '12345678', reward: { enabled: true, mode: 'priority', priorities: [{ item: 'BEDWARS', value: 30 }, { item: 'SKYWARS', value: 20 }] },
+  settings: { bilibiliUid: '12345678', unsupportedKeyboard: false, reward: { enabled: true, mode: 'priority', priorities: [{ item: 'BEDWARS', value: 30 }, { item: 'SKYWARS', value: 20 }], items: ['BEDWARS', 'SKYWARS', 'experience'] },
     share: { url: 'https://qun.qq.com/example', invitedCount: 6, invitedBySomeone: false, createdAt: '2026-09-18T12:00:00' } }
 }
 const names = ['钻石', '草方块', '末影珍珠', '附魔金苹果', '海晶石', '紫水晶', '红石粉', '绿宝石', '铁锭', '下界合金锭', '火焰棒', '蜂蜜瓶', '橡木', '萤石', '南瓜', '青金石', '煤炭', '书']

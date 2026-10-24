@@ -1,31 +1,42 @@
 <script setup lang="ts">
 import {computed, onBeforeUnmount, ref, shallowRef, watch} from 'vue'
 import Icon from './Icon.vue'
+import ToggleSwitch from './ToggleSwitch.vue'
+import {ApiError} from '../session'
 import botBlue from '../assets/bot-blue.svg'
-import {renderMarkdown} from '../../../webui/src/shared/lib/markdown.js'
+import {escapeHtml, renderMarkdown} from '../../../webui/src/shared/lib/markdown.js'
+import {renderCommandInputTags} from '../../../webui/src/shared/lib/messageRender.js'
 import 'katex/dist/katex.min.css'
 import type {PrivateRequest} from '../activity'
-import type {GroupWelcome} from '../groups'
+import type {GroupWelcome, PrivatePost} from '../groups'
 import type {Profile} from '../profile'
 
-const props = defineProps<{ bot: Profile['bot']; groupId: string; request: PrivateRequest; revision: number }>()
+const props = defineProps<{ bot: Profile['bot']; groupId: string; request: PrivateRequest; post: PrivatePost; revision: number }>()
 const avatarFailed = ref(false)
 watch(() => props.bot.avatarUrl, () => {
   avatarFailed.value = false
 })
 const welcome = shallowRef<GroupWelcome | null>(null)
 const loading = ref(false), error = ref(false)
+const saving = ref(false), saveError = ref('')
 const expanded = ref(false)
 let version = 0, disposed = false
 const preview = computed(() => {
-  const text = welcome.value?.text || ''
+  const labels: string[] = []
+  const text = (welcome.value?.text || '').replace(/<qqbot-cmd-input\b[^>]*\/>/g, tag => {
+    const label = renderCommandInputTags(tag)
+    if (label === tag) return ''
+    return `\uE002${labels.push(label) - 1}\uE003`
+  })
   return renderMarkdown(`@新成员${text.trim() ? ` ${text}` : ''}`)
       .replace('@新成员', '<span class="welcome-mention">@新成员</span>')
       .replace(/<a\b[^>]*>/g, '<span class="welcome-link">').replace(/<\/a>/g, '</span>')
+      .replace(/\uE002(\d+)\uE003/g, (_, index) => `<span class="welcome-command">${escapeHtml(labels[Number(index)] || '')}</span>`)
 })
 const style = (value: string) => ['GRAY', 'BLUE', 'RED', 'BLUE_WITH_BACKGROUND', 'ICON_BUTTON'].includes(value) ? value : 'BLUE'
 
 async function load() {
+  if (saving.value) return
   const current = ++version
   loading.value = true
   try {
@@ -41,11 +52,29 @@ async function load() {
   }
 }
 
+async function setEnabled(enabled: boolean) {
+  if (!welcome.value?.canEdit || loading.value || saving.value) return
+  const current = version
+  saving.value = true
+  saveError.value = ''
+  try {
+    const result = await props.post<{enabled: boolean}>(`groups/${encodeURIComponent(props.groupId)}/join-welcome`, {enabled})
+    if (!disposed && current === version && result && welcome.value) welcome.value = {...welcome.value, enabled: result.enabled}
+  } catch (reason) {
+    if (!disposed && current === version) {
+      saveError.value = reason instanceof ApiError && ['GROUP_NOT_BOUND', 'GROUP_SETTINGS_FORBIDDEN', 'GROUP_UNAVAILABLE'].includes(reason.code)
+        ? '当前群无法修改欢迎设置，请刷新群资料' : '保存失败，请稍后重试'
+    }
+  } finally { if (current === version) saving.value = false }
+}
+
 watch(() => [props.groupId, props.revision], () => {
   version++;
   welcome.value = null;
   error.value = false;
   loading.value = false
+  saving.value = false;
+  saveError.value = ''
   if (expanded.value) void load()
 })
 
@@ -61,14 +90,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="group-welcome glass" aria-label="加群欢迎" :aria-busy="loading">
+  <section class="group-welcome glass" aria-label="加群欢迎" :aria-busy="loading || saving">
     <header class="welcome-heading">
       <button class="welcome-toggle" :aria-expanded="expanded" @click="toggle">
         <Icon name="message"/>
         <h3>加群欢迎</h3>
         <Icon name="chevron" :class="{ expanded }"/>
       </button>
-      <button v-if="expanded" class="text-button" :disabled="loading" aria-label="刷新加群欢迎" @click="load">
+      <button v-if="expanded" class="text-button" :disabled="loading || saving" aria-label="刷新加群欢迎" @click="load">
         <Icon name="refresh" :class="{ 'refresh-spinning': loading }"/>
       </button>
     </header>
@@ -80,10 +109,13 @@ onBeforeUnmount(() => {
       </div>
       <p v-else-if="!welcome" class="welcome-empty" role="status">正在读取欢迎内容…</p>
       <template v-if="welcome">
+        <div class="welcome-setting"><span>欢迎新成员</span><ToggleSwitch :model-value="welcome.enabled" label="加群欢迎开关"
+             :disabled="!welcome.canEdit || loading || saving" @update:model-value="setEnabled"/></div>
+        <p v-if="saveError" class="welcome-save-error" role="alert">{{ saveError }}</p>
         <div class="welcome-badges"><span :class="{ enabled: welcome.enabled }">{{
             welcome.enabled ? '已开启' : '已关闭'
           }}</span><span>{{ welcome.custom ? '自定义欢迎' : '系统默认 · 普通新成员' }}</span><span
-            class="welcome-readonly"><Icon name="lock"/>只读</span></div>
+            class="welcome-readonly"><Icon name="lock"/>内容只读</span></div>
         <div class="welcome-message">
         <span class="welcome-bot">
           <img v-if="bot.avatarUrl && !avatarFailed" :src="bot.avatarUrl" alt="发送者头像" referrerpolicy="no-referrer"
@@ -110,11 +142,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-welcome {
-  margin-top: 16px;
-  padding: 22px 25px;
-  border-radius: 23px;
+  margin-top: 14px;
+  padding: 20px 22px;
+  border-radius: 21px;
   min-width: 0;
 }
+
+.welcome-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 12px; color: #637857; }
+.welcome-save-error { font-size: 11px; color: #ad5656; margin: 12px 0 0; }
 
 .welcome-heading, .welcome-heading > div {
   display: flex;
@@ -345,7 +380,7 @@ onBeforeUnmount(() => {
   border-top: 1px solid #b5c3a740;
 }
 
-.welcome-markdown :deep(.welcome-mention), .welcome-markdown :deep(.welcome-link) {
+.welcome-markdown :deep(.welcome-mention), .welcome-markdown :deep(.welcome-link), .welcome-markdown :deep(.welcome-command) {
   color: #6e93b4;
 }
 
@@ -415,8 +450,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 760px) {
   .group-welcome {
-    padding: 18px;
-    border-radius: 21px;
+    padding: 16px;
+    border-radius: 19px;
   }
 
   .welcome-message {

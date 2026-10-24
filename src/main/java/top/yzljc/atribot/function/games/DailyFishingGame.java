@@ -123,6 +123,8 @@ public final class DailyFishingGame implements CommandExecutor {
 
         markdown += "> 群系：" + result.biomeName() + "\n" +
                 "> 渔获：**" + result.name() + "**（" + category + "）\n";
+        int luck = result.luck() == null ? table.luck(result.totalGold()) : result.luck();
+        markdown += "> 幸运值：" + luck;
 
         if (result.durability() != null) {
             var durability = result.durability();
@@ -136,7 +138,10 @@ public final class DailyFishingGame implements CommandExecutor {
             }
         }
 
-        markdown += "\n> " + Markdown.img("atribot_pic", RS.get("resource.image.gold"), 16, 16) + "+ " + result.baseGold() + " 金粒（钓鱼奖励）";
+        markdown += "\n> " + Markdown.img("atribot_pic", RS.get("resource.image.gold"), 16, 16) + "+ " + result.totalGold() + " 金粒（钓鱼奖励）";
+        if (result.bonusGold() > 0) {
+            markdown += "\n> 基础奖励：" + result.baseGold() + " 金粒，附魔加成：" + result.bonusGold() + " 金粒";
+        }
 
         return markdown;
     }

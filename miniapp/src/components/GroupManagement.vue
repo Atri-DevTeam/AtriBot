@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch} from 'vue'
 import Icon from './Icon.vue'
+import GroupPushSettings from './GroupPushSettings.vue'
+import GroupCommandSettings from './GroupCommandSettings.vue'
 import groupsIcon from '../assets/dock-groups.png'
 import {ApiError} from '../session'
 import type {PrivateRequest} from '../activity'
@@ -10,6 +12,7 @@ import type {BindingChallenge, BoundGroup, GroupOverview, PrivatePost} from '../
 const GroupWelcome = defineAsyncComponent(() => import('./GroupWelcome.vue'))
 const GroupModeration = defineAsyncComponent(() => import('./GroupModeration.vue'))
 const moderationPanel = ref<{ mayLeave: () => boolean } | null>(null)
+const commandPanel = ref<{ mayLeave: () => boolean } | null>(null)
 const welcomeRevision = ref(0)
 
 const props = defineProps<{ bot: Profile['bot']; request: PrivateRequest; post: PrivatePost; active: boolean }>()
@@ -41,6 +44,7 @@ async function openGroup(groupId: string) {
 }
 
 async function backToList(force = false) {
+  if (!force && commandPanel.value && !commandPanel.value.mayLeave()) return
   if (!force && moderationPanel.value && !moderationPanel.value.mayLeave()) return
   const previousId = selectedGroupId.value
   selectedGroupId.value = null
@@ -73,6 +77,7 @@ async function loadDetail() {
 }
 
 async function refresh() {
+  if (commandPanel.value && !commandPanel.value.mayLeave()) return
   if (moderationPanel.value && !moderationPanel.value.mayLeave()) return
   welcomeRevision.value++;
   await load();
@@ -82,6 +87,7 @@ async function refresh() {
 async function unbind() {
   const id = selectedGroupId.value
   if (!id || unbinding.value) return
+  if (commandPanel.value && !commandPanel.value.mayLeave()) return
   if (moderationPanel.value && !moderationPanel.value.mayLeave()) return
   unbinding.value = true;
   unbindError.value = '';
@@ -343,8 +349,12 @@ onBeforeUnmount(() => {
       </div>
       <p v-if="unbindError" class="group-form-error" role="alert">{{ unbindError }}</p>
     </article>
+    <GroupCommandSettings v-if="selectedBinding" :key="selectedBinding.groupId" ref="commandPanel" :group-id="selectedBinding.groupId"
+                          :request="request" :post="post" :revision="welcomeRevision"/>
+    <GroupPushSettings v-if="selectedBinding" :key="selectedBinding.groupId" :group-id="selectedBinding.groupId"
+                       :request="request" :post="post" :revision="welcomeRevision"/>
     <GroupWelcome v-if="selectedBinding" :key="selectedBinding.groupId" :bot="bot" :group-id="selectedBinding.groupId"
-                  :request="request" :revision="welcomeRevision"/>
+                  :request="request" :post="post" :revision="welcomeRevision"/>
     <GroupModeration v-if="selectedBinding && group?.canManageModeration === true" :key="selectedBinding.groupId"
                      ref="moderationPanel" :group-id="selectedBinding.groupId"
                      :request="request" :post="post" :revision="welcomeRevision"
@@ -439,8 +449,8 @@ onBeforeUnmount(() => {
 }
 
 .group-binding {
-  padding: 25px 27px;
-  border-radius: 23px;
+  padding: 22px 24px;
+  border-radius: 21px;
   margin-bottom: 22px;
 }
 
@@ -721,9 +731,9 @@ onBeforeUnmount(() => {
 }
 
 .bound-group {
-  padding: 28px;
+  padding: 24px;
   min-width: 0;
-  border-radius: 24px;
+  border-radius: 22px;
   animation: arrive .25s ease both;
 }
 
@@ -986,8 +996,8 @@ onBeforeUnmount(() => {
   }
 
   .group-binding, .bound-group {
-    padding: 21px;
-    border-radius: 21px;
+    padding: 18px;
+    border-radius: 19px;
   }
 
   .bound-groups {

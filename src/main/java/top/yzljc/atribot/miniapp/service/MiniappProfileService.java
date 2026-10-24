@@ -45,7 +45,7 @@ public final class MiniappProfileService {
         T map(ResultSet rows) throws SQLException;
     }
 
-    public record Account(String uuid, String username, String createdAt, String minecraftUuid, String qqNumber) {
+    public record Account(String uuid, String username, String createdAt, String minecraftUuid, String qqNumber, String qqConnectOpenId) {
     }
 
     public record Messages(long count, String firstAt, String lastAt) {
@@ -90,9 +90,10 @@ public final class MiniappProfileService {
         Collection collection = null;
         String username = null;
         try (Connection connection = connections.open()) {
-            account = read(connection, "account", "SELECT uuid, username, create_time, minecraft_uuid, qq_user_uin FROM unified_account WHERE qq_user_open_id = ? LIMIT 1",
+            account = read(connection, "account", "SELECT uuid, username, create_time, minecraft_uuid, qq_user_uin, qq_connect_open_id FROM unified_account WHERE qq_user_open_id = ? LIMIT 1",
                     userId, rows -> rows.next() ? new Account(rows.getString("uuid"), clean(rows.getString("username")),
-                            rows.getString("create_time"), clean(rows.getString("minecraft_uuid")), clean(rows.getString("qq_user_uin"))) : null, unavailable);
+                            rows.getString("create_time"), clean(rows.getString("minecraft_uuid")), clean(rows.getString("qq_user_uin")),
+                            clean(rows.getString("qq_connect_open_id"))) : null, unavailable);
             if (account != null) username = account.username();
             if (username == null) {
                 // The same recorded-name sources used by the bot's user management page.

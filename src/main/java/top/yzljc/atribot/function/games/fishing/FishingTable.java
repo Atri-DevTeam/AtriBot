@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.ToIntFunction;
 import java.util.random.RandomGenerator;
 
@@ -29,6 +30,7 @@ import java.util.random.RandomGenerator;
 public final class FishingTable {
     private static final List<String> CATEGORIES = List.of("fish", "junk", "treasure");
     private final Definition definition;
+    private final Map<Integer, Double> rewardProbabilities;
 
     public record Rules(String timezone, int dailyLimit, int luckOfTheSeaLevel, int playerLuck,
                         boolean openWater, String biomeSelection) {
@@ -74,6 +76,7 @@ public final class FishingTable {
         definition = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
                 .readValue(Objects.requireNonNull(input, "Fishing table resource missing"), Definition.class);
         validate();
+        rewardProbabilities = calculateRewardProbabilities();
     }
 
     public static FishingTable load() {
@@ -104,8 +107,46 @@ public final class FishingTable {
             durability = new Durability(remaining, damage.maxDurability());
         }
         List<Enchantment> enchantments = entry.enchantment() == null ? List.of() : enchant(entry.enchantment(), random);
+        int originalGold = Math.addExact(entry.gold(), bonus(enchantments));
+        int baseGold = entry.gold() / 2;
+        int bonusGold = originalGold / 2 - baseGold;
         return new FishingResult(date.toString(), biome.id(), biome.name(), category, entry.id(), entry.name(),
-                entry.items(), entry.potion(), durability, enchantments, entry.gold(), bonus(enchantments));
+                entry.items(), entry.potion(), durability, enchantments, baseGold, bonusGold, luck(originalGold));
+    }
+
+    /**
+     * 按原始奖励在奖池中的加权排名计算幸运值，同值条目取排名区间的中点
+     *
+     * @param originalGold 减半前的渔获奖励，包含附魔加成
+     * @return 0 至 100 的幸运值，不参与出货或奖励计算
+     */
+    public int luck(int originalGold) {
+        double percentile = 0;
+        for (var reward : rewardProbabilities.entrySet()) {
+            if (reward.getKey() > originalGold) break;
+            percentile += reward.getValue() * (reward.getKey() == originalGold ? 0.5 : 1);
+        }
+        return Math.clamp(Math.round(percentile * 100), 0, 100);
+    }
+
+    private Map<Integer, Double> calculateRewardProbabilities() {
+        var probabilities = new TreeMap<Integer, Double>();
+        int biomeWeight = definition.biomes().stream().mapToInt(Biome::weight).sum();
+        int totalCategoryWeight = CATEGORIES.stream().mapToInt(this::categoryWeight).sum();
+        for (var biome : definition.biomes()) {
+            for (String category : CATEGORIES) {
+                var entries = new ArrayList<>(definition.commonLoot().get(category));
+                if (category.equals("junk")) entries.addAll(biome.appendJunk());
+                if (category.equals("treasure")) entries.addAll(biome.appendTreasure());
+                int entryWeight = entries.stream().mapToInt(Entry::weight).sum();
+                double probability = (double) biome.weight() / biomeWeight
+                        * categoryWeight(category) / totalCategoryWeight;
+                for (var entry : entries) {
+                    probabilities.merge(entry.gold(), probability * entry.weight() / entryWeight, Double::sum);
+                }
+            }
+        }
+        return java.util.Collections.unmodifiableSortedMap(probabilities);
     }
 
     int categoryWeight(String category) {

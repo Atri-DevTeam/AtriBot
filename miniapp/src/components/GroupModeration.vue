@@ -346,9 +346,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-moderation {
-  margin-top: 16px;
-  padding: 22px 25px;
-  border-radius: 23px;
+  margin-top: 14px;
+  padding: 20px 22px;
+  border-radius: 21px;
   min-width: 0;
   color: #64735e;
 }
@@ -704,8 +704,8 @@ button:disabled {
 
 @media (max-width: 760px) {
   .group-moderation {
-    padding: 18px;
-    border-radius: 21px;
+    padding: 16px;
+    border-radius: 19px;
   }
 
   .moderation-prompt {

@@ -11,11 +11,13 @@ import java.util.List;
  */
 public record FishingResult(String date, String biomeId, String biomeName, String category,
                             String entryId, String name, List<Item> items, String potion,
-                            Durability durability, List<Enchantment> enchantments, int baseGold, int bonusGold) {
+                            Durability durability, List<Enchantment> enchantments, int baseGold, int bonusGold,
+                            Integer luck) {
     public FishingResult {
         items = List.copyOf(items);
         enchantments = List.copyOf(enchantments);
-        if (baseGold <= 0 || bonusGold < 0) throw new IllegalArgumentException("Invalid fishing reward");
+        if (baseGold < 0 || bonusGold < 0) throw new IllegalArgumentException("Invalid fishing reward");
+        if (luck != null && (luck < 0 || luck > 100)) throw new IllegalArgumentException("Invalid fishing luck");
     }
 
     public int totalGold() {

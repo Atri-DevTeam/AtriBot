@@ -25,16 +25,20 @@ public final class GroupLeaveMessageController {
         String groupId = groupId(ctx);
         if (groupId == null) return;
         String content;
+        boolean triggerOnMemberJoin;
         try {
             JsonNode body = ctx.bodyAsClass(JsonNode.class);
             if (body == null || !body.path("content").isTextual()) throw new IllegalArgumentException();
             content = body.path("content").asText();
+            if (body.has("triggerOnMemberJoin") && !body.get("triggerOnMemberJoin").isBoolean())
+                throw new IllegalArgumentException();
+            triggerOnMemberJoin = body.path("triggerOnMemberJoin").asBoolean(false);
         } catch (Exception e) {
-            ctx.status(400).json(Result.customFailure("请填写 Markdown 留言内容"));
+            ctx.status(400).json(Result.customFailure("留言内容或触发设置无效"));
             return;
         }
         try {
-            ctx.json(Result.success(Map.of("id", GroupLeaveMessageService.add(groupId, content))));
+            ctx.json(Result.success(Map.of("id", GroupLeaveMessageService.add(groupId, content, triggerOnMemberJoin))));
         } catch (IllegalArgumentException e) {
             ctx.status(400).json(Result.customFailure(e.getMessage()));
         } catch (IllegalStateException e) {

@@ -73,6 +73,7 @@ public class OfficialGroups {
         if (isGroupBlacklisted(groupOpenId)) return false; // 黑名单群不允许删除
         if (GroupRepository.deleteGroup(groupOpenId)) {
             cache.remove(groupOpenId);
+            top.yzljc.atribot.command.CommandSettingsService.INSTANCE.forgetGroup(groupOpenId);
             return true;
         }
         return false;

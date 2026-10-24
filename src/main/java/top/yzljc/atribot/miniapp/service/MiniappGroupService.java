@@ -2,14 +2,19 @@ package top.yzljc.atribot.miniapp.service;
 
 import top.yzljc.atricore.core.CoreConfig;
 
-import top.yzljc.atribot.configuration.RS;
-import top.yzljc.atricore.chat.official.Markdown;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.chat.official.welcome.DefaultJoinWelcomeStore;
+import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atribot.function.command.PushTaskCommand;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.database.repo.GroupBindingRepository;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atricore.platform.PlatformRole;
 
 import java.security.SecureRandom;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
@@ -19,6 +24,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.function.Predicate;
 
 /**
  * @Author YZ_Ljc_
@@ -34,6 +40,9 @@ public final class MiniappGroupService {
     private final GroupBindingRepository repository;
     private final Clock clock;
     private final Supplier<String> prefix;
+    private final Supplier<List<PushTask>> tasks;
+    private final Predicate<String> blocked;
+    private final WelcomeDefaults defaults;
     private final SecureRandom random = new SecureRandom();
     private final Map<String, Challenge> pending = new HashMap<>();
     private final Map<String, Integer> attempts = new HashMap<>();
@@ -45,22 +54,27 @@ public final class MiniappGroupService {
     }
 
     public record WelcomeButton(String label, String style) {}
-    public record Welcome(boolean enabled, boolean custom, String text, String buttonSize,
+    public record Welcome(boolean enabled, boolean custom, boolean canEdit, String text, String buttonSize,
                           List<List<WelcomeButton>> keyboard) {}
+    public record Function(String key, String name, boolean enabled, boolean needActiveMessage) {}
+    public record Functions(List<Function> items, boolean canEdit, boolean proactive) {}
 
-    public Welcome welcome(MiniappSessions.Identity identity, String groupId) throws SQLException {
+    @FunctionalInterface
+    interface WelcomeDefaults {
+        ObjectNode load() throws IOException;
+    }
+
+    public Welcome welcome(MiniappSessions.Identity identity, String groupId) throws SQLException, IOException {
         validateGroupId(groupId);
         var stored = repository.welcome(identity.userId(), groupId);
         if (stored == null) throw new Problem(404, "GROUP_NOT_BOUND");
-        boolean enabled = stored.enabled() != null ? stored.enabled() : PushTaskCommand.isFunctionDefaultEnabled("member_add_welcome");
+        boolean enabled = stored.enabled() != null ? stored.enabled() : tasks.get().stream()
+                .anyMatch(task -> task.getFunctionId().equals("member_add_welcome") && task.isDefaultEnabled());
         var config = stored.config();
         boolean custom = config != null && (!config.path("text").asText("").isBlank()
                 || config.path("keyboard").isArray() && !config.path("keyboard").isEmpty());
         if (!custom) {
-            // The ordinary new-member default from GroupJoinWelcome; role-specific greetings are event-dependent.
-            String text = "欢迎新人喵~\n\n" + Markdown.img(RS.get("resource.image.welcome"), 1858, 846) + "\n\n> 关闭欢迎提示";
-            return new Welcome(enabled, false, text, "SMALL", List.of(List.of(
-                    new WelcomeButton("打卡", "BLUE"), new WelcomeButton("帮助", "BLUE"), new WelcomeButton("自定义欢迎", "BLUE"))));
+            config = defaults.load();
         }
         List<List<WelcomeButton>> keyboard = new ArrayList<>();
         if (config.path("keyboard").isArray()) for (var row : config.path("keyboard")) {
@@ -70,8 +84,58 @@ public final class MiniappGroupService {
                     button.path("display_text").asText("未命名按钮"), button.path("style").asText("BLUE")));
             if (!buttons.isEmpty()) keyboard.add(List.copyOf(buttons));
         }
-        return new Welcome(enabled, true, config.path("text").asText(""),
+        return new Welcome(enabled, custom, stored.canEdit() && !blocked.test(identity.userId()), config.path("text").asText(""),
                 config.path("button_size").asText("UNDEFINED"), List.copyOf(keyboard));
+    }
+
+    public Functions functions(MiniappSessions.Identity identity, String groupId) throws SQLException {
+        validateGroupId(groupId);
+        var stored = repository.functions(identity.userId(), groupId);
+        if (stored == null) throw new Problem(403, "GROUP_NOT_BOUND");
+        var items = tasks.get().stream().filter(MiniappGroupService::publicGroupTask)
+                .filter(task -> !task.getFunctionId().equals("member_add_welcome"))
+                .map(task -> {
+                    JsonNode enabled = stored.functions().path(task.getFunctionId()).path("enabled");
+                    return new Function(task.getFunctionId(), task.getDisplayName(),
+                            enabled.isBoolean() ? enabled.booleanValue() : task.isDefaultEnabled(), task.isNeedActiveMessage());
+                }).toList();
+        return new Functions(items, stored.available() && !stored.restricted() && !blocked.test(identity.userId()), stored.proactive());
+    }
+
+    public void setFunction(MiniappSessions.Identity identity, String groupId, String functionId,
+                            boolean enabled, Runnable checkSession) throws SQLException {
+        if ("member_add_welcome".equals(functionId)) throw new Problem(400, "INVALID_GROUP_FUNCTION");
+        updateFunction(identity, groupId, functionId, enabled, checkSession);
+    }
+
+    public void setWelcomeEnabled(MiniappSessions.Identity identity, String groupId, boolean enabled,
+                                  Runnable checkSession) throws SQLException {
+        updateFunction(identity, groupId, "member_add_welcome", enabled, checkSession);
+    }
+
+    private void updateFunction(MiniappSessions.Identity identity, String groupId, String functionId,
+                                boolean enabled, Runnable checkSession) throws SQLException {
+        validateGroupId(groupId);
+        if (blocked.test(identity.userId())) throw new Problem(403, "GROUP_SETTINGS_FORBIDDEN");
+        var task = tasks.get().stream().filter(MiniappGroupService::publicGroupTask)
+                .filter(item -> item.getFunctionId().equals(functionId)).findFirst()
+                .orElseThrow(() -> new Problem(400, "INVALID_GROUP_FUNCTION"));
+        checkSession.run();
+        var result = repository.setFunction(identity.userId(), groupId, functionId, enabled, task.isNeedActiveMessage(), () -> {
+            checkSession.run();
+            if (blocked.test(identity.userId())) throw new Problem(403, "GROUP_SETTINGS_FORBIDDEN");
+        });
+        switch (result) {
+            case NOT_BOUND -> throw new Problem(403, "GROUP_NOT_BOUND");
+            case UNAVAILABLE -> throw new Problem(409, "GROUP_UNAVAILABLE");
+            case RESTRICTED -> throw new Problem(403, "GROUP_SETTINGS_FORBIDDEN");
+            case ACTIVE_REQUIRED -> throw new Problem(409, "GROUP_ACTIVE_REQUIRED");
+            case SAVED -> { }
+        }
+    }
+
+    private static boolean publicGroupTask(PushTask task) {
+        return task.isGroupEnable() && !task.isPrivateFunction();
     }
 
     public enum Verification {SUCCESS, NO_PENDING, EXPIRED, NOT_OWNER, WRONG_GROUP, WRONG_CODE, TOO_MANY_ATTEMPTS, SAVE_FAILED}
@@ -88,9 +152,19 @@ public final class MiniappGroupService {
     }
 
     public MiniappGroupService(GroupBindingRepository repository, Clock clock, Supplier<String> prefix) {
+        this(repository, clock, prefix, PushTaskCommand::getTasks,
+                id -> OfficialUsers.isBlocked(id) || OfficialUsers.isIgnored(id),
+                () -> DefaultJoinWelcomeStore.getInstance().get(UnifiedRole.USER));
+    }
+
+    MiniappGroupService(GroupBindingRepository repository, Clock clock, Supplier<String> prefix,
+                        Supplier<List<PushTask>> tasks, Predicate<String> blocked, WelcomeDefaults defaults) {
         this.repository = repository;
         this.clock = clock;
         this.prefix = prefix;
+        this.tasks = tasks;
+        this.blocked = blocked;
+        this.defaults = defaults;
     }
 
     public Overview load(MiniappSessions.Identity identity) throws SQLException {

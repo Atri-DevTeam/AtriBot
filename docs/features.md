@@ -46,13 +46,29 @@ QQ 官方私聊发送 `提醒 <时间或周期>`，由 AI 解析时间，再发�
 
 提醒保存在 `bot_userdata.user_settings.skyblock_price_alerts`，不新增表。保存配置不依赖当前行情。搜索及提醒列表异步加载共享图标，同一物品复用加载结果；UGC 在本地目录及 COS 长期保存小图，Miniapp 经 API 读取，官机通知优先使用 COS 地址。搜索名称按品质着色，市场显示为 `Auction House` 或 `Bazaar`。管理员可发送测试提醒，测试不改变配置和完成状态
 
+## 随机附魔
+
+QQ 官方群聊、私聊使用独立指令 `/ec` 打开物品选择，MC 指令菜单保留此入口。也可直接发送 `/ec 钻石镐`、`/ec pickaxe` 或 `/ec diamond_pickaxe`
+
+提供 16 类原版附魔台可接受的物品预设，同类不同材质使用一个代表，工具、武器和防具优先使用钻石材质。选择菜单为单页，按名称长度排列，首行 4 项，其余 4 行各 3 项，较长名称放在底部；仅对设置为不兼容键盘的用户转换为 Markdown 指令按钮。结果页可对同一物品再次附魔或返回选择。预设包含书、工具、武器、防具和钓鱼竿，排除只能通过铁砧附魔的物品
+
+使用 Java 版 26.3、15 个书架、第三档 30 级的原版抽取规则。按物品的 `minecraft:enchantable` 值修正附魔强度，加入原版 ±15% 随机波动，再依据各附魔的 `min_cost`、`max_cost` 和权重选择等级与种类。追加附魔使用原版 `nextInt(50) <= 强度` 判定，每次追加后强度减半，保留重复及互斥过滤；书在抽到多条时按原版随机移除一条
+
+抽取范围仅限 `minecraft:in_enchanting_table` 标签中的 36 种附魔，物品适用范围使用原版 `primary_items`，缺省时使用 `supported_items`。经验修补、冰霜行者、灵魂疾行、迅捷潜行、风爆、绑定诅咒与消失诅咒均不会出现。完整的 43 种附魔定义仍保留在资源文件中，供版本校验使用。本功能不扣除经验或青金石，不使用每日钓鱼的奖励、次数或记录
+
+附魔定义、效果、适用物品、中文名称和标签保存在 [enchantments-26.3.json](../src/main/resources/minecraft/enchantments-26.3.json)，数据来源为 [Minecraft 26.3 原版导出](https://github.com/misode/mcmeta/tree/26.3-data/data/minecraft/enchantment)。使用 `python scripts/export_minecraft_enchantments.py` 可重新导出，通过 `--ugc-output <UGC资源文件路径>` 同步服务端校验数据；两端使用同一版本。运行时仅读取打包数据，不请求外部附魔接口
+
+抽取逻辑见 [MinecraftEnchantmentTable](../src/main/java/top/yzljc/atribot/function/minecraft/MinecraftEnchantmentTable.java)，发送入口见 [MinecraftEnchantmentGame](../src/main/java/top/yzljc/atribot/function/games/MinecraftEnchantmentGame.java)。结果通过 UGC 目录中的 `bot.minecraft.enchantment` 渲染，图片服务不可用时发送同一份结果的文字内容，不重新抽取
+
 ## 今日钓鱼
 
 QQ 官方群聊、私聊使用 `/fish`、`/今日钓鱼` 或无前缀的 `今日钓鱼`。每名用户每天一次，按北京时间零点刷新，跨群与私聊共用次数。重复调用返回当天已保存的渔获，不重复发放金粒
 
 统一按海之眷顾 III、玩家幸运值 0、开放水域计算，鱼类、杂物、宝藏的权重为 82、4、11。先抽取钓点和类别，再合并公共池与对应钓点追加池抽取一个条目。钓点包含 24 组，群系追加项除丛林竹子外均为自定义掉落规则
 
-奖励表见 [daily-fishing.json](../src/main/resources/games/daily-fishing.json)，随程序打包加载。`gold` 是整个条目的金粒数，不乘物品数量；非诅咒附魔每级增加 5 金粒，经验修补额外增加 30 金粒，附魔加成最多 100 金粒。耐久仅展示，不影响兑换。渔获直接兑换，不加入物品卡背包
+奖励表见 [daily-fishing.json](../src/main/resources/games/daily-fishing.json)，随程序打包加载。`gold` 是整个条目的原始金粒数，不乘物品数量；非诅咒附魔每级增加 5 金粒，经验修补额外增加 30 金粒，附魔加成最多 100 金粒。基础奖励与附魔加成相加后按二分之一结算，奇数向下取整，消息显示实际结算金额。历史结算金额保持不变。耐久仅展示，不影响兑换。渔获直接兑换，不加入物品卡背包
+
+幸运值为 0–100，按减半前的渔获价值在奖池中的加权排名计算，计入附魔加成，同值条目取排名区间的中点。分数随每日结果保存，不影响出货概率或金粒奖励；旧记录未保存分数时，按原有奖励金额计算展示值
 
 `daily_fishing` 表按用户和日期保存完整结果，包括钓点、物品、附魔、耐久及奖励。渔获、金粒余额、来源日志和累计游戏统计在同一事务中提交；数据库唯一键与用户行锁防止并发重复领取。发送失败后再次调用可读取已结算结果，重启不会清除记录
 

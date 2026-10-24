@@ -14,8 +14,8 @@ import top.yzljc.atricore.event.events.NapcatGroupMessageEvent;
 import top.yzljc.atricore.event.events.NapcatRecallMessageEvent;
 import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author YZ_Ljc_
@@ -28,7 +28,7 @@ import java.util.Map;
 public class AutoSendPtt implements Listener {
 
     // md5为键
-    private static final Map<String, PttRecord> recordedPtt = new HashMap<>();
+    private static final Map<String, PttRecord> recordedPtt = new ConcurrentHashMap<>();
 
 //    @EventHandler
 //    public void onGroupChat(NapcatGroupMessageEvent event) {
@@ -85,16 +85,19 @@ public class AutoSendPtt implements Listener {
                 if (t != null) {
                     var text = "[语音]" + event.getUser().getUsername() + ": " + t;
                     log.info("转文字-> {}", text);
-                    String napcatGroupId = recordedPtt.get(md5).getNapcatGroupId() != null ? recordedPtt.get(md5).getNapcatGroupId() : String.valueOf(OfficialGroups.getRealGroupId(event.getGroupId()));
+                    var record = recordedPtt.get(md5);
+                    String napcatGroupId = record == null ? null : record.getNapcatGroupId();
+                    if (napcatGroupId == null) {
+                        Long realGroupId = OfficialGroups.getRealGroupId(event.getGroupId());
+                        napcatGroupId = realGroupId == null ? null : realGroupId.toString();
+                    }
                     if (napcatGroupId != null && !napcatGroupId.equals("0")) {
                         var mid = GroupMessage.chatMessage(napcatGroupId, text);
-                        if (mid != null && recordedPtt.containsKey(md5)) {
-                            var record = recordedPtt.get(md5);
+                        if (mid != null && record != null) {
                             record.setPttMessageId(mid);
 
-                            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(() -> {
-                                recordedPtt.remove(md5);
-                            }, 2 * 60 * 1000);
+                            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(
+                                    () -> recordedPtt.remove(md5, record), 2 * 60 * 1000L);
 //                            log.debug("Updated PTT record for md5 {}: rawMessageId={}, pttMessageId={}", md5, record.getRawMessageId(), record.getPttMessageId());
                         }
                     }
@@ -122,7 +125,7 @@ public class AutoSendPtt implements Listener {
     @Data
     private class PttRecord {
         private String rawMessageId;
-        private String pttMessageId;
+        private volatile String pttMessageId;
         private String napcatGroupId;
 
         public PttRecord(String rawMessageId, String pttMessageId, String napcatGroupId) {

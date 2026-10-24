@@ -20,6 +20,16 @@ export type GroupBinding = Pick<BoundGroup, 'groupId' | 'groupNumber' | 'name' |
 export type GroupOverview = { groups: GroupBinding[]; pending: BindingChallenge | null }
 export type PrivatePost = <T>(path: string, body: unknown) => Promise<T | null>
 export type GroupWelcome = {
-    enabled: boolean; custom: boolean; text: string; buttonSize: string
+    enabled: boolean; custom: boolean; canEdit: boolean; text: string; buttonSize: string
     keyboard: { label: string; style: string }[][]
 }
+export type GroupFunctions = {
+    items: {key: string; name: string; enabled: boolean; needActiveMessage: boolean}[]
+    canEdit: boolean; proactive: boolean
+}
+export type GroupCommandItem = {
+    key: string; displayName: string; switchable: boolean; rateLimitable: boolean
+    enabled: boolean; cooldownSeconds: number; scope: 'USER' | 'GROUP'; locked: boolean
+    lockReason: string | null; startsAt: string | null; endsAt: string | null
+}
+export type GroupCommands = {items: GroupCommandItem[]; canEdit: boolean}

@@ -218,7 +218,7 @@
           <div class="errors-surface bs-card bs-command-card">
             <header class="bs-card-head">
               <h3 class="bs-card-title">指令管理</h3>
-              <p class="bs-card-desc">查看后端注册指令，并设置群聊中的临时停用规则</p>
+              <p class="bs-card-desc">管理指令及群聊高级停用规则，生效期间锁定个人面板中的对应设置</p>
             </header>
             <CommandSettingsPanel ref="commandPanel" :api="api"/>
           </div>

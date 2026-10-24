@@ -10,6 +10,8 @@ import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.OfficialC2CMessageCreateEvent;
 import top.yzljc.atricore.event.events.OfficialGroupAtMessageCreateEvent;
 import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMemberAddEvent;
+import top.yzljc.atribot.auth.official.OfficialGroups;
 
 /**
  * 被动队列排空器：目标下一次与 Bot 交互时补发欠他的通知。
@@ -24,6 +26,12 @@ import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
  */
 @Slf4j
 public class PendingNoticeDispatcher implements Listener {
+
+    @EventHandler
+    public void onGroupMemberAdd(OfficialGroupMemberAddEvent event) {
+        if (OfficialGroups.isGroupBlacklisted(event.getGroupOpenId())) return;
+        GroupLeaveMessageService.deliver(event.getGroupOpenId(), true, markdown -> event.sendMessage(markdown, false));
+    }
 
     @EventHandler
     public void onC2CMessage(OfficialC2CMessageCreateEvent event) {

@@ -39,7 +39,7 @@ public class Properties {
 
     public static final String FUNCTION_SETTINGS = "data/function-settings.json";
 
-    public static final String COMMAND_DISABLE_SETTINGS = "data/command-disable-settings.json";
+    public static final String COMMAND_SETTINGS = "data/command-settings.json";
 
     public static final String LOOT_FREE_DRAW_RECORD = "data/loot-free-draws.json";
 

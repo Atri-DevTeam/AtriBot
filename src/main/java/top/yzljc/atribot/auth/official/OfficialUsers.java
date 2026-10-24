@@ -67,6 +67,16 @@ public class OfficialUsers {
     }
 
     /**
+     * 查询好友列表数据库中是否存在该用户
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 存在私聊用户记录时返回 true，参数为空或查询失败时返回 false
+     */
+    public static boolean isFriend(String userOpenId) {
+        return C2CRepository.exists(userOpenId);
+    }
+
+    /**
      * 注册私聊用户并补全统一账号，已有权限与状态保持不变
      *
      * @param userOpenId QQ 用户 OpenID

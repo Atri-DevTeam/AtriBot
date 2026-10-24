@@ -15,7 +15,7 @@ import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.button.Keyboard;
-import top.yzljc.atribot.command.CommandDisableService;
+import top.yzljc.atribot.command.CommandSettingsService;
 import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.repo.LootRepository;
@@ -190,7 +190,7 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
     private void reveal(QQCommandSender qq, SoundRound round, SoundRound.Result result) {
         try {
             if (closed) return;
-            if (CommandDisableService.isDisabled("sound",
+            if (CommandSettingsService.INSTANCE.isDisabled("sound",
                     qq.getPlatform() == Platform.OFFICIAL_GROUP ? qq.getGroupId() : null)) return;
             int correct = round.question.answer();
             String ending = result.winner() != null ? "判断正确！该声音出现的场景为："

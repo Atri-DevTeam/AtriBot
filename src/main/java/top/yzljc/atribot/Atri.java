@@ -9,6 +9,9 @@ import top.yzljc.atribot.bootstrap.ApplicationAccessService;
 import top.yzljc.atribot.bootstrap.ApplicationBotCommand;
 import top.yzljc.atribot.bootstrap.ApplicationLogRecorder;
 import top.yzljc.atribot.configuration.RS;
+import top.yzljc.atribot.command.CommandSettingsService;
+import top.yzljc.atribot.command.GroupCommands;
+import top.yzljc.atribot.function.games.MinecraftEnchantmentGame;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.media.MaterialImages;
 import top.yzljc.atricore.core.AccessService;
@@ -375,6 +378,10 @@ public class Atri extends AtriProvider {
 
         CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
+        CommandManager.getCommand("ec").setExecutor((sender, command, label, args) ->
+                !(sender instanceof top.yzljc.atricore.command.QQCommandSender user) || MinecraftEnchantmentGame.onCommand(user, args));
+        GroupCommands.register(CommandSettingsService.INSTANCE);
+        EventManager.getInstance().registerEvents(CommandSettingsService.INSTANCE);
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());
         CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
         CommandManager.getCommand("sharebot").setExecutor(new ShareBotCommand());
@@ -403,6 +410,11 @@ public class Atri extends AtriProvider {
         UnifiedAuthentication.init();
         siteAccountBroadcaster.start(UnifiedAuthentication.findAll());
         BotUserDataRepository.init();
+        try {
+            CommandSettingsService.INSTANCE.init();
+        } catch (java.sql.SQLException failure) {
+            throw new IllegalStateException("群指令配置初始化失败", failure);
+        }
         OfficialUsers.init();
         UserGameDataRepository.init();
         SignRepository.init();

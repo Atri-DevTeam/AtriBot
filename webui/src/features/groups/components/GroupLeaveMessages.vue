@@ -32,11 +32,16 @@
                 </button>
               </div>
               <pre>{{ note.content }}</pre>
+              <span v-if="note.triggerOnMemberJoin" class="leave-join-tag">成员入群时也可触发</span>
             </article>
           </div>
           <label class="leave-label">新留言
             <textarea ref="editor" v-model="draft" rows="5" maxlength="16000" :disabled="busy"
                       placeholder="输入 Markdown 留言内容" @keydown.enter.stop/>
+          </label>
+          <label class="leave-join-option">
+            <input v-model="triggerOnMemberJoin" type="checkbox" :disabled="busy"/>
+            <span>成员入群时触发</span>
           </label>
         </div>
         <footer class="leave-foot">
@@ -63,6 +68,7 @@ const open = ref(false)
 const menuStyle = ref({})
 const notes = ref([])
 const draft = ref('')
+const triggerOnMemberJoin = ref(false)
 const loading = ref(false)
 const loaded = ref(false)
 const busy = ref(false)
@@ -116,10 +122,12 @@ async function add() {
   if (!draft.value.trim() || !loaded.value || notes.value.length >= 20) return
   await mutate(async () => {
     const content = draft.value
-    const result = await props.request(endpoint, {method: 'POST', body: JSON.stringify({content})})
+    const memberJoin = triggerOnMemberJoin.value
+    const result = await props.request(endpoint, {method: 'POST', body: JSON.stringify({content, triggerOnMemberJoin: memberJoin})})
     if (!alive) return
-    notes.value.push({id: result.id, content, attempts: 0})
+    notes.value.push({id: result.id, content, attempts: 0, triggerOnMemberJoin: memberJoin})
     draft.value = ''
+    triggerOnMemberJoin.value = false
   })
 }
 
@@ -168,7 +176,7 @@ function onMenuKeydown(event) {
     return
   }
   if (event.key !== 'Tab') return
-  const fields = [...menu.value.querySelectorAll('button:not(:disabled), textarea:not(:disabled)')]
+  const fields = [...menu.value.querySelectorAll('button:not(:disabled), textarea:not(:disabled), input:not(:disabled)')]
   const first = fields[0], last = fields.at(-1)
   if (event.shiftKey && document.activeElement === first) {
     event.preventDefault();
@@ -369,6 +377,10 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 7px;
 }
+
+.leave-join-option { display: flex; align-items: center; gap: 7px; margin-top: 12px; color: #6b7686; font-size: 12px; cursor: pointer; }
+.leave-join-option input { width: 15px; height: 15px; margin: 0; accent-color: #0099ff; }
+.leave-join-tag { display: inline-block; margin-top: 8px; padding: 2px 6px; border-radius: 4px; background: #eaf4fc; color: #4383ad; font-size: 11px; }
 
 .leave-label textarea {
   display: block;

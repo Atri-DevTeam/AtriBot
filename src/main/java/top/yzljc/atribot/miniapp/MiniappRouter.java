@@ -72,6 +72,9 @@ public final class MiniappRouter {
         server.before("/atrimeow/profile", ctx -> guard(ctx, enabled));
         server.before("/atrimeow/profile/*", ctx -> guard(ctx, enabled));
         MiniappPriceAlertRoutes.register(server, sessions);
+        registerSettings(server, sessions);
+        registerGroupSettings(server, sessions, groups);
+        registerGroupCommands(server, sessions, top.yzljc.atribot.command.CommandSettingsService.INSTANCE);
         server.get("/atrimeow/profile", MiniappRouter::index);
         server.get("/atrimeow/profile/", MiniappRouter::index);
 
@@ -142,7 +145,7 @@ public final class MiniappRouter {
             var identity = requireIdentity(ctx, sessions);
             try { ctx.json(groups.welcome(identity, ctx.pathParam("groupId"))); }
             catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException e) {
+            catch (java.sql.SQLException | java.io.IOException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群欢迎内容读取失败", e);
                 ctx.status(502).json(Map.of("error", "WELCOME_UNAVAILABLE"));
             }
@@ -200,6 +203,111 @@ public final class MiniappRouter {
             if (token == null) token = ctx.body();
             if (token.length() <= 128) sessions.revoke(token);
             ctx.status(204);
+        });
+    }
+
+    public static void registerGroupCommands(Javalin server, MiniappSessions sessions,
+                                      top.yzljc.atribot.command.CommandSettingsService service) {
+        server.get("/atrimeow/profile/api/groups/{groupId}/commands", ctx -> groupCommands(ctx, sessions, service, false));
+        server.post("/atrimeow/profile/api/groups/{groupId}/commands/{command}", ctx -> groupCommands(ctx, sessions, service, true));
+    }
+
+    private static void groupCommands(Context ctx, MiniappSessions sessions,
+                                       top.yzljc.atribot.command.CommandSettingsService service, boolean save) {
+        var identity = requireIdentity(ctx, sessions);
+        try {
+            Object result;
+            if (!save) result = service.groupView(identity.userId(), ctx.pathParam("groupId"));
+            else {
+                if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json")
+                        || ctx.bodyAsBytes().length > 2048) throw new IllegalArgumentException();
+                var request = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                        .readTree(ctx.body());
+                result = service.saveGroup(identity.userId(), ctx.pathParam("groupId"), ctx.pathParam("command"), request,
+                        () -> requireIdentity(ctx, sessions));
+            }
+            requireIdentity(ctx, sessions);
+            ctx.json(result);
+        } catch (MiniappGroupService.Problem problem) {
+            ctx.status(problem.status).json(Map.of("error", problem.code));
+        } catch (IllegalArgumentException | java.io.IOException invalid) {
+            ctx.status(400).json(Map.of("error", "INVALID_COMMAND_SETTINGS"));
+        } catch (java.sql.SQLException failure) {
+            org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群指令设置请求失败", failure);
+            ctx.status(502).json(Map.of("error", "COMMAND_SETTINGS_UNAVAILABLE"));
+        }
+    }
+
+    static void registerGroupSettings(Javalin server, MiniappSessions sessions, MiniappGroupService groups) {
+        server.get("/atrimeow/profile/api/groups/{groupId}/functions", ctx -> {
+            var identity = requireIdentity(ctx, sessions);
+            try { ctx.json(groups.functions(identity, ctx.pathParam("groupId"))); }
+            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
+            catch (java.sql.SQLException failure) {
+                org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群推送设置读取失败", failure);
+                ctx.status(502).json(Map.of("error", "GROUP_SETTINGS_UNAVAILABLE"));
+            }
+        });
+        server.post("/atrimeow/profile/api/groups/{groupId}/functions/{functionId}", ctx ->
+                saveGroupSwitch(ctx, sessions, groups, false));
+        server.post("/atrimeow/profile/api/groups/{groupId}/join-welcome", ctx ->
+                saveGroupSwitch(ctx, sessions, groups, true));
+    }
+
+    private static void saveGroupSwitch(Context ctx, MiniappSessions sessions, MiniappGroupService groups, boolean welcome) {
+        var identity = requireIdentity(ctx, sessions);
+        boolean enabled;
+        try {
+            if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json")
+                    || ctx.bodyAsBytes().length > 1024) throw new IllegalArgumentException();
+            var request = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                    .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                    .readTree(ctx.body());
+            if (request == null || !request.isObject() || request.size() != 1 || !request.path("enabled").isBoolean())
+                throw new IllegalArgumentException();
+            enabled = request.path("enabled").booleanValue();
+        } catch (java.io.IOException | IllegalArgumentException invalid) {
+            ctx.status(400).json(Map.of("error", "INVALID_GROUP_SETTINGS"));
+            return;
+        }
+        try {
+            Runnable checkSession = () -> requireIdentity(ctx, sessions);
+            if (welcome) groups.setWelcomeEnabled(identity, ctx.pathParam("groupId"), enabled, checkSession);
+            else groups.setFunction(identity, ctx.pathParam("groupId"), ctx.pathParam("functionId"), enabled, checkSession);
+            ctx.json(Map.of("enabled", enabled));
+        } catch (MiniappGroupService.Problem problem) {
+            ctx.status(problem.status).json(Map.of("error", problem.code));
+        } catch (java.sql.SQLException failure) {
+            org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群功能开关保存失败", failure);
+            ctx.status(502).json(Map.of("error", "GROUP_SETTINGS_UNAVAILABLE"));
+        }
+    }
+
+    static void registerSettings(Javalin server, MiniappSessions sessions) {
+        server.post("/atrimeow/profile/api/settings", ctx -> {
+            var identity = requireIdentity(ctx, sessions);
+            MiniappUserSettings.Change change;
+            try {
+                if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json")
+                        || ctx.bodyAsBytes().length > 2048) throw new IllegalArgumentException();
+                var request = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                        .readTree(ctx.body());
+                change = MiniappUserSettings.Change.parse(request);
+            } catch (java.io.IOException | IllegalArgumentException invalid) {
+                ctx.status(400).json(Map.of("error", "INVALID_USER_SETTINGS"));
+                return;
+            }
+            requireIdentity(ctx, sessions);
+            if (!change.save(identity.userId())) {
+                ctx.status(502).json(Map.of("error", "USER_SETTINGS_UNAVAILABLE"));
+                return;
+            }
+            ctx.json(Map.of("saved", true));
         });
     }
 

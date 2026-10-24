@@ -54,6 +54,26 @@ public class C2CRepository {
     }
 
     /**
+     * 查询官机私聊用户记录是否存在
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 记录存在时返回 true，参数为空或查询失败时返回 false
+     */
+    public static boolean exists(String userOpenId) {
+        if (userOpenId == null || userOpenId.isBlank()) return false;
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement("SELECT 1 FROM official_users WHERE user_openId = ? LIMIT 1")) {
+            ps.setString(1, userOpenId);
+            try (var rows = ps.executeQuery()) {
+                return rows.next();
+            }
+        } catch (SQLException e) {
+            log.error("查询私聊用户 {} 是否存在失败", userOpenId, e);
+            return false;
+        }
+    }
+
+    /**
      * 确保私聊用户记录存在，保留已有的主动消息授权
      *
      * @param con 调用方数据库连接

@@ -112,8 +112,10 @@ public final class DailyFishingRepository {
                     ps.setString(3, JSON.writeValueAsString(result));
                     ps.executeUpdate();
                 }
-                LootRepository.addCoins(con, userId, result.totalGold());
-                CoinGainLogRepository.recordCoinGain(con, userId, "daily_fishing", result.totalGold());
+                if (result.totalGold() > 0) {
+                    LootRepository.addCoins(con, userId, result.totalGold());
+                    CoinGainLogRepository.recordCoinGain(con, userId, "daily_fishing", result.totalGold());
+                }
                 ObjectNode fishing = object(root, "fishing");
                 add(fishing, "plays", 1);
                 add(fishing, result.category(), 1);

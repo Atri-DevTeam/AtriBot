@@ -28,7 +28,7 @@ public final class UserGameDataRepository {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final UserGameDataRepository INSTANCE = new UserGameDataRepository(DatabaseManager::getConnection);
 
-    public enum Game {minesweeper, sound, connect4, roulette, rsp, fishing}
+    public enum Game {minesweeper, sound, connect4, roulette, rsp, fishing, tictactoe}
 
     private static final Map<String, List<String>> COUNTER_FIELDS = Map.of(
             "minesweeper", List.of("participations", "plays", "wins", "losses", "operations", "digs", "mineHits", "flagsPlaced", "flagsRemoved"),
@@ -37,7 +37,8 @@ public final class UserGameDataRepository {
             "roulette", List.of("participations", "plays", "wins", "losses", "actions", "selfTargets", "otherTargets", "timeouts"),
             "rsp", List.of("participations", "plays", "wins", "losses", "draws", "rock", "scissors", "paper"),
             "reaction", List.of("plays", "wins", "hits", "misses", "abandoned", "timeouts", "timedCompletions", "totalCompletedMs"),
-            "fishing", List.of("plays", "fish", "junk", "treasure", "gold", "enchanted"));
+            "fishing", List.of("plays", "fish", "junk", "treasure", "gold", "enchanted"),
+            "tictactoe", List.of("plays", "wins", "losses", "draws", "moves", "normalWins", "forfeitWins", "timeoutWins", "forfeits", "moveTimeouts"));
 
     /**
      * @param game 游戏数据键

@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import profileIcon from '../assets/dock-profile.png'
+import dataIcon from '../assets/dock-data.png'
 import groupsIcon from '../assets/dock-groups.png'
 import pricesIcon from '../assets/dock-prices.png'
 import Icon from './Icon.vue'
 
-type Page = 'profile' | 'groups' | 'prices' | 'about'
+type Page = 'profile' | 'data' | 'groups' | 'prices' | 'about'
 const props = defineProps<{ active: Page; canUsePrices?: boolean }>()
 const emit = defineEmits<{ select: [page: Page] }>()
-// Pixel icons reused from atriwebsite/src/lib/mcMobileDockIcons.js.
 const items = [
   {key: 'profile', label: '我的档案', icon: profileIcon},
+  {key: 'data', label: '我的数据', icon: dataIcon},
   {key: 'groups', label: '群管理', icon: groupsIcon},
   {key: 'prices', label: '价格提醒', icon: pricesIcon},
   {key: 'about', label: '关于', icon: null}
@@ -20,7 +21,7 @@ const selectedIndex = computed(() => Math.max(0, visibleItems.value.findIndex(it
 </script>
 
 <template>
-  <nav class="navigation-dock glass" aria-label="栏目导航"
+  <nav class="navigation-dock glass" :class="{ 'dock-expanded': visibleItems.length > 4 }" aria-label="栏目导航"
        :style="{ '--dock-count': visibleItems.length, '--dock-index': selectedIndex }">
     <span class="dock-selection" aria-hidden="true"></span>
     <button v-for="item in visibleItems" :key="item.key" type="button" class="dock-item"
@@ -149,6 +150,17 @@ const selectedIndex = computed(() => Math.max(0, visibleItems.value.findIndex(it
   .navigation-dock, .dock-selection, .dock-item, .dock-item img, .dock-item svg {
     animation: none;
     transition: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .dock-expanded .dock-item {
+    flex-direction: column;
+    gap: 3px;
+    min-height: 46px;
+    padding: 4px 2px;
+    font-size: 10px;
+    letter-spacing: 0;
   }
 }
 </style>

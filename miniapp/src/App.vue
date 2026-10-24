@@ -2,8 +2,10 @@
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch} from 'vue'
 import {PageSession, takeEntry, type State, type Grant} from './session'
 import type {Profile} from './profile'
+import type {Activity} from './activity'
 import Icon from './components/Icon.vue'
 import ActivityPanel from './components/ActivityPanel.vue'
+import UserSettings from './components/UserSettings.vue'
 import NavigationDock from './components/NavigationDock.vue'
 import GroupManagement from './components/GroupManagement.vue'
 import AboutPage from './components/AboutPage.vue'
@@ -13,7 +15,9 @@ import goldIcon from './assets/gold.png'
 
 const props = defineProps<{dashboardGrant?: Grant}>()
 const emit = defineEmits<{renew: []; logout: []}>()
-const activityPanel = ref<InstanceType<typeof ActivityPanel> | null>(null)
+const activity = shallowRef<Activity | null>(null)
+const activityLoading = ref(false)
+const activityFailed = ref(false)
 const apiBase = (import.meta.env.VITE_API_BASE || '/atrimeow/profile/api').replace(/\/+$/, '')
 const readPrivate = <T, >(path: string) => session.get<T>(path)
 const writePrivate = <T, >(path: string, body: unknown) => session.post<T>(path, body)
@@ -23,7 +27,7 @@ async function refreshAll() {
   if (refreshingAll.value) return
   refreshingAll.value = true
   try {
-    await Promise.allSettled([loadProfile(), activityPanel.value?.reload()])
+    await Promise.allSettled([loadProfile(), loadActivity()])
   } finally {
     refreshingAll.value = false
   }
@@ -42,7 +46,7 @@ const loggingOut = ref(false)
 const logoutError = ref('')
 let logoutController: AbortController | undefined
 let disposed = false
-type Page = 'profile' | 'groups' | 'prices' | 'about'
+type Page = 'profile' | 'data' | 'groups' | 'prices' | 'about'
 const activePage = ref<Page>('profile')
 const groupsOpened = ref(false)
 const pricesOpened = ref(false)
@@ -53,7 +57,7 @@ watch(canUsePrices, allowed => {
     if (activePage.value === 'prices') activePage.value = 'profile'
   }
 })
-const scrollPositions: Record<Page, number> = {profile: 0, groups: 0, prices: 0, about: 0}
+const scrollPositions: Record<Page, number> = {profile: 0, data: 0, groups: 0, prices: 0, about: 0}
 
 async function selectPage(page: Page) {
   if (activePage.value === page || state.value.phase !== 'ready' || !revealed.value) return
@@ -102,11 +106,13 @@ const session = new PageSession({
     if (next.phase === 'ready') {
       fallbackTimer = setTimeout(reveal, 2800)
       void loadProfile()
+      void loadActivity()
     }
     if (next.phase === 'expired') {
       clearIntroTimers()
       if (timer) clearInterval(timer)
       profile.value = null
+      activity.value = null
       copyNotice.value = ''
     }
   },
@@ -144,6 +150,23 @@ async function loadProfile() {
   } finally {
     loading.value = false;
     profileSettled.value = true
+  }
+}
+
+async function loadActivity() {
+  if (activityLoading.value || state.value.phase !== 'ready') return
+  activityLoading.value = true
+  try {
+    const result = await session.get<Activity>('activity')
+    if (result && state.value.phase === 'ready') {
+      activity.value = result
+      activityFailed.value = false
+    }
+  } catch {
+    if (state.value.phase === 'ready') activityFailed.value = true
+  } finally {
+    activityLoading.value = false
+    recordsSettled.value = true
   }
 }
 
@@ -274,7 +297,7 @@ onBeforeUnmount(() => {
             <Icon v-else name="bot"/>
           </div>
           <h1 class="bot-title"><span class="bot-name">{{ bot.name }}</span><span class="bot-subtitle">{{
-                activePage === 'groups' ? '群管理' : activePage === 'prices' ? '价格提醒' : activePage === 'about' ? '关于' : '用户档案'
+                activePage === 'data' ? '我的数据' : activePage === 'groups' ? '群管理' : activePage === 'prices' ? '价格提醒' : activePage === 'about' ? '关于' : '用户档案'
             }}</span></h1>
         </div>
         <button v-if="state.phase === 'ready'" class="text-button profile-exit" :disabled="loggingOut" @click="logout">{{ loggingOut ? '退出中…' : '退出登录' }}</button>
@@ -335,6 +358,12 @@ onBeforeUnmount(() => {
               </dd>
             </div>
             <div>
+              <dt>QQ 互联 ID</dt>
+              <dd class="mono" :class="{ muted: !profile?.account?.qqConnectOpenId }">{{
+                  loading && !profile ? '读取中…' : unavailable('account') ? '暂时无法读取' : profile?.account?.qqConnectOpenId || '未绑定'
+                }}</dd>
+            </div>
+            <div>
               <dt>统一账号 <span>ACCOUNT ID</span></dt>
               <dd class="mono" :class="{ muted: !profile?.account }">{{ accountValue(profile?.account?.uuid) }}</dd>
             </div>
@@ -352,50 +381,58 @@ onBeforeUnmount(() => {
             </div>
           </dl>
         </section>
-        <section class="detail-card glass activity-card">
-          <header class="section-heading">
-            <div><span class="section-icon"><Icon name="message"/></span>
-              <h2>互动记录</h2></div>
-          </header>
-          <div class="activity-list">
-            <div class="activity-row"><span class="activity-icon sand"><img class="gold-icon" :src="goldIcon"
-                                                                            alt=""/></span>
-              <div><h3>金粒余额</h3>
-                <p v-if="unavailable('coins') || profile?.coins == null">
-                  {{ unavailable('coins') ? '暂时无法读取' : loading && !profile ? '读取中…' : '暂无记录' }}</p></div>
-              <span class="activity-value">{{ unavailable('coins') ? '—' : count(profile?.coins) }}<small
-                  v-if="!unavailable('coins') && profile?.coins != null">粒</small></span></div>
-            <div class="activity-row"><span class="activity-icon sage"><Icon name="message"/></span>
-              <div><h3>私聊消息</h3>
-                <p>{{ messageNote('privateMessages') }}</p></div>
-              <span class="activity-date">{{
-                  unavailable('privateMessages') ? '—' : date(profile?.privateMessages?.lastAt)
-                }}</span></div>
-            <div class="activity-row"><span class="activity-icon lilac"><Icon name="users"/></span>
-              <div><h3>群聊消息</h3>
-                <p>{{ messageNote('groupMessages') }}</p></div>
-              <span class="activity-date">{{
-                  unavailable('groupMessages') ? '—' : date(profile?.groupMessages?.lastAt)
-                }}</span></div>
-            <div class="activity-row"><span class="activity-icon sand"><Icon name="calendar"/></span>
-              <div><h3>最近签到</h3>
-                <p>{{
-                    unavailable('signIn') ? '暂时无法读取' : profile?.signIn ? `累计 ${count(profile.signIn.days)} 天` : '暂无记录'
-                  }}</p></div>
-              <span class="activity-date">{{ unavailable('signIn') ? '—' : date(profile?.signIn?.lastDate) }}</span>
-            </div>
-          </div>
-        </section>
-      </div>
-      <ActivityPanel ref="activityPanel" :request="readPrivate" @ready="recordsSettled = true"
-                     @copy="copyText($event, '分享链接')"/>
-      <div class="sync-line"><span>{{ loading ? '读取中…' : '' }}</span>
-        <button class="text-button" :disabled="loading || refreshingAll" :aria-busy="refreshingAll" @click="refreshAll">
-          <Icon name="refresh" :class="{ 'refresh-spinning': loading || refreshingAll }"/>
-          更新记录
-        </button>
+        <UserSettings :settings="activity?.settings ?? null" :busy="activityLoading"
+                      :post="writePrivate" @update="settings => { if (activity) activity = {...activity, settings} }"
+                      :failed="activityFailed || Boolean(activity?.unavailable.includes('settings'))"
+                      @retry="loadActivity" @copy="copyText($event, '分享链接')"/>
       </div>
     </main>
+
+    <main v-if="state.phase === 'ready'" v-show="activePage === 'data'" id="data-page" class="dashboard data-page"
+          :inert="!revealed || activePage !== 'data'" :aria-hidden="!revealed || activePage !== 'data'">
+      <section class="detail-card glass activity-card">
+        <header class="section-heading">
+          <div><span class="section-icon"><Icon name="message"/></span>
+            <h2>互动记录</h2></div>
+        </header>
+        <div class="activity-list">
+          <div class="activity-row"><span class="activity-icon sand"><img class="gold-icon" :src="goldIcon"
+                                                                          alt=""/></span>
+            <div><h3>金粒余额</h3>
+              <p v-if="unavailable('coins') || profile?.coins == null">
+                {{ unavailable('coins') ? '暂时无法读取' : loading && !profile ? '读取中…' : '暂无记录' }}</p></div>
+            <span class="activity-value">{{ unavailable('coins') ? '—' : count(profile?.coins) }}<small
+                v-if="!unavailable('coins') && profile?.coins != null">粒</small></span></div>
+          <div class="activity-row"><span class="activity-icon sage"><Icon name="message"/></span>
+            <div><h3>私聊消息</h3>
+              <p>{{ messageNote('privateMessages') }}</p></div>
+            <span class="activity-date">{{
+                unavailable('privateMessages') ? '—' : date(profile?.privateMessages?.lastAt)
+              }}</span></div>
+          <div class="activity-row"><span class="activity-icon lilac"><Icon name="users"/></span>
+            <div><h3>群聊消息</h3>
+              <p>{{ messageNote('groupMessages') }}</p></div>
+            <span class="activity-date">{{
+                unavailable('groupMessages') ? '—' : date(profile?.groupMessages?.lastAt)
+              }}</span></div>
+          <div class="activity-row"><span class="activity-icon sand"><Icon name="calendar"/></span>
+            <div><h3>最近签到</h3>
+              <p>{{
+                  unavailable('signIn') ? '暂时无法读取' : profile?.signIn ? `累计 ${count(profile.signIn.days)} 天` : '暂无记录'
+                }}</p></div>
+            <span class="activity-date">{{ unavailable('signIn') ? '—' : date(profile?.signIn?.lastDate) }}</span>
+          </div>
+        </div>
+      </section>
+      <ActivityPanel :activity="activity" :busy="activityLoading" :failed="activityFailed" @retry="loadActivity"/>
+    </main>
+    <div v-if="state.phase === 'ready' && (activePage === 'profile' || activePage === 'data')"
+       class="dashboard sync-line" :inert="!revealed" :aria-hidden="!revealed"><span>{{ loading || activityLoading ? '读取中…' : '' }}</span>
+      <button class="text-button" :disabled="loading || activityLoading || refreshingAll" :aria-busy="refreshingAll" @click="refreshAll">
+        <Icon name="refresh" :class="{ 'refresh-spinning': loading || activityLoading || refreshingAll }"/>
+        更新记录
+      </button>
+    </div>
 
     <main v-if="state.phase === 'ready'" v-show="activePage === 'groups'" id="groups-page" class="groups-page"
           :inert="activePage !== 'groups'" :aria-hidden="activePage !== 'groups'">
