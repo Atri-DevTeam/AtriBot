@@ -8,6 +8,7 @@ import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.ApiCode;
 import top.yzljc.atribot.webui.repo.BotStatsRepository;
+import top.yzljc.atribot.webui.repo.BotStatsCache;
 import top.yzljc.atribot.webui.repo.BotStatsSection;
 import top.yzljc.atribot.webui.repo.PublicOfficialQueryRepo;
 
@@ -30,8 +31,8 @@ import java.util.function.Supplier;
  */
 @Slf4j
 public final class BotStatsController {
-    private static final BotStatsController INSTANCE = new BotStatsController(new BotStatsRepository()::load, BotStatsController::messages);
-    private final Cache<String, Map<String, Object>> cache = CacheBuilder.newBuilder()
+    private static final BotStatsController INSTANCE = new BotStatsController(BotStatsCache::snapshot, BotStatsController::messages);
+    private final Cache<String, Object> cache = CacheBuilder.newBuilder()
             .maximumSize(1).expireAfterWrite(Duration.ofSeconds(60)).build();
     private final Supplier<BotStatsRepository.Snapshot> loader;
     private final Supplier<Object> messageQuery;
@@ -53,7 +54,7 @@ public final class BotStatsController {
         }
         ctx.future(() -> ThreadManager.supplyAsync(() -> {
             try {
-                return Result.success(cache.get("snapshot", () -> response(loader.get())));
+                return Result.success(response(loader.get()));
             } catch (Exception e) {
                 log.error("聚合统计查询失败", e);
                 return Result.failure(ApiCode.STATISTICS_QUERY_FAILED);
@@ -67,10 +68,11 @@ public final class BotStatsController {
         result.put("schemaVersion", 1);
         result.put("generatedAt", snapshot.generatedAt());
         result.put("cacheSeconds", 60);
+        result.put("leaderboardLimit", BotStatsSection.LEADERBOARD_LIMIT);
         result.put("registrations", snapshot.registrations());
         try {
-            result.put("messages", messageQuery.get());
-        } catch (RuntimeException e) {
+            result.put("messages", cache.get("messages", messageQuery::get));
+        } catch (Exception e) {
             log.warn("聚合消息统计读取失败", e);
             unavailable.add("messages");
             result.put("messages", null);
@@ -80,7 +82,6 @@ public final class BotStatsController {
         result.put("games", snapshot.games() == null ? null : games);
         result.put("loot", view(snapshot.loot()));
         result.put("sign", view(snapshot.sign()));
-        result.put("images", view(snapshot.images()));
         result.put("unavailable", unavailable);
         return Collections.unmodifiableMap(result);
     }

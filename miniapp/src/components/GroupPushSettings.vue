@@ -80,19 +80,19 @@ onBeforeUnmount(() => { disposed = true; version++ })
 </template>
 
 <style scoped>
-.group-push-settings { margin-top: 14px; padding: 20px 22px; border-radius: 21px; min-width: 0; }
+.group-push-settings { min-width: 0; background: transparent; border: 0; border-top: 1px solid var(--ui-border); border-radius: 0; padding: 24px 0; margin-top: 0; }
 .push-heading, .push-heading > div { display: flex; align-items: center; gap: 9px; }
 .push-heading { justify-content: space-between; }
 .push-heading h3 { margin: 0; font-size: 14px; font-weight: 550; }
-.push-heading svg { width: 16px; height: 16px; color: #8a9a80; }
+.push-heading svg { width: 16px; height: 16px; color: var(--ui-muted); }
 .push-list { margin-top: 8px; }
 .push-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
-.push-row + .push-row { border-top: 1px solid #b3c1a726; }
+.push-row + .push-row { border-top: 1px solid var(--ui-border); }
 .push-row > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.push-row span { font-size: 12px; color: #637857; overflow-wrap: anywhere; }
-.push-row small, .push-status { color: #89957e; font-size: 10px; line-height: 1.8; }
+.push-row span { font-size: 12px; color: var(--ui-secondary); overflow-wrap: anywhere; }
+.push-row small, .push-status { color: var(--ui-muted); font-size: 10px; line-height: 1.8; }
 .push-status { margin: 12px 0 0; }
 .push-status > button { margin-left: 12px; }
-.push-status.error { color: #ad5656; }
-@media (max-width: 760px) { .group-push-settings { padding: 16px; border-radius: 19px; } }
+.push-status.error { color: var(--ui-danger); }
+@media (max-width: 760px) { .group-push-settings { padding: 24px 0; border-radius: 0; } }
 </style>

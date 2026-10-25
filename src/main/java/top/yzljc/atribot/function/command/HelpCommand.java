@@ -11,6 +11,7 @@ import top.yzljc.atricore.chat.official.button.*;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.command.ConsoleCommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.command.QQGuildCommandSender;
 import top.yzljc.atricore.command.NapcatCommandSender;
@@ -29,6 +30,23 @@ import java.util.List;
 public class HelpCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+
+        if (sender instanceof ConsoleCommandSender) {
+            sender.sendMessage("""
+                    ======== 控制台指令帮助 ========
+                    help  查看指令帮助
+                    reboot  停止当前进程，重启需由进程管理器完成
+                    webui  切换 WebUI 的启用状态
+                    debug -o  切换官方 QQ 事件监听，输出至控制台
+                    debug -n  切换 Napcat 事件监听
+                    debug -t  切换官方 QQ 延迟调试
+                    refresh  刷新已记录的群资料
+                    groupinfo <群号>  查看 Napcat 群功能配置
+                    check-hyp  检查并推送新的 Hypixel 公告
+                    check-hyp-skyblock  检查并推送新的 SkyBlock 公告
+                    """.trim());
+            return true;
+        }
 
         if (sender instanceof QQCommandSender user) {
             Markdown md = TC.md("✨ **" + QQBot.BOT_NAME + "帮助菜单**\n\n" +

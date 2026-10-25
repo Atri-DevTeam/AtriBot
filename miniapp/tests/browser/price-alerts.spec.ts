@@ -201,7 +201,7 @@ for (const administrator of [false, true]) {
     await page.screenshot({path: testInfo.outputPath('price-alert-existing-rule.png'), fullPage: true})
     if (administrator) {
       const button = page.getByRole('button', {name: '测试', exact: true})
-      await expect(button).toHaveCSS('color', 'rgb(191, 86, 94)')
+      await expect(button).toHaveCSS('color', 'rgb(238, 160, 166)')
       await button.click()
       await expect(page.getByText('测试消息已发送')).toBeVisible()
       expect(tests).toBe(1)

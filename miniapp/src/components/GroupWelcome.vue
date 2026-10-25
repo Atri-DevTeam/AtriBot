@@ -142,14 +142,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-welcome {
-  margin-top: 14px;
-  padding: 20px 22px;
-  border-radius: 21px;
   min-width: 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  border-radius: 0;
+  padding: 24px 0;
+  margin-top: 0;
 }
 
-.welcome-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 12px; color: #637857; }
-.welcome-save-error { font-size: 11px; color: #ad5656; margin: 12px 0 0; }
+.welcome-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 12px; color: var(--ui-secondary); }
+.welcome-save-error { font-size: 11px; color: var(--ui-danger); margin: 12px 0 0; }
 
 .welcome-heading, .welcome-heading > div {
   display: flex;
@@ -178,7 +181,7 @@ onBeforeUnmount(() => {
 .welcome-toggle svg {
   width: 16px;
   height: 16px;
-  color: #8a9a80;
+  color: var(--ui-muted);
 }
 
 .welcome-toggle svg:last-child {
@@ -213,7 +216,7 @@ onBeforeUnmount(() => {
 .welcome-heading > div > svg {
   width: 16px;
   height: 16px;
-  color: #8a9a80;
+  color: var(--ui-muted);
 }
 
 .welcome-badges {
@@ -229,16 +232,16 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   padding: 4px 7px;
-  background: #ffffff70;
-  border: 1px solid #fff;
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-border);
   border-radius: 7px;
-  color: #91988a;
+  color: var(--ui-muted);
   font-size: 9px;
 }
 
 .welcome-badges > span.enabled {
-  background: #e9efdf88;
-  color: #7c906c;
+  background: var(--ui-raised);
+  color: var(--ui-secondary);
 }
 
 .welcome-badges > span.welcome-readonly {
@@ -263,9 +266,9 @@ onBeforeUnmount(() => {
   place-items: center;
   width: 36px;
   height: 36px;
-  border: 1px solid #fff;
+  border: 1px solid var(--ui-border);
   border-radius: 50%;
-  background: #ffffff80;
+  background: var(--ui-raised);
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -294,7 +297,7 @@ onBeforeUnmount(() => {
   min-height: 16px;
   font-size: 11px;
   line-height: 16px;
-  color: #8a9288;
+  color: var(--ui-muted);
 }
 
 .welcome-sender span {
@@ -311,8 +314,8 @@ onBeforeUnmount(() => {
 
 .welcome-bubble {
   min-width: 0;
-  background: #ffffff91;
-  border: 1px solid #fff;
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-border);
   border-radius: 4px 16px 16px;
   padding: 16px;
 }
@@ -321,7 +324,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   line-height: 1.85;
   overflow-wrap: anywhere;
-  color: #64735e;
+  color: var(--ui-secondary);
 }
 
 .welcome-markdown :deep(> :first-child) {
@@ -363,25 +366,25 @@ onBeforeUnmount(() => {
 
 .welcome-markdown :deep(pre) {
   white-space: pre-wrap;
-  background: #eef1e880;
+  background: var(--ui-raised);
   padding: 10px;
   border-radius: 8px;
 }
 
 .welcome-markdown :deep(blockquote) {
-  border-left: 2px solid #c9d5bf;
+  border-left: 2px solid var(--ui-border);
   margin: 10px 0;
   padding-left: 10px;
-  color: #89917f;
+  color: var(--ui-muted);
 }
 
 .welcome-markdown :deep(hr) {
   border: 0;
-  border-top: 1px solid #b5c3a740;
+  border-top: 1px solid var(--ui-border);
 }
 
 .welcome-markdown :deep(.welcome-mention), .welcome-markdown :deep(.welcome-link), .welcome-markdown :deep(.welcome-command) {
-  color: #6e93b4;
+  color: var(--ui-accent);
 }
 
 .welcome-markdown :deep(.katex) {
@@ -445,13 +448,13 @@ onBeforeUnmount(() => {
   gap: 10px;
   margin: 15px 0 0;
   font-size: 11px;
-  color: #929b88;
+  color: var(--ui-muted);
 }
 
 @media (max-width: 760px) {
   .group-welcome {
-    padding: 16px;
-    border-radius: 19px;
+    padding: 24px 0;
+    border-radius: 0;
   }
 
   .welcome-message {

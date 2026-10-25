@@ -346,11 +346,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-moderation {
-  margin-top: 14px;
-  padding: 20px 22px;
-  border-radius: 21px;
   min-width: 0;
-  color: #64735e;
+  color: var(--ui-secondary);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  border-radius: 0;
+  padding: 24px 0;
+  margin-top: 0;
 }
 
 .moderation-heading, .moderation-heading > div, .moderation-section-title, .moderation-subheading, .moderation-footer {
@@ -369,7 +372,7 @@ onBeforeUnmount(() => {
 .moderation-heading svg {
   width: 16px;
   height: 16px;
-  color: #8a9a80;
+  color: var(--ui-muted);
 }
 
 h3, h4, h5 {
@@ -399,18 +402,18 @@ fieldset {
 .moderation-block {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #b5c3a730;
+  border-top: 1px solid var(--ui-border);
 }
 
 .moderation-help, .moderation-empty {
   font-size: 11px;
-  color: #849079;
+  color: var(--ui-muted);
   line-height: 1.85;
   margin: 10px 0 13px;
 }
 
 .moderation-error {
-  color: #a07863;
+  color: var(--ui-danger);
   font-size: 12px;
   line-height: 1.8;
 }
@@ -424,7 +427,7 @@ label {
 }
 
 input[type=checkbox] {
-  accent-color: #829970;
+  accent-color: var(--ui-accent);
   width: 15px;
   height: 15px;
   margin: 0;
@@ -433,28 +436,28 @@ input[type=checkbox] {
 input:not([type=checkbox]), select, textarea {
   box-sizing: border-box;
   min-width: 0;
-  border: 1px solid #c7d1bf;
+  border: 1px solid var(--ui-border);
   border-radius: 10px;
   padding: 10px 12px;
-  color: #53644b;
-  background: #ffffffbd;
+  color: var(--ui-text);
+  background: var(--ui-input);
   font: inherit;
   font-size: 13px;
   line-height: 1.6;
 }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
-  outline: 2px solid #a3b496;
+  outline: 2px solid var(--ui-focus);
   outline-offset: 2px;
 }
 
 input::placeholder, textarea::placeholder {
-  color: #9aa58f;
+  color: var(--ui-subtle);
 }
 
 input:disabled, select:disabled, textarea:disabled {
   opacity: .7;
-  background: #eef1e9;
+  background: var(--ui-input);
   cursor: not-allowed;
 }
 
@@ -473,17 +476,17 @@ input:disabled, select:disabled, textarea:disabled {
 .moderation-button {
   min-height: 36px;
   padding: 8px 14px;
-  background: #ffffff91;
-  border: 1px solid #fff;
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-border);
   border-radius: 11px;
-  color: #637857;
+  color: var(--ui-secondary);
   font-size: 11px;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .moderation-button.primary {
-  background: #dfe9d4;
+  background: var(--ui-raised);
 }
 
 button:disabled {
@@ -495,8 +498,8 @@ button:disabled {
   list-style: none;
   margin: 12px 0 0;
   padding: 0 13px;
-  border: 1px solid #ffffffb0;
-  background: #ffffff50;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-raised);
   border-radius: 12px;
 }
 
@@ -508,7 +511,7 @@ button:disabled {
 }
 
 .moderation-rules li + li {
-  border-top: 1px solid #b5c3a726;
+  border-top: 1px solid var(--ui-border);
 }
 
 .moderation-rules li.moderation-keyword {
@@ -520,9 +523,9 @@ button:disabled {
   box-sizing: border-box;
   margin-top: 12px;
   padding: 12px;
-  border: 1px solid #ffffffb0;
+  border: 1px solid var(--ui-border);
   border-radius: 11px;
-  background: #eff1eb70;
+  background: var(--ui-raised);
 }
 
 .moderation-readonly-label {
@@ -530,7 +533,7 @@ button:disabled {
   align-items: center;
   gap: 5px;
   font-size: 10px;
-  color: #8a947f;
+  color: var(--ui-muted);
 }
 
 .moderation-readonly-label svg {
@@ -552,7 +555,7 @@ button:disabled {
 }
 
 .moderation-readonly dt {
-  color: #89947e;
+  color: var(--ui-muted);
 }
 
 .moderation-readonly dd {
@@ -571,7 +574,7 @@ button:disabled {
 
 .moderation-secret small {
   display: block;
-  color: #9a927e;
+  color: var(--ui-muted);
   font-size: 9px;
   margin-top: 3px;
 }
@@ -594,7 +597,7 @@ button:disabled {
 
 .moderation-subheading > span {
   font-size: 10px;
-  color: #8b9683;
+  color: var(--ui-muted);
 }
 
 .moderation-section-title {
@@ -612,9 +615,9 @@ button:disabled {
 .moderation-prompt {
   margin-top: 20px;
   padding: 16px;
-  border: 1px solid #d4ddcc;
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
-  background: #f4f7ef80;
+  background: var(--ui-raised);
 }
 
 .moderation-prompt .moderation-subheading {
@@ -659,18 +662,18 @@ button:disabled {
   flex: 1 0 34px;
   min-height: 36px;
   padding: 6px;
-  border: 1px solid #d2dbcb;
+  border: 1px solid var(--ui-border);
   border-radius: 9px;
-  color: #6c7e60;
-  background: #ffffff90;
+  color: var(--ui-secondary);
+  background: var(--ui-raised);
   font-size: 11px;
   cursor: pointer;
 }
 
 .moderation-weekdays button[aria-pressed=true] {
-  border-color: #9db28c;
-  background: #dfe9d4;
-  color: #4e6441;
+  border-color: var(--ui-focus);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-hover);
 }
 
 .moderation-reminder {
@@ -679,10 +682,10 @@ button:disabled {
   margin: 20px 0 0;
   padding: 13px;
   border-radius: 12px;
-  background: #e9efdf60;
+  background: var(--ui-raised);
   font-size: 11px;
   line-height: 1.9;
-  color: #7e8b74;
+  color: var(--ui-secondary);
 }
 
 .moderation-reminder svg {
@@ -695,17 +698,17 @@ button:disabled {
 .moderation-footer {
   margin-top: 18px;
   font-size: 11px;
-  color: #839675;
+  color: var(--ui-muted);
 }
 
 .danger {
-  color: #ac7f70;
+  color: var(--ui-danger);
 }
 
 @media (max-width: 760px) {
   .group-moderation {
-    padding: 16px;
-    border-radius: 19px;
+    padding: 24px 0;
+    border-radius: 0;
   }
 
   .moderation-prompt {

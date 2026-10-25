@@ -17,6 +17,7 @@ import java.util.Set;
  * @Package top.yzljc.atribot.webui.repo
  */
 public final class BotStatsSection {
+    public static final int LEADERBOARD_LIMIT = 100;
     public record Ranking(int rank, String userId, Number value) {
     }
 
@@ -48,15 +49,25 @@ public final class BotStatsSection {
                 if (previous == null || previous.compareTo(score) != 0) rank = position;
                 previous = score;
                 ranks.computeIfAbsent(entry.getKey(), _ -> new LinkedHashMap<>()).put(metric, rank);
-                entries.add(new Ranking(rank, (String) entry.getValue().get("userId"), value));
+                if (entries.size() < LEADERBOARD_LIMIT)
+                    entries.add(new Ranking(rank, (String) entry.getValue().get("userId"), value));
             }
             leaderboards.put(metric, List.copyOf(entries));
         }
     }
 
     public Map<String, Object> view() {
-        return Map.of("totals", totals, "players", players.keySet().stream().sorted().map(this::player).toList(),
+        return Map.of("totals", totals, "players", leaderboards.values().stream().flatMap(List::stream)
+                        .map(Ranking::userId).distinct().sorted().map(this::player).toList(),
                 "leaderboards", Collections.unmodifiableMap(leaderboards));
+    }
+
+    /**
+     * @param userId 用户 OpenID
+     * @return 用户在全部有效成绩中的名次，不受公开榜单条数限制
+     */
+    public Map<String, Integer> ranks(String userId) {
+        return Collections.unmodifiableMap(ranks.getOrDefault(userId, Map.of()));
     }
 
     public Map<String, Object> player(String id) {

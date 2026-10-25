@@ -168,33 +168,33 @@ function savePriority(item: string, clear = false) {
 </template>
 
 <style scoped>
-.settings-switch { display: inline-flex; align-items: center; width: 34px; height: 20px; padding: 3px; border: 0; border-radius: 12px; background: #bdc5b9; cursor: pointer; transition: background .18s; }
-.settings-switch > span { width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #35433920; transition: transform .18s; }
-.settings-switch[aria-checked=true] { background: #849978; }
+.settings-switch { display: inline-flex; align-items: center; width: 34px; height: 20px; padding: 3px; border: 0; border-radius: 12px; background: var(--ui-switch-off); cursor: pointer; transition: background .18s; }
+.settings-switch > span { width: 14px; height: 14px; border-radius: 50%; background: var(--ui-text); box-shadow: none; transition: transform .18s; }
+.settings-switch[aria-checked=true] { background: var(--ui-accent); }
 .settings-switch[aria-checked=true] > span { transform: translateX(14px); }
 .settings-switch:disabled { cursor: default; opacity: .5; }
-.reward-mode { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; margin: 10px 0; font-size: 11px; color: #86917d; }
-.settings-hint { margin: 10px 0; font-size: 10px; line-height: 1.8; color: #86917d; }
-.reward-priorities > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 0; font-size: 11px; color: #53634d; list-style: none; cursor: pointer; }
+.reward-mode { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; margin: 10px 0; font-size: 11px; color: var(--ui-muted); }
+.settings-hint { margin: 10px 0; font-size: 10px; line-height: 1.8; color: var(--ui-muted); }
+.reward-priorities > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 0; font-size: 11px; color: var(--ui-text); list-style: none; cursor: pointer; }
 .reward-priorities > summary::-webkit-details-marker { display: none; }
-.reward-priorities > summary > svg { width: 12px; height: 12px; color: #86917d; transition: transform .18s; }
+.reward-priorities > summary > svg { width: 12px; height: 12px; color: var(--ui-muted); transition: transform .18s; }
 .reward-priorities[open] > summary > svg { transform: rotate(90deg); }
 .reward-options { display: flex; flex-direction: column; }
-.reward-option { border-bottom: 1px solid #b3c1a726; }
+.reward-option { border-bottom: 1px solid var(--ui-border); }
 .reward-option:last-child { border-bottom: 0; }
-.reward-option-heading { display: flex; align-items: center; gap: 8px; padding: 11px 0; font-size: 11px; color: #53634d; }
+.reward-option-heading { display: flex; align-items: center; gap: 8px; padding: 11px 0; font-size: 11px; color: var(--ui-text); }
 .reward-option-heading > span { min-width: 0; overflow-wrap: anywhere; flex: 1; }
-.reward-option-heading > small { color: #86917d; font-size: 10px; }
+.reward-option-heading > small { color: var(--ui-muted); font-size: 10px; }
 .reward-editor { display: flex; align-items: center; gap: 10px; padding: 0 0 12px; }
-.reward-editor label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: #86917d; font-size: 10px; }
-.reward-editor input { width: 64px; min-width: 0; padding: 7px 8px; border: 1px solid #b5c3a740; border-radius: 8px; background: #ffffff70; color: #53634d; font: inherit; font-size: 12px; }
-.settings-action { border: 1px solid #b5c3a740; padding: 7px 12px; border-radius: 8px; background: #e4eadc; color: #53634d; font: inherit; font-size: 11px; cursor: pointer; }
+.reward-editor label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: var(--ui-muted); font-size: 10px; }
+.reward-editor input { width: 64px; min-width: 0; padding: 7px 8px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-input); color: var(--ui-text); font: inherit; font-size: 12px; }
+.settings-action { border: 1px solid var(--ui-border); padding: 7px 12px; border-radius: 8px; background: var(--ui-raised); color: var(--ui-text); font: inherit; font-size: 11px; cursor: pointer; }
 .settings-action:disabled, .reward-editor .text-button:disabled { opacity: .45; cursor: default; }
 .settings-help-label { position: relative; display: inline-flex; align-items: center; gap: 6px; }
-.settings-tooltip { position: absolute; z-index: 20; bottom: calc(100% + 10px); left: 0; width: 240px; max-width: calc(100vw - 80px); box-sizing: border-box; padding: 10px 12px; border: 1px solid #ffffff18; border-radius: 10px; background: #354339; color: #f5f7f2; box-shadow: 0 6px 20px #25302626; font-size: 11px; font-weight: 400; line-height: 1.7; white-space: normal; text-align: left; }
+.settings-tooltip { position: absolute; z-index: 20; bottom: calc(100% + 10px); left: 0; width: 240px; max-width: calc(100vw - 80px); box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-raised); color: var(--ui-text); box-shadow: var(--ui-shadow); font-size: 11px; font-weight: 400; line-height: 1.7; white-space: normal; text-align: left; }
 .settings-help-label::after { content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 10px; }
-.settings-help-button { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; padding: 0; border: 1px solid #aebaa4; border-radius: 50%; background: transparent; color: #86917d; font: inherit; font-size: 10px; cursor: pointer; }
-.settings-feedback { margin: 14px 0 0; color: #637857; font-size: 11px; }
-.settings-feedback.error { color: #ad5656; }
+.settings-help-button { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; padding: 0; border: 1px solid var(--ui-border); border-radius: 50%; background: transparent; color: var(--ui-muted); font: inherit; font-size: 10px; cursor: pointer; }
+.settings-feedback { margin: 14px 0 0; color: var(--ui-secondary); font-size: 11px; }
+.settings-feedback.error { color: var(--ui-danger); }
 @media (prefers-reduced-motion: reduce) { .settings-switch, .settings-switch > span, .reward-priorities > summary > svg { transition: none; } }
 </style>

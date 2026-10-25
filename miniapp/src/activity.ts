@@ -8,6 +8,7 @@ export type Reaction = {
     metrics?: Record<string, number>
 }
 export type Activity = {
+    rankings?: Record<string, Record<string, number>>
     reaction: Reaction | null
     freeDraw: 'available' | 'used' | 'locked' | null
     games: { game: string; operations: number; correct: number; plays: number; wins: number; metrics?: Record<string, number> }[] | null

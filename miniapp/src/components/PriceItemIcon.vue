@@ -54,8 +54,8 @@ onBeforeUnmount(() => { ++version; observer?.disconnect() })
   justify-content: center;
   overflow: hidden;
   border-radius: 12px;
-  background: var(--price-soft, #ffffff70);
-  color: var(--price-subtle, #98a18f);
+  background: var(--ui-raised);
+  color: var(--price-subtle, var(--ui-muted));
 }
 .price-item-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .price-item-icon svg { width: 21px; height: 21px; opacity: .65; }

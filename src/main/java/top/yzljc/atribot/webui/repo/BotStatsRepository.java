@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public final class BotStatsRepository {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final List<String> GAMES = List.of("minesweeper", "sound", "connect4", "roulette", "rsp", "reaction", "fishing");
+    private static final List<String> GAMES = List.of("minesweeper", "sound", "connect4", "roulette", "rsp", "reaction", "fishing", "tictactoe");
     private final UserGameDataRepository.Connections connections;
     private final Supplier<Catalog> catalog;
     private final Supplier<LocalDate> today;
@@ -45,7 +45,7 @@ public final class BotStatsRepository {
     }
 
     public record Snapshot(long generatedAt, Map<String, BotStatsSection> games, BotStatsSection loot,
-                           BotStatsSection sign, BotStatsSection images, Map<String, Long> registrations,
+                           BotStatsSection sign, Map<String, Long> registrations,
                            List<String> unavailable) {
     }
 
@@ -69,14 +69,13 @@ public final class BotStatsRepository {
         var games = section("games", unavailable, this::games);
         var loot = section("loot", unavailable, () -> loot(unavailable));
         var sign = section("sign", unavailable, this::sign);
-        var images = section("images", unavailable, this::images);
         var registrations = section("registrations", unavailable, () -> {
             Map<String, Long> counts = new LinkedHashMap<>();
             query("SELECT COUNT(*) AS total FROM official_users", rows -> counts.put("users", rows.getLong("total")));
             query("SELECT COUNT(*) AS total FROM official_groups", rows -> counts.put("groups", rows.getLong("total")));
             return Collections.unmodifiableMap(counts);
         });
-        return new Snapshot(System.currentTimeMillis(), games, loot, sign, images, registrations, List.copyOf(unavailable));
+        return new Snapshot(System.currentTimeMillis(), games, loot, sign, registrations, List.copyOf(unavailable));
     }
 
     private Map<String, BotStatsSection> games() throws Exception {
@@ -194,34 +193,6 @@ public final class BotStatsRepository {
         return new BotStatsSection(totals, players, List.of("totalCount", "totalCoins", "todayCheckInTime"), Set.of("todayCheckInTime"));
     }
 
-    private BotStatsSection images() throws Exception {
-        Map<String, Map<String, Object>> players = new LinkedHashMap<>();
-        query("SELECT uploader_id, review_status, COUNT(*) AS total FROM image_source "
-                + "WHERE platform IN ('OFFICIAL_GROUP', 'OFFICIAL_C2C') GROUP BY uploader_id, review_status", rows -> {
-            String user = rows.getString("uploader_id");
-            var player = players.computeIfAbsent(user, BotStatsRepository::identity);
-            long count = rows.getLong("total");
-            add(player, "submitted", count);
-            switch (rows.getString("review_status")) {
-                case "REVIEWED" -> add(player, "approved", count);
-                case "DENIED" -> add(player, "denied", count);
-                case "PENDING" -> add(player, "pending", count);
-                default -> add(player, "other", count);
-            }
-        });
-        Map<String, Object> totals = new LinkedHashMap<>();
-        totals.put("contributors", players.size());
-        for (String metric : List.of("submitted", "approved", "denied", "pending", "other"))
-            totals.put(metric, sum(players, metric));
-        totals.put("approvalRate", percent(number(totals, "approved"), number(totals, "approved") + number(totals, "denied")));
-        players.values().forEach(player -> {
-            for (String metric : List.of("submitted", "approved", "denied", "pending", "other"))
-                player.putIfAbsent(metric, 0L);
-            player.put("approvalRate", percent(number(player, "approved"), number(player, "approved") + number(player, "denied")));
-        });
-        return new BotStatsSection(totals, players, List.of("submitted", "approved", "approvalRate"), Set.of());
-    }
-
     private static void collection(Map<String, Object> target, Set<String> owned, Catalog catalog) {
         if (catalog == null) {
             for (String key : List.of("catalogTypes", "normalCatalogTypes", "collectedCatalogTypes", "collectedNormalTypes",
@@ -282,10 +253,6 @@ public final class BotStatsRepository {
 
     private static long number(Map<String, Object> data, String key) {
         return data.get(key) instanceof Number value ? value.longValue() : 0;
-    }
-
-    private static void add(Map<String, Object> data, String key, long count) {
-        data.put(key, Math.addExact(number(data, key), count));
     }
 
     private static long sum(Map<String, Map<String, Object>> players, String key) {

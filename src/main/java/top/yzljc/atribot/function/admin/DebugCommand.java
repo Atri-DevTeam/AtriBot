@@ -60,7 +60,7 @@ public class DebugCommand implements CommandExecutor {
                 console.sendMessage("无效的平台参数，可选参数: -n, -o, -t；-i 请在官方 QQ 会话中使用");
                 return true;
             }
-            if (args.length >1 && args[0].equals("-o")) {
+            if (args.length == 1 && args[0].equals("-o")) {
                 String text = "[!] 事件监听器%s，调用方: OFFICIAL_QQ_ALL_EVENT";
                 if (isQQDebugEnabled.get()) {
                     console.sendMessage(String.format(text, "已禁用"));
@@ -72,7 +72,7 @@ public class DebugCommand implements CommandExecutor {
                     type = DebugDisplayType.CONSOLE;
                 }
                 return true;
-            } else if (args.length >1 && args[0].equals("-n")) {
+            } else if (args.length == 1 && args[0].equals("-n")) {
                 String text = "[!] 事件监听器%s，调用方: NAPCAT_ALL_EVENT";
                 boolean toggled = NapcatPacket.toggleDebug();
                 if (toggled) {

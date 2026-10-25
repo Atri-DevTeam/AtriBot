@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
       </button>
       <div v-else class="group-page-title"><span class="group-heading-icon"><img :src="groupsIcon" alt="" width="24"
                                                                                  height="24"/></span>
-        <div><h2>群管理</h2>
+        <div><p class="page-eyebrow">群聊与功能</p><h2>群管理</h2>
           <p>{{ overview ? `已绑定 ${groups.length} 个群` : '读取群资料' }}</p></div>
       </div>
       <div class="group-actions">
@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
             {{ submitting ? '生成中…' : '生成验证指令' }}
           </button>
         </div>
-        <p class="group-help">机器人需已加入该群。群 ID 可在群内发送 <code>/whoami</code> 获取。</p>
+        <p class="group-help">机器人需已加入该群。群 ID 可在群内发送 <button type="button" class="group-copy-command" aria-label="复制 /whoami 指令" @click="emit('copy', '/whoami')"><code>/whoami</code></button> 获取</p>
       </form>
       <div v-else class="group-verification">
         <p class="group-help">使用当前 QQ，在目标群中 @ 机器人并发送：</p>
@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
 .group-page-heading {
   justify-content: space-between;
   gap: 12px;
-  margin: 4px 0 23px;
+  margin: 0 0 30px;
 }
 
 .group-page-title {
@@ -385,29 +385,30 @@ onBeforeUnmount(() => {
 .group-heading-icon {
   display: grid;
   place-items: center;
-  width: 45px;
-  height: 45px;
-  border: 1px solid #fff;
   border-radius: 15px;
-  background: #ffffff80;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  background: transparent;
 }
 
 .group-heading-icon img {
-  width: 24px;
-  height: 24px;
   image-rendering: pixelated;
+  width: 36px;
+  height: 36px;
 }
 
 .group-page-title h2 {
   margin: 0;
-  font-size: 18px;
   font-weight: 550;
+  font-size: 30px;
+  letter-spacing: -.04em;
 }
 
 .group-page-title p {
   margin: 5px 0 0;
-  font-size: 10px;
-  color: #8b9683;
+  color: var(--ui-muted);
+  font-size: 12px;
 }
 
 .group-actions {
@@ -430,12 +431,12 @@ onBeforeUnmount(() => {
   gap: 6px;
   min-height: 38px;
   padding: 9px 14px;
-  border: 1px solid #fff;
-  border-radius: 12px;
-  background: #ffffff91;
-  color: #637857;
-  font-size: 11px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-raised);
+  color: var(--ui-secondary);
   white-space: nowrap;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .group-button svg {
@@ -444,14 +445,15 @@ onBeforeUnmount(() => {
 }
 
 .group-button.primary {
-  background: #dfe9d49c;
-  border-color: #ffffffc9;
+  border-color: var(--ui-border);
+  background: var(--ui-text);
+  color: var(--ui-on-accent);
 }
 
 .group-binding {
   padding: 22px 24px;
-  border-radius: 21px;
   margin-bottom: 22px;
+  border-radius: 8px;
 }
 
 .group-section-heading {
@@ -467,7 +469,7 @@ onBeforeUnmount(() => {
 }
 
 .group-step {
-  color: #97a28f;
+  color: var(--ui-muted);
   font-size: 10px;
   letter-spacing: .7px;
 }
@@ -475,7 +477,7 @@ onBeforeUnmount(() => {
 .group-bind-form label {
   display: block;
   font-size: 11px;
-  color: #7e8b74;
+  color: var(--ui-secondary);
   margin-bottom: 10px;
 }
 
@@ -488,33 +490,49 @@ onBeforeUnmount(() => {
   flex: 1;
   min-width: 0;
   min-height: 42px;
-  border: 1px solid #ffffff;
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
   padding: 10px 13px;
   font: inherit;
   font-size: 14px;
-  color: #354339;
-  background: #ffffffa0;
+  color: var(--ui-text);
+  background: var(--ui-input);
   outline-offset: 2px;
 }
 
 .group-input-row input:focus {
-  outline: 1px solid #a3b496;
+  outline: 1px solid var(--ui-focus);
 }
 
 .group-input-row input::placeholder {
-  color: #a0aa97;
+  color: var(--ui-subtle);
 }
 
 .group-help {
-  color: #89957e;
+  color: var(--ui-muted);
   font-size: 11px;
   line-height: 1.9;
   margin: 12px 0 0;
 }
 
 .group-help code {
-  color: #677e5c;
+  color: var(--ui-secondary);
+}
+
+.group-copy-command {
+  padding: 0 2px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--ui-secondary);
+}
+
+.group-copy-command:hover {
+  background: var(--ui-hover);
 }
 
 .group-verification > .group-help:first-child {
@@ -528,14 +546,14 @@ onBeforeUnmount(() => {
   gap: 14px;
   margin-top: 13px;
   padding: 14px 16px;
-  background: #ffffff91;
-  border: 1px solid #fff;
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-border);
   border-radius: 14px;
 }
 
 .group-command code {
   font-size: 16px;
-  color: #596d4e;
+  color: var(--ui-text);
   overflow-wrap: anywhere;
 }
 
@@ -556,25 +574,25 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 7px;
   font-size: 10px;
-  color: #879477;
+  color: var(--ui-muted);
 }
 
 .verification-status i {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #9daf86;
+  background: var(--ui-raised);
 }
 
 .verification-status time {
   font-variant-numeric: tabular-nums;
-  color: #a28e68;
+  color: var(--ui-muted);
 }
 
 .group-form-error, .group-unavailable {
   margin: 12px 0 0;
   font-size: 11px;
-  color: #a07863;
+  color: var(--ui-danger);
   line-height: 1.8;
 }
 
@@ -582,27 +600,30 @@ onBeforeUnmount(() => {
   margin: 0 0 18px;
   padding-left: 2px;
   font-size: 12px;
-  color: #6c855d;
+  color: var(--ui-secondary);
 }
 
 .group-loading {
   display: grid;
   place-items: center;
   min-height: 180px;
-  border-radius: 23px;
-  color: #7e8b74;
+  border-radius: 14px;
+  color: var(--ui-secondary);
   font-size: 12px;
 }
 
 .bound-groups {
   list-style: none;
   margin: 0;
-  padding: 0 18px;
-  border-radius: 20px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  border-radius: 0;
 }
 
 .bound-groups li + li {
-  border-top: 1px solid #b5c3a726;
+  border-top: 1px solid var(--ui-border);
 }
 
 .group-row {
@@ -611,7 +632,6 @@ onBeforeUnmount(() => {
   gap: 13px;
   width: 100%;
   min-height: 78px;
-  padding: 15px 0;
   border: 0;
   background: transparent;
   color: inherit;
@@ -619,15 +639,16 @@ onBeforeUnmount(() => {
   text-align: left;
   cursor: pointer;
   transition: background .18s ease;
-  border-radius: 12px;
+  padding: 18px 12px;
+  border-radius: 0;
 }
 
 .group-row:hover {
-  background: #ffffff60;
+  background: var(--ui-hover);
 }
 
 .group-row:focus-visible {
-  outline: 2px solid #a3b496;
+  outline: 2px solid var(--ui-focus);
   outline-offset: 3px;
 }
 
@@ -660,7 +681,7 @@ onBeforeUnmount(() => {
   display: block;
   margin-top: 5px;
   font-size: 10px;
-  color: #8e9a82;
+  color: var(--ui-muted);
 }
 
 .group-row-identity > .group-row-id {
@@ -669,7 +690,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   font-size: 8px;
   letter-spacing: .6px;
-  color: #9aa48f;
+  color: var(--ui-muted);
 }
 
 .group-row-id code {
@@ -682,7 +703,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   text-align: right;
   font-size: 10px;
-  color: #8b9683;
+  color: var(--ui-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -690,7 +711,7 @@ onBeforeUnmount(() => {
   display: block;
   margin-bottom: 5px;
   font-size: 9px;
-  color: #9aa48f;
+  color: var(--ui-muted);
 }
 
 .group-detail-error, .group-unbind {
@@ -701,23 +722,23 @@ onBeforeUnmount(() => {
   gap: 12px;
   margin-top: 20px;
   font-size: 11px;
-  color: #9d8071;
+  color: var(--ui-danger);
 }
 
 .group-unbind {
   padding-top: 18px;
-  border-top: 1px solid #b5c3a726;
+  border-top: 1px solid var(--ui-border);
 }
 
 .danger {
-  color: #ac7f70;
+  color: var(--ui-danger);
 }
 
 .group-row-arrow {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #a3b098;
+  color: var(--ui-subtle);
 }
 
 .group-back {
@@ -731,9 +752,11 @@ onBeforeUnmount(() => {
 }
 
 .bound-group {
-  padding: 24px;
+  padding: 0 0 24px;
   min-width: 0;
-  border-radius: 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   animation: arrive .25s ease both;
 }
 
@@ -747,10 +770,10 @@ onBeforeUnmount(() => {
   width: 49px;
   height: 49px;
   flex-shrink: 0;
-  border: 1px solid #fff;
+  border: 1px solid var(--ui-border);
   border-radius: 16px;
-  background: linear-gradient(145deg, #e5ecdc90, #dce7e780);
-  color: #8b9d7f;
+  background: var(--ui-raised);
+  color: var(--ui-muted);
 }
 
 .bound-group-avatar svg {
@@ -783,7 +806,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 5px;
   padding: 5px 9px;
-  border: 1px solid #ffffffd9;
+  border: 1px solid var(--ui-border);
   border-radius: 9px;
   font-size: 10px;
   line-height: 1.5;
@@ -796,18 +819,18 @@ onBeforeUnmount(() => {
 }
 
 .group-badge.owner {
-  color: #7c906c;
-  background: #e9efdf88;
+  color: var(--ui-secondary);
+  background: var(--ui-raised);
 }
 
 .group-badge.bot-role {
-  color: #7c8d9b;
-  background: #e6eef18c;
+  color: var(--ui-accent);
+  background: var(--ui-raised);
 }
 
 .group-badge.members {
-  color: #968977;
-  background: #f1ecdf80;
+  color: var(--ui-muted);
+  background: var(--ui-raised);
   font-variant-numeric: tabular-nums;
 }
 
@@ -817,7 +840,7 @@ onBeforeUnmount(() => {
   gap: 30px;
   margin-top: 23px;
   padding-top: 23px;
-  border-top: 1px solid #b5c3a726;
+  border-top: 1px solid var(--ui-border);
 }
 
 .group-content.without-intro {
@@ -831,7 +854,7 @@ onBeforeUnmount(() => {
 .group-description {
   font-size: 12px;
   line-height: 1.95;
-  color: #7e8977;
+  color: var(--ui-secondary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0;
@@ -855,17 +878,17 @@ onBeforeUnmount(() => {
   padding: 4px 7px;
   font-size: 9px;
   line-height: 1.5;
-  color: #9a909f;
-  background: #f1edf56b;
-  border: 1px solid #ffffffbf;
+  color: var(--ui-muted);
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-border);
   border-radius: 6px;
   overflow-wrap: anywhere;
   max-width: 100%;
 }
 
 .group-tags span.category {
-  color: #8c967c;
-  background: #ebefdf70;
+  color: var(--ui-muted);
+  background: var(--ui-raised);
 }
 
 .group-tags svg {
@@ -878,10 +901,11 @@ onBeforeUnmount(() => {
   align-self: start;
   min-width: 0;
   margin: 0;
-  padding: 1px 13px;
-  background: #ffffff50;
-  border: 1px solid #ffffffa6;
-  border-radius: 14px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--ui-border);
+  border-radius: 0;
+  padding: 0 0 0 24px;
 }
 
 .group-details > div {
@@ -893,7 +917,7 @@ onBeforeUnmount(() => {
 }
 
 .group-details > div + div {
-  border-top: 1px solid #b5c3a71f;
+  border-top: 1px solid var(--ui-border);
 }
 
 .group-details dt {
@@ -902,7 +926,7 @@ onBeforeUnmount(() => {
   gap: 7px;
   flex-shrink: 0;
   font-size: 10px;
-  color: #8e9a82;
+  color: var(--ui-muted);
 }
 
 .group-field-icon {
@@ -911,8 +935,8 @@ onBeforeUnmount(() => {
   width: 25px;
   height: 25px;
   border-radius: 8px;
-  background: #e8eddf70;
-  color: #97a48a;
+  background: var(--ui-raised);
+  color: var(--ui-muted);
 }
 
 .group-field-icon svg {
@@ -924,13 +948,13 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 11px;
   line-height: 1.6;
-  color: #6f8264;
+  color: var(--ui-secondary);
   text-align: right;
   overflow-wrap: anywhere;
 }
 
 .group-details dd.muted {
-  color: #a1a59b;
+  color: var(--ui-subtle);
 }
 
 .group-dates {
@@ -942,14 +966,14 @@ onBeforeUnmount(() => {
 
 .group-dates > div + div {
   padding-left: 25px;
-  border-left: 1px solid #b5c3a72e;
+  border-left: 1px solid var(--ui-border);
 }
 
 .group-dates dt {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #9aa48f;
+  color: var(--ui-muted);
   font-size: 9px;
 }
 
@@ -961,7 +985,7 @@ onBeforeUnmount(() => {
 .group-dates dd {
   margin: 7px 0 0;
   font-size: 11px;
-  color: #7e8b74;
+  color: var(--ui-secondary);
   font-variant-numeric: tabular-nums;
   letter-spacing: .4px;
 }
@@ -971,7 +995,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   align-items: baseline;
   margin-top: 8px;
-  color: #9aa48f;
+  color: var(--ui-muted);
 }
 
 .group-id span {
@@ -997,12 +1021,12 @@ onBeforeUnmount(() => {
 
   .group-binding, .bound-group {
     padding: 18px;
-    border-radius: 19px;
+    border-radius: 14px;
   }
 
   .bound-groups {
     padding: 0 13px;
-    border-radius: 18px;
+    border-radius: 14px;
   }
 
   .group-row {
@@ -1069,5 +1093,13 @@ onBeforeUnmount(() => {
   .group-command code {
     font-size: 13px;
   }
+}
+
+.group-page-title .page-eyebrow { font-size: 10px; margin: 0 0 5px; }
+
+@media (max-width: 760px) {
+  .group-page-title h2 { font-size: 28px; }
+  .group-management .bound-group { padding: 0 0 24px; border: 0; border-radius: 0; }
+  .group-details { border: 0; padding: 0; }
 }
 </style>

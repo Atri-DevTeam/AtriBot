@@ -190,7 +190,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   <div class="price-alerts">
     <section class="price-intro">
       <span class="price-heading-icon"><img :src="goldIngot" alt="" width="24" height="24"/></span>
-      <div><h2>价格提醒</h2><p>设置价格条件，接收 QQ 私聊通知</p></div>
+      <div><p class="page-eyebrow">SkyBlock 市场</p><h2>价格提醒</h2><p>设置价格条件，接收 QQ 私聊通知</p></div>
     </section>
     <div v-if="error" class="price-message error" role="alert">{{ error }}</div>
     <div v-if="notice" class="price-message success" role="status">{{ notice }}</div>
@@ -203,6 +203,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
         <p v-if="!settings.available" class="price-warning">请先添加机器人为好友，再设置私聊提醒</p>
         <p v-else-if="!settings.canPush" class="price-warning">私聊主动消息已关闭，请先开启主动消息权限</p>
       </section>
+      <div class="price-workspace">
       <section v-if="selected" class="price-card price-editor" aria-label="配置价格提醒">
         <button class="price-back" :disabled="busy" @click="close"><Icon name="left"/> 返回物品列表</button>
         <div class="selected-item">
@@ -261,6 +262,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
           <div class="rule-actions"><button :disabled="busy || rule.sending || !settings.available" @click="open({id: rule.itemId, key: rule.key, name: rule.name}, rule)">编辑</button><button :disabled="busy || rule.sending || !settings.available" @click="action(rule, !rule.enabled)">{{ rule.enabled ? '暂停' : '启用' }}</button><button v-if="deleting !== rule.id" class="price-danger" :disabled="busy || rule.sending || !settings.available" @click="deleting = rule.id">删除</button><template v-else><button class="price-danger" :disabled="busy" @click="action(rule)">确认删除</button><button :disabled="busy" @click="deleting = ''">取消</button></template></div>
         </article>
       </section>
+      </div>
     </template>
     <button v-else class="price-primary" @click="load">重新加载</button>
   </div>
@@ -268,15 +270,15 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 
 <style scoped>
 .price-alerts {
-  --price-text: #354339;
-  --price-muted: #7e8977;
-  --price-subtle: #98a18f;
-  --price-soft: #ffffff70;
-  --price-border: #b5c3a740;
-  --price-accent: #829678;
-  --price-accent-hover: #637857;
-  --price-accent-soft: #dfe9d49c;
-  --price-focus: #a9ba9b;
+  --price-text: var(--ui-text);
+  --price-muted: var(--ui-muted);
+  --price-subtle: var(--ui-subtle);
+  --price-soft: var(--ui-input);
+  --price-border: var(--ui-border);
+  --price-accent: var(--ui-accent);
+  --price-accent-hover: var(--ui-accent-hover);
+  --price-accent-soft: var(--ui-accent-soft);
+  --price-focus: var(--ui-focus);
   padding-bottom: 24px;
   color: var(--price-text);
 }
@@ -284,39 +286,40 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 .price-intro {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 4px 0 23px;
+  gap: 18px;
+  margin: 0 0 30px;
 }
 
 .price-heading-icon {
   display: grid;
   place-items: center;
-  width: 45px;
-  height: 45px;
   flex: none;
-  border: 1px solid #fff;
-  border-radius: 15px;
-  background: #ffffff80;
+  width: 52px;
+  height: 52px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .price-heading-icon img {
   display: block;
-  width: 24px;
-  height: 24px;
   image-rendering: pixelated;
+  width: 40px;
+  height: 40px;
 }
 
 .price-intro h2 {
   margin: 0;
-  font-size: 18px;
   font-weight: 550;
+  font-size: 30px;
+  letter-spacing: -.04em;
 }
 
 .price-intro p {
   margin: 5px 0 0;
-  color: #8b9683;
-  font-size: 10px;
+  color: var(--ui-muted);
   line-height: 1.7;
+  font-size: 12px;
 }
 
 .push-settings p {
@@ -327,14 +330,12 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 }
 
 .price-card {
-  padding: 25px 27px;
-  margin-bottom: 22px;
-  border: 1px solid #ffffffe0;
-  border-radius: 23px;
-  background: #ffffff6e;
-  box-shadow: 0 8px 32px #44573c05, inset 0 1px 0 #ffffffa6;
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-panel);
+  box-shadow: none;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }
 
 .push-settings {
@@ -343,6 +344,12 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  padding: 16px 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border);
+  background: transparent;
+  border-radius: 0;
+  margin-bottom: 32px;
 }
 
 .push-settings strong {
@@ -360,7 +367,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   padding: 3px;
   border: 0;
   border-radius: 20px;
-  background: #d3dacd;
+  background: var(--ui-switch-off);
   transition: background .2s;
 }
 
@@ -368,9 +375,9 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   display: block;
   width: 19px;
   height: 19px;
-  background: white;
+  background: var(--ui-text);
   border-radius: 50%;
-  box-shadow: 0 1px 3px #0002;
+  box-shadow: none;
   transition: transform .2s;
 }
 
@@ -385,15 +392,15 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 .price-warning {
   width: 100%;
   font-size: 12px;
-  color: #b57548;
+  color: var(--ui-warning);
   line-height: 1.6;
   margin: 8px 0 0;
 }
 
 .price-card h3,.price-list-title h3 {
   margin: 0 0 14px;
-  font-size: 15px;
   font-weight: 550;
+  font-size: 16px;
 }
 
 .price-message {
@@ -405,8 +412,8 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 }
 
 .price-message.error {
-  color: #b05252;
-  background: #fff0ed;
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
 }
 
 .price-message.success {
@@ -427,14 +434,14 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   min-width: 0;
   padding: 0 13px;
   border: 1px solid var(--price-border);
-  background: var(--price-soft);
-  border-radius: 12px;
   transition: border-color .18s, box-shadow .18s;
+  border-radius: 6px;
+  background: var(--ui-panel);
 }
 
 .price-search-control:focus-within {
   border-color: var(--price-focus);
-  box-shadow: 0 0 0 3px #647f660d;
+  box-shadow: 0 0 0 3px var(--ui-focus-ring);
 }
 
 .price-search-control > svg {
@@ -454,9 +461,10 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   border: 0;
   border-radius: 0;
   font: inherit;
-  font-size: 14px;
   color: var(--price-text);
   appearance: none;
+  font-size: 13px;
+  min-height: 46px;
 }
 
 .price-search-input:focus-visible {
@@ -464,7 +472,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 }
 
 .price-search-input::placeholder {
-  color: var(--price-subtle);
+  color: var(--ui-subtle);
 }
 
 .price-search-input::-webkit-search-cancel-button {
@@ -473,7 +481,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 
 .price-search-submit,
 .price-primary {
-  border: 1px solid #ffffffc9;
+  border: 1px solid var(--ui-border);
   background: var(--price-accent-soft);
   color: var(--price-accent-hover);
   font: inherit;
@@ -487,11 +495,17 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 .price-search-submit {
   min-width: 76px;
   flex: none;
+  border-radius: 6px;
+  padding: 0 18px;
 }
 
 .price-primary {
   width: 100%;
   min-height: 43px;
+  border-radius: 6px;
+  background: var(--ui-text);
+  color: var(--ui-on-accent);
+  font-weight: 500;
 }
 
 .price-hint {
@@ -508,7 +522,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   gap: 12px;
   text-align: left;
   border: 0;
-  border-bottom: 1px solid #b5c3a726;
+  border-bottom: 1px solid var(--ui-border);
   background: none;
   width: 100%;
   padding: 15px 0;
@@ -645,14 +659,14 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   font-size: 10px;
   border-radius: 6px;
   padding: 4px 7px;
-  background: #e9eddf80;
+  background: var(--ui-raised);
   color: var(--price-muted);
 }
 
 .rule-test {
   border: 0;
-  color: #bf565e;
-  background: #fae9ec;
+  color: var(--ui-danger);
+  background: var(--ui-raised);
 }
 
 .rule-source,.rule-variant {
@@ -671,9 +685,11 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 }
 
 .rule-threshold strong {
-  font-size: 18px;
   color: var(--price-text);
   margin-left: 7px;
+  font-size: 25px;
+  font-weight: 450;
+  letter-spacing: -.03em;
 }
 
 .rule-threshold>span {
@@ -690,13 +706,15 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 .rule-actions {
   display: flex;
   gap: 7px;
-  margin-top: 14px;
   flex-wrap: wrap;
+  border-top: 1px solid var(--ui-border);
+  padding-top: 14px;
+  margin-top: 18px;
 }
 
 .rule-actions .price-danger {
-  background: #fbefec;
-  color: #b58277;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
 .price-back {
@@ -726,8 +744,8 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 
 .selected-item h3 {
   margin: 0;
-  font-size: 16px;
   overflow-wrap: anywhere;
+  font-size: 20px;
 }
 
 .selected-item p,.selected-item small {
@@ -753,15 +771,16 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 
 .price-field input {
   font: inherit;
-  font-size: 12px;
   color: var(--price-text);
   background: var(--price-soft);
   border: 1px solid var(--price-border);
-  border-radius: 10px;
   width: 100%;
   min-width: 0;
   padding: 11px 12px;
   box-sizing: border-box;
+  border-radius: 6px;
+  min-height: 44px;
+  font-size: 13px;
 }
 
 .price-fields {
@@ -774,12 +793,13 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: var(--price-soft);
-  border-radius: 12px;
-  padding: 13px;
   margin-bottom: 16px;
   font-size: 11px;
   color: var(--price-muted);
+  background: transparent;
+  border-left: 2px solid var(--ui-border);
+  border-radius: 0;
+  padding: 4px 0 4px 14px;
 }
 
 .quote-status strong {
@@ -833,7 +853,7 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 @media (hover: hover) {
   .price-search-submit:hover:not(:disabled),
   .price-primary:hover:not(:disabled) {
-    background: #d5e2cbbf;
+    background: var(--ui-hover);
   }
 
   .search-item:hover {
@@ -843,13 +863,13 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
 
 @media(max-width:760px) {
   .price-card {
-    padding: 20px;
+    padding: 18px;
   }
 }
 
 @media(max-width:420px) {
   .price-card {
-    padding: 16px;
+    padding: 18px;
   }
   .price-fields {
     gap: 8px;
@@ -867,5 +887,24 @@ onBeforeUnmount(() => { destroyed = true; ++searchVersion; ++detailVersion; icon
   .price-alerts * {
     transition: none!important;
   }
+}
+
+.price-intro .page-eyebrow { font-size: 10px; margin: 0 0 5px; }
+
+.price-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 40px; }
+
+.price-workspace > * { min-width: 0; }
+
+.price-workspace > .price-search { padding: 0; background: transparent; border: 0; }
+
+.price-rule-list { padding-left: 32px; border-left: 1px solid var(--ui-border); }
+
+.price-alerts .price-primary:hover:not(:disabled) { background: var(--ui-accent-hover); color: var(--ui-on-accent); }
+
+@media (max-width: 760px) {
+  .price-intro h2 { font-size: 28px; }
+  .price-workspace { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .price-rule-list { padding: 24px 0 0; border: 0; border-top: 1px solid var(--ui-border); }
+  .price-alerts .push-settings { padding: 12px 0 24px; }
 }
 </style>

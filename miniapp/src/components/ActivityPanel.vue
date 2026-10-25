@@ -6,6 +6,17 @@ import {number, recordDate, type Activity} from '../activity'
 const props = defineProps<{activity: Activity | null; busy: boolean; failed: boolean}>()
 const emit = defineEmits<{retry: []}>()
 const problem = (section: string) => props.failed || Boolean(props.activity?.unavailable.includes(section))
+const rankLabels: Record<string, string> = {
+  participations: '参与次数', plays: '结算场次', wins: '获胜次数', losses: '失败次数', draws: '平局次数',
+  operations: '有效操作', digs: '挖格次数', mineHits: '触雷次数', flagsPlaced: '插旗次数', flagsRemoved: '拔旗次数',
+  winRate: '胜率', correct: '答对次数', wrong: '答错次数', accuracy: '正确率', moves: '落子次数',
+  normalWins: '正常获胜', timeoutWins: '对手超时获胜', timeoutPlays: '超时结束场次', moveTimeouts: '落子超时',
+  forfeitWins: '对手放弃获胜', forfeits: '主动放弃', actions: '手动操作', selfTargets: '指定自己', otherTargets: '指定他人',
+  timeouts: '超时次数', rock: '石头次数', scissors: '剪刀次数', paper: '布次数', hits: '正确点击', misses: '失误次数',
+  abandoned: '主动放弃', timedCompletions: '耗时样本数', totalCompletedMs: '累计完成用时',
+  completionRate: '完成率', bestMs: '最好用时', averageCompletedMs: '平均完成用时',
+  fish: '鱼类', junk: '杂物', treasure: '宝藏', gold: '累计兑换金粒', enchanted: '附魔产物', treasureRate: '宝藏率'
+}
 const games = computed(() => {
   const ratio = (wins: number, plays: number) => plays ? `${Math.round(wins / plays * 1000) / 10}%` : '—'
   const definitions = [
@@ -77,8 +88,14 @@ const games = computed(() => {
       metrics.push(metric('败场数', 'losses'), metric('平局数', 'draws'), metric('石头次数', 'rock'),
         metric('剪刀次数', 'scissors'), metric('布次数', 'paper'), metric('出拳参与次数', 'participations'))
     }
+    const ranks = ready ? props.activity?.rankings?.[def.id] : undefined
+    const mainMetric = def.id === 'reaction' ? 'bestMs' : def.id === 'sound' ? 'accuracy'
+        : def.id === 'minesweeper' ? 'digs' : def.id === 'fishing' ? 'gold' : 'winRate'
+    const rankings = Object.entries(ranks ?? {}).filter(([key]) => rankLabels[key])
+        .map(([key, rank]) => ({key, label: rankLabels[key], rank}))
     return {
-      ...def, bad, label, value, unit, metrics, rank: ready && def.id === 'reaction' ? r?.rank : null,
+      ...def, bad, label, value, unit, metrics, rankings,
+      rank: ranks?.[mainMetric] ?? (ready && def.id === 'reaction' ? r?.rank : null),
       best: ready && def.id === 'reaction' && r?.bestMs != null ? `${recordDate(r.bestDate)} · ${r.bestMisses} 次失误` : ''
     }
   })
@@ -100,13 +117,15 @@ const games = computed(() => {
     <div class="games-grid">
       <section v-for="game in games" :key="game.id" class="game-card glass" :data-game="game.id"
                :aria-label="game.name + '成绩'" :aria-busy="busy">
-        <header class="game-card-heading"><span class="game-emblem"><Icon :name="game.icon"/></span>
-          <h3>{{ game.name }}</h3><span v-if="game.rank" class="game-rank"
-                                        :title="'用时排名 ' + game.rank">排名：#{{ number(game.rank) }}</span></header>
+        <div class="game-overview">
+          <header class="game-card-heading"><span class="game-emblem"><Icon :name="game.icon"/></span>
+            <h3>{{ game.name }}</h3><span v-if="game.rank" class="game-rank"
+                                          :title="game.label + '排名 ' + game.rank">排名：#{{ number(game.rank) }}</span></header>
+          <div v-if="!game.bad" class="game-score"><span>{{ game.label }}</span><strong>{{ game.value }}<small
+              v-if="game.unit">{{ game.unit }}</small></strong></div>
+        </div>
         <div v-if="game.bad" class="game-error">暂时无法读取</div>
         <template v-else>
-          <div class="game-score"><span>{{ game.label }}</span><strong>{{ game.value }}<small
-              v-if="game.unit">{{ game.unit }}</small></strong></div>
           <dl v-if="game.metrics.length" class="game-metrics">
             <div v-for="metric in game.metrics" :key="metric.label">
               <dt>{{ metric.label }}</dt>
@@ -114,6 +133,14 @@ const games = computed(() => {
             </div>
           </dl>
           <p v-if="game.best" class="game-best">{{ game.best }}</p>
+          <details v-if="game.rankings.length" class="game-rankings">
+            <summary>各项排名</summary>
+            <dl class="game-metrics">
+              <div v-for="ranking in game.rankings" :key="ranking.key">
+                <dt>{{ ranking.label }}</dt><dd>第 {{ number(ranking.rank) }} 名</dd>
+              </div>
+            </dl>
+          </details>
         </template>
       </section>
     </div>

@@ -14,7 +14,7 @@
     display: grid;
     place-items: center;
     padding: 28px;
-    background: #f4f5f0f5;
+    background: var(--ui-page);
 }
 
 .intro-content {
@@ -28,10 +28,6 @@
     margin: 0 auto 26px;
 }
 
-.intro-portrait {
-    animation: intro-float 2.6s ease-in-out infinite alternate;
-}
-
 .intro-portrait img {
     display: block;
     width: 100%;
@@ -43,14 +39,14 @@
     font-size: 19px;
     font-weight: 500;
     letter-spacing: 3px;
-    color: #53634d;
+    color: var(--ui-text);
 }
 
 .intro-caption {
     margin: 12px 0 22px;
     font-size: 11px;
     letter-spacing: 1px;
-    color: #929b88;
+    color: var(--ui-muted);
 }
 
 .intro-track {
@@ -60,7 +56,7 @@
     margin: 0 auto;
     border-radius: 3px;
     overflow: hidden;
-    background: #c5cfbb40;
+    background: var(--ui-raised);
 }
 
 .intro-track > i {
@@ -68,7 +64,7 @@
     width: 38px;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #b0c19f00, #9caf8c, #b0c19f00);
+    background: var(--ui-accent);
     animation: intro-track 1.65s cubic-bezier(.45, 0, .3, 1) infinite;
 }
 
@@ -90,29 +86,23 @@
 }
 
 .intro-revealed .topbar {
-    animation: nav-reveal .65s cubic-bezier(.22, 1, .36, 1) .04s backwards;
+    animation: nav-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }
 
 .intro-revealed .profile-card {
-    animation: profile-reveal .75s cubic-bezier(.22, 1, .36, 1) .08s backwards;
+    animation: profile-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }
 
 .intro-revealed .avatar-frame {
-    animation: avatar-reveal .8s cubic-bezier(.22, 1, .36, 1) .14s backwards;
+    animation: avatar-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }
 
 .intro-revealed .activity-panel {
-    animation: profile-reveal .8s cubic-bezier(.22, 1, .36, 1) .3s backwards;
+    animation: profile-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }
 
 .intro-revealed .sync-line {
-    animation: profile-reveal .8s cubic-bezier(.22, 1, .36, 1) .4s backwards;
-}
-
-@keyframes intro-float {
-    to {
-        transform: translateY(-5px);
-    }
+    animation: profile-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }
 
 @keyframes intro-track {
@@ -171,5 +161,5 @@
 }
 
 .intro-revealed .profile-details {
-    animation: profile-reveal .72s cubic-bezier(.22, 1, .36, 1) .17s backwards;
+    animation: profile-reveal .25s cubic-bezier(.22, 1, .36, 1) 0s backwards;
 }

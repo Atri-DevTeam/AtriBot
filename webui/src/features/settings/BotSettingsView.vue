@@ -158,15 +158,18 @@
             </template>
           </div>
 
-          <div class="errors-surface bs-card">
-            <header class="bs-card-head">
+          <details class="errors-surface bs-card bs-welcome-card">
+            <summary class="bs-card-head bs-welcome-summary">
+              <div>
               <h3 class="bs-card-title">默认加群欢迎</h3>
               <p class="bs-card-desc">按机器人权限身份配置欢迎正文、图片和按钮</p>
-            </header>
+              </div>
+              <svg class="bs-welcome-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+            </summary>
             <DefaultJoinWelcomeSettings ref="welcomePanel" :api="api" :bot-name="profile.botName"
                                         :bot-avatar-url="profile.avatarUrl"
                                         :debug-group-id="settingItems.find(item => item.key === 'qq.debug-group-openId')?.value || ''"/>
-          </div>
+          </details>
 
           <!-- 面板设置 -->
           <div class="errors-surface bs-card">

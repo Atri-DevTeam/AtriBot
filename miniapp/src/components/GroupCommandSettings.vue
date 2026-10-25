@@ -118,33 +118,33 @@ onBeforeUnmount(() => { disposed = true; version++ })
 </template>
 
 <style scoped>
-.group-command-settings { margin-top: 14px; padding: 20px 22px; border-radius: 21px; min-width: 0; }
+.group-command-settings { min-width: 0; background: transparent; border: 0; border-top: 1px solid var(--ui-border); border-radius: 0; padding: 24px 0; margin-top: 0; }
 .command-heading, .command-heading > div { display: flex; align-items: center; gap: 9px; }
 .command-heading { justify-content: space-between; margin-bottom: 8px; }
 .command-heading h3 { margin: 0; font-size: 14px; font-weight: 550; }
-.command-heading svg { width: 16px; height: 16px; color: #8a9a80; }
-.command-item + .command-item { border-top: 1px solid #b3c1a726; }
-.command-item > summary { display: flex; align-items: center; gap: 9px; padding: 13px 0; color: #637857; list-style: none; cursor: pointer; font-size: 12px; }
+.command-heading svg { width: 16px; height: 16px; color: var(--ui-muted); }
+.command-item + .command-item { border-top: 1px solid var(--ui-border); }
+.command-item > summary { display: flex; align-items: center; gap: 9px; padding: 13px 0; color: var(--ui-secondary); list-style: none; cursor: pointer; font-size: 12px; }
 .command-item > summary::-webkit-details-marker { display: none; }
 .command-item > summary > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.command-item > summary small { display: block; margin-top: 4px; font-size: 10px; color: #95a08b; }
+.command-item > summary small { display: block; margin-top: 4px; font-size: 10px; color: var(--ui-muted); }
 .command-item > summary > svg { width: 12px; height: 12px; transition: transform .18s; }
 .command-item[open] > summary > svg { transform: rotate(90deg); }
-.command-state { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #86917d; }
+.command-state { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--ui-muted); }
 .command-state svg { width: 12px; height: 12px; }
 fieldset { border: 0; padding: 0 0 12px; margin: 0; min-width: 0; }
-.command-toggle, .command-field { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0; font-size: 11px; color: #86917d; }
+.command-toggle, .command-field { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0; font-size: 11px; color: var(--ui-muted); }
 .command-field { display: grid; grid-template-columns: 100px minmax(0, 1fr); }
-.command-field input { min-width: 0; width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #b5c3a740; border-radius: 11px; background: #ffffff70; color: #53634d; font: inherit; font-size: 12px; }
-.command-save { padding: 8px 12px; border: 1px solid #b5c3a740; border-radius: 9px; background: #e4eadc; color: #53634d; font: inherit; font-size: 11px; cursor: pointer; }
+.command-field input { min-width: 0; width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid var(--ui-border); border-radius: 11px; background: var(--ui-input); color: var(--ui-text); font: inherit; font-size: 12px; }
+.command-save { padding: 8px 12px; border: 1px solid var(--ui-border); border-radius: 9px; background: var(--ui-raised); color: var(--ui-text); font: inherit; font-size: 11px; cursor: pointer; }
 .command-save:disabled, fieldset:disabled input { opacity: .5; cursor: default; }
-.command-note { margin: 10px 0; font-size: 10px; color: #89957e; line-height: 1.8; }
+.command-note { margin: 10px 0; font-size: 10px; color: var(--ui-muted); line-height: 1.8; }
 .command-note > button { margin-left: 12px; }
-.command-note.error { color: #ad5656; }
-.command-lock { padding: 10px 12px; margin: 0 0 12px; border-radius: 9px; background: #eee8df80; color: #958773; }
+.command-note.error { color: var(--ui-danger); }
+.command-lock { padding: 10px 12px; margin: 0 0 12px; border-radius: 9px; background: var(--ui-raised); color: var(--ui-muted); }
 .command-lock p { margin: 0 0 5px; font-size: 11px; overflow-wrap: anywhere; }
 .command-lock small { font-size: 10px; line-height: 1.8; }
-@media (max-width: 760px) { .group-command-settings { padding: 16px; border-radius: 19px; } }
+@media (max-width: 760px) { .group-command-settings { padding: 24px 0; border-radius: 0; } }
 @media (max-width: 360px) { .command-field { grid-template-columns: 85px minmax(0, 1fr); gap: 8px; } }
 @media (prefers-reduced-motion: reduce) { .command-item > summary > svg { transition: none; } }
 </style>

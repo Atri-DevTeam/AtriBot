@@ -90,4 +90,11 @@ defineExpose({mayLeave, releaseLeaveGuard, load})
   padding: 14px 0 0;
   background: transparent;
 }
+
+.default-welcome-settings :deep(.welcome-markdown img:not(.md-inline-icon)) {
+  max-width: min(100%, 480px);
+  max-height: 300px;
+  height: auto;
+  object-fit: contain;
+}
 </style>

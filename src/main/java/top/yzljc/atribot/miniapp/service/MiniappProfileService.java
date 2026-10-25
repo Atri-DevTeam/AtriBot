@@ -133,16 +133,11 @@ public final class MiniappProfileService {
     }
 
     /**
-     * @return 当前机器人名称和头像地址，仅读取已缓存的机器人资料及配置
+     * @return 当前机器人名称和头像地址，读取 QQBot 已获取的机器人资料
      */
     public static Bot currentBot() {
         String name = clean(QQBot.BOT_NAME);
-        String avatar = clean(QQBot.BOT_AVATAR_URL);
-        Config config = Config.getInstance();
-        if (avatar == null && clean(config.getOfficialOpenId()) != null) {
-            avatar = avatarUrl(CoreConfig.getInstance().getSettings().getQqAppId(), config.getOfficialOpenId());
-        }
-        return new Bot(name == null ? "机器人" : name, avatar);
+        return new Bot(name == null ? "机器人" : name, QQBot.BOT_AVATAR_URL);
     }
 
     private static <T> T read(Connection connection, String section, String sql, String userId,

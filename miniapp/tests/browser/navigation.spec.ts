@@ -86,7 +86,9 @@ test('dock switches sections without reopening the session or losing cached prof
   expect({ exchanges, imageCalls, profileCalls, aboutCalls }).toEqual({ exchanges: 1, imageCalls: 0, profileCalls: 1, aboutCalls: 1 })
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   const refresh = await page.getByRole('button', { name: '更新记录', exact: true }).boundingBox()
-  expect(refresh!.y + refresh!.height).toBeLessThan((await dock.boundingBox())!.y)
+  const dockBounds = (await dock.boundingBox())!
+  if (page.viewportSize()!.width <= 760) expect(refresh!.y + refresh!.height).toBeLessThan(dockBounds.y)
+  else expect(refresh!.y).toBeGreaterThan(dockBounds.y + dockBounds.height)
   await page.setViewportSize({ width: 320, height: 740 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await aboutTab.click()

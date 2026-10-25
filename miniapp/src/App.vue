@@ -196,7 +196,7 @@ async function copyText(value: string, label: string) {
 }
 
 function copyId() {
-  return copyText(userId.value, '用户 ID ')
+  return copyText(userId.value, '用户平台ID')
 }
 
 function leave() {
@@ -275,7 +275,6 @@ onBeforeUnmount(() => {
 <template>
   <div class="app-shell"
        :class="{ 'intro-pending': introVisible, 'intro-revealed': revealed && state.phase === 'ready', 'has-dock': state.phase === 'ready' }">
-    <div class="backdrop" aria-hidden="true"><i class="wash wash-lilac"></i><i class="wash wash-peach"></i></div>
     <Transition name="intro-screen">
       <div v-if="introVisible" class="intro-screen" role="status" aria-live="polite" aria-label="正在加载用户档案">
         <div class="intro-content">
@@ -316,12 +315,9 @@ onBeforeUnmount(() => {
               <Icon name="user"/>
             </div>
           </div>
-          <div class="profile-identity"><h2 :class="{ skeleton: loading && !profile }">
+          <div class="profile-identity"><p class="page-eyebrow">个人中心</p><h2 :class="{ skeleton: loading && !profile }">
             {{ username || (loading ? '读取中…' : '暂无记录') }}</h2>
             <div class="user-id"><span class="field-label">USER ID</span><code>{{ userId }}</code>
-              <button class="copy-button" aria-label="复制用户 ID" @click="copyId">
-                <Icon name="copy"/>
-              </button>
             </div>
           </div>
         </div>
@@ -347,8 +343,12 @@ onBeforeUnmount(() => {
               </dd>
             </div>
             <div>
-              <dt>用户标识 <span>USER ID</span></dt>
-              <dd class="mono">{{ userId }}</dd>
+              <dt>用户平台ID <span>USER ID</span></dt>
+              <dd class="mono profile-copy-value"><span>{{ userId }}</span>
+                <button v-if="userId" class="copy-button" aria-label="复制用户平台ID" @click="copyId">
+                  <Icon name="copy"/>
+                </button>
+              </dd>
             </div>
             <div>
               <dt>绑定 QQ 号</dt>
@@ -390,6 +390,7 @@ onBeforeUnmount(() => {
 
     <main v-if="state.phase === 'ready'" v-show="activePage === 'data'" id="data-page" class="dashboard data-page"
           :inert="!revealed || activePage !== 'data'" :aria-hidden="!revealed || activePage !== 'data'">
+      <header class="page-heading"><div><p class="page-eyebrow">统计记录</p><h2>我的数据</h2></div><p>互动记录与小游戏成绩</p></header>
       <section class="detail-card glass activity-card">
         <header class="section-heading">
           <div><span class="section-icon"><Icon name="message"/></span>
@@ -399,6 +400,7 @@ onBeforeUnmount(() => {
           <div class="activity-row"><span class="activity-icon sand"><img class="gold-icon" :src="goldIcon"
                                                                           alt=""/></span>
             <div><h3>金粒余额</h3>
+              <p v-if="activity?.rankings?.loot?.coins">排名：#{{ count(activity.rankings.loot.coins) }}</p>
               <p v-if="unavailable('coins') || profile?.coins == null">
                 {{ unavailable('coins') ? '暂时无法读取' : loading && !profile ? '读取中…' : '暂无记录' }}</p></div>
             <span class="activity-value">{{ unavailable('coins') ? '—' : count(profile?.coins) }}<small
@@ -417,6 +419,7 @@ onBeforeUnmount(() => {
               }}</span></div>
           <div class="activity-row"><span class="activity-icon sand"><Icon name="calendar"/></span>
             <div><h3>最近签到</h3>
+              <p v-if="activity?.rankings?.sign?.totalCount">累计签到排名：#{{ count(activity.rankings.sign.totalCount) }}</p>
               <p>{{
                   unavailable('signIn') ? '暂时无法读取' : profile?.signIn ? `累计 ${count(profile.signIn.days)} 天` : '暂无记录'
                 }}</p></div>
@@ -437,7 +440,7 @@ onBeforeUnmount(() => {
     <main v-if="state.phase === 'ready'" v-show="activePage === 'groups'" id="groups-page" class="groups-page"
           :inert="activePage !== 'groups'" :aria-hidden="activePage !== 'groups'">
       <GroupManagement v-if="groupsOpened" :bot="bot" :request="readPrivate" :post="writePrivate"
-                       :active="activePage === 'groups'" @copy="copyText($event, '验证指令')"/>
+                       :active="activePage === 'groups'" @copy="copyText($event, '指令')"/>
     </main>
     <main v-if="state.phase === 'ready'" v-show="activePage === 'about'" id="about-page" class="about-page"
           :inert="activePage !== 'about'" :aria-hidden="activePage !== 'about'">

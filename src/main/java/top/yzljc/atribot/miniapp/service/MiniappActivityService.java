@@ -10,6 +10,7 @@ import top.yzljc.atribot.database.repo.UserGameDataRepository;
 import top.yzljc.atribot.function.impl.drawitem.LootService;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atribot.miniapp.MiniappUserSettings;
+import top.yzljc.atribot.webui.repo.BotStatsCache;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,6 +54,7 @@ public final class MiniappActivityService {
     }
 
     public record Activity(Reaction reaction, String freeDraw, List<GameStats> games, MiniappUserSettings settings,
+                           Map<String, Map<String, Integer>> rankings,
                            List<String> unavailable) {
     }
 
@@ -90,6 +92,16 @@ public final class MiniappActivityService {
         String freeDraw = null;
         List<GameStats> games = null;
         MiniappUserSettings settings = null;
+        Map<String, Map<String, Integer>> rankings = Map.of();
+        try {
+            var snapshot = BotStatsCache.snapshot();
+            rankings = BotStatsCache.ranks(snapshot, identity.userId());
+            if (snapshot.games() == null || snapshot.loot() == null || snapshot.sign() == null)
+                unavailable.add("rankings");
+        } catch (RuntimeException e) {
+            unavailable.add("rankings");
+            log.warn("Miniapp 用户排名读取失败", e);
+        }
         try {
             synchronized (freeDrawLock) {
                 freeDraw = freeDraw(identity.userId());
@@ -101,8 +113,8 @@ public final class MiniappActivityService {
         try {
             JsonNode root = gameData.read(identity.userId());
             try {
-                reaction = reaction(root.get("reaction"));
-            } catch (SQLException | IOException | IllegalArgumentException e) {
+                reaction = reaction(root.get("reaction"), rankings.getOrDefault("reaction", Map.of()).get("bestMs"));
+            } catch (IOException | IllegalArgumentException e) {
                 unavailable.add("reaction");
                 log.warn("Miniapp 反应力记录读取失败", e);
             }
@@ -135,7 +147,7 @@ public final class MiniappActivityService {
             unavailable.add("settings");
             log.warn("Miniapp 用户设置读取失败", e);
         }
-        return new Activity(reaction, freeDraw, games, settings, List.copyOf(unavailable));
+        return new Activity(reaction, freeDraw, games, settings, rankings, List.copyOf(unavailable));
     }
 
     public Page<Item> inventory(MiniappSessions.Identity identity, int offset) {
@@ -170,12 +182,11 @@ public final class MiniappActivityService {
         }
     }
 
-    private Reaction reaction(JsonNode user) throws IOException, SQLException {
+    private Reaction reaction(JsonNode user, Integer rank) throws IOException {
         if (user == null) return null;
         if (!user.isObject()) throw new IOException("Invalid reaction record");
         long best = number(user, "bestMs"), plays = number(user, "plays"), completed = number(user, "wins");
         if (completed > plays) throw new IOException("Invalid completion count");
-        int rank = gameData.reactionRank(best);
         long misses = best > 0 ? number(user, "bestMisses") : 0;
         if (misses > Integer.MAX_VALUE) throw new IOException("Invalid bestMisses");
         return new Reaction(plays, completed, best > 0 ? best : null,

@@ -32,10 +32,14 @@ public final class MiniappRouter {
 
     public record ExchangeRequest(String userId, String ticket) {
     }
+
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public record GroupBindingRequest(String groupId) {}
+    public record GroupBindingRequest(String groupId) {
+    }
+
     public record About(String version, String buildTime, String branch, String commitId,
-                        String developerAvatarUrl) {}
+                        String developerAvatarUrl) {
+    }
 
     public static void register(Javalin server, MiniappSessions sessions, boolean enabled) {
         register(server, sessions, enabled, new MiniappProfileService()::load);
@@ -106,8 +110,9 @@ public final class MiniappRouter {
         server.get("/atrimeow/profile/api/activity", ctx -> ctx.json(activity.load(requireIdentity(ctx, sessions))));
         server.get("/atrimeow/profile/api/groups", ctx -> {
             var identity = requireIdentity(ctx, sessions);
-            try { ctx.json(groups.load(identity)); }
-            catch (java.sql.SQLException e) {
+            try {
+                ctx.json(groups.load(identity));
+            } catch (java.sql.SQLException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群资料读取失败", e);
                 ctx.status(502).json(Map.of("error", "GROUPS_UNAVAILABLE"));
             }
@@ -117,12 +122,17 @@ public final class MiniappRouter {
             if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json"))
                 throw new BadRequestResponse("Expected JSON");
             GroupBindingRequest request;
-            try { request = ctx.bodyAsClass(GroupBindingRequest.class); }
-            catch (Exception invalid) { throw new BadRequestResponse("Invalid binding request"); }
+            try {
+                request = ctx.bodyAsClass(GroupBindingRequest.class);
+            } catch (Exception invalid) {
+                throw new BadRequestResponse("Invalid binding request");
+            }
             if (request == null) throw new BadRequestResponse();
-            try { ctx.json(groups.start(identity, request.groupId())); }
-            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException e) {
+            try {
+                ctx.json(groups.start(identity, request.groupId()));
+            } catch (MiniappGroupService.Problem problem) {
+                ctx.status(problem.status).json(Map.of("error", problem.code));
+            } catch (java.sql.SQLException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("发起群绑定失败", e);
                 ctx.status(502).json(Map.of("error", "GROUPS_UNAVAILABLE"));
             }
@@ -134,18 +144,20 @@ public final class MiniappRouter {
                 com.fasterxml.jackson.databind.node.ObjectNode result = new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(detail);
                 result.put("canManageModeration", detail.available() && !detail.restricted() && moderation.canManage(identity));
                 ctx.json(result);
-            }
-            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException e) {
+            } catch (MiniappGroupService.Problem problem) {
+                ctx.status(problem.status).json(Map.of("error", problem.code));
+            } catch (java.sql.SQLException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群详情读取失败", e);
                 ctx.status(502).json(Map.of("error", "GROUPS_UNAVAILABLE"));
             }
         });
         server.get("/atrimeow/profile/api/groups/{groupId}/join-welcome", ctx -> {
             var identity = requireIdentity(ctx, sessions);
-            try { ctx.json(groups.welcome(identity, ctx.pathParam("groupId"))); }
-            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException | java.io.IOException e) {
+            try {
+                ctx.json(groups.welcome(identity, ctx.pathParam("groupId")));
+            } catch (MiniappGroupService.Problem problem) {
+                ctx.status(problem.status).json(Map.of("error", problem.code));
+            } catch (java.sql.SQLException | java.io.IOException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群欢迎内容读取失败", e);
                 ctx.status(502).json(Map.of("error", "WELCOME_UNAVAILABLE"));
             }
@@ -157,12 +169,18 @@ public final class MiniappRouter {
             if (ctx.contentType() == null || !ctx.contentType().toLowerCase(java.util.Locale.ROOT).startsWith("application/json"))
                 throw new BadRequestResponse("Expected JSON");
             GroupBindingRequest request;
-            try { request = ctx.bodyAsClass(GroupBindingRequest.class); }
-            catch (Exception invalid) { throw new BadRequestResponse("Invalid unbinding request"); }
+            try {
+                request = ctx.bodyAsClass(GroupBindingRequest.class);
+            } catch (Exception invalid) {
+                throw new BadRequestResponse("Invalid unbinding request");
+            }
             if (request == null) throw new BadRequestResponse();
-            try { groups.unbind(identity, request.groupId()); ctx.json(Map.of("success", true)); }
-            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException e) {
+            try {
+                groups.unbind(identity, request.groupId());
+                ctx.json(Map.of("success", true));
+            } catch (MiniappGroupService.Problem problem) {
+                ctx.status(problem.status).json(Map.of("error", problem.code));
+            } catch (java.sql.SQLException e) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("解除群绑定失败", e);
                 ctx.status(502).json(Map.of("error", "GROUPS_UNAVAILABLE"));
             }
@@ -207,13 +225,13 @@ public final class MiniappRouter {
     }
 
     public static void registerGroupCommands(Javalin server, MiniappSessions sessions,
-                                      top.yzljc.atribot.command.CommandSettingsService service) {
+                                             top.yzljc.atribot.command.CommandSettingsService service) {
         server.get("/atrimeow/profile/api/groups/{groupId}/commands", ctx -> groupCommands(ctx, sessions, service, false));
         server.post("/atrimeow/profile/api/groups/{groupId}/commands/{command}", ctx -> groupCommands(ctx, sessions, service, true));
     }
 
     private static void groupCommands(Context ctx, MiniappSessions sessions,
-                                       top.yzljc.atribot.command.CommandSettingsService service, boolean save) {
+                                      top.yzljc.atribot.command.CommandSettingsService service, boolean save) {
         var identity = requireIdentity(ctx, sessions);
         try {
             Object result;
@@ -243,9 +261,11 @@ public final class MiniappRouter {
     static void registerGroupSettings(Javalin server, MiniappSessions sessions, MiniappGroupService groups) {
         server.get("/atrimeow/profile/api/groups/{groupId}/functions", ctx -> {
             var identity = requireIdentity(ctx, sessions);
-            try { ctx.json(groups.functions(identity, ctx.pathParam("groupId"))); }
-            catch (MiniappGroupService.Problem problem) { ctx.status(problem.status).json(Map.of("error", problem.code)); }
-            catch (java.sql.SQLException failure) {
+            try {
+                ctx.json(groups.functions(identity, ctx.pathParam("groupId")));
+            } catch (MiniappGroupService.Problem problem) {
+                ctx.status(problem.status).json(Map.of("error", problem.code));
+            } catch (java.sql.SQLException failure) {
                 org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("群推送设置读取失败", failure);
                 ctx.status(502).json(Map.of("error", "GROUP_SETTINGS_UNAVAILABLE"));
             }
@@ -276,7 +296,8 @@ public final class MiniappRouter {
         try {
             Runnable checkSession = () -> requireIdentity(ctx, sessions);
             if (welcome) groups.setWelcomeEnabled(identity, ctx.pathParam("groupId"), enabled, checkSession);
-            else groups.setFunction(identity, ctx.pathParam("groupId"), ctx.pathParam("functionId"), enabled, checkSession);
+            else
+                groups.setFunction(identity, ctx.pathParam("groupId"), ctx.pathParam("functionId"), enabled, checkSession);
             ctx.json(Map.of("enabled", enabled));
         } catch (MiniappGroupService.Problem problem) {
             ctx.status(problem.status).json(Map.of("error", problem.code));

@@ -139,7 +139,7 @@ WebUI 关闭时管理接口不可用并断开实时连接，个人面板及 QQ �
 
 用户、群详情仅供 WebUI 使用，接口分别为 `/webui/api/stats/users/{userOpenId}` 和 `/webui/api/stats/groups/{groupOpenId}`，要求后台已开启且登录会话有效。原公开路径不再提供这两个接口
 
-`GET /openapi/bot_stats` 为公开接口，无需鉴权，不受 WebUI 开关影响。无参数返回消息、小游戏、卡片、签到、图源及在档数量统计，包含完整个人成绩与排行榜。响应与统计口径见[机器人统计接口](integrations/bot-stats.md)
+`GET /openapi/bot_stats` 为公开接口，无需鉴权，不受 WebUI 开关影响。无参数返回消息、小游戏、卡片、签到及在档数量统计，每项排行榜最多返回 100 条及对应上榜用户成绩，个人中心可查看自己的全量名次。响应与统计口径见[机器人统计接口](integrations/bot-stats.md)
 
 ## Miniapp
 

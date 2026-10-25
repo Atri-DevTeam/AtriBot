@@ -148,6 +148,11 @@ function value(text: string | null | undefined) {
             class="about-link-text"><strong>GitHub 开源仓库</strong><small>Atri-DevTeam / AtriBot</small></span>
           <Icon name="copy"/>
         </button>
+        <a class="about-link" href="https://moentg.cn" target="_blank" rel="noopener noreferrer"
+           referrerpolicy="no-referrer"><span class="about-link-icon"><Icon name="spark"/></span><span
+            class="about-link-text"><strong>页面设计</strong><small>本页面风格有参考开发者 NTG 的设计方案</small></span>
+          <Icon name="external"/>
+        </a>
       </div>
     </section>
   </div>
@@ -156,19 +161,23 @@ function value(text: string | null | undefined) {
 <style scoped>
 .about-content {
   display: grid;
-  gap: 14px;
-  width: min(100%, 680px);
   margin: 0 auto;
   animation: arrive .3s ease both;
+  width: 100%;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: 24px 48px;
 }
 
 .about-identity {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 35px 22px 29px;
-  border-radius: 23px;
-  text-align: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  align-items: flex-start;
+  text-align: left;
+  padding: 0 0 24px;
+  grid-row: span 2;
 }
 
 .about-app-avatar {
@@ -177,10 +186,10 @@ function value(text: string | null | undefined) {
   width: 76px;
   height: 76px;
   padding: 5px;
-  border: 1px solid #fff;
+  border: 1px solid var(--ui-border);
   border-radius: 24px;
-  background: #f8faf5;
-  box-shadow: 0 8px 22px #57664d12;
+  background: var(--ui-raised);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -198,13 +207,14 @@ function value(text: string | null | undefined) {
 
 .about-identity h2 {
   margin: 16px 0 4px;
-  font-size: 22px;
   font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -.04em;
 }
 
 .about-identity p {
   margin: 0;
-  color: #8a9684;
+  color: var(--ui-muted);
   font-size: 11px;
   line-height: 1.8;
 }
@@ -212,16 +222,20 @@ function value(text: string | null | undefined) {
 .about-version {
   margin-top: 17px;
   padding: 6px 13px;
-  border: 1px solid #fff;
-  border-radius: 30px;
-  background: #eaf0e3a1;
-  color: #708365;
-  font-size: 11px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-raised);
+  color: var(--ui-secondary);
+  border-radius: 4px;
+  font-size: 10px;
 }
 
 .about-section {
-  padding: 20px 24px;
-  border-radius: 20px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  border-radius: 0;
+  padding: 24px 0;
+  margin-top: 0;
 }
 
 .about-section-heading, .about-section-heading > div {
@@ -242,13 +256,14 @@ function value(text: string | null | undefined) {
 .about-section-heading svg {
   width: 17px;
   height: 17px;
-  color: #829676;
+  color: var(--ui-muted);
+  display: none;
 }
 
 .about-section-heading h3 {
   margin: 0;
-  font-size: 14px;
   font-weight: 550;
+  font-size: 16px;
 }
 
 .about-refresh {
@@ -258,7 +273,7 @@ function value(text: string | null | undefined) {
   height: 28px;
   border: 0;
   background: transparent;
-  color: #839478;
+  color: var(--ui-muted);
 }
 
 .about-refresh svg {
@@ -268,7 +283,7 @@ function value(text: string | null | undefined) {
 
 .about-error {
   margin: 0 0 8px;
-  color: #a07863;
+  color: var(--ui-danger);
   font-size: 11px;
 }
 
@@ -282,18 +297,18 @@ function value(text: string | null | undefined) {
   align-items: baseline;
   gap: 15px;
   padding: 11px 0;
-  border-top: 1px solid #b5c3a726;
+  border-top: 1px solid var(--ui-border);
 }
 
 .about-details dt {
-  color: #8f9a87;
+  color: var(--ui-muted);
   font-size: 11px;
   white-space: nowrap;
 }
 
 .about-details dd {
   margin: 0;
-  color: #5c6d55;
+  color: var(--ui-text);
   font-size: 11px;
   text-align: right;
   overflow-wrap: anywhere;
@@ -312,9 +327,9 @@ function value(text: string | null | undefined) {
   width: 49px;
   height: 49px;
   flex-shrink: 0;
-  border: 1px solid #fff;
+  border: 1px solid var(--ui-border);
   border-radius: 15px;
-  background: #e9eee4;
+  background: var(--ui-raised);
   overflow: hidden;
 }
 
@@ -327,7 +342,7 @@ function value(text: string | null | undefined) {
 .about-developer-avatar svg {
   width: 24px;
   height: 24px;
-  color: #8ba080;
+  color: var(--ui-muted);
 }
 
 .about-developer strong, .about-developer span {
@@ -341,19 +356,19 @@ function value(text: string | null | undefined) {
 
 .about-developer div > span {
   margin-top: 4px;
-  color: #94a08e;
+  color: var(--ui-muted);
   font-size: 10px;
 }
 
 .about-intro {
   margin: 0 0 13px;
-  color: #7f8c78;
+  color: var(--ui-secondary);
   font-size: 11px;
   line-height: 1.9;
 }
 
 .about-links {
-  border-top: 1px solid #b5c3a726;
+  border-top: 0;
 }
 
 .about-link {
@@ -362,13 +377,13 @@ function value(text: string | null | undefined) {
   gap: 11px;
   width: 100%;
   min-height: 62px;
-  padding: 8px 2px;
   border: 0;
-  border-bottom: 1px solid #b5c3a726;
+  border-bottom: 1px solid var(--ui-border);
   background: transparent;
   color: inherit;
   text-decoration: none;
   text-align: left;
+  padding: 14px 0;
 }
 
 .about-link:last-child {
@@ -376,7 +391,7 @@ function value(text: string | null | undefined) {
 }
 
 .about-link:hover {
-  background: #ffffff57;
+  background: var(--ui-hover);
 }
 
 .about-link-icon {
@@ -385,10 +400,10 @@ function value(text: string | null | undefined) {
   width: 35px;
   height: 35px;
   flex-shrink: 0;
-  border: 1px solid #fff;
   border-radius: 11px;
-  background: #eaf0e494;
-  color: #809477;
+  color: var(--ui-secondary);
+  border: 0;
+  background: transparent;
 }
 
 .about-link-icon svg {
@@ -413,7 +428,7 @@ function value(text: string | null | undefined) {
 
 .about-link-text small {
   margin-top: 4px;
-  color: #96a18f;
+  color: var(--ui-muted);
   font-size: 10px;
   overflow-wrap: anywhere;
 }
@@ -421,7 +436,7 @@ function value(text: string | null | undefined) {
 .about-link > svg {
   width: 15px;
   height: 15px;
-  color: #a0ae98;
+  color: var(--ui-subtle);
 }
 
 @media (max-width: 760px) {
@@ -430,12 +445,14 @@ function value(text: string | null | undefined) {
   }
 
   .about-identity {
-    padding: 31px 20px 25px;
+    padding: 0 0 24px;
   }
 
   .about-section {
-    padding: 18px 19px;
-    border-radius: 18px;
+    padding: 24px 0;
+    border-radius: 0;
   }
 }
+
+@media (max-width: 760px) { .about-content { grid-template-columns: minmax(0, 1fr); gap: 0; } .about-identity { grid-row: auto; } }
 </style>

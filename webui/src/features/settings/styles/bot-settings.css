@@ -40,6 +40,37 @@
     color: var(--color-text-muted);
 }
 
+.bs-welcome-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    cursor: pointer;
+    list-style: none;
+}
+
+.bs-welcome-summary::-webkit-details-marker {
+    display: none;
+}
+
+.bs-welcome-card:not([open]) > .bs-welcome-summary {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: 0;
+}
+
+.bs-welcome-chevron {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-muted);
+    transition: transform .18s ease;
+}
+
+.bs-welcome-card[open] > .bs-welcome-summary .bs-welcome-chevron {
+    transform: rotate(90deg);
+}
+
 /* ---- 机器人资料 ---- */
 
 .bs-profile {

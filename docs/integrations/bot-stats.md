@@ -2,7 +2,7 @@
 
 [文档目录](../README.md) · [WebUI 与 Miniapp](../web.md)
 
-`GET /openapi/bot_stats` 返回 QQ 官机的在档数量、消息汇总、小游戏成绩、卡片收藏、签到与图源投稿统计
+`GET /openapi/bot_stats` 返回 QQ 官机的在档数量、消息汇总、小游戏成绩、卡片收藏与签到统计
 
 ## 目录
 
@@ -19,9 +19,9 @@
 - [猜拳](#猜拳)
 - [反应力](#反应力)
 - [今日钓鱼](#今日钓鱼)
+- [井字棋](#井字棋)
 - [卡片收藏与金粒](#卡片收藏与金粒)
 - [签到](#签到)
-- [图源投稿](#图源投稿)
 - [异常与空值](#异常与空值)
 - [接入示例](#接入示例)
 
@@ -35,7 +35,7 @@
 | 请求参数与请求体 | 均不需要 |
 | 响应格式 | JSON |
 | 数据范围 | QQ 官机相关统计，不返回 `platform` 字段 |
-| 数据量 | 全部个人成绩及完整排行榜，无分页、条数限制或日期筛选 |
+| 数据量 | 每项排行榜最多 100 条，附带上榜用户成绩；全局汇总仍覆盖全部用户，无分页或日期筛选 |
 | 请求频控 | 每 IP 每分钟 60 次，全局每分钟 600 次，与现有公开工具接口共用计数 |
 | 服务端缓存 | 聚合结果缓存 60 秒，过期后由下一次请求刷新 |
 | HTTP 缓存 | 响应头 `Cache-Control: no-store` |
@@ -65,6 +65,7 @@ curl 'https://bot.example.com/openapi/bot_stats'
     "schemaVersion": 1,
     "generatedAt": 1791259200000,
     "cacheSeconds": 60,
+    "leaderboardLimit": 100,
     "unavailable": []
   },
   "timestamp": 1791259201000,
@@ -89,12 +90,12 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 | `schemaVersion` | integer | 响应结构版本，当前为 `1` |
 | `generatedAt` | integer | 数据库聚合结果生成时间，Unix 毫秒时间戳 |
 | `cacheSeconds` | integer | 服务端缓存有效期，当前为 `60` 秒 |
+| `leaderboardLimit` | integer | 每项排行榜最多返回的条数，当前为 `100` |
 | `registrations` | object 或 null | 在档用户数与群数 |
 | `messages` | object 或 null | 累计、今日消息汇总及平均日活 |
-| `games` | object 或 null | 七种小游戏的累计统计、个人成绩及排行榜 |
+| `games` | object 或 null | 八种小游戏的累计统计、个人成绩及排行榜 |
 | `loot` | object 或 null | 当前卡片拥有数、目录完成度及金粒余额 |
 | `sign` | object 或 null | 累计与今日签到统计 |
-| `images` | object 或 null | 图源投稿及审核状态统计 |
 | `unavailable` | string[] | 本次无法读取的模块名称，全部可用时为 `[]` |
 
 `timestamp` 随请求更新；缓存命中时 `generatedAt` 保持不变。各模块依次读取，并非同一数据库事务中的严格一致快照
@@ -189,7 +190,7 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 ## 统计模块与排行榜
 
-`games` 下的每个游戏，以及 `loot`、`sign`、`images`，均采用以下结构。本例节选自听声辨物：
+`games` 下的每个游戏，以及 `loot`、`sign`，均采用以下结构。本例节选自听声辨物：
 
 ```json
 {
@@ -210,10 +211,10 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `totals` | object | 模块的全局汇总 |
-| `players` | object[] | 该模块全部符合条件的个人记录，按 `userId` 字符串升序排列 |
+| `players` | object[] | 该模块各项前 100 条榜单所涉及的用户记录，取并集去重后按 `userId` 字符串升序排列 |
 | `players[].userId` | string | 用户 OpenID |
 | `players[].ranks` | object | 指标名到整数名次的映射 |
-| `leaderboards` | object | 指标名到完整榜单数组的映射 |
+| `leaderboards` | object | 指标名到榜单数组的映射，每项最多 100 条 |
 | `leaderboards.<指标>[].rank` | integer | 名次，从 `1` 开始 |
 | `leaderboards.<指标>[].userId` | string | 排名对应的用户 OpenID |
 | `leaderboards.<指标>[].value` | number | 对应指标原始值，单位与该指标相同 |
@@ -224,25 +225,29 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 2. 并列使用 `1、1、3` 规则；同值记录按 `userId` 字符串升序排列
 3. `bestMs`、`averageCompletedMs`、`todayCheckInTime` 按升序排名，其余指标按降序排名
 4. 无最低场次门槛。例如只完成一场且获胜的用户，胜率可为 `100%`
-5. 未进入某项榜单时，个人 `ranks` 中没有该指标的键，不返回 `rank: 0` 占位
+5. `ranks` 按全体有效成绩计算，名次可以大于 100；指标未参与排名时不返回对应键
 6. 没有入榜用户时，对应榜单仍存在，值为 `[]`
+7. 每项榜单截取排序后的前 100 条；截断位置出现并列时，按用户标识顺序保留，不扩大榜单
+8. `players` 是各榜上榜用户的并集，可能超过 100 条，但不再包含全部用户；`totals` 不受截断影响
+
+Miniapp 通过已登录的个人统计接口读取当前用户的完整名次，包括 100 名之后的排名，与本接口共用 60 秒统计缓存。公开接口不提供未上榜用户查询
 
 不是每个数字字段都有排行榜。各模块下列出的“排行榜指标”为完整清单
 
 ## 小游戏公共约定
 
-位置：`data.games`。读取成功时固定包含 `minesweeper`、`sound`、`connect4`、`roulette`、`rsp`、`reaction`、`fishing` 七个键，每个键的值均采用上述统计模块结构
+位置：`data.games`。读取成功时固定包含 `minesweeper`、`sound`、`connect4`、`roulette`、`rsp`、`reaction`、`fishing`、`tictactoe` 八个键，每个键的值均采用上述统计模块结构
 
 每个游戏的 `totals` 包含以下全局字段，个人记录不包含这两个字段：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `players` | integer | 至少一个已知累计指标大于零，或有效 `bestMs` 大于零的用户数，等于该游戏 `players` 数组长度 |
+| `players` | integer | 至少一个已知累计指标大于零，或有效 `bestMs` 大于零的用户数，为全量参与用户数，不等于截取后的 `players` 数组长度 |
 | `recordedRounds` | integer | 事件表中可识别的去重结算事件数；听声辨物为有效答题事件数 |
 
 `recordedRounds` 按游戏内事件 ID 去重，排除操作、开局等带冒号后缀的事件及 `legacy-` 导入事件。它不是全部历史局数，也不等于参与场次之和。多人同局只计一个结算事件，但会增加多名用户的 `plays`
 
-各游戏计数字段同时出现在 `totals` 和 `players[]`，前者为个人计数之和。比例按汇总后的分子和分母重新计算，不是个人比例的平均值。个人记录另包含 `userId` 与 `ranks`
+各游戏计数字段同时出现在 `totals` 和 `players[]`，前者为全体用户个人计数之和，不是当前返回的上榜用户计数之和。比例按汇总后的分子和分母重新计算，不是个人比例的平均值。个人记录另包含 `userId` 与 `ranks`
 
 旧扫雷 `operations` 在缺少 `digs` 时全部归入挖格；旧听声辨物的 `wrong` 按 `operations - correct` 补齐。其他新增指标从启用后累计，旧败场、平局、超时等不推算。历史数据不保证满足 `plays = wins + losses + draws` 等等式
 
@@ -532,6 +537,24 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 一次渔获只归属一个类别，`fish + junk + treasure = plays`。按北京时间日期和用户去重，群聊与私聊共用次数；重复查看不累计。产物数量不影响钓鱼次数，例如墨囊 ×10 只计一次杂物。该接口不返回逐日渔获明细
 
+## 井字棋
+
+位置：`data.games.tictactoe`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `plays` | integer | 已结算的参与场次 |
+| `wins`、`losses`、`draws` | integer | 胜场、败场和平局场次 |
+| `moves` | integer | 落子次数 |
+| `normalWins` | integer | 正常连线获胜次数 |
+| `forfeitWins` | integer | 对手放弃获胜次数 |
+| `timeoutWins` | integer | 对手超时获胜次数 |
+| `forfeits` | integer | 主动放弃次数 |
+| `moveTimeouts` | integer | 本人落子超时次数 |
+| `winRate` | number 或 null | `wins / plays × 100` |
+
+上述字段均提供排行榜，按降序排列
+
 ## 卡片收藏与金粒
 
 位置：`data.loot`
@@ -669,62 +692,11 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 | `todayCheckInTime` | integer，可缺省 | 今日签到时间，Unix 毫秒时间戳 |
 | `todayCoins` | integer，可缺省 | 今日获得的签到奖励 |
 
-`players` 以累计签到表中的用户记录为准。今日未签到时，三个 `today` 字段均不出现，`ranks` 中也没有 `todayCheckInTime`
+`players` 以累计签到表中进入任一签到榜单前 100 条的用户记录为准。今日未签到时，三个 `today` 字段均不出现，`ranks` 中也没有 `todayCheckInTime`
 
 `todayRank` 是签到顺序；`ranks.todayCheckInTime` 是按签到时间计算的排行榜名次。多个用户时间戳相同时，时间榜会并列，顺序编号仍各不相同
 
 排行榜指标：`totalCount`、`totalCoins`、`todayCheckInTime`。其中 `todayCheckInTime` 按升序，其余按降序。当前余额排行榜位于 `loot.leaderboards.coins`
-
-## 图源投稿
-
-位置：`data.images`
-
-`totals` 示例：
-
-```json
-{
-  "contributors": 10,
-  "submitted": 100,
-  "approved": 72,
-  "denied": 18,
-  "pending": 8,
-  "other": 2,
-  "approvalRate": 80.0
-}
-```
-
-`players[]` 示例：
-
-```json
-{
-  "userId": "USER_A",
-  "submitted": 10,
-  "approved": 8,
-  "denied": 2,
-  "pending": 0,
-  "other": 0,
-  "approvalRate": 80.0,
-  "ranks": {"submitted": 3, "approved": 2, "approvalRate": 4}
-}
-```
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `contributors` | integer | 仅全局包含，有投稿记录的用户去重数 |
-| `submitted` | integer | 当前保留的投稿记录总数，包含所有审核状态 |
-| `approved` | integer | 审核状态为 `REVIEWED` 的数量 |
-| `denied` | integer | 审核状态为 `DENIED` 的数量 |
-| `pending` | integer | 审核状态为 `PENDING` 的数量 |
-| `other` | integer | 其他审核状态的数量 |
-| `approvalRate` | number 或 null | `approved / (approved + denied) × 100`，待审核及其他状态不计入分母 |
-
-仅统计 `image_source` 中平台为 `OFFICIAL_GROUP` 或 `OFFICIAL_C2C` 的记录，同一用户在群聊和私聊的投稿合并。删除记录不再计入，因此数量反映当前保留的记录，不是永久递增的历史投稿量
-
-没有已通过或已拒绝记录时，通过率为 `null`。全局通过率根据全局数量计算，不是个人通过率的平均值
-
-排行榜指标：`submitted`、`approved`、`approvalRate`
-
-本模块不返回图片 URL、投稿内容或审核说明
 
 ## 异常与空值
 
@@ -782,8 +754,8 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 
 ```json
 {
-  "images": null,
-  "unavailable": ["images", "loot.catalog"]
+  "messages": null,
+  "unavailable": ["messages", "loot.catalog"]
 }
 ```
 
@@ -795,7 +767,6 @@ HTTP 状态与业务状态需要分别判断，见[异常与空值](#异常与�
 | `loot` | 收藏或金粒统计读取失败，`loot` 为 `null` |
 | `loot.catalog` | 卡片目录不可用，目录相关字段为 `null`；库存读取成功时 `loot` 仍可用 |
 | `sign` | 签到统计读取失败，`sign` 为 `null` |
-| `images` | 投稿统计读取失败，`images` 为 `null` |
 
 游戏计数或库存数据格式错误也可能导致所属模块不可用。部分失败结果同样受 60 秒缓存影响
 
