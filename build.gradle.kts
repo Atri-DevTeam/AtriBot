@@ -31,7 +31,7 @@ dependencies {
     api(project(":atri-core"))
     api("cn.dev33:sa-token-sign:1.46.0")
     api("net.dankito.readability4j:readability4j:1.0.8")
-    api("com.mysql:mysql-connector-j:26.7.0")
+    api("com.mysql:mysql-connector-j:26.10.0")
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
