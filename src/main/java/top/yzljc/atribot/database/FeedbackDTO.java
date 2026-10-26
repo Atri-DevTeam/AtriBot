@@ -22,6 +22,12 @@ public class FeedbackDTO {
     private boolean isRead;
     private String replyContent;
     private Timestamp replyTime;
-    @JsonProperty("isHidden")
-    private boolean isHidden;
+    private String status;
+    private Timestamp updateTime;
+    private Timestamp closedTime;
+    private String latestContent;
+    private Timestamp latestContentTime;
+    private String replyActorName;
+    private String sourceMessageId;
+    private Timestamp sourceMessageTime;
 }

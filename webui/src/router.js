@@ -38,7 +38,7 @@ const router = createRouter({
       path: '/feedback',
       name: 'feedback',
       component: () => import('./features/feedback/FeedbackView.vue'),
-      meta: { requiresAuth: true, title: '反馈管理' }
+      meta: { requiresAuth: true, title: '工单管理' }
     },
     {
       path: '/gallery',

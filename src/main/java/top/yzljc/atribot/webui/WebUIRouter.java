@@ -219,6 +219,10 @@ public class WebUIRouter {
         server.get("/webui/api/feedback/list", AdminController::listFeedback);
         server.get("/webui/api/feedback/count", AdminController::countFeedback);
         server.post("/webui/api/feedback/reply", AdminController::replyFeedback);
+        server.post("/webui/api/feedback/close", AdminController::closeFeedback);
+        server.post("/webui/api/feedback/reopen", AdminController::reopenFeedback);
+        server.get("/webui/api/feedback/{id}/entries", AdminController::feedbackEntries);
+        server.delete("/webui/api/feedback/{id}/entries/{entryId}", AdminController::deleteFeedbackReply);
 
         server.get("/webui/api/backgrounds/list", BackgroundController::list);
         server.get("/webui/api/backgrounds/count", BackgroundController::count);

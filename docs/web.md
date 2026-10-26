@@ -177,3 +177,50 @@ npm --prefix miniapp run build
 构建输出分别进入 `src/main/resources/official-webui` 和 `src/main/resources/miniapp`，随 JAR 提供静态资源。修改 Vite 的部署路径时，必须同时核对后端路由与反向代理路径
 
 源码入口：[WebUI](../webui/src)、[Miniapp](../miniapp/src)、[WebUISessionManager](../src/main/java/top/yzljc/atribot/webui/WebUISessionManager.java)、[MiniappRouter](../src/main/java/top/yzljc/atribot/miniapp/MiniappRouter.java)、[MiniappSessions](../src/main/java/top/yzljc/atribot/miniapp/MiniappSessions.java)
+
+## 工单管理
+
+用户发送 `/feedback <内容>` 提交工单；同一平台身份已有未关闭工单时，内容追加到最近创建的未关闭工单。QQ 群聊与私聊共用用户身份，QQ 频道与频道私信单独匹配
+
+收到新的补充后，工单恢复为待处理，已有回复及操作记录保留；管理员再次回复后自动转为等待用户回复。回复时可勾选“同时关闭工单”，将回复与关闭操作一并保存，并记录关闭时间及操作者；默认不勾选，可与静默回复或私聊回复搭配使用
+
+已开放主动消息的 QQ 群优先主动发送工单回复，失败后加入被动队列。未开放主动消息的群及私聊使用对应提交或补充消息的 `msg_id`：来源消息未满五分钟时立即被动回复，发送失败则加入被动队列。超过五分钟、来源时间无效或旧记录缺少消息 ID 时，沿用主动通知及失败入队流程。静默回复不投递。消息 ID 与平台消息时间保存在 `feedback_entries`，回复使用当时的来源记录，后续补充不会改变该回复的发送目标
+
+回复窗口提供“私聊回复”选项，用户在机器人好友列表内且开启私聊主动消息权限时可选，否则置灰。仅 QQ 群聊和私聊来源支持此选项，提交时后端重新检查资格；不可与静默回复同时选择。私聊回复只改变该条回复的投递目标，工单来源保持不变；发送失败后仅在私聊补发
+
+工单通知由 `FeedbackCommand.getReplyMessage` 统一生成 `Markdown` 对象，可通过 `setKeyboard` 附加内联键盘。队列保留工单及回复记录编号，补发时从对应回复重新构建消息；QQ 群聊和私聊直接发送完整对象，群内追加 @ 不会丢弃键盘。频道沿用纯文本回复
+
+| 状态 | 含义 |
+| --- | --- |
+| `PENDING` | 已提交，等待管理员处理 |
+| `PROCESSING` | 管理员已回复，工单仍可补充和继续回复 |
+| `WAITING_USER` | 管理员提交回复后自动进入此状态，用户补充后转回待处理 |
+| `CLOSED` | 用户或管理员手动关闭，重新打开后可继续回复 |
+
+用户使用 `/feedback -c <工单编号>` 关闭本人工单，支持完整编号或至少 8 位的唯一前缀。管理员在 WebUI 中关闭工单。关闭后再次提交会创建新工单；如果该用户有其他历史未关闭工单，则追加到其中最近创建的一条
+
+管理员可在 WebUI 重新打开已关闭工单：未回复过的恢复为待处理，已有回复的恢复为等待用户回复。同一平台身份已有其他未关闭工单时，不允许重新打开。重新打开会清除当前关闭时间，保留历史关闭记录，并记录本次操作者；不向用户发送通知
+
+回复记录保存当前登录管理员的统一账号 UUID 和名称快照，仅管理端可见，不写入发给用户的通知。回复通知始终不附带用户提交或补充的原文，原文仅在管理端保留。回复成功保存后默认转为等待用户回复，勾选“同时关闭工单”则转为已关闭。静默回复保存记录，但不发送通知，也不在后续消息中补发
+
+### 管理接口
+
+以下接口均位于 `/webui/api`，沿用 WebUI 的 QQ 登录会话、管理员身份、服务开关及写请求来源校验，响应使用统一 `Result` 格式
+
+| 方法 | 路径 | 参数及响应 |
+| --- | --- | --- |
+| GET | `/feedback/list` | `filter=pending\|processing\|waiting\|closed\|all`，默认 pending；`page` 从 1 开始，`pageSize` 默认 20、最多 100；返回分页工单及状态、最新补充、最近回复人 |
+| GET | `/feedback/count` | 返回 `pending`、`processing`、`waiting`、`closed`、`all` 数量 |
+| GET | `/feedback/{id}/entries` | 返回倒序记录 `items` 和 `nextCursor`，每次最多 50 条；下一次传 `before=nextCursor` 读取更早记录；`canDelete` 表示回复尚未送达、允许申请删除，删除时后端重新检查 |
+| DELETE | `/feedback/{id}/entries/{entryId}` | 删除尚未送达的非静默回复并取消队列补发；仅管理员可操作，回复不存在、正在发送或已经送达时返回 HTTP 409 |
+| POST | `/feedback/reply` | JSON：`id`、`replyContent`、`silent`、`privateReply`、`closeTicket`（布尔选项默认 false）；`closeTicket=true` 同时关闭工单，否则转为等待用户回复；内容最多 4000 字符，操作者由服务端会话确定；已关闭工单返回 HTTP 409，私聊回复资格不满足或同时指定静默回复返回 HTTP 400 |
+| POST | `/feedback/close` | JSON：`id`；重复关闭成功，工单不存在返回 HTTP 404 |
+| POST | `/feedback/reopen` | JSON：`id`；要求 ADMIN 或 OWNER 会话，操作者由服务端确定；重复打开成功，工单不存在返回 HTTP 404，已有其他未关闭工单返回 HTTP 409 |
+
+记录类型为 `SUBMIT`（提交）、`APPEND`（补充）、`REPLY`（管理员回复）、`REPLY_DELETED`（已删除回复）、`ADMIN_DELETE`（删除回复操作）、`USER_CLOSE`（用户关闭）、`ADMIN_CLOSE`（管理员关闭）、`ADMIN_REOPEN`（管理员重新打开）。记录包含操作者标识及名称、内容、时间及静默选项；记录 ID 和翻页游标以字符串返回
+
+删除回复会清除该条回复正文和对应待补发通知，并记录删除操作者。工单摘要恢复到上一条有效回复；没有有效回复时恢复待处理，最新有效记录为用户补充时也保持待处理。已关闭工单保持关闭，不会因删除回复自动重新打开
+
+工单记录中的用户头像按平台用户标识生成；WebUI 管理员头像取自服务端登录会话，随回复、关闭及重新打开操作保存到 `feedback_entries.actor_avatar_url`。历史记录没有头像时显示名称首字，不使用当前查看者的头像替代
+
+启动时为 `feedback` 增加状态、更新时间和关闭时间，并创建 `feedback_entries` 保存追加记录。旧的未回复记录迁为待处理，已回复记录迁为处理中，历史回复人的身份留空。迁移保留原始内容及回复，不自动关闭历史工单，可重复启动

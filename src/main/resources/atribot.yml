@@ -125,7 +125,7 @@ commands:
     description: 测试命令
   feedback:
     description: 提交反馈
-    usage: /feedback <反馈内容>
+    usage: /feedback <内容> 或 /feedback -c <工单编号>
     prefixless-aliases: [反馈与建议]
     aliases:
       - 反馈

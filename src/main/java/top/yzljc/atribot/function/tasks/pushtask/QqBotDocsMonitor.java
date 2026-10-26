@@ -1,4 +1,4 @@
-package top.yzljc.atribot.function.task;
+package top.yzljc.atribot.function.tasks.pushtask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -13,7 +13,6 @@ import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.service.runtime.ThreadManager;
-import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
@@ -84,7 +83,9 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
         checkForUpdates();
     }
 
-    /** 手动执行完整检查，沿用定时任务的快照、订阅推送及并发保护。 */
+    /**
+     * 手动执行完整检查，沿用定时任务的快照、订阅推送及并发保护。
+     */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission()) {
@@ -213,7 +214,8 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
                 "modifiedPages", changes.modified.size(), "removedPages", changes.removed.size(), "documents", documents);
     }
 
-    public record DiffLine(String kind, int oldLine, int newLine, String text) {}
+    public record DiffLine(String kind, int oldLine, int newLine, String text) {
+    }
 
     private static Map<String, PageSnapshot> crawlAllPages() throws Exception {
         return crawlAllPages(QqBotDocsMonitor::fetch);
@@ -317,7 +319,9 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
                 && uri.getPath() != null && uri.getPath().startsWith(DOC_PREFIX);
     }
 
-    /** 手动导出全站正文，便于核对覆盖范围；不修改运行中的基线，也不触发订阅推送。 */
+    /**
+     * 手动导出全站正文，便于核对覆盖范围；不修改运行中的基线，也不触发订阅推送。
+     */
     public static void main(String[] args) throws Exception {
         if (args.length != 2 || !"--export".equals(args[0])) {
             throw new IllegalArgumentException("用法: QqBotDocsMonitor --export <输出目录>");
@@ -402,7 +406,7 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
     }
 
     static String buildReport(ChangeSet changes, Map<String, PageSnapshot> oldPages,
-                                      Map<String, PageSnapshot> newPages) {
+                              Map<String, PageSnapshot> newPages) {
         StringBuilder out = new StringBuilder("QQ 开放平台官方文档检测到更新\n")
                 .append("新增 ").append(changes.added.size()).append(" 页，修改 ")
                 .append(changes.modified.size()).append(" 页，删除 ")
@@ -420,7 +424,7 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
     }
 
     private static void appendChanges(StringBuilder out, String type, List<String> urls,
-                                     Map<String, PageSnapshot> pages) {
+                                      Map<String, PageSnapshot> pages) {
         for (String url : urls) {
             PageSnapshot page = pages.get(url);
             out.append("\n[").append(type).append("] ")
@@ -472,7 +476,8 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
         public String fetchedAt;
         public Map<String, PageSnapshot> pages = new LinkedHashMap<>();
 
-        public SnapshotFile() {}
+        public SnapshotFile() {
+        }
 
         private SnapshotFile(String fetchedAt, Map<String, PageSnapshot> pages) {
             this.fetchedAt = fetchedAt;
@@ -480,7 +485,9 @@ public final class QqBotDocsMonitor implements ScheduledTask, CommandExecutor {
         }
     }
 
-    /** 简单的逐行 LCS diff；文档页规模较小，无需额外引入 diff 依赖。 */
+    /**
+     * 简单的逐行 LCS diff；文档页规模较小，无需额外引入 diff 依赖。
+     */
     private static final class UnifiedDiff {
         private static String create(String before, String after) {
             StringBuilder out = new StringBuilder();

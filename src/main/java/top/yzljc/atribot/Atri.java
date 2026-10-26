@@ -1,6 +1,7 @@
 package top.yzljc.atribot;
 
 import top.yzljc.atribot.database.repo.*;
+import top.yzljc.atribot.function.tasks.pushtask.QqBotDocsMonitor;
 import top.yzljc.atricore.core.CoreConfig;
 
 import cn.dev33.satoken.sign.SaSignManager;
@@ -286,6 +287,7 @@ public class Atri extends AtriProvider {
         EventManager.getInstance().registerEvents(new GroupJoinWelcome());
         EventManager.getInstance().registerEvents(new ShareBotCommand());
         EventManager.getInstance().registerEvents(MinesweeperGame.INSTANCE);
+        EventManager.getInstance().registerEvents(new CodexResetAlert());
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -475,6 +477,7 @@ public class Atri extends AtriProvider {
             GroupConfigManager.registerFeature("tufe_class_alert", false);
             GroupConfigManager.registerFeature("private_func", false);
             GroupConfigManager.registerFeature("illegal_words_check", false);
+            GroupConfigManager.registerFeature("codex_reset_alert", false);
         }
 
         if (settings.getEnv().equals("dev")) {

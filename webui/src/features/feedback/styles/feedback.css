@@ -70,10 +70,6 @@
     padding: 16px;
 }
 
-.feedback-card--hidden {
-    border-left: 4px solid #f59e0b;
-}
-
 .feedback-card--replied {
     background: var(--color-surface-alt);
 }
@@ -125,11 +121,6 @@
 .feedback-tag--replied {
     background: var(--color-success-soft);
     color: var(--color-success-strong);
-}
-
-.feedback-tag--hidden {
-    background: var(--color-warning-soft);
-    color: var(--color-warning-strong);
 }
 
 .feedback-card-body {

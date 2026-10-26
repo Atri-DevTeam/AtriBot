@@ -3,6 +3,7 @@ package top.yzljc.atribot.function.tasks;
 import top.yzljc.atribot.configuration.RS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -21,8 +22,10 @@ import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
+import top.yzljc.atricore.core.CoreConfig;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.utils.AtomicFiles;
+import top.yzljc.atribot.utils.FormatTools;
 import top.yzljc.atricore.service.taskscheduler.TaskPlan;
 import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
 import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
@@ -35,6 +38,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,6 +62,7 @@ import java.util.regex.Pattern;
 public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask {
 
     private static final String HYPIXEL_ALPHA_FORUMS_URL = "https://hypixel.net/skyblock-alpha/index.rss";
+    private static final URI SKYBLOCK_SKILLS_API = URI.create("https://api.hypixel.net/v2/resources/skyblock/skills");
     private record FeedConfig(String url, String label) {}
     private static final List<FeedConfig> FEEDS = List.of(
             new FeedConfig(HYPIXEL_ALPHA_FORUMS_URL, "Hypixel Alpha")
@@ -67,7 +74,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
     private static final int INTRO_MAX_LENGTH = 100;
     private static final int MAX_PUSH_PER_RUN = 3;
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
-    private static final String HYPIXEL_HEADER_URL = RS.get("resource.image.hypixel-header");
     private static final Set<String> OFFICIAL_CREATORS = Set.of(
             "Hypixel Team",
             "MotorGorilla",
@@ -98,8 +104,9 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
     }
 
     public static boolean feedAnnouncements() {
+        boolean versionUpdated = checkSkyblockVersion();
         List<Announcement> announcements = checkForNewAnnouncements();
-        if (announcements.isEmpty()) return false;
+        if (announcements.isEmpty()) return versionUpdated;
 
         int pushed = 0;
         for (Announcement a : announcements) {
@@ -115,7 +122,7 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             String headerText = a.source() + " 发布了新的公告";
 
             Markdown md = TC.md(
-                    Markdown.img(HYPIXEL_HEADER_URL, 24, 24) + "**" + headerText + "**\n\n" +
+                    Markdown.img(RS.get("resource.image.hypixel-header"), 24, 24) + "**" + headerText + "**\n\n" +
                             "标题: " + a.title() + "\n\n" +
                             "作者: " + a.author() + "\n\n" +
                             "时间: " + a.publishTime() + "\n\n" +
@@ -176,6 +183,79 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
         return announcements;
     }
+
+    /**
+     * 检查 SkyBlock 技能资源版本，首次获取和版本信息变化时通过现有公告渠道推送
+     *
+     * @return 本次已提交更新推送时返回 true，无变化或检查失败时返回 false
+     */
+    public static boolean checkSkyblockVersion() {
+        return checkSkyblockVersion(SKYBLOCK_SKILLS_API, Path.of(Properties.SKYBLOCK_VERSION_CACHE), version -> {
+
+            Markdown md = TC.md(Markdown.img(RS.get("resource.image.skyblock-logo"), 20, 20) + "**SkyBlock 发布了新的版本**\n\n" +
+                    "> 版本变动: " + version.previousVersion() + " ⟶ " + version.version() + "\n" +
+                    "> 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()));
+
+            Markdown gmd = TC.md("**SkyBlock 发布了新的版本**\n\n" +
+                    "> 版本变动: " + version.previousVersion() + " ⟶ " + version.version() + "\n" +
+                    "> 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()));
+
+            PushTask.push("hyp_alpha_news", md);
+//            GroupChat.sendMessage(CoreConfig.getInstance().getSettings().getDebugGroupOpenId(), md);
+            ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), "[版本更新] " + version.version(), gmd);
+        });
+    }
+
+    static synchronized boolean checkSkyblockVersion(URI endpoint, Path cache, Consumer<SkyblockVersion> publish) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(endpoint)
+                    .header("Accept", "application/json")
+                    .timeout(Duration.ofSeconds(20)).GET().build();
+            HttpResponse<String> response = HttpService.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                log.warn("SkyBlock 更新检查失败，HTTP: {}", response.statusCode());
+                return false;
+            }
+            JsonNode body = objectMapper.readTree(response.body());
+            if (body == null || !body.path("success").asBoolean(false)) {
+                log.warn("SkyBlock 更新检查失败，接口未返回成功结果");
+                return false;
+            }
+            SkyblockVersion current = readSkyblockVersion(body);
+            if (Files.exists(cache)) {
+                SkyblockVersion previous = readSkyblockVersion(objectMapper.readTree(cache.toFile()));
+                boolean sameVersion = current.version().equals(previous.version());
+                if ((sameVersion && current.lastUpdated() == previous.lastUpdated())
+                        || current.lastUpdated() < previous.lastUpdated()) return false;
+                current = new SkyblockVersion(current.version(), current.lastUpdated(),
+                        sameVersion ? previous.previousVersion() : previous.version());
+            }
+            publish.accept(current);
+            AtomicFiles.write(cache, objectMapper.writeValueAsBytes(current));
+            log.info("SkyBlock 更新已推送，版本: {}，更新时间: {}", current.version(),
+                    FormatTools.formatTimestampMilli(current.lastUpdated()));
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("SkyBlock 更新检查被中断");
+        } catch (Exception e) {
+            log.warn("SkyBlock 更新检查失败", e);
+        }
+        return false;
+    }
+
+    private static SkyblockVersion readSkyblockVersion(JsonNode data) throws IOException {
+        if (data == null || !data.path("version").isTextual() || data.path("version").asText().isBlank()
+                || !data.path("lastUpdated").isIntegralNumber() || !data.path("lastUpdated").canConvertToLong()
+                || data.path("lastUpdated").asLong() <= 0) {
+            throw new IOException("SkyBlock 版本信息缺少有效的 version 或 lastUpdated");
+        }
+        String previousVersion = data.path("previousVersion").asText("0");
+        return new SkyblockVersion(data.path("version").asText().trim(), data.path("lastUpdated").asLong(),
+                previousVersion.isBlank() ? "0" : previousVersion);
+    }
+
+    record SkyblockVersion(String version, long lastUpdated, String previousVersion) {}
 
     private static List<Announcement> fetchAnnouncementsFromUrl(FeedConfig feed) {
         String feedUrl = feed.url();

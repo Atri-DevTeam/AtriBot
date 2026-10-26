@@ -35,6 +35,8 @@ public class Properties {
 
     public static final String SKYBLOCK_CACHE = "data/skyblock-cache.json";
 
+    public static final String SKYBLOCK_VERSION_CACHE = "data/skyblock-version.json";
+
     public static final String CHAT_PINNED = "data/chat-pinned.json";
 
     public static final String FUNCTION_SETTINGS = "data/function-settings.json";

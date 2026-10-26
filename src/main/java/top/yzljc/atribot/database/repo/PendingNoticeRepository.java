@@ -176,6 +176,14 @@ public class PendingNoticeRepository {
         }
     }
 
+    public static boolean isPending(String id) {
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement("SELECT 1 FROM pending_notice WHERE id=? AND is_delivered=FALSE")) {
+            ps.setString(1, id);
+            try (var rs = ps.executeQuery()) { return rs.next(); }
+        } catch (Exception e) { throw new IllegalStateException("读取通知投递状态失败", e); }
+    }
+
     /**
      * 记录一次投递失败，用于排查长期卡住的通知。
      */

@@ -95,7 +95,8 @@ public class HelpCommand implements CommandExecutor {
                     /wz <玩家>  查询 Hypixel 法师掘战数据
                     /help  查看帮助
                     /whoami  查看当前账号及场景信息
-                    /feedback <内容>  提交反馈
+                    /feedback <内容>  提交或补充工单
+                    /feedback -c <编号>  关闭本人工单
                     /hypstatus  查询 Hypixel 服务状态
                     /mojang  查询 Mojang 服务状态
                     /today  查看今日日历

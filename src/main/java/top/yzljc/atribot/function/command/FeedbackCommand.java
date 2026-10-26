@@ -1,7 +1,12 @@
 package top.yzljc.atribot.function.command;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
@@ -22,7 +27,13 @@ import top.yzljc.atribot.utils.notify.NotificationService;
 import top.yzljc.atribot.utils.tools.Alert;
 
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.function.Function;
+
+import top.yzljc.atribot.auth.UnifiedAuthentication;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,11 +57,13 @@ public class FeedbackCommand implements CommandExecutor, Listener {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("请提供反馈或建议的内容，用法：/feedback <反馈内容>");
+            sender.sendMessage("提交或补充工单：/feedback <内容>\n关闭自己的工单：/feedback -c <工单编号>");
             return true;
         }
 
         String firstArg = args[0].toLowerCase();
+
+        if (firstArg.equals("-c")) return handleClose(sender, args);
 
         if (firstArg.equals("list") || firstArg.equals("reply")) {
             return handleAdminCommand(sender, args);
@@ -77,9 +90,9 @@ public class FeedbackCommand implements CommandExecutor, Listener {
     }
 
     /**
-     * @param sender 提交者，平台和用户标识来自发送者
+     * @param sender  提交者，平台和用户标识来自发送者
      * @param groupId 来源会话标识，私聊允许为 null
-     * @param content 反馈正文，沿用待处理反馈限制和通知流程
+     * @param content 工单正文，未关闭的工单追加本次内容
      * @return 是否已处理提交
      */
     public static boolean submitFeedback(CommandSender sender, String groupId, String content) {
@@ -93,9 +106,8 @@ public class FeedbackCommand implements CommandExecutor, Listener {
             return true;
         }
 
-        // 检查是否有未回复的反馈
-        if (FeedbackRepository.hasPendingFeedback(userId)) {
-            sender.sendMessage("你已经提交过反馈了哦，请先等待上一条反馈被受理！");
+        if (content.isBlank() || content.length() > FeedbackRepository.MAX_CONTENT_LENGTH) {
+            sender.sendMessage("工单内容长度须为 1—4000 个字符");
             return true;
         }
 
@@ -107,20 +119,64 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         feedback.setGroupId(groupId);
         feedback.setSubmitContent(content);
         feedback.setCreateTime(new Timestamp(System.currentTimeMillis()));
+        if (sender instanceof QQCommandSender qq && qq.getMessage() != null) {
+            feedback.setSourceMessageId(qq.getMessage().getMessageId());
+            feedback.setSourceMessageTime(parseMessageTime(qq.getMessage().getTimestamp()));
+        }
 
-        String id = FeedbackRepository.insert(feedback);
-        if (id != null) {
-            sender.sendMessage("反馈已收到！我们会尽快处理的~\n反馈编号: " + id.substring(0, 8) + "...");
+        var submission = FeedbackRepository.submit(feedback);
+        if (submission != null) {
 
-            // 发送通知到调试群
-            String alertStr = "收到反馈: " + content + " 来自用户: " + sender.getUsername() +
+            feedback.setId(submission.id());
+
+            String id = submission.id().substring(0, 8);
+            if (sender instanceof QQCommandSender user) {
+                if (submission.appended()) {
+                    user.sendMessage(getReplyFeedbackMessage(feedback));
+                } else {
+                    user.sendMessage(getSubmitMessage(feedback));
+                }
+            } else {
+                sender.sendMessage((submission.appended() ? "已补充到原工单" : "工单已提交")
+                        + "\n工单编号：" + id + "\n继续补充：/feedback <内容>\n关闭工单：/feedback -c " + id);
+            }
+
+            String alertStr = (submission.appended() ? "工单补充: " : "收到工单: ") + id + "\n" + content + " 来自用户: " + sender.getUsername() +
                     " (" + platformName + ": " + userId + ")" +
                     (groupId != null ? " 群聊: " + groupId : "");
             Alert.notify(alertStr);
         } else {
-            sender.sendMessage("反馈提交失败了呢，请稍后再试！");
+            sender.sendMessage("反馈提交失败了呢，请稍后再试~");
         }
 
+        return true;
+    }
+
+    private boolean handleClose(CommandSender sender, String[] args) {
+        if (args.length != 2) {
+            sender.sendMessage("关闭工单：/feedback -c <工单编号>");
+            return true;
+        }
+        String platform = sender.getPlatform().name();
+        var ticket = FeedbackRepository.findByIdPrefix(args[1], sender.getUserId(), platform);
+        if (ticket == null) {
+            sender.sendMessage("无法找到匹配的用户工单，请检查编号后重试");
+            return true;
+        }
+        var result = FeedbackRepository.close(ticket.getId(), sender.getUserId(), platform, sender.getUserId(), sender.getUsername());
+        switch (result) {
+            case CLOSED -> {
+                if (sender instanceof QQCommandSender user) {
+                    user.sendMessage(getClosedMessage(ticket));
+                } else {
+                    sender.sendMessage("工单已关闭，如有需要补充的内容，请重新提交新的工单！");
+                }
+            }
+            case ALREADY_CLOSED -> sender.sendMessage("该工单已经关闭");
+            case NOT_FOUND -> sender.sendMessage("获取工单信息失败，请尝试联系开发者处理！");
+            case FAILED -> sender.sendMessage("工单关闭失败，请稍后重试！");
+        }
+        ;
         return true;
     }
 
@@ -146,19 +202,12 @@ public class FeedbackCommand implements CommandExecutor, Listener {
 
         if (subCommand.equals("reply")) {
             if (args.length < 3) {
-                sender.sendMessage("用法: /feedback reply <反馈ID前缀> <回复内容> [--hidden]");
+                sender.sendMessage("用法: /feedback reply <反馈ID前缀> <回复内容>");
                 return true;
             }
             String idPrefix = args[1];
-            boolean isHidden = false;
-            // 检查最后一个参数是否是 --hidden
-            int contentEnd = args.length;
-            if (args[args.length - 1].equalsIgnoreCase("--hidden")) {
-                isHidden = true;
-                contentEnd = args.length - 1;
-            }
-            String replyContent = String.join(" ", java.util.Arrays.copyOfRange(args, 2, contentEnd));
-            return handleReply(sender, idPrefix, replyContent, isHidden);
+            String replyContent = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length));
+            return handleReply(sender, idPrefix, replyContent);
         }
 
         return false;
@@ -194,7 +243,7 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         }
 
         int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
-        sb.append("回复: /feedback reply <ID前缀> <回复内容> [--hidden]");
+        sb.append("回复: /feedback reply <ID前缀> <回复内容>");
         if (page < totalPages) {
             sb.append("\n下一页: /feedback list ").append(page + 1);
         }
@@ -207,9 +256,9 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         return true;
     }
 
-    private boolean handleReply(CommandSender sender, String idPrefix, String replyContent, boolean isHidden) {
-        if (replyContent.isBlank()) {
-            sender.sendMessage("回复内容不能为空！");
+    private boolean handleReply(CommandSender sender, String idPrefix, String replyContent) {
+        if (replyContent.isBlank() || replyContent.length() > FeedbackRepository.MAX_CONTENT_LENGTH) {
+            sender.sendMessage("回复内容长度须为 1—4000 个字符");
             return true;
         }
 
@@ -221,21 +270,21 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         }
 
         boolean isReReply = feedback.getReplyContent() != null;
-
-        boolean success = FeedbackRepository.reply(feedback.getId(), replyContent, isHidden);
-        if (success) {
-            boolean pushed = dispatchReply(feedback.getId());
+        String accountOpenId = sender instanceof QQGuildCommandSender guild ? guild.getUnionOpenId() : sender.getUserId();
+        var account = UnifiedAuthentication.getCachedQqUserAccount(accountOpenId);
+        String actorId = account == null ? sender.getPlatform().name() + ":" + sender.getUserId() : account.uuid().toString();
+        String actorName = account == null ? sender.getUsername() : account.username();
+        var saved = FeedbackRepository.reply(feedback.getId(), replyContent, false, actorId, actorName);
+        if (saved != null) {
+            boolean pushed = isOfficialPlatform(feedback.getPlatform()) && dispatchReply(saved.entry().id());
             String msg = (isReReply ? "重新回复成功！" : "回复成功！") +
                     "反馈编号: " + feedback.getId().substring(0, 8) + "...";
-            if (isHidden) {
-                msg += "\n已标记为隐藏原始内容";
-            }
-            msg += pushed ? "\n已主动推送给用户" : "\n用户未开放主动消息，已转入被动队列";
+            msg += pushed ? "\n已发送给用户" : "\n等待被动消息补发";
             sender.sendMessage(msg);
-            log.info("管理员 {} {}回复了反馈 {}: isHidden={}",
-                    sender.getUsername(), isReReply ? "重新" : "", feedback.getId(), isHidden);
+            log.info("管理员 {} {}回复了反馈 {}",
+                    sender.getUsername(), isReReply ? "重新" : "", feedback.getId());
         } else {
-            sender.sendMessage("回复失败，请稍后再试");
+            sender.sendMessage("回复失败，工单可能已关闭，请刷新后重试");
         }
 
         return true;
@@ -243,68 +292,52 @@ public class FeedbackCommand implements CommandExecutor, Listener {
 
     @EventHandler
     public void onGroupAtChat(OfficialGroupAtMessageCreateEvent event) {
-        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
-        if (reply != null) {
-            event.sendMessage(TC.md(buildReplyMessage(reply, true)), false);
-            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
-        }
+        deliverPending(event.getUser().getUserId(), Platform.OFFICIAL_GROUP,
+                markdown -> event.sendMessage(markdown, false));
     }
 
     @EventHandler
     public void onGroupChat(OfficialGroupMessageCreateEvent event) {
-        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
-        if (reply != null) {
-            event.sendMessage(TC.md(buildReplyMessage(reply, true)), false);
-            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
-        }
+        deliverPending(event.getUser().getUserId(), Platform.OFFICIAL_GROUP,
+                markdown -> event.sendMessage(markdown, false));
     }
 
     @EventHandler
     public void onPrivateChat(OfficialC2CMessageCreateEvent event) {
-        FeedbackDTO reply = consumePendingReply(event.getUser().getUserId());
-        if (reply != null) {
-            event.sendMessage(TC.md(buildReplyMessage(reply, true)));
-            log.info("已送达反馈回复: userId={}, feedbackId={}", event.getUser().getUserId(), reply.getId());
-        }
+        deliverPending(event.getUser().getUserId(), Platform.OFFICIAL_C2C, event::sendMessage);
     }
 
     @EventHandler
     public void onGuildChannelChat(OfficialGuildAtMessageCreateEvent event) {
-        String channelUserId = event.getUser().getUserId();
-        FeedbackDTO reply = consumePendingReply(channelUserId);
-        if (reply != null) {
-            event.replyMessage(buildReplyMessage(reply, false));
-            log.info("已送达反馈回复(频道): userId={}, feedbackId={}", channelUserId, reply.getId());
-        }
+        deliverPending(event.getUser().getUserId(), Platform.OFFICIAL_GUILD_CHANNEL, markdown -> event.replyMessage(markdown.getText()));
     }
 
     @EventHandler
     public void onGuildDirectChat(OfficialGuildDirectMessageCreateEvent event) {
-        String channelUserId = event.getUser().getUserId();
-        FeedbackDTO reply = consumePendingReply(channelUserId);
-        if (reply != null) {
-            event.replyMessage(buildReplyMessage(reply, false));
-            log.info("已送达反馈回复(频道私信): userId={}, feedbackId={}", channelUserId, reply.getId());
+        deliverPending(event.getUser().getUserId(), Platform.OFFICIAL_GUILD_DM, markdown -> event.replyMessage(markdown.getText()));
+    }
+
+    public static boolean dispatchReply(long entryId) {
+        var reply = FeedbackRepository.claimReply(entryId, null, null);
+        if (reply == null) return false;
+        try {
+            var feedback = reply.ticket();
+            return NotificationService.notify(feedback.getPlatform(), feedback.getUserId(), feedback.getGroupId(),
+                    getReplyMessage(feedback), SOURCE, feedback.getId() + ":" + entryId,
+                    feedback.getSourceMessageId(), feedback.getSourceMessageTime());
+        } catch (Exception e) {
+            FeedbackRepository.releaseReply(entryId);
+            log.error("投递工单回复失败，记录: {}", entryId, e);
+            return false;
         }
     }
 
-    public static boolean dispatchReply(String feedbackId) {
+    static Timestamp parseMessageTime(String value) {
+        if (value == null || value.isBlank()) return null;
         try {
-            FeedbackDTO feedback = FeedbackRepository.findById(feedbackId);
-            if (feedback == null || feedback.getReplyContent() == null || feedback.isRead()) {
-                return false;
-            }
-            if (!isOfficialPlatform(feedback.getPlatform())) {
-                return false;
-            }
-
-            boolean pushed = NotificationService.notify(feedback.getPlatform(), feedback.getUserId(),
-                    feedback.getGroupId(), buildReplyMessage(feedback, true), SOURCE, feedback.getId());
-            FeedbackRepository.markRead(feedback.getId());
-            return pushed;
-        } catch (Exception e) {
-            log.error("投递反馈回复失败: id={}", feedbackId, e);
-            return false;
+            return Timestamp.from(OffsetDateTime.parse(value).toInstant());
+        } catch (DateTimeParseException e) {
+            return null;
         }
     }
 
@@ -312,39 +345,73 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         return Platform.OFFICIAL_GROUP.name().equals(platform) || Platform.OFFICIAL_C2C.name().equals(platform);
     }
 
-    private static FeedbackDTO consumePendingReply(String userId) {
-        if (userId == null || userId.isBlank()) {
-            return null;
-        }
+    private static void deliverPending(String userId, Platform platform, Function<Markdown, String> send) {
+        if (userId == null || userId.isBlank()) return;
+        var reply = FeedbackRepository.claimReply(null, userId, platform.name());
+        if (reply == null) return;
         try {
-            FeedbackDTO reply = FeedbackRepository.findPendingReplyByUserId(userId);
-            if (reply != null) {
-                FeedbackRepository.markRead(reply.getId());
-            }
-            return reply;
+            if (send.apply(getReplyMessage(reply.ticket())) == null)
+                FeedbackRepository.releaseReply(reply.entry().id());
         } catch (Exception e) {
-            log.warn("消费待送达回复失败: userId={}", userId, e);
-            return null;
+            FeedbackRepository.releaseReply(reply.entry().id());
+            log.warn("发送工单回复失败，记录: {}", reply.entry().id(), e);
         }
     }
 
-    private static String buildReplyMessage(FeedbackDTO feedback, boolean markdown) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("**您的反馈已被受理**").append("\n\n");
-        sb.append("> 反馈编号: ").append(feedback.getId(), 0, 8).append("\n");
-        sb.append("> 时间: ").append(FormatTools.formatTimestamp(feedback.getCreateTime(), "")).append("\n");
+    public static Markdown queuedReplyMessage(String sourceId) {
+        FeedbackDTO reply = FeedbackRepository.queuedReply(sourceId);
+        return reply == null ? null : getReplyMessage(reply);
+    }
 
-        if (feedback.isHidden()) {
-            sb.append("> 反馈内容：已被隐藏\n");
+    private static Markdown getReplyMessage(FeedbackDTO d) {
+        String shortId = "#" + d.getId().substring(0, 8);
+        boolean closed = d.getStatus().equals("CLOSED");
+
+        return TC.md("> 工单编号: " + shortId + "\n\n" +
+                        "回复内容：" + d.getReplyContent() + "\n\n" +
+                        "回复时间：" + FormatTools.formatTimestamp(d.getReplyTime(), "") + (closed ? "\n\n> 当前工单已被开发者关闭，如有其他问题，请提交新的工单！" : ""))
+                .setKeyboard(getType(closed, d));
+    }
+
+    private static Keyboard getType(boolean closed, FeedbackDTO d) {
+        if (closed) {
+            return new Keyboard(List.of(
+                    List.of(new Button("r-1", "提交新的工单", "/feedback ", false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND))
+            ));
         } else {
-            sb.append("> 反馈内容：").append(feedback.getSubmitContent()).append("\n");
+            return new Keyboard(List.of(
+                    List.of(new Button("r-1", "补充内容", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setReply(true),
+                            new Button("r-2", "关闭工单", "/feedback -c " + d.getId(), false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND).setModal("你确定要关闭工单吗？关闭后可提交新的工单反馈。", "关闭工单", "取消"))
+            ));
         }
-
-        sb.append("> 回复时间: ").append(FormatTools.formatTimestamp(feedback.getReplyTime(), "")).append("\n");
-        sb.append("> 回复内容: ").append(feedback.getReplyContent()).append("\n\n");
-        sb.append("如有任何问题欢迎继续联系我们！");
-
-        return sb.toString();
     }
 
+    private static Markdown getSubmitMessage(FeedbackDTO d) {
+        String shortId = "#" + d.getId().substring(0, 8);
+
+        return TC.md("> 工单编号: " + shortId + "\n\n" +
+                "工单创建成功，如果您已添加机器人好友，开发者会优先通过私聊回复，若未添加，可尝试在群组内@机器人查看是否新的回复。").setKeyboard(new Keyboard(List.of(
+                List.of(new Button("r-1", "补充内容", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setReply(true),
+                        new Button("r-2", "关闭工单", "/feedback -c " + d.getId(), false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND).setModal("你确定要关闭工单" + shortId + "吗？关闭后可提交新的工单反馈。", "关闭工单", "取消"))
+        )));
+    }
+
+    private static Markdown getClosedMessage(FeedbackDTO d) {
+        String shortId = "#" + d.getId().substring(0, 8);
+
+        return TC.md("> 工单编号: " + shortId + "\n\n" +
+                "工单已关闭，若有新的问题，请重新提交工单反馈。").setKeyboard(new Keyboard(List.of(
+                List.of(new Button("r-1", "提交新的工单", "/feedback ", false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND))
+        )));
+    }
+
+    private static Markdown getReplyFeedbackMessage(FeedbackDTO d) {
+        String shortId = "#" + d.getId().substring(0, 8);
+
+        return TC.md("> 工单编号: " + shortId + "\n\n" +
+                "信息补充成功。如果您已添加机器人好友，开发者会优先通过私聊回复，若未添加，可尝试在群组内@机器人查看是否新的回复。").setKeyboard(new Keyboard(List.of(
+                List.of(new Button("r-1", "补充内容", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setReply(true),
+                        new Button("r-2", "关闭工单", "/feedback -c " + d.getId(), false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND).setModal("你确定要关闭工单" + shortId + "吗？关闭后可提交新的工单反馈。", "关闭工单", "取消"))
+        )));
+    }
 }

@@ -4,9 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import lombok.Data;
+import top.yzljc.atribot.auth.official.OfficialUsers;
+import top.yzljc.atribot.dashboard.DashboardSessions;
 import top.yzljc.atribot.database.ErrorReportDTO;
 import top.yzljc.atribot.database.EventLogDTO;
 import top.yzljc.atribot.database.FeedbackDTO;
+import top.yzljc.atricore.auth.AtriAccount;
+import top.yzljc.atribot.webui.WebUISessionManager;
 import top.yzljc.atribot.database.OfficialSendLogDTO;
 import top.yzljc.atribot.database.repo.*;
 import top.yzljc.atribot.function.command.FeedbackCommand;
@@ -152,87 +156,158 @@ public class AdminController {
 
 
     public static void listFeedback(Context ctx) {
-        int page = parseInt(ctx.queryParam("page"), 1);
-        int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
-        String filter = ctx.queryParam("filter"); // "unreplied" | "replied" | "all"
-
-        List<FeedbackDTO> list;
-        int total;
-
-        if ("replied".equals(filter)) {
-            total = FeedbackRepository.countReplied();
-            list = FeedbackRepository.findRepliedPaginated(page, pageSize);
-        } else if ("all".equals(filter)) {
-            total = FeedbackRepository.countAll();
-            list = FeedbackRepository.findAllPaginated(page, pageSize);
-        } else {
-            total = FeedbackRepository.countUnreplied();
-            list = FeedbackRepository.findUnrepliedPaginated(page, pageSize);
-        }
-
-        List<FeedbackItemDTO> items = list.stream().map(fb -> new FeedbackItemDTO(
-                fb.getId(),
-                fb.getPlatform(),
-                fb.getUserId(),
-                fb.getUsername(),
-                fb.getGroupId(),
-                fb.getSubmitContent(),
-                formatFeedbackTime(fb.getCreateTime()),
-                fb.isRead(),
-                fb.getReplyContent(),
-                formatFeedbackTime(fb.getReplyTime()),
-                fb.isHidden()
+        int page = Math.max(1, parseInt(ctx.queryParam("page"), 1));
+        int pageSize = Math.max(1, Math.min(100, parseInt(ctx.queryParam("pageSize"), 20)));
+        String filter = ctx.queryParam("filter");
+        var list = FeedbackRepository.findPaginated(filter, page, pageSize);
+        var items = list.stream().map(fb -> new FeedbackItemDTO(
+                fb.getId(), fb.getPlatform(), fb.getUserId(), fb.getUsername(), fb.getGroupId(),
+                fb.getSubmitContent(), formatFeedbackTime(fb.getCreateTime()), fb.getReplyContent(),
+                formatFeedbackTime(fb.getReplyTime()), fb.getStatus(),
+                formatFeedbackTime(fb.getUpdateTime()), formatFeedbackTime(fb.getClosedTime()),
+                fb.getLatestContent(), formatFeedbackTime(fb.getLatestContentTime()), fb.getReplyActorName(), canPrivateReply(fb)
         )).toList();
-
-        ctx.json(Result.success(new PagedResult<>(items, total, page, pageSize)));
+        ctx.json(Result.success(new PagedResult<>(items, FeedbackRepository.count(filter), page, pageSize)));
     }
 
     public static void countFeedback(Context ctx) {
-        int unreplied = FeedbackRepository.countUnreplied();
-        int replied = FeedbackRepository.countReplied();
-        int all = FeedbackRepository.countAll();
-        ctx.json(Result.success(new FeedbackCountDTO(unreplied, replied, all)));
+        ctx.json(Result.success(Map.of("pending", FeedbackRepository.count("pending"),
+                "processing", FeedbackRepository.count("processing"), "closed", FeedbackRepository.count("closed"),
+                "waiting", FeedbackRepository.count("waiting"),
+                "all", FeedbackRepository.count("all"))));
+    }
+
+    public static void feedbackEntries(Context ctx) {
+        String id = ctx.pathParam("id");
+        if (FeedbackRepository.findById(id) == null) {
+            ctx.status(404).json(Result.customFailure("工单不存在"));
+            return;
+        }
+        long before = parseLong(ctx.queryParam("before"), Long.MAX_VALUE);
+        var entries = FeedbackRepository.entries(id, before);
+        var deletable = FeedbackRepository.deletableReplyIds(id);
+        var items = entries.stream().map(e -> new FeedbackEntryDTO(Long.toString(e.id()), e.type(), e.content(),
+                e.actorId(), e.actorName(), formatFeedbackTime(e.createTime()), e.silent(), e.platform(), e.actorAvatarUrl(), deletable.contains(e.id()))).toList();
+        ctx.json(Result.success(Map.of("items", items, "nextCursor",
+                entries.size() == 50 ? Long.toString(entries.getLast().id()) : "")));
     }
 
     public static void replyFeedback(Context ctx) {
+        AtriAccount account = feedbackAdministrator(ctx);
+        if (account == null) return;
         ReplyFeedbackDTO dto = ctx.bodyAsClass(ReplyFeedbackDTO.class);
-        if (isBlank(dto.getId()) || isBlank(dto.getReplyContent())) {
-            ctx.json(Result.customFailure("id 和 replyContent 不能为空"));
+        if (isBlank(dto.getId()) || isBlank(dto.getReplyContent())
+                || dto.getReplyContent().length() > FeedbackRepository.MAX_CONTENT_LENGTH) {
+            ctx.status(400).json(Result.customFailure("id 不能为空，回复内容长度须为 1—4000 个字符"));
             return;
         }
         FeedbackDTO target = FeedbackRepository.findById(dto.getId());
-        if (target != null && target.getPlatform() != null
-                && target.getPlatform().toUpperCase(java.util.Locale.ROOT).startsWith("NAPCAT")) {
-            ctx.json(Result.customFailure("NapCat 来源反馈已停止回复接入"));
+        if (dto.isPrivateReply() && (dto.isSilent() || !canPrivateReply(target))) {
+            ctx.status(400).json(Result.customFailure(dto.isSilent()
+                    ? "私聊回复不能与静默回复同时使用" : "私聊回复需要用户是机器人好友且已开启私聊主动消息权限"));
             return;
         }
-        boolean success = FeedbackRepository.reply(dto.getId(), dto.getReplyContent(), dto.isHidden(), dto.isSilent());
-        if (success) {
-            if (!dto.isSilent()) {
-                // 主动推送涉及网络，别阻塞 WebUI 请求线程
-                ThreadManager.execute(() -> FeedbackCommand.dispatchReply(dto.getId()));
-            }
-            ctx.json(Result.success("ok"));
-        } else {
-            ctx.json(Result.customFailure("回复失败，可能该反馈不存在"));
+        if (target != null && target.getPlatform() != null && target.getPlatform().startsWith("NAPCAT")) {
+            ctx.json(Result.customFailure("NapCat 来源工单已停止回复接入"));
+            return;
         }
+        var reply = FeedbackRepository.reply(dto.getId(), dto.getReplyContent().trim(), dto.isSilent(),
+                account.uuid().toString(), isBlank(account.username()) ? "管理员" : account.username(), dto.isPrivateReply(), feedbackAvatar(ctx), dto.isCloseTicket());
+        if (reply == null) {
+            ctx.status(409).json(Result.customFailure("回复失败，工单不存在、已关闭或保存失败"));
+            return;
+        }
+        if (!dto.isSilent() && ("OFFICIAL_GROUP".equals(target.getPlatform()) || "OFFICIAL_C2C".equals(target.getPlatform()))) {
+            ThreadManager.execute(() -> FeedbackCommand.dispatchReply(reply.entry().id()));
+        }
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void deleteFeedbackReply(Context ctx) {
+        AtriAccount account = feedbackAdministrator(ctx);
+        if (account == null) return;
+        long entryId = parseLong(ctx.pathParam("entryId"), -1);
+        if (entryId <= 0) {
+            ctx.status(400).json(Result.customFailure("回复编号无效"));
+            return;
+        }
+        boolean deleted = FeedbackRepository.deletePendingReply(ctx.pathParam("id"), entryId,
+                account.uuid().toString(), isBlank(account.username()) ? "管理员" : account.username(), feedbackAvatar(ctx));
+        if (!deleted) {
+            ctx.status(409).json(Result.customFailure("回复不存在、正在发送或已送达，无法删除"));
+            return;
+        }
+        ctx.json(Result.success("ok"));
+    }
+
+    public static void closeFeedback(Context ctx) {
+        AtriAccount account = feedbackAdministrator(ctx);
+        if (account == null) return;
+        FeedbackActionDTO dto = ctx.bodyAsClass(FeedbackActionDTO.class);
+        if (isBlank(dto.id())) {
+            ctx.status(400).json(Result.customFailure("id 不能为空"));
+            return;
+        }
+        var result = FeedbackRepository.close(dto.id(), null, null, account.uuid().toString(), isBlank(account.username()) ? "管理员" : account.username(), feedbackAvatar(ctx));
+        switch (result) {
+            case CLOSED, ALREADY_CLOSED -> ctx.json(Result.success("ok"));
+            case NOT_FOUND -> ctx.status(404).json(Result.customFailure("工单不存在"));
+            case FAILED -> ctx.status(500).json(Result.customFailure("工单关闭失败"));
+        }
+    }
+
+    public static void reopenFeedback(Context ctx) {
+        AtriAccount account = feedbackAdministrator(ctx);
+        if (account == null) return;
+        FeedbackActionDTO dto = ctx.bodyAsClass(FeedbackActionDTO.class);
+        if (isBlank(dto.id())) {
+            ctx.status(400).json(Result.customFailure("id 不能为空"));
+            return;
+        }
+        var result = FeedbackRepository.reopen(dto.id(), account.uuid().toString(), isBlank(account.username()) ? "管理员" : account.username(), feedbackAvatar(ctx));
+        switch (result) {
+            case REOPENED, ALREADY_OPEN -> ctx.json(Result.success("ok"));
+            case OTHER_OPEN -> ctx.status(409).json(Result.customFailure("该用户已有未关闭工单，请先关闭该工单"));
+            case NOT_FOUND -> ctx.status(404).json(Result.customFailure("工单不存在"));
+            case FAILED -> ctx.status(500).json(Result.customFailure("工单重新打开失败"));
+        }
+    }
+
+    private static String feedbackAvatar(Context ctx) {
+        DashboardSessions.Login login = ctx.attribute("webui.login");
+        return login == null ? null : login.avatarUrl();
+    }
+
+    private static boolean canPrivateReply(FeedbackDTO ticket) {
+        return ticket != null && ("OFFICIAL_GROUP".equals(ticket.getPlatform()) || "OFFICIAL_C2C".equals(ticket.getPlatform()))
+                && OfficialUsers.isFriend(ticket.getUserId()) && OfficialUsers.isC2CPushEnabled(ticket.getUserId());
+    }
+
+    private static AtriAccount feedbackAdministrator(Context ctx) {
+        AtriAccount account = ctx.attribute("webui.account");
+        if (WebUISessionManager.isAdministrator(account)) return account;
+        ctx.status(403).json(Result.failure(ApiCode.ACCESS_DENIED));
+        return null;
     }
 
     public record FeedbackItemDTO(String id, String platform, String userId, String username,
                                    String groupId, String submitContent, String createTime,
-                                   @JsonProperty("isRead") boolean isRead,
                                    String replyContent, String replyTime,
-                                   @JsonProperty("isHidden") boolean isHidden) {}
+                                   String status, String updateTime, String closedTime,
+                                   String latestContent, String latestContentTime, String replyActorName, boolean canPrivateReply) {}
 
-    public record FeedbackCountDTO(int unreplied, int replied, int all) {}
+    public record FeedbackEntryDTO(String id, String type, String content, String actorId, String actorName,
+                                    String createTime, boolean silent, String platform, String avatarUrl, boolean canDelete) {}
+
+    public record FeedbackActionDTO(String id) {}
 
     @Data
     public static class ReplyFeedbackDTO {
         private String id;
         private String replyContent;
-        @JsonProperty("isHidden")
-        private boolean isHidden;
         private boolean silent;
+        private boolean privateReply;
+        private boolean closeTicket;
     }
 
     // ============ 错误报告 ============

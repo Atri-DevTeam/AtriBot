@@ -10,7 +10,7 @@ import top.yzljc.atribot.function.task.LootFreeDrawCleanupTask;
 import top.yzljc.atribot.function.task.ManosabaDate;
 import top.yzljc.atribot.function.task.MessageStats;
 import top.yzljc.atribot.function.task.NapcatChatDailyReport;
-import top.yzljc.atribot.function.task.QqBotDocsMonitor;
+import top.yzljc.atribot.function.tasks.pushtask.QqBotDocsMonitor;
 import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
 import top.yzljc.atribot.function.tasks.pushtask.HypixelBanWaveAlertTask;
 import top.yzljc.atribot.function.tasks.pushtask.SkyblockPriceAlertTask;

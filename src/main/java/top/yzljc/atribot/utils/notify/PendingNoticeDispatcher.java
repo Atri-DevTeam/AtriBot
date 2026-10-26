@@ -5,6 +5,8 @@ import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.database.PendingNoticeDTO;
 import top.yzljc.atribot.database.repo.PendingNoticeRepository;
+import top.yzljc.atribot.database.repo.FeedbackRepository;
+import top.yzljc.atribot.function.command.FeedbackCommand;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.OfficialC2CMessageCreateEvent;
@@ -38,7 +40,7 @@ public class PendingNoticeDispatcher implements Listener {
         if (event.getUser().isBot()) return;
         PendingNoticeDTO notice = PendingNoticeRepository.pollForC2C(event.getUser().getUserId());
         if (notice == null) return;
-        deliver(notice, () -> event.sendMessage(TC.md(notice.getContent())));
+        deliver(notice, event::sendMessage);
     }
 
     @EventHandler
@@ -60,17 +62,32 @@ public class PendingNoticeDispatcher implements Listener {
     private void deliverToGroup(String groupId, String speakerUserId, MarkdownSink sink) {
         PendingNoticeDTO notice = PendingNoticeRepository.pollForGroup(groupId, speakerUserId);
         if (notice == null) return;
-
-        // 群内补发时把本人 @ 出来，否则用户在刷屏的群里根本注意不到
-        String body = notice.getMentionUserId() != null
-                ? Markdown.at(notice.getMentionUserId()) + "\n" + notice.getContent()
-                : notice.getContent();
-        deliver(notice, () -> sink.send(TC.md(body)));
+        deliver(notice, markdown -> sink.send(NotificationService.mention(markdown, notice.getMentionUserId())));
     }
 
-    private void deliver(PendingNoticeDTO notice, Delivery delivery) {
+    private Markdown prepareMessage(PendingNoticeDTO notice) {
+        if (!"feedback".equals(notice.getSource())) return TC.md(notice.getContent());
         try {
-            String messageId = delivery.run();
+            Markdown markdown = FeedbackCommand.queuedReplyMessage(notice.getSourceId());
+            if (markdown != null) return markdown;
+            PendingNoticeRepository.markAttemptFailed(notice.getId(), "feedback_reply_not_found");
+            log.warn("待补发工单回复不存在，通知: {}", notice.getId());
+        } catch (Exception e) {
+            PendingNoticeRepository.markAttemptFailed(notice.getId(), "feedback_reply_load_failed");
+            log.warn("读取待补发工单回复失败，通知: {}", notice.getId(), e);
+        }
+        return null;
+    }
+
+    private void deliver(PendingNoticeDTO notice, MarkdownSink sink) {
+        var lock = "feedback".equals(notice.getSource()) && notice.getSourceId() != null
+                ? FeedbackRepository.deliveryLock(notice.getSourceId().split(":", 2)[0]) : null;
+        if (lock != null && !lock.tryLock()) return;
+        try {
+            if (lock != null && !PendingNoticeRepository.isPending(notice.getId())) return;
+            Markdown markdown = prepareMessage(notice);
+            if (markdown == null) return;
+            String messageId = sink.send(markdown);
             if (messageId != null) {
                 PendingNoticeRepository.markDelivered(notice.getId());
                 log.info("被动补发通知成功: id={}, target={}, source={}",
@@ -82,12 +99,7 @@ public class PendingNoticeDispatcher implements Listener {
         } catch (Exception e) {
             PendingNoticeRepository.markAttemptFailed(notice.getId(), e.getMessage());
             log.warn("被动补发通知异常，保留在队列中: id={}", notice.getId(), e);
-        }
-    }
-
-    @FunctionalInterface
-    private interface Delivery {
-        String run();
+        } finally { if (lock != null) lock.unlock(); }
     }
 
     @FunctionalInterface
