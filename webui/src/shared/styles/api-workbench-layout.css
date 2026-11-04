@@ -1,0 +1,380 @@
+.debug-workspace .method-get {
+    --method-color: var(--color-accent-text);
+    --method-bg: var(--color-accent-soft);
+}
+
+.debug-workbench {
+    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    align-items: stretch;
+    align-content: stretch;
+    overflow: hidden;
+}
+
+.debug-catalog {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.debug-catalog .connect-catalog-heading {
+    flex-shrink: 0;
+}
+
+.debug-catalog-toggle {
+    display: none;
+}
+
+.debug-catalog-list {
+    flex: 1;
+    min-height: 0;
+    padding: 0 4px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.debug-workbench > .connect-main {
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    grid-auto-rows: max-content;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.debug-catalog-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    height: 34px;
+    margin-bottom: 10px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+}
+
+.debug-catalog-search:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: var(--focus-ring);
+}
+
+.debug-workspace .debug-catalog-search input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    height: 30px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    font-size: 12px;
+}
+
+.debug-catalog-search svg {
+    flex-shrink: 0;
+}
+
+.debug-catalog-group summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 6px;
+    list-style: none;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.debug-catalog-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.debug-catalog-group summary span {
+    margin-left: auto;
+    color: var(--color-text-subtle);
+    font: 10px var(--font-mono);
+}
+
+.debug-catalog-group[open] summary svg {
+    transform: rotate(90deg);
+}
+
+.debug-catalog-item {
+    gap: 8px;
+    padding: 9px 8px;
+    margin-bottom: 3px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.debug-catalog-item:hover {
+    background: var(--color-surface-sunken);
+}
+
+.debug-catalog-item.active {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-soft);
+    color: var(--color-accent-text);
+}
+
+.debug-catalog-item > span:last-child {
+    min-width: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.debug-catalog-method {
+    width: 42px;
+    flex-shrink: 0;
+    font: 600 10px var(--font-mono);
+    color: var(--method-color);
+}
+
+.debug-workspace .connect-heading h3 {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.debug-workspace .debug-panel {
+    min-height: 0;
+}
+
+.debug-workspace .debug-method-wrap {
+    border: 1px solid var(--color-border-input);
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+}
+
+.debug-workspace .debug-url-bar .debug-method-wrap .debug-method {
+    height: 30px;
+    min-height: 0;
+    padding: 0 26px 0 12px;
+    border: 0;
+    border-radius: 7px 0 0 7px;
+    background: transparent;
+    color: var(--method-color);
+    font: 600 12px var(--font-mono);
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.debug-workspace .debug-request .debug-url-bar .debug-path {
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+    background: var(--color-surface-alt);
+    font: 12px var(--font-mono);
+    box-shadow: none;
+}
+
+.debug-workspace .debug-url-bar:focus-within {
+    box-shadow: none;
+}
+
+.debug-workspace .debug-url-bar:focus-within :is(.debug-method-wrap, .debug-path) {
+    border-color: var(--color-accent);
+}
+
+.debug-workspace .debug-preset-line {
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.debug-workspace .debug-doc-link {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.debug-workspace .debug-doc-link:hover {
+    color: var(--color-accent-text);
+}
+
+.debug-workspace .debug-preset {
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.debug-workspace .debug-preset-label {
+    font-size: 12px;
+    width: auto;
+}
+
+.debug-workspace .debug-preset-note {
+    border-left: 2px solid var(--color-accent-border);
+    padding-left: 10px;
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+.debug-workspace .debug-template-line {
+    gap: 12px;
+}
+
+.debug-workspace .debug-template-field {
+    display: grid;
+    gap: 6px;
+    height: auto;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+}
+
+.debug-workspace .debug-template-field span {
+    padding: 0;
+    line-height: 1.5;
+    border: 0;
+    background: transparent;
+    font-size: 11px;
+}
+
+.debug-workspace .debug-template-field input {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border-input);
+    border-radius: 8px;
+    font: 12px var(--font-mono);
+}
+
+.debug-workspace .debug-template-field input:focus {
+    border-color: var(--color-accent);
+    box-shadow: var(--focus-ring);
+}
+
+.debug-workspace .debug-tab-panel {
+    min-height: 160px;
+}
+
+.debug-workspace .debug-tabs {
+    flex-wrap: wrap;
+    column-gap: 16px;
+    overflow: visible;
+}
+
+.debug-workspace .debug-tab-actions {
+    flex-wrap: wrap;
+    padding: 4px 0;
+    gap: 5px;
+}
+
+.debug-workspace .debug-editor {
+    padding-top: 0;
+}
+
+.debug-workspace .debug-editor textarea {
+    min-height: 180px;
+    height: 220px;
+    resize: vertical;
+    background: var(--color-surface-alt);
+    font: 12px/1.7 var(--font-mono);
+}
+
+.debug-workspace .debug-response-body {
+    padding: 16px 20px;
+    overflow: hidden;
+}
+
+.debug-workspace .debug-output {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    max-height: 480px;
+    font: 12px/1.7 var(--font-mono);
+}
+
+.debug-workspace .debug-status-code.is-2xx {
+    color: var(--color-accent-text);
+    background: var(--color-accent-soft);
+}
+
+.debug-workspace .debug-response-status {
+    font-size: 11px;
+}
+
+.debug-workspace .debug-param-row {
+    min-width: 0;
+    grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.4fr) 22px;
+}
+
+.debug-workspace .debug-param-row input:not([type='checkbox']) {
+    font-size: 12px;
+}
+
+.debug-workspace .debug-modal-textarea {
+    font: 12px/1.7 var(--font-mono);
+}
+
+@media (max-width: 1100px) {
+    .debug-workbench {
+        grid-template-columns: 200px minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .debug-workbench {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .debug-catalog-toggle {
+        display: block;
+        margin-left: auto;
+    }
+
+    .debug-catalog .connect-catalog-heading {
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 0 0 8px;
+    }
+
+    .debug-catalog-list {
+        display: none;
+    }
+
+    .debug-catalog-list.is-open {
+        display: block;
+        flex: none;
+        max-height: min(300px, 35dvh);
+    }
+
+    .debug-catalog .debug-catalog-item {
+        width: 100%;
+    }
+}
+
+@media (max-width: 720px) {
+    .debug-workspace .debug-url-bar {
+        grid-template-columns: auto minmax(0, 1fr);
+        row-gap: 10px;
+    }
+
+    .debug-workspace .debug-send-btn {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .debug-workspace .debug-template-line {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .debug-workspace .debug-response-body {
+        padding: 14px;
+    }
+
+    .debug-workspace .debug-response-head {
+        flex-wrap: wrap;
+    }
+
+    .debug-workspace .connect-badge {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+}

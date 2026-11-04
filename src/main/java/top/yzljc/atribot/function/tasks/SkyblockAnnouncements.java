@@ -1,6 +1,5 @@
 package top.yzljc.atribot.function.tasks;
 
-import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atricore.service.taskscheduler.*;
 import top.yzljc.atribot.function.tasks.HypixelAnnouncements.Announcement;
@@ -14,17 +13,11 @@ import java.util.List;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.tasks
  */
-public final class SkyblockAnnouncements implements CommandExecutor, ScheduledTask {
+public final class SkyblockAnnouncements implements ScheduledTask {
     private static final HypixelAnnouncementFeed FEED = new HypixelAnnouncementFeed(
             "https://hypixel.net/forums/skyblock-patch-notes.158/index.rss",
             "Hypixel SkyBlock", Properties.HYPIXEL_ANNOUNCEMENTS);
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender) && !(sender instanceof ConsoleCommandSender)) return true;
-        if (!feedAnnouncements()) sender.sendMessage("暂无新的 Hypixel SkyBlock 公告");
-        return true;
-    }
 
     @Override
     public TaskSchedule schedule() {

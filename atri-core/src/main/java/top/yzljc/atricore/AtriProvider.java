@@ -1,8 +1,11 @@
 package top.yzljc.atricore;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
+import lombok.NonNull;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import top.yzljc.atricore.chat.official.ChatService;
 import top.yzljc.atricore.command.CommandManager;
@@ -160,7 +163,7 @@ public abstract class AtriProvider implements AutoCloseable {
     /**
      * @return 平台连接及框架配置，不得为 null
      */
-    public AtriSettings getSettings() {
+    public @NonNull AtriSettings getSettings() {
         return CoreConfig.getInstance().getSettings();
     }
 
@@ -175,8 +178,15 @@ public abstract class AtriProvider implements AutoCloseable {
             configure.accept(config);
         });
         napcatEventQueue = new NapcatEventQueue();
+        ObjectMapper eventMapper = new ObjectMapper();
         server.post("/", ctx -> {
-            JsonNode body = ctx.bodyAsClass(JsonNode.class);
+            JsonNode body;
+            try {
+                body = eventMapper.readValue(ctx.body(), JsonNode.class);
+            } catch (JsonProcessingException e) {
+                ctx.status(400).json(Map.of("status", 432, "message", "请求体格式无效。"));
+                return;
+            }
             if (body == null || !body.isObject()) {
                 ctx.status(400).json(Map.of("status", 432, "message", "请求体格式无效。"));
             } else if (napcatEventQueue.offer(body, ctx.bodyAsBytes().length)) {
@@ -310,7 +320,7 @@ public abstract class AtriProvider implements AutoCloseable {
     }
 
     /**
-     * @return 被动回复的维护图片；未配置时返回 null，暂停期间不发送替代消息
+     * @return 被动回复的维护图片；未配置时返回 null，停用期间将不发送任何内容
      */
     public ImageComponent getMaintenanceMessage() {
         return null;

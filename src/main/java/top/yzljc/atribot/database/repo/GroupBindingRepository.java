@@ -37,9 +37,13 @@ public class GroupBindingRepository {
     public record WelcomeData(ObjectNode config, Boolean enabled, boolean canEdit) {
     }
 
-    public record FunctionData(ObjectNode functions, boolean proactive, boolean restricted, boolean available) {}
+    public record FunctionData(ObjectNode functions, boolean proactive, boolean restricted, boolean available) {
+    }
+
     public enum FunctionWrite {SAVED, NOT_BOUND, UNAVAILABLE, RESTRICTED, ACTIVE_REQUIRED}
-    public record CommandWrite(FunctionWrite result, ObjectNode commands) {}
+
+    public record CommandWrite(FunctionWrite result, ObjectNode commands) {
+    }
 
     public Map<String, ObjectNode> loadCommandSettings() throws SQLException {
         var result = new LinkedHashMap<String, ObjectNode>();
@@ -51,7 +55,8 @@ public class GroupBindingRepository {
                 while (rows.next()) {
                     var commands = parseSettings(rows.getString("group_settings")).get("commands");
                     if (commands == null || commands.isNull()) continue;
-                    if (!(commands instanceof ObjectNode object)) throw new SQLException("Invalid group command settings");
+                    if (!(commands instanceof ObjectNode object))
+                        throw new SQLException("Invalid group command settings");
                     if (!object.isEmpty()) result.put(rows.getString("group_openId"), object);
                 }
             }
@@ -62,11 +67,11 @@ public class GroupBindingRepository {
     /**
      * 校验群绑定后更新单个指令配置，保留其他指令和群设置
      *
-     * @param userId 已认证页面用户
+     * @param userId  已认证页面用户
      * @param groupId 群 OpenID
      * @param command 已登记的指令标识
-     * @param rule 已校验的群指令配置
-     * @param guard 提交前检查会话、账号及高级规则
+     * @param rule    已校验的群指令配置
+     * @param guard   提交前检查会话、账号及高级规则
      * @return 写入结果及成功保存的完整群指令配置
      * @throws SQLException 数据读取或事务提交失败
      */
@@ -74,7 +79,8 @@ public class GroupBindingRepository {
         try (var con = connections.open()) {
             con.setAutoCommit(false);
             try {
-                if (!bindings(readSettings(con, userId, false)).has(groupId)) return new CommandWrite(FunctionWrite.NOT_BOUND, null);
+                if (!bindings(readSettings(con, userId, false)).has(groupId))
+                    return new CommandWrite(FunctionWrite.NOT_BOUND, null);
                 ObjectNode settings;
                 try (var ps = con.prepareStatement("SELECT group_settings, is_blacklisted FROM official_groups WHERE group_openId = ? FOR UPDATE")) {
                     ps.setString(1, groupId);
@@ -85,9 +91,11 @@ public class GroupBindingRepository {
                         settings = parseSettings(rows.getString("group_settings"));
                     }
                 }
-                if (!bindings(readSettings(con, userId, true)).has(groupId)) return new CommandWrite(FunctionWrite.NOT_BOUND, null);
+                if (!bindings(readSettings(con, userId, true)).has(groupId))
+                    return new CommandWrite(FunctionWrite.NOT_BOUND, null);
                 var existing = settings.get("commands");
-                if (existing != null && !existing.isNull() && !existing.isObject()) throw new SQLException("Invalid group command settings");
+                if (existing != null && !existing.isNull() && !existing.isObject())
+                    throw new SQLException("Invalid group command settings");
                 ObjectNode commands = existing instanceof ObjectNode object ? object : settings.putObject("commands");
                 commands.set(command, rule.deepCopy());
                 guard.run();
@@ -100,8 +108,11 @@ public class GroupBindingRepository {
                 con.commit();
                 return new CommandWrite(FunctionWrite.SAVED, commands);
             } catch (SQLException | RuntimeException failure) {
-                try { con.rollback(); }
-                catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                try {
+                    con.rollback();
+                } catch (SQLException rollback) {
+                    failure.addSuppressed(rollback);
+                }
                 throw failure;
             } finally {
                 con.rollback();
@@ -215,7 +226,8 @@ public class GroupBindingRepository {
                 if (!rows.next()) return new FunctionData(JSON.createObjectNode(), false, false, false);
                 ObjectNode settings = parseSettings(rows.getString("group_settings"));
                 var functions = settings.get("functions");
-                if (functions != null && !functions.isNull() && !functions.isObject()) throw new SQLException("Invalid group functions");
+                if (functions != null && !functions.isNull() && !functions.isObject())
+                    throw new SQLException("Invalid group functions");
                 return new FunctionData(functions instanceof ObjectNode object ? object : JSON.createObjectNode(),
                         rows.getBoolean("allow_proactive_msg"), rows.getBoolean("is_blacklisted"), true);
             }
@@ -225,11 +237,11 @@ public class GroupBindingRepository {
     /**
      * 在绑定和群记录的行锁保护下更新单个推送开关，保留其他群设置
      *
-     * @param userId 已认证页面用户
-     * @param groupId 群 OpenID
-     * @param functionId 已通过任务白名单校验的功能标识
-     * @param enabled 目标开关状态
-     * @param needsActive 功能是否需要主动消息权限
+     * @param userId       已认证页面用户
+     * @param groupId      群 OpenID
+     * @param functionId   已通过任务白名单校验的功能标识
+     * @param enabled      目标开关状态
+     * @param needsActive  功能是否需要主动消息权限
      * @param checkSession 写入前的会话有效性检查
      * @return 写入结果或拒绝原因
      * @throws SQLException 数据读取、保存或事务提交失败
@@ -246,13 +258,15 @@ public class GroupBindingRepository {
                     try (var rows = ps.executeQuery()) {
                         if (!rows.next()) return FunctionWrite.UNAVAILABLE;
                         if (rows.getBoolean("is_blacklisted")) return FunctionWrite.RESTRICTED;
-                        if (enabled && needsActive && !rows.getBoolean("allow_proactive_msg")) return FunctionWrite.ACTIVE_REQUIRED;
+                        if (enabled && needsActive && !rows.getBoolean("allow_proactive_msg"))
+                            return FunctionWrite.ACTIVE_REQUIRED;
                         settings = parseSettings(rows.getString("group_settings"));
                     }
                 }
                 if (!bindings(readSettings(con, userId, true)).has(groupId)) return FunctionWrite.NOT_BOUND;
                 JsonNode existing = settings.get("functions");
-                if (existing != null && !existing.isNull() && !existing.isObject()) throw new SQLException("Invalid group functions");
+                if (existing != null && !existing.isNull() && !existing.isObject())
+                    throw new SQLException("Invalid group functions");
                 ObjectNode functions = existing instanceof ObjectNode object ? object : settings.putObject("functions");
                 ObjectNode entry = functions.path(functionId) instanceof ObjectNode object ? object : functions.putObject(functionId);
                 entry.put("enabled", enabled);
@@ -267,8 +281,11 @@ public class GroupBindingRepository {
                 con.commit();
                 return FunctionWrite.SAVED;
             } catch (SQLException | RuntimeException failure) {
-                try { con.rollback(); }
-                catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                try {
+                    con.rollback();
+                } catch (SQLException rollback) {
+                    failure.addSuppressed(rollback);
+                }
                 throw failure;
             } finally {
                 con.rollback();

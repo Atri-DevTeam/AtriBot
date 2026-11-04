@@ -13,7 +13,7 @@ test('dock switches sections without reopening the session or losing cached prof
     }
     if (path.endsWith('/profile')) {
       profileCalls++
-      return route.fulfill({ json: { ...profile, skyblockPrice: true, avatarUrl: null, bot: { ...profile.bot, avatarUrl: null } } })
+      return route.fulfill({ json: { ...profile, avatarUrl: null, bot: { ...profile.bot, avatarUrl: null } } })
     }
     if (path.endsWith('/about')) {
       aboutCalls++

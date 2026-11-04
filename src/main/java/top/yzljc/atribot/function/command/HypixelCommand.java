@@ -11,7 +11,6 @@ import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.function.minecraft.BedwarsProfileImpl;
 import top.yzljc.atribot.function.minecraft.SkywarsProfileImpl;
-import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -82,6 +81,7 @@ public class HypixelCommand implements CommandExecutor {
     private static Map<String, SubCommand> createSubCommands() {
         Map<String, SubCommand> commands = new LinkedHashMap<>();
         register(commands, new SubCommand("lb", Category.GENERAL, "查询玩家大厅总览数据", RS.get("resource.image.icon-compass"), HypixelCommand::handleLobbyStats));
+        register(commands, new SubCommand("rg", Category.GENERAL, "查询玩家最近游戏记录", RS.get("resource.image.icon-paper"), HypixelCommand::handleRecentGames));
         register(commands, new SubCommand("wz", Category.GENERAL, "查询玩家法师掘战详细数据", RS.get("resource.image.icon-tnt"), HypixelCommand::handleWizards));
         register(commands, new SubCommand("zs", Category.GENERAL, "查询玩家僵尸末日详细数据", RS.get("resource.image.icon-zombie-head"), HypixelCommand::handleZombies));
         register(commands, new SubCommand("gs", Category.GENERAL, "全服小游戏在线情况", RS.get("resource.image.hypixel-header"), HypixelCommand::handleGameStatus));
@@ -110,14 +110,16 @@ public class HypixelCommand implements CommandExecutor {
         }
     }
 
-    public static final Object keyboard = TC.keyboard(
-            List.of(
-                    List.of(
-                            new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
-                            new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK)
-                    )
-            )
-    );
+    public static Object getMenuKeyBoard() {
+        return TC.keyboard(
+                List.of(
+                        List.of(
+                                new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
+                                new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK)
+                        )
+                )
+        );
+    }
 
     private static Markdown getSubCommands(QQCommandSender sender, Category category) {
         StringBuilder s = new StringBuilder();
@@ -135,7 +137,7 @@ public class HypixelCommand implements CommandExecutor {
         }
         for (var cmd : SUB_COMMANDS.values()) {
             if (cmd.category() != category) continue;
-            if (cmd.prefix().equals("ip") && !sender.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) continue;
+            if (cmd.prefix().equals("ip") && !sender.hasPermission("bot.skyblock.price")) continue;
             s.append("> ").append(Markdown.img(cmd.icon(), 16, 16)).append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmd.description())).append("\n");
         }
         return new Markdown(s.toString());
@@ -166,7 +168,7 @@ public class HypixelCommand implements CommandExecutor {
             user.sendMessage("未知的子命令，请使用 /hyp 查看可用的子命令列表");
             return true;
         }
-//        if (prefix.equals("ip") && !user.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) {
+//        if (prefix.equals("ip") && !user.hasPermission("bot.skyblock.price")) {
 //            user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
 //            return true;
 //        }
@@ -186,7 +188,7 @@ public class HypixelCommand implements CommandExecutor {
     }
 
     private static void sendMenu(QQCommandSender sender, Category category) {
-        sender.sendMessage(getSubCommands(sender, category), keyboard);
+        sender.sendMessage(getSubCommands(sender, category), getMenuKeyBoard());
     }
 
     private static void sendMissingPlayer(QQCommandSender sender) {
@@ -195,6 +197,14 @@ public class HypixelCommand implements CommandExecutor {
 
     private static boolean handleWizards(QQCommandSender user, String[] args) {
         return queryPlayer(user, args, OpenApi.get("bot.hypixel.tnt-wizards"), "wz");
+    }
+
+    private static boolean handleRecentGames(QQCommandSender user, String[] args) {
+        if (args.length > 1) {
+            user.sendMessage("用法: /hyp rg [玩家名或UUID]");
+            return true;
+        }
+        return queryPlayer(user, args, OpenApi.get("bot.hypixel.recent-games"), "rg");
     }
 
     private static boolean handleZombies(QQCommandSender user, String[] args) {
@@ -412,7 +422,7 @@ public class HypixelCommand implements CommandExecutor {
         }
 
 
-        if (!user.hasPermission(SkyblockPriceAlertService.USE_PERMISSION)) {
+        if (!user.hasPermission("bot.skyblock.price")) {
             user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
             return true;
         }

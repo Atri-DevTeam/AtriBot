@@ -46,6 +46,12 @@ public class Config {
     private String env;
     @Getter
     private String apiUrl;
+    /** Connect 接口签名密钥，至少 32 字节，留空时关闭接口 */
+    @Getter
+    private String connectSecret;
+    /** WebUI 必需的统一账号 UUID 白名单，仍需满足账号状态与管理员角色要求 */
+    @Getter
+    private volatile Set<UUID> webuiAllowedAccountUuids = Set.of();
     @Getter
     private boolean miniappEnabled;
     @Getter
@@ -220,6 +226,21 @@ public class Config {
             this.aiPropertiesMap = loadAiConfigs();
             this.env = yaml.getString("env", "production");
             this.apiUrl = yaml.getString("api-url", "http://localhost:1234");
+            this.connectSecret = yaml.getString("connect.secret", "");
+            this.webuiAllowedAccountUuids = Set.of();
+            Set<UUID> webuiAccounts = new HashSet<>();
+            for (String value : yaml.getStringList("webui.allowed-account-uuids")) {
+                try {
+                    UUID uuid = UUID.fromString(value.trim());
+                    if (!uuid.toString().equalsIgnoreCase(value.trim())) {
+                        throw new IllegalArgumentException("UUID 格式不完整");
+                    }
+                    webuiAccounts.add(uuid);
+                } catch (IllegalArgumentException e) {
+                    log.warn("忽略 WebUI 白名单中格式无效的统一账号 UUID: {}", value);
+                }
+            }
+            this.webuiAllowedAccountUuids = Set.copyOf(webuiAccounts);
             this.miniappEnabled = yaml.getBoolean("miniapp.enabled", true);
             this.dashboardEnabled = yaml.getBoolean("dashboard.enabled", false);
             this.dashboardBaseUrl = yaml.getString("dashboard.base-url", "");
@@ -362,8 +383,9 @@ public class Config {
         AiProperties props = new AiProperties();
         props.setApiKey(yaml.getString(prefix + ".api-key", ""));
         props.setBaseUrl(yaml.getString(prefix + ".base-url", ""));
-        props.setModel(yaml.getString(prefix + ".model", "deepseek-v4-pro"));
-        props.setTimeout(yaml.getInt(prefix + ".timeout", 30000000));
+        boolean imageProvider = prefix.equals("ai." + AiProvider.DEEPSEEK_IMAGE.getConfigKey());
+        props.setModel(yaml.getString(prefix + ".model", imageProvider ? "deepseek-flash" : "deepseek-v4-pro"));
+        props.setTimeout(yaml.getInt(prefix + ".timeout", imageProvider ? 60000 : 30000000));
 
         // 读取 YAML 中除标准字段外的所有额外字段，放入 extraBody
         YamlConfiguration.ConfigSection section = yaml.getSection(prefix);

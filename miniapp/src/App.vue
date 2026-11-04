@@ -9,7 +9,10 @@ import UserSettings from './components/UserSettings.vue'
 import NavigationDock from './components/NavigationDock.vue'
 import GroupManagement from './components/GroupManagement.vue'
 import AboutPage from './components/AboutPage.vue'
-import PriceAlerts from './components/PriceAlerts.vue'
+import SurveyPanel from './components/SurveyPanel.vue'
+import {surveyTarget, surveyPath, type SurveyTarget} from './surveys'
+import TicketsPage from './components/TicketsPage.vue'
+import MinecraftBinding from './components/MinecraftBinding.vue'
 import introIllustration from './assets/atri-main.png'
 import goldIcon from './assets/gold.png'
 
@@ -46,32 +49,40 @@ const loggingOut = ref(false)
 const logoutError = ref('')
 let logoutController: AbortController | undefined
 let disposed = false
-type Page = 'profile' | 'data' | 'groups' | 'prices' | 'about'
-const activePage = ref<Page>('profile')
+type Page = 'profile' | 'data' | 'groups' | 'tickets' | 'about'
+const currentSurvey = ref<SurveyTarget>(surveyTarget(new URL(window.location.href)))
+const activePage = ref<Page>(currentSurvey.value ? 'about' : 'profile')
 const groupsOpened = ref(false)
-const pricesOpened = ref(false)
-const canUsePrices = computed(() => profile.value?.skyblockPrice === true)
-watch(canUsePrices, allowed => {
-  if (!allowed) {
-    pricesOpened.value = false
-    if (activePage.value === 'prices') activePage.value = 'profile'
-  }
-})
-const scrollPositions: Record<Page, number> = {profile: 0, data: 0, groups: 0, prices: 0, about: 0}
+const scrollPositions: Record<Page, number> = {profile: 0, data: 0, groups: 0, tickets: 0, about: 0}
 
 async function selectPage(page: Page) {
   if (activePage.value === page || state.value.phase !== 'ready' || !revealed.value) return
-  if (page === 'prices' && !canUsePrices.value) return
   scrollPositions[activePage.value] = window.scrollY
+  if (currentSurvey.value) openSurvey(null)
   activePage.value = page
   if (page === 'groups') groupsOpened.value = true
-  if (page === 'prices') pricesOpened.value = true
   await nextTick()
   if (state.value.phase === 'ready' && activePage.value === page) window.scrollTo({
     top: scrollPositions[page],
     behavior: 'instant'
   })
 }
+
+function openSurvey(target: SurveyTarget) {
+  currentSurvey.value = target
+  activePage.value = 'about'
+  const url = new URL(window.location.href)
+  url.pathname = surveyPath(target)
+  window.history.pushState(null, '', url.pathname + url.search)
+  window.scrollTo({top: 0, behavior: 'instant'})
+}
+
+function restoreSurvey() {
+  currentSurvey.value = surveyTarget(new URL(window.location.href))
+  activePage.value = 'about'
+}
+onMounted(() => window.addEventListener('popstate', restoreSurvey))
+onBeforeUnmount(() => window.removeEventListener('popstate', restoreSurvey))
 
 const profileSettled = ref(false)
 const recordsSettled = ref(false)
@@ -296,7 +307,7 @@ onBeforeUnmount(() => {
             <Icon v-else name="bot"/>
           </div>
           <h1 class="bot-title"><span class="bot-name">{{ bot.name }}</span><span class="bot-subtitle">{{
-                activePage === 'data' ? '我的数据' : activePage === 'groups' ? '群管理' : activePage === 'prices' ? '价格提醒' : activePage === 'about' ? '关于' : '用户档案'
+                activePage === 'data' ? '我的数据' : activePage === 'groups' ? '群管理' : activePage === 'tickets' ? '工单' : activePage === 'about' ? currentSurvey ? '问卷填写' : '关于' : '用户档案'
             }}</span></h1>
         </div>
         <button v-if="state.phase === 'ready'" class="text-button profile-exit" :disabled="loggingOut" @click="logout">{{ loggingOut ? '退出中…' : '退出登录' }}</button>
@@ -375,8 +386,9 @@ onBeforeUnmount(() => {
             </div>
             <div>
               <dt>Minecraft 绑定</dt>
-              <dd class="mono" :class="{ muted: !profile?.account?.minecraftUuid }">
-                {{ accountValue(profile?.account?.minecraftUuid) }}
+              <dd :class="{ muted: !profile?.account?.minecraftUuid }">
+                <MinecraftBinding v-if="profile?.account?.minecraftUuid" :uuid="profile.account.minecraftUuid" :request="readPrivate"/>
+                <template v-else>{{ accountValue(profile?.account?.minecraftUuid) }}</template>
               </dd>
             </div>
           </dl>
@@ -390,7 +402,7 @@ onBeforeUnmount(() => {
 
     <main v-if="state.phase === 'ready'" v-show="activePage === 'data'" id="data-page" class="dashboard data-page"
           :inert="!revealed || activePage !== 'data'" :aria-hidden="!revealed || activePage !== 'data'">
-      <header class="page-heading"><div><p class="page-eyebrow">统计记录</p><h2>我的数据</h2></div><p>互动记录与小游戏成绩</p></header>
+      <header class="page-heading"><div><p class="page-eyebrow">统计记录</p><h2>我的数据</h2></div><p>互动记录、物品卡与小游戏成绩</p></header>
       <section class="detail-card glass activity-card">
         <header class="section-heading">
           <div><span class="section-icon"><Icon name="message"/></span>
@@ -444,13 +456,14 @@ onBeforeUnmount(() => {
     </main>
     <main v-if="state.phase === 'ready'" v-show="activePage === 'about'" id="about-page" class="about-page"
           :inert="activePage !== 'about'" :aria-hidden="activePage !== 'about'">
-      <AboutPage :bot="bot" :request="readPrivate" :active="activePage === 'about'" @copy="copyText"/>
+      <SurveyPanel v-if="currentSurvey" :target="currentSurvey" :active="activePage === 'about'" :request="readPrivate" :post="writePrivate" @open="openSurvey"/>
+      <AboutPage v-else :bot="bot" :request="readPrivate" :active="activePage === 'about'" @copy="copyText" @surveys="openSurvey('list')"/>
     </main>
-    <main v-if="state.phase === 'ready' && canUsePrices" v-show="activePage === 'prices'" id="prices-page" class="groups-page"
-          :inert="activePage !== 'prices'" :aria-hidden="activePage !== 'prices'">
-      <PriceAlerts v-if="pricesOpened" :request="readPrivate" :post="writePrivate" :image="path => session.image(path)"/>
+    <main v-if="state.phase === 'ready'" v-show="activePage === 'tickets'" id="tickets-page" class="groups-page"
+          :inert="activePage !== 'tickets'" :aria-hidden="activePage !== 'tickets'">
+      <TicketsPage :active="activePage === 'tickets'" :request="readPrivate" :post="writePrivate"/>
     </main>
-    <NavigationDock v-if="state.phase === 'ready' && revealed" :active="activePage" :can-use-prices="canUsePrices" @select="selectPage"/>
+    <NavigationDock v-if="state.phase === 'ready' && revealed" :active="activePage" @select="selectPage"/>
 
     <main v-if="state.phase === 'expired'" class="entry-layout" aria-live="polite">
       <section class="entry-card glass">

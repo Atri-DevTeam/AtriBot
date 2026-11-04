@@ -7,7 +7,6 @@ import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.chat.official.media.HexColor;
-import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
@@ -46,8 +45,10 @@ public class ItemCommand implements CommandExecutor {
             }
 //            qq.sendMessage(ImageComponent.imageOf(d.image().url()));
 
-            var loots = LootRepository.getLoots(qq.getUserId());
+            var loots = LootRepository.getLoots(qq.getUserId()).stream()
+                    .filter(loot -> !loot.special()).toList();
             Set<String> catalogItemIds = LootService.getCatalog(false).stream()
+                    .filter(item -> !item.special())
                     .map(LootService.LootCatalogItem::itemId).collect(Collectors.toSet());
 
             // 收集进度 xx.xx%

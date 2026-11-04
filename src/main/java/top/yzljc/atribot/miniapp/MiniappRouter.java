@@ -75,7 +75,8 @@ public final class MiniappRouter {
                          MiniappGroupService groups, MiniappModerationService moderation) {
         server.before("/atrimeow/profile", ctx -> guard(ctx, enabled));
         server.before("/atrimeow/profile/*", ctx -> guard(ctx, enabled));
-        MiniappPriceAlertRoutes.register(server, sessions);
+        MiniappTicketRoutes.register(server, sessions);
+        MiniappSurveyRoutes.register(server, sessions);
         registerSettings(server, sessions);
         registerGroupSettings(server, sessions, groups);
         registerGroupCommands(server, sessions, top.yzljc.atribot.command.CommandSettingsService.INSTANCE);
@@ -107,6 +108,20 @@ public final class MiniappRouter {
                     MiniappProfileService.avatarUrl(CoreConfig.getInstance().getSettings().getQqAppId(), config.getSuperAdminId())));
         });
         server.get("/atrimeow/profile/api/profile", ctx -> ctx.json(profiles.apply(requireIdentity(ctx, sessions))));
+        var minecraft = new top.yzljc.atribot.miniapp.service.MiniappMinecraftService();
+        server.get("/atrimeow/profile/api/minecraft", ctx -> {
+            var identity = requireIdentity(ctx, sessions);
+            ctx.future(() -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    var result = minecraft.load(identity.userId());
+                    requireIdentity(ctx, sessions);
+                    ctx.json(result);
+                } catch (java.sql.SQLException e) {
+                    org.slf4j.LoggerFactory.getLogger(MiniappRouter.class).warn("Minecraft 绑定记录读取失败", e);
+                    ctx.status(502).json(Map.of("error", "MINECRAFT_PROFILE_UNAVAILABLE"));
+                }
+            }, top.yzljc.atricore.service.runtime.ThreadManager.getExecutor()));
+        });
         server.get("/atrimeow/profile/api/activity", ctx -> ctx.json(activity.load(requireIdentity(ctx, sessions))));
         server.get("/atrimeow/profile/api/groups", ctx -> {
             var identity = requireIdentity(ctx, sessions);

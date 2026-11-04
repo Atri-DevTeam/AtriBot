@@ -52,6 +52,7 @@ public class Properties {
     public static final String USERS_LISTED = "data/users-listed.txt";
 
     public static final String GROUP_MODERATION_CONFIG = "data/group-moderation.json";
+    public static final String IMAGE_AI_REVIEW_SETTINGS = "data/image-ai-review.json";
 
     public static final String JOIN_WELCOME_DEFAULTS = "data/join-welcome-defaults.json";
 

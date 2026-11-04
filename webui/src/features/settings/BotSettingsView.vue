@@ -3,7 +3,7 @@
             :bot-open-id="profile.openId || ''"
             :bot-name="profile.botName || 'AtriBot'">
 
-    <main class="workspace">
+    <main class="workspace bot-settings-workspace">
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
@@ -22,7 +22,7 @@
         <div class="bot-settings-page">
 
           <!-- 机器人信息 -->
-          <div class="errors-surface bs-card bs-profile-card">
+          <div class="bs-card bs-profile-card">
             <div class="bs-profile">
               <img v-if="profile.avatarUrl" class="bs-avatar" :src="profile.avatarUrl" alt="机器人头像"
                    referrerpolicy="no-referrer" @error="profile.avatarUrl = ''"/>
@@ -32,6 +32,7 @@
               <div class="bs-profile-main">
                 <div class="bs-profile-name-row">
                   <span class="bs-profile-name">{{ profile.botName || 'AtriBot' }}</span>
+                  <span class="bs-profile-caption">机器人资料</span>
                   <span class="bs-badge" :class="isDevEnv ? 'bs-badge--sandbox' : 'bs-badge--prod'">{{ envText }}</span>
                   <span v-if="profile.apiSandbox" class="bs-badge bs-badge--mode">沙箱 API</span>
                   <span class="bs-badge bs-badge--mode">{{ connectionModeText }}</span>
@@ -121,16 +122,16 @@
           </div>
 
           <!-- 基础设置 -->
-          <div class="errors-surface bs-card">
+          <div class="bs-card bs-basics-card">
             <header class="bs-card-head">
-              <h3 class="bs-card-title">基础设置</h3>
+              <h3 class="bs-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></svg>基础设置</h3>
               <p class="bs-card-desc">机器人后端配置</p>
             </header>
 
             <div v-if="settingsLoading" class="empty-state">加载中...</div>
             <div v-else-if="settingsError" class="empty-state error">{{ settingsError }}</div>
             <template v-else>
-              <div v-for="item in settingItems" :key="item.key" class="bs-setting-row">
+              <div v-for="item in settingItems" :key="item.key" class="bs-setting-row" :class="{'bs-setting-row--input': item.type !== 'boolean'}">
                 <div class="bs-setting-info">
                   <span class="bs-setting-label">
                     {{ item.label }}
@@ -144,7 +145,7 @@
                           @click="drafts[item.key] = !drafts[item.key]"><span class="nt-switch-knob"/></button>
                   <input v-else v-model="drafts[item.key]" class="bs-input"
                          :type="item.type === 'int' ? 'number' : 'text'"
-                         :placeholder="item.label"/>
+                         :placeholder="item.label" :aria-label="item.label"/>
                 </div>
               </div>
 
@@ -158,13 +159,13 @@
             </template>
           </div>
 
-          <details class="errors-surface bs-card bs-welcome-card">
-            <summary class="bs-card-head bs-welcome-summary">
+          <details class="bs-card bs-disclosure">
+            <summary class="bs-card-head bs-disclosure-summary">
               <div>
-              <h3 class="bs-card-title">默认加群欢迎</h3>
+              <h3 class="bs-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H3l2-5a8.5 8.5 0 1 1 16-3.5Z"/><path d="M8 10h8M8 14h5"/></svg>默认加群欢迎</h3>
               <p class="bs-card-desc">按机器人权限身份配置欢迎正文、图片和按钮</p>
               </div>
-              <svg class="bs-welcome-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+              <svg class="bs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
             </summary>
             <DefaultJoinWelcomeSettings ref="welcomePanel" :api="api" :bot-name="profile.botName"
                                         :bot-avatar-url="profile.avatarUrl"
@@ -172,9 +173,9 @@
           </details>
 
           <!-- 面板设置 -->
-          <div class="errors-surface bs-card">
+          <div class="bs-card bs-panel-card">
             <header class="bs-card-head">
-              <h3 class="bs-card-title">面板设置</h3>
+              <h3 class="bs-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M9 9v11"/></svg>面板设置</h3>
               <p class="bs-card-desc">WebUI 面板的个性化选项</p>
             </header>
 
@@ -217,23 +218,31 @@
             <OrphanedRecordCleanup ref="friendCleanupPanel" kind="friend" :api="api"/>
           </div>
 
+
+
           <!-- 指令管理 -->
-          <div class="errors-surface bs-card bs-command-card">
-            <header class="bs-card-head">
-              <h3 class="bs-card-title">指令管理</h3>
+          <details class="bs-card bs-command-card bs-disclosure">
+            <summary class="bs-card-head bs-disclosure-summary">
+              <div>
+              <h3 class="bs-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 7 5 5-5 5M13 17h6"/></svg>指令管理</h3>
               <p class="bs-card-desc">管理指令及群聊高级停用规则，生效期间锁定个人面板中的对应设置</p>
-            </header>
+              </div>
+              <svg class="bs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+            </summary>
             <CommandSettingsPanel ref="commandPanel" :api="api"/>
-          </div>
+          </details>
 
           <!-- 功能配置 -->
-          <div class="errors-surface bs-card bs-function-card">
-            <header class="bs-card-head">
-              <h3 class="bs-card-title">功能配置</h3>
+          <details class="bs-card bs-function-card bs-disclosure">
+            <summary class="bs-card-head bs-disclosure-summary">
+              <div>
+              <h3 class="bs-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M17.5 14v7M14 17.5h7"/></svg>功能配置</h3>
               <p class="bs-card-desc">设置推送任务的临时停用范围和生效时间</p>
-            </header>
+              </div>
+              <svg class="bs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+            </summary>
             <FunctionSettingsPanel ref="functionPanel" :api="api"/>
-          </div>
+          </details>
 
         </div>
       </section>

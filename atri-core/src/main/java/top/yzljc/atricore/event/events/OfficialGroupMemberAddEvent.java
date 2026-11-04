@@ -6,6 +6,7 @@ import lombok.Getter;
 import top.yzljc.atricore.auth.official.UnifiedRole;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
@@ -26,6 +27,17 @@ public class OfficialGroupMemberAddEvent extends Event {
     private final String groupOpenId;
     private final String memberOpenId;
     private final String timestamp;
+
+    /**
+     * 使用成员加入事件 ID，向当前群发送被动卡片回复
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(Card card) {
+        return GroupChat.replyMessage(groupOpenId, RT.event(eventId), card);
+    }
 
     /**
      * 被动消息回复 - 纯文本消息

@@ -111,6 +111,16 @@
               <div class="chatnt-head-sub">{{ active.type === 'group' ? '群聊' : '私聊' }} · {{ active.openId }}</div>
             </div>
             <span class="status-pill"><span class="dot ok"></span>{{ totalMessages }} 条</span>
+            <button v-if="active.type === 'group'" class="chatnt-members-btn" :class="{active: selectingMessages}"
+                    title="多选消息" aria-label="多选消息" :aria-pressed="selectingMessages"
+                    :disabled="recallingSelection"
+                    @click="selectingMessages ? resetMessageSelection() : startMessageSelection()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <path d="m7 12 3 3 7-7"/>
+              </svg>
+            </button>
             <!-- 侧栏按钮：手机和桌面都靠点击展开，不做常驻 -->
             <button v-if="active.type === 'group'" class="chatnt-members-btn"
                     :class="{ active: panel === 'members' }" title="群成员" aria-label="群成员"
@@ -153,9 +163,20 @@
                 <article v-for="message in orderedMessages" :key="message.id"
                          :data-message-id="message.id"
                          class="qm"
-                         :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id, 'qm-arriving': arrivingMessageIds.has(message.id) }"
+                         :class="{ mine: isMe(message), highlighted: highlightedMessageId === message.id, 'qm-arriving': arrivingMessageIds.has(message.id), 'qm-selecting': selectingMessages, 'qm-selected': selectingMessages && selectedMessageIds.has(message.messageOpenId) }"
+                         @click.capture="onSelectionClick($event, message)"
                          @animationend.self="arrivingMessageIds.delete(message.id)">
-                <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)">
+                  <button v-if="selectingMessages" type="button" class="qm-select" role="checkbox"
+                          :aria-label="`选择消息 ${message.id}`"
+                          :aria-checked="selectedMessageIds.has(message.messageOpenId)"
+                          :disabled="recallingSelection || !canSelectMessage(message)">
+                    <svg v-if="selectedMessageIds.has(message.messageOpenId)" width="12" height="12" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                      <path d="m5 12 4 4L19 6"/>
+                    </svg>
+                  </button>
+                  <span class="qm-avatar" title="点击显示/隐藏 ID" @click="toggleUid(message.id)"
+                        @contextmenu.prevent.stop="onContextMenu($event, message, 'avatar')">
                   <span>{{ avatarText(message) }}</span>
                   <img v-if="avatarUrl(message) && !avatarFailed[message.id]"
                        :src="avatarUrl(message)" :alt="message.username"
@@ -178,7 +199,7 @@
                       <span v-if="displayUid(message)" class="qm-uid">{{ displayUid(message) }}</span>
                     </div>
                     <div v-chat-image-layout class="qm-bubble"
-                         :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message) }"
+                         :class="{ recalled: recalledIds[message.messageOpenId], 'qm-bubble--forward': !recalledIds[message.messageOpenId] && forwardRecord(message), 'qm-bubble--card': !recalledIds[message.messageOpenId] && hasCard(message) }"
                          @contextmenu.prevent.stop="onContextMenu($event, message)">
                       <pre v-if="recalledIds[message.messageOpenId]">{{
                           isMe(message) ? '你撤回了一条消息' : '该消息已被撤回'
@@ -286,12 +307,31 @@
             </Transition>
           </div>
 
-          <div v-if="replyTo" class="chatnt-replybar">
+          <div v-if="replyTo && !selectingMessages" class="chatnt-replybar">
             <span>已选 {{ replyTo.username || '...' }}：{{ replyPreview }}</span>
             <button aria-label="取消选择消息" @click="cancelReply">×</button>
           </div>
 
-          <form class="chatnt-composer" @submit.prevent="sendMessage">
+          <div v-if="selectingMessages" class="chatnt-selection-bar">
+            <span class="chatnt-selection-count" role="status">{{
+                recallingSelection ? `正在撤回 ${recallProgress.done}/${recallProgress.total}` : `已选择 ${selectedMessageIds.size} 条消息`
+              }}</span>
+            <div class="chatnt-selection-actions">
+              <button type="button" :disabled="recallingSelection || !selectableMessages.length"
+                      @click="toggleSelectLoadedMessages">{{ allLoadedSelected ? '取消全选' : '全选已加载' }}
+              </button>
+              <button type="button" :disabled="recallingSelection" @click="resetMessageSelection">取消</button>
+              <button type="button" class="chatnt-selection-recall"
+                      :disabled="recallingSelection || !selectedMessageIds.size" @click="recallSelectedMessages">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 5 3 11l6 6M3 11h11a6 6 0 0 1 6 6v2"/>
+                </svg>
+                {{ recallingSelection ? '撤回中…' : '撤回' }}
+              </button>
+            </div>
+          </div>
+          <form v-show="!selectingMessages" class="chatnt-composer" @submit.prevent="sendMessage">
             <div class="chatnt-tools" tabindex="0" aria-label="消息类型与发送方式，可左右滑动">
               <div class="chatnt-type">
                 <label :class="{ active: msgType === 'text' }"><input type="radio" v-model="msgType" value="text"/>文本</label>
@@ -764,7 +804,8 @@
                                 :debug-group-id="debugGroupId" :request="api"
                                 @enabled-change="syncWelcomeEnabled"/>
               <GroupModerationPanel v-else-if="panel === 'moderation' && active.type === 'group'"
-                                    :key="`moderation:${active.openId}`" ref="moderationPanelRef" :group-open-id="active.openId"
+                                    :key="`moderation:${active.openId}`" ref="moderationPanelRef"
+                                    :group-open-id="active.openId"
                                     :request="api"/>
 
               <!-- ═══ 单用户设置 ═══ -->
@@ -781,26 +822,32 @@
     </main>
 
     <div v-if="ctxMenu.visible" class="ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }">
-      <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户
-      </button>
-      <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click="openProfile(ctxMenu.message.unionOpenId, ctxMenu.message.username); ctxMenu.visible = false">用户设置
-      </button>
-      <!-- 禁言不做身份预判：机器人没权限时接口会报错，直接把错误甩给用户看 -->
-      <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言
-      </button>
-      <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
-              @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言
-      </button>
-      <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">选择</button>
-      <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
-      <!-- 别人的消息也给撤回入口，能不能撤由官方接口判定，前端不预判权限 -->
-      <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
-              class="ctx-recall"
-              @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回
-      </button>
+      <template v-if="ctxMenu.target === 'avatar'">
+        <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+                @click="atUser(ctxMenu.message); ctxMenu.visible = false">@ 用户
+        </button>
+        <button v-if="!isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+                @click="openProfile(ctxMenu.message.unionOpenId, ctxMenu.message.username); ctxMenu.visible = false">
+          用户设置
+        </button>
+        <!-- 禁言不做身份预判：机器人没权限时接口会报错，直接把错误甩给用户看 -->
+        <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+                @click.stop="openMutePanel(ctxMenu.message); ctxMenu.visible = false">禁言
+        </button>
+        <button v-if="active && active.type === 'group' && !isMe(ctxMenu.message) && ctxMenu.message.unionOpenId"
+                @click.stop="unmuteMember(ctxMenu.message); ctxMenu.visible = false">解除禁言
+        </button>
+      </template>
+      <template v-else>
+        <button @click="selectReplyTarget(ctxMenu.message); ctxMenu.visible = false">选择</button>
+        <button @click="copyText(ctxMenu.message.content); ctxMenu.visible = false">复制</button>
+        <button v-if="active?.type === 'group'" @click="startMessageSelection(ctxMenu.message)">多选</button>
+        <!-- 别人的消息也给撤回入口，能不能撤由官方接口判定，前端不预判权限 -->
+        <button v-if="!recalledIds[ctxMenu.message.messageOpenId]"
+                class="ctx-recall"
+                @click="recallMsg(ctxMenu.message); ctxMenu.visible = false">撤回
+        </button>
+      </template>
     </div>
 
     <div v-if="previewImg || previewVideo" class="lightbox" @click="closePreview">
@@ -1040,8 +1087,17 @@ let noticeTimer = null
 const sidebarOpen = ref(false)
 const previewImg = ref(null)
 const previewVideo = ref(null)
-const ctxMenu = reactive({visible: false, x: 0, y: 0, message: null})
+const ctxMenu = reactive({visible: false, x: 0, y: 0, message: null, target: 'message'})
 const recalledIds = reactive({})
+const selectingMessages = ref(false)
+const selectedMessageIds = reactive(new Set())
+const recallingSelection = ref(false)
+const recallProgress = reactive({done: 0, total: 0})
+let recallSelectionVersion = 0
+const selectableMessages = computed(() => messages.value.filter(canSelectMessage))
+const allLoadedSelected = computed(() => selectableMessages.value.length > 0
+    && selectableMessages.value.every(message => selectedMessageIds.has(message.messageOpenId)))
+watch(() => active.value ? `${active.value.type}:${active.value.openId}` : null, resetMessageSelection, {flush: 'sync'})
 const avatarFailed = reactive({})
 const attachFailed = reactive({})
 // 手机端点头像展开 ID（PC 端 ID 常驻，这个状态不参与）
@@ -1218,6 +1274,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  resetMessageSelection()
   // 先失效异步回调，再释放连接和定时器，避免请求完成后重新调度。
   disposed = true
   convLoadSeq++
@@ -1421,7 +1478,11 @@ async function loadMoreConversations() {
   const generation = conversationGeneration
   loadingMoreConvs.value = true
   try {
-    const params = new URLSearchParams({limit: String(CONV_LIST_PAGE_SIZE), offset: String(nonPinnedLoadedCount.value), q: search.value.trim()})
+    const params = new URLSearchParams({
+      limit: String(CONV_LIST_PAGE_SIZE),
+      offset: String(nonPinnedLoadedCount.value),
+      q: search.value.trim()
+    })
     const data = await api(`/chat/conversations?${params}`)
     if (disposed || generation !== conversationGeneration) return
     const existing = new Set(conversations.value.map(convKey))
@@ -1632,7 +1693,8 @@ async function openConversation(c) {
     const params = new URLSearchParams({type: c.type, openId: c.openId})
     api(`/chat/conversation?${params}`).then(value => {
       if (!disposed && isActive(c) && value) selectedConversation.value = value
-    }).catch(() => {})
+    }).catch(() => {
+    })
   }
   resetProfile()
   messageScroller.cancel()
@@ -2689,7 +2751,11 @@ watch(msgType, () => {
 
 // ═══════════════ 消息操作 ═══════════════
 
-function onContextMenu(e, message) {
+function onContextMenu(e, message, target = 'message') {
+  ctxMenu.visible = false
+  if (selectingMessages.value) return
+  if (target === 'avatar' && (isMe(message) || !message.unionOpenId)) return
+  ctxMenu.target = target
   ctxMenu.visible = true
   ctxMenu.x = e.clientX
   ctxMenu.y = e.clientY
@@ -2827,6 +2893,79 @@ async function unmuteMember(message) {
     showNotice(`已解除 ${target} 的禁言`)
   } catch (error) {
     showNotice(error.message || '解除禁言失败')
+  }
+}
+
+function canSelectMessage(message) {
+  return !!message.messageOpenId && !recalledIds[message.messageOpenId]
+}
+
+function resetMessageSelection() {
+  recallSelectionVersion++
+  selectingMessages.value = false
+  recallingSelection.value = false
+  selectedMessageIds.clear()
+}
+
+function startMessageSelection(message) {
+  if (active.value?.type !== 'group' || recallingSelection.value) return
+  selectingMessages.value = true
+  ctxMenu.visible = false
+  if (message && canSelectMessage(message)) selectedMessageIds.add(message.messageOpenId)
+}
+
+function onSelectionClick(event, message) {
+  if (!selectingMessages.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (recallingSelection.value || !canSelectMessage(message)) return
+  const id = message.messageOpenId
+  if (selectedMessageIds.has(id)) selectedMessageIds.delete(id)
+  else selectedMessageIds.add(id)
+}
+
+function toggleSelectLoadedMessages() {
+  if (recallingSelection.value) return
+  const remove = allLoadedSelected.value
+  for (const message of selectableMessages.value) {
+    if (remove) selectedMessageIds.delete(message.messageOpenId)
+    else selectedMessageIds.add(message.messageOpenId)
+  }
+}
+
+async function recallSelectedMessages() {
+  if (active.value?.type !== 'group' || recallingSelection.value || !selectedMessageIds.size) return
+  const ids = [...selectedMessageIds].filter(id => !recalledIds[id])
+  if (!ids.length || !confirm(`确认撤回选中的 ${ids.length} 条消息吗？`)) return
+  const groupOpenId = active.value.openId
+  const version = recallSelectionVersion
+  recallingSelection.value = true
+  recallProgress.done = 0
+  recallProgress.total = ids.length
+  let success = 0
+  let failed = 0
+  let reason = ''
+  try {
+    // 并发提交，由 core 限速；固定原群 ID，切换会话后不再更新当前页面
+    await Promise.all(ids.map(async messageId => {
+      try {
+        await api('/groups/recall', {method: 'POST', body: JSON.stringify({groupOpenId, messageId})})
+        if (version !== recallSelectionVersion || disposed) return
+        recalledIds[messageId] = true
+        selectedMessageIds.delete(messageId)
+        success++
+      } catch (error) {
+        if (version !== recallSelectionVersion || disposed) return
+        failed++
+        if (!reason) reason = error.message || '撤回失败'
+      }
+      recallProgress.done++
+    }))
+    if (version !== recallSelectionVersion || disposed) return
+    if (!selectedMessageIds.size) resetMessageSelection()
+    showNotice(failed ? `已撤回 ${success} 条，失败 ${failed} 条：${reason}` : `已撤回 ${success} 条消息`)
+  } finally {
+    if (version === recallSelectionVersion) recallingSelection.value = false
   }
 }
 

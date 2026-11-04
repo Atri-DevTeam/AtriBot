@@ -161,18 +161,18 @@ public class SignCommand implements CommandExecutor, Listener {
 
             if (SignRepository.isInSettlementWindow()) {
                 if (label == 1) {
-                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), TC.md("打卡结算中，暂时无法打卡哦！"));
+                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), "打卡结算中，暂时无法打卡哦！");
                 } else {
-                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), userOpenId, TC.md("打卡结算中，暂时无法打卡哦！"));
+                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), "打卡结算中，暂时无法打卡哦！");
                 }
                 return;
             }
 
             if (SignRepository.hasCheckedInToday(userOpenId)) {
                 if (label == 1) {
-                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), TC.md("你今天已经打过卡了哦！"));
+                    C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), "你今天已经打过卡了哦！");
                 } else {
-                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), userOpenId, TC.md("你今天已经打过卡了哦！"));
+                    GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), "你今天已经打过卡了哦！");
                 }
                 return;
             }
@@ -189,17 +189,24 @@ public class SignCommand implements CommandExecutor, Listener {
                                 ((d == null || d.url() == null) ? "" : Markdown.img(d.url(), d.w(), d.h()) + "\n\n") +
                                 (!isNewUser ? ("叮！你是第 " + SignRepository.getTotalUserCount() + " 位来报到的新朋友～") : "") + "\n" +
                                 "> 收集自网络，可联系删除 " + Markdown.enterCommand("/submit ", "投稿图片") + "\n" +
-                                "> 你已累计打卡**" + result.totalCount() + "**次！\n" +
+                                "> 你已打卡**" + result.totalCount() + "**次，连续打卡**" + result.consecutiveCount() + "**天！\n" +
                                 "> 今天已有**" + result.rank() + "**人参与了打卡！\n" +
-                                "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + " " + Markdown.link("https://www.yzljc.top/atribot/#sign", "排行榜"));
+                                "> " + Markdown.img(RS.get("resource.image.gold"), 16, 16) + "+ " + result.coins() + "金粒   " + Markdown.enterCommand("/golds", "查看总数") + " " + Markdown.link("https://www.yzljc.top/atribot/#sign", "排行榜") + "\n" +
+                                "> " + Markdown.link("https://bot.yzljc.top/dashboard/surveys/d14e26ce7104?_wwv=9983&qq=1", "✨有想法或建议？欢迎提给开发者")
+                );
             }
 
             Object buttons = TC.keyboard(List.of(
-                    List.of(new Button("c1", "今日打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                            new Button("c3", "每日钓鱼", "/fish", true, ButtonStyle.BLUE, ButtonType.COMMAND),
-                            new Button("c2", "MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND))
+                    List.of(new Button("c1", "打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("c3", "钓鱼", "/fish", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("c2", "MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                            new Button("c4", "任意门", "/door", true, ButtonStyle.RED, ButtonType.COMMAND)
+                    ),
+                    List.of(
+                            new Button("c6", "\uD83D\uDCCC 今日问题", "/question", true, ButtonStyle.RED, ButtonType.COMMAND),
+                            new Button("c5", "\uD83E\uDDE8 春节倒计时", "/newyear", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND)
                     )
-            );
+            ));
 
             if (label == 1) {
                 C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), md, buttons);

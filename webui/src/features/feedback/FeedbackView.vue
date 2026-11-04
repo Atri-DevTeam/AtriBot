@@ -11,11 +11,12 @@
           </button>
           <h2>工单管理</h2>
         </div>
-        <button class="icon-button" aria-label="刷新工单" title="刷新" :disabled="loading || loadingCounts"
+        <button class="icon-button ticket-refresh" aria-label="刷新工单" title="刷新"
+                :disabled="loading || loadingCounts"
                 @click="refresh">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/>
+            <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.8L21 8M21 3v5h-5"/>
           </svg>
         </button>
       </header>

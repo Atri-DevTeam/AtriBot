@@ -478,7 +478,7 @@ public class UnifiedAccountRepository {
     /**
      * 仅为用户名为空的账号写入昵称
      *
-     * @param uuid 统一账号 UUID
+     * @param uuid     统一账号 UUID
      * @param username 已验证平台提供的昵称
      * @return 写入成功返回 true，已有用户名或参数无效时返回 false
      * @throws SQLException 数据库操作失败
@@ -492,8 +492,8 @@ public class UnifiedAccountRepository {
     /**
      * 使用数据库条件更新保证已有用户名不会被覆盖
      *
-     * @param con 数据库连接，由调用方关闭
-     * @param uuid 统一账号 UUID
+     * @param con      数据库连接，由调用方关闭
+     * @param uuid     统一账号 UUID
      * @param username 已验证平台提供的昵称
      * @return 写入成功返回 true，已有用户名或参数无效时返回 false
      * @throws SQLException 数据库操作失败

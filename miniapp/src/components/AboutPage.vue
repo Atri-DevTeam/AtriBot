@@ -6,7 +6,7 @@ import type {PrivateRequest} from '../activity'
 import type {Profile} from '../profile'
 
 const props = defineProps<{ bot: Profile['bot']; request: PrivateRequest; active: boolean }>()
-const emit = defineEmits<{ copy: [value: string, label: string] }>()
+const emit = defineEmits<{ copy: [value: string, label: string]; surveys: [] }>()
 const about = shallowRef<About | null>(null)
 const loading = ref(false)
 const error = ref(false)
@@ -57,6 +57,14 @@ function value(text: string | null | undefined) {
       <h2 id="about-title">{{ bot.name }}</h2>
       <p>关于本机器人的一些信息</p>
       <span class="about-version">版本 {{ loading && !about ? '读取中…' : value(about?.version) }}</span>
+    </section>
+
+    <section class="about-section glass" aria-label="参与调查">
+      <button class="about-link" type="button" @click="emit('surveys')">
+        <span class="about-link-icon"><Icon name="message"/></span>
+        <span class="about-link-text"><strong>问卷填写</strong><small>参与问卷调查，查看我的答卷</small></span>
+        <Icon name="external"/>
+      </button>
     </section>
 
     <section class="about-section glass" aria-labelledby="version-title" :aria-busy="loading">

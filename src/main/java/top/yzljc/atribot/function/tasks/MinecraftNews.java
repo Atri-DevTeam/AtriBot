@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
-import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ArticleScraper;
 import top.yzljc.atribot.function.impl.AtriNewsSummarizer;
@@ -27,7 +26,6 @@ import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
-import top.yzljc.atricore.platform.Identifier;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.service.request.OpenApi;
 import top.yzljc.atricore.service.runtime.ThreadManager;
@@ -51,7 +49,7 @@ import top.yzljc.sakuraba_ema.utils.ForumCode;
  * @Package top.yzljc.atribot.function.tasks
  * @Description 抓取并总结 Minecraft 新闻，审查文本后生成图片推送
  */
-public final class MinecraftNews implements CommandExecutor, ScheduledTask {
+public final class MinecraftNews implements ScheduledTask {
 
     private static final Logger log = LoggerFactory.getLogger(MinecraftNews.class);
 
@@ -65,21 +63,6 @@ public final class MinecraftNews implements CommandExecutor, ScheduledTask {
     private static final Set<String> pushedArticleIds = new HashSet<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-
-        if (!(sender instanceof QQCommandSender nc)) return true;
-//        if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mc_news")) return true;
-
-        if (!nc.hasPermission()) {
-            nc.sendMessage(Identifier.NO_PERMISSION);
-            return true;
-        }
-
-        ThreadManager.execute(() -> checkNews(true));
-        nc.sendMessage("正在手动检查 Minecraft 最新资讯...");
-        return true;
-    }
 
     public static synchronized void checkNews(boolean isManualTrigger) {
         try {

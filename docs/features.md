@@ -13,6 +13,7 @@
 | 提醒 | 两步提醒设置与定时引用 | [function/reminder](../src/main/java/top/yzljc/atribot/function/reminder) |
 | 游戏与签到 | 签到、抽卡、扫雷及其他游戏 | [function/games](../src/main/java/top/yzljc/atribot/function/games)、[function/command](../src/main/java/top/yzljc/atribot/function/command) |
 | Minecraft 音效 | 听音辨物、资源索引与答题 | [SoundCommand](../src/main/java/top/yzljc/atribot/function/command/SoundCommand.java)、[games/sound](../src/main/java/top/yzljc/atribot/function/games/sound) |
+| 问卷调查 | 管理问卷、填写、答卷查看与登录返回 | [问卷调查](surveys.md) |
 | 群聊 AI | Napcat 群内会话 | [AtriChat](../src/main/java/top/yzljc/atribot/function/utils/AtriChat.java) |
 | 图片及资料审查 | 生图、转存、皮肤和名字审查 | [图片与业务接口](integrations/images.md) |
 | 频道第二账号 | 频道内容、成员与通知操作 | [QQ 频道第二账号](integrations/tencent-channel.md) |
@@ -37,14 +38,6 @@ QQ 官方私聊发送 `提醒 <时间或周期>`，由 AI 解析时间，再发�
 `提醒列表` 使用 Markdown 显示任务 ID、状态和时间，每项提供「开启」「关闭」「删除」按钮。也可发送 `提醒列表 删除 <任务ID>`，支持带或不带 `/`。关闭保留任务，删除释放任务名额。再次开启周期任务时跳过已错过的周期，过期的一次性任务需要重新设置。旧的单次输入创建、修改及 `自定义提醒` 入口已移除
 
 默认每人最多保留 10 项任务，每 30 分钟最多发起 30 次设置请求；`test.reminder.unlimit` 豁免这两项限制。沿用现有提醒表，无需修改数据库结构
-
-## SkyBlock 价格提醒
-
-官机私聊用户使用 `/dash` 或 `/dashboard` 打开个人中心，在「价格提醒」中搜索物品，选择报价类型、目标价格及「低于或等于」「高于或等于」条件。支持集市即时买卖、买卖订单和拍卖最低单价，每人最多保存 20 条提醒，可编辑、暂停、删除或重新启用
-
-总开关沿用 `skyblock_price_alert` 私聊推送配置。每 15 分钟按物品变体合并查询已有行情，过期、不可用和缺失报价不触发提醒；每份新行情符合条件时发送一次，同一行情不重复发送，规则持续生效。点击提醒底部的「停用当前规则」，或在官机私聊发送 `/preferences skyblock_price disable <规则ID>`，可停用本人对应规则。好友移除、账号受限、主动消息关闭或全局停用时停止发送，原配置保留
-
-提醒保存在 `bot_userdata.user_settings.skyblock_price_alerts`，不新增表。保存配置不依赖当前行情。搜索及提醒列表异步加载共享图标，同一物品复用加载结果；UGC 在本地目录及 COS 长期保存小图，Miniapp 经 API 读取，官机通知优先使用 COS 地址。搜索名称按品质着色，市场显示为 `Auction House` 或 `Bazaar`。管理员可发送测试提醒，测试不改变配置和完成状态
 
 ## 随机附魔
 
@@ -107,6 +100,23 @@ QQ 官方群聊、私聊使用 `/fish`、`/今日钓鱼` 或无前缀的 `今日
 `user_game_stat_events` 按游戏、事件和用户去重，多人记录使用同一事务。该表同时包含操作、开局和结算事件，不能直接把全部事件行数当作局数；新增结算事件使用无后缀的本局 ID，开局使用 `:start`，四子棋落子使用 `:move:行:列`，轮盘操作使用 `:turn:序号`，猜拳出拳使用 `:choice`，扫雷操作使用 `:序号`。听声辨物无后缀事件表示一次有效答题
 
 ## 必要配置
+
+### 区域天象
+
+QQ 官机群聊与私聊支持 `/astro`，使用 UGC 天象卡片、Markdown 和区域按钮回复
+
+| 指令 | 用途 |
+| --- | --- |
+| `/astro` | 查询默认区域今日天象，未设置时显示选择按钮 |
+| `/astro 华东` | 临时查询固定区域 |
+| `/astro 设置 华东` | 保存个人默认区域 |
+| `/astro 区域` | 显示东北、华北、华东、华中、华南、西南、西北、新疆 |
+
+数据来自 [Sunrise-Sunset.org v2](https://sunrise-sunset.org/api)，日期和时间统一使用 `Asia/Shanghai`。区域代表点仅供参考，不支持地址、城市或经纬度输入
+
+默认区域保存在 `bot_userdata.user_settings.astronomy_region`，不新增数据库表。成功数据按日期和区域保存到 `data/astronomy/日期/区域枚举.json`，重启后复用，内存最多保留八条。同一区域并发请求合并，失败后一分钟内不重复请求；不会使用昨天的数据代替当天结果
+
+UGC 需同步部署包含 `bot.astronomy` 的版本，机器人通过现有 OpenAPI 目录发现接口，沿用现有 UGC 地址与密钥。图片按 UGC 已配置的素材、COS 或 API 方式发送；渲染失败时改发文字，缺失事件显示“暂无”
 
 Napcat 群功能由 `GroupConfigManager` 和 `groupconfig.json` 管理，各功能按键启用。QQ 官方群功能与订阅由对应业务配置和 WebUI 管理，不与 Napcat 开关共用
 

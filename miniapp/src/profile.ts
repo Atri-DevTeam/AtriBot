@@ -1,7 +1,6 @@
 export type Messages = { count: number; firstAt: string | null; lastAt: string | null }
 export type Profile = {
     bot: { name: string; avatarUrl: string | null }
-    skyblockPrice?: boolean
     userId: string
     username: string | null
     avatarUrl: string | null

@@ -69,6 +69,8 @@ public class MinecraftToolsCommand implements CommandExecutor {
         }
         text.append("> ").append(Markdown.img(RS.get("resource.image.icon-ec"), 16, 16))
                 .append(Markdown.enterCommand("/ec", "附魔台物品附魔模拟")).append("\n");
+        text.append("> ").append(Markdown.img(RS.get("resource.image.icon-fishing-rod"), 16, 16))
+                .append(Markdown.enterCommand("/fish", "每日随机钓鱼")).append("\n");
         return new Markdown(text.toString());
     }
 

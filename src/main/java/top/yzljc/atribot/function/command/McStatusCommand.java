@@ -1,8 +1,15 @@
 package top.yzljc.atribot.function.command;
 
+import java.util.List;
 import java.util.Map;
 
 import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.TC;
+import top.yzljc.atricore.chat.official.button.Button;
+import top.yzljc.atricore.chat.official.button.ButtonStyle;
+import top.yzljc.atricore.chat.official.button.ButtonType;
+import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.service.request.OpenApi;
@@ -18,11 +25,11 @@ public class McStatusCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-//        if (sender instanceof NapcatCommandSender nc) {
+        if (sender instanceof NapcatCommandSender) {
 //            if (!GroupConfigManager.isFeatureEnabled(nc.getGroupId(), "mojang_status")) {
-//                return true;
+                return true;
 //            }
-//        }
+        }
 
         String messageId = sender.sendMessage("正在查询Minecraft验证服务器服务状态，请稍候...");
 
@@ -44,7 +51,18 @@ public class McStatusCommand implements CommandExecutor {
 
         switch (sender) {
 //            case NapcatCommandSender nc -> nc.sendMessage(ImageComponent.imageOf(data.url()));
-            case QQCommandSender qq -> qq.sendMessage(ImageComponent.imageOf(data.url()));
+            case QQCommandSender qq -> {
+
+                var md = TC.md(Markdown.img(data.url(), data.width(), data.height()) + "\n\n" + Markdown.at(qq.getUserId()));
+                md.setKeyboard(Keyboard.singleLine(
+                        List.of(
+                                new Button("\uD83D\uDD0D再次查询", "/mojang", ButtonStyle.BLUE),
+                                new Button("⛏\uFE0F最新版本", "/mctool ver", ButtonStyle.BLUE_WITH_BACKGROUND)
+                        )
+                ));
+
+                qq.sendMessage(md, false);
+            }
             case QQGuildCommandSender guildUser -> guildUser.sendMessage(ImageComponent.imageOf(data.url()));
             default -> {}
         }

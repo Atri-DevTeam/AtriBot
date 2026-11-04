@@ -127,7 +127,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         layout.add(List.of(new Button("btn_custom", "自定义雷数并开始", "/扫雷 start ",
                 false, ButtonStyle.GRAY, ButtonType.COMMAND)));
 
-        Object keyboard = TC.keyboard(layout);
+        // Object keyboard = TC.keyboard(layout);
         sender.sendMessage(TC.md(markdown).setKeyboard(selectDifficultyKeyboard()));
     }
 

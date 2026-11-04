@@ -5,6 +5,7 @@ import lombok.Setter;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
@@ -37,6 +38,17 @@ public class OfficialC2CMessageCreateEvent extends Event {
         this.user = user;
         this.message = message;
         this.timestamp = timestamp;
+    }
+
+    /**
+     * 使用当前私聊消息 ID，向当前用户发送被动卡片回复
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(Card card) {
+        return this.user.sendMessage(this.message.getMessageId(), card);
     }
 
     /**

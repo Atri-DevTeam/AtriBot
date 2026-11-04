@@ -4,7 +4,7 @@
       <button class="ghost-button" @click="resetRequest">重置请求</button>
     </template>
 
-    <main class="workspace">
+    <main class="workspace connect-workspace debug-workspace">
       <header class="topbar">
         <div class="topbar-left">
           <button v-show="!sidebarOpen" class="menu-btn" aria-label="打开侧边栏" @click="sidebarOpen = true">
@@ -19,172 +19,214 @@
         </div>
       </header>
 
-      <section class="content debug-layout">
-        <section class="chat-panel debug-panel">
-          <form class="debug-request" @submit.prevent="sendRequest">
-            <!-- 地址栏：方法 + 路径 + 发送，三段拼成一条，方法按动词着色 -->
-            <div class="debug-url-bar">
-              <div class="debug-method-wrap" :class="'method-' + method.toLowerCase()">
-                <select v-model="method" class="debug-method" aria-label="请求方法">
-                  <option v-for="item in methods" :key="item" :value="item">{{ item }}</option>
-                </select>
-                <span class="debug-method-caret" aria-hidden="true">▾</span>
-              </div>
-              <input class="debug-path" v-model="path" spellcheck="false"
-                     placeholder="/v2/groups/{group_openid}/messages"/>
-              <button class="debug-send-btn" type="submit" :disabled="loading || !path.trim()">
-                {{ loading ? '请求中' : '发送' }}
+      <section class="content connect-layout debug-workbench">
+        <aside class="connect-catalog debug-catalog">
+          <div class="connect-catalog-heading">
+            <h3>接口目录</h3><span>{{ debugPresets.length }}</span>
+            <button type="button" class="debug-catalog-toggle debug-ghost-btn" :aria-expanded="catalogOpen"
+                    aria-controls="debug-catalog-list" @click="catalogOpen = !catalogOpen">
+              {{ catalogOpen ? '收起' : '选择接口' }}
+            </button>
+          </div>
+          <div id="debug-catalog-list" class="debug-catalog-list" :class="{ 'is-open': catalogOpen }">
+            <label class="debug-catalog-search">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <circle cx="10.5" cy="10.5" r="6.5"/>
+                <path d="m16 16 5 5"/>
+              </svg>
+              <input v-model="presetSearch" placeholder="搜索接口" aria-label="搜索接口"/>
+            </label>
+            <details v-for="(group, index) in filteredPresetGroups" :key="group.category" class="debug-catalog-group"
+                     :open="!!presetSearch.trim() || index === 0">
+              <summary>{{ group.category }}<span>{{ group.items.length }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m9 5 7 7-7 7"/>
+                </svg>
+              </summary>
+              <button v-for="item in group.items" :key="item.key" type="button"
+                      class="connect-endpoint debug-catalog-item" :class="{ active: selectedPreset === item.key }"
+                      :aria-pressed="selectedPreset === item.key" :title="item.path" @click="selectPreset(item.key)">
+                <span class="debug-catalog-method" :class="'method-' + item.method.toLowerCase()">{{
+                    item.method
+                  }}</span><span>{{ item.label }}</span>
               </button>
-            </div>
-
-            <div class="debug-preset-line">
-              <span class="debug-preset-label">预设</span>
-              <select v-model="selectedPreset" class="debug-preset" @change="applyPreset">
-                <option value="">-- 选择接口样例 --</option>
-                <optgroup v-for="group in groupedPresets" :key="group.category" :label="group.category">
-                  <option v-for="item in group.items" :key="item.key" :value="item.key">
-                    {{ item.method }} · {{ item.label }}
-                  </option>
-                </optgroup>
-              </select>
-              <a class="debug-doc-link" :href="presetDocumentation" target="_blank" rel="noopener noreferrer">官方文档 ↗</a>
-              <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
-            </div>
-
-            <div v-if="currentPreset?.samples?.length" class="debug-preset-line">
-              <span class="debug-preset-label">样例</span>
-              <select v-model="selectedSample" class="debug-preset" aria-label="请求样例" @change="applySample">
-                <option :value="-1">默认请求</option>
-                <option v-for="(sample, index) in currentPreset.samples" :key="sample.label" :value="index">{{ sample.label }}</option>
-              </select>
-            </div>
-            <div v-if="currentPreset" class="debug-preset-note">
-              <span v-if="presetNote">{{ presetNote }}<br/></span>
-              路径占位符自动替换；Headers 和 Body 原样发送，示例中的 ID、文件数据和时间需手动填写
-            </div>
-
-            <div class="debug-template-line">
-              <label class="debug-template-field">
-                <span>{group_openid}</span>
-                <input v-model="templateGroupOpenId" spellcheck="false" placeholder="qq.debug-group-openId"/>
-              </label>
-              <label class="debug-template-field">
-                <span>{user_openid}</span>
-                <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id"/>
-              </label>
-              <label v-for="name in additionalTemplateNames" :key="name" class="debug-template-field">
-                <span>{{ '{' + name + '}' }}</span>
-                <input v-model="templateValues[name]" spellcheck="false" :placeholder="`填写 ${name}`"/>
-              </label>
-            </div>
-
-            <!-- 请求页签：Params / Headers / Body，右上角保留原有的格式化与放大 -->
-            <div class="debug-tabs" role="tablist">
-              <button v-for="tab in requestTabs" :key="tab.key" type="button" role="tab"
-                      class="debug-tab" :class="{ active: requestTab === tab.key }"
-                      :aria-selected="requestTab === tab.key"
-                      @click="requestTab = tab.key">
-                {{ tab.label }}
-                <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
-                <span v-else-if="tab.dot" class="debug-tab-dot" aria-hidden="true"></span>
-              </button>
-              <div class="debug-tab-actions">
-                <template v-if="requestTab === 'params'">
-                  <button type="button" class="debug-ghost-btn" @click="addParamRow">添加参数</button>
-                </template>
-                <template v-else-if="requestTab === 'headers'">
-                  <button type="button" class="debug-ghost-btn" @click="openEditor('headers')">放大</button>
-                </template>
-                <template v-else>
-                  <button type="button" class="debug-ghost-btn" @click="formatBodyJson">格式化</button>
-                  <button type="button" class="debug-ghost-btn" @click="openEditor('body')">放大</button>
-                </template>
-              </div>
-            </div>
-
-            <div class="debug-tab-panel">
-              <!-- Query 参数表：与地址栏里的 ?a=b 双向同步 -->
-              <div v-show="requestTab === 'params'" class="debug-params">
-                <div v-if="queryParams.length === 0" class="debug-params-empty">
-                  未输入查询参数
+            </details>
+            <p v-if="!filteredPresetGroups.length" class="connect-note">没有匹配的接口</p>
+          </div>
+        </aside>
+        <div class="connect-main">
+          <section class="connect-panel debug-panel">
+            <header class="connect-heading">
+              <div class="connect-title"><span class="connect-title-icon"><svg width="18" height="18"
+                                                                               viewBox="0 0 24 24" fill="none"
+                                                                               stroke="currentColor" stroke-width="1.6"><path
+                  d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16"/></svg></span>
+                <h3>{{ currentPreset?.label || '自定义请求' }}</h3></div>
+              <span class="connect-badge">QQ 开放平台</span>
+            </header>
+            <form class="debug-request" @submit.prevent="sendRequest">
+              <!-- 地址栏：方法 + 路径 + 发送，三段拼成一条，方法按动词着色 -->
+              <div class="debug-url-bar">
+                <div class="debug-method-wrap" :class="'method-' + method.toLowerCase()">
+                  <select v-model="method" class="debug-method" aria-label="请求方法">
+                    <option v-for="item in methods" :key="item" :value="item">{{ item }}</option>
+                  </select>
+                  <span class="debug-method-caret" aria-hidden="true">▾</span>
                 </div>
-                <template v-else>
-                  <div class="debug-param-row debug-param-head">
-                    <span></span><span>参数名</span><span>值</span><span></span>
-                  </div>
-                  <div v-for="(row, index) in queryParams" :key="index" class="debug-param-row">
-                    <input type="checkbox" v-model="row.enabled" :aria-label="'启用 ' + (row.key || '参数')"
-                           @change="applyParamsToPath"/>
-                    <input v-model="row.key" spellcheck="false" placeholder="key" @input="applyParamsToPath"/>
-                    <input v-model="row.value" spellcheck="false" placeholder="value" @input="applyParamsToPath"/>
-                    <button type="button" class="debug-param-del" title="删除该参数"
-                            @click="removeParamRow(index)">×
-                    </button>
-                  </div>
-                </template>
+                <input class="debug-path" v-model="path" spellcheck="false" aria-label="请求路径"
+                       placeholder="/v2/groups/{group_openid}/messages"/>
+                <button class="debug-send-btn" type="submit" :disabled="loading || !path.trim()">
+                  {{ loading ? '发送中…' : '发送请求' }}
+                </button>
               </div>
 
-              <div v-show="requestTab === 'headers'" class="debug-editor">
-                <textarea v-model="headers" spellcheck="false"
+              <div class="debug-preset-line">
+                <a class="debug-doc-link" :href="presetDocumentation" target="_blank" rel="noopener noreferrer">官方文档
+                  ↗</a>
+                <button type="button" class="debug-ghost-btn" @click="resetRequest">重置</button>
+              </div>
+
+              <div v-if="currentPreset?.samples?.length" class="debug-preset-line">
+                <span class="debug-preset-label">样例</span>
+                <select v-model="selectedSample" class="debug-preset" aria-label="请求样例" @change="applySample">
+                  <option :value="-1">默认请求</option>
+                  <option v-for="(sample, index) in currentPreset.samples" :key="sample.label" :value="index">
+                    {{ sample.label }}
+                  </option>
+                </select>
+              </div>
+              <div v-if="currentPreset" class="debug-preset-note">
+                <span v-if="presetNote">{{ presetNote }}<br/></span>
+                路径占位符自动替换；Headers 和 Body 原样发送，示例中的 ID、文件数据和时间需手动填写
+              </div>
+
+              <div class="debug-template-line">
+                <label class="debug-template-field">
+                  <span>{group_openid}</span>
+                  <input v-model="templateGroupOpenId" spellcheck="false" placeholder="qq.debug-group-openId"/>
+                </label>
+                <label class="debug-template-field">
+                  <span>{user_openid}</span>
+                  <input v-model="templateUserOpenId" spellcheck="false" placeholder="qq.super_admin_id"/>
+                </label>
+                <label v-for="name in additionalTemplateNames" :key="name" class="debug-template-field">
+                  <span>{{ '{' + name + '}' }}</span>
+                  <input v-model="templateValues[name]" spellcheck="false" :placeholder="`填写 ${name}`"/>
+                </label>
+              </div>
+
+              <!-- 请求页签：Params / Headers / Body，右上角保留原有的格式化与放大 -->
+              <div class="debug-tabs" role="tablist">
+                <button v-for="tab in requestTabs" :key="tab.key" type="button" role="tab"
+                        class="debug-tab" :class="{ active: requestTab === tab.key }"
+                        :aria-selected="requestTab === tab.key"
+                        @click="requestTab = tab.key">
+                  {{ tab.label }}
+                  <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
+                  <span v-else-if="tab.dot" class="debug-tab-dot" aria-hidden="true"></span>
+                </button>
+                <div class="debug-tab-actions">
+                  <template v-if="requestTab === 'params'">
+                    <button type="button" class="debug-ghost-btn" @click="addParamRow">添加参数</button>
+                  </template>
+                  <template v-else-if="requestTab === 'headers'">
+                    <button type="button" class="debug-ghost-btn" @click="openEditor('headers')">放大</button>
+                  </template>
+                  <template v-else>
+                    <button type="button" class="debug-ghost-btn" @click="formatBodyJson">格式化</button>
+                    <button type="button" class="debug-ghost-btn" @click="openEditor('body')">放大</button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="debug-tab-panel">
+                <!-- Query 参数表：与地址栏里的 ?a=b 双向同步 -->
+                <div v-show="requestTab === 'params'" class="debug-params">
+                  <div v-if="queryParams.length === 0" class="debug-params-empty">
+                    未输入查询参数
+                  </div>
+                  <template v-else>
+                    <div class="debug-param-row debug-param-head">
+                      <span></span><span>参数名</span><span>值</span><span></span>
+                    </div>
+                    <div v-for="(row, index) in queryParams" :key="index" class="debug-param-row">
+                      <input type="checkbox" v-model="row.enabled" :aria-label="'启用 ' + (row.key || '参数')"
+                             @change="applyParamsToPath"/>
+                      <input v-model="row.key" spellcheck="false" placeholder="key" @input="applyParamsToPath"/>
+                      <input v-model="row.value" spellcheck="false" placeholder="value" @input="applyParamsToPath"/>
+                      <button type="button" class="debug-param-del" title="删除该参数"
+                              @click="removeParamRow(index)">×
+                      </button>
+                    </div>
+                  </template>
+                </div>
+
+                <div v-show="requestTab === 'headers'" class="debug-editor">
+                <textarea v-model="headers" spellcheck="false" aria-label="请求头"
                           placeholder="例如&#10;X-Union-Appid: 102047514"></textarea>
-              </div>
+                </div>
 
-              <div v-show="requestTab === 'body'" class="debug-editor">
-                <textarea v-model="body" spellcheck="false"
+                <div v-show="requestTab === 'body'" class="debug-editor">
+                <textarea v-model="body" spellcheck="false" aria-label="请求内容"
                           placeholder="{&#10;  &quot;content&quot;: &quot;hello&quot;&#10;}"></textarea>
+                </div>
               </div>
-            </div>
-          </form>
-        </section>
+            </form>
+          </section>
 
-        <section class="chat-panel debug-panel">
-          <div class="debug-response-head">
-            <strong>响应结果</strong>
-            <div v-if="result" class="debug-response-status">
+          <section class="connect-panel debug-panel">
+            <div class="debug-response-head">
+              <strong>响应结果</strong>
+              <div v-if="result" class="debug-response-status">
               <span class="debug-status-code" :class="statusClass(result.statusCode)">
                 {{ result.statusCode }} {{ statusText(result.statusCode) }}
               </span>
-              <span class="debug-stat">{{ result.durationMillis }} ms</span>
-              <span class="debug-stat">{{ responseSize }}</span>
+                <span class="debug-stat">{{ result.durationMillis }} ms</span>
+                <span class="debug-stat">{{ responseSize }}</span>
+              </div>
             </div>
-          </div>
 
-          <div v-if="result" class="debug-tabs" role="tablist">
-            <button v-for="tab in responseTabs" :key="tab.key" type="button" role="tab"
-                    class="debug-tab" :class="{ active: responseTab === tab.key }"
-                    :aria-selected="responseTab === tab.key"
-                    @click="responseTab = tab.key">
-              {{ tab.label }}
-              <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
-            </button>
-            <div class="debug-tab-actions">
-              <button type="button" class="debug-ghost-btn" :class="{ active: wrapResponse }"
-                      @click="wrapResponse = !wrapResponse">自动换行
+            <div v-if="result" class="debug-tabs" role="tablist">
+              <button v-for="tab in responseTabs" :key="tab.key" type="button" role="tab"
+                      class="debug-tab" :class="{ active: responseTab === tab.key }"
+                      :aria-selected="responseTab === tab.key"
+                      @click="responseTab = tab.key">
+                {{ tab.label }}
+                <span v-if="tab.count" class="debug-tab-count">{{ tab.count }}</span>
               </button>
-              <button type="button" class="debug-ghost-btn" @click="copyResponse">
-                {{ copied ? '已复制' : '复制' }}
-              </button>
+              <div class="debug-tab-actions">
+                <button type="button" class="debug-ghost-btn" :class="{ active: wrapResponse }"
+                        @click="wrapResponse = !wrapResponse">自动换行
+                </button>
+                <button type="button" class="debug-ghost-btn" @click="copyResponse">
+                  {{ copied ? '已复制' : '复制' }}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div class="debug-response-body">
-            <div v-if="error" class="empty-state error">{{ error }}</div>
-            <div v-else-if="loading" class="empty-state">正在请求开放平台API</div>
-            <div v-else-if="!result" class="empty-state">请求结果</div>
-            <template v-else>
-              <div class="debug-meta">
+            <div class="debug-response-body">
+              <div v-if="error" class="empty-state error">{{ error }}</div>
+              <div v-else-if="loading" class="empty-state">正在请求开放平台API</div>
+              <div v-else-if="!result" class="connect-empty">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16"/>
+                </svg>
+                <p>发送请求后查看响应</p></div>
+              <template v-else>
+                <div class="debug-meta">
                 <span class="debug-meta-method" :class="'method-' + String(result.method || '').toLowerCase()">
                   {{ result.method }}
                 </span>
-                <span class="debug-final-url" :title="result.url">{{ result.url }}</span>
-              </div>
-              <pre v-show="responseTab === 'body'" class="debug-output"
-                   :class="{ nowrap: !wrapResponse }">{{ responseText }}</pre>
-              <pre v-show="responseTab === 'headers'" class="debug-output"
-                   :class="{ nowrap: !wrapResponse }">{{ formatJson(result.headers) }}</pre>
-            </template>
-          </div>
-        </section>
+                  <span class="debug-final-url" :title="result.url">{{ result.url }}</span>
+                </div>
+                <pre v-show="responseTab === 'body'" class="debug-output"
+                     :class="{ nowrap: !wrapResponse }">{{ responseText }}</pre>
+                <pre v-show="responseTab === 'headers'" class="debug-output"
+                     :class="{ nowrap: !wrapResponse }">{{ formatJson(result.headers) }}</pre>
+              </template>
+            </div>
+          </section>
+        </div>
       </section>
 
       <div v-if="expandedEditor" class="debug-modal-backdrop" @click.self="closeEditor">
@@ -243,6 +285,8 @@ const debugPresets = [
 
 const sidebarOpen = ref(false)
 const selectedPreset = ref('')
+const presetSearch = ref('')
+const catalogOpen = ref(false)
 const selectedSample = ref(-1)
 const method = ref('GET')
 const path = ref('/gateway')
@@ -277,6 +321,22 @@ const groupedPresets = computed(() => {
   }
   return [...groups].map(([category, items]) => ({category, items}))
 })
+
+const filteredPresetGroups = computed(() => {
+  const query = presetSearch.value.trim().toLowerCase()
+  if (!query) return groupedPresets.value
+  return groupedPresets.value.map(group => ({
+    ...group, items: group.items.filter(item =>
+        `${group.category} ${item.label} ${item.method} ${item.path}`.toLowerCase().includes(query)
+    )
+  })).filter(group => group.items.length)
+})
+
+function selectPreset(key) {
+  selectedPreset.value = key
+  applyPreset()
+  catalogOpen.value = false
+}
 
 const additionalTemplateNames = computed(() => {
   const text = path.value
@@ -563,3 +623,6 @@ function logout() {
   return logoutWebui(API_BASE, router)
 }
 </script>
+
+<style scoped src="../../shared/styles/api-workbench.css"></style>
+<style scoped src="../../shared/styles/api-workbench-layout.css"></style>

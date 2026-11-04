@@ -7,10 +7,6 @@ import org.slf4j.LoggerFactory;
 import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atricore.chat.napcat.impl.MessageSegment;
-import top.yzljc.atricore.command.Command;
-import top.yzljc.atricore.command.CommandExecutor;
-import top.yzljc.atricore.command.CommandSender;
-import top.yzljc.atricore.command.NapcatCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.utils.napcat.impl.MojiraIssueSummarizer;
 import top.yzljc.atricore.platform.napcat.PostRequest;
@@ -37,7 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.utils.personal
  */
-public final class MojiraStatus implements CommandExecutor, ScheduledTask{
+public final class MojiraStatus implements ScheduledTask{
 
     private static final Logger log = LoggerFactory.getLogger(MojiraStatus.class);
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -73,15 +69,6 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask{
         loadCache();
     }
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof NapcatCommandSender nc)) return true;
-        if (!nc.hasPermission()) return true;
-        this.run();
-        nc.sendMessage("已触发 Mojira 手动检查!");
-        log.info("[Mojira] 用户 {} 在群 {} 触发了手动检查", nc.getUserId(), nc.getGroupId());
-        return true;
-    }
 
     @Override
     public TaskSchedule schedule() {
@@ -196,7 +183,7 @@ public final class MojiraStatus implements CommandExecutor, ScheduledTask{
             Map<String, Object> cache = new LinkedHashMap<>();
             cache.put("issues", new ArrayList<>(knownIssues));
             jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, cache);
-            log.info("Mojira 缓存已保存, 共 {} 条记录", knownIssues.size());
+            // log.info("Mojira 缓存已保存, 共 {} 条记录", knownIssues.size());
         } catch (IOException e) {
             log.warn("Mojira 缓存保存失败: {}", e.getMessage());
         }

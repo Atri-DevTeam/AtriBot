@@ -128,7 +128,7 @@ public final class DailyFishingGame implements CommandExecutor {
 
         if (result.durability() != null) {
             var durability = result.durability();
-            markdown += "> 耐久：" + durability.remaining() + "/" + durability.maximum() + "\n";
+            markdown += "\n> 耐久：" + durability.remaining() + "/" + durability.maximum() + "\n";
         }
 
         if (!result.enchantments().isEmpty()) {

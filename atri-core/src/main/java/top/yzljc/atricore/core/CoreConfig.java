@@ -15,7 +15,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * 从运行目录加载框架配置，解析成功后替换当前配置对象
+ * 框架 YAML 配置的加载与重载入口
+ *
+ * <p>共享实例读取进程工作目录下的 {@value #FILE_NAME}，首次访问时加载配置
+ * 配置文件不存在时，从框架资源复制默认模板
+ * 使用 {@link #CoreConfig(Path)} 可创建读取指定文件的独立实例
+ *
+ * <p>通过 {@code CoreConfig.getInstance().getSettings()} 获取配置数据
+ * 本类负责文件读取、字段转换和配置对象替换，配置数据由 {@link AtriSettings} 保存
  *
  * @Author YZ_Ljc_
  * @ClassName CoreConfig

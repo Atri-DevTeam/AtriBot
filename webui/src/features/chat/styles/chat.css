@@ -1070,6 +1070,27 @@
 
 .qm.mine { flex-direction: row-reverse; }
 
+.qm.qm-selecting { position: relative; padding-left: 38px; border-radius: 8px; cursor: pointer; }
+.qm.qm-selecting:hover { background: rgb(0 153 255 / 4%); }
+.qm.qm-selected { background: rgb(0 153 255 / 8%); }
+.qm.qm-selecting .qm-main, .qm.qm-selecting .qm-avatar { pointer-events: none; }
+.qm-select { position: absolute; left: 6px; top: 12px; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 1px solid #c7cfd9; border-radius: 50%; background: #fff; color: #fff; }
+.qm-select[aria-checked="true"] { border-color: #0099ff; background: #0099ff; }
+.qm-select:focus-visible { outline: 2px solid #0099ff; outline-offset: 3px; }
+.qm-select:disabled { cursor: default; opacity: .4; }
+.chatnt-selection-bar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; padding: 16px 20px; border-top: 1px solid #e9edf2; background: #fff; }
+.chatnt-selection-count { color: #737e8d; font-size: 12px; font-variant-numeric: tabular-nums; }
+.chatnt-selection-actions { display: flex; align-items: center; gap: 8px; }
+.chatnt-selection-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 32px; padding: 0 12px; border: 1px solid #e2e7ee; border-radius: 6px; color: #606b7b; background: #fff; font-size: 12px; white-space: nowrap; }
+.chatnt-selection-actions button:hover:not(:disabled) { color: #0086e6; border-color: #cce9ff; background: #edf7ff; }
+.chatnt-selection-actions .chatnt-selection-recall { color: #fff; background: #0099ff; border-color: #0099ff; }
+.chatnt-selection-actions .chatnt-selection-recall:hover:not(:disabled) { color: #fff; background: #008bea; border-color: #008bea; }
+@media (max-width: 600px) {
+  .chatnt-selection-bar { flex-wrap: wrap; gap: 10px; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .chatnt-selection-actions { margin-left: auto; }
+  .qm.qm-selecting .qm-main { max-width: calc(100% - 48px); }
+}
+
 .qm-avatar {
   position: relative;
   display: grid;
@@ -1166,6 +1187,15 @@
 .qm.mine .qm-bubble {
   background: #4db8ff;
   color: #ffffff;
+}
+
+.qm .qm-bubble.qm-bubble--card {
+  --qm-bubble-padding-x: 0px;
+  padding: 0;
+  border-radius: 9px;
+  background: #fff;
+  color: #222;
+  box-shadow: none;
 }
 
 .qm-bubble--image-sized {

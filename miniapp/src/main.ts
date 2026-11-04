@@ -5,5 +5,8 @@ import './styles.css'
 import './activity.css'
 import './intro.css'
 
-const dashboard = /^\/dashboard\/?$/.test(window.location.pathname)
+const qq = new URLSearchParams(window.location.search).getAll('qq')
+document.documentElement.classList.toggle('miniapp-qq', qq.length === 1 && qq[0] === '1')
+
+const dashboard = /^\/dashboard(?:\/|$)/.test(window.location.pathname)
 createApp(dashboard ? Dashboard : App).mount('#app')

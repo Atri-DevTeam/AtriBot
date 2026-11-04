@@ -11,6 +11,8 @@ import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 import top.yzljc.atribot.database.repo.PicRepository;
 import top.yzljc.atribot.function.impl.pic.ImageSourceClient;
+import top.yzljc.atribot.function.impl.pic.ImageAiReviewService;
+import top.yzljc.atribot.function.impl.pic.ImageReviewService;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.utils.tools.Alert;
 
@@ -48,7 +50,7 @@ public class PicSubmitCommand implements CommandExecutor {
 
         String uploaderId = qq.getUserId();
         int pendingLimit = Config.getInstance().getImageSourcePendingLimit();
-        int submitCount = qq.hasPermission("atri.submit.multiple") ? images.size() : 1;
+        int submitCount = qq.hasPermission("atri.submit.multiple") ? images.size() : Math.min(images.size(), 10);
         int pendingCount = PicRepository.countPendingByUploader(uploaderId);
         if (!qq.hasPermission("atri.submit.multiple") && pendingCount + submitCount > pendingLimit) {
             qq.sendMessage("你已有 " + pendingCount + " 张投稿正在等待审核，本次投稿 " + submitCount
@@ -130,6 +132,7 @@ public class PicSubmitCommand implements CommandExecutor {
             dto.setProcessedHeight(uploadResult.height());
             dto.setProcessedFileSize(uploadResult.fileSize());
             PicRepository.updateProcessedInfo(id, dto.getProcessedWidth(), dto.getProcessedHeight(), dto.getProcessedFileSize());
+            ImageAiReviewService.enqueue(id);
 
             return new SubmissionResult("投稿成功！我们会尽快审核的~\n投稿编号: " + shortId(id), true);
         } catch (Exception e) {
@@ -141,6 +144,7 @@ public class PicSubmitCommand implements CommandExecutor {
     private ImageSourceDTO buildDTO(QQCommandSender sender, String imageUrl, JsonNode attachment) {
         ImageSourceDTO dto = new ImageSourceDTO();
         dto.setImageUuid(UUID.randomUUID().toString());
+        ImageReviewService.rememberSource(dto.getImageUuid(), sender.getMessage().getMessageId(), sender.getMessage().getTimestamp());
         dto.setPlatform(sender.getPlatform().name());
         dto.setUploaderId(sender.getUserId());
         dto.setUploaderName(sender.getUsername());

@@ -11,6 +11,16 @@ ttf-file-name: "default.ttf"
 # API
 api-url: null
 
+# Connect 接口签名密钥，至少 32 字节；留空时关闭 /connect 接口
+connect:
+  secret: ""
+
+# WebUI 访问白名单，填写统一账号 UUID，非机器人 OpenID 或 QQ 互联 OpenID
+# 仅名单内且状态为 ACTIVE 的 ADMIN / OWNER 可访问，空名单拒绝访问
+# env: dev 的本地免登录模式不受此名单限制
+webui:
+  allowed-account-uuids: []
+
 # 个人面板功能开关，入口地址与 QQ 登录通过 dashboard 配置
 miniapp:
   enabled: true
@@ -62,6 +72,14 @@ mysql:
 # 除此之外的任意字段都会原样合并到请求 JSON body 中，
 # 可用于传递 temperature、top_p、max_tokens、extra_body 等参数。
 ai:
+  deepseek_image:
+    api-key: ""
+    base-url: "https://api.deepseek.com/chat/completions"
+    model: "deepseek-flash"
+    timeout: 60000
+    thinking:
+      type: "disabled"
+    max_tokens: 1024
   default:
     api-key: ""
     base-url: ""

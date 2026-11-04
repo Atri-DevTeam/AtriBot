@@ -3,12 +3,14 @@ package top.yzljc.atribot.test;
 
 import top.yzljc.atricore.chat.official.*;
 import top.yzljc.atricore.chat.official.button.*;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.ConsoleCommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
 
 import java.util.List;
@@ -203,9 +205,9 @@ public class Test implements CommandExecutor, Listener {
 //                )
 //        )));
 //        d();
-        var md = TC.md("**亚托莉喵反馈调研**\n\n" +
-                "> 你好呀，我是亚托莉喵～想听听你的真实想法喵！\n" + "> 完成本次小调研，就能获得 300 金粒 奖励哦～\n> 请根据真实感受作答，你的每一条反馈我都会认真记下来的喵！\n> 谢谢你的帮忙，快来帮帮亚托莉喵吧～\n\n" +
-                Markdown.link("https://v.wjx.cn/vm/hNCP76y.aspx#", "点击参与调研"));
+//        var md = TC.md("**亚托莉喵反馈调研**\n\n" +
+//                "> 你好呀，我是亚托莉喵～想听听你的真实想法喵！\n" + "> 完成本次小调研，就能获得 300 金粒 奖励哦～\n> 请根据真实感受作答，你的每一条反馈我都会认真记下来的喵！\n> 谢谢你的帮忙，快来帮帮亚托莉喵吧～\n\n" +
+//                Markdown.link("https://v.wjx.cn/vm/hNCP76y.aspx#", "点击参与调研"));
 //        if (args.length == 1 && args[0].equalsIgnoreCase("retry-active")) {
 //            try {
 //                C2CActiveMessageRetry.start(md);
@@ -215,7 +217,9 @@ public class Test implements CommandExecutor, Listener {
 //            }
 //            return true;
 //        }
-        u.sendMessage(md);
+//        var c = Card.tuWen("网易云音乐: BadApple", "时长: 11:22:33", QQBot.BOT_AVATAR_URL, "https://music.163.com/song?id=83106&uct2=U2FsdGVkX18QIJZVsrFDjNTR3Qb00lGsIvi6pHUvO1g=");
+//
+//        GroupChat.replyMessage(u.getGroupId(), RT.message(u.getMessage().getMessageId()), c);
         sender.sendMessage("已发送调研问卷，请在私聊中完成喵~");
 
         return true;

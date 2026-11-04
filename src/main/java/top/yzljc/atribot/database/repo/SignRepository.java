@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.database.DatabaseManager;
 
 import java.io.File;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -39,6 +40,7 @@ public class SignRepository {
                 "  `user_open_id` VARCHAR(255) NOT NULL," +
                 "  `total_count` INT DEFAULT 1," +
                 "  `total_coins` INT DEFAULT 0," +
+                "  `consecutive_count` INT NOT NULL DEFAULT 0," +
                 "  `last_check_in_date` DATE NOT NULL," +
                 "  PRIMARY KEY (`user_open_id`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -76,7 +78,7 @@ public class SignRepository {
 //            }
             log.info("打卡数据库表初始化完成");
         } catch (Exception e) {
-            log.error("初始化打卡数据库表失败", e);
+            throw new IllegalStateException("初始化打卡数据库表失败", e);
         }
     }
 
@@ -121,30 +123,15 @@ public class SignRepository {
                     throw e;
                 }
 
-                String upsertTotal = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`) " +
-                        "VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE `total_count` = `total_count` + 1, `last_check_in_date` = ?";
-                try (var ps = con.prepareStatement(upsertTotal)) {
-                    ps.setString(1, userOpenId);
-                    ps.setDate(2, Date.valueOf(today));
-                    ps.setDate(3, Date.valueOf(today));
-                    ps.executeUpdate();
-                }
+                updateTotal(con, userOpenId, today);
 
-                int totalCount;
-                String totalSql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
-                try (var ps = con.prepareStatement(totalSql)) {
-                    ps.setString(1, userOpenId);
-                    try (var rs = ps.executeQuery()) {
-                        rs.next();
-                        totalCount = rs.getInt("total_count");
-                    }
-                }
+                SignCounts counts = getCounts(con, userOpenId, today);
 
                 // 复用当前事务连接，保证签到记录与权威余额同时生效。
                 LootRepository.addCoins(con, userOpenId, coins);
                 int totalCoins = LootRepository.getCoins(con, userOpenId);
                 con.commit();
-                return new CheckInResult(rank, totalCount, coins, totalCoins);
+                return new CheckInResult(rank, counts.totalCount(), coins, totalCoins, counts.consecutiveCount());
             } catch (Exception e) {
                 LootRepository.rollback(con, e);
                 throw e;
@@ -152,6 +139,20 @@ public class SignRepository {
         } catch (Exception e) {
             log.error("打卡失败，userOpenId: {}", userOpenId, e);
             return null;
+        }
+    }
+
+    static void updateTotal(Connection con, String userOpenId, LocalDate today) throws SQLException {
+        String sql = "INSERT INTO `check_in_total` (`user_open_id`, `total_count`, `last_check_in_date`, `consecutive_count`) " +
+                "VALUES (?, 1, ?, 1) ON DUPLICATE KEY UPDATE " +
+                "`consecutive_count` = CASE WHEN `last_check_in_date` = ? THEN `consecutive_count` + 1 ELSE 1 END, " +
+                "`total_count` = `total_count` + 1, `last_check_in_date` = ?";
+        try (var ps = con.prepareStatement(sql)) {
+            ps.setString(1, userOpenId);
+            ps.setDate(2, Date.valueOf(today));
+            ps.setDate(3, Date.valueOf(today.minusDays(1)));
+            ps.setDate(4, Date.valueOf(today));
+            ps.executeUpdate();
         }
     }
 
@@ -210,22 +211,32 @@ public class SignRepository {
     }
 
     /**
-     * 获取用户累计打卡次数
+     * 一次查询获取累计及当前连续打卡次数，今天尚未打卡时保留截至昨天的连续次数，已断签则连续次数返回 0
+     * 总表保存截至最后打卡日的连续次数，不需要每天批量清零
+     *
+     * @param userOpenId 用户 OpenID
+     * @return 打卡次数，无记录时两项均为 0
+     * @throws IllegalStateException 数据库查询失败
      */
-    public static int getTotalCount(String userOpenId) {
-        String sql = "SELECT `total_count` FROM `check_in_total` WHERE `user_open_id` = ?";
-        try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement(sql)) {
+    public static SignCounts getCounts(String userOpenId) {
+        try (var con = DatabaseManager.getConnection()) {
+            return getCounts(con, userOpenId, LocalDate.now());
+        } catch (SQLException e) {
+            throw new IllegalStateException("查询打卡次数失败", e);
+        }
+    }
+
+    static SignCounts getCounts(Connection con, String userOpenId, LocalDate today) throws SQLException {
+        String sql = "SELECT total_count, consecutive_count, last_check_in_date FROM check_in_total WHERE user_open_id = ?";
+        try (var ps = con.prepareStatement(sql)) {
             ps.setString(1, userOpenId);
             try (var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("total_count");
-                }
+                if (!rs.next()) return new SignCounts(0, 0);
+                LocalDate lastDate = rs.getDate("last_check_in_date").toLocalDate();
+                int consecutiveCount = lastDate.isBefore(today.minusDays(1)) ? 0 : rs.getInt("consecutive_count");
+                return new SignCounts(rs.getInt("total_count"), consecutiveCount);
             }
-        } catch (Exception e) {
-            log.error("查询累计打卡次数失败", e);
         }
-        return 0;
     }
 
     /**
@@ -396,7 +407,14 @@ public class SignRepository {
         return now.getHour() == 23 && now.getMinute() >= 50;
     }
 
-    public record CheckInResult(int rank, int totalCount, int coins, int totalCoins) {
+    /**
+     * @param totalCount 累计打卡次数
+     * @param consecutiveCount 当前连续打卡次数
+     */
+    public record SignCounts(int totalCount, int consecutiveCount) {
+    }
+
+    public record CheckInResult(int rank, int totalCount, int coins, int totalCoins, int consecutiveCount) {
     }
 
     public record PublicSignData(String type, String date, long totalCount, List<?> records) {

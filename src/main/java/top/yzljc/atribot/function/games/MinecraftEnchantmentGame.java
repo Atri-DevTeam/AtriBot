@@ -7,6 +7,10 @@ import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.QQCommandSender;
+import top.yzljc.atricore.command.Command;
+import top.yzljc.atricore.command.CommandExecutor;
+import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.function.impl.ImageDTO;
@@ -31,13 +35,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * @Package top.yzljc.atribot.function.games
  */
 @Slf4j
-public final class MinecraftEnchantmentGame {
+public final class MinecraftEnchantmentGame implements CommandExecutor {
     private static final MinecraftEnchantmentTable TABLE = MinecraftEnchantmentTable.load();
 
-    private MinecraftEnchantmentGame() {
-    }
-
-    public static boolean onCommand(QQCommandSender sender, String[] args) {
+    @Override
+    public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
+        if (!(commandSender instanceof QQCommandSender sender)) return true;
+        if (sender.getPlatform() != Platform.OFFICIAL_GROUP && sender.getPlatform() != Platform.OFFICIAL_C2C) return true;
         if (args.length == 0) {
             sendPresets(sender);
             return true;

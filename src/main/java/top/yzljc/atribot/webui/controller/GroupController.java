@@ -467,7 +467,10 @@ public class GroupController {
             ctx.json(Result.customFailure("groupOpenId 和 messageId 不能为空"));
             return;
         }
-        GroupChat.recallMessage(dto.getGroupOpenId(), dto.getMessageId());
+        if (!GroupChat.recallMessage(dto.getGroupOpenId(), dto.getMessageId())) {
+            ctx.status(502).json(Result.customFailure("消息撤回失败，请检查机器人权限或消息是否仍可撤回"));
+            return;
+        }
         ctx.json(Result.success("ok"));
     }
 

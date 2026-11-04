@@ -14,7 +14,8 @@ public enum AiProvider {
 
     DEFAULT("default"),
     PLAN_1("plan_1"),
-    PLAN_2("plan_2");
+    PLAN_2("plan_2"),
+    DEEPSEEK_IMAGE("deepseek_image");
 
     private final String configKey;
 

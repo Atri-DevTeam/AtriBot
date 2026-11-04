@@ -583,7 +583,7 @@ public class ConnectFourGame implements CommandExecutor {
                 if (targetOpenId != null && current.lastCmdMsgId != null) {
                     try {
                         GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), targetOpenId,
-                                TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消 " + Markdown.at(targetOpenId)));
+                                TC.md("⏰ 四子棋游戏因 1 分钟内未满员而自动取消"));
                     } catch (Exception e) {
                         log.warn("发送加入超时通知失败: ", e);
                     }

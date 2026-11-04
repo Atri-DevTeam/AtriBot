@@ -17,6 +17,12 @@
 
         </div>
         <div class="topbar-right">
+          <button v-if="kind === 'gallery'" type="button" class="gallery-ai-settings" title="AI 初审设置" aria-label="AI 初审设置" @click="aiSettingsOpen = true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
           <div class="gallery-density" role="group" aria-label="视图密度">
             <button :class="{ active: density === 'comfy' }" title="大图" @click="density = 'comfy'">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -89,6 +95,8 @@
               <button class="ghost-button danger gallery-bulk-btn" :disabled="bulkBusy" @click="bulkReview('DENIED')">
                 批量拒绝
               </button>
+              <button v-if="kind === 'gallery'" class="ghost-button danger gallery-bulk-btn"
+                      :disabled="bulkBusy" @click="bulkReview('DENIED', true)">批量静默拒绝</button>
               <button class="ghost-button gallery-bulk-btn" @click="clearSelection">取消</button>
             </span>
             <span class="status-pill" style="margin-left:auto"><span class="dot ok"></span>{{ total }} 张</span>
@@ -166,6 +174,10 @@
                   </div>
                   <div v-if="item.reviewRemark" class="gallery-remark" :title="item.reviewRemark">
                     备注：{{ item.reviewRemark }}
+                  </div>
+                  <div v-if="kind === 'gallery'" class="gallery-ai-result">
+                    <ImageAiReviewTag :image="item"/>
+                    <button v-if="item.reviewStatus === 'PENDING' && item.aiReview?.status !== 'QUEUED'" class="link-button" :disabled="aiBusy === item.id" @click="requestAiReview(item)">{{ aiBusy === item.id ? '提交中…' : item.aiReview ? '重新初审' : '提交初审' }}</button>
                   </div>
                 </figcaption>
               </figure>
@@ -279,11 +291,17 @@
             <dd>{{ viewer.reviewRemark }}</dd>
           </div>
           <div>
-            <dt>结果送达</dt>
-            <dd>{{ viewer.isNotified ? '已送达' : (viewer.reviewStatus === 'PENDING' ? '—' : '待送达') }}</dd>
+            <dt>{{ kind === 'gallery' ? '通知处理' : '结果送达' }}</dt>
+            <dd v-if="kind === 'gallery'">{{ viewer.isNotified ? '已处理' : (viewer.reviewStatus === 'PENDING' ? '—' : '待处理') }}</dd>
+            <dd v-else>{{ viewer.isNotified ? '已送达' : (viewer.reviewStatus === 'PENDING' ? '—' : '待送达') }}</dd>
           </div>
         </dl>
         <div class="gallery-viewer-actions">
+          <div v-if="kind === 'gallery'" class="gallery-ai-detail">
+            <ImageAiReviewTag :image="viewer"/>
+            <p v-if="viewer.aiReview?.reason">{{ viewer.aiReview.reason }}</p>
+            <small v-if="viewer.aiReview?.reviewedAt">{{ viewer.aiReview.model }} · {{ formatTime(viewer.aiReview.reviewedAt) }}</small>
+          </div>
           <template v-if="viewer.reviewStatus === 'PENDING'">
             <button class="primary-button" :disabled="busy === viewer.id" @click="review(viewer, 'REVIEWED')">通过
             </button>
@@ -301,6 +319,7 @@
       </aside>
     </div>
 
+    <ImageAiReviewSettings v-if="aiSettingsOpen" :api="api" @close="aiSettingsOpen = false"/>
     <!-- 拒绝理由 -->
     <div v-if="denyTarget" class="modal-backdrop" @click.self="closeDeny">
       <div class="modal">
@@ -316,7 +335,7 @@
         <div class="modal-body">
           <div class="reply-context">
             <div class="feedback-label">#{{ shortId(denyTarget.id) }} · {{ denyTarget.uploaderName || '匿名' }}</div>
-            <div class="feedback-text">拒绝理由会随审核结果一并通知</div>
+            <div class="feedback-text">{{ kind === 'gallery' ? '普通拒绝会通知投稿人，静默拒绝不发送通知' : '拒绝理由会随审核结果一并通知' }}</div>
           </div>
           <select v-if="denyReasons.length" v-model="denyRemark" class="quick-reply-select">
             <option value="" disabled>快捷理由…</option>
@@ -326,7 +345,9 @@
         </div>
         <div class="modal-foot">
           <button class="ghost-button" @click="closeDeny">取消</button>
-          <button class="primary-button" :disabled="submitting" @click="doDeny">
+          <button v-if="kind === 'gallery'" class="ghost-button danger" :disabled="submitting"
+                  @click="doDeny(true)">静默拒绝</button>
+          <button class="primary-button" :disabled="submitting" @click="doDeny(false)">
             {{ submitting ? '提交中...' : '确认拒绝' }}
           </button>
         </div>
@@ -342,6 +363,8 @@ import {ref, reactive, computed, onMounted, onUnmounted, defineAsyncComponent} f
 import {useRouter} from 'vue-router'
 import {API_BASE} from '../../router.js'
 import AppShell from '../../shared/components/AppShell.vue'
+import ImageAiReviewSettings from './components/ImageAiReviewSettings.vue'
+import ImageAiReviewTag from './components/ImageAiReviewTag.vue'
 import {useBotConfig} from '../../shared/lib/botConfig.js'
 
 import {formatTime} from '../../shared/lib/time.js'
@@ -350,6 +373,44 @@ import {isBlockedCosUrl} from '../../shared/lib/mediaUrl.js'
 const {loadBotConfig} = useBotConfig()
 const MaterialImagesPanel = defineAsyncComponent(() => import('./components/MaterialImagesPanel.vue'))
 const materialBusy = ref(false)
+const aiSettingsOpen = ref(false), aiBusy = ref('')
+let aiPollTimer, aiPolling = false, disposed = false, aiRevision = 0
+
+async function requestAiReview(item) {
+  if (aiBusy.value) return
+  aiRevision++
+  aiBusy.value = item.id
+  try {
+    await api(`/gallery/ai/review/${encodeURIComponent(item.id)}`, {method: 'POST'})
+    item.aiReview = {status: 'QUEUED'}
+  } catch (e) { window.alert(e.message) }
+  finally { aiBusy.value = '' }
+}
+
+async function pollAiResults() {
+  if (aiPolling || aiBusy.value || mutating.value || disposed || document.hidden || kind.value !== 'gallery' || !items.value.some(item => item.reviewStatus === 'PENDING' && item.aiReview?.status === 'QUEUED')) return
+  aiPolling = true
+  const currentPage = page.value, currentFilter = filter.value
+  const revision = aiRevision
+  try {
+    const data = await api(`/gallery/list?page=${currentPage}&pageSize=${pageSize}&status=${currentFilter}`)
+    if (disposed || revision !== aiRevision || kind.value !== 'gallery' || page.value !== currentPage || filter.value !== currentFilter) return
+    const changed = total.value !== data.total || items.value.some(item => !data.items.some(row => row.id === item.id && row.reviewStatus === item.reviewStatus))
+    items.value = data.items.map(row => {
+      const item = items.value.find(item => item.id === row.id)
+      return item ? Object.assign(item, row) : row
+    })
+    total.value = data.total
+    for (const id of selection) if (!items.value.some(item => item.id === id)) selection.delete(id)
+    if (viewer.value) {
+      const row = items.value.find(item => item.id === viewer.value.id)
+      if (row) Object.assign(viewer.value, row)
+      else closeViewer()
+    }
+    if (changed) await fetchCounts()
+  } catch { /* 下次轮询重试，保留当前列表 */ }
+  finally { aiPolling = false }
+}
 
 function visibleUrl(url) {
   return url && !isBlockedCosUrl(url) ? url : ''
@@ -511,12 +572,13 @@ async function review(item, status, remark) {
   }
 }
 
-async function bulkReview(status) {
+async function bulkReview(status, silent = false) {
+  if (bulkBusy.value) return
   bulkBusy.value = true
   try {
     const result = await api(`/${kind.value}/review-batch`, {
       method: 'POST',
-      body: JSON.stringify({ids: [...selection], status, remark: ''})
+      body: JSON.stringify({ids: [...selection], status, remark: '', ...(kind.value === 'gallery' ? {silent} : {})})
     })
     if (result.success < result.total) alert(`已处理 ${result.success} / ${result.total} 张，其余申请已发生变化，请刷新确认`)
     clearSelection()
@@ -572,14 +634,15 @@ function closeDeny() {
   denyRemark.value = ''
 }
 
-async function doDeny() {
+async function doDeny(silent = false) {
+  if (submitting.value || !denyTarget.value) return
   submitting.value = true
   const target = denyTarget.value
   const remark = denyRemark.value.trim()
   try {
     await api(`/${kind.value}/review`, {
       method: 'POST',
-      body: JSON.stringify({id: target.id, status: 'DENIED', remark})
+      body: JSON.stringify({id: target.id, status: 'DENIED', remark, ...(kind.value === 'gallery' ? {silent} : {})})
     })
     closeDeny()
     if (viewer.value && viewer.value.id === target.id) closeViewer()
@@ -619,6 +682,7 @@ function hasProcessedInfo(item) {
 }
 
 function onKey(e) {
+  if (aiSettingsOpen.value) return
   if (!viewer.value) return
   if (e.key === 'Escape') closeViewer()
   else if (e.key === 'ArrowLeft') step(-1)
@@ -626,6 +690,7 @@ function onKey(e) {
 }
 
 onMounted(async () => {
+  aiPollTimer = window.setInterval(pollAiResults, 5000)
   window.addEventListener('keydown', onKey)
   try {
     await loadBotConfig(api)
@@ -637,6 +702,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
+  window.clearInterval(aiPollTimer)
   window.removeEventListener('keydown', onKey)
 })
 </script>

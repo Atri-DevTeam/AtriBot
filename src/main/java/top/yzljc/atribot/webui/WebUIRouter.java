@@ -81,6 +81,12 @@ public class WebUIRouter {
         server.get("/openapi/bot_stats", BotStatsController::query);
 
         // API routes
+        server.get("/webui/api/update-notice", UpdateNoticeController::get);
+        server.put("/webui/api/update-notice", UpdateNoticeController::save);
+        server.put("/webui/api/update-notice/settings", UpdateNoticeController::saveSettings);
+        server.put("/webui/api/update-notice/layouts", UpdateNoticeController::saveLayouts);
+        server.put("/webui/api/update-notice/buttons", UpdateNoticeController::saveButtons);
+        SurveyController.register(server);
         server.get("/webui/api/channels/query/{operation}", ChannelController::query);
         server.post("/webui/api/channels/action/{operation}", ChannelController::action);
         server.get("/webui/api/stats/database", DatabaseStatsController::usage);
@@ -233,6 +239,9 @@ public class WebUIRouter {
 
         // 图源管理
         server.get("/webui/api/gallery/list", ContentController::listGallery);
+        server.get("/webui/api/gallery/ai/settings", ImageAiReviewController::getSettings);
+        server.put("/webui/api/gallery/ai/settings", ImageAiReviewController::saveSettings);
+        server.post("/webui/api/gallery/ai/review/{id}", ImageAiReviewController::retry);
         server.get("/webui/api/gallery/count", ContentController::countGallery);
         server.post("/webui/api/gallery/review", ContentController::reviewGallery);
         server.post("/webui/api/gallery/review-batch", ContentController::reviewGalleryBatch);

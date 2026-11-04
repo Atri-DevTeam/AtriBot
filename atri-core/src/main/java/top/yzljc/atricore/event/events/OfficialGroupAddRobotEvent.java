@@ -5,6 +5,7 @@ import lombok.Getter;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
@@ -25,6 +26,17 @@ public class OfficialGroupAddRobotEvent extends Event {
     private final String groupOpenId;
     private final String opMemberOpenId;
     private final String timestamp;
+
+    /**
+     * 使用机器人加群事件 ID，向当前群发送卡片开场白
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendOpeningMessage(Card card) {
+        return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), card);
+    }
 
     /**
      * 被动消息群开放白消息 - 纯文本

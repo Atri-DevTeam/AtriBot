@@ -11,6 +11,18 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_BASE),
   routes: [
     {
+      path: '/update-notice',
+      name: 'updateNotice',
+      component: () => import('./features/update/UpdateNoticeView.vue'),
+      meta: { requiresAuth: true, title: '更新日志' }
+    },
+    {
+      path: '/surveys',
+      name: 'surveys',
+      component: () => import('./features/surveys/SurveysView.vue'),
+      meta: { requiresAuth: true, title: '问卷调查' }
+    },
+    {
       path: '/channels',
       name: 'channels',
       component: () => import('./features/channels/ChannelView.vue'),
@@ -113,6 +125,12 @@ const router = createRouter({
       name: 'debug',
       component: () => import('./features/debug/ApiDebugView.vue'),
       meta: { requiresAuth: true, title: '调试' }
+    },
+    {
+      path: '/connect',
+      name: 'connect',
+      component: () => import('./features/connect/ConnectApiView.vue'),
+      meta: { requiresAuth: true, title: 'API接口' }
     },
     {
       path: '/logout',

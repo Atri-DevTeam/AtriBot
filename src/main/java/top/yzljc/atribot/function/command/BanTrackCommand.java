@@ -74,7 +74,7 @@ public class BanTrackCommand implements CommandExecutor {
         }
 
         Markdown md = TC.md(
-                Markdown.img(data.url(), data.width(), data.height())
+                Markdown.img(data.url(), data.width(), data.height()) + "\n\n" + Markdown.at(sender.getUserId()) + "\n\n> " + Markdown.enterCommand("/tasks enable hyp_banwave_alert", "✨订阅封禁数据波动告警")
         );
 
 //        Object buttons = TC.keyboard(
@@ -94,7 +94,7 @@ public class BanTrackCommand implements CommandExecutor {
                 )
         );
 
-        sender.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
+        sender.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())), false);
 
         return true;
     }

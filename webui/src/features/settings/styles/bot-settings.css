@@ -2,23 +2,30 @@
 
 .bot-settings-layout {
     display: block;
+    padding: 0;
     overflow-y: auto;
     background: var(--color-bg);
 }
 
 .bot-settings-page {
     max-width: 860px;
+    width: 100%;
+    box-sizing: border-box;
     margin: 0 auto;
     padding: var(--space-5) var(--space-6) var(--space-7);
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 16px;
 }
 
 /* ---- 卡片 ---- */
 
 .bs-card {
-    padding: var(--space-5) var(--space-5) var(--space-4);
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-surface);
 }
 
 .bs-card-head {
@@ -29,7 +36,10 @@
 
 .bs-card-title {
     margin: 0;
-    font-size: var(--text-lg);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-strong);
 }
@@ -40,7 +50,7 @@
     color: var(--color-text-muted);
 }
 
-.bs-welcome-summary {
+.bs-disclosure-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -49,17 +59,17 @@
     list-style: none;
 }
 
-.bs-welcome-summary::-webkit-details-marker {
+.bs-disclosure-summary::-webkit-details-marker {
     display: none;
 }
 
-.bs-welcome-card:not([open]) > .bs-welcome-summary {
+.bs-disclosure:not([open]) > .bs-disclosure-summary {
     padding-bottom: 0;
     margin-bottom: 0;
     border-bottom: 0;
 }
 
-.bs-welcome-chevron {
+.bs-chevron {
     flex: 0 0 18px;
     width: 18px;
     height: 18px;
@@ -67,7 +77,7 @@
     transition: transform .18s ease;
 }
 
-.bs-welcome-card[open] > .bs-welcome-summary .bs-welcome-chevron {
+.bs-disclosure[open] > .bs-disclosure-summary .bs-chevron {
     transform: rotate(90deg);
 }
 
@@ -76,13 +86,13 @@
 .bs-profile {
     display: flex;
     gap: var(--space-4);
-    align-items: flex-start;
+    align-items: center;
 }
 
 .bs-avatar {
     flex: 0 0 auto;
-    width: 72px;
-    height: 72px;
+    width: 60px;
+    height: 60px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
     object-fit: cover;
@@ -114,8 +124,10 @@
 .bs-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-2) var(--space-5);
-    margin: var(--space-4) 0 0;
+    gap: 16px 24px;
+    margin: 20px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-hairline);
 }
 
 .bs-profile-name {
@@ -135,8 +147,8 @@
 }
 
 .bs-badge--prod {
-    background: var(--color-success-soft);
-    color: var(--color-success-strong);
+    background: var(--color-accent-soft);
+    color: var(--color-accent-text);
 }
 
 .bs-badge--sandbox {
@@ -196,7 +208,7 @@
 
 /* ---- 分享二维码（悬浮气泡） ---- */
 
-/* errors-surface 默认 overflow:hidden 会裁掉气泡，资料卡需要放行 */
+/* 资料卡保留二维码浮层的显示空间 */
 .bs-profile-card {
     overflow: visible;
 }
@@ -336,7 +348,8 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: var(--text-md);
+    flex-wrap: wrap;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-text-strong);
 }
@@ -365,7 +378,8 @@
 }
 
 .bs-input {
-    width: 260px;
+    width: 210px;
+    max-width: 100%;
     height: 32px;
     padding: 0 var(--space-3);
     border: 1px solid var(--color-border-input);
@@ -373,7 +387,7 @@
     background: var(--color-surface);
     color: var(--color-text);
     font-family: var(--font-mono);
-    font-size: var(--text-base);
+    font-size: 12px;
     outline: none;
 }
 
@@ -408,6 +422,7 @@
 .bs-save-btn {
     flex: 0 0 auto;
     min-height: 32px;
+    font-size: 12px;
 }
 
 /* ---- 面板设置（行式结构与基础设置共用 bs-setting-row） ---- */
@@ -420,6 +435,7 @@
 
 .bs-reset-btn {
     min-height: 32px;
+    font-size: 12px;
 }
 
 .bs-background-opacity {
@@ -447,61 +463,68 @@
     text-align: right;
 }
 
-/* ---- 手机端 ---- */
+/* ---- 页面主题与分区 ---- */
+
+.bot-settings-workspace {
+    --color-bg: #f6f7f9;
+    --color-border: #e7e9ee;
+    --color-border-input: #dce1e8;
+    --color-hairline: #eef0f3;
+    --color-accent: #0099ff;
+    --color-accent-hover: #0088e6;
+    --color-accent-active: #007acc;
+    --color-accent-soft: #edf7ff;
+    --color-accent-border: #c9e7fc;
+    --color-accent-text: #0085df;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --focus-ring: 0 0 0 3px rgb(0 153 255 / 12%);
+}
+
+.bs-card-title svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--color-accent-text); }
+.bs-card-head > .bs-card-desc, .bs-disclosure-summary .bs-card-desc { margin-left: 27px; line-height: 1.7; }
+.bs-disclosure-summary > div { min-width: 0; }
+.bs-disclosure-summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 6px; border-radius: 4px; }
+.bs-disclosure-summary:hover .bs-chevron { color: var(--color-accent-text); }
+.bs-profile-caption { font-size: 11px; color: var(--color-text-subtle); margin-right: 8px; }
+.bs-field { min-width: 0; }
+.bs-setting-control { max-width: 100%; }
+.bot-settings-workspace .nt-switch.on { background: var(--color-accent); border-color: var(--color-accent); }
+.bot-settings-workspace .chatnt-scan-submit { color: var(--color-accent-text); background: var(--color-accent-soft); border-color: var(--color-accent-border); font-size: 12px; border-radius: 7px; }
+.bot-settings-workspace .bs-settings-footer .primary-button { padding: 6px 16px; border-radius: 8px; }
+
+/* ---- 响应式布局 ---- */
 
 @media (max-width: 760px) {
     .bot-settings-page {
-        padding: var(--space-4) var(--space-4) var(--space-6);
+        padding: 14px 12px 28px;
+        gap: 12px;
     }
 
     .bs-card {
-        padding: var(--space-4) var(--space-3);
+        padding: 16px;
+        border-radius: 12px;
     }
 
-    /* 头部：保持「头像在左、信息在右」的紧凑行布局，只缩小头像与间距 */
-    .bs-profile {
-        gap: var(--space-3);
-    }
+    .bs-profile { gap: 12px; }
+    .bs-avatar { width: 48px; height: 48px; }
+    .bs-profile-name { font-size: 17px; }
+    .bs-profile-caption { display: none; }
+    .bs-profile-name-row { gap: 6px; }
+    .bs-share-actions { margin-left: 0; }
+    .bs-fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .bs-field dd { font-size: 11px; }
 
-    .bs-avatar {
-        width: 56px;
-        height: 56px;
-    }
+    .bs-setting-row { gap: 12px; }
+    .bs-setting-row--input { flex-direction: column; align-items: stretch; gap: 8px; }
+    .bs-input { width: 100%; }
+    .bs-setting-desc { line-height: 1.6; }
+    .bs-settings-footer { flex-wrap: wrap; }
+    .bs-background-opacity { gap: 6px; }
+    .bs-background-opacity input { width: 90px; }
+    .bs-share-popover { right: auto; left: 0; }
+}
 
-    .bs-avatar-placeholder {
-        font-size: var(--text-xl);
-    }
-
-    .bs-profile-name-row {
-        row-gap: var(--space-1);
-    }
-
-    .bs-profile-name {
-        font-size: var(--text-lg);
-    }
-
-    /* 二维码图标独占一行，靠左贴着头像列 */
-    .bs-share-actions {
-        flex-basis: 100%;
-        margin-left: 0;
-    }
-
-    .bs-fields {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-2) var(--space-4);
-    }
-
-    .bs-setting-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--space-2);
-    }
-
-    .bs-input {
-        width: 100%;
-    }
-
-    .bs-settings-footer {
-        flex-wrap: wrap;
-    }
+@media (prefers-reduced-motion: reduce) {
+    .bs-chevron { transition: none; }
 }

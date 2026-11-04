@@ -50,7 +50,10 @@
     color: var(--ui-accent);
 }
 
-.game-emblem svg { width: 18px; height: 18px; }
+.game-emblem svg {
+    width: 18px;
+    height: 18px;
+}
 
 .game-card-heading h3 {
     margin: 0;
@@ -75,7 +78,11 @@
     text-align: right;
 }
 
-.game-score > span { color: var(--ui-muted); font-size: 12px; line-height: 1.5; }
+.game-score > span {
+    color: var(--ui-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
 
 .game-score strong {
     color: var(--ui-text);
@@ -87,7 +94,12 @@
     overflow-wrap: anywhere;
 }
 
-.game-score small { margin-left: 5px; color: var(--ui-muted); font-size: 12px; font-weight: 400; }
+.game-score small {
+    margin-left: 5px;
+    color: var(--ui-muted);
+    font-size: 12px;
+    font-weight: 400;
+}
 
 .game-metrics {
     display: grid;
@@ -107,10 +119,28 @@
     padding: 10px 0;
 }
 
-.game-rankings { margin-top: 16px; border-top: 1px solid var(--ui-border); padding-top: 12px; }
-.game-rankings summary { cursor: pointer; color: var(--ui-muted); font-size: 12px; }
-.game-rankings .game-metrics { border-top: 0; }
-.game-metrics dt { min-width: 0; color: var(--ui-muted); font-size: 12px; line-height: 1.6; }
+.game-rankings {
+    margin-top: 16px;
+    border-top: 1px solid var(--ui-border);
+    padding-top: 12px;
+}
+
+.game-rankings summary {
+    cursor: pointer;
+    color: var(--ui-muted);
+    font-size: 12px;
+}
+
+.game-rankings .game-metrics {
+    border-top: 0;
+}
+
+.game-metrics dt {
+    min-width: 0;
+    color: var(--ui-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
 
 .game-metrics dd {
     margin: 0;
@@ -124,25 +154,62 @@
     overflow-wrap: anywhere;
 }
 
-.game-best { margin: 10px 0 0; padding-top: 12px; border-top: 1px solid var(--ui-border); color: var(--ui-muted); font-size: 11px; line-height: 1.6; }
-.game-error { padding: 12px 0; color: var(--ui-danger); font-size: 12px; }
+.game-best {
+    margin: 10px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--ui-border);
+    color: var(--ui-muted);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.game-error {
+    padding: 12px 0;
+    color: var(--ui-danger);
+    font-size: 12px;
+}
 
 @media (max-width: 960px) {
-    .games-grid { grid-template-columns: minmax(0, 1fr); }
+    .games-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 @media (max-width: 760px) {
-    .games-grid { gap: 12px; }
-    .game-card { padding: 16px; }
-    .game-overview { gap: 12px; padding-bottom: 14px; }
-    .game-score strong { font-size: 24px; }
-    .game-metrics { column-gap: 20px; }
-    .data-page .activity-row p { font-size: 12px; }
-    .data-page .activity-date { font-size: 11px; }
+    .games-grid {
+        gap: 12px;
+    }
+
+    .game-card {
+        padding: 16px;
+    }
+
+    .game-overview {
+        gap: 12px;
+        padding-bottom: 14px;
+    }
+
+    .game-score strong {
+        font-size: 24px;
+    }
+
+    .game-metrics {
+        column-gap: 20px;
+    }
+
+    .data-page .activity-row p {
+        font-size: 12px;
+    }
+
+    .data-page .activity-date {
+        font-size: 11px;
+    }
 }
 
 @media (max-width: 360px) {
-    .game-metrics { grid-template-columns: minmax(0, 1fr); }
+    .game-metrics {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .activity-panel {
@@ -363,12 +430,25 @@
     }
 }
 
-.data-page .activity-row { border-bottom: 0; }
+.data-page .activity-row {
+    border-bottom: 0;
+}
 
-.data-page .activity-row:last-child { border-right: 0; }
+.data-page .activity-row:last-child {
+    border-right: 0;
+}
 
 @media (max-width: 760px) {
-  .data-page .activity-row:nth-child(2n) { border-right: 0; }
-  .data-page .activity-row:nth-child(-n+2) { border-bottom: 1px solid var(--ui-border); }
-  .profile-details > .settings-card { padding-top: 24px; border-top: 1px solid var(--ui-border); }
+    .data-page .activity-row:nth-child(2n) {
+        border-right: 0;
+    }
+
+    .data-page .activity-row:nth-child(-n+2) {
+        border-bottom: 1px solid var(--ui-border);
+    }
+
+    .profile-details > .settings-card {
+        padding-top: 24px;
+        border-top: 1px solid var(--ui-border);
+    }
 }

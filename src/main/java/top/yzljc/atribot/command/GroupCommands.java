@@ -29,6 +29,8 @@ public final class GroupCommands {
         service.register("rsp", "石头剪刀布", true, true, (label, args) -> true);
         service.register("sound", "听声辨物", true, true, (label, args) -> args.length == 0);
         service.register("fish", "今日钓鱼", true, true, (label, args) -> true);
+        service.register("door", "每日任意门", true, true, (label, args) -> true);
+        service.register("question", "今日问题", true, true, (label, args) -> args.length == 0);
         service.register("item", "物品卡", true, true, (label, args) -> true);
         service.register("ec", "随机附魔", true, true, (label, args) -> args.length > 0);
     }

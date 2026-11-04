@@ -28,12 +28,12 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
     public static HypixelBanWaveAlertTask TASK_INSTANCE = new HypixelBanWaveAlertTask();
 
     public HypixelBanWaveAlertTask() {
-        super("hyp_banwave_alert", "Hypixel BanWave告警", true);
+        super("hyp_banwave_alert", "Hypixel 封禁数据波动告警", true);
     }
 
     @Override
     public Markdown getDescription(Platform platform, String platformIdentifyId) {
-        return TC.md("**Hypixel BanWave告警**\n\n在Hypixel Punishment数据发生波动时予以提醒，例如：\n\n---\n\n" + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel BanWave告警\n\n> 近5分钟 225，前5分钟 100，环比 +125.0%" + " " + Markdown.enterCommand("/bantrack 6h", "详情") + "\n\n---\n\n"
+        return TC.md("**Hypixel 封禁数据波动告警**\n\n在Hypixel Punishment数据发生波动时予以提醒，例如：\n\n---\n\n" + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel 封禁数据波动告警\n\n> 近5分钟 225，前5分钟 100，环比 +125.0%" + " " + Markdown.enterCommand("/bantrack 6h", "详情") + "\n\n---\n\n"
                 + getStatus(platform, platformIdentifyId));
     }
 
@@ -50,7 +50,7 @@ public final class HypixelBanWaveAlertTask extends PushTask implements Scheduled
         var data = response.path("data");
         if (data.path("is_banwave").asBoolean(false) && tryAcquireAlert()) {
             String alert = data.path("alert").asText("");
-            PushTask.push("hyp_banwave_alert", TC.md(Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel BanWave告警\n\n" + "> " + alert + " " + Markdown.enterCommand("/bantrack 6h", "详情")));
+            PushTask.push("hyp_banwave_alert", TC.md(Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + "Hypixel 封禁数据波动告警\n\n" + "> " + alert + " " + Markdown.enterCommand("/bantrack 6h", "详情")));
         }
     }
 

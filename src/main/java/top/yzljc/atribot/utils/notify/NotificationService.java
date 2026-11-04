@@ -179,7 +179,7 @@ public class NotificationService {
         try {
             result = send.get();
         } catch (Exception e) {
-            log.warn("工单被动回复失败，准备入队补发", e);
+            log.warn("被动通知发送失败，准备入队补发", e);
         }
         if (result != null && !result.isBlank()) return true;
         queue.run();

@@ -25,15 +25,12 @@ import top.yzljc.atribot.webui.ChatChanges;
 import top.yzljc.atribot.webui.repo.ChatConversationRepo;
 import top.yzljc.atribot.webui.repo.ChatStatsSnapshotRepo;
 
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static top.yzljc.atricore.utils.StringUtils.firstNonBlank;
 import static top.yzljc.atricore.utils.StringUtils.isBlank;
@@ -739,7 +736,7 @@ public class QQChatContentRecord implements Listener {
         return null;
     }
 
-    private static GroupMessageRecord toGroupMessageRecord(java.sql.Connection conn, java.sql.ResultSet rs) throws SQLException {
+    private static GroupMessageRecord toGroupMessageRecord(Connection conn, ResultSet rs) throws SQLException {
         String groupOpenId = rs.getString("group_openId");
         return new GroupMessageRecord(
                 rs.getLong("id"),
@@ -762,7 +759,7 @@ public class QQChatContentRecord implements Listener {
         );
     }
 
-    private static String enrichMessageReference(java.sql.Connection conn, String groupOpenId, String rawReference) {
+    private static String enrichMessageReference(Connection conn, String groupOpenId, String rawReference) {
         return enrichMessageReference(conn, GROUP_TABLE, "group_openId", groupOpenId, rawReference);
     }
 
@@ -770,7 +767,7 @@ public class QQChatContentRecord implements Listener {
      * 新引用保留平台的 preview/content，仅按同会话的 msgIdx 补全作者。
      * 旧格式引用继续回查历史记录补全正文及附件。
      */
-    private static String enrichMessageReference(java.sql.Connection conn, String table, String keyColumn,
+    private static String enrichMessageReference(Connection conn, String table, String keyColumn,
                                                  String keyValue, String rawReference) {
         if (isBlank(keyValue) || isBlank(rawReference)) {
             return rawReference;
@@ -798,13 +795,13 @@ public class QQChatContentRecord implements Listener {
 
             var enrichedRoot = root.deepCopy();
             JsonNode enrichedRefNode = enrichedRoot.isArray() && !enrichedRoot.isEmpty() ? enrichedRoot.get(0) : enrichedRoot;
-            if (!(enrichedRefNode instanceof com.fasterxml.jackson.databind.node.ObjectNode refObj)) {
+            if (!(enrichedRefNode instanceof ObjectNode refObj)) {
                 return rawReference;
             }
 
             JsonNode authorJson = refObj.get("author");
-            com.fasterxml.jackson.databind.node.ObjectNode authorNode;
-            if (authorJson instanceof com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+            ObjectNode authorNode;
+            if (authorJson instanceof ObjectNode objectNode) {
                 authorNode = objectNode;
             } else {
                 authorNode = objectMapper.createObjectNode();
@@ -832,7 +829,7 @@ public class QQChatContentRecord implements Listener {
         }
     }
 
-    private static String enrichReferenceAuthor(java.sql.Connection conn, String table, String keyColumn,
+    private static String enrichReferenceAuthor(Connection conn, String table, String keyColumn,
                                                 String keyValue, ObjectNode reference, String rawReference) throws SQLException {
         if (!isBlank(reference.path("webui").path("author").asText(null))
                 || !isBlank(findReferenceAuthor(reference))) {
@@ -854,7 +851,7 @@ public class QQChatContentRecord implements Listener {
         }
     }
 
-    private static ReferenceSource findReferenceSource(java.sql.Connection conn, String table, String keyColumn,
+    private static ReferenceSource findReferenceSource(Connection conn, String table, String keyColumn,
                                                        String keyValue, JsonNode refNode) throws SQLException {
         String refMsgIdx = findRefIdxValue(refNode);
         if (!isBlank(refMsgIdx)) {
@@ -1071,7 +1068,7 @@ public class QQChatContentRecord implements Listener {
         boolean updateStats;
         long changedId;
         try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+             var stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             conn.setAutoCommit(false);
             ChatConversationRepo.lock(conn, "group", groupOpenId);
             boolean selfSend = "BOT_SEND".equals(source);
@@ -1095,7 +1092,7 @@ public class QQChatContentRecord implements Listener {
             stmt.setString(7, emptyToNull(memberRole));
             stmt.setString(8, source);
             if (messageType == null) {
-                stmt.setNull(9, java.sql.Types.INTEGER);
+                stmt.setNull(9, Types.INTEGER);
             } else {
                 stmt.setInt(9, messageType);
             }
@@ -1116,6 +1113,7 @@ public class QQChatContentRecord implements Listener {
         }
 
         // 消息连接归还后再保存统计，避免同一任务嵌套占用连接池。
+        if (!senderIsBot) OfficialUsers.updateUsername(unionOpenId, username);
         if (updateStats) {
             ChatStatsSnapshotRepo.recordGroupMessage(groupOpenId, unionOpenId, username, senderIsBot, source, eventTimestamp);
         }
@@ -1171,7 +1169,7 @@ public class QQChatContentRecord implements Listener {
         int affected;
         long changedId;
         try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+             var stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             conn.setAutoCommit(false);
             ChatConversationRepo.lock(conn, "c2c", userOpenId);
             stmt.setString(1, userOpenId);
@@ -1181,7 +1179,7 @@ public class QQChatContentRecord implements Listener {
             stmt.setBoolean(5, senderIsBot);
             stmt.setString(6, emptyToNull(source));
             if (messageType == null) {
-                stmt.setNull(7, java.sql.Types.INTEGER);
+                stmt.setNull(7, Types.INTEGER);
             } else {
                 stmt.setInt(7, messageType);
             }
@@ -1200,13 +1198,14 @@ public class QQChatContentRecord implements Listener {
             return;
         }
 
+        if (!senderIsBot) OfficialUsers.updateUsername(userOpenId, username);
         if (affected == 1) {
             ChatStatsSnapshotRepo.recordC2CMessage(userOpenId, username, senderIsBot, source, eventTimestamp);
         }
         ChatChanges.publish("c2c", userOpenId, changedId, changedId == 0);
     }
 
-    private static long generatedId(java.sql.PreparedStatement stmt) throws SQLException {
+    private static long generatedId(PreparedStatement stmt) throws SQLException {
         try (var keys = stmt.getGeneratedKeys()) {
             return keys.next() ? keys.getLong(1) : 0;
         }
@@ -1376,7 +1375,7 @@ public class QQChatContentRecord implements Listener {
         return new MessagePage<>(safePage, safePageSize, total, records, cursor);
     }
 
-    private static C2CMessageRecord toC2CMessageRecord(java.sql.Connection conn, java.sql.ResultSet rs,
+    private static C2CMessageRecord toC2CMessageRecord(Connection conn, ResultSet rs,
                                                        String username, boolean senderIsBot) throws SQLException {
         String unionOpenId = rs.getString("union_openId");
         return new C2CMessageRecord(
@@ -1496,7 +1495,7 @@ public class QQChatContentRecord implements Listener {
     /**
      * 目标消息之后还有多少条更新的记录，决定它落在分页的第几页
      */
-    private static int pageOf(java.sql.PreparedStatement newerCountStmt, String keyValue,
+    private static int pageOf(PreparedStatement newerCountStmt, String keyValue,
                               long recordId, int pageSize) throws SQLException {
         newerCountStmt.setString(1, keyValue);
         newerCountStmt.setLong(2, recordId);
@@ -1591,8 +1590,8 @@ public class QQChatContentRecord implements Listener {
      *
      * @param limit               本页条数
      * @param offset              跳过条数（只按「未被排除的会话」计数）
-     * @param excludeGroupOpenIds 需排除的群会话（置顶会话由调用方单独前置，避免重复）
-     * @param excludeC2COpenIds   需排除的私聊会话（同上）
+     * @param excludedGroups 需排除的群会话（置顶会话由调用方单独前置，避免重复）
+     * @param excludedUsers   需排除的私聊会话（同上）
      */
     public static ConversationPage fetchConversations(int limit, int offset,
                                                       Set<String> excludedGroups, Set<String> excludedUsers) {
@@ -1632,7 +1631,7 @@ public class QQChatContentRecord implements Listener {
 
     public static List<ConversationRecord> fetchConversationRecords(List<String> keys) {
         if (keys.isEmpty()) return List.of();
-        Map<String, ConversationRecord> records = new java.util.HashMap<>();
+        Map<String, ConversationRecord> records = new HashMap<>();
         try (var conn = DatabaseManager.getConnection()) {
             for (String type : List.of("group", "c2c")) {
                 var ids = keys.stream().filter(key -> key.startsWith(type + ":"))
@@ -1643,7 +1642,7 @@ public class QQChatContentRecord implements Listener {
                         + " s JOIN " + ChatConversationRepo.sourceTable(type) + " r ON r.id=s.last_id"
                         + " WHERE s.type=? AND s.open_id IN (" + placeholders(ids.size()) + ")";
                 List<Object[]> rows = new ArrayList<>();
-                Set<String> missingNames = new java.util.HashSet<>();
+                Set<String> missingNames = new HashSet<>();
                 try (var stmt = conn.prepareStatement(sql)) {
                     stmt.setString(1, type);
                     for (int i = 0; i < ids.size(); i++) stmt.setString(i + 2, ids.get(i));
@@ -1675,11 +1674,11 @@ public class QQChatContentRecord implements Listener {
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to load conversation summaries", e);
         }
-        return keys.stream().map(records::get).filter(java.util.Objects::nonNull).toList();
+        return keys.stream().map(records::get).filter(Objects::nonNull).toList();
     }
 
     private static String placeholders(int count) {
-        return String.join(",", java.util.Collections.nCopies(count, "?"));
+        return String.join(",", Collections.nCopies(count, "?"));
     }
 
     private static ConversationRecord buildGroupConversation(Object[] row) {
@@ -1733,12 +1732,12 @@ public class QQChatContentRecord implements Listener {
      * 批量版 {@link #findLatestKnownUsername}：一次查询取回一批 unionOpenId 各自最近一次
      * 非空、非机器人发送的用户名，避免 fetchConversations 对每个私聊会话单独发一条子查询。
      */
-    private static Map<String, String> batchFindLatestKnownUsernames(java.sql.Connection conn, java.util.Set<String> unionOpenIds) throws SQLException {
-        Map<String, String> resultMap = new java.util.HashMap<>();
+    private static Map<String, String> batchFindLatestKnownUsernames(Connection conn, Set<String> unionOpenIds) throws SQLException {
+        Map<String, String> resultMap = new HashMap<>();
         if (unionOpenIds.isEmpty()) {
             return resultMap;
         }
-        String placeholders = String.join(",", java.util.Collections.nCopies(unionOpenIds.size(), "?"));
+        String placeholders = String.join(",", Collections.nCopies(unionOpenIds.size(), "?"));
         String sql = "SELECT union_openId, username FROM (" +
                 "  SELECT union_openId, username, created_at, " +
                 "         ROW_NUMBER() OVER (PARTITION BY union_openId ORDER BY created_at DESC) AS rn " +
@@ -1781,11 +1780,11 @@ public class QQChatContentRecord implements Listener {
             String text = String.join(" ", openId, name == null ? "" : name,
                     realGroupId == null ? "" : realGroupId.toString(), lastSenderName == null ? "" : lastSenderName,
                     ChatPreview.render(lastContent, lastAttachments, lastArk));
-            return text.toLowerCase(java.util.Locale.ROOT).contains(query.toLowerCase(java.util.Locale.ROOT));
+            return text.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
         }
     }
 
-    private static String findLatestKnownUsername(java.sql.Connection conn, String userOpenId) {
+    private static String findLatestKnownUsername(Connection conn, String userOpenId) {
         if (isBlank(userOpenId)) {
             return null;
         }

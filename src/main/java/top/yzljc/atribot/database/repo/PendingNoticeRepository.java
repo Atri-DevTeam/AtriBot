@@ -180,8 +180,12 @@ public class PendingNoticeRepository {
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement("SELECT 1 FROM pending_notice WHERE id=? AND is_delivered=FALSE")) {
             ps.setString(1, id);
-            try (var rs = ps.executeQuery()) { return rs.next(); }
-        } catch (Exception e) { throw new IllegalStateException("读取通知投递状态失败", e); }
+            try (var rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("读取通知投递状态失败", e);
+        }
     }
 
     /**

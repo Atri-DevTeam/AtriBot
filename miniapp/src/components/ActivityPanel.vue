@@ -6,6 +6,12 @@ import {number, recordDate, type Activity} from '../activity'
 const props = defineProps<{activity: Activity | null; busy: boolean; failed: boolean}>()
 const emit = defineEmits<{retry: []}>()
 const problem = (section: string) => props.failed || Boolean(props.activity?.unavailable.includes(section))
+const lootRanks = computed(() => {
+  const labels: Record<string, string> = {ownedCards: '持有数量', collectedTypes: '收集种类', normalCollectionCompletion: '普通卡完成度'}
+  return Object.entries(props.activity?.rankings?.loot ?? {}).filter(([key]) => labels[key])
+      .map(([key, rank]) => ({key, label: labels[key], rank}))
+})
+const freeDrawNames = {available: '可领取', used: '已领取', locked: '结算中'}
 const rankLabels: Record<string, string> = {
   participations: '参与次数', plays: '结算场次', wins: '获胜次数', losses: '失败次数', draws: '平局次数',
   operations: '有效操作', digs: '挖格次数', mineHits: '触雷次数', flagsPlaced: '插旗次数', flagsRemoved: '拔旗次数',
@@ -105,6 +111,26 @@ const games = computed(() => {
 
 <template>
   <div class="activity-panel">
+    <div class="module-heading"><div><Icon name="collection"/><h2>抽卡数据</h2></div></div>
+    <section class="game-card glass loot-card" aria-label="抽卡统计" :aria-busy="busy">
+      <div class="game-overview">
+        <header class="game-card-heading"><span class="game-emblem"><Icon name="collection"/></span><h3>物品卡收集</h3>
+          <span v-if="!problem('loot') && activity?.rankings?.loot?.ownedCards" class="game-rank">排名：#{{ number(activity.rankings.loot.ownedCards) }}</span></header>
+        <div class="game-score"><span>普通卡完成度</span><strong>{{ !problem('loot') && activity?.loot?.normalCollectionCompletion != null ? activity.loot.normalCollectionCompletion.toFixed(2) + '%' : '—' }}</strong></div>
+      </div>
+      <p v-if="problem('loot')" class="game-error">暂时无法读取</p>
+      <template v-else>
+        <dl class="game-metrics">
+          <div><dt>持有数量（含特殊卡）</dt><dd>{{ number(activity?.loot?.ownedCards) }}</dd></div>
+          <div><dt>收集种类（含特殊卡）</dt><dd>{{ number(activity?.loot?.collectedTypes) }}</dd></div>
+          <div><dt>普通卡种类</dt><dd>{{ number(activity?.loot?.collectedNormalTypes) }} / {{ number(activity?.loot?.normalCatalogTypes) }}</dd></div>
+          <div><dt>今日免费抽取</dt><dd>{{ activity?.freeDraw ? freeDrawNames[activity.freeDraw] : '—' }}</dd></div>
+        </dl>
+        <details v-if="lootRanks.length" class="game-rankings"><summary>各项排名</summary>
+          <dl class="game-metrics"><div v-for="rank in lootRanks" :key="rank.key"><dt>{{ rank.label }}</dt><dd>第 {{ number(rank.rank) }} 名</dd></div></dl>
+        </details>
+      </template>
+    </section>
     <div class="module-heading">
       <div>
         <Icon name="gamepad"/>
@@ -146,3 +172,7 @@ const games = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.loot-card { margin-bottom: 28px; }
+</style>

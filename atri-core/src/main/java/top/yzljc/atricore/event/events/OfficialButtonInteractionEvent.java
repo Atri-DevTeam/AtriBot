@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.chat.ImageComponent;
@@ -34,6 +35,8 @@ import java.util.concurrent.RejectedExecutionException;
 @Getter
 @Slf4j
 public class OfficialButtonInteractionEvent extends OfficialInteractionEvents implements Cancellable {
+
+    public static final String MISSING_DATA_TAG = "missing_data";
     /**
      * 聊天类型：1 为群聊，2 为单聊
      */
@@ -126,7 +129,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         if (type == 11 && data.resolved.has("button_data")) {
             return data.resolved.get("button_data").asText();
         } else {
-            return "missing_data";
+            return MISSING_DATA_TAG;
         }
     }
 
@@ -141,6 +144,42 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
         } else {
             return "missing_data";
         }
+    }
+
+    /**
+     * 使用当前按钮交互事件 ID，向交互所在群或点击者私聊发送被动卡片回复
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnknownButtonInteractionScene                           聊天类型不是群聊或单聊
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String replyMessage(Card card) {
+        if (this.chatType == 1) {
+            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), card);
+        } else if (this.chatType == 2) {
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), card);
+        }
+        throw new UnknownButtonInteractionScene(this.chatType, this.scene);
+    }
+
+    /**
+     * 向交互所在群或点击者私聊发送主动卡片消息，不使用当前事件作为回复来源
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnknownButtonInteractionScene                           聊天类型不是群聊或单聊
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    @SuppressWarnings("UnusedReturnValue")
+    public String sendMessage(Card card) {
+        if (this.chatType == 1) {
+            return GroupChat.sendMessage(this.groupOpenId, card);
+        } else if (this.chatType == 2) {
+            return C2CChat.sendMessage(this.userOpenId, card);
+        }
+        throw new UnknownButtonInteractionScene(this.chatType, this.scene);
     }
 
     /**

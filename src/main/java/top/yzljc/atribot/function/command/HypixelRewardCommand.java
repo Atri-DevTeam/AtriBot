@@ -539,7 +539,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         }
                         sb.append("> ").append(Markdown.enterCommand("/preferences hypixel_reward", "设置自动领取规则"));
                         if (!OfficialGroups.allowProactiveMsg(session.groupId)) {
-                            sb.append("\n").append(Markdown.enterCommand("/全量消息", "/全量消息")).append("授权后可直接解析链接");
+                            sb.append("\n").append("也可以私聊机器人使用哦");
                         }
                             if (isAutoClaimEnabled) {
                             GroupChat.replyMessage(session.groupId, RT.message(session.messageId), session.userId, TC.md(sb.toString()));

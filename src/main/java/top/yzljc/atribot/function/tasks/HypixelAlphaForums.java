@@ -14,18 +14,16 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
-import top.yzljc.atricore.command.Command;
-import top.yzljc.atricore.command.CommandExecutor;
-import top.yzljc.atricore.command.CommandSender;
-import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atribot.configuration.Properties;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
-import top.yzljc.atricore.core.CoreConfig;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.utils.AtomicFiles;
 import top.yzljc.atribot.utils.FormatTools;
+import top.yzljc.atribot.service.textreview.TextReviewService;
+import top.yzljc.atribot.service.textreview.TextReviewException;
 import top.yzljc.atricore.service.taskscheduler.TaskPlan;
 import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
 import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
@@ -48,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,7 +58,7 @@ import java.util.regex.Pattern;
  * @Package top.yzljc.atribot.function.official.minecraft
  */
 @Slf4j
-public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask {
+public final class HypixelAlphaForums implements ScheduledTask {
 
     private static final String HYPIXEL_ALPHA_FORUMS_URL = "https://hypixel.net/skyblock-alpha/index.rss";
     private static final URI SKYBLOCK_SKILLS_API = URI.create("https://api.hypixel.net/v2/resources/skyblock/skills");
@@ -80,18 +79,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             "ConnorLinfoot"
     );
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof QQCommandSender qq)) return true;
-
-        boolean result = feedAnnouncements();
-        if (!result) {
-            qq.sendMessage("暂无新的 Hypixel Alpha公告");
-            return true;
-        }
-
-        return true;
-    }
 
     @Override
     public TaskSchedule schedule() {
@@ -103,15 +90,22 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
         feedAnnouncements();
     }
 
-    public static boolean feedAnnouncements() {
+    public static synchronized boolean feedAnnouncements() {
         boolean versionUpdated = checkSkyblockVersion();
         List<Announcement> announcements = checkForNewAnnouncements();
         if (announcements.isEmpty()) return versionUpdated;
 
+        Set<String> storedGuids = loadStoredGuids();
         int pushed = 0;
-        for (Announcement a : announcements) {
+        for (Announcement announcement : announcements) {
             if (pushed >= MAX_PUSH_PER_RUN) break;
-            pushed++;
+            Announcement a;
+            try {
+                a = reviewAnnouncement(announcement, TextReviewService::review);
+            } catch (TextReviewException e) {
+                log.warn("Hypixel Alpha 公告文本审查失败，跳过本次推送并在下次检查时重试，公告: {}", announcement.guid(), e);
+                continue;
+            }
 
             ImageDTO banner = a.headerImage() != null ? PreImageGenerate.dump(a.headerImage()) : null;
             if (banner != null && banner.isError()) {
@@ -124,7 +118,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             Markdown md = TC.md(
                     Markdown.img(RS.get("resource.image.hypixel-header"), 24, 24) + "**" + headerText + "**\n\n" +
                             "标题: " + a.title() + "\n\n" +
-                            "作者: " + a.author() + "\n\n" +
                             "时间: " + a.publishTime() + "\n\n" +
                             (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
@@ -134,7 +127,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
 //            String text = headerText + "！\n" +
 //                    "标题: " + a.title() + "\n" +
-//                    "作者: " + a.author() + "\n" +
 //                    "时间: " + a.publishTime() + "\n" +
 //                    "链接: " + a.link() + "\n" +
 //                    (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) + "\n" : "");
@@ -160,7 +152,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
             Markdown forumsMarkdown = TC.md(
                     "**" + headerText + "**\n\n" +
-                            "作者: " + a.author() + "\n\n" +
                             "时间: " + a.publishTime() + "\n\n" +
                             "位置: " + Markdown.link(a.link(), "查看原帖") + "\n\n" +
                             (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
@@ -168,10 +159,27 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             );
 
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), a.title(), forumsMarkdown);
+            storedGuids.add(a.guid());
+            saveGuids(storedGuids);
+            pushed++;
 //            GroupMessage.chatMessage(CoreConfig.getInstance().getSettings().getNapcatDebugGroupUin(), text.trim());
 //            GroupChat.sendMessage(CoreConfig.getInstance().getSettings().getDebugGroupOpenId(), md);
         }
-        return true;
+        return versionUpdated || pushed > 0;
+    }
+
+    /**
+     * @param announcement 待推送公告
+     * @param review 文本审查函数，失败时应抛出 TextReviewException
+     * @return 使用审查后标题和简介的公告，其他字段保持不变
+     * @throws TextReviewException 标题或简介审查失败
+     */
+    static Announcement reviewAnnouncement(Announcement announcement, UnaryOperator<String> review) {
+        String title = review.apply(announcement.title());
+        String intro = announcement.intro();
+        if (intro != null && !intro.isBlank()) intro = review.apply(intro);
+        return new Announcement(title, announcement.author(), announcement.publishTime(), announcement.link(),
+                announcement.guid(), announcement.headerImage(), intro, announcement.source(), announcement.creator());
     }
 
     public static List<Announcement> fetchAnnouncements() {
@@ -192,15 +200,18 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
     public static boolean checkSkyblockVersion() {
         return checkSkyblockVersion(SKYBLOCK_SKILLS_API, Path.of(Properties.SKYBLOCK_VERSION_CACHE), version -> {
 
-            Markdown md = TC.md(Markdown.img(RS.get("resource.image.skyblock-logo"), 20, 20) + "**SkyBlock 发布了新的版本**\n\n" +
-                    "> 版本变动: " + version.previousVersion() + " ⟶ " + version.version() + "\n" +
-                    "> 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()));
+//            Markdown md = TC.md(Markdown.img(RS.get("resource.image.skyblock-logo"), 20, 20) + "**SkyBlock 发布了新的版本**\n\n" +
+//                    "> 版本变动: " + version.previousVersion() + " ⟶ " + version.version() + "\n" +
+//                    "> 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()));
+
+            Card card = Card.tuWen("Skyblock发布了新版本", "版本变动: " + version.previousVersion() + " ⟶ " + version.version() + ", 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()),
+                    RS.get("resource.image.skyblock-logo"), "https://bot.yzljc.top");
 
             Markdown gmd = TC.md("**SkyBlock 发布了新的版本**\n\n" +
                     "> 版本变动: " + version.previousVersion() + " ⟶ " + version.version() + "\n" +
                     "> 更新时间: " + FormatTools.formatTimestampMilli(version.lastUpdated()));
 
-            PushTask.push("hyp_alpha_news", md);
+            PushTask.push("hyp_alpha_news", card);
 //            GroupChat.sendMessage(CoreConfig.getInstance().getSettings().getDebugGroupOpenId(), md);
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), "[版本更新] " + version.version(), gmd);
         });
@@ -392,26 +403,11 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
 
         Set<String> storedGuids = loadStoredGuids();
 
-        if (storedGuids.isEmpty()) {
-            saveGuids(latest);
-            log.info("Initial announcement guids saved, {} entries", latest.size());
-
-            return latest;
-        }
-
         List<Announcement> newOnes = new ArrayList<>();
         for (Announcement announcement : latest) {
             if (!storedGuids.contains(announcement.guid())) {
                 newOnes.add(announcement);
             }
-        }
-
-        if (!newOnes.isEmpty()) {
-            for (Announcement announcement : newOnes) {
-                storedGuids.add(announcement.guid());
-            }
-            saveGuids(storedGuids);
-            log.info("{} new Hypixel announcement(s) detected and saved", newOnes.size());
         }
 
         return newOnes;
@@ -437,17 +433,6 @@ public final class HypixelAlphaForums implements CommandExecutor, ScheduledTask 
             log.warn("Failed to load stored Hypixel announcement guids, will re-create", e);
             return new HashSet<>();
         }
-    }
-
-    private static void saveGuids(List<Announcement> announcements) {
-        Set<String> guids = new HashSet<>();
-
-        for (Announcement announcement : announcements) {
-            if (announcement.guid() != null && !announcement.guid().isBlank()) {
-                guids.add(announcement.guid());
-            }
-        }
-        saveGuids(guids);
     }
 
     private static synchronized void saveGuids(Set<String> guids) {

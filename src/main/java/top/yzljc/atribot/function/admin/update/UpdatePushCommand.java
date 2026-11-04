@@ -1,5 +1,8 @@
 package top.yzljc.atribot.function.admin.update;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
@@ -8,6 +11,10 @@ import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 import top.yzljc.atricore.event.events.UserRunCommandEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMemberAddEvent;
+import top.yzljc.atricore.event.events.OfficialGroupMessageCreateEvent;
+import top.yzljc.atricore.event.events.OfficialGroupAtMessageCreateEvent;
+import top.yzljc.atricore.platform.qq.QQUser;
 import top.yzljc.atricore.platform.Identifier;
 import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.atribot.utils.FormatTools;
@@ -17,15 +24,68 @@ import top.yzljc.sakuraba_ema.utils.ForumCode;
 import java.util.Arrays;
 
 /**
+ * 更新通知管理指令、群消息推送及成员入群延迟推送
+ *
  * @Author YZ_Ljc_
  * @ClassName UpdatePushCommand
  * @Created_at 2026/06/24
  * @Project AtriMeow
- * @Package top.yzljc.atribot.utils.update
+ * @Package top.yzljc.atribot.function.admin.update
  */
 public class UpdatePushCommand implements Listener, CommandExecutor {
+    private static final Logger log = LoggerFactory.getLogger(UpdatePushCommand.class);
+    private final java.util.concurrent.ConcurrentMap<String, UpdateNoticeRecord.JoinTrigger> pendingJoins = new java.util.concurrent.ConcurrentHashMap<>();
 
-//    private static final String layout = QQBot.BOT_NAME + "近期更新日志:\n";
+    @EventHandler
+    public void onGroupMessage(OfficialGroupMessageCreateEvent event) {
+        pushPassiveMessage(event.getGroupId(), event.getMessage().getMessageId(), event.getUser());
+    }
+
+    @EventHandler
+    public void onGroupAtMessage(OfficialGroupAtMessageCreateEvent event) {
+        pushPassiveMessage(event.getGroupId(), event.getMessage().getMessageId(), event.getUser());
+    }
+
+    private void pushPassiveMessage(String groupId, String messageId, QQUser user) {
+        if (!UpdateNoticeRecord.isPassiveMessagePushEnabled() || !UpdateNoticeRecord.shouldNotify(groupId)) return;
+        if (groupId == null || groupId.isBlank() || messageId == null || messageId.isBlank()) return;
+        Atri.getInstance().getScheduler().runTaskAsynchronously(() -> {
+            try {
+                UpdateNoticeRecord.deliverPassiveOnce(groupId, (content, createdAt) -> {
+                    String message = content.render(QQBot.BOT_NAME, FormatTools.formatTimestampMilli(createdAt));
+                    return "MARKDOWN".equals(content.format())
+                            ? user.sendMessage(groupId, messageId, content.markdown(message), false)
+                            : user.sendMessage(groupId, messageId, message);
+                });
+            } catch (Exception e) {
+                log.warn("群消息更新通知发送失败，群ID {}", groupId, e);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onMemberJoin(OfficialGroupMemberAddEvent event) {
+        String groupId = event.getGroupOpenId();
+        var trigger = UpdateNoticeRecord.getJoinTrigger(groupId);
+        if (trigger == null) return;
+        pendingJoins.compute(groupId, (key, existing) -> {
+            if (trigger.equals(existing)) return existing;
+            Atri.getInstance().getScheduler().runTaskLaterAsynchronously(() -> {
+                try {
+                    UpdateNoticeRecord.deliverOnce(groupId, trigger, (content, createdAt) -> {
+                        String message = content.render(QQBot.BOT_NAME, FormatTools.formatTimestampMilli(createdAt));
+                        return "MARKDOWN".equals(content.format())
+                                ? event.sendMessage(content.markdown(message), false) : event.sendMessage(message);
+                    });
+                } catch (Exception e) {
+                    log.warn("入群事件更新通知发送失败，群ID {}", groupId, e);
+                } finally {
+                    pendingJoins.remove(groupId, trigger);
+                }
+            }, 3 * 60 * 1000L);
+            return trigger;
+        });
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -111,13 +171,13 @@ public class UpdatePushCommand implements Listener, CommandExecutor {
             return;
         }
 
-        if (groupId != null && UpdateNoticeRecord.shouldNotify(groupId)) {
-            String layout = QQBot.BOT_NAME + "近期更新日志:\n";
-
-            String pushContent = layout + "> " + FormatTools.formatTimestampMilli(UpdateNoticeRecord.getCreatedAt()) + "\n\n"
-                    + UpdateNoticeRecord.getText() + "\n\n遇到了一些问题？使用/feedback向开发者反馈！";
-            event.getSender().sendMessage(pushContent);
-            UpdateNoticeRecord.markNotified(groupId);
-        }
+        UpdateNoticeRecord.deliverOnce(groupId, null, (content, createdAt) -> {
+            String pushContent = content.render(QQBot.BOT_NAME, FormatTools.formatTimestampMilli(createdAt));
+            if ("MARKDOWN".equals(content.format())) {
+                return ((QQCommandSender) event.getSender()).sendMessage(content.markdown(pushContent), false);
+            } else {
+                return event.getSender().sendMessage(pushContent);
+            }
+        });
     }
 }

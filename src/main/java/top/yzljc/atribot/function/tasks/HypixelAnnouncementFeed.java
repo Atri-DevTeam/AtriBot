@@ -18,6 +18,8 @@ import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.utils.AtomicFiles;
+import top.yzljc.atribot.service.textreview.TextReviewException;
+import top.yzljc.atribot.service.textreview.TextReviewService;
 import top.yzljc.sakuraba_ema.guild.ChannelPosts;
 import top.yzljc.sakuraba_ema.utils.ForumCode;
 
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,7 +68,6 @@ public final class HypixelAnnouncementFeed {
     private static final int INTRO_MAX_LENGTH = 100;
     private static final int MAX_PUSH_PER_RUN = 3;
     private static final Pattern GUID_NUMBER_PATTERN = Pattern.compile("(\\d+)");
-    private static final String HYPIXEL_HEADER_URL = RS.get("resource.image.hypixel-header");
 
     static boolean pushAnnouncements(List<Announcement> announcements, String functionId) {
         if (announcements.isEmpty()) return false;
@@ -84,9 +86,8 @@ public final class HypixelAnnouncementFeed {
             String headerText = a.source() + " 发布了新的公告";
 
             Markdown md = TC.md(
-                    Markdown.img(HYPIXEL_HEADER_URL, 24, 24) + "**" + headerText + "**\n\n" +
+                    Markdown.img(RS.get("resource.image.hypixel-header"), 24, 24) + "**" + headerText + "**\n\n" +
                             "标题: " + a.title() + "\n\n" +
-                            "作者: " + a.author() + "\n\n" +
                             "时间: " + a.publishTime() + "\n\n" +
                             (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
                             ((banner != null) ? "\n\n" + Markdown.img("banner", banner.url(), banner.width(), banner.height()) : "")
@@ -96,7 +97,6 @@ public final class HypixelAnnouncementFeed {
 
             Markdown forumsMarkdown = TC.md(
                     "**" + headerText + "**\n\n" +
-                            "作者: " + a.author() + "\n\n" +
                             "时间: " + a.publishTime() + "\n\n" +
                             "位置: " + Markdown.link(a.link(), "查看原帖") + "\n\n" +
                             (a.intro() != null && !a.intro().isBlank() ? ("简介: " + a.intro()) : "") +
@@ -246,25 +246,28 @@ public final class HypixelAnnouncementFeed {
 
         // 两个任务共用历史文件，读取、合并、写回必须一起加锁，避免覆盖对方记录。
         synchronized (HISTORY_LOCK) {
-            return recordNewAnnouncements(latest);
+            return recordNewAnnouncements(latest, TextReviewService::review);
         }
     }
 
-    private List<Announcement> recordNewAnnouncements(List<Announcement> latest) {
+    List<Announcement> recordNewAnnouncements(List<Announcement> latest, UnaryOperator<String> review) {
         Set<String> storedGuids = loadStoredGuids();
-
-        if (storedGuids.isEmpty()) {
-            saveGuids(latest);
-            log.info("Initial announcement guids saved, {} entries", latest.size());
-
-            return latest;
-        }
 
         List<Announcement> newOnes = new ArrayList<>();
 
         for (Announcement announcement : latest) {
+            if (newOnes.size() >= MAX_PUSH_PER_RUN) break;
             if (!storedGuids.contains(announcement.guid())) {
-                newOnes.add(announcement);
+                try {
+                    String title = review.apply(announcement.title());
+                    String intro = announcement.intro();
+                    if (intro != null && !intro.isBlank()) intro = review.apply(intro);
+                    newOnes.add(new Announcement(title, announcement.author(), announcement.publishTime(),
+                            announcement.link(), announcement.guid(), announcement.headerImage(), intro, announcement.source()));
+                } catch (TextReviewException e) {
+                    log.warn("{} 公告文本审查失败，跳过本次推送并在下次检查时重试，公告: {}",
+                            source, announcement.guid(), e);
+                }
             }
         }
 
@@ -302,18 +305,6 @@ public final class HypixelAnnouncementFeed {
             log.warn("Failed to load stored Hypixel announcement guids, will re-create", e);
             return new HashSet<>();
         }
-    }
-
-    private void saveGuids(List<Announcement> announcements) {
-        Set<String> guids = new HashSet<>();
-
-        for (Announcement announcement : announcements) {
-            if (announcement.guid() != null && !announcement.guid().isBlank()) {
-                guids.add(announcement.guid());
-            }
-        }
-
-        saveGuids(guids);
     }
 
     private void saveGuids(Set<String> guids) {

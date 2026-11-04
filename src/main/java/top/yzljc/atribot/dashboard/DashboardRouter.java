@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static top.yzljc.atricore.utils.StringUtils.firstNonBlank;
+
 /**
  * Dashboard 的 QQ 互联授权、绑定与页面会话入口
  *
@@ -40,7 +42,7 @@ public final class DashboardRouter {
     private DashboardRouter() {
     }
 
-    record StartRequest(String userOpenId, String ticket, String nav, String wwv, boolean mobile, boolean qq) {
+    record StartRequest(String userOpenId, String ticket, String nav, String wwv, boolean mobile, boolean qq, String survey) {
     }
 
     @FunctionalInterface
@@ -99,6 +101,11 @@ public final class DashboardRouter {
         server.before("/auth/qq/callback", ctx -> guard(ctx, configuration.get()));
         server.get("/dashboard", DashboardRouter::index);
         server.get("/dashboard/", DashboardRouter::index);
+        server.get("/dashboard/surveys", DashboardRouter::index);
+        server.get("/dashboard/surveys/{id}", ctx -> {
+            if (!ctx.pathParam("id").matches("[0-9a-f]{12}")) throw new io.javalin.http.NotFoundResponse();
+            index(ctx);
+        });
         server.get("/dashboard/api/bot", ctx -> ctx.json(MiniappProfileService.currentBot()));
 
         server.post("/dashboard/api/auth/start", ctx -> {
@@ -108,6 +115,10 @@ public final class DashboardRouter {
             if (request == null || request.userOpenId() != null && request.userOpenId().length() > 128
                     || request.ticket() != null && request.ticket().length() > 128) throw new BadRequestResponse();
             String navigation = navigation(request.nav(), request.wwv(), request.qq());
+            if (request.survey() != null) {
+                if (!request.survey().matches("list|[0-9a-f]{12}")) throw new BadRequestResponse();
+                navigation += (navigation.isEmpty() ? "" : "&") + "survey=" + request.survey();
+            }
             try {
                 String state = sessions.begin(request.userOpenId(), request.ticket(), settings, navigation);
                 cookie(ctx, STATE_COOKIE, state, "/", DashboardSessions.STATE_SECONDS, settings);
@@ -154,7 +165,10 @@ public final class DashboardRouter {
                             authorizedProfile = profile;
 
                             var account = identity == null ? null : UnifiedAuthentication.getCachedQqUserAccount(identity.userId());
-                            LOG.info("[!] QQ互联登陆授权成功，统一身份用户：{}(权限组：{}), 机器人平台ID：{}，互联平台ID：{}",
+                            String username = firstNonBlank(OfficialUsers.getUsername(identity.userId()),
+                                    profile.nickname(), identity.displayName(), "未知用户");
+                            LOG.info("[!] QQ互联登陆授权成功，用户名：{}，统一身份用户：{}(权限组：{}), 机器人平台ID：{}，互联平台ID：{}",
+                                    username,
                                     account == null ? "未绑定" : account.uuid(),
                                     account == null ? "未绑定" : account.role(),
                                     identity == null ? "未绑定" : identity.userId(), qqOpenId);
@@ -184,7 +198,7 @@ public final class DashboardRouter {
             }
             String query = pending.navigation();
             if (error != null) query += (query.isEmpty() ? "" : "&") + "auth_error=" + error;
-            ctx.redirect("/dashboard/" + (query.isEmpty() ? "" : "?" + query));
+            ctx.redirect(surveyDestination(query));
         };
         server.get("/dashboard/auth/complete", completeLogin);
         server.get("/auth/qq/callback", ctx -> {
@@ -275,6 +289,18 @@ public final class DashboardRouter {
         if (wwv != null && wwv.matches("[0-9]{1,10}")) query += (query.isEmpty() ? "" : "&") + "_wwv=" + wwv;
         if (qq) query += (query.isEmpty() ? "" : "&") + "qq=1";
         return query;
+    }
+
+    static String surveyDestination(String query) {
+        String path = "/dashboard/";
+        var params = new java.util.ArrayList<String>();
+        for (String part : query.split("&")) {
+            if (part.matches("survey=(list|[0-9a-f]{12})")) {
+                String target = part.substring(7);
+                path = "/dashboard/surveys" + (target.equals("list") ? "" : "/" + target);
+            } else if (!part.isEmpty()) params.add(part);
+        }
+        return path + (params.isEmpty() ? "" : "?" + String.join("&", params));
     }
 
     private static void index(Context ctx) {

@@ -386,7 +386,11 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         }
     }
 
-    private static Markdown getSubmitMessage(FeedbackDTO d) {
+    /**
+     * @param d 已创建的工单，需包含完整编号
+     * @return 创建成功提示及操作键盘
+     */
+    public static Markdown getSubmitMessage(FeedbackDTO d) {
         String shortId = "#" + d.getId().substring(0, 8);
 
         return TC.md("> 工单编号: " + shortId + "\n\n" +
@@ -396,7 +400,11 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         )));
     }
 
-    private static Markdown getClosedMessage(FeedbackDTO d) {
+    /**
+     * @param d 已关闭的工单，需包含完整编号
+     * @return 关闭成功提示及操作键盘
+     */
+    public static Markdown getClosedMessage(FeedbackDTO d) {
         String shortId = "#" + d.getId().substring(0, 8);
 
         return TC.md("> 工单编号: " + shortId + "\n\n" +
@@ -405,7 +413,11 @@ public class FeedbackCommand implements CommandExecutor, Listener {
         )));
     }
 
-    private static Markdown getReplyFeedbackMessage(FeedbackDTO d) {
+    /**
+     * @param d 已补充的工单，需包含完整编号
+     * @return 补充成功提示及操作键盘
+     */
+    public static Markdown getReplyFeedbackMessage(FeedbackDTO d) {
         String shortId = "#" + d.getId().substring(0, 8);
 
         return TC.md("> 工单编号: " + shortId + "\n\n" +

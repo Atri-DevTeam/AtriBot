@@ -23,6 +23,7 @@ public class C2CRepository {
                     CREATE TABLE IF NOT EXISTS official_users (
                       user_openId VARCHAR(256) NOT NULL,
                       c2c_push BOOLEAN NOT NULL DEFAULT TRUE,
+                      username VARCHAR(256) NULL,
                       PRIMARY KEY (user_openId)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """);
@@ -31,12 +32,31 @@ public class C2CRepository {
         }
     }
 
+    /**
+     * 更新已有好友的昵称
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @param username 已校验的非空昵称
+     * @return 好友记录更新成功时返回 true
+     */
+    public static boolean updateUsername(String userOpenId, String username) {
+        try (var con = DatabaseManager.getConnection();
+             var ps = con.prepareStatement("UPDATE official_users SET username = ? WHERE user_openId = ?")) {
+            ps.setString(1, username);
+            ps.setString(2, userOpenId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            log.error("保存私聊用户 {} 的昵称失败", userOpenId, e);
+            return false;
+        }
+    }
+
     public static List<UserRow> loadAll() {
         var users = new ArrayList<UserRow>();
         try (var con = DatabaseManager.getConnection();
-             var ps = con.prepareStatement("SELECT user_openId, c2c_push FROM official_users");
+             var ps = con.prepareStatement("SELECT user_openId, c2c_push, username FROM official_users");
              var rows = ps.executeQuery()) {
-            while (rows.next()) users.add(new UserRow(rows.getString(1), rows.getBoolean(2)));
+            while (rows.next()) users.add(new UserRow(rows.getString(1), rows.getBoolean(2), rows.getString(3)));
         } catch (SQLException e) {
             throw new IllegalStateException("加载官机私聊用户失败", e);
         }
@@ -156,5 +176,5 @@ public class C2CRepository {
         }
     }
 
-    public record UserRow(String userOpenId, boolean c2cPush) {}
+    public record UserRow(String userOpenId, boolean c2cPush, String username) {}
 }

@@ -15,6 +15,7 @@ import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.platform.UnsupportedPlatform;
 
@@ -39,7 +40,8 @@ public abstract class PushTask {
     private final boolean groupEnable;
     @Getter
     private final boolean c2cEnable;
-    @Getter @Setter
+    @Getter
+    @Setter
     private boolean defaultEnabled = false;
     @Getter
     private boolean isPrivateFunction = false;
@@ -136,7 +138,7 @@ public abstract class PushTask {
     public abstract Markdown getDescription(Platform platform, String platformIdentifyId);
 
     public void enable(Platform platform, String groupOpenId, String operatorOpenId, String commandMessageId) {
-        Markdown md = TC.md( Markdown.at(operatorOpenId) + "\n\n" + "✅ 已启用**" + this.getDisplayName() + "**");
+        Markdown md = TC.md(Markdown.at(operatorOpenId) + "\n\n" + "✅ 已启用**" + this.getDisplayName() + "**");
         Object keys = TC.keyboard(
                 List.of(
                         List.of(new Button("c1", "关闭", "/tasks disable " + this.getFunctionId(), true, ButtonStyle.RED, ButtonType.COMMAND),
@@ -204,7 +206,8 @@ public abstract class PushTask {
     private enum Type {
         IMAGE_COMPONENT,
         TEXT,
-        MARKDOWN
+        MARKDOWN,
+        CARD
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -212,8 +215,13 @@ public abstract class PushTask {
         Type type = Type.TEXT;
 
         if (content != null) {
-            if (content instanceof Markdown) type = Type.MARKDOWN;
-            else if (content instanceof ImageComponent) type = Type.IMAGE_COMPONENT;
+            switch (content) {
+                case Markdown _ -> type = Type.MARKDOWN;
+                case ImageComponent _ -> type = Type.IMAGE_COMPONENT;
+                case Card _ -> type = Type.CARD;
+                default -> {
+                }
+            }
         } else {
             return false;
         }
@@ -227,8 +235,10 @@ public abstract class PushTask {
                     case IMAGE_COMPONENT -> GroupChat.sendMessage(groupOpenId, (ImageComponent) content);
                     case TEXT -> GroupChat.sendMessage(groupOpenId, (String) content);
                     case MARKDOWN -> GroupChat.sendMessage(groupOpenId, (Markdown) content);
+                    case CARD -> GroupChat.sendMessage(groupOpenId, (Card) content);
                 }
-            } catch (QQMessageSendException _) {}
+            } catch (QQMessageSendException _) {
+            }
         }
         for (String uid : userLists) {
             try {
@@ -236,8 +246,10 @@ public abstract class PushTask {
                     case IMAGE_COMPONENT -> C2CChat.sendMessage(uid, (ImageComponent) content);
                     case TEXT -> C2CChat.sendMessage(uid, (String) content);
                     case MARKDOWN -> C2CChat.sendMessage(uid, (Markdown) content);
+                    case CARD -> C2CChat.sendMessage(uid, (Card) content);
                 }
-            } catch (QQMessageSendException _) {}
+            } catch (QQMessageSendException _) {
+            }
         }
         return true;
     }

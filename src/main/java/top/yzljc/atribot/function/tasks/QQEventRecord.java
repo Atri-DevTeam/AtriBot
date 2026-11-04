@@ -1,5 +1,6 @@
 package top.yzljc.atribot.function.tasks;
 
+import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atricore.core.CoreConfig;
 
 import top.yzljc.atribot.Atri;
@@ -30,6 +31,8 @@ import top.yzljc.atribot.webui.SseBroadcaster;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static top.yzljc.atricore.utils.StringUtils.firstNonBlank;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName EventRecord
@@ -50,7 +53,7 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onGroupJoin(OfficialGroupAddRobotEvent event) {
-        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★");
+        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★" + Markdown.img(RS.get("bot.atri_header"), 1916, 959));
         Object keyboard = TC.keyboard(
                 List.of(
                         List.of(new Button("c1", "看看指令", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -66,9 +69,7 @@ public class QQEventRecord implements Listener {
             log.error("Failed to register group: {}", event.getGroupOpenId());
             Alert.notify("Failed to register group: " + event.getGroupOpenId());
         } else {
-            log.info("Registered group: {}", event.getGroupOpenId());
-
-            Alert.notify("[+] 机器人进群：" + event.getGroupOpenId() + "，操作者：" + event.getOpMemberOpenId(), false);
+            log.info("[+] 机器人进群：{}，操作者：{}", event.getGroupOpenId(), event.getOpMemberOpenId());
 
 //            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵添加到群聊" + event.getGroupOpenId() + "中"); 2026/10/21 该放下了，哎
             Atri.getInstance().getScheduler().runTaskAsynchronously(() -> fetchAndSaveGroupProfile(event.getGroupOpenId()));
@@ -99,9 +100,8 @@ public class QQEventRecord implements Listener {
             log.error("Failed to remove group: {}", event.getGroupOpenId());
             Alert.notify("Failed to remove group: " + event.getGroupOpenId());
         } else {
-            log.info("Removed group: {}", event.getGroupOpenId());
+            log.info("[-] 机器人退群：{}，操作者：{}", event.getGroupOpenId(), event.getOpMemberOpenId());
 //            Alert.notify(event.getOpMemberOpenId() + "将亚托莉喵移出群聊" + event.getGroupOpenId());
-            Alert.notify("[-] 机器人退群：" + event.getGroupOpenId() + "，操作者：" + event.getOpMemberOpenId(), false);
         }
     }
 
@@ -122,9 +122,9 @@ public class QQEventRecord implements Listener {
 
     @EventHandler
     public void onFriendAdd(OfficialFriendAddEvent event) {
-        log.info("[+] 官机数据变动，新增好友: {}", event.getUserOpenId());
+        log.info("[+] 机器人好友添加：{} （场景: {}）", event.getUserOpenId(), event.getScene().getTip());
 
-        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★");
+        Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★" + Markdown.img(RS.get("bot.atri_header"), 1916, 959));
         Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(new Button("c1", "指令功能一览♪", "/help", true, ButtonStyle.ICON_BUTTON, ButtonType.COMMAND),
@@ -142,7 +142,6 @@ public class QQEventRecord implements Listener {
             log.info("Added 100 coins to new friend {} for first friend_add event", event.getUserOpenId());
         }
 //        Alert.notify("新的好友添加了亚托莉喵，OpenID: " + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + ")");
-        Alert.notify("[+] 机器人好友添加：" + event.getUserOpenId() + " （场景: " + event.getScene().getTip() + "）", false);
     }
 
     @EventHandler
@@ -152,7 +151,7 @@ public class QQEventRecord implements Listener {
             log.warn("忽略缺少用户 OpenID 的好友删除事件，timestamp: {}", event.getTimestamp());
             return;
         }
-        log.info("Friend removed: {}", userOpenId);
+        log.info("[-] 机器人好友删除：{}", userOpenId);
         c2cNotifiedUsers.remove(userOpenId);
         if (OfficialUsers.removeUser(userOpenId)) {
             log.info("Removed official friend record: {}", userOpenId);
@@ -162,7 +161,6 @@ public class QQEventRecord implements Listener {
             return;
         }
 //        Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
-        Alert.notify("[-] 机器人好友删除：" + userOpenId, false);
     }
 
     @EventHandler
@@ -301,7 +299,7 @@ public class QQEventRecord implements Listener {
                 );
             } else {
                 info = "[!] 用户 %s (%s) 使用指令: /%s %s (私聊)".formatted(
-                        qq.getUsername(),
+                        firstNonBlank(OfficialUsers.getUsername(qq.getUserId()), qq.getUsername(), "未知用户"),
                         qq.getUserId(),
                         event.getCommandHeader(),
                         String.join(" ", event.getArgs())

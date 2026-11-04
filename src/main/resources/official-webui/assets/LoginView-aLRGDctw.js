@@ -1,0 +1,1 @@
+import{C as e,h as o,e as a}from"./index-K2ppNDaT.js";const t={"aria-live":"polite"},s={__name:"LoginView",setup(i){return window.location.replace(e("/dashboard/")),(n,r)=>(a(),o("main",t,"正在返回个人中心…"))}};export{s as default};

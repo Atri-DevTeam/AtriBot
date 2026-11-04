@@ -8,6 +8,8 @@ export type Reaction = {
     metrics?: Record<string, number>
 }
 export type Activity = {
+    loot?: {ownedCards: number; collectedTypes: number; collectedNormalTypes: number | null;
+        normalCatalogTypes: number | null; normalCollectionCompletion: number | null} | null
     rankings?: Record<string, Record<string, number>>
     reaction: Reaction | null
     freeDraw: 'available' | 'used' | 'locked' | null

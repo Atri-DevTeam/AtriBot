@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
-import top.yzljc.atribot.function.skyblockprice.SkyblockPriceAlertService;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atricore.platform.qq.QQBot;
 
@@ -62,7 +61,7 @@ public final class MiniappProfileService {
 
     public record Profile(String userId, String username, String avatarUrl, Account account,
                           Messages privateMessages, Messages groupMessages, SignIn signIn,
-                          Integer coins, Collection collection, List<String> unavailable, String updatedAt, Bot bot, boolean skyblockPrice) {
+                          Integer coins, Collection collection, List<String> unavailable, String updatedAt, Bot bot) {
     }
 
     public MiniappProfileService() {
@@ -129,7 +128,7 @@ public final class MiniappProfileService {
         }
         // Do not invent a username from an OpenID or create a unified account just to show a page.
         return new Profile(userId, username, avatarUrl(appId.get(), userId), account, privateMessages, groupMessages,
-                signIn, coins, collection, List.copyOf(unavailable), Instant.now().toString(), bot.get(), SkyblockPriceAlertService.canUse(userId));
+                signIn, coins, collection, List.copyOf(unavailable), Instant.now().toString(), bot.get());
     }
 
     /**

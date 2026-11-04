@@ -13,7 +13,6 @@ import top.yzljc.atribot.function.task.NapcatChatDailyReport;
 import top.yzljc.atribot.function.tasks.pushtask.QqBotDocsMonitor;
 import top.yzljc.atribot.function.tasks.RefreshGroupProfilesTask;
 import top.yzljc.atribot.function.tasks.pushtask.HypixelBanWaveAlertTask;
-import top.yzljc.atribot.function.tasks.pushtask.SkyblockPriceAlertTask;
 
 import java.util.List;
 import java.util.Objects;
@@ -39,8 +38,7 @@ public final class TaskSchedulerRegistry {
             ManosabaDate.INSTANCE,
             MessageStats.INSTANCE,
             NapcatChatDailyReport.INSTANCE,
-            NewYearCountdownTask.INSTANCE,
-            SkyblockPriceAlertTask.INSTANCE
+            NewYearCountdownTask.INSTANCE
     );
 
     private TaskSchedulerRegistry() {

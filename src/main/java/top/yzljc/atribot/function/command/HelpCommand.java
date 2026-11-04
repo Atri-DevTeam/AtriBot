@@ -42,43 +42,63 @@ public class HelpCommand implements CommandExecutor {
                     debug -t  切换官方 QQ 延迟调试
                     refresh  刷新已记录的群资料
                     groupinfo <群号>  查看 Napcat 群功能配置
-                    check-hyp  检查并推送新的 Hypixel 公告
-                    check-hyp-skyblock  检查并推送新的 SkyBlock 公告
                     """.trim());
             return true;
         }
 
         if (sender instanceof QQCommandSender user) {
             Markdown md = TC.md("✨ **" + QQBot.BOT_NAME + "帮助菜单**\n\n" +
-                    "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
-                    "---\n\n" +
-                    "> " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡签到") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.console-logo"), 16, 16) + Markdown.enterCommand("/drawitem", "抽取随机ᴍɪɴᴇᴄʀᴀғᴛ物品") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.grass-block"), 16, 16) + Markdown.enterCommand("/mctool", "ᴍɪɴᴇᴄʀᴀғᴛ工具二级菜单") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.dice-result-template").replace("<id>", "6"), 16, 16) + Markdown.enterCommand("/hyp dice", "sᴋʏʙʟᴏᴄᴋ运气测试") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + Markdown.enterCommand("/hyp", "ʜʏᴘɪxᴇʟ数据查询二级菜单") + "\n" +
-                    "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取ʜʏᴘɪxᴇʟ每日签到奖励") + "\n" +
-                    "> " + Markdown.enterCommand("/rsp", "✊一场酣畅淋漓的石头剪刀布") + "\n" +
-                    "> " + Markdown.enterCommand("/mojang", "\uD83D\uDEE0查询ᴍᴄ验证服务器状态") + "\n" +
-                    "> " + Markdown.enterCommand("/newyear", "\uD83E\uDDE8查看新年倒计时") + "\n" +
-                    "> " + Markdown.enterCommand("/tasks", "\uD83D\uDD14设置推送任务") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.minecraft-cape-example"), 16, 16) + Markdown.enterCommand("/mctool cape", "查看ᴍᴄ披风拥有情况") + "\n" +
-                    "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABʜʏᴘɪxᴇʟ ʙᴀɴ ᴛʀᴀᴄᴋ") + "\n" +
-                    "> " + Markdown.img(RS.get("resource.image.icon-ec"), 16, 16) + Markdown.enterCommand("/ec", "ᴍɪɴᴇᴄʀᴀғᴛ物品附魔模拟") + "\n" +
-                    "> " + Markdown.enterCommand("/games", "\uD83E\uDDE9游玩更多经典小游戏"));
+                            "> \uD83D\uDCA1小提示: 下方内容可直接点击触发\n\n" +
+                            "---\n\n" +
+                            "> " + Markdown.enterCommand("/打卡", "\uD83D\uDCCC每日打卡签到") + "\n" +
+                            "> " + Markdown.img(RS.get("resource.image.console-logo"), 16, 16) + Markdown.enterCommand("/item", "抽取随机ᴍɪɴᴇᴄʀᴀғᴛ物品") + "\n" +
+//                    "> " + Markdown.img(RS.get("resource.image.grass-block"), 16, 16) + Markdown.enterCommand("/mctool", "ᴍɪɴᴇᴄʀᴀғᴛ工具二级菜单") + "\n" +
+                            "> " + Markdown.img(RS.get("resource.image.dice-result-template").replace("<id>", "6"), 16, 16) + Markdown.enterCommand("/hyp dice", "sᴋʏʙʟᴏᴄᴋ运气测试") + "\n" +
+//                    "> " + Markdown.img(RS.get("resource.image.hypixel-header"), 16, 16) + Markdown.enterCommand("/hyp", "ʜʏᴘɪxᴇʟ数据查询二级菜单") + "\n" +
+                            "> " + Markdown.enterCommand("/cl ", "\uD83C\uDF81领取ʜʏᴘɪxᴇʟ每日签到奖励") + "\n" +
+                            "> " + Markdown.enterCommand("/rsp", "✊一场酣畅淋漓的石头剪刀布") + "\n" +
+                            "> " + Markdown.enterCommand("/mojang", "\uD83D\uDEE0查询ᴍᴄ验证服务器状态") + "\n" +
+                            "> " + Markdown.enterCommand("/newyear", "\uD83E\uDDE8还有多久欢度春节？") + "\n" +
+                            "> " + Markdown.enterCommand("/astro", "☀查询地区参考天象") + "\n" +
+//                    "> " + Markdown.enterCommand("/tasks", "\uD83D\uDD14设置推送任务") + "\n" +
+                            "> " + Markdown.img(RS.get("resource.image.minecraft-cape-example"), 16, 16) + Markdown.enterCommand("/mctool cape", "查看ᴍᴄ披风拥有情况") + "\n" +
+                            "> " + Markdown.enterCommand("/bantrack", "\uD83D\uDEABʜʏᴘɪxᴇʟ ʙᴀɴ ᴛʀᴀᴄᴋ") + "\n" +
+                            "> " + Markdown.img(RS.get("resource.image.icon-ec"), 16, 16) + Markdown.enterCommand("/ec", "ᴍɪɴᴇᴄʀᴀғᴛ物品附魔模拟") + "\n\n" +
+                            "> " + Markdown.link("https://bot.yzljc.top/dashboard/surveys/d14e26ce7104?_wwv=9983&qq=1", "✨有想法或建议？欢迎提给开发者")
+//                    "> " + Markdown.enterCommand("/games", "游玩更多经典小游戏")
+            );
 
 //            Object keyboard = TC.keyboard(
+//            );
+
+//            Keyboard keyboard = new Keyboard(
+//                    List.of(
+//                            List.of(
+//                                    new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
+//                                    new Button("s6", "全量消息", "/全量消息", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+//                            ),
+//                            List.of(
+//                                    new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
+//                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + CoreConfig.getInstance().getSettings().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
+//                            )
+//                    )
 //            );
 
             Keyboard keyboard = new Keyboard(
                     List.of(
                             List.of(
-                                    new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
-                                    new Button("s6", "全量消息", "/全量消息", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                                    new Button("g1", "\uD83D\uDD14 推送任务", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                    new Button("q1", "友情链接", "/otherbot", true, ButtonStyle.RED, ButtonType.COMMAND),
+                                    new Button("g2", "\uD83E\uDDE9 小游戏", "/games", true, ButtonStyle.BLUE, ButtonType.COMMAND)
                             ),
                             List.of(
-                                    new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE, ButtonType.LINK),
-                                    new Button("l3", "添加到频道", "https://qun.qq.com/qunpro/robot/share?robot_appid=" + CoreConfig.getInstance().getSettings().getQqAppId(), true, ButtonStyle.BLUE, ButtonType.LINK)
+                                    new Button("mc", "ᴍɪɴᴇᴄʀᴀғᴛ工具", "/mctool", true, ButtonStyle.BLUE, ButtonType.COMMAND),
+                                    new Button("hyp", "ʜʏᴘɪxᴇʟ查询", "/hyp", true, ButtonStyle.BLUE, ButtonType.COMMAND)
+                            ),
+                            List.of(
+                                    new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
+                                    // new Button("s2", "用户调研", "https://bot.yzljc.top/dashboard/surveys/d14e26ce7104?_wwv=9983&qq=1", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK),
+                                    new Button("l2", "添加到群", "https://web.qun.qq.com/qunrobot/jump.html?robot_uin=" + QQBot.BOT_UIN + "&target=2", true, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK)
                             )
                     )
             );
@@ -133,6 +153,7 @@ public class HelpCommand implements CommandExecutor {
                         /help  查看本帮助
                         /ping  检查机器人响应
                         /hitokoto  获取随机一言
+                        /bot <QQ号或AppID>  查询机器人信息
                         /chat [y|overall|@用户]  查看消息统计
                         /贡献名单  查看项目贡献名单
                         /search "关键词"  搜索群聊记录
@@ -146,18 +167,17 @@ public class HelpCommand implements CommandExecutor {
                         /newyear  查看新年倒计时
                         /cl <Hypixel 链接>  领取每日奖励
                         /groupinfo  查看本群功能配置
-
+                        
                         实际可用项以本群当前功能配置为准。
                         """.trim()),
                 GroupMessage.createTextNode("""
                         【管理与维护指令】
                         /recall、/rollback  撤回消息
                         /github、/autolike  管理群功能
-                        /check-mc、/check-mojira  检查新闻源
                         /signall  执行自动签到
                         /info @用户、/debug  排查运行信息
                         /reboot  重启机器人
-
+                        
                         此部分仅对具有相应权限的用户开放。
                         """.trim())
         );

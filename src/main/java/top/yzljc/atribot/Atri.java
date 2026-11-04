@@ -1,4 +1,5 @@
 package top.yzljc.atribot;
+import top.yzljc.atribot.function.impl.pic.ImageAiReviewService;
 
 import top.yzljc.atribot.database.repo.*;
 import top.yzljc.atribot.function.tasks.pushtask.QqBotDocsMonitor;
@@ -49,6 +50,7 @@ import top.yzljc.atribot.function.command.*;
 import top.yzljc.atribot.function.reminder.ReminderService;
 import top.yzljc.atribot.function.games.ClickTrainGame;
 import top.yzljc.atribot.function.games.DailyFishingGame;
+import top.yzljc.atribot.function.games.DailyDoorGame;
 import top.yzljc.atribot.function.games.ConnectFourGame;
 import top.yzljc.atribot.function.games.LuckyRouletteGame;
 import top.yzljc.atribot.function.games.MinesweeperGame;
@@ -211,6 +213,7 @@ public class Atri extends AtriProvider {
             });
 
             WebUIRouter.register(server, dashboardSessions);
+            top.yzljc.atribot.connect.ConnectRouter.register(server);
             PluginHttpRoutes.attach(server);
             MiniappRouter.register(server, miniappSessions, config.isMiniappEnabled());
             DashboardRouter.register(server, dashboardSessions, miniappSessions, siteAuthorization);
@@ -288,6 +291,7 @@ public class Atri extends AtriProvider {
         EventManager.getInstance().registerEvents(new ShareBotCommand());
         EventManager.getInstance().registerEvents(MinesweeperGame.INSTANCE);
         EventManager.getInstance().registerEvents(new CodexResetAlert());
+        EventManager.getInstance().registerEvents(CommandSettingsService.INSTANCE);
 
         CommandManager.reload();
         CommandManager.getCommand("newyear").setExecutor(new HappyNewYearCommand());
@@ -301,7 +305,6 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("mojang").setExecutor(new McStatusCommand());
         CommandManager.getCommand("cl").setExecutor(new HypixelRewardCommand());
         CommandManager.getCommand("preferences").setExecutor(new PreferencesSettingsCommand());
-        CommandManager.getCommand("check-mc").setExecutor(this.minecraftNews);
         CommandManager.getCommand("manodate").setExecutor(ManosabaDate.INSTANCE);
         CommandManager.getCommand("github").setExecutor(new GithubCommitNotify());
         CommandManager.getCommand("signall").setExecutor(AutoSign.INSTANCE);
@@ -309,7 +312,6 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("groupreport").setExecutor(new GroupDailyReportCommand());
         CommandManager.getCommand("groupinfo").setExecutor(new GroupConfigInfo());
 //        CommandManager.getCommand("calendar").setExecutor(new Calendar());
-        CommandManager.getCommand("check-mojira").setExecutor(this.checkMojira);
         CommandManager.getCommand("emj").setExecutor(new AnnoyUser());
         CommandManager.getCommand("py").setExecutor(PinYin.INSTANCE);
         CommandManager.getCommand("autolike").setExecutor(new AutoLikeCommand());
@@ -327,6 +329,7 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("perm").setExecutor(new UserManagementCommand());
         CommandManager.getCommand("today").setExecutor(this.calendarTask);
         CommandManager.getCommand("help").setExecutor(new HelpCommand());
+        CommandManager.getCommand("otherbot").setExecutor(new OtherBotCommand());
         CommandManager.getCommand("minesweeper").setExecutor(MinesweeperGame.INSTANCE);
         CommandManager.getCommand("tictactoe").setExecutor(new TicTacToeGame());
         CommandManager.getCommand("connect4").setExecutor(new ConnectFourGame());
@@ -343,11 +346,16 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("sign").setExecutor(new SignCommand());
         CommandManager.getCommand("debug").setExecutor(new DebugCommand());
         CommandManager.getCommand("ema").setExecutor(new EmaCommand());
-        CommandManager.getCommand("check-hyp").setExecutor(this.hypixelAnnouncements);
-        CommandManager.getCommand("check-hyp-skyblock").setExecutor(this.hypixelSkyblockAnnouncements);
-        CommandManager.getCommand("check-hyp-alpha").setExecutor(this.hypixelAlphaForums);
         CommandManager.getCommand("games").setExecutor(new MiniGameCommand());
         CommandManager.getCommand("fish").setExecutor(new DailyFishingGame());
+        CommandManager.getCommand("door").setExecutor(new DailyDoorGame());
+        try {
+            var questions = new top.yzljc.atribot.database.repo.DailyQuestionRepository();
+            questions.init();
+            CommandManager.getCommand("question").setExecutor(new DailyQuestionCommand(questions));
+        } catch (Exception e) {
+            log.error("今日问题初始化失败", e);
+        }
         CommandManager.getCommand("music").setExecutor(new MusicCommand());
         CommandManager.getCommand("sound").setExecutor(soundCommand);
         CommandManager.getCommand("ping").setExecutor(new PingCommand());
@@ -377,13 +385,13 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("mcv").setExecutor(new MinecraftVersionCommand());
         CommandManager.getCommand("mccape").setExecutor(new MinecraftCapeCommand());
         CommandManager.getCommand("skbpack").setExecutor(new SkyblockPackCommand());
+        CommandManager.getCommand("check").setExecutor(new CheckCommand());
 
         CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
-        CommandManager.getCommand("ec").setExecutor((sender, command, label, args) ->
-                !(sender instanceof top.yzljc.atricore.command.QQCommandSender user) || MinecraftEnchantmentGame.onCommand(user, args));
-        GroupCommands.register(CommandSettingsService.INSTANCE);
-        EventManager.getInstance().registerEvents(CommandSettingsService.INSTANCE);
+        CommandManager.getCommand("ec").setExecutor(new MinecraftEnchantmentGame());
+        CommandManager.getCommand("bot").setExecutor(new BotInfoCommand());
+        CommandManager.getCommand("astro").setExecutor(new AstronomyCommand());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());
         CommandManager.getCommand("how-to-custom-text").setExecutor(new GroupJoinWelcome());
         CommandManager.getCommand("sharebot").setExecutor(new ShareBotCommand());
@@ -394,6 +402,8 @@ public class Atri extends AtriProvider {
         CommandManager.getCommand("test-qqdoc").setExecutor(QqBotDocsMonitor.INSTANCE);
         CommandManager.getCommand("test-mcnews").setExecutor(new MinecraftNewsDebug());
         CommandManager.getCommand("test-markdown").setExecutor(new MarkdownDisplayTest());
+
+        GroupCommands.register(CommandSettingsService.INSTANCE);
 
         try {
             BotRuntimeData.init();
@@ -429,6 +439,17 @@ public class Atri extends AtriProvider {
         }
         FeedbackRepository.init();
         try {
+            new top.yzljc.atribot.database.repo.SurveyRepository().init();
+        } catch (java.sql.SQLException e) {
+            log.error("问卷记录表初始化失败", e);
+        }
+        try {
+            var dailyDoorRepository = new DailyDoorRepository();
+            dailyDoorRepository.init();
+        } catch (java.sql.SQLException e) {
+            log.error("每日任意门记录表初始化失败", e);
+        }
+        try {
             ReminderService.getInstance().init();
             ReminderService.getInstance().start(getScheduler());
         } catch (Exception e) {
@@ -439,6 +460,7 @@ public class Atri extends AtriProvider {
         EventLogRepository.init();
         ModerationLogRepository.init();
         PicRepository.init();
+        ImageAiReviewService.start();
         PendingNoticeRepository.init();
         PackVersion.initAsync();
 

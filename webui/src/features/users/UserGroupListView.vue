@@ -45,7 +45,7 @@
               </button>
               <span class="status-pill">
                 <span class="dot ok"></span>{{
-                  activeTab === 'groups' ? `${groups.length} 个群` : `${users.length} 个用户`
+                  activeTab === 'groups' ? `${visibleGroups.length} 个群` : `${visibleUsers.length} 个用户`
                 }}
               </span>
             </div>
@@ -442,6 +442,13 @@
             <option v-for="opt in userFilterOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </label>
+        <div v-if="activeTab === 'groups'" class="dir-filter-field">
+          <span class="dir-filter-field-label">过滤设置</span>
+          <label class="dir-filter-check">
+            <input v-model="hideTestGroups" type="checkbox"/>
+            屏蔽测试群
+          </label>
+        </div>
       </div>
     </Teleport>
   </AppShell>
@@ -501,6 +508,11 @@ const currentSearch = ref('')
 const groupFilterValue = ref('')
 const groupMsgValue = ref('')
 const groupFuncValue = ref('')
+const hideTestGroups = ref(true)
+const TEST_GROUP_INVITERS = new Set([
+  'DB5E301060F6F2874F4D440072FC574A',
+  '1F7326AF1BD3A1A8D02839F7E0DBAB5B'
+])
 const userFilterValue = ref('')
 
 /* ═══════════ 筛选二级菜单 ═══════════ */
@@ -775,6 +787,9 @@ async function sendBroadcast() {
 
 const visibleGroups = computed(() => {
   let list = groups.value
+  if (hideTestGroups.value) {
+    list = list.filter(g => !TEST_GROUP_INVITERS.has((g.opMemberOpenId || '').trim().toUpperCase()))
+  }
   if (groupFilterValue.value === 'whitelist') list = list.filter(g => g.whitelist)
   else if (groupFilterValue.value === 'blacklist') list = list.filter(g => g.blacklisted)
   else if (groupFilterValue.value === 'admin') {

@@ -51,6 +51,18 @@ public class Keyboard {
         this.isPromptStyle = isPromptStyle;
     }
 
+    public static Keyboard of(List<List<Button>> buttons) {
+        return new Keyboard(buttons);
+    }
+
+    public static Keyboard single(Button button) {
+        return new Keyboard(List.of(List.of(button)));
+    }
+
+    public static Keyboard singleLine(List<Button> buttons) {
+        return new Keyboard(List.of(buttons));
+    }
+
     public Keyboard setSize(ButtonSize size) {
         this.size = size;
         return this;

@@ -3,6 +3,7 @@ package top.yzljc.atribot.webui;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.dashboard.DashboardSessions;
 import top.yzljc.atribot.dashboard.DashboardSettings;
 import top.yzljc.atricore.auth.AccountStatus;
@@ -79,11 +80,20 @@ public final class WebUISessionManager {
 
     /**
      * @param account 统一账号当前缓存记录，不接受权限节点替代管理员身份
-     * @return 账号有效且权限组为 ADMIN 或 OWNER 时返回 true
+     * @return 账号有效、权限组为 ADMIN 或 OWNER 且 UUID 在配置白名单中时返回 true，本地调试身份除外
      */
     public static boolean isAdministrator(AtriAccount account) {
+        if (account == DEVELOPMENT_ACCOUNT && developmentEnvironment.getAsBoolean()) return true;
+        return isAdministrator(account, Config.getInstance().getWebuiAllowedAccountUuids());
+    }
+
+    /**
+     * 校验正常环境的 WebUI 访问资格，白名单不替代角色和账号状态要求
+     */
+    static boolean isAdministrator(AtriAccount account, Set<UUID> allowedAccountUuids) {
         return account != null && account.status() == AccountStatus.ACTIVE
-                && (account.role() == UnifiedRole.ADMIN || account.role() == UnifiedRole.OWNER);
+                && (account.role() == UnifiedRole.ADMIN || account.role() == UnifiedRole.OWNER)
+                && account.uuid() != null && allowedAccountUuids.contains(account.uuid());
     }
 
     public static AtriAccount currentAccount(String token) {

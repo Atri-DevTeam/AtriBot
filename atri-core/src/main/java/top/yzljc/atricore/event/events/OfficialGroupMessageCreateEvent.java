@@ -3,6 +3,7 @@ package top.yzljc.atricore.event.events;
 import top.yzljc.atricore.AtriProvider;
 import lombok.Getter;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.event.Event;
 import top.yzljc.atricore.platform.qq.QQUser;
@@ -32,6 +33,17 @@ public class OfficialGroupMessageCreateEvent extends Event {
         this.message = message;
         this.timestamp = timestamp;
         this.isAtBot = isAtBot;
+    }
+
+    /**
+     * 使用当前群消息 ID，向当前群发送被动卡片回复
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(Card card) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), card);
     }
 
     /**

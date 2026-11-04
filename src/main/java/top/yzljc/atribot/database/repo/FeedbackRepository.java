@@ -25,9 +25,14 @@ public class FeedbackRepository {
     private static final Striped<Lock> SUBMISSION_LOCKS = Striped.lock(128);
     private static final Striped<Lock> DELIVERY_LOCKS = Striped.lock(128);
 
-    public record Submission(String id, boolean appended) {}
-    public record Reply(FeedbackDTO ticket, FeedbackEntry entry) {}
+    public record Submission(String id, boolean appended) {
+    }
+
+    public record Reply(FeedbackDTO ticket, FeedbackEntry entry) {
+    }
+
     public enum CloseResult {CLOSED, ALREADY_CLOSED, NOT_FOUND, FAILED}
+
     public enum ReopenResult {REOPENED, ALREADY_OPEN, OTHER_OPEN, NOT_FOUND, FAILED}
 
     public static void init() {
@@ -53,14 +58,6 @@ public class FeedbackRepository {
                       INDEX idx_user_id (user_id), INDEX idx_create_time (create_time)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """);
-            var columns = new HashSet<String>();
-            try (var rs = st.executeQuery("SELECT * FROM feedback WHERE 1=0")) {
-                var meta = rs.getMetaData();
-                for (int i = 1; i <= meta.getColumnCount(); i++) columns.add(meta.getColumnName(i).toLowerCase(Locale.ROOT));
-            }
-            if (!columns.contains("status")) st.executeUpdate("ALTER TABLE feedback ADD COLUMN status VARCHAR(16)");
-            if (!columns.contains("update_time")) st.executeUpdate("ALTER TABLE feedback ADD COLUMN update_time DATETIME");
-            if (!columns.contains("closed_time")) st.executeUpdate("ALTER TABLE feedback ADD COLUMN closed_time DATETIME");
             st.executeUpdate("""
                     CREATE TABLE IF NOT EXISTS feedback_entries (
                       id BIGINT AUTO_INCREMENT PRIMARY KEY, feedback_id VARCHAR(36) NOT NULL,
@@ -73,40 +70,7 @@ public class FeedbackRepository {
                       INDEX idx_feedback_entry (feedback_id, id), INDEX idx_delivery (delivered, id)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """);
-            columns.clear();
-            try (var rs = st.executeQuery("SELECT * FROM feedback_entries WHERE 1=0")) {
-                var meta = rs.getMetaData();
-                for (int i = 1; i <= meta.getColumnCount(); i++) columns.add(meta.getColumnName(i).toLowerCase(Locale.ROOT));
-            }
-            if (!columns.contains("source_message_id")) st.executeUpdate("ALTER TABLE feedback_entries ADD COLUMN source_message_id TEXT");
-            if (!columns.contains("source_message_time")) st.executeUpdate("ALTER TABLE feedback_entries ADD COLUMN source_message_time DATETIME(3)");
-            if (!columns.contains("actor_avatar_url")) st.executeUpdate("ALTER TABLE feedback_entries ADD COLUMN actor_avatar_url TEXT");
         }
-        transaction(con, () -> {
-            try (var st = con.createStatement()) {
-                st.executeUpdate("""
-                        INSERT INTO feedback_entries (feedback_id, entry_type, content, actor_id, actor_name,
-                          create_time, platform, group_id, legacy_key)
-                        SELECT f.id, 'SUBMIT', f.submit_content, f.user_id, f.username, f.create_time,
-                          f.platform, f.group_id, CONCAT('submit:', f.id) FROM feedback f
-                        WHERE f.status IS NULL AND NOT EXISTS (
-                          SELECT 1 FROM feedback_entries e WHERE e.legacy_key = CONCAT('submit:', f.id))
-                        """);
-                st.executeUpdate("""
-                        INSERT INTO feedback_entries (feedback_id, entry_type, content, create_time,
-                          platform, group_id, delivered, legacy_key)
-                        SELECT f.id, 'REPLY', f.reply_content, COALESCE(f.reply_time, f.create_time),
-                          f.platform, f.group_id, f.is_read, CONCAT('reply:', f.id) FROM feedback f
-                        WHERE f.status IS NULL AND f.reply_content IS NOT NULL AND NOT EXISTS (
-                          SELECT 1 FROM feedback_entries e WHERE e.legacy_key = CONCAT('reply:', f.id))
-                        """);
-                st.executeUpdate("""
-                        UPDATE feedback SET status = CASE WHEN reply_content IS NULL THEN 'PENDING' ELSE 'PROCESSING' END,
-                          update_time = COALESCE(reply_time, create_time) WHERE status IS NULL
-                        """);
-            }
-            return null;
-        });
     }
 
     /**
@@ -116,8 +80,18 @@ public class FeedbackRepository {
      * @return 工单编号和是否追加，保存失败返回 null
      */
     public static Submission submit(FeedbackDTO feedback) {
+        return submit(feedback, null);
+    }
+
+    /**
+     * @param feedback   本次提交内容及来源
+     * @param expectedId 指定追加的未关闭工单编号，新建或自动追加时为 null
+     * @return 工单编号和是否追加，保存失败返回 null
+     * @throws IllegalArgumentException 指定工单已关闭或不属于提交者
+     */
+    public static Submission submit(FeedbackDTO feedback, String expectedId) {
         try (var con = DatabaseManager.getConnection()) {
-            return submit(con, feedback);
+            return submit(con, feedback, expectedId);
         } catch (SQLException e) {
             log.error("保存工单失败，用户: {}", feedback.getUserId(), e);
             return null;
@@ -125,6 +99,10 @@ public class FeedbackRepository {
     }
 
     static Submission submit(Connection con, FeedbackDTO feedback) throws SQLException {
+        return submit(con, feedback, null);
+    }
+
+    static Submission submit(Connection con, FeedbackDTO feedback, String expectedId) throws SQLException {
         validateContent(feedback.getSubmitContent());
         String family = platformFamily(feedback.getPlatform());
         var lock = SUBMISSION_LOCKS.get(family + ":" + feedback.getUserId());
@@ -140,15 +118,22 @@ public class FeedbackRepository {
                                 + platformCondition(feedback.getPlatform())
                                 + " AND status <> 'CLOSED' ORDER BY create_time DESC, id DESC LIMIT 1 FOR UPDATE")) {
                             ps.setString(1, feedback.getUserId());
-                            try (var rs = ps.executeQuery()) { if (rs.next()) current = rowToDTO(rs); }
+                            try (var rs = ps.executeQuery()) {
+                                if (rs.next()) current = rowToDTO(rs);
+                            }
                         }
+                        if (expectedId != null && (current == null || !expectedId.equals(current.getId())))
+                            throw new IllegalArgumentException("TICKET_NOT_OPEN");
                         Timestamp now = new Timestamp(System.currentTimeMillis());
                         boolean appended = current != null;
                         String id = appended ? current.getId() : UUID.randomUUID().toString();
                         if (appended) {
                             try (var ps = con.prepareStatement("UPDATE feedback SET platform=?, group_id=?, username=?, update_time=?, status='PENDING' WHERE id=?")) {
-                                ps.setString(1, feedback.getPlatform()); ps.setString(2, feedback.getGroupId());
-                                ps.setString(3, feedback.getUsername()); ps.setTimestamp(4, now); ps.setString(5, id);
+                                ps.setString(1, feedback.getPlatform());
+                                ps.setString(2, feedback.getGroupId());
+                                ps.setString(3, feedback.getUsername());
+                                ps.setTimestamp(4, now);
+                                ps.setString(5, id);
                                 ps.executeUpdate();
                             }
                         } else {
@@ -156,9 +141,14 @@ public class FeedbackRepository {
                                     INSERT INTO feedback (id, platform, user_id, username, group_id, submit_content,
                                       create_time, update_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
                                     """)) {
-                                ps.setString(1, id); ps.setString(2, feedback.getPlatform()); ps.setString(3, feedback.getUserId());
-                                ps.setString(4, feedback.getUsername()); ps.setString(5, feedback.getGroupId());
-                                ps.setString(6, feedback.getSubmitContent()); ps.setTimestamp(7, now); ps.setTimestamp(8, now);
+                                ps.setString(1, id);
+                                ps.setString(2, feedback.getPlatform());
+                                ps.setString(3, feedback.getUserId());
+                                ps.setString(4, feedback.getUsername());
+                                ps.setString(5, feedback.getGroupId());
+                                ps.setString(6, feedback.getSubmitContent());
+                                ps.setTimestamp(7, now);
+                                ps.setTimestamp(8, now);
                                 ps.executeUpdate();
                             }
                         }
@@ -172,7 +162,11 @@ public class FeedbackRepository {
                 }
             }
         } finally {
-            try { con.setTransactionIsolation(isolation); } finally { lock.unlock(); }
+            try {
+                con.setTransactionIsolation(isolation);
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -228,18 +222,26 @@ public class FeedbackRepository {
                     UPDATE feedback SET reply_content=?, reply_time=?, is_read=?,
                       status=?, update_time=?, closed_time=? WHERE id=?
                     """)) {
-                ps.setString(1, content); ps.setTimestamp(2, now); ps.setBoolean(3, silent);
-                ps.setString(4, status); ps.setTimestamp(5, now);
-                ps.setTimestamp(6, closeTicket ? now : null); ps.setString(7, id); ps.executeUpdate();
+                ps.setString(1, content);
+                ps.setTimestamp(2, now);
+                ps.setBoolean(3, silent);
+                ps.setString(4, status);
+                ps.setTimestamp(5, now);
+                ps.setTimestamp(6, closeTicket ? now : null);
+                ps.setString(7, id);
+                ps.executeUpdate();
             }
             if (closeTicket) {
                 addEntry(con, id, "ADMIN_CLOSE", "", actorId, actorName, now,
                         ticket.getPlatform(), ticket.getGroupId(), true, null, null, actorAvatarUrl);
             }
-            ticket.setReplyContent(content); ticket.setReplyTime(now);
-            ticket.setStatus(status); ticket.setUpdateTime(now);
+            ticket.setReplyContent(content);
+            ticket.setReplyTime(now);
+            ticket.setStatus(status);
+            ticket.setUpdateTime(now);
             ticket.setClosedTime(closeTicket ? now : null);
-            ticket.setPlatform(entry.platform()); ticket.setGroupId(entry.groupId());
+            ticket.setPlatform(entry.platform());
+            ticket.setGroupId(entry.groupId());
             return new Reply(ticket, entry);
         });
     }
@@ -247,10 +249,10 @@ public class FeedbackRepository {
     /**
      * 用户关闭时同时验证所属平台和用户标识，管理员关闭由管理端会话鉴权
      *
-     * @param id 工单完整编号
-     * @param ownerId 用户关闭时的本人标识，管理端传 null
-     * @param platform 用户关闭时的平台
-     * @param actorId 关闭操作者标识
+     * @param id        工单完整编号
+     * @param ownerId   用户关闭时的本人标识，管理端传 null
+     * @param platform  用户关闭时的平台
+     * @param actorId   关闭操作者标识
      * @param actorName 关闭操作者名称快照
      * @return 关闭结果，不存在和无权访问均返回 NOT_FOUND
      */
@@ -277,11 +279,15 @@ public class FeedbackRepository {
         return transaction(con, () -> {
             FeedbackDTO ticket = findById(con, id, true);
             if (ticket == null || (ownerId != null && (!ownerId.equals(ticket.getUserId())
-                    || !platformFamily(platform).equals(platformFamily(ticket.getPlatform()))))) return CloseResult.NOT_FOUND;
+                    || !platformFamily(platform).equals(platformFamily(ticket.getPlatform())))))
+                return CloseResult.NOT_FOUND;
             if ("CLOSED".equals(ticket.getStatus())) return CloseResult.ALREADY_CLOSED;
             Timestamp now = new Timestamp(System.currentTimeMillis());
             try (var ps = con.prepareStatement("UPDATE feedback SET status='CLOSED', closed_time=?, update_time=? WHERE id=?")) {
-                ps.setTimestamp(1, now); ps.setTimestamp(2, now); ps.setString(3, id); ps.executeUpdate();
+                ps.setTimestamp(1, now);
+                ps.setTimestamp(2, now);
+                ps.setString(3, id);
+                ps.executeUpdate();
             }
             addEntry(con, id, ownerId == null ? "ADMIN_CLOSE" : "USER_CLOSE", "", actorId, actorName,
                     now, ticket.getPlatform(), ticket.getGroupId(), true, null, null, actorAvatarUrl);
@@ -292,8 +298,8 @@ public class FeedbackRepository {
     /**
      * 重新打开工单，并根据是否已有回复恢复处理状态，调用方负责管理员鉴权
      *
-     * @param id 工单完整编号
-     * @param actorId 管理员统一账号标识
+     * @param id        工单完整编号
+     * @param actorId   管理员统一账号标识
      * @param actorName 管理员名称快照
      * @return 重新打开的结果，已打开时不重复写入记录
      */
@@ -325,7 +331,11 @@ public class FeedbackRepository {
             con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             return reopenLocked(con, id, actorId, actorName, actorAvatarUrl);
         } finally {
-            try { con.setTransactionIsolation(isolation); } finally { lock.unlock(); }
+            try {
+                con.setTransactionIsolation(isolation);
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -344,7 +354,10 @@ public class FeedbackRepository {
             Timestamp now = new Timestamp(System.currentTimeMillis());
             String status = ticket.getReplyContent() == null ? "PENDING" : "WAITING_USER";
             try (var ps = con.prepareStatement("UPDATE feedback SET status=?, closed_time=NULL, update_time=? WHERE id=?")) {
-                ps.setString(1, status); ps.setTimestamp(2, now); ps.setString(3, id); ps.executeUpdate();
+                ps.setString(1, status);
+                ps.setTimestamp(2, now);
+                ps.setString(3, id);
+                ps.executeUpdate();
             }
             addEntry(con, id, "ADMIN_REOPEN", "", actorId, actorName,
                     now, ticket.getPlatform(), ticket.getGroupId(), true, null, null, actorAvatarUrl);
@@ -361,7 +374,8 @@ public class FeedbackRepository {
                 FROM feedback f
                 """ + filterCondition(filter) + " ORDER BY update_time DESC, id DESC LIMIT ? OFFSET ?";
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
-            ps.setInt(1, pageSize); ps.setLong(2, (long) (page - 1) * pageSize);
+            ps.setInt(1, pageSize);
+            ps.setLong(2, (long) (page - 1) * pageSize);
             List<FeedbackDTO> result = new ArrayList<>();
             try (var rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -382,11 +396,16 @@ public class FeedbackRepository {
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement("""
                 SELECT * FROM feedback_entries WHERE feedback_id=? AND id < ? ORDER BY id DESC LIMIT 50
                 """)) {
-            ps.setString(1, id); ps.setLong(2, before > 0 ? before : Long.MAX_VALUE);
+            ps.setString(1, id);
+            ps.setLong(2, before > 0 ? before : Long.MAX_VALUE);
             List<FeedbackEntry> entries = new ArrayList<>();
-            try (var rs = ps.executeQuery()) { while (rs.next()) entries.add(rowToEntry(rs)); }
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) entries.add(rowToEntry(rs));
+            }
             return entries;
-        } catch (SQLException e) { throw new IllegalStateException("读取工单记录失败", e); }
+        } catch (SQLException e) {
+            throw new IllegalStateException("读取工单记录失败", e);
+        }
     }
 
     /**
@@ -402,7 +421,9 @@ public class FeedbackRepository {
     public static Set<Long> deletableReplyIds(String id) {
         try (var con = DatabaseManager.getConnection()) {
             return deletableReplyIds(con, id);
-        } catch (SQLException e) { throw new IllegalStateException("读取回复投递状态失败", e); }
+        } catch (SQLException e) {
+            throw new IllegalStateException("读取回复投递状态失败", e);
+        }
     }
 
     static Set<Long> deletableReplyIds(Connection con, String id) throws SQLException {
@@ -419,7 +440,9 @@ public class FeedbackRepository {
                 """)) {
             ps.setString(1, id);
             Set<Long> result = new HashSet<>();
-            try (var rs = ps.executeQuery()) { while (rs.next()) result.add(rs.getLong(1)); }
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) result.add(rs.getLong(1));
+            }
             return result;
         }
     }
@@ -431,7 +454,9 @@ public class FeedbackRepository {
             return deletePendingReply(con, id, entryId, actorId, actorName, avatarUrl);
         } catch (SQLException e) {
             throw new IllegalStateException("删除待送达回复失败", e);
-        } finally { lock.unlock(); }
+        } finally {
+            lock.unlock();
+        }
     }
 
     static boolean deletePendingReply(Connection con, String id, long entryId, String actorId,
@@ -441,7 +466,8 @@ public class FeedbackRepository {
             if (ticket == null) return false;
             boolean legacy;
             try (var ps = con.prepareStatement("SELECT legacy_key FROM feedback_entries WHERE id=? AND feedback_id=? FOR UPDATE")) {
-                ps.setLong(1, entryId); ps.setString(2, id);
+                ps.setLong(1, entryId);
+                ps.setString(2, id);
                 try (var rs = ps.executeQuery()) {
                     if (!rs.next()) return false;
                     legacy = ("reply:" + id).equals(rs.getString(1));
@@ -449,11 +475,13 @@ public class FeedbackRepository {
             }
             if (!deletableReplyIds(con, id).contains(entryId)) return false;
             try (var ps = con.prepareStatement("DELETE FROM pending_notice WHERE source='feedback' AND is_delivered=FALSE AND (source_id=? OR source_id=?)")) {
-                ps.setString(1, id + ":" + entryId); ps.setString(2, legacy ? id : id + ":" + entryId);
+                ps.setString(1, id + ":" + entryId);
+                ps.setString(2, legacy ? id : id + ":" + entryId);
                 ps.executeUpdate();
             }
             try (var ps = con.prepareStatement("UPDATE feedback_entries SET entry_type='REPLY_DELETED', content='', delivered=TRUE WHERE id=?")) {
-                ps.setLong(1, entryId); ps.executeUpdate();
+                ps.setLong(1, entryId);
+                ps.executeUpdate();
             }
             Timestamp now = new Timestamp(System.currentTimeMillis());
             addEntry(con, id, "ADMIN_DELETE", "删除待送达回复 #" + entryId, actorId, actorName, now,
@@ -464,7 +492,11 @@ public class FeedbackRepository {
             try (var ps = con.prepareStatement("SELECT content, create_time, delivered FROM feedback_entries WHERE feedback_id=? AND entry_type='REPLY' ORDER BY id DESC LIMIT 1")) {
                 ps.setString(1, id);
                 try (var rs = ps.executeQuery()) {
-                    if (rs.next()) { content = rs.getString(1); replyTime = rs.getTimestamp(2); read = rs.getBoolean(3); }
+                    if (rs.next()) {
+                        content = rs.getString(1);
+                        replyTime = rs.getTimestamp(2);
+                        read = rs.getBoolean(3);
+                    }
                 }
             }
             String status = ticket.getStatus();
@@ -472,12 +504,19 @@ public class FeedbackRepository {
                 status = "PENDING";
                 try (var ps = con.prepareStatement("SELECT entry_type FROM feedback_entries WHERE feedback_id=? AND entry_type IN ('REPLY','SUBMIT','APPEND') ORDER BY id DESC LIMIT 1")) {
                     ps.setString(1, id);
-                    try (var rs = ps.executeQuery()) { if (rs.next() && "REPLY".equals(rs.getString(1))) status = "WAITING_USER"; }
+                    try (var rs = ps.executeQuery()) {
+                        if (rs.next() && "REPLY".equals(rs.getString(1))) status = "WAITING_USER";
+                    }
                 }
             }
             try (var ps = con.prepareStatement("UPDATE feedback SET reply_content=?, reply_time=?, is_read=?, status=?, update_time=? WHERE id=?")) {
-                ps.setString(1, content); ps.setTimestamp(2, replyTime); ps.setBoolean(3, read);
-                ps.setString(4, status); ps.setTimestamp(5, now); ps.setString(6, id); ps.executeUpdate();
+                ps.setString(1, content);
+                ps.setTimestamp(2, replyTime);
+                ps.setBoolean(3, read);
+                ps.setString(4, status);
+                ps.setTimestamp(5, now);
+                ps.setString(6, id);
+                ps.executeUpdate();
             }
             return true;
         });
@@ -487,11 +526,18 @@ public class FeedbackRepository {
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement("SELECT COUNT(*) FROM feedback" + filterCondition(filter));
              var rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
-        } catch (SQLException e) { throw new IllegalStateException("统计工单失败", e); }
+        } catch (SQLException e) {
+            throw new IllegalStateException("统计工单失败", e);
+        }
     }
 
-    public static int countUnreplied() { return count("pending"); }
-    public static List<FeedbackDTO> findUnrepliedPaginated(int page, int pageSize) { return findPaginated("pending", page, pageSize); }
+    public static int countUnreplied() {
+        return count("pending");
+    }
+
+    public static List<FeedbackDTO> findUnrepliedPaginated(int page, int pageSize) {
+        return findPaginated("pending", page, pageSize);
+    }
 
     private static String filterCondition(String filter) {
         return switch (filter == null ? "pending" : filter) {
@@ -504,18 +550,25 @@ public class FeedbackRepository {
     }
 
     public static FeedbackDTO findById(String id) {
-        try (var con = DatabaseManager.getConnection()) { return findById(con, id, false); }
-        catch (SQLException e) { throw new IllegalStateException("读取工单失败", e); }
+        try (var con = DatabaseManager.getConnection()) {
+            return findById(con, id, false);
+        } catch (SQLException e) {
+            throw new IllegalStateException("读取工单失败", e);
+        }
     }
 
     static FeedbackDTO findById(Connection con, String id, boolean lock) throws SQLException {
         try (var ps = con.prepareStatement("SELECT * FROM feedback WHERE id=?" + (lock ? " FOR UPDATE" : ""))) {
             ps.setString(1, id);
-            try (var rs = ps.executeQuery()) { return rs.next() ? rowToDTO(rs) : null; }
+            try (var rs = ps.executeQuery()) {
+                return rs.next() ? rowToDTO(rs) : null;
+            }
         }
     }
 
-    public static FeedbackDTO findByIdPrefix(String prefix) { return findByIdPrefix(prefix, null, null); }
+    public static FeedbackDTO findByIdPrefix(String prefix) {
+        return findByIdPrefix(prefix, null, null);
+    }
 
     public static FeedbackDTO findByIdPrefix(String prefix, String ownerId, String platform) {
         if (prefix == null || !prefix.matches("[a-fA-F0-9-]{8,36}")) return null;
@@ -528,14 +581,16 @@ public class FeedbackRepository {
                 var ticket = rowToDTO(rs);
                 return rs.next() ? null : ticket;
             }
-        } catch (SQLException e) { throw new IllegalStateException("查找工单失败", e); }
+        } catch (SQLException e) {
+            throw new IllegalStateException("查找工单失败", e);
+        }
     }
 
     /**
      * 原子领取一条回复，主动通知与事件补发共用领取状态
      *
-     * @param entryId 指定回复记录，用户被动领取时传 null
-     * @param userId 被动领取的用户标识
+     * @param entryId  指定回复记录，用户被动领取时传 null
+     * @param userId   被动领取的用户标识
      * @param platform 被动领取的平台，用于隔离频道和 QQ 身份
      * @return 待发送快照，无记录时返回 null
      */
@@ -549,44 +604,55 @@ public class FeedbackRepository {
     }
 
     static Reply claimReply(Connection con, Long entryId, String userId, String platform) throws SQLException {
-            return transaction(con, () -> {
-                String sql = "SELECT e.* FROM feedback_entries e JOIN feedback f ON f.id=e.feedback_id "
-                        + "WHERE e.entry_type='REPLY' AND e.delivered=FALSE AND e.silent=FALSE "
-                        + (entryId != null ? "AND e.id=?" : "AND f.user_id=? AND " + platformCondition(platform).replace("platform", "e.platform")
-                            + ("OFFICIAL_C2C".equals(platform) ? "" : " AND e.platform <> 'OFFICIAL_C2C'"))
-                        + " ORDER BY e.id LIMIT 1 FOR UPDATE";
-                FeedbackEntry entry;
-                try (var ps = con.prepareStatement(sql)) {
-                    if (entryId != null) ps.setLong(1, entryId); else ps.setString(1, userId);
-                    try (var rs = ps.executeQuery()) { if (!rs.next()) return null; entry = rowToEntry(rs); }
+        return transaction(con, () -> {
+            String sql = "SELECT e.* FROM feedback_entries e JOIN feedback f ON f.id=e.feedback_id "
+                    + "WHERE e.entry_type='REPLY' AND e.delivered=FALSE AND e.silent=FALSE "
+                    + (entryId != null ? "AND e.id=?" : "AND f.user_id=? AND " + platformCondition(platform).replace("platform", "e.platform")
+                    + ("OFFICIAL_C2C".equals(platform) ? "" : " AND e.platform <> 'OFFICIAL_C2C'"))
+                    + " ORDER BY e.id LIMIT 1 FOR UPDATE";
+            FeedbackEntry entry;
+            try (var ps = con.prepareStatement(sql)) {
+                if (entryId != null) ps.setLong(1, entryId);
+                else ps.setString(1, userId);
+                try (var rs = ps.executeQuery()) {
+                    if (!rs.next()) return null;
+                    entry = rowToEntry(rs);
                 }
-                try (var ps = con.prepareStatement("UPDATE feedback_entries SET delivered=TRUE WHERE id=?")) {
-                    ps.setLong(1, entry.id()); ps.executeUpdate();
-                }
-                FeedbackDTO ticket = findById(con, entry.feedbackId(), false);
-                ticket.setPlatform(entry.platform()); ticket.setGroupId(entry.groupId());
-                ticket.setReplyContent(entry.content()); ticket.setReplyTime(entry.createTime());
-                try (var ps = con.prepareStatement("""
-                        SELECT platform, group_id, source_message_id, source_message_time FROM feedback_entries
-                        WHERE feedback_id=? AND id<? AND entry_type IN ('SUBMIT','APPEND') ORDER BY id DESC LIMIT 1
-                        """)) {
-                    ps.setString(1, entry.feedbackId()); ps.setLong(2, entry.id());
-                    try (var rs = ps.executeQuery()) {
-                        if (rs.next() && Objects.equals(entry.platform(), rs.getString("platform"))
-                                && Objects.equals(entry.groupId(), rs.getString("group_id"))) {
-                            ticket.setSourceMessageId(rs.getString("source_message_id"));
-                            ticket.setSourceMessageTime(rs.getTimestamp("source_message_time"));
-                        }
+            }
+            try (var ps = con.prepareStatement("UPDATE feedback_entries SET delivered=TRUE WHERE id=?")) {
+                ps.setLong(1, entry.id());
+                ps.executeUpdate();
+            }
+            FeedbackDTO ticket = findById(con, entry.feedbackId(), false);
+            ticket.setPlatform(entry.platform());
+            ticket.setGroupId(entry.groupId());
+            ticket.setReplyContent(entry.content());
+            ticket.setReplyTime(entry.createTime());
+            try (var ps = con.prepareStatement("""
+                    SELECT platform, group_id, source_message_id, source_message_time FROM feedback_entries
+                    WHERE feedback_id=? AND id<? AND entry_type IN ('SUBMIT','APPEND') ORDER BY id DESC LIMIT 1
+                    """)) {
+                ps.setString(1, entry.feedbackId());
+                ps.setLong(2, entry.id());
+                try (var rs = ps.executeQuery()) {
+                    if (rs.next() && Objects.equals(entry.platform(), rs.getString("platform"))
+                            && Objects.equals(entry.groupId(), rs.getString("group_id"))) {
+                        ticket.setSourceMessageId(rs.getString("source_message_id"));
+                        ticket.setSourceMessageTime(rs.getTimestamp("source_message_time"));
                     }
                 }
-                return new Reply(ticket, entry);
-            });
+            }
+            return new Reply(ticket, entry);
+        });
     }
 
     public static void releaseReply(long entryId) {
         try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement("UPDATE feedback_entries SET delivered=FALSE WHERE id=? AND silent=FALSE")) {
-            ps.setLong(1, entryId); ps.executeUpdate();
-        } catch (SQLException e) { log.error("恢复工单待发送状态失败，记录: {}", entryId, e); }
+            ps.setLong(1, entryId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("恢复工单待发送状态失败，记录: {}", entryId, e);
+        }
     }
 
     /**
@@ -599,7 +665,9 @@ public class FeedbackRepository {
         if (sourceId == null) return null;
         try (var con = DatabaseManager.getConnection()) {
             return queuedReply(con, sourceId);
-        } catch (SQLException e) { throw new IllegalStateException("读取待补发工单回复失败", e); }
+        } catch (SQLException e) {
+            throw new IllegalStateException("读取待补发工单回复失败", e);
+        }
     }
 
     static FeedbackDTO queuedReply(Connection con, String sourceId) throws SQLException {
@@ -607,7 +675,11 @@ public class FeedbackRepository {
         if (parts.length > 2) return null;
         long entryId = 0;
         if (parts.length == 2) {
-            try { entryId = Long.parseLong(parts[1]); } catch (NumberFormatException e) { return null; }
+            try {
+                entryId = Long.parseLong(parts[1]);
+            } catch (NumberFormatException e) {
+                return null;
+            }
             if (entryId <= 0) return null;
         }
         var ticket = findById(con, parts[0], false);
@@ -616,7 +688,8 @@ public class FeedbackRepository {
                 + (parts.length == 2 ? "id=?" : "legacy_key=?");
         try (var ps = con.prepareStatement(sql)) {
             ps.setString(1, parts[0]);
-            if (parts.length == 2) ps.setLong(2, entryId); else ps.setString(2, "reply:" + parts[0]);
+            if (parts.length == 2) ps.setLong(2, entryId);
+            else ps.setString(2, "reply:" + parts[0]);
             try (var rs = ps.executeQuery()) {
                 if (!rs.next()) return null;
                 ticket.setReplyContent(rs.getString("content"));
@@ -634,10 +707,18 @@ public class FeedbackRepository {
                   platform, group_id, silent, delivered, source_message_id, source_message_time, actor_avatar_url)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, id); ps.setString(2, type); ps.setString(3, content); ps.setString(4, actorId);
-            ps.setString(5, actorName); ps.setTimestamp(6, time); ps.setString(7, platform); ps.setString(8, groupId);
-            ps.setBoolean(9, silent); ps.setBoolean(10, !"REPLY".equals(type) || silent);
-            ps.setString(11, sourceMessageId); ps.setTimestamp(12, sourceMessageTime);
+            ps.setString(1, id);
+            ps.setString(2, type);
+            ps.setString(3, content);
+            ps.setString(4, actorId);
+            ps.setString(5, actorName);
+            ps.setTimestamp(6, time);
+            ps.setString(7, platform);
+            ps.setString(8, groupId);
+            ps.setBoolean(9, silent);
+            ps.setBoolean(10, !"REPLY".equals(type) || silent);
+            ps.setString(11, sourceMessageId);
+            ps.setTimestamp(12, sourceMessageTime);
             ps.setString(13, actorAvatarUrl);
             ps.executeUpdate();
             try (var keys = ps.getGeneratedKeys()) {
@@ -679,12 +760,18 @@ public class FeedbackRepository {
 
     private static FeedbackDTO rowToDTO(ResultSet rs) throws SQLException {
         FeedbackDTO dto = new FeedbackDTO();
-        dto.setId(rs.getString("id")); dto.setPlatform(rs.getString("platform")); dto.setUserId(rs.getString("user_id"));
-        dto.setUsername(rs.getString("username")); dto.setGroupId(rs.getString("group_id"));
-        dto.setSubmitContent(rs.getString("submit_content")); dto.setCreateTime(rs.getTimestamp("create_time"));
-        dto.setRead(rs.getBoolean("is_read")); dto.setReplyContent(rs.getString("reply_content"));
+        dto.setId(rs.getString("id"));
+        dto.setPlatform(rs.getString("platform"));
+        dto.setUserId(rs.getString("user_id"));
+        dto.setUsername(rs.getString("username"));
+        dto.setGroupId(rs.getString("group_id"));
+        dto.setSubmitContent(rs.getString("submit_content"));
+        dto.setCreateTime(rs.getTimestamp("create_time"));
+        dto.setRead(rs.getBoolean("is_read"));
+        dto.setReplyContent(rs.getString("reply_content"));
         dto.setReplyTime(rs.getTimestamp("reply_time"));
-        dto.setStatus(rs.getString("status")); dto.setUpdateTime(rs.getTimestamp("update_time"));
+        dto.setStatus(rs.getString("status"));
+        dto.setUpdateTime(rs.getTimestamp("update_time"));
         dto.setClosedTime(rs.getTimestamp("closed_time"));
         return dto;
     }
@@ -699,9 +786,13 @@ public class FeedbackRepository {
         } catch (SQLException | RuntimeException e) {
             con.rollback();
             throw e;
-        } finally { con.setAutoCommit(autoCommit); }
+        } finally {
+            con.setAutoCommit(autoCommit);
+        }
     }
 
     @FunctionalInterface
-    private interface SqlWork<T> { T run() throws SQLException; }
+    private interface SqlWork<T> {
+        T run() throws SQLException;
+    }
 }

@@ -7,6 +7,7 @@ import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.RT;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.event.EventType;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.platform.PlatformRole;
@@ -175,6 +176,15 @@ public class QQSenderImpl implements QQCommandSender {
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image)");
+    }
+
+    @Override
+    public String sendMessage(Card card) {
+        return switch (this.user.getPlatform()) {
+            case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, this.message.getMessageId(), card);
+            case OFFICIAL_C2C -> this.user.sendMessage(this.message.getMessageId(), card);
+            default -> throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Card card)");
+        };
     }
 
     @Override

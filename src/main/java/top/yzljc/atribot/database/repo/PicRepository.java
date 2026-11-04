@@ -1,11 +1,15 @@
 package top.yzljc.atribot.database.repo;
 
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.function.impl.pic.ImageReviewStatus;
 import top.yzljc.atribot.database.ImageSourceDTO;
 
 import java.sql.Timestamp;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +25,7 @@ import java.util.UUID;
  */
 @Slf4j
 public class PicRepository {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     // ==================== Table init ====================
 
@@ -48,6 +53,7 @@ public class PicRepository {
                 "  `review_time` DATETIME NULL," +
                 "  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "  `is_notified` BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  `ai_review` JSON NULL," +
                 "  PRIMARY KEY (`id`)," +
                 "  UNIQUE KEY `uk_image_uuid` (`image_uuid`)," +
                 "  INDEX `idx_uploader_id` (`uploader_id`)," +
@@ -60,6 +66,7 @@ public class PicRepository {
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
             ps.execute();
+            migrateAiReviewOnce(con);
             log.info("图源数据库表初始化完成");
         } catch (Exception e) {
             log.error("初始化图源数据库表失败", e);
@@ -67,6 +74,46 @@ public class PicRepository {
     }
 
     // ==================== 投稿 ====================
+
+    /** 一次性扩表：已有投稿表增加 AI 初审结果，完成迁移后可删除此方法及调用 */
+    public static void migrateAiReviewOnce(Connection con) throws SQLException {
+        try (var columns = con.getMetaData().getColumns(con.getCatalog(), null, "image_source", "ai_review")) {
+            if (columns.next()) return;
+        }
+        try (var statement = con.createStatement()) {
+            statement.executeUpdate("ALTER TABLE image_source ADD COLUMN ai_review JSON NULL");
+        }
+    }
+
+    /** 仅已完成转存的待审图片可以进入初审队列，重复提交不重置正在处理的任务 */
+    public static boolean queueAiReview(String id) {
+        String sql = "UPDATE image_source SET ai_review = '{\"status\":\"QUEUED\"}'"
+                + " WHERE id = ? AND review_status = 'PENDING' AND processed_file_size > 0"
+                + " AND (ai_review IS NULL OR COALESCE(JSON_UNQUOTE(JSON_EXTRACT(ai_review, '$.status')), '') <> 'QUEUED')";
+        try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(sql)) {
+            ps.setString(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            log.warn("图源初审入队失败: id={}", id, e);
+            return false;
+        }
+    }
+
+    public static ImageSourceDTO nextAiReview() {
+        return querySingle("SELECT * FROM image_source WHERE review_status = 'PENDING'"
+                + " AND JSON_UNQUOTE(JSON_EXTRACT(ai_review, '$.status')) = ? ORDER BY create_time, id LIMIT 1", "QUEUED");
+    }
+
+    /** 人工审核或删除后丢弃迟到的初审结果 */
+    public static void completeAiReview(String id, JsonNode result) throws SQLException {
+        try (var con = DatabaseManager.getConnection(); var ps = con.prepareStatement(
+                "UPDATE image_source SET ai_review = ? WHERE id = ?"
+                        + " AND (ai_review IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(ai_review, '$.status')) = 'QUEUED')")) {
+            ps.setString(1, result.toString());
+            ps.setString(2, id);
+            ps.executeUpdate();
+        }
+    }
 
     /**
      * 写入一条投稿记录，返回生成的主键 UUID；失败返回 null。
@@ -170,8 +217,21 @@ public class PicRepository {
      * @return 是否命中并更新了记录
      */
     public static boolean review(String id, ImageReviewStatus status, String reviewer, String remark) {
+        return review(id, status, reviewer, remark, false);
+    }
+
+    /**
+     * 更新审核结果，静默拒绝同时将通知标记为已处理，避免进入待通知列表
+     *
+     * @param silent 是否静默拒绝，仅适用于 DENIED 状态
+     * @return 是否命中并更新了记录
+     */
+    public static boolean review(String id, ImageReviewStatus status, String reviewer, String remark, boolean silent) {
+        if (silent && status != ImageReviewStatus.DENIED) return false;
         String sql = "UPDATE `image_source` SET `review_status` = ?, `reviewer` = ?, `review_remark` = ?, " +
-                "`review_time` = ?, `is_notified` = FALSE WHERE `id` = ?";
+                "`review_time` = ?, `is_notified` = ?, " +
+                "`ai_review` = CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(ai_review, '$.status')) = 'QUEUED' " +
+                "THEN NULL ELSE ai_review END WHERE `id` = ?";
 
         try (var con = DatabaseManager.getConnection();
              var ps = con.prepareStatement(sql)) {
@@ -179,10 +239,11 @@ public class PicRepository {
             ps.setString(2, reviewer);
             ps.setString(3, remark);
             ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-            ps.setString(5, id);
+            ps.setBoolean(5, silent);
+            ps.setString(6, id);
             int affected = ps.executeUpdate();
             if (affected > 0) {
-                log.info("图源审核完成: id={}, status={}, reviewer={}", id, status.name(), reviewer);
+                log.info("图源审核完成: id={}, status={}, reviewer={}, silent={}", id, status.name(), reviewer, silent);
                 return true;
             }
             log.warn("图源审核未命中记录: id={}", id);
@@ -405,6 +466,11 @@ public class PicRepository {
         dto.setReviewTime(rs.getTimestamp("review_time"));
         dto.setCreateTime(rs.getTimestamp("create_time"));
         dto.setNotified(rs.getBoolean("is_notified"));
+        String aiReview = rs.getString("ai_review");
+        if (aiReview != null) {
+            try { dto.setAiReview(MAPPER.readTree(aiReview)); }
+            catch (java.io.IOException e) { log.warn("图源初审结果解析失败: id={}", dto.getId()); }
+        }
         return dto;
     }
 }

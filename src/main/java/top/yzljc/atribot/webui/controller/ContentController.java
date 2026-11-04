@@ -24,6 +24,8 @@ import top.yzljc.atribot.service.request.BizResponse;
 import top.yzljc.atribot.webui.PagedResult;
 import top.yzljc.atribot.webui.Result;
 import top.yzljc.atribot.webui.ApiCode;
+import top.yzljc.atribot.webui.WebUISessionManager;
+import top.yzljc.atricore.auth.AtriAccount;
 
 import static top.yzljc.atribot.webui.WebUiSupport.isBlank;
 import static top.yzljc.atribot.webui.WebUiSupport.parseInt;
@@ -56,17 +58,21 @@ public class ContentController {
     }
 
     public static void reviewGallery(Context ctx) {
+        String reviewer = galleryReviewer(ctx);
+        if (reviewer == null) return;
         ReviewGalleryDTO dto = ctx.bodyAsClass(ReviewGalleryDTO.class);
         if (isBlank(dto.getId()) || !ImageReviewStatus.isValid(dto.getStatus())) {
             ctx.json(Result.customFailure("id 与合法的 status 不能为空"));
             return;
         }
         boolean success = ImageReviewService.review(dto.getId(), ImageReviewStatus.of(dto.getStatus()),
-                REVIEWER_NAME, dto.getRemark());
+                reviewer, dto.getRemark(), dto.isSilent());
         ctx.json(success ? Result.success("ok") : Result.customFailure("审核失败，可能该投稿不存在"));
     }
 
     public static void reviewGalleryBatch(Context ctx) {
+        String reviewer = galleryReviewer(ctx);
+        if (reviewer == null) return;
         ReviewGalleryBatchDTO dto = ctx.bodyAsClass(ReviewGalleryBatchDTO.class);
         if (dto.getIds() == null || dto.getIds().isEmpty() || !ImageReviewStatus.isValid(dto.getStatus())) {
             ctx.json(Result.customFailure("ids 与合法的 status 不能为空"));
@@ -76,7 +82,7 @@ public class ContentController {
         int ok = 0;
         for (String id : dto.getIds()) {
             if (isBlank(id)) continue;
-            if (ImageReviewService.review(id, status, REVIEWER_NAME, dto.getRemark())) ok++;
+            if (ImageReviewService.review(id, status, reviewer, dto.getRemark(), dto.isSilent())) ok++;
         }
         ctx.json(Result.success(new GalleryBatchResult(ok, dto.getIds().size())));
     }
@@ -111,12 +117,18 @@ public class ContentController {
                 dto.getReviewer(), dto.getReviewRemark(),
                 FormatTools.formatTimestamp(dto.getReviewTime(), null),
                 FormatTools.formatTimestamp(dto.getCreateTime(), null),
-                dto.isNotified()
+                dto.isNotified(), dto.getAiReview()
         );
     }
 
-    /** WebUI 目前只有单一管理员会话，没有独立账号体系，审核人统一记为 webui */
-    private static final String REVIEWER_NAME = "webui";
+    private static String galleryReviewer(Context ctx) {
+        AtriAccount account = ctx.attribute("webui.account");
+        if (!WebUISessionManager.isAdministrator(account)) {
+            ctx.status(403).json(Result.failure(ApiCode.ACCESS_DENIED));
+            return null;
+        }
+        return isBlank(account.username()) ? "管理员" : account.username();
+    }
 
     public record GalleryItemDTO(String id, String imageUuid, String platform, String uploaderId,
                                  String uploaderName, String groupId, String displayUrl, String fileName,
@@ -124,7 +136,7 @@ public class ContentController {
                                  int processedWidth, int processedHeight, long processedFileSize, String hash,
                                  String reviewStatus, String reviewer, String reviewRemark,
                                  String reviewTime, String createTime,
-                                 @JsonProperty("isNotified") boolean isNotified) {
+                                 @JsonProperty("isNotified") boolean isNotified, JsonNode aiReview) {
     }
 
     public record GalleryCountDTO(int pending, int reviewed, int denied, int all) {
@@ -138,6 +150,7 @@ public class ContentController {
         private String id;
         private String status;
         private String remark;
+        private boolean silent;
     }
 
     @Data
@@ -145,6 +158,7 @@ public class ContentController {
         private List<String> ids;
         private String status;
         private String remark;
+        private boolean silent;
     }
 
     @Data

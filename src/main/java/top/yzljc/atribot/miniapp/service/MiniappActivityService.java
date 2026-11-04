@@ -53,9 +53,12 @@ public final class MiniappActivityService {
     public record GameStats(String game, long operations, long correct, long plays, long wins, Map<String, Long> metrics) {
     }
 
+    public record Loot(long ownedCards, long collectedTypes, Number collectedNormalTypes,
+                       Number normalCatalogTypes, Number normalCollectionCompletion) {}
+
     public record Activity(Reaction reaction, String freeDraw, List<GameStats> games, MiniappUserSettings settings,
                            Map<String, Map<String, Integer>> rankings,
-                           List<String> unavailable) {
+                           List<String> unavailable, Loot loot) {
     }
 
     public record Item(String itemId, String name, int count, long firstAt, long lastAt, String source) {
@@ -90,15 +93,24 @@ public final class MiniappActivityService {
         List<String> unavailable = new ArrayList<>();
         Reaction reaction = null;
         String freeDraw = null;
+        Loot loot = null;
         List<GameStats> games = null;
         MiniappUserSettings settings = null;
         Map<String, Map<String, Integer>> rankings = Map.of();
         try {
             var snapshot = BotStatsCache.snapshot();
             rankings = BotStatsCache.ranks(snapshot, identity.userId());
+            if (snapshot.loot() != null) {
+                var player = snapshot.loot().player(identity.userId());
+                loot = player == null ? new Loot(0, 0, null, null, null)
+                        : new Loot(((Number) player.get("ownedCards")).longValue(),
+                        ((Number) player.get("collectedTypes")).longValue(), (Number) player.get("collectedNormalTypes"),
+                        (Number) player.get("normalCatalogTypes"), (Number) player.get("normalCollectionCompletion"));
+            } else unavailable.add("loot");
             if (snapshot.games() == null || snapshot.loot() == null || snapshot.sign() == null)
                 unavailable.add("rankings");
         } catch (RuntimeException e) {
+            unavailable.add("loot");
             unavailable.add("rankings");
             log.warn("Miniapp 用户排名读取失败", e);
         }
@@ -147,7 +159,7 @@ public final class MiniappActivityService {
             unavailable.add("settings");
             log.warn("Miniapp 用户设置读取失败", e);
         }
-        return new Activity(reaction, freeDraw, games, settings, rankings, List.copyOf(unavailable));
+        return new Activity(reaction, freeDraw, games, settings, rankings, List.copyOf(unavailable), loot);
     }
 
     public Page<Item> inventory(MiniappSessions.Identity identity, int offset) {

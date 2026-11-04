@@ -12,6 +12,20 @@
     justify-content: space-between;
 }
 
+.ticket-topbar .ticket-refresh {
+    display: grid;
+    place-items: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.ticket-refresh svg {
+    display: block;
+}
+
 .ticket-filters {
     display: flex;
     overflow-x: auto;
@@ -599,8 +613,16 @@
 }
 
 @media (max-width: 640px) {
+    .ticket-topbar .topbar-left {
+        padding-left: 0;
+    }
+
     .ticket-topbar .menu-btn {
         position: static;
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        padding: 6px;
     }
 
     .ticket-topbar h2 {

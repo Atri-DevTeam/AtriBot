@@ -70,10 +70,10 @@ public class BasicReply implements Listener {
             "好梦"
     );
     public static final Set<String> TRIGGER_WORDS = Set.of(
-            "我喜欢你", "爱你", "爱死你", "l love you", "love you", "hello world",
-            "亲亲", "mua", "啵一个", "亲一下", "kiss", "喜欢",
+            "我喜欢你", "爱你", "爱死你", "l love you", "love you",
+            "亲亲", "啵一个", "亲一下", "喜欢",
             "摸摸", "摸头", "抱抱", "揉揉", "蹭蹭", "贴贴", "摸", "亚托莉",
-            "想你了", "在干嘛", "出来玩", "陪我", "rua", "晚安", "可爱", "聊天"
+            "想你了", "在干嘛", "出来玩", "陪我", "晚安", "可爱", "聊天"
     );
 
     @EventHandler
@@ -110,6 +110,16 @@ public class BasicReply implements Listener {
             return;
         }
 
+        if (content.equals("喵")) {
+            event.sendMessage("喵～ (ฅ>ω<*ฅ)");
+            return;
+        }
+
+        if (content.equals("喵喵喵")) {
+            event.sendMessage("喵喵喵～ (ฅ>ω<*ฅ)");
+            return;
+        }
+
         for (var w : TRIGGER_WORDS) {
             if (content.contains(w)) {
                 event.sendMessage(getRandomReply());
@@ -122,11 +132,31 @@ public class BasicReply implements Listener {
     public void onGroupMessage(OfficialGroupMessageCreateEvent event) {
         if (event.getMessage().isCommand()) return;
         if (event.shouldIgnore()) return;
-        if (!event.isAtBot()) return;
+
         String content = event.getMessage().getContent().trim();
+
+        if (!event.isAtBot()) {
+
+            if (content.equals("喵")) {
+                event.sendMessage("喵～ (ฅ>ω<*ฅ)");
+                return;
+            }
+
+            if (content.equals("喵喵喵")) {
+                event.sendMessage("喵喵喵～ (ฅ>ω<*ฅ)");
+                return;
+            }
+
+            return;
+        }
 
         if (content.contains("你好") || content.toLowerCase().contains("hello") || content.contains("ciallo")) {
             event.sendMessage(CIALLO);
+            return;
+        }
+
+        if (content.contains("喵喵喵")) {
+            event.sendMessage("喵喵喵～ (ฅ>ω<*ฅ)");
             return;
         }
 

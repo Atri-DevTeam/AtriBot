@@ -99,19 +99,34 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
 
     @Override
     public void run() {
-        check(null);
+        checkAndPush();
     }
 
-    private void check(CommandSender sender) {
+    /**
+     * 检查资源包版本并通过现有订阅及频道渠道推送更新
+     *
+     * @return 本次检查结果，推送提交不代表所有接收方均已送达
+     */
+    public CheckResult checkAndPush() {
+        return check(null);
+    }
+
+    public enum CheckResult {
+        UPDATED, UNCHANGED, FAILED
+    }
+
+    private synchronized CheckResult check(CommandSender sender) {
         var d = HttpService.sendGetRequest(RS.get("request.hypixel.resource-packs"));
         if (d == null || d.isEmpty() || d.path("packs").isMissingNode()) {
             log.error("获取Hypixel Skyblock资源包信息失败");
             if (sender != null) sender.sendMessage("获取 Hypixel Skyblock 资源包信息失败，请稍后重试。");
-            return;
+            return CheckResult.FAILED;
         }
         Map<String, Object> request = new HashMap<>();
 
         long tmpLastTime = lastUpdateTime;
+        long updateTime = 0;
+        String currentDeployId = null;
         for (var node : d.path("packs")) {
             if (node.path("id").asText("default").equals("SkyBlock")) {
                 long updateTimeRaw = node.path("lastUpdated").asLong(0);
@@ -120,17 +135,22 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                 if (updateTimeRaw == lastUpdateTime && Objects.equals(deployId, lastDeployId)) {
                     if (sender == null) {
                         log.info("Skyblock 资源包无更新");
-                        return;
+                        return CheckResult.UNCHANGED;
                     }
                 }
 
-                lastUpdateTime = updateTimeRaw;
-                lastDeployId = deployId;
-                saveCache();
+                updateTime = updateTimeRaw;
+                currentDeployId = deployId;
 
                 request.putAll(renderRequest(node));
                 break;
             }
+        }
+
+        if (request.isEmpty()) {
+            log.warn("资源包响应中未找到 SkyBlock");
+            if (sender != null) sender.sendMessage("获取 Hypixel Skyblock 资源包信息失败，请稍后重试。");
+            return CheckResult.FAILED;
         }
 
         if (sender instanceof QQCommandSender) BackgroundService.applyApprovedBackground(request, sender.getUserId());
@@ -141,9 +161,9 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         if (sender != null) {
             if (r.url() == null || r.isError()) {
                 sender.sendMessage(r.errorMessage());
-                return;
+                return CheckResult.FAILED;
             }
-            var lastUpdatedTime = "上一次的更新时间为 " + FormatTools.formatTimestampMilli(lastUpdateTime);
+            var lastUpdatedTime = "上一次的更新时间为 " + FormatTools.formatTimestampMilli(updateTime);
             ImageComponent image = ImageComponent.imageOf(r.url()).setText(lastUpdatedTime);
             switch (sender) {
                 case QQCommandSender qqSender -> qqSender.sendMessage(image);
@@ -154,7 +174,7 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
         } else {
             if (r.url() == null || r.isError()) {
                 log.error("Skyblock 资源包信息生成图片失败: {}", r.errorMessage());
-                return;
+                return CheckResult.FAILED;
             }
 
 //            var groups = OfficialGroups.enabledGroups("skyblock_resource_pack");
@@ -173,7 +193,11 @@ public final class SkyblockPackCheckImpl implements ScheduledTask {
                     lastUpdatedTime + "\n\n" + Markdown.img(r.url(), r.width(), r.height())
             );
             ChannelPosts.sendMessage(ForumCode.GUILD_ID, ForumCode.HYPIXEL_SKYBLOCK_NEWS.getChannelId(), "[资源包更新] Skyblock资源包已更新", md);
+            lastUpdateTime = updateTime;
+            lastDeployId = currentDeployId;
+            saveCache();
         }
+        return CheckResult.UPDATED;
     }
 
     private static void loadCache() {

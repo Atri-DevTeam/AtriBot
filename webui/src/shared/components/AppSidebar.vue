@@ -137,6 +137,10 @@
         </svg>
         <span class="side-nav-label">事件记录</span>
       </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/surveys' }" title="问卷调查" @click="go('/surveys')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h6"/></svg>
+        <span class="side-nav-label">问卷调查</span>
+      </button>
       <button class="side-nav-item" :class="{ active: route.path === '/napcat' }" @click="go('/napcat')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="14" rx="3" />
@@ -144,6 +148,14 @@
           <path d="M12 18v2" />
         </svg>
         <span class="side-nav-label">Napcat功能</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/connect' }" @click="go('/connect')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-12-2 14"/></svg>
+        <span class="side-nav-label">API接口</span>
+      </button>
+      <button class="side-nav-item" :class="{ active: route.path === '/update-notice' }" @click="go('/update-notice')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-6v14L3 13zM7 14l2 7h3l-2-6M21 9v6"/></svg>
+        <span class="side-nav-label">更新日志</span>
       </button>
       <button class="side-nav-item" :class="{ active: route.path === '/debug' }" @click="go('/debug')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

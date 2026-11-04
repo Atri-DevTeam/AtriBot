@@ -40,7 +40,7 @@ public class OfficialUsers {
         C2CRepository.initTable();
         cache.clear();
         for (var row : C2CRepository.loadAll()) {
-            cache.put(row.userOpenId(), new UserData(row.userOpenId(), row.c2cPush()));
+            cache.put(row.userOpenId(), new UserData(row.userOpenId(), row.c2cPush(), row.username()));
         }
         log.info("OfficialUsers 缓存加载完成，共 {} 条", cache.size());
     }
@@ -57,6 +57,33 @@ public class OfficialUsers {
      */
     public static List<UserData> listAll() {
         return new ArrayList<>(cache.values());
+    }
+
+    /**
+     * 从好友缓存读取最近收到的有效昵称，不查询数据库
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @return 缓存中的昵称，用户不在好友缓存或尚无昵称时返回 null
+     */
+    public static String getUsername(String userOpenId) {
+        UserData data = userOpenId == null ? null : cache.get(userOpenId);
+        return data == null ? null : data.username();
+    }
+
+    /**
+     * 昵称变化时更新已有好友记录，同一用户的更新按缓存键串行执行
+     *
+     * @param userOpenId QQ 用户 OpenID
+     * @param username 消息中的昵称，空值不覆盖已有昵称
+     */
+    public static void updateUsername(String userOpenId, String username) {
+        if (userOpenId == null || username == null || username.isBlank()) return;
+        UserData current = cache.get(userOpenId);
+        if (current == null || username.equals(current.username())) return;
+        cache.computeIfPresent(userOpenId, (id, existing) -> {
+            if (username.equals(existing.username()) || !C2CRepository.updateUsername(id, username)) return existing;
+            return new UserData(id, existing.c2cPush(), username);
+        });
     }
 
     /**
@@ -144,7 +171,7 @@ public class OfficialUsers {
      */
     public static void setC2CPush(String userOpenId, boolean c2cPush) {
         if (C2CRepository.setC2CPush(userOpenId, c2cPush)) {
-            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush));
+            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush, existing.username()));
         }
     }
 
@@ -201,7 +228,7 @@ public class OfficialUsers {
         if (userOpenId == null || userOpenId.isBlank() || status == null) return false;
         Set<String> savedPermissions = Set.copyOf(permissions);
         if (UnifiedAuthentication.saveOfficialUserProfile(userOpenId, role, savedPermissions, status, c2cPush)) {
-            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush));
+            cache.computeIfPresent(userOpenId, (id, existing) -> new UserData(id, c2cPush, existing.username()));
             return true;
         }
         return false;
@@ -417,7 +444,11 @@ public class OfficialUsers {
         return BotUserDataRepository.setUserSetting(userOpenId, BILIBILI_UID_SETTING, Long.toString(uid), true);
     }
 
-    public record UserData(String userOpenId, boolean c2cPush) {
+    public record UserData(String userOpenId, boolean c2cPush, String username) {
+        public UserData(String userOpenId, boolean c2cPush) {
+            this(userOpenId, c2cPush, null);
+        }
+
         public UnifiedRole role() {
             var account = UnifiedAuthentication.getCachedQqUserAccount(userOpenId);
             return account == null ? UnifiedRole.USER : account.role();

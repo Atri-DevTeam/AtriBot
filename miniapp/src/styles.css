@@ -1,4 +1,5 @@
 :root {
+    --app-top-inset: env(safe-area-inset-top, 0px);
     --ui-page: #09090b;
     --ui-panel: #121214;
     --ui-raised: #1b1b1f;
@@ -27,6 +28,10 @@
     -webkit-font-smoothing: antialiased;
     color-scheme: dark;
     scrollbar-color: #45454f var(--ui-page);
+}
+
+:root.miniapp-qq {
+    --app-top-inset: calc(44px + env(safe-area-inset-top, 0px));
 }
 
 * {
@@ -79,7 +84,7 @@ svg {
     isolation: isolate;
     min-height: 100vh;
     min-height: 100svh;
-    padding: calc(64px + env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
+    padding: calc(64px + var(--app-top-inset)) max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
     overflow: hidden;
 }
 
@@ -93,7 +98,7 @@ svg {
     position: fixed;
     inset: 0 0 auto;
     z-index: 20;
-    padding: env(safe-area-inset-top) max(28px, env(safe-area-inset-right)) 0 max(28px, env(safe-area-inset-left));
+    padding: var(--app-top-inset) max(28px, env(safe-area-inset-right)) 0 max(28px, env(safe-area-inset-left));
     border: 0;
     border-bottom: 1px solid var(--ui-border);
     background: var(--ui-page);
@@ -527,7 +532,7 @@ svg {
 }
 
 .entry-layout {
-    min-height: calc(100svh - 88px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: calc(100svh - 88px - var(--app-top-inset) - env(safe-area-inset-bottom));
     display: grid;
     place-items: center;
     padding: 40px 0;
@@ -604,7 +609,7 @@ svg {
     .app-shell {
         padding-left: max(20px, env(safe-area-inset-left));
         padding-right: max(20px, env(safe-area-inset-right));
-        padding-top: calc(56px + env(safe-area-inset-top));
+        padding-top: calc(56px + var(--app-top-inset));
     }
 
     .topbar {
@@ -772,21 +777,63 @@ svg {
     margin-left: 6px;
 }
 
-.page-eyebrow { margin: 0 0 8px; color: var(--ui-subtle); font-size: 10px; letter-spacing: .12em; line-height: 1.6; }
+.page-eyebrow {
+    margin: 0 0 8px;
+    color: var(--ui-subtle);
+    font-size: 10px;
+    letter-spacing: .12em;
+    line-height: 1.6;
+}
 
-.page-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
+.page-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 30px;
+}
 
-.page-heading h2 { margin: 0; font-size: 30px; font-weight: 550; letter-spacing: -.04em; }
+.page-heading h2 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 550;
+    letter-spacing: -.04em;
+}
 
-.page-heading > p { margin: 0 0 3px; color: var(--ui-muted); font-size: 12px; }
+.page-heading > p {
+    margin: 0 0 3px;
+    color: var(--ui-muted);
+    font-size: 12px;
+}
 
 @media (min-width: 761px) {
-  .app-shell.has-dock { padding-top: calc(110px + env(safe-area-inset-top)); padding-bottom: 32px; }
-  .profile-details > .settings-card { padding-left: 36px; border-left: 1px solid var(--ui-border); }
+    .app-shell.has-dock {
+        padding-top: calc(110px + var(--app-top-inset));
+        padding-bottom: 32px;
+    }
+
+    .profile-details > .settings-card {
+        padding-left: 36px;
+        border-left: 1px solid var(--ui-border);
+    }
 }
 
 @media (max-width: 760px) {
-  .profile-card { align-items: stretch; flex-direction: column; gap: 24px; padding: 4px 0 24px; }
-  .page-heading { align-items: start; flex-direction: column; gap: 8px; margin-bottom: 24px; }
-  .page-heading h2 { font-size: 28px; }
+    .profile-card {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 24px;
+        padding: 4px 0 24px;
+    }
+
+    .page-heading {
+        align-items: start;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 24px;
+    }
+
+    .page-heading h2 {
+        font-size: 28px;
+    }
 }

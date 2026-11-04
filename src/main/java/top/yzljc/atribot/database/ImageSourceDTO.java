@@ -1,6 +1,7 @@
 package top.yzljc.atribot.database;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -55,4 +56,6 @@ public class ImageSourceDTO {
     /** 审核结果是否已送达投稿人 */
     @JsonProperty("isNotified")
     private boolean isNotified;
+    /** AI 初审建议，不参与人工审核状态判定 */
+    private JsonNode aiReview;
 }

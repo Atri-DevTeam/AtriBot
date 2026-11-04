@@ -3,6 +3,11 @@ version: ${version}
 main: top.yzljc.atribot.Atri
 
 commands:
+  otherbot:
+    description: 查看友情链接
+    usage: /otherbot
+    aliases:
+      - 友情链接
   groupsystemverify:
     description: 群主验证网页群绑定请求（仅官机群聊）
     usage: /群绑定 <验证码>
@@ -59,8 +64,6 @@ commands:
   anan:
     description: 夏目安安素描本
     usage: /anan <文本> [模式]
-  check-mc:
-    description: 获取MC新闻
   py:
     description: 获取拼音
     aliases:
@@ -112,6 +115,9 @@ commands:
   mccape:
     description: 查询 Minecraft 披风状态
     usage: /mccape
+  check:
+    description: 检查并推送更新
+    usage: /check <对象|-l>
   skbpack:
     description: 查询 Hypixel Skyblock 资源包版本
     usage: /skbpack
@@ -241,16 +247,26 @@ commands:
     prefixless-aliases: [今天也要记得签到🌙]
   debug:
     description: 调试
-  check-hyp:
-    description: 检查Hypixel最新公告
-  check-hyp-skyblock:
-    description: 检查Hypixel SkyBlock最新公告
+  bot:
+    description: 查询 QQ 机器人信息（仅 Napcat）
+    usage: /bot <机器人QQ号或AppID>
+  astro:
+    description: 查询地区参考天象
+    usage: /astro [区域] 或 /astro 设置 <区域>
   fish:
     description: 每日钓鱼并兑换金粒
     usage: /fish
     aliases:
       - 今日钓鱼
     prefixless-aliases: [今日钓鱼]
+  door:
+    description: 查看全服每日任意门或尝试开门
+    usage: /door 查看状态，/open 尝试开门
+    aliases:
+      - open
+  question:
+    description: 查看今日问题并提交选择
+    usage: /question 或 /question A/B
   games:
     aliases:
       - 游戏
@@ -288,15 +304,11 @@ commands:
     usage: 取决于 label
     aliases:
       - yl
-  check-mojira:
-    description: 检查 Mojira 漏洞追踪器
   test-mcnews:
     description: 测试获取 MC 新闻
   test-qqdoc:
     description: 手动检查 QQ 开放平台文档更新（管理员）
     usage: /test-qqdoc
-  check-hyp-alpha:
-    description: 检查 Hypixel Alpha 测试服最新公告
   pause:
     description: 紧急暂停
   地球online:

@@ -2,6 +2,7 @@ package top.yzljc.atricore.command;
 
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.platform.PlatformRole;
 import top.yzljc.atricore.platform.qq.QQMessage;
@@ -45,6 +46,16 @@ public interface QQCommandSender extends CommandSender {
     String sendMessage(Markdown markdown, Object buttons, boolean at);
 
     String sendMessage(ImageComponent image);
+
+    /**
+     * 使用当前指令消息作为回复来源，被动回复 QQ 官方群聊或单聊卡片
+     *
+     * @param card 卡片内容
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws top.yzljc.atricore.platform.UnsupportedPlatform 当前发送者不属于 QQ 官方群聊或单聊
+     * @throws top.yzljc.atricore.chat.official.QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    String sendMessage(Card card);
 
     /**
      * 被动回复 QQ 官方群聊或单聊图片消息，可同时引用当前消息

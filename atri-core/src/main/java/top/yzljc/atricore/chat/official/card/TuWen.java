@@ -31,8 +31,8 @@ public class TuWen implements Card.CardContent {
     /**
      * @param title 表示卡片消息的标题.
      * @param description 表示卡片消息的描述.
-     * @param picUrl: 表示卡片消息中出现的图片.
-     * @param jumpUrl: 表示卡片消息中的跳转链接.
+     * @param picUrl 表示卡片消息中出现的图片.
+     * @param jumpUrl 表示卡片消息中的跳转链接.
      */
     public TuWen(String title, String description, String picUrl, String jumpUrl) {
         this.title = title;

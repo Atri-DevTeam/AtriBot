@@ -558,10 +558,10 @@ public class GroupRepository {
     /**
      * 在行锁保护下只更新指定设置，保留其他字段；null 表示清除，不创建缺失的群记录
      *
-     * @param con 调用方的自动提交连接
+     * @param con         调用方的自动提交连接
      * @param groupOpenId 群 OpenID
-     * @param key 群设置字段
-     * @param json 配置对象的 JSON，清除时为 null
+     * @param key         群设置字段
+     * @param json        配置对象的 JSON，清除时为 null
      * @throws SQLException 数据无效或事务失败
      */
     private static void saveGroupSettingJson(Connection con, String groupOpenId, String key, String json) throws SQLException {
@@ -572,8 +572,11 @@ public class GroupRepository {
             writeGroupSetting(con, groupOpenId, key, config);
             con.commit();
         } catch (SQLException | RuntimeException e) {
-            try { con.rollback(); }
-            catch (SQLException rollback) { e.addSuppressed(rollback); }
+            try {
+                con.rollback();
+            } catch (SQLException rollback) {
+                e.addSuppressed(rollback);
+            }
             throw e;
         } finally {
             con.setAutoCommit(true);

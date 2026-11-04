@@ -23,11 +23,8 @@ import top.yzljc.atribot.webui.SseBroadcaster;
 import top.yzljc.atribot.webui.repo.OrphanedFriendRecordCleanup;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static top.yzljc.atribot.webui.WebUiSupport.firstNonBlank;
@@ -62,23 +59,17 @@ public class C2CController {
 
     public static void listC2CUsers(Context ctx) {
         List<OfficialUsers.UserData> all = OfficialUsers.listAll();
-        Set<String> openIds = new LinkedHashSet<>();
-        for (var data : all) {
-            if (data.userOpenId() != null && !data.userOpenId().isBlank()) {
-                openIds.add(data.userOpenId());
-            }
-        }
-        Map<String, String> usernames = QQChatContentRecord.findLatestKnownUsernames(openIds);
         List<C2CUserDTO> users = new ArrayList<>(all.size());
         for (var data : all) {
-            users.add(toC2CUserDTO(data, usernames.get(data.userOpenId())));
+            users.add(toC2CUserDTO(data, data.username()));
         }
         ctx.json(Result.success(users));
     }
 
     public static void getC2CUserPermissions(Context ctx) {
         var data = OfficialUsers.getData(ctx.pathParam("userOpenId"));
-        String username = QQChatContentRecord.findLatestKnownUsername(data.userOpenId());
+        String username = OfficialUsers.isCached(data.userOpenId()) ? data.username()
+                : QQChatContentRecord.findLatestKnownUsername(data.userOpenId());
         ctx.json(Result.success(toC2CUserProfileDTO(data, username)));
     }
 
@@ -239,7 +230,9 @@ public class C2CController {
         }
 
         var updated = OfficialUsers.getData(userOpenId);
-        ctx.json(Result.success(toC2CUserProfileDTO(updated, QQChatContentRecord.findLatestKnownUsername(updated.userOpenId()))));
+        String username = OfficialUsers.isCached(updated.userOpenId()) ? updated.username()
+                : QQChatContentRecord.findLatestKnownUsername(updated.userOpenId());
+        ctx.json(Result.success(toC2CUserProfileDTO(updated, username)));
     }
 
     public static void fetchC2CMessages(Context ctx) {

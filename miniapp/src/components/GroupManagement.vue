@@ -202,7 +202,8 @@ onBeforeUnmount(() => {
       </button>
       <div v-else class="group-page-title"><span class="group-heading-icon"><img :src="groupsIcon" alt="" width="24"
                                                                                  height="24"/></span>
-        <div><p class="page-eyebrow">群聊与功能</p><h2>群管理</h2>
+        <div><p class="page-eyebrow">群聊与功能</p>
+          <h2>群管理</h2>
           <p>{{ overview ? `已绑定 ${groups.length} 个群` : '读取群资料' }}</p></div>
       </div>
       <div class="group-actions">
@@ -236,7 +237,11 @@ onBeforeUnmount(() => {
             {{ submitting ? '生成中…' : '生成验证指令' }}
           </button>
         </div>
-        <p class="group-help">机器人需已加入该群。群 ID 可在群内发送 <button type="button" class="group-copy-command" aria-label="复制 /whoami 指令" @click="emit('copy', '/whoami')"><code>/whoami</code></button> 获取</p>
+        <p class="group-help">机器人需已加入该群。群 ID 可在群内发送
+          <button type="button" class="group-copy-command" aria-label="复制 /whoami 指令"
+                  @click="emit('copy', '/whoami')"><code>/whoami</code></button>
+          获取
+        </p>
       </form>
       <div v-else class="group-verification">
         <p class="group-help">使用当前 QQ，在目标群中 @ 机器人并发送：</p>
@@ -349,7 +354,8 @@ onBeforeUnmount(() => {
       </div>
       <p v-if="unbindError" class="group-form-error" role="alert">{{ unbindError }}</p>
     </article>
-    <GroupCommandSettings v-if="selectedBinding" :key="selectedBinding.groupId" ref="commandPanel" :group-id="selectedBinding.groupId"
+    <GroupCommandSettings v-if="selectedBinding" :key="selectedBinding.groupId" ref="commandPanel"
+                          :group-id="selectedBinding.groupId"
                           :request="request" :post="post" :revision="welcomeRevision"/>
     <GroupPushSettings v-if="selectedBinding" :key="selectedBinding.groupId" :group-id="selectedBinding.groupId"
                        :request="request" :post="post" :revision="welcomeRevision"/>
@@ -1095,11 +1101,25 @@ onBeforeUnmount(() => {
   }
 }
 
-.group-page-title .page-eyebrow { font-size: 10px; margin: 0 0 5px; }
+.group-page-title .page-eyebrow {
+  font-size: 10px;
+  margin: 0 0 5px;
+}
 
 @media (max-width: 760px) {
-  .group-page-title h2 { font-size: 28px; }
-  .group-management .bound-group { padding: 0 0 24px; border: 0; border-radius: 0; }
-  .group-details { border: 0; padding: 0; }
+  .group-page-title h2 {
+    font-size: 28px;
+  }
+
+  .group-management .bound-group {
+    padding: 0 0 24px;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .group-details {
+    border: 0;
+    padding: 0;
+  }
 }
 </style>

@@ -100,6 +100,23 @@
     width: auto;
 }
 
+.dir-filter-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    color: var(--color-text);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dir-filter-check input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--color-accent);
+}
+
 /* ── 名单筛选下拉（群分类筛选 / 用户身份筛选共用）── */
 .dir-filter-select {
     flex-shrink: 0;
