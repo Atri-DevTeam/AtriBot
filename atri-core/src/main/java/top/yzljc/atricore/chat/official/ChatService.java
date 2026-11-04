@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.ImageComponent;
+import top.yzljc.atricore.chat.official.button.ActionButton;
 import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atricore.event.EventManager;
 import top.yzljc.atricore.event.events.OfficialGroupSendFailEvent;
@@ -67,7 +68,7 @@ public class ChatService implements AutoCloseable {
     public ChatService(String apiBaseUrl, TokenManager tokenManager) {
         this.apiBaseUrl = apiBaseUrl;
         this.tokenManager = tokenManager;
-        this.bodyFactory = new MessageBodyFactory(this::getNextMsgSeq);
+        this.bodyFactory = new MessageBodyFactory();
         this.mediaUploader = new OfficialMediaUploader(tokenManager, objectMapper, bodyFactory);
         this.activeRateLimiter = new ActiveMessageRateLimiter();
         this.privateStreamHelper = new C2CStreamMessage(apiBaseUrl, tokenManager, objectMapper, bodyFactory,
@@ -199,6 +200,34 @@ public class ChatService implements AutoCloseable {
      */
     public CompletableFuture<String> sendPrivateWakeupMessageAsync(String openId, MessageBody request) {
         return sendPrivateMessageAsync(openId, bodyFactory.wakeup(request));
+    }
+
+    /**
+     * 异步发送带操作栏的单聊消息，沿用原发送入口的限速、记录与失败处理
+     *
+     * @param openId       用户 OpenID
+     * @param request      消息体，原对象不会被修改
+     * @param actionButton 消息操作栏，null 表示沿用消息体中的设置
+     * @return 消息 ID 的 Future
+     */
+    CompletableFuture<String> sendPrivateMessageAsync(String openId, MessageBody request, ActionButton actionButton) {
+        return sendPrivateMessageAsync(openId, withActionButton(request, actionButton));
+    }
+
+    /**
+     * 异步发送带操作栏的单聊召回消息，清除被动回复来源及引用
+     *
+     * @param openId       用户 OpenID
+     * @param request      消息体，原对象不会被修改
+     * @param actionButton 消息操作栏，null 表示沿用消息体中的设置
+     * @return 消息 ID 的 Future
+     */
+    CompletableFuture<String> sendPrivateWakeupMessageAsync(String openId, MessageBody request, ActionButton actionButton) {
+        return sendPrivateWakeupMessageAsync(openId, withActionButton(request, actionButton));
+    }
+
+    private static MessageBody withActionButton(MessageBody body, ActionButton actionButton) {
+        return body == null || actionButton == null ? body : body.toBuilder().actionButton(actionButton).build();
     }
 
     /**
@@ -397,9 +426,10 @@ public class ChatService implements AutoCloseable {
      */
     private CompletableFuture<MessageBody> prepareMessageAsync(MessageBody request, String uploadUrl, String logType) {
         if (!emergencyPaused || (request != null && request.isMaintenanceReply())) {
-            return CompletableFuture.completedFuture(request);
+            return CompletableFuture.completedFuture(request == null ? null : request.prepareForSend(this::getNextMsgSeq));
         }
-        return ThreadManager.supplyAsync(() -> emergencyPauseRequestOrNull(request, uploadUrl, logType));
+        return ThreadManager.supplyAsync(() -> emergencyPauseRequestOrNull(request, uploadUrl, logType))
+                .thenApply(effective -> effective == null ? null : effective.prepareForSend(this::getNextMsgSeq));
     }
 
     public CompletableFuture<?> sendMessageAsync(JsonPayload request, String url, String logType) {
@@ -636,6 +666,11 @@ public class ChatService implements AutoCloseable {
             String traceId = AtriProvider.getInstance().getLogRecorder().recordSend(logType, "POST", url, json);
             if (res.status() >= 200 && res.status() < 300 && res.body() != null && !res.body().isBlank()) {
                 JsonNode result = objectMapper.readTree(res.body());
+                if (request.getInputNotify() != null && result.isObject() && result.isEmpty()) {
+                    AtriProvider.getInstance().getLogRecorder().recordResponse(traceId, logType, "POST", url, json,
+                            res.status(), res.body());
+                    return null;
+                }
                 JsonNode idNode = result.get("id");
                 String timestamp = result.path("timestamp").asText(null);
                 String refIdx = result.path("ext_info").path("ref_idx").asText(null);

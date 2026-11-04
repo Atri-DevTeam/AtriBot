@@ -35,7 +35,7 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), conte
 这些方法返回 `String`，不发送消息
 
 ::: caution 指令标签的输入处理
-指令和显示文字长度分别不能超过 100 个 Java 字符；方法不负责对任意输入进行 HTML 属性转义或 URL 编码
+指令和显示文字会先清除单双引号、尖括号、`&`、反斜杠、控制字符及 Unicode 换行分隔符，清理后的长度分别不能超过 100 个 Java 字符；斜杠 `/`、普通空格、中文和表情保留，不进行 URL 编码
 :::
 
 `HexColor` 是保存颜色字符串的 record，可使用 `new HexColor("#336699")` 或预定义的 `RED`、`BLUE`、`GRAY` 等常量，`value()` 读取颜色值；构造器不验证颜色格式
@@ -49,8 +49,6 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), conte
 | `append(String)` | 返回新的 Markdown，保留原键盘与图片校验标记 |
 | `append(Markdown)` | 拼接文本；被追加对象含键盘时抛出 `UnsupportedOperationException` |
 | `setKeyboard(Keyboard)` | 设置当前对象的键盘，返回当前对象 |
-| `setKeyboard(Keyboard, false)` | 保留独立键盘 |
-| `setKeyboard(Keyboard, true)` | 键盘转为 Markdown 文本，返回新对象，应接收返回值 |
 | `withText` / `withForceVerifyImageResource` / `withKeyboard` | Lombok 生成的复制方法，返回修改后的新对象 |
 | `getText` / `getForceVerifyImageResource` / `getKeyboard` | 读取字段 |
 | `toString()` | 返回文本内容 |
@@ -65,6 +63,8 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), conte
 
 ```java
 public Markdown(String text);
+public Markdown(String text, Boolean forceVerifyImageResource);
+public Markdown(String text, Boolean forceVerifyImageResource, Keyboard keyboard);
 public static String img(String url, int width, int height);
 public static String img(String alt, String url, int width, int height);
 public static String materialImage(String reference, int width, int height);
@@ -79,5 +79,4 @@ public String toString();
 public Markdown append(String text);
 public Markdown append(Markdown markdown);
 public Markdown setKeyboard(Keyboard keyboard);
-public Markdown setKeyboard(Keyboard keyboard, boolean toMarkdown);
 ```

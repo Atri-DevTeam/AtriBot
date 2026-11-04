@@ -1,5 +1,6 @@
 package top.yzljc.atricore.chat.official.card;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -27,6 +28,7 @@ public class Card {
     public enum Type {
         TuWen("tuwen");
 
+        @JsonValue
         private final String key;
     }
 
@@ -34,11 +36,30 @@ public class Card {
         Type getType();
 
         Object toObject();
+
+        /** 旧版自定义卡片内容的序列化兼容入口 */
+        @JsonValue
+        default Object toPayload() {
+            return toObject();
+        }
     }
 
     public Type getType() {
         return content.getType();
     }
+
+    /**
+     * 返回可由 Jackson 直接序列化的卡片结构
+     *
+     * @return 卡片类型及内容
+     */
+    @JsonValue
+    public Payload toPayload() {
+        return new Payload(getType(), content);
+    }
+
+    /** QQ 卡片协议结构 */
+    public record Payload(Type type, CardContent content) {}
 
     public Object toObject() {
         return Map.of(

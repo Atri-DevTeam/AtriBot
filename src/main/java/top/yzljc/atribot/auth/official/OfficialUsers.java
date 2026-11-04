@@ -29,14 +29,11 @@ public class OfficialUsers {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     public static final String BILIBILI_UID_SETTING = "bv_uid";
-    private static final String UNSUPPORTED_KEYBOARD_SETTING = "unsupported_keyboard";
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final Map<String, UserData> cache = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> unsupportedKeyboardCache = new ConcurrentHashMap<>();
 
     public static void init() {
-        unsupportedKeyboardCache.clear();
         C2CRepository.initTable();
         cache.clear();
         for (var row : C2CRepository.loadAll()) {
@@ -209,8 +206,7 @@ public class OfficialUsers {
     public static boolean setPermissionGroup(String userOpenId, UnifiedRole role, Set<String> permissions) {
         if (userOpenId == null || userOpenId.isBlank()) return false;
         Set<String> savedPermissions = Set.copyOf(permissions);
-        if (!UnifiedAuthentication.saveOfficialUserPermissions(userOpenId, role, savedPermissions)) return false;
-        return true;
+        return UnifiedAuthentication.saveOfficialUserPermissions(userOpenId, role, savedPermissions);
     }
 
     /**
@@ -406,34 +402,12 @@ public class OfficialUsers {
      */
     public static boolean setUserSetting(String userOpenId, String setting, Object data) {
         try {
-            boolean saved = BotUserDataRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
+            return BotUserDataRepository.setUserSetting(userOpenId, setting, objectMapper.writeValueAsString(data),
                     BILIBILI_UID_SETTING.equals(setting)) == BotUserDataRepository.SettingWriteResult.SAVED;
-            if (saved && UNSUPPORTED_KEYBOARD_SETTING.equals(setting)) {
-                // 写入成功后失效，下一次查询重新加载，兼容通用设置入口及并发写入
-                unsupportedKeyboardCache.remove(userOpenId);
-            }
-            return saved;
         } catch (Exception e) {
             log.error("保存用户 {} 的偏好设置失败: {}", userOpenId, e.getMessage());
             return false;
         }
-    }
-
-    /**
-     * 按用户懒加载键盘兼容设置，默认为 {@code false}
-     */
-    public static boolean isUserUnsupportedKeyboard(String userOpenId) {
-        if (userOpenId == null || userOpenId.isBlank()) {
-            return false;
-        }
-        return unsupportedKeyboardCache.computeIfAbsent(userOpenId, id -> {
-            var d = getUserSetting(id, UNSUPPORTED_KEYBOARD_SETTING);
-            return d != null && d.asBoolean(false);
-        });
-    }
-
-    public static boolean setUserUnsupportedKeyboard(String userOpenId, boolean unsupported) {
-        return setUserSetting(userOpenId, UNSUPPORTED_KEYBOARD_SETTING, unsupported);
     }
 
     /**

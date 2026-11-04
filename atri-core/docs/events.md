@@ -133,7 +133,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialGroupAtMessageCreateEvent.java) · 收到 `GROUP_AT_MESSAGE_CREATE`，即群内 @ 机器人的消息时触发
 
 - 数据：`QQUser user`、`QQMessage message`、`groupId`、`timestamp`
-- 操作：`sendMessage()` 使用当前消息 ID 被动回复，支持文本或 Markdown；`shouldIgnore()` 检查群黑名单与用户封禁状态
+- 操作：`sendMessage()` 使用当前消息 ID 被动回复，支持文本、ImageComponent、Markdown 或 Card；`shouldIgnore()` 检查群黑名单与用户封禁状态
 - 范围：与全量群消息事件分别分发，监听其中一个不会自动收到另一个
 
 ### OfficialGroupMessageCreateEvent
@@ -149,7 +149,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialC2CMessageCreateEvent.java) · 收到私聊消息 `C2C_MESSAGE_CREATE` 时触发
 
 - 数据：`QQUser user`、`QQMessage message`、`timestamp`；`switchButtons` 保存解析出的开关按钮状态，未携带时可能为 `null`
-- 操作：`sendMessage()` 被动回复文本或 Markdown，可附带按钮；`sendStreamMarkdownMessageD()`、`sendStreamTextMessageD()` 按增量列表发送流式回复
+- 操作：`sendMessage()` 被动回复文本、ImageComponent、Markdown 或 Card，Markdown 可附带键盘；文本、图片和 Markdown 可追加 ActionButton；`sendStreamMarkdownMessageD()`、`sendStreamTextMessageD()` 按增量列表发送流式回复
 - 判断：`shouldIgnore()` 检查用户封禁状态；开关数据存在时，可通过 `switchButtons.isEnabled(key)` 查询指定开关
 
 ### OfficialFriendAddEvent
@@ -157,7 +157,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialFriendAddEvent.java) · 收到 `FRIEND_ADD`，即用户添加机器人好友时触发
 
 - 数据：`eventId`、`userOpenId`、`unionOpenId`、`timestamp`、添加来源 `scene`、来源参数 `sceneParam`、`shortCode`；`userOpenId` 取自 `openid`，`unionOpenId` 取自 `author.union_openid`，未携带时为 `null`，两者独立保存
-- 操作：`sendOpeningMessage()` 使用本次事件 ID 发送文本或 Markdown 开场消息
+- 操作：`sendOpeningMessage()` 使用本次事件 ID 发送文本、ImageComponent、Markdown 或 Card 开场消息，文本、图片和 Markdown 可追加 ActionButton
 
 ### OfficialFriendDelEvent
 
@@ -185,7 +185,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialGroupMemberAddEvent.java) · 收到 `GROUP_MEMBER_ADD`，即群成员加入时触发
 
 - 数据：`eventId`、`groupOpenId`、`memberOpenId`、`timestamp`
-- 操作：`sendMessage()` 使用事件 ID 发送 Markdown，可附带按钮或 @ 新成员
+- 操作：`sendMessage()` 使用事件 ID 发送文本、ImageComponent、Markdown 或 Card；Markdown 可附带键盘，默认不 @ 新成员，传入 `at = true` 时提及
 - 身份：`getUserBotRole()` 返回成员在机器人系统中的 `UnifiedRole`，不是其 QQ 群内角色
 
 ### OfficialGroupMemberRemoveEvent
@@ -254,7 +254,7 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 [源码](../src/main/java/top/yzljc/atricore/event/events/OfficialInteractionEvents.java) · QQ 交互事件的抽象基类，不单独分发
 
 - 数据：`applicationId`、上报事件 ID `eventId`、交互 ID `id`、`scene`、`timestamp`、交互类型 `type`、`version`
-- 范围：按钮点击和 C2C 授权变更继承此类。事件管理器按具体类型匹配，监听该基类不能接收两个子类的事件
+- 范围：按钮点击、C2C 操作反馈和 C2C 授权变更继承此类。事件管理器按具体类型匹配，监听该基类不能接收子类事件
 
 ### OfficialButtonInteractionEvent
 
@@ -264,6 +264,17 @@ QQ 平台上报事件由 [BotEvents](../src/main/java/top/yzljc/atricore/platfor
 - 操作：`getButtonId()`、`getButtonValue()` 读取按钮标识和值；缺失时返回 `missing_data`。`answer(AnswerCode)` 向平台提交交互应答
 - 回复：`replyMessage()` 使用事件 ID 被动回复，`sendMessage()` 主动发送；当前封装处理 `chatType = 1` 的群聊及 `chatType = 2` 的 C2C，其他场景抛出异常
 - 过滤：`shouldIgnore()` 检查群黑名单、用户封禁和忽略状态，命中时同时提交失败应答。`setCancelled(true)` 本身不提交应答，后续调用 `answer()` 时才强制使用失败状态
+
+### OfficialC2CPromptFeedbackEvent
+
+[源码](../src/main/java/top/yzljc/atricore/event/events/OfficialC2CPromptFeedbackEvent.java) · 收到 `INTERACTION_CREATE` 中的 C2C 操作反馈时触发，仅私聊
+
+- 数据：公共交互字段，以及 `userOpenId`、`targetMessageId`、`callbackData`、`feedbackOpt`、`checked`、`messageScene`、`dataType`、`chatType`
+- 操作：`sendMessage(content, actionButton)` 使用当前事件 ID 被动回复；文本、Markdown 和 ImageComponent 可附带操作栏，Card 按卡片发送
+- 判断：`feedbackOpt` 常量包括 LIKE、UNLIKE、REGENERATE、PROMPT_CLICK；`checked` 为 1 时表示选中，2 表示取消选中，缺失时为 0
+- 来源：`targetMessageId` 是被操作的机器人消息 ID，不能当作用户新消息 ID；`callbackData` 读取回调中的 `button_data`，可能为 null
+
+完整字段及监听示例见 [私聊消息操作栏](qq/components/action-button.md#接收操作反馈)
 
 ### OfficialC2CAuthorizeModifyEvent
 

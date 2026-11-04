@@ -28,7 +28,6 @@ import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atribot.function.tasks.pushtask.PushTaskGlobalSettings;
 import top.yzljc.atricore.service.request.HttpService;
 import top.yzljc.atribot.service.request.OpenApi;
-import top.yzljc.atricore.service.runtime.ThreadManager;
 import top.yzljc.atricore.service.taskscheduler.ScheduleMode;
 import top.yzljc.atricore.service.taskscheduler.ScheduledTask;
 import top.yzljc.atricore.service.taskscheduler.TaskPlan;

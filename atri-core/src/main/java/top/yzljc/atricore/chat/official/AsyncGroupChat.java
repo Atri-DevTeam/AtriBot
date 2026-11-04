@@ -1,6 +1,7 @@
 package top.yzljc.atricore.chat.official;
 
 import top.yzljc.atricore.AtriProvider;
+
 import java.nio.file.Path;
 
 import top.yzljc.atricore.chat.ImageComponent;
@@ -18,8 +19,7 @@ import java.util.Objects;
  * @Created_at 2026/07/24
  * @Project AtriBot
  * @Package top.yzljc.atricore.chat.official
- * @Description
- * 群聊异步业务层
+ * @Description 群聊异步业务层
  * 封装所有群聊场景下的消息构造与发送逻辑
  * 包括主动消息、被动回复、事件回复和引用回复
  * 底层 HTTP 传输由 {@link ChatService} 提供
@@ -29,9 +29,9 @@ public final class AsyncGroupChat {
     /**
      * 异步主动发送群聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 群 openId
+     * @param openId   群 openId
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID 的 Future，上传或发送失败时结果为 null
      */
     public static CompletableFuture<String> sendMessage(String openId, FileType fileType, Path file) {
@@ -44,10 +44,10 @@ public final class AsyncGroupChat {
     /**
      * 异步回复群聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 群 openId
-     * @param rt 消息或事件回复来源
+     * @param openId   群 openId
+     * @param rt       消息或事件回复来源
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID 的 Future，上传或发送失败时结果为 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, FileType fileType, Path file) {
@@ -58,12 +58,11 @@ public final class AsyncGroupChat {
                         : service().sendGroupMessageAsync(openId, request));
     }
 
-
     /**
      * 异步撤回群聊消息
      *
      * @param groupOpenId 群 openId
-     * @param messageId 消息 ID
+     * @param messageId   消息 ID
      * @return 撤回结果，平台返回成功状态时为 true，请求失败时为 false
      */
     public static CompletableFuture<Boolean> recallMessage(String groupOpenId, String messageId) {
@@ -89,17 +88,15 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步主动发送带键盘的群聊 Markdown 并引用指定消息
+     * 异步主动发送群聊 Markdown 并引用指定消息
      *
      * @param groupOpenId 群 openId
      * @param markdown    Markdown 消息内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, Object keyboard, String refIdx) {
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown, keyboard, null, refIdx));
+    public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, String refIdx) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown, null, refIdx));
     }
 
     /**
@@ -115,7 +112,7 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步主动发送群聊 Markdown并引用指定消息
+     * 异步主动发送群聊 Markdown 并引用指定消息
      *
      * @param groupOpenId 群 openId
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
@@ -123,22 +120,8 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, Markdown markdown) {
-        return sendMessage(groupOpenId, markdown, null, refIdx);
+        return sendMessage(groupOpenId, markdown, refIdx);
     }
-
-    /**
-     * 异步主动发送带键盘的群聊 Markdown 并引用指定消息
-     *
-     * @param groupOpenId 群 openId
-     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
-     * @param markdown    Markdown 消息内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, Markdown markdown, Object keyboard) {
-        return sendMessage(groupOpenId, markdown, keyboard, refIdx);
-    }
-
 
     /**
      * 异步回复群聊 Markdown 消息并引用指定消息
@@ -146,14 +129,12 @@ public final class AsyncGroupChat {
      * @param groupOpenId 群 openId
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
+    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, String refIdx) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(markdown, keyboard, rt, refIdx));
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown, rt, refIdx));
     }
 
     /**
@@ -163,14 +144,12 @@ public final class AsyncGroupChat {
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param userOpenId  被 @ 的用户 openId
      * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard, String refIdx) {
+    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, String refIdx) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendGroupMessageAsync(groupOpenId,
-                service().getBodyFactory().markdown(service().getBodyFactory().atMarkdown(userOpenId, markdown), keyboard, rt, refIdx));
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(service().getBodyFactory().atMarkdown(userOpenId, markdown), rt, refIdx));
     }
 
     /**
@@ -192,7 +171,6 @@ public final class AsyncGroupChat {
                         ? CompletableFuture.completedFuture(null)
                         : service().sendGroupMessageAsync(groupOpenId, request));
     }
-
 
     private static ChatService service() {
         return AtriProvider.getInstance().getChatService();
@@ -232,17 +210,6 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步发送群聊 Markdown 主动消息
-     *
-     * @param groupOpenId 群 openId
-     * @param markdown    Markdown 消息体
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown));
-    }
-
-    /**
      * 异步发送群聊图片主动消息
      *
      * @param groupOpenId 群 openId
@@ -259,15 +226,14 @@ public final class AsyncGroupChat {
     }
 
     /**
-     * 异步发送带键盘的群聊 Markdown 主动消息
+     * 异步发送群聊 Markdown 主动消息
      *
      * @param groupOpenId 群 openId
      * @param markdown    Markdown 消息体
-     * @param keyboard    键盘按钮对象
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, Object keyboard) {
-        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown, keyboard));
+    public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown) {
+        return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().markdown(markdown));
     }
 
     /**
@@ -333,7 +299,7 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown) {
-        return replyMessage(groupOpenId, rt, userOpenId, markdown, null, null);
+        return replyMessage(groupOpenId, rt, userOpenId, markdown, null);
     }
 
     /**
@@ -345,34 +311,7 @@ public final class AsyncGroupChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown) {
-        return replyMessage(groupOpenId, rt, markdown, null, null);
-    }
-
-    /**
-     * 异步回复带键盘的群聊 Markdown 消息并 @ 用户
-     *
-     * @param groupOpenId 群 openId
-     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param userOpenId  被 @ 的用户 openId
-     * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard) {
-        return replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard, null);
-    }
-
-    /**
-     * 异步回复带键盘的群聊 Markdown 消息（不 @）
-     *
-     * @param groupOpenId 群 openId
-     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard) {
-        return replyMessage(groupOpenId, rt, markdown, keyboard, null);
+        return replyMessage(groupOpenId, rt, markdown, null);
     }
 
     /**
@@ -439,4 +378,5 @@ public final class AsyncGroupChat {
     public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, String content) {
         return service().sendGroupMessageAsync(groupOpenId, service().getBodyFactory().textRef(content, refIdx));
     }
+
 }

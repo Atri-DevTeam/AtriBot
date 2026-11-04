@@ -11,7 +11,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-/** 群留言通过新消息或已启用的成员入群事件被动发送 */
+/**
+ * 群留言通过新消息或已启用的成员入群事件被动发送
+ */
 @Slf4j
 public final class GroupLeaveMessageService {
     public static final int MAX_CONTENT_LENGTH = 16000;
@@ -71,7 +73,9 @@ public final class GroupLeaveMessageService {
         }
     }
 
-    /** 同群并发消息仅一个负责发送；发送期间新增和删除也使用同一把锁。 */
+    /**
+     * 同群并发消息仅一个负责发送；发送期间新增和删除也使用同一把锁。
+     */
     public static void deliver(String groupId, Function<Markdown, String> reply) {
         deliver(groupId, false, reply);
     }
@@ -79,19 +83,21 @@ public final class GroupLeaveMessageService {
     /**
      * 按触发来源发送待处理留言，成员入群仅发送已启用该触发方式的留言
      *
-     * @param groupId 群 OpenID
+     * @param groupId    群 OpenID
      * @param memberJoin 是否由成员入群触发
-     * @param reply 使用当前消息或事件凭据发送 Markdown
+     * @param reply      使用当前消息或事件凭据发送 Markdown
      */
     public static void deliver(String groupId, boolean memberJoin, Function<Markdown, String> reply) {
         var lock = lockFor(groupId);
         lock.lock();
         try {
             for (PendingNoticeDTO note : PendingNoticeRepository.listGroupLeaveMessages(groupId)) {
-                if (memberJoin && !PendingNoticeRepository.GROUP_LEAVE_MESSAGE_JOIN_SOURCE.equals(note.getSource())) continue;
+                if (memberJoin && !PendingNoticeRepository.GROUP_LEAVE_MESSAGE_JOIN_SOURCE.equals(note.getSource()))
+                    continue;
                 try {
                     String messageId = reply.apply(new Markdown(note.getContent()));
-                    if (messageId == null || messageId.isBlank()) throw new IllegalStateException("被动发送未返回消息 ID");
+                    if (messageId == null || messageId.isBlank())
+                        throw new IllegalStateException("被动发送未返回消息 ID");
                     if (!PendingNoticeRepository.markDelivered(note.getId())) {
                         log.error("群留言已发送但送达状态保存失败: id={}", note.getId());
                         break;
@@ -109,5 +115,7 @@ public final class GroupLeaveMessageService {
         }
     }
 
-    public record LeaveMessage(String id, String content, Timestamp createdAt, int attempts, boolean triggerOnMemberJoin) {}
+    public record LeaveMessage(String id, String content, Timestamp createdAt, int attempts,
+                               boolean triggerOnMemberJoin) {
+    }
 }

@@ -2,6 +2,7 @@ package top.yzljc.atribot.function.games;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.official.Markdown;
+import top.yzljc.atricore.chat.official.button.ActionButton;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
 import top.yzljc.atricore.chat.official.button.ButtonType;
@@ -10,9 +11,11 @@ import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
+import top.yzljc.atricore.event.EventHandler;
+import top.yzljc.atricore.event.Listener;
+import top.yzljc.atricore.event.events.OfficialC2CPromptFeedbackEvent;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.service.runtime.ThreadManager;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.function.impl.ImageDTO;
 import top.yzljc.atribot.function.impl.PreImageGenerate;
 import top.yzljc.atribot.function.minecraft.MinecraftEnchantmentTable;
@@ -35,8 +38,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * @Package top.yzljc.atribot.function.games
  */
 @Slf4j
-public final class MinecraftEnchantmentGame implements CommandExecutor {
+public final class MinecraftEnchantmentGame implements CommandExecutor, Listener {
     private static final MinecraftEnchantmentTable TABLE = MinecraftEnchantmentTable.load();
+    private static final String ENCHANT_REGENERATE = "enchant_regenerate:";
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
@@ -51,24 +55,43 @@ public final class MinecraftEnchantmentGame implements CommandExecutor {
             sender.sendMessage("仅支持原版附魔台可接受的物品，使用 /ec 选择，或发送 /ec 钻石镐 指定物品");
             return true;
         }
-        ThreadManager.execute(() -> {
-            Result result = TABLE.roll(preset, new Random(ThreadLocalRandom.current().nextInt()));
-            ImageDTO image = null;
-            try {
-                image = PreImageGenerate.dumpMarkdown(OpenApi.get("bot.minecraft.enchantment"),
-                        request(result), sender.getPlatform());
-                if (image.isError()) {
-                    log.warn("随机附魔图片生成失败，用户: {}，原因: {}", sender.getUserId(), image.errorMessage());
-                }
-            } catch (Exception e) {
-                log.warn("随机附魔图片暂不可用，用户: {}", sender.getUserId(), e);
-            }
-            var keyboard = new Keyboard(List.of(List.of(
-                    new Button("enchant_again", "再次附魔", "/ec " + preset.key(), ButtonStyle.BLUE, ButtonType.COMMAND),
-                    new Button("enchant_presets", "选择物品", "/ec", ButtonStyle.GRAY, ButtonType.COMMAND))));
-            sender.sendMessage(render(result, image).setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
-        });
+        ThreadManager.execute(() -> sender.sendMessage(
+                generateResult(preset, sender.getUserId(), sender.getPlatform()), getRegenerateButton(preset)));
         return true;
+    }
+
+    @EventHandler
+    public void onFeedbackReceived(OfficialC2CPromptFeedbackEvent event) {
+        if (!OfficialC2CPromptFeedbackEvent.REGENERATE.equals(event.getFeedbackOpt())) return;
+        String callback = event.getCallbackData();
+        if (callback == null || !callback.startsWith(ENCHANT_REGENERATE)) return;
+        Preset preset = TABLE.findPreset(callback.substring(ENCHANT_REGENERATE.length()));
+        String userId = event.getUserOpenId();
+        if (preset == null || userId == null || userId.isBlank()) return;
+
+        ThreadManager.execute(() -> event.sendMessage(
+                generateResult(preset, userId, Platform.OFFICIAL_C2C), getRegenerateButton(preset)));
+    }
+
+    private static ActionButton getRegenerateButton(Preset preset) {
+        return new ActionButton().setCallbackData(ENCHANT_REGENERATE + preset.key()).setReGenerate(true);
+    }
+
+    private static Markdown generateResult(Preset preset, String userId, Platform platform) {
+        Result result = TABLE.roll(preset, new Random(ThreadLocalRandom.current().nextInt()));
+        ImageDTO image = null;
+        try {
+            image = PreImageGenerate.dumpMarkdown(OpenApi.get("bot.minecraft.enchantment"), request(result), platform);
+            if (image.isError()) {
+                log.warn("随机附魔图片生成失败，用户: {}，原因: {}", userId, image.errorMessage());
+            }
+        } catch (Exception e) {
+            log.warn("随机附魔图片暂不可用，用户: {}", userId, e);
+        }
+        var keyboard = new Keyboard(List.of(List.of(
+                new Button("enchant_again", "再次附魔", "/ec " + preset.key(), ButtonStyle.BLUE, ButtonType.COMMAND),
+                new Button("enchant_presets", "选择物品", "/ec", ButtonStyle.GRAY, ButtonType.COMMAND))));
+        return render(result, image).setKeyboard(keyboard);
     }
 
     private static void sendPresets(QQCommandSender sender) {
@@ -86,7 +109,7 @@ public final class MinecraftEnchantmentGame implements CommandExecutor {
             i = end;
         }
         String text = "**Minecraft附魔模拟**\n\n请选择附魔物品";
-        sender.sendMessage(new Markdown(text).setKeyboard(new Keyboard(rows), OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
+        sender.sendMessage(new Markdown(text).setKeyboard(new Keyboard(rows)));
     }
 
     private static Map<String, Object> request(Result result) {

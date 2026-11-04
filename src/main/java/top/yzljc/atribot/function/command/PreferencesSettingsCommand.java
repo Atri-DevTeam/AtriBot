@@ -1,6 +1,5 @@
 package top.yzljc.atribot.function.command;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.command.Command;
@@ -23,7 +22,6 @@ import java.util.Locale;
  */
 public class PreferencesSettingsCommand implements CommandExecutor {
     private static final String HYPIXEL_REWARD_PREFIX = "/preferences hypixel_reward";
-    private static final String UNSUPPORT_MARKDOWN_PREFIX = "/preferences unsupport_keyboard";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -33,9 +31,6 @@ public class PreferencesSettingsCommand implements CommandExecutor {
             return true;
         }
 
-        if ("unsupport_keyboard".equalsIgnoreCase(args[0])) {
-            return handleUnsupportedKeyboard(user, args);
-        }
         if (!"hypixel_reward".equalsIgnoreCase(args[0])) {
             sender.sendMessage("无效的设置参数。");
             return true;
@@ -93,42 +88,6 @@ public class PreferencesSettingsCommand implements CommandExecutor {
         }
         sendPanel(user);
         return true;
-    }
-
-    private static boolean handleUnsupportedKeyboard(QQCommandSender user, String[] args) {
-        if (args.length == 1) {
-            sendUnsupportedKeyboardPanel(user);
-            return true;
-        }
-        if (args.length != 2) {
-            user.sendMessage("用法：" + UNSUPPORT_MARKDOWN_PREFIX + " <enable|disable>");
-            return true;
-        }
-
-        boolean unsupported;
-        switch (args[1].toLowerCase(Locale.ROOT)) {
-            case "enable", "on" -> unsupported = true;
-            case "disable", "off" -> unsupported = false;
-            default -> {
-                user.sendMessage("用法：" + UNSUPPORT_MARKDOWN_PREFIX + " <enable|disable>");
-                return true;
-            }
-        }
-        if (!OfficialUsers.setUserUnsupportedKeyboard(user.getUserId(), unsupported)) {
-            user.sendMessage("键盘偏好保存失败，请稍后重试。");
-            return true;
-        }
-        sendUnsupportedKeyboardPanel(user);
-        return true;
-    }
-
-    private static void sendUnsupportedKeyboardPanel(QQCommandSender user) {
-        boolean unsupported = OfficialUsers.isUserUnsupportedKeyboard(user.getUserId());
-        user.sendMessage(TC.md("**个人键盘偏好**\n\n"
-                + "当设备不支持按钮消息时可启用此选项，以兼容部分操作\n\n"
-                + "按钮兼容模式：" + (unsupported ? "已启用" : "已禁用") + "\n\n"
-                + Markdown.enterCommand(UNSUPPORT_MARKDOWN_PREFIX + " enable", "启用") + " "
-                + Markdown.enterCommand(UNSUPPORT_MARKDOWN_PREFIX + " disable", "禁用")));
     }
 
     private static String canonicalKey(String input) {

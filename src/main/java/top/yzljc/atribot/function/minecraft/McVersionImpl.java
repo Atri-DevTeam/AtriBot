@@ -149,7 +149,7 @@ public final class McVersionImpl implements ScheduledTask {
                 release != null ? FormatTools.formatIsoTime(release.releaseTime()) : "未知",
                 snapshot != null ? snapshot.id() : "未知",
                 snapshot != null ? FormatTools.formatIsoTime(snapshot.releaseTime()) : "未知",
-                Markdown.enterCommand("/推送任务 开启 mc_news", "订阅更新动态")
+                Markdown.enterCommand("/tasks enable mc_ver", "订阅更新动态")
         );
         return sender.sendMessage(TC.md(versionInfo)) != null;
     }

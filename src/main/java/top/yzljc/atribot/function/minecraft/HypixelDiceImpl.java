@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.minecraft;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atribot.configuration.RS;
 
 import top.yzljc.atricore.chat.official.Markdown;
@@ -107,8 +109,8 @@ public class HypixelDiceImpl {
                 )
         );
 
-        Object button = TC.keyboard(buttons);
-        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(markdown), button);
+        Keyboard button = new Keyboard(buttons);
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(markdown).setKeyboard(button));
     }
 
     private static String multipleResult(long times) {
@@ -158,7 +160,7 @@ public class HypixelDiceImpl {
                 )
         );
 
-        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(result), TC.keyboard(buttons));
+        if (sender instanceof QQCommandSender qq) qq.sendMessage(TC.md(result).setKeyboard(new Keyboard(buttons)));
     }
 
     static int getRolledNumber() {

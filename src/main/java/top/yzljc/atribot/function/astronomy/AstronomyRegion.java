@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.astronomy;
 
+import lombok.Getter;
+
 /**
  * @Author YZ_Ljc_
  * @ClassName AstronomyRegion
@@ -7,6 +9,7 @@ package top.yzljc.atribot.function.astronomy;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.function.astronomy
  */
+@Getter
 public enum AstronomyRegion {
     NORTHEAST("东北", "沈阳", 41.8057, 123.4315),
     NORTH_CHINA("华北", "石家庄", 38.0428, 114.5149),
@@ -28,11 +31,6 @@ public enum AstronomyRegion {
         this.lat = lat;
         this.lng = lng;
     }
-
-    public String getDisplayName() { return displayName; }
-    public String getReferenceName() { return referenceName; }
-    public double getLat() { return lat; }
-    public double getLng() { return lng; }
 
     public static AstronomyRegion parse(String input) {
         if (input == null) return null;

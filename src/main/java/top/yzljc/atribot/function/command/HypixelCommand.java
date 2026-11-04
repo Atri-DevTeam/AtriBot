@@ -8,7 +8,6 @@ import com.google.common.cache.CacheBuilder;
 
 import top.yzljc.atribot.Atri;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.function.minecraft.BedwarsProfileImpl;
 import top.yzljc.atribot.function.minecraft.SkywarsProfileImpl;
 import top.yzljc.atricore.chat.ImageComponent;
@@ -96,7 +95,6 @@ public class HypixelCommand implements CommandExecutor {
         register(commands, new SubCommand("bw", Category.GENERAL, "查询玩家起床战争详细数据", RS.get("resource.image.icon-bedwars"), HypixelCommand::handleBedwars));
         register(commands, new SubCommand("sh", Category.GENERAL, "查询玩家起床战争入梦酒店任务树", RS.get("resource.image.icon-slumber-hotel"), HypixelCommand::handleSlumberHotel));
         register(commands, new SubCommand("cr", Category.SKYBLOCK, "查询sᴋʏʙʟᴏᴄᴋ日历", RS.get("resource.image.icon-skyblock-calendar"), HypixelCommand::handleSkyblockCalendar));
-        register(commands, new SubCommand("ip", Category.SKYBLOCK, "查询sᴋʏʙʟᴏᴄᴋ物品价格信息", RS.get("resource.image.skyblock-bank-logo"), HypixelCommand::handleSearchSkyblockItemPrice));
         register(commands, new SubCommand("hotm", Category.SKYBLOCK, "查询玩家sᴋʏʙʟᴏᴄᴋ山之心数据", RS.get("resource.image.icon-skyblock-hotm"), HypixelCommand::handleHotm));
         register(commands, new SubCommand("rift", Category.SKYBLOCK, "查询玩家sᴋʏʙʟᴏᴄᴋ ʀɪғᴛ数据", RS.get("resource.image.icon-skyblock-rift"), HypixelCommand::handleRift));
         register(commands, new SubCommand("sw", Category.GENERAL, "查询玩家空岛战争详细数据", RS.get("resource.image.icon-skywars"), HypixelCommand::handleSkywars));
@@ -110,8 +108,8 @@ public class HypixelCommand implements CommandExecutor {
         }
     }
 
-    public static Object getMenuKeyBoard() {
-        return TC.keyboard(
+    public static Keyboard getMenuKeyBoard() {
+        return new Keyboard(
                 List.of(
                         List.of(
                                 new Button("s1", "问题反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND).setModal("对" + QQBot.BOT_NAME + "的部分内容有更改建议？遇到了问题？欢迎向开发者反馈喵~", "我要反馈", "以后再说"),
@@ -137,7 +135,6 @@ public class HypixelCommand implements CommandExecutor {
         }
         for (var cmd : SUB_COMMANDS.values()) {
             if (cmd.category() != category) continue;
-            if (cmd.prefix().equals("ip") && !sender.hasPermission("bot.skyblock.price")) continue;
             s.append("> ").append(Markdown.img(cmd.icon(), 16, 16)).append(Markdown.enterCommand(cmdPrefix + cmd.prefix() + " ", cmd.description())).append("\n");
         }
         return new Markdown(s.toString());
@@ -168,10 +165,6 @@ public class HypixelCommand implements CommandExecutor {
             user.sendMessage("未知的子命令，请使用 /hyp 查看可用的子命令列表");
             return true;
         }
-//        if (prefix.equals("ip") && !user.hasPermission("bot.skyblock.price")) {
-//            user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
-//            return true;
-//        }
         if (isCoolingDown(user)) return true;
         return sub.handler().execute(user, Arrays.copyOfRange(args, 1, args.length));
     }
@@ -188,7 +181,7 @@ public class HypixelCommand implements CommandExecutor {
     }
 
     private static void sendMenu(QQCommandSender sender, Category category) {
-        sender.sendMessage(getSubCommands(sender, category), getMenuKeyBoard());
+        sender.sendMessage(getSubCommands(sender, category).setKeyboard(getMenuKeyBoard()));
     }
 
     private static void sendMissingPlayer(QQCommandSender sender) {
@@ -235,11 +228,7 @@ public class HypixelCommand implements CommandExecutor {
             sendImageResult(user, result, null);
             return true;
         }
-        if (OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())) {
-            user.sendMessage(TC.md(Markdown.img("atri_bot_pic", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames(), true), false);
-        } else {
-            user.sendMessage(TC.md(Markdown.img("atri_bot_pic", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())), getMiniGames(), false);
-        }
+        user.sendMessage(TC.md(Markdown.img("atri_bot_pic", result.url(), result.width(), result.height()) + "\n\n" + Markdown.at(user.getUserId())).setKeyboard(getMiniGames()), false);
         return true;
     }
 
@@ -365,10 +354,11 @@ public class HypixelCommand implements CommandExecutor {
             return true;
         }
 
+        var playerUuid = result.playerUuid();
         List<String> profiles = new ArrayList<>();
         var pn = result.d().path("availableProfiles");
         // System.out.println(result.d());
-        if (pn.isArray()) {
+        if (playerUuid != null && pn.isArray()) {
             for (var p : pn) {
                 profiles.add(p.asText());
             }
@@ -380,14 +370,14 @@ public class HypixelCommand implements CommandExecutor {
             List<Button> row = new ArrayList<>();
             for (int j = i; j < Math.min(i + 3, profiles.size()); j++) {
                 String profile = profiles.get(j);
-                row.add(new Button("btn_" + System.currentTimeMillis(), profile, "/hyp " + subCommand + " " + player + " " + profile, true, ButtonStyle.GRAY, ButtonType.COMMAND));
+                row.add(new Button("btn_" + System.currentTimeMillis(), profile, "/hyp " + subCommand + " " + playerUuid + " " + profile, true, ButtonStyle.GRAY, ButtonType.COMMAND));
             }
             buttons.add(row);
         }
         buttons.add(QueryTemplate.getQueryButtonTemplate("/hyp", subCommand));
 
-        Object keyboard = TC.keyboard(buttons);
-        user.sendMessage(TC.md(QueryTemplate.getTemplate(result.i(), user.getUserId(), player)), keyboard, false);
+        Keyboard keyboard = new Keyboard(buttons);
+        user.sendMessage(TC.md(QueryTemplate.getTemplate(result.i(), user.getUserId(), result.playerUuid())).setKeyboard(keyboard), false);
         return true;
     }
 
@@ -397,71 +387,6 @@ public class HypixelCommand implements CommandExecutor {
 
     private static boolean handleArcadeDropper(QQCommandSender sender, String[] args) {
         return queryPlayer(sender, args, OpenApi.get("bot.hypixel.dropper"), "dpr");
-    }
-
-    private static boolean handleSearchSkyblockItemPrice(QQCommandSender user, String[] args) {
-        if (args.length < 1) {
-            user.sendMessage("未指定查询物品，请指定查询目标。");
-            return true;
-        }
-
-        String cursor = null;
-        int end = args.length;
-        if (args.length >= 3 && args[args.length - 2].equals("--cursor")) {
-            cursor = args[args.length - 1];
-            end -= 2;
-        }
-        String search = String.join(" ", Arrays.copyOf(args, end));
-        Map<String, Object> request = priceRequest(search, cursor, user.getUserId());
-        var result = withQueryProgress(user, "正在查询相关数据，请稍等片刻...",
-                () -> customQueryRequest(OpenApi.get("bot.hypixel.skyblock.price"), request, "Authorization", bearer()));
-
-        if (!result.success()) {
-            user.sendMessage(result.message());
-            return true;
-        }
-
-
-        if (!user.hasPermission("bot.skyblock.price")) {
-            user.sendMessage("你没有使用此功能的权限（bot.skyblock.price）。");
-            return true;
-        }
-        String nextCursor = result.d().path("next_cursor").asText(null);
-        String previousCursor = result.d().path("pre_cursor").asText(null);
-
-        user.sendMessage(getSkyblockPriceMarkdown(result.i().url(), result.i().width(), result.i().height(), user.getUserId())
-                .setKeyboard(getSkyblockPriceKeyboard(search, previousCursor, nextCursor)), false);
-
-        return true;
-    }
-
-    private static Map<String, Object> priceRequest(String query, String cursor, String userId) {
-        Map<String, Object> request = new LinkedHashMap<>();
-        request.put("q", query);
-        if (cursor != null) request.put("cursor", cursor);
-        BackgroundService.applyApprovedBackground(request, userId);
-        return request;
-    }
-
-    private static Keyboard getSkyblockPriceKeyboard(String search, String previousCursor, String nextCursor) {
-        List<List<Button>> rows = new ArrayList<>();
-        List<Button> pages = new ArrayList<>();
-        String command = "/hyp ip " + search + " --cursor ";
-        if (previousCursor != null && !previousCursor.isBlank()) {
-            pages.add(new Button("skyblock_previous", "上一页", command + previousCursor, true, ButtonStyle.GRAY, ButtonType.COMMAND));
-        }
-        if (nextCursor != null && !nextCursor.isBlank()) {
-            pages.add(new Button("skyblock_next", "下一页", command + nextCursor, true, ButtonStyle.GRAY, ButtonType.COMMAND));
-        }
-        if (!pages.isEmpty()) rows.add(pages);
-        rows.add(List.of(new Button("c1", "查询其他物品", "/hyp ip ", false, ButtonStyle.BLUE, ButtonType.COMMAND)));
-        return new Keyboard(rows);
-    }
-
-    private static Markdown getSkyblockPriceMarkdown(String url, int w, int h, String userOpenId) {
-        return TC.md(
-                Markdown.img("atri_bot_pic", url, w, h) + "\n\n" + Markdown.at(userOpenId)
-        );
     }
 
     private static String getPlayer(QQCommandSender sender, String[] args) {
@@ -511,7 +436,7 @@ public class HypixelCommand implements CommandExecutor {
             return true;
         }
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(result.i(), sender.getUserId(), player)).setKeyboard(QueryTemplate.getKeyboard("/hyp", subCommand)), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(result.i(), sender.getUserId(), result.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/hyp", subCommand)), false);
 
         return true;
     }
@@ -599,15 +524,16 @@ public class HypixelCommand implements CommandExecutor {
             return true;
         }
 
-        List<List<Button>> btns = List.of(
-                List.of(
-                        new Button("在线情况", "/hyp gs", ButtonStyle.GRAY),
-                        new Button("大厅钓鱼", "/hyp lf " + p, ButtonStyle.GRAY),
-                        new Button("大厅跑酷", "/hyp pr " + p, ButtonStyle.GRAY)
-                )
-        );
+        List<Button> row = new ArrayList<>();
+        row.add(new Button("在线情况", "/hyp gs", ButtonStyle.GRAY));
+        var playerUuid = q.playerUuid();
+        if (playerUuid != null) {
+            row.add(new Button("大厅钓鱼", "/hyp lf " + playerUuid, ButtonStyle.GRAY));
+            row.add(new Button("大厅跑酷", "/hyp pr " + playerUuid, ButtonStyle.GRAY));
+        }
+        List<List<Button>> btns = List.of(row);
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, p)).setKeyboard(QueryTemplate.getKeyboard("/hyp", "lb").append(btns, true)), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, q.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/hyp", "lb").append(btns, true)), false);
         return true;
     }
 }

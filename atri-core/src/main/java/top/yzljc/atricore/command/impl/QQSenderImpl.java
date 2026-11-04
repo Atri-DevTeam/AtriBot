@@ -1,5 +1,7 @@
 package top.yzljc.atricore.command.impl;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import lombok.AllArgsConstructor;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.command.QQCommandSender;
@@ -79,6 +81,18 @@ public class QQSenderImpl implements QQCommandSender {
 
     @Override
     public String sendMessage(String text) {
+        return sendMessage(text, null);
+    }
+
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param text         文本内容
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    @Override
+    public String sendMessage(String text, ActionButton actionButton) {
         if (this.user.getPlatform().equals(Platform.OFFICIAL_GROUP)) {
             if (this.message.getMessageEventType().equals(EventType.OFFICIAL_GROUP_MESSAGE)) {
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), text, this.message.getRefIdx());
@@ -86,12 +100,25 @@ public class QQSenderImpl implements QQCommandSender {
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), text);
             }
         } else {
-            return this.user.sendMessage(this.message.getMessageId(), text);
+            return this.user.sendMessage(this.message.getMessageId(), text, actionButton);
         }
     }
 
     @Override
     public String sendMessage(String text, boolean ref) {
+        return sendMessage(text, ref, null);
+    }
+
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param text         文本内容
+     * @param ref          是否引用当前消息
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    @Override
+    public String sendMessage(String text, boolean ref, ActionButton actionButton) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
                 return ref
@@ -100,8 +127,8 @@ public class QQSenderImpl implements QQCommandSender {
             }
             case OFFICIAL_C2C -> {
                 return ref
-                        ? this.user.sendMessage(RT.message(this.message.getMessageId()), text, this.message.getRefIdx())
-                        : this.user.sendMessage(this.message.getMessageId(), text);
+                        ? this.user.sendMessage(RT.message(this.message.getMessageId()), text, this.message.getRefIdx(), actionButton)
+                        : this.user.sendMessage(this.message.getMessageId(), text, actionButton);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(String text, boolean ref)");
@@ -109,58 +136,69 @@ public class QQSenderImpl implements QQCommandSender {
 
     @Override
     public String sendMessage(Markdown markdown) {
+        return sendMessage(markdown, null);
+    }
+
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param markdown     Markdown 内容，可携带键盘
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    @Override
+    public String sendMessage(Markdown markdown, ActionButton actionButton) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown);
             }
             case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), markdown);
+                return this.user.sendMessage(this.message.getMessageId(), markdown, actionButton);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown)");
     }
 
     @Override
-    public String sendMessage(Markdown markdown, Object buttons) {
-        switch (this.user.getPlatform()) {
-            case OFFICIAL_GROUP -> {
-                return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, buttons);
-            }
-            case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), markdown, buttons);
-            }
-        }
-        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons)");
+    public String sendMessage(Markdown markdown, boolean at) {
+        return sendMessage(markdown, at, null);
     }
 
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param markdown     Markdown 内容，可携带键盘
+     * @param at           是否自动 @ 用户，仅群聊生效
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
     @Override
-    public String sendMessage(Markdown markdown, boolean at) {
+    public String sendMessage(Markdown markdown, boolean at, ActionButton actionButton) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, at);
             }
             case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), markdown);
+                return this.user.sendMessage(this.message.getMessageId(), markdown, actionButton);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, boolean at)");
     }
 
     @Override
-    public String sendMessage(Markdown markdown, Object buttons, boolean at) {
-        switch (this.user.getPlatform()) {
-            case OFFICIAL_GROUP -> {
-                return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, buttons, at);
-            }
-            case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), markdown, buttons);
-            }
-        }
-        throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at)");
+    public String sendMessage(ImageComponent image) {
+        return sendMessage(image, null);
     }
 
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param image        图片组件
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
     @Override
-    public String sendMessage(ImageComponent image) {
+    public String sendMessage(ImageComponent image, ActionButton actionButton) {
         switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> {
 
@@ -172,7 +210,7 @@ public class QQSenderImpl implements QQCommandSender {
                 return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
             }
             case OFFICIAL_C2C -> {
-                return this.user.sendMessage(this.message.getMessageId(), image);
+                return this.user.sendMessage(this.message.getMessageId(), image, actionButton);
             }
         }
         throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image)");
@@ -189,13 +227,26 @@ public class QQSenderImpl implements QQCommandSender {
 
     @Override
     public String sendMessage(ImageComponent image, boolean ref) {
+        return sendMessage(image, ref, null);
+    }
+
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param image        图片组件
+     * @param ref          是否引用当前消息
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    @Override
+    public String sendMessage(ImageComponent image, boolean ref, ActionButton actionButton) {
         if (!ref) {
-            return sendMessage(image);
+            return sendMessage(image, actionButton);
         }
         RT rt = RT.message(this.message.getMessageId());
         return switch (this.user.getPlatform()) {
             case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, image, this.message.getRefIdx());
-            case OFFICIAL_C2C -> this.user.sendMessage(rt, image, this.message.getRefIdx());
+            case OFFICIAL_C2C -> this.user.sendMessage(rt, image, this.message.getRefIdx(), actionButton);
             default ->
                     throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(ImageComponent image, boolean ref)");
         };
@@ -203,21 +254,29 @@ public class QQSenderImpl implements QQCommandSender {
 
     @Override
     public String sendMessage(Markdown markdown, boolean at, boolean ref) {
-        return sendMessage(markdown, null, at, ref);
+        return sendMessage(markdown, at, ref, null);
     }
 
+    /**
+     * 发送消息并附带操作栏，沿用原发送入口的回复与引用规则
+     *
+     * @param markdown     Markdown 内容，可携带键盘
+     * @param at           是否自动 @ 用户，仅群聊生效
+     * @param ref          是否引用当前消息
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
     @Override
-    public String sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref) {
+    public String sendMessage(Markdown markdown, boolean at, boolean ref, ActionButton actionButton) {
         if (!ref) {
-            return sendMessage(markdown, buttons, at);
+            return sendMessage(markdown, at, actionButton);
         }
         RT rt = RT.message(this.message.getMessageId());
         return switch (this.user.getPlatform()) {
-            case OFFICIAL_GROUP ->
-                    this.user.sendMessage(this.groupId, rt, markdown, buttons, at, this.message.getRefIdx());
-            case OFFICIAL_C2C -> this.user.sendMessage(rt, markdown, buttons, this.message.getRefIdx());
+            case OFFICIAL_GROUP -> this.user.sendMessage(this.groupId, rt, markdown, at, this.message.getRefIdx());
+            case OFFICIAL_C2C -> this.user.sendMessage(rt, markdown, this.message.getRefIdx(), actionButton);
             default ->
-                    throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, Object buttons, boolean at, boolean ref)");
+                    throw new UnsupportedPlatform(this.user.getPlatform(), "sendMessage(Markdown markdown, boolean at, boolean ref)");
         };
     }
 

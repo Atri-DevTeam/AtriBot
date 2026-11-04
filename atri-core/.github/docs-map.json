@@ -24,6 +24,7 @@
   "docs/qq/components/README.md": "QQ消息组件/目录.md",
   "docs/qq/components/markdown.md": "QQ消息组件/Markdown.md",
   "docs/qq/components/buttons.md": "QQ消息组件/按钮键盘.md",
+  "docs/qq/components/action-button.md": "QQ消息组件/私聊消息操作栏.md",
   "docs/qq/components/cards.md": "QQ消息组件/图文卡片.md",
   "docs/qq/components/ark.md": "QQ消息组件/Ark模板.md",
   "docs/qq/components/embed.md": "QQ消息组件/频道Embed.md",

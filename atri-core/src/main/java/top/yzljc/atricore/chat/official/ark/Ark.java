@@ -1,5 +1,9 @@
 package top.yzljc.atricore.chat.official.ark;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -47,10 +51,32 @@ public class Ark {
         Type getType();
 
         List<Map<String, Object>> toObject();
+
+        /** 旧版自定义模板的兼容入口，内置模板直接返回协议对象 */
+        default List<ArkValue> values() {
+            return LegacyMapper.INSTANCE.convertValue(toObject(), new TypeReference<List<ArkValue>>() {});
+        }
     }
 
     public Type getType() {
         return content.getType();
+    }
+
+    /**
+     * 返回 QQ Ark 协议结构
+     *
+     * @return 模板编号及模板字段
+     */
+    @JsonValue
+    public Payload toPayload() {
+        return new Payload(getType().getTemplateId(), content.values());
+    }
+
+    /** Ark 模板请求结构 */
+    public record Payload(@JsonProperty("template_id") int templateId, List<ArkValue> kv) {}
+
+    private static final class LegacyMapper {
+        private static final ObjectMapper INSTANCE = new ObjectMapper();
     }
 
     public Map<String, Object> toObject() {

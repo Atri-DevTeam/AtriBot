@@ -1,6 +1,5 @@
 package top.yzljc.atribot.webui.controller;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import lombok.Data;

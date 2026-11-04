@@ -19,7 +19,7 @@ var confirm = new Button("confirm", "确认", "confirm:123",
         .setModal("是否执行此操作？", "确认", "取消");
 var keyboard = new Keyboard(List.of(List.of(query, confirm)));
 String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId),
-        TC.md("请选择操作"), keyboard.toKeyboardObject());
+        TC.md("请选择操作").setKeyboard(keyboard));
 ```
 
 ## 按钮构造参数
@@ -74,12 +74,35 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId),
 | `new Keyboard(rows, size)` | 指定 `ButtonSize.SMALL` 或 `UNDEFINED` |
 | `new Keyboard(rows, size, promptStyle)` | 是否使用输入提示键盘 |
 | `setSize(size)` / `setPromptStyle(value)` | 修改布局选项 |
-| `toKeyboardObject()` | 转换为发送接口接受的对象 |
-| `toMarkdownString()` | 仅支持 COMMAND 和 LINK；CALLBACK 或 CUSTOM 会抛出 UnsupportedOperationException |
-| `TC.keyboard(rows)` / `TC.keyboard(rows, size)` | 直接生成键盘对象 |
-| `TC.promptKeyboard(rows)` | 直接生成输入提示键盘对象 |
 
-`TC` 的直接转换方法不执行 `Keyboard` 构造器的行列数量校验。发送时使用转换后的对象或将 Keyboard 绑定至 Markdown，不直接将 Keyboard 当作平台请求结构
+通过 `markdown.setKeyboard(keyboard)` 设置按钮，发送层负责转换为 QQ 键盘协议
+
+`Keyboard.of(rows)` 与构造方法等价；`Keyboard.single(button)` 创建单按钮键盘，`Keyboard.singleLine(buttons)` 创建单行键盘。`append(rows)` 在末尾追加行，`append(rows, true)` 在开头追加行，两者都返回新键盘，保留原尺寸与提示样式，并校验合并后的行列数量
+
+## 输入提示键盘
+
+::: important 仅私聊
+`setPromptStyle(true)` 用于 QQ 官方机器人 C2C 输入提示键盘。群聊使用普通消息键盘，保留默认的 `false`
+:::
+
+```java
+var keyboard = Keyboard.single(new Button("query", "查询", "/query", true,
+        ButtonStyle.BLUE, ButtonType.COMMAND)).setPromptStyle(true);
+C2CChat.replyMessage(userOpenId, RT.message(messageId),
+        TC.md("请选择操作").setKeyboard(keyboard));
+```
+
+示例中的 `C2CChat` 位于 `top.yzljc.atricore.chat.official` 包。普通键盘写入请求的 `keyboard`，输入提示键盘写入 `prompt_keyboard.keyboard`
+
+消息下方的赞踩、语音播放、重新生成等操作使用 [ActionButton](action-button.md)，与本页的按钮键盘分别配置
+
+## 对象与协议
+
+`Keyboard` 保存按钮行、尺寸和提示样式。Jackson 序列化键盘时由 `KeyboardPayload.Serializer` 转换为 QQ 请求结构，发送层通过 `KeyboardPayload.from(keyboard)` 取得独立的协议快照，业务发送无需自行转换
+
+::: tip 原有调用迁移
+旧的 `Object keyboard` 发送参数、`TC.keyboard(...)` 和 `TC.md(text, keyboard)` 已移除。使用 `new Keyboard(rows)` 构造键盘，再通过 `TC.md(text).setKeyboard(keyboard)` 随 Markdown 发送。`Keyboard` 不再提供 `toPayload()`、`fromPayload()` 或转换 Markdown 文本的兼容方法
+:::
 
 回调按钮的接收、应答和消息回复见 [按钮交互](../interaction/callback.md)
 
@@ -109,18 +132,17 @@ public Button setButtonGroupId(String buttonGroupId);
 public Keyboard(List<List<Button>> buttons);
 public Keyboard(List<List<Button>> buttons, ButtonSize size);
 public Keyboard(List<List<Button>> buttons, ButtonSize size, boolean isPromptStyle);
+public static Keyboard of(List<List<Button>> buttons);
+public static Keyboard single(Button button);
+public static Keyboard singleLine(List<Button> buttons);
 public Keyboard setSize(ButtonSize size);
 public Keyboard setPromptStyle(boolean isPrompt);
-public Object toKeyboardObject();
-public String toMarkdownString();
-public Markdown toMarkdown();
+public Keyboard append(List<List<Button>> buttons);
+public Keyboard append(List<List<Button>> buttons, boolean reverse);
 ```
 
 ### TC
 
 ```java
 public static Markdown md(String text);
-public static Object promptKeyboard(List<List<Button>> layout);
-public static Object keyboard(List<List<Button>> layout);
-public static Object keyboard(List<List<Button>> layout, ButtonSize size);
 ```

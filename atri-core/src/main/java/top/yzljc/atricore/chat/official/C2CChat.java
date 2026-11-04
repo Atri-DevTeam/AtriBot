@@ -1,5 +1,7 @@
 package top.yzljc.atricore.chat.official;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import java.nio.file.Path;
 
 import top.yzljc.atricore.chat.ImageComponent;
@@ -26,9 +28,9 @@ public final class C2CChat {
     /**
      * 主动发送单聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 用户 openId
+     * @param openId   用户 openId
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID，上传或发送失败时返回 null
      */
     public static String sendMessage(String openId, FileType fileType, Path file) {
@@ -38,16 +40,15 @@ public final class C2CChat {
     /**
      * 回复单聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 用户 openId
-     * @param rt 消息或事件回复来源
+     * @param openId   用户 openId
+     * @param rt       消息或事件回复来源
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID，上传或发送失败时返回 null
      */
     public static String replyMessage(String openId, RT rt, FileType fileType, Path file) {
         return await(AsyncC2CChat.replyMessage(openId, rt, fileType, file));
     }
-
 
     /**
      * 发送单聊正在输入通知，默认持续 60 秒
@@ -85,7 +86,19 @@ public final class C2CChat {
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
     public static String wakeupMessage(String openId, String text) {
-        return await(AsyncC2CChat.wakeupMessage(openId, text));
+        return wakeupMessage(openId, text, null);
+    }
+
+    /**
+     * 发送单聊纯文本召回消息，不携带回复来源或引用，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param text         纯文本消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，暂停发送或发送失败返回 null
+     */
+    public static String wakeupMessage(String openId, String text, ActionButton actionButton) {
+        return await(AsyncC2CChat.wakeupMessage(openId, text, actionButton));
     }
 
     /**
@@ -122,23 +135,23 @@ public final class C2CChat {
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
     public static String wakeupMessage(String openId, Markdown markdown) {
-        return await(AsyncC2CChat.wakeupMessage(openId, markdown));
+        return wakeupMessage(openId, markdown, null);
     }
 
     /**
-     * 发送带键盘的单聊 Markdown 召回消息
+     * 发送单聊 Markdown 召回消息，附带消息操作栏
      *
      * <p><strong>互动召回规则：</strong>在用户主动与机器人对话之后，机器人在未来 {@code 30} 天内
      * 可下发互动召回消息给用户（消息类型与当前机器人拥有的消息类型权限一致），每个周期内
      * 可下发一条。周期分别为：当天、1 - 3 天、3 - 7 天、7 - 30 天，合计 4 个周期。
      *
-     * @param openId   用户 openId
-     * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
-    public static String wakeupMessage(String openId, Markdown markdown, Object keyboard) {
-        return await(AsyncC2CChat.wakeupMessage(openId, markdown, keyboard));
+    public static String wakeupMessage(String openId, Markdown markdown, ActionButton actionButton) {
+        return await(AsyncC2CChat.wakeupMessage(openId, markdown, actionButton));
     }
 
     /**
@@ -153,7 +166,23 @@ public final class C2CChat {
      * @return 消息 ID，暂停发送或发送失败返回 null；普通上传失败沿用文字回退
      */
     public static String wakeupMessage(String openId, ImageComponent image) {
-        return await(AsyncC2CChat.wakeupMessage(openId, image));
+        return wakeupMessage(openId, image, null);
+    }
+
+    /**
+     * 发送单聊图片召回消息，附带消息操作栏
+     *
+     * <p><strong>互动召回规则：</strong>在用户主动与机器人对话之后，机器人在未来 {@code 30} 天内
+     * 可下发互动召回消息给用户（消息类型与当前机器人拥有的消息类型权限一致），每个周期内
+     * 可下发一条。周期分别为：当天、1 - 3 天、3 - 7 天、7 - 30 天，合计 4 个周期。
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件，支持 URL、Base64 及附带文字
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，暂停发送或发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static String wakeupMessage(String openId, ImageComponent image, ActionButton actionButton) {
+        return await(AsyncC2CChat.wakeupMessage(openId, image, actionButton));
     }
 
     /**
@@ -213,7 +242,6 @@ public final class C2CChat {
         return await(AsyncC2CChat.wakeupStreamDeltas(openId, markdownDeltas));
     }
 
-
     /**
      * 主动发送单聊图片并引用指定消息
      *
@@ -223,20 +251,45 @@ public final class C2CChat {
      * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
      */
     public static String sendMessage(String openId, ImageComponent image, String refIdx) {
-        return await(AsyncC2CChat.sendMessage(openId, image, refIdx));
+        return sendMessage(openId, image, refIdx, null);
     }
 
     /**
-     * 主动发送带键盘的单聊 Markdown 并引用指定消息
+     * 主动发送单聊图片并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static String sendMessage(String openId, ImageComponent image, String refIdx, ActionButton actionButton) {
+        return await(AsyncC2CChat.sendMessage(openId, image, refIdx, actionButton));
+    }
+
+    /**
+     * 主动发送单聊 Markdown 并引用指定消息
      *
      * @param openId   用户 openId
      * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static String sendMessage(String openId, Markdown markdown, Object keyboard, String refIdx) {
-        return await(AsyncC2CChat.sendMessage(openId, markdown, keyboard, refIdx));
+    public static String sendMessage(String openId, Markdown markdown, String refIdx) {
+        return sendMessage(openId, markdown, refIdx, null);
+    }
+
+    /**
+     * 主动发送单聊 Markdown 并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息内容
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String sendMessage(String openId, Markdown markdown, String refIdx, ActionButton actionButton) {
+        return await(AsyncC2CChat.sendMessage(openId, markdown, refIdx, actionButton));
     }
 
     /**
@@ -248,11 +301,24 @@ public final class C2CChat {
      * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
      */
     public static String refMessage(String openId, String refIdx, ImageComponent image) {
-        return await(AsyncC2CChat.refMessage(openId, refIdx, image));
+        return refMessage(openId, refIdx, image, null);
     }
 
     /**
-     * 主动发送单聊 Markdown并引用指定消息
+     * 主动发送单聊图片并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static String refMessage(String openId, String refIdx, ImageComponent image, ActionButton actionButton) {
+        return await(AsyncC2CChat.refMessage(openId, refIdx, image, actionButton));
+    }
+
+    /**
+     * 主动发送单聊 Markdown 并引用指定消息
      *
      * @param openId   用户 openId
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
@@ -260,22 +326,21 @@ public final class C2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static String refMessage(String openId, String refIdx, Markdown markdown) {
-        return await(AsyncC2CChat.refMessage(openId, refIdx, markdown));
+        return refMessage(openId, refIdx, markdown, null);
     }
 
     /**
-     * 主动发送带键盘的单聊 Markdown 并引用指定消息
+     * 主动发送单聊 Markdown 并引用指定消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
-     * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    public static String refMessage(String openId, String refIdx, Markdown markdown, Object keyboard) {
-        return await(AsyncC2CChat.refMessage(openId, refIdx, markdown, keyboard));
+    public static String refMessage(String openId, String refIdx, Markdown markdown, ActionButton actionButton) {
+        return await(AsyncC2CChat.refMessage(openId, refIdx, markdown, actionButton));
     }
-
 
     /**
      * 回复单聊 Markdown 消息并引用指定消息
@@ -283,12 +348,25 @@ public final class C2CChat {
      * @param openId   用户 openId
      * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown Markdown 回复内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyMessage(String openId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, markdown, keyboard, refIdx));
+    public static String replyMessage(String openId, RT rt, Markdown markdown, String refIdx) {
+        return replyMessage(openId, rt, markdown, refIdx, null);
+    }
+
+    /**
+     * 回复单聊 Markdown 消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown     Markdown 回复内容
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String openId, RT rt, Markdown markdown, String refIdx, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, markdown, refIdx, actionButton));
     }
 
     /**
@@ -301,9 +379,22 @@ public final class C2CChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static String replyMessage(String openId, RT rt, ImageComponent image, String refIdx) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, image, refIdx));
+        return replyMessage(openId, rt, image, refIdx, null);
     }
 
+    /**
+     * 回复单聊图片消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image        图片组件
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static String replyMessage(String openId, RT rt, ImageComponent image, String refIdx, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, image, refIdx, actionButton));
+    }
 
     /**
      * 回复单聊语音消息，上传失败时不发送文本回退
@@ -326,7 +417,19 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String sendMessage(String openId, String text) {
-        return await(AsyncC2CChat.sendMessage(openId, text));
+        return sendMessage(openId, text, null);
+    }
+
+    /**
+     * 发送单聊纯文本主动消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param text         消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String sendMessage(String openId, String text, ActionButton actionButton) {
+        return await(AsyncC2CChat.sendMessage(openId, text, actionButton));
     }
 
     /**
@@ -363,20 +466,19 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String sendMessage(String openId, Markdown markdown) {
-        return await(AsyncC2CChat.sendMessage(openId, markdown));
+        return sendMessage(openId, markdown, (ActionButton) null);
     }
 
     /**
-     * 发送带键盘的单聊 Markdown 主动消息
+     * 发送单聊 Markdown 主动消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param markdown Markdown 消息体
-     * @param keyboard 键盘按钮对象
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息体
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String openId, Markdown markdown, Object keyboard) {
-        return await(AsyncC2CChat.sendMessage(openId, markdown, keyboard));
+    public static String sendMessage(String openId, Markdown markdown, ActionButton actionButton) {
+        return await(AsyncC2CChat.sendMessage(openId, markdown, actionButton));
     }
 
     /**
@@ -388,7 +490,19 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String sendMessage(String openId, ImageComponent image) {
-        return await(AsyncC2CChat.sendMessage(openId, image));
+        return sendMessage(openId, image, (ActionButton) null);
+    }
+
+    /**
+     * 发送单聊图片主动消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static String sendMessage(String openId, ImageComponent image, ActionButton actionButton) {
+        return await(AsyncC2CChat.sendMessage(openId, image, actionButton));
     }
 
     /**
@@ -401,7 +515,20 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String openId, RT rt, String replyText) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, replyText));
+        return replyMessage(openId, rt, replyText, (ActionButton) null);
+    }
+
+    /**
+     * 回复单聊纯文本消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param replyText    回复内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String openId, RT rt, String replyText, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, replyText, actionButton));
     }
 
     /**
@@ -415,7 +542,21 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String openId, RT rt, String replyText, String refIdx) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, replyText, refIdx));
+        return replyMessage(openId, rt, replyText, refIdx, null);
+    }
+
+    /**
+     * 回复单聊纯文本消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param replyText    回复内容
+     * @param refIdx       被引用消息的索引 ID，不改变消息或事件回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String replyMessage(String openId, RT rt, String replyText, String refIdx, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, replyText, refIdx, actionButton));
     }
 
     /**
@@ -454,7 +595,20 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String refMessage(String openId, String refIdx, String content) {
-        return await(AsyncC2CChat.refMessage(openId, refIdx, content));
+        return refMessage(openId, refIdx, content, null);
+    }
+
+    /**
+     * 主动发送单聊纯文本并引用消息（不携带被动回复来源），附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID
+     * @param content      引用回复的文本内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static String refMessage(String openId, String refIdx, String content, ActionButton actionButton) {
+        return await(AsyncC2CChat.refMessage(openId, refIdx, content, actionButton));
     }
 
     /**
@@ -467,21 +621,20 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String openId, RT rt, Markdown markdown) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, markdown));
+        return replyMessage(openId, rt, markdown, (ActionButton) null);
     }
 
     /**
-     * 回复带键盘的单聊 Markdown 消息
+     * 回复单聊 Markdown 消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param markdown Markdown 回复内容
-     * @param keyboard 键盘按钮对象
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown     Markdown 回复内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String openId, RT rt, Markdown markdown, Object keyboard) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, markdown, keyboard));
+    public static String replyMessage(String openId, RT rt, Markdown markdown, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, markdown, actionButton));
     }
 
     /**
@@ -494,7 +647,20 @@ public final class C2CChat {
      */
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String openId, RT rt, ImageComponent image) {
-        return await(AsyncC2CChat.replyMessage(openId, rt, image));
+        return replyMessage(openId, rt, image, (ActionButton) null);
+    }
+
+    /**
+     * 回复单聊图片消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static String replyMessage(String openId, RT rt, ImageComponent image, ActionButton actionButton) {
+        return await(AsyncC2CChat.replyMessage(openId, rt, image, actionButton));
     }
 
     /**

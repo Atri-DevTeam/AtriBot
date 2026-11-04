@@ -24,6 +24,8 @@ String sentId = GuildChannelChat.replyMessage(channelId, RT.message(messageId), 
 
 `getTitle()`、`getPrompt()`、`getImageUrl()`、`getFields()` 读取内容，`toPayload()` 返回平台对象。构造参数使用非 null 值，字段列表可以为空
 
+Embed 可直接交给 Jackson 序列化，默认使用 `toMessagePayload()` 返回的协议对象。`MessageBody.embed` 接收 Embed 对象，业务发送无需提前转换成 Map
+
 频道私信使用 `GuildDirectChat.replyMessage(guildId, rt, embed)`，目标为私信会话的 guildId。异步调用对应 `AsyncGuildChannelChat`、`AsyncGuildDirectChat`
 
 ## 方法与数据类型索引
@@ -34,4 +36,5 @@ String sentId = GuildChannelChat.replyMessage(channelId, RT.message(messageId), 
 
 ```java
 public Map<String, Object> toPayload();
+public Payload toMessagePayload();
 ```

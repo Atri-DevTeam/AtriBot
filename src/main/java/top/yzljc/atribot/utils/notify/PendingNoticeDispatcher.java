@@ -99,7 +99,9 @@ public class PendingNoticeDispatcher implements Listener {
         } catch (Exception e) {
             PendingNoticeRepository.markAttemptFailed(notice.getId(), e.getMessage());
             log.warn("被动补发通知异常，保留在队列中: id={}", notice.getId(), e);
-        } finally { if (lock != null) lock.unlock(); }
+        } finally {
+            if (lock != null) lock.unlock();
+        }
     }
 
     @FunctionalInterface

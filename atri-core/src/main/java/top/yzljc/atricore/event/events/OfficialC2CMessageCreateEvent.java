@@ -1,5 +1,7 @@
 package top.yzljc.atricore.event.events;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import lombok.Getter;
 import lombok.Setter;
 import top.yzljc.atricore.chat.ImageComponent;
@@ -7,7 +9,6 @@ import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
-import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
 import top.yzljc.atricore.platform.qq.QQUser;
 import top.yzljc.atricore.platform.qq.QQMessage;
@@ -58,18 +59,18 @@ public class OfficialC2CMessageCreateEvent extends Event {
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
      */
     public String sendMessage(String content) {
-        return this.user.sendMessage(this.message.getMessageId(), content);
+        return sendMessage(content, null);
     }
 
     /**
-     * 被动消息回复 - Markdown 消息
-     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置。</p>
+     * 被动消息回复 - 纯文本消息，附带消息操作栏
      *
-     * @param markdown Markdown 消息内容
+     * @param content      文本消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
      */
-    public String sendMessage(Markdown markdown) {
-        return this.user.sendMessage(this.message.getMessageId(), markdown);
+    public String sendMessage(String content, ActionButton actionButton) {
+        return this.user.sendMessage(this.message.getMessageId(), content, actionButton);
     }
 
     /**
@@ -79,20 +80,39 @@ public class OfficialC2CMessageCreateEvent extends Event {
      * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
      */
     public String sendMessage(ImageComponent image) {
-        return this.user.sendMessage(this.message.getMessageId(), image);
+        return sendMessage(image, null);
+    }
+
+    /**
+     * 被动消息回复 - 图片消息，附带消息操作栏
+     *
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
+     */
+    public String sendMessage(ImageComponent image, ActionButton actionButton) {
+        return this.user.sendMessage(this.message.getMessageId(), image, actionButton);
     }
 
     /**
      * 被动消息回复 - Markdown 消息 + 自定义键盘（已弃用）
      *
      * @param markdown Markdown 消息内容
-     * @param keyboard 自定义键盘内容
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
-     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #sendMessage(Markdown)} 发送
      */
-    @Deprecated
-    public String sendMessage(Markdown markdown, Object keyboard) {
-        return this.user.sendMessage(this.message.getMessageId(), markdown, keyboard);
+    public String sendMessage(Markdown markdown) {
+        return sendMessage(markdown, null);
+    }
+
+    /**
+     * 被动消息回复 - Markdown 消息 + 自定义键盘（已弃用），附带消息操作栏
+     *
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     */
+    public String sendMessage(Markdown markdown, ActionButton actionButton) {
+        return this.user.sendMessage(this.message.getMessageId(), markdown, actionButton);
     }
 
     /**

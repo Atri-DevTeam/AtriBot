@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -63,7 +65,7 @@ public class GoldsCommand implements CommandExecutor {
         Button fishBtn = DailyFishingGame.hasFishedToday(qq.getUserId()) ? new Button("c1", "✅ 已完成", "/fish", false, ButtonStyle.RED, ButtonType.CUSTOM).setUnsupportedTip("您今天已经完成钓鱼了！") : new Button("c1", "每日钓鱼", "/fish", ButtonStyle.BLUE, ButtonType.COMMAND);
         Button signBtn = hasCheckedInToday(qq.getUserId()) ? new Button("c3", "✅ 已打卡", "/sign ", false, ButtonStyle.RED, ButtonType.CUSTOM).setUnsupportedTip("您今日已完成打卡，明天再来吧！") : new Button("c3", "每日打卡", "/sign ", true, ButtonStyle.BLUE, ButtonType.COMMAND);
 
-        Object keyboard = TC.keyboard(
+        Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(
                                 fishBtn,
@@ -73,7 +75,7 @@ public class GoldsCommand implements CommandExecutor {
                 ), ButtonSize.SMALL
         );
 
-        qq.sendMessage(content, keyboard, false);
+        qq.sendMessage(content.setKeyboard(keyboard), false);
         return true;
     }
 }

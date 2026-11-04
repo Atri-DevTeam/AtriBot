@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.games;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.GroupChat;
@@ -127,8 +129,8 @@ public class ConnectFourGame implements CommandExecutor {
         layout.add(List.of(new Button("join_b", "⚪ 玩家B", "/四子棋 join B",
                 true, ButtonStyle.GRAY, ButtonType.COMMAND)));
 
-        Object keyboard = TC.keyboard(layout);
-        sender.sendMessage(TC.md(markdown), keyboard);
+        Keyboard keyboard = new Keyboard(layout);
+        sender.sendMessage(TC.md(markdown).setKeyboard(keyboard));
         game.lastCmdMsgId = sender.getMessage().getMessageId();
 
         scheduleJoinTimeout(sessionId, game);
@@ -232,9 +234,9 @@ public class ConnectFourGame implements CommandExecutor {
         layout.add(List.of(new Button("join_b", displayB, "/四子棋 join B",
                 true, styleB, ButtonType.COMMAND)));
 
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = sender.sendMessage(TC.md(sb.toString()), keyboard);
+        String messageId = sender.sendMessage(TC.md(sb.toString()).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = sender.getMessage().getMessageId();
@@ -353,14 +355,14 @@ public class ConnectFourGame implements CommandExecutor {
     private void sendGameBoard(GameState game, String sessionId, String cmdMsgId, String statusMsg) {
         String md = buildBoardMarkdown(game, statusMsg);
         String currentPlayerOpenId = game.currentPlayer == PLAYER_A ? game.playerAOpenId : game.playerBOpenId;
-        Object keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
-        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(md), keyboard);
+        Keyboard keyboard = buildColumnKeyboard(currentPlayerOpenId, game.board);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(md).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = cmdMsgId;
     }
 
-    private Object buildColumnKeyboard(String currentPlayerOpenId, int[][] board) {
+    private Keyboard buildColumnKeyboard(String currentPlayerOpenId, int[][] board) {
         Set<Integer> fullCols = getFullColumns(board);
         List<List<Button>> layout = new ArrayList<>();
         List<Button> row = new ArrayList<>();
@@ -385,7 +387,7 @@ public class ConnectFourGame implements CommandExecutor {
 //                    .setAllowedOpenIds(List.of(currentPlayerOpenId)));
         }
         layout.add(row);
-        return TC.keyboard(layout);
+        return new Keyboard(layout);
     }
 
     private String buildBoardMarkdown(GameState game, String statusMsg) {
@@ -627,10 +629,10 @@ public class ConnectFourGame implements CommandExecutor {
                     List<List<Button>> layout = new ArrayList<>();
                     layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
                             true, ButtonStyle.BLUE, ButtonType.COMMAND)));
-                    Object keyboard = TC.keyboard(layout);
+                    Keyboard keyboard = new Keyboard(layout);
 
                     GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), loserId,
-                            TC.md(markdown), keyboard);
+                            TC.md(markdown).setKeyboard(keyboard));
                 } catch (Exception e) {
                     log.warn("发送落子超时结算面板失败: ", e);
                 }
@@ -666,10 +668,10 @@ public class ConnectFourGame implements CommandExecutor {
                     List<List<Button>> layout = new ArrayList<>();
                     layout.add(List.of(new Button("play_again", "再来一局", "/四子棋",
                             true, ButtonStyle.BLUE, ButtonType.COMMAND)));
-                    Object keyboard = TC.keyboard(layout);
+                    Keyboard keyboard = new Keyboard(layout);
 
                     GroupChat.replyMessage(current.groupOpenId, RT.message(current.lastCmdMsgId), playerAId,
-                            TC.md(markdown), keyboard);
+                            TC.md(markdown).setKeyboard(keyboard));
                 } catch (Exception e) {
                     log.warn("发送对局超时结算面板失败: ", e);
                 }

@@ -92,7 +92,7 @@ public class NotificationService {
     }
 
     private static boolean notifyGroup(String groupOpenId, String mentionUserId, Markdown markdown,
-                                      String source, String sourceId) {
+                                       String source, String sourceId) {
         if (groupOpenId == null || groupOpenId.isBlank() || markdown == null || markdown.getText().isBlank()) {
             return false;
         }
@@ -136,13 +136,13 @@ public class NotificationService {
      * 已开放主动消息的群优先主动通知；其余来源在五分钟内直接被动回复，失败后进入被动队列
      * 来源过期或缺失时沿用主动通知流程
      *
-     * @param platform 来源平台，仅 QQ 群聊和私聊支持此被动回复方式
-     * @param userOpenId 用户 OpenID
+     * @param platform    来源平台，仅 QQ 群聊和私聊支持此被动回复方式
+     * @param userOpenId  用户 OpenID
      * @param groupOpenId 群 OpenID，私聊传 null
-     * @param markdown 完整回复对象；入队后由业务来源记录重建正文和键盘
-     * @param source 业务来源
-     * @param sourceId 业务记录编号，用于通知去重
-     * @param messageId 提交或补充内容的来源消息 ID
+     * @param markdown    完整回复对象；入队后由业务来源记录重建正文和键盘
+     * @param source      业务来源
+     * @param sourceId    业务记录编号，用于通知去重
+     * @param messageId   提交或补充内容的来源消息 ID
      * @param messageTime 来源消息时间
      * @return 已发送返回 true，已入队返回 false
      */
@@ -187,7 +187,7 @@ public class NotificationService {
     }
 
     private static boolean enqueue(String targetType, String targetId, String mentionUserId, String markdown,
-                                String source, String sourceId, String reason) {
+                                   String source, String sourceId, String reason) {
         if (source != null && sourceId != null && PendingNoticeRepository.hasPending(source, sourceId)) {
             log.info("该业务对象已有待送达通知，跳过重复入队: source={}, sourceId={}", source, sourceId);
             return true;

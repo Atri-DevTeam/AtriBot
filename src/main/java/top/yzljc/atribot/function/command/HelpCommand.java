@@ -1,8 +1,5 @@
 package top.yzljc.atribot.function.command;
 
-import top.yzljc.atricore.core.CoreConfig;
-
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
 import top.yzljc.atricore.chat.napcat.impl.MessageSegment;
 import top.yzljc.atricore.chat.official.Markdown;
@@ -103,7 +100,7 @@ public class HelpCommand implements CommandExecutor {
                     )
             );
 
-            user.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(user.getUserId())));
+            user.sendMessage(md.setKeyboard(keyboard));
 
             return true;
         }

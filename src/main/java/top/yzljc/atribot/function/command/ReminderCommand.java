@@ -83,7 +83,6 @@ public final class ReminderCommand implements CommandExecutor, Listener {
                 service.releaseCustomInput(userId, messageId);
                 sender.sendMessage(ReminderService.BUSY, false);
             }
-            return;
         }
     }
 

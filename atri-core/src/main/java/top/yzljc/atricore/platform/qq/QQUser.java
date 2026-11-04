@@ -1,5 +1,7 @@
 package top.yzljc.atricore.platform.qq;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import top.yzljc.atricore.AtriProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
@@ -202,8 +204,22 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, String text) {
+        return sendMessage(messageId, text, (ActionButton) null);
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊纯文本消息，附带消息操作栏
+     *
+     * @param messageId 回复来源消息 ID
+     * @param text      回复文本
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
+     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(String messageId, String text, ActionButton actionButton) {
         if (this.platform == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, RT.message(messageId), text);
+            return C2CChat.replyMessage(this.userId, RT.message(messageId), text, actionButton);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, String text)");
     }
@@ -220,8 +236,23 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(RT rt, String text, String refIdx) {
+        return sendMessage(rt, text, refIdx, null);
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊纯文本消息并引用指定消息，附带消息操作栏
+     *
+     * @param rt     消息或事件回复来源，使用 {@link RT#message(String)} 或 {@link RT#event(String)}
+     * @param text   回复文本
+     * @param refIdx 被引用消息的索引 ID，{@code null} 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
+     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(RT rt, String text, String refIdx, ActionButton actionButton) {
         if (this.platform == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, rt, text, refIdx);
+            return C2CChat.replyMessage(this.userId, rt, text, refIdx, actionButton);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, String text, String refIdx)");
     }
@@ -310,72 +341,24 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, Markdown md) {
-        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, RT.message(messageId), md);
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md)");
+        return sendMessage(messageId, md, null);
     }
 
     /**
-     * 被动回复 QQ 官方群聊 Markdown 消息，默认 @ 当前用户
-     *
-     * @param groupId   群 OpenID
-     * @param messageId 回复来源消息 ID
-     * @param md        Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard  独立传入的键盘按钮对象，不指定时传入 {@code null}
-     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
-     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方群聊
-     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(String, String, Markdown)}
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard) {
-        return this.sendMessage(groupId, messageId, md, keyboard, true);
-    }
-
-    /**
-     * 被动回复 QQ 官方群聊 Markdown 消息，可控制 @ 当前用户
-     *
-     * @param groupId   群 OpenID
-     * @param messageId 回复来源消息 ID
-     * @param md        Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard  独立传入的键盘按钮对象，不指定时传入 {@code null}
-     * @param at        是否 @ 当前用户
-     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
-     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方群聊
-     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(String, String, Markdown, boolean)}
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, String messageId, Markdown md, Object keyboard, boolean at) {
-        if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_GROUP) {
-            return at
-                    ? GroupChat.replyMessage(groupId, RT.message(messageId), this.userId, md, keyboard)
-                    : GroupChat.replyMessage(groupId, RT.message(messageId), md, keyboard);
-        }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, String messageId, Markdown md, Object keyboard)");
-    }
-
-    /**
-     * 被动回复 QQ 官方单聊 Markdown 消息
+     * 被动回复 QQ 官方单聊 Markdown 消息，附带消息操作栏
      *
      * @param messageId 回复来源消息 ID
      * @param md        Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard  独立传入的键盘按钮对象，不指定时传入 {@code null}
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
      * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
      * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(String, Markdown)}
      */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String messageId, Markdown md, Object keyboard) {
+    public String sendMessage(String messageId, Markdown md, ActionButton actionButton) {
         if (Objects.requireNonNull(this.platform) == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, RT.message(messageId), md, keyboard);
+            return C2CChat.replyMessage(this.userId, RT.message(messageId), md, actionButton);
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md, Object keyboard)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, Markdown md)");
     }
 
     /**
@@ -471,8 +454,22 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String messageId, ImageComponent image) {
+        return sendMessage(messageId, image, null);
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊图片消息，附带消息操作栏
+     *
+     * @param messageId 回复来源消息 ID
+     * @param image     图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
+     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(String messageId, ImageComponent image, ActionButton actionButton) {
         if (this.platform == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, RT.message(messageId), image);
+            return C2CChat.replyMessage(this.userId, RT.message(messageId), image, actionButton);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(String messageId, ImageComponent image)");
     }
@@ -489,8 +486,23 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(RT rt, ImageComponent image, String refIdx) {
+        return sendMessage(rt, image, refIdx, null);
+    }
+
+    /**
+     * 被动回复 QQ 官方单聊图片消息并引用指定消息，附带消息操作栏
+     *
+     * @param rt     消息或事件回复来源，使用 {@link RT#message(String)} 或 {@link RT#event(String)}
+     * @param image  图片组件
+     * @param refIdx 被引用消息的索引 ID，{@code null} 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
+     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
+     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
+     */
+    public String sendMessage(RT rt, ImageComponent image, String refIdx, ActionButton actionButton) {
         if (this.platform == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, rt, image, refIdx);
+            return C2CChat.replyMessage(this.userId, rt, image, refIdx, actionButton);
         }
         throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, ImageComponent image, String refIdx)");
     }
@@ -507,28 +519,25 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(RT rt, Markdown markdown, String refIdx) {
-        return sendMessage(rt, markdown, null, refIdx);
+        return sendMessage(rt, markdown, refIdx, null);
     }
 
     /**
-     * 被动回复 QQ 官方单聊 Markdown 消息并引用指定消息
+     * 被动回复 QQ 官方单聊 Markdown 消息并引用指定消息，附带消息操作栏
      *
      * @param rt       消息或事件回复来源，使用 {@link RT#message(String)} 或 {@link RT#event(String)}
      * @param markdown Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard 独立传入的键盘按钮对象，不指定时传入 {@code null}
      * @param refIdx   被引用消息的索引 ID，{@code null} 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
      * @throws UnsupportedPlatform    当前用户不属于 QQ 官方单聊
      * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(RT, Markdown, String)}
      */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(RT rt, Markdown markdown, Object keyboard, String refIdx) {
+    public String sendMessage(RT rt, Markdown markdown, String refIdx, ActionButton actionButton) {
         if (this.platform == Platform.OFFICIAL_C2C) {
-            return C2CChat.replyMessage(this.userId, rt, markdown, keyboard, refIdx);
+            return C2CChat.replyMessage(this.userId, rt, markdown, refIdx, actionButton);
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, Markdown markdown, Object keyboard, String refIdx)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(RT rt, Markdown markdown, String refIdx)");
     }
 
     /**
@@ -563,7 +572,7 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, RT rt, Markdown markdown, String refIdx) {
-        return sendMessage(groupId, rt, markdown, null, true, refIdx);
+        return sendMessage(groupId, rt, markdown, true, refIdx);
     }
 
     /**
@@ -580,50 +589,12 @@ public final class QQUser extends User {
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String groupId, RT rt, Markdown markdown, boolean at, String refIdx) {
-        return sendMessage(groupId, rt, markdown, null, at, refIdx);
-    }
-
-    /**
-     * 被动回复 QQ 官方群聊 Markdown 消息并引用指定消息，默认 @ 当前用户
-     *
-     * @param groupId  群 OpenID
-     * @param rt       消息或事件回复来源，使用 {@link RT#message(String)} 或 {@link RT#event(String)}
-     * @param markdown Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard 独立传入的键盘按钮对象，不指定时传入 {@code null}
-     * @param refIdx   被引用消息的索引 ID，{@code null} 表示不引用，不改变回复来源
-     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
-     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方群聊
-     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(String, RT, Markdown, String)}
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
-        return sendMessage(groupId, rt, markdown, keyboard, true, refIdx);
-    }
-
-    /**
-     * 被动回复 QQ 官方群聊 Markdown 消息并引用指定消息，可控制 @ 当前用户
-     *
-     * @param groupId  群 OpenID
-     * @param rt       消息或事件回复来源，使用 {@link RT#message(String)} 或 {@link RT#event(String)}
-     * @param markdown Markdown 内容，可通过 {@link Markdown#setKeyboard(Keyboard)} 设置按钮
-     * @param keyboard 独立传入的键盘按钮对象，不指定时传入 {@code null}
-     * @param at       是否 @ 当前用户
-     * @param refIdx   被引用消息的索引 ID，{@code null} 表示不引用，不改变回复来源
-     * @return 发送成功的消息 ID，未取得发送结果时返回 {@code null}
-     * @throws UnsupportedPlatform    当前用户不属于 QQ 官方群聊
-     * @throws QQMessageSendException QQ 开放平台拒绝发送消息
-     * @deprecated 使用 {@link Markdown#setKeyboard(Keyboard)} 设置按钮，再调用 {@link #sendMessage(String, RT, Markdown, boolean, String)}
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, boolean at, String refIdx) {
         if (this.platform == Platform.OFFICIAL_GROUP) {
             return at
-                    ? GroupChat.replyMessage(groupId, rt, this.userId, markdown, keyboard, refIdx)
-                    : GroupChat.replyMessage(groupId, rt, markdown, keyboard, refIdx);
+                    ? GroupChat.replyMessage(groupId, rt, this.userId, markdown, refIdx)
+                    : GroupChat.replyMessage(groupId, rt, markdown, refIdx);
         }
-        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, RT rt, Markdown markdown, Object keyboard, boolean at, String refIdx)");
+        throw new UnsupportedPlatform(this.platform, "sendMessage(String groupId, RT rt, Markdown markdown, boolean at, String refIdx)");
     }
+
 }

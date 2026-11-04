@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.http.Context;
 import lombok.Data;
 import top.yzljc.atribot.auth.UnifiedAuthentication;
+import top.yzljc.atribot.function.tasks.pushtask.PushTask;
 import top.yzljc.atricore.auth.AccountStatus;
 import top.yzljc.atricore.auth.AtriAccount;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -81,7 +82,7 @@ public class C2CController {
     private static List<C2CPushTaskDTO> validC2CPushTasks(JsonNode config) {
         // 以当前注册且支持私聊的任务为准，忽略数据库中已删除任务的残留 key。
         return PushTaskCommand.getTasks().stream()
-                .filter(task -> task.isC2cEnable())
+                .filter(PushTask::isC2cEnable)
                 .map(task -> {
                     JsonNode enabled = config.path(task.getFunctionId()).path("enabled");
                     return new C2CPushTaskDTO(task.getFunctionId(), task.getDisplayName(),
@@ -364,7 +365,7 @@ public class C2CController {
                         Markdown markdown = new Markdown(dto.getContent());
                         messageId = isBlank(replyId)
                                 ? C2CChat.refMessage(dto.getUserOpenId(), refId, markdown)
-                                : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), markdown, null, refId);
+                                : C2CChat.replyMessage(dto.getUserOpenId(), RT.message(replyId), markdown, refId);
                     } else {
                         messageId = isBlank(replyId)
                                 ? C2CChat.refMessage(dto.getUserOpenId(), refId, dto.getContent())

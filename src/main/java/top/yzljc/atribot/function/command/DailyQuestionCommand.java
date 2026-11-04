@@ -2,7 +2,6 @@ package top.yzljc.atribot.function.command;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.database.repo.DailyQuestionRepository;
 import top.yzljc.atricore.chat.official.Markdown;
@@ -82,7 +81,7 @@ public final class DailyQuestionCommand implements CommandExecutor {
 //            var buttons = new Keyboard(List.of(
 //                    List.of(new Button("A. " + q.optionA(), "/question A " + view.day().key(), ButtonStyle.BLUE)),
 //                    List.of(new Button("B. " + q.optionB(), "/question B " + view.day().key(), ButtonStyle.BLUE))));
-//            md.setKeyboard(buttons, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId()));
+//            md.setKeyboard(buttons);
 //        }
         sender.sendMessage(md.setKeyboard(get(view.answer() != null, view.day().key())));
     }

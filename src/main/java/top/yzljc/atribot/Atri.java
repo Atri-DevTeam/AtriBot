@@ -389,7 +389,9 @@ public class Atri extends AtriProvider {
 
         CommandManager.getCommand("hyp").setExecutor(new HypixelCommand());
         CommandManager.getCommand("mctool").setExecutor(new MinecraftToolsCommand());
-        CommandManager.getCommand("ec").setExecutor(new MinecraftEnchantmentGame());
+        var enchantmentGame = new MinecraftEnchantmentGame();
+        CommandManager.getCommand("ec").setExecutor(enchantmentGame);
+        EventManager.getInstance().registerEvents(enchantmentGame);
         CommandManager.getCommand("bot").setExecutor(new BotInfoCommand());
         CommandManager.getCommand("astro").setExecutor(new AstronomyCommand());
         CommandManager.getCommand("whoami").setExecutor(new WhoAmICommand());

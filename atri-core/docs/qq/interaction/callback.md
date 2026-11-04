@@ -52,12 +52,16 @@ public final class ButtonListener implements Listener {
 | `setCancelled(boolean)` / `isCancelled()` | 设置或读取事件取消标记 |
 | `replyMessage(text / image / markdown)` | 使用当前事件作为来源，返回消息 ID |
 | `replyMessage(markdown, at)` | 群聊可提及点击者 |
-| `replyMessage(markdown, keyboard)` | 带键盘回复 |
-| `replyMessage(markdown, keyboard, at)` | 带键盘并选择是否提及 |
+| `replyMessage(markdown.setKeyboard(keyboard))` | 带键盘回复 |
+| `replyMessage(markdown.setKeyboard(keyboard), at)` | 带键盘并选择是否提及 |
 | `sendMessage(text / markdown)` | 主动发送，不使用当前事件作为来源 |
-| `sendMessage(markdown, keyboard)` | 主动发送 Markdown 和键盘 |
+| `sendMessage(markdown.setKeyboard(keyboard))` | 主动发送 Markdown 和键盘 |
 
 未知场景的聊天辅助方法抛出 `UnknownButtonInteractionScene`。`answer` 的请求同步执行，发送日志另行提交到共享执行器
+
+::: important 操作栏仅私聊
+文本、Markdown 和 ImageComponent 的 `sendMessage`、`replyMessage` 方法可在末尾追加 ActionButton。私聊携带操作栏，群聊忽略该参数。操作栏反馈由 `OfficialC2CPromptFeedbackEvent` 接收，用法见 [私聊消息操作栏](../components/action-button.md)
+:::
 
 | AnswerCode | 值 | 用途   |
 | --- | --- |------|

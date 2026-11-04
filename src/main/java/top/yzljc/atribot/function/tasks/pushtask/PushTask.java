@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.tasks.pushtask;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import lombok.Getter;
 import lombok.Setter;
 import top.yzljc.atribot.auth.official.FullMessageAuth;
@@ -139,7 +141,7 @@ public abstract class PushTask {
 
     public void enable(Platform platform, String groupOpenId, String operatorOpenId, String commandMessageId) {
         Markdown md = TC.md(Markdown.at(operatorOpenId) + "\n\n" + "✅ 已启用**" + this.getDisplayName() + "**");
-        Object keys = TC.keyboard(
+        Keyboard keys = new Keyboard(
                 List.of(
                         List.of(new Button("c1", "关闭", "/tasks disable " + this.getFunctionId(), true, ButtonStyle.RED, ButtonType.COMMAND),
                                 new Button("c2", "返回列表", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -150,7 +152,7 @@ public abstract class PushTask {
                 // 探测主动消息权限：发送失败以异常形式抛出，需映射回失败分支引导授权
                 String messageId;
                 try {
-                    messageId = GroupChat.sendMessage(groupOpenId, md, keys);
+                    messageId = GroupChat.sendMessage(groupOpenId, md.setKeyboard(keys));
                 } catch (QQMessageSendException e) {
                     messageId = null;
                 }
@@ -159,7 +161,7 @@ public abstract class PushTask {
                     return;
                 }
             } else {
-                GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), md, keys);
+                GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), md.setKeyboard(keys));
             }
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), true, operatorOpenId);
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
@@ -167,7 +169,7 @@ public abstract class PushTask {
                 // 探测主动消息权限：发送失败以异常形式抛出，需映射回失败分支引导授权
                 String messageId;
                 try {
-                    messageId = C2CChat.sendMessage(operatorOpenId, md, keys);
+                    messageId = C2CChat.sendMessage(operatorOpenId, md.setKeyboard(keys));
                 } catch (QQMessageSendException e) {
                     messageId = null;
                 }
@@ -176,7 +178,7 @@ public abstract class PushTask {
                     return;
                 }
             } else {
-                C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md, keys);
+                C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md.setKeyboard(keys));
             }
             OfficialUsers.setFunctionEnabled(operatorOpenId, this.getFunctionId(), true, operatorOpenId);
         } else {
@@ -186,7 +188,7 @@ public abstract class PushTask {
 
     public void disable(Platform platform, String groupOpenId, String operatorOpenId, String commandMessageId) {
         Markdown md = TC.md("❌ 已关闭**" + this.getDisplayName() + "**");
-        Object keys = TC.keyboard(
+        Keyboard keys = new Keyboard(
                 List.of(
                         List.of(new Button("c1", "启用", "/tasks enable " + this.getFunctionId(), true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "返回列表", "/tasks", true, ButtonStyle.BLUE, ButtonType.COMMAND))
@@ -194,10 +196,10 @@ public abstract class PushTask {
         );
         if (platform.equals(Platform.OFFICIAL_GROUP)) {
             OfficialGroups.setFunctionEnabled(groupOpenId, this.getFunctionId(), false, operatorOpenId);
-            GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), operatorOpenId, md, keys);
+            GroupChat.replyMessage(groupOpenId, RT.message(commandMessageId), operatorOpenId, md.setKeyboard(keys));
         } else if (platform.equals(Platform.OFFICIAL_C2C)) {
             OfficialUsers.setFunctionEnabled(operatorOpenId, this.getFunctionId(), false, operatorOpenId);
-            C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md, keys);
+            C2CChat.replyMessage(operatorOpenId, RT.message(commandMessageId), md.setKeyboard(keys));
         } else {
             throw new UnsupportedPlatform(platform, "推送任务在该平台不支持");
         }

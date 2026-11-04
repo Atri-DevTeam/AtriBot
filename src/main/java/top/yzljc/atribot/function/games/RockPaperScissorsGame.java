@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.games;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.GroupChat;
@@ -78,9 +80,9 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
                 + "> 双方选定后揭晓结果，60 秒内未完成自动取消";
 
         List<List<Button>> layout = buildChoiceButtons();
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = qq.sendMessage(TC.md(markdown), keyboard, false);
+        String messageId = qq.sendMessage(TC.md(markdown).setKeyboard(keyboard), false);
         game.lastCmdMsgId = qq.getMessage().getMessageId();
         game.lastMessageId = messageId;
 
@@ -204,9 +206,9 @@ public class RockPaperScissorsGame implements Listener, CommandExecutor {
                 + "> 60 秒内未完成自动取消";
 
         List<List<Button>> layout = buildChoiceButtons();
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = event.replyMessage(TC.md(markdown), keyboard);
+        String messageId = event.replyMessage(TC.md(markdown).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
     }

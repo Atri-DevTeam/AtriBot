@@ -37,6 +37,8 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), card)
 
 `Ark23`、`Ark24`、`Ark37` 都实现 `Ark.ArkContent`，可通过 `new Ark(content)` 包装。`getType()` 返回模板类型，`getContent()` 读取内容，`toObject()` 转换为带 `template_id` 和 `kv` 的请求对象
 
+Jackson 直接序列化 Ark 时使用 `toPayload()` 返回的协议对象，内置模板通过 `values()` 提供 `List<ArkValue>` 字段。原有 `toObject()` 保留，业务发送无需先转换为 Map；Ark 发送入口不提供 ActionButton 参数
+
 群聊和 C2C 提供主动发送与被动回复的 Ark 重载，异步类提供相同参数。模板使用资格和可发送场景由平台授权决定，创建对象成功不代表远端允许发送
 
 ## 方法与数据类型索引
@@ -50,6 +52,7 @@ public static Ark ark23(String description, String prompt, List<Ark23.Item> item
 public static Ark ark24(String description, String prompt, String title, String metaDescription, String picUrl, String jumpUrl, String subTitle);
 public static Ark ark37(String prompt, String title, String subTitle, String picUrl, String jumpUrl);
 public Type getType();
+public Payload toPayload();
 public Map<String, Object> toObject();
 ```
 

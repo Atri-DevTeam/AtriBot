@@ -1,5 +1,7 @@
 package top.yzljc.atribot.dashboard;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atribot.auth.UnifiedAuthentication;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.C2CChat;
@@ -13,7 +15,6 @@ import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
-import top.yzljc.atricore.event.impl.ErrorCode;
 import top.yzljc.atricore.platform.Platform;
 import top.yzljc.atricore.platform.qq.QQBot;
 
@@ -68,8 +69,7 @@ public final class DashboardCommand implements CommandExecutor {
                 if (OfficialUsers.isFriend(qq.getUserId())) {
                     try {
                         text = text + "\n\n> " + Markdown.link(url, "点击此处或下方按钮打开个人面板");
-                        C2CChat.sendMessage(qq.getUserId(), TC.md(text),
-                                TC.keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK)))));
+                        C2CChat.sendMessage(qq.getUserId(), TC.md(text).setKeyboard(new Keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK))))));
 
                         qq.sendMessage(QQBot.BOT_NAME + "已通过私聊向你发送绑定信息，请注意查收，如未收到，请使用 /dash 指令获取。");
                         return true;
@@ -83,8 +83,7 @@ public final class DashboardCommand implements CommandExecutor {
         }
 
         text = text + "\n\n> " + Markdown.link(url, "点击此处或下方按钮打开个人面板");
-        qq.sendMessage(TC.md(text),
-                TC.keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK)))));
+        qq.sendMessage(TC.md(text).setKeyboard(new Keyboard(List.of(List.of(new Button("dashboard", "打开个人面板", url, true, ButtonStyle.BLUE, ButtonType.LINK))))));
         return true;
     }
 }

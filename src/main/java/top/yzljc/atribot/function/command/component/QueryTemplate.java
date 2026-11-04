@@ -19,6 +19,7 @@ import top.yzljc.atricore.utils.debug.MessageTrace;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -30,10 +31,15 @@ import java.util.function.Supplier;
  */
 public final class QueryTemplate {
 
-    public static String getTemplate(ImageDTO i, String userOpenId, String queriedPlayer) {
+    /**
+     * @param playerUuid 远端查询确认的玩家 UUID，缺失时不显示白名单审查入口
+     */
+    public static String getTemplate(ImageDTO i, String userOpenId, UUID playerUuid) {
+        String review = playerUuid == null ? "" : " 根据开放平台要求，用户提交的自定义内容须经过审查后才能显示，请使用 "
+                + Markdown.enterCommand("/feedback 白名单审查 " + playerUuid, "/反馈 玩家名") + " 提交审核。";
         return (
                 Markdown.img("atri_bot_pic", i.url(), i.width(), i.height()) + "\n\n" +
-                        Markdown.at(userOpenId) + " 根据开放平台要求，用户提交的自定义内容须经过审查后才能显示，请使用 " + Markdown.enterCommand("/feedback 白名单审查 " + queriedPlayer, "/反馈 玩家名") + " 提交审核。" + "\n\n" + "> " + Markdown.link("https://bot.yzljc.top/dashboard/surveys/d14e26ce7104?_wwv=9983&qq=1", "✨有想法或建议？欢迎提给开发者")
+                        Markdown.at(userOpenId) + review + "\n\n" + "> " + Markdown.link("https://bot.yzljc.top/dashboard/surveys/d14e26ce7104?_wwv=9983&qq=1", "✨有想法或建议？欢迎提给开发者")
         );
     }
 

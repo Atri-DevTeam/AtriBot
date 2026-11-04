@@ -4,7 +4,6 @@ import top.yzljc.atribot.event.events.EmailMessageEvent;
 import top.yzljc.atribot.platform.napcat.groupfunction.GroupConfigManager;
 import top.yzljc.atricore.chat.napcat.GroupInformation;
 import top.yzljc.atricore.chat.napcat.GroupMessage;
-import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.event.EventHandler;
 import top.yzljc.atricore.event.Listener;
 

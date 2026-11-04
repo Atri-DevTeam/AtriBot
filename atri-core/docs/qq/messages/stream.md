@@ -4,6 +4,10 @@
 
 流式消息使用 `top.yzljc.atricore.chat.official` 包的聊天入口。`C2CStreamMessage` 是包内实现，不能从运行服务直接调用
 
+::: important 仅私聊
+本页流式发送入口仅用于 QQ 官方机器人 C2C 私聊，不提供 ActionButton 重载
+:::
+
 ## 回复文本流
 
 ```java

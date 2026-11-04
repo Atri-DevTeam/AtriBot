@@ -2,7 +2,6 @@ package top.yzljc.atribot.miniapp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.function.minecraft.HypixelRewardAutoClaim;
 
 import java.io.IOException;
@@ -22,7 +21,7 @@ import java.util.Set;
  * @Project AtriMeow
  * @Package top.yzljc.atribot.miniapp
  */
-public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share, boolean unsupportedKeyboard) {
+public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share) {
     public record Priority(String item, int value) {
     }
 
@@ -43,7 +42,7 @@ public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share
                 throw new IllegalArgumentException("Invalid settings change");
             String action = request.path("action").textValue();
             Set<String> fields = switch (action) {
-                case "reward_enabled", "keyboard" -> Set.of("action", "enabled");
+                case "reward_enabled" -> Set.of("action", "enabled");
                 case "reward_mode" -> Set.of("action", "mode");
                 case "reward_priority" -> Set.of("action", "item", "value");
                 default -> throw new IllegalArgumentException("Invalid settings action");
@@ -56,7 +55,7 @@ public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share
             String mode = null, item = null;
             Integer value = null;
             switch (action) {
-                case "reward_enabled", "keyboard" -> {
+                case "reward_enabled" -> {
                     if (!request.path("enabled").isBoolean()) throw new IllegalArgumentException("Invalid switch");
                     enabled = request.path("enabled").booleanValue();
                 }
@@ -91,7 +90,6 @@ public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share
                 case "reward_priority" -> value == null
                         ? HypixelRewardAutoClaim.removeItemPriority(userId, item)
                         : HypixelRewardAutoClaim.setItemPriority(userId, item, value);
-                case "keyboard" -> OfficialUsers.setUserUnsupportedKeyboard(userId, enabled);
                 default -> throw new IllegalArgumentException("Invalid settings action");
             };
         }
@@ -134,8 +132,7 @@ public record MiniappUserSettings(String bilibiliUid, Reward reward, Share share
                 new Reward(reward.path("enabled").isBoolean() && reward.path("enabled").booleanValue(),
                         "priority".equals(reward.path("first_claim").asText()) ? "priority" : "rarity", List.copyOf(priorities),
                         HypixelRewardAutoClaim.knownItemKeys().stream().sorted().toList()),
-                new Share(link, invited.size(), text(share.path("inviter_open_id")) != null, text(share.path("create_time"))),
-                root.path("unsupported_keyboard").asBoolean(false));
+                new Share(link, invited.size(), text(share.path("inviter_open_id")) != null, text(share.path("create_time"))));
     }
 
     private static String text(JsonNode value) {

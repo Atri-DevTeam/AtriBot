@@ -53,7 +53,7 @@ public class BotRuntimeData implements Listener {
         try {
             AtomicFiles.write(file.toPath(), mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(cache));
         } catch (Exception e) {
-            log.error("保存运行时数据失败: " + e.getMessage());
+            log.error("保存运行时数据失败: {}", e.getMessage());
         }
     }
 

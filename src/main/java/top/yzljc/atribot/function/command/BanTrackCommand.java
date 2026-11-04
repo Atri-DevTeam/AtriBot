@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
@@ -94,7 +93,7 @@ public class BanTrackCommand implements CommandExecutor {
                 )
         );
 
-        sender.sendMessage(md.setKeyboard(keyboard, OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())), false);
+        sender.sendMessage(md.setKeyboard(keyboard), false);
 
         return true;
     }

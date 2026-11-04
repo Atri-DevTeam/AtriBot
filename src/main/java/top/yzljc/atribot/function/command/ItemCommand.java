@@ -2,10 +2,7 @@ package top.yzljc.atribot.function.command;
 
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
-import top.yzljc.atricore.chat.official.button.Button;
-import top.yzljc.atricore.chat.official.button.ButtonStyle;
-import top.yzljc.atricore.chat.official.button.ButtonType;
-import top.yzljc.atricore.chat.official.button.Keyboard;
+import top.yzljc.atricore.chat.official.button.*;
 import top.yzljc.atricore.chat.official.media.HexColor;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
@@ -96,7 +93,7 @@ public class ItemCommand implements CommandExecutor {
                 + Markdown.enterCommand("/golds", "查看剩余金粒");
         Markdown md = TC.md(Markdown.img(d.image().url(), d.image().width(), d.image().height()) + "\n\n" + levelLine);
 
-        Object keyboards = TC.keyboard(
+        Keyboard keyboards = new Keyboard(
                 List.of(
                         List.of(
                                 new Button("c1", "再抽一次", "/item", ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -105,7 +102,7 @@ public class ItemCommand implements CommandExecutor {
                 )
         );
 
-        qq.sendMessage(md, keyboards);
+        qq.sendMessage(md.setKeyboard(keyboards));
         return true;
     }
 

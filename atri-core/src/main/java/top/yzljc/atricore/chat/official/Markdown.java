@@ -65,6 +65,7 @@ public class Markdown {
     }
 
     public static String enterCommand(String command) {
+        command = sanitizeCommandAttribute(command);
         if (isOutOfLimit(command)) {
             throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
         }
@@ -72,16 +73,12 @@ public class Markdown {
     }
 
     public static String enterCommand(String command, String display) {
-        if (isOutOfLimit(display)) {
-            throw new IllegalArgumentException("enterCommand 的 display 参数长度不能超过 100 个字符");
-        }
-        if (isOutOfLimit(command)) {
-            throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
-        }
-        return "<qqbot-cmd-input text=\"" + command + "\" show=\"" + display + "\" reference=\"false\" />";
+        return enterCommand(command, display, false);
     }
 
     public static String enterCommand(String command, String display, boolean reference) {
+        command = sanitizeCommandAttribute(command);
+        display = sanitizeCommandAttribute(display);
         if (isOutOfLimit(display)) {
             throw new IllegalArgumentException("enterCommand 的 display 参数长度不能超过 100 个字符");
         }
@@ -89,6 +86,22 @@ public class Markdown {
             throw new IllegalArgumentException("enterCommand 的 command 参数长度不能超过 100 个字符");
         }
         return "<qqbot-cmd-input text=\"" + command + "\" show=\"" + display + "\" reference=\"" + reference + "\" />";
+    }
+
+    /**
+     * 清除交互标签属性中的引号、标签分隔符、实体起始符、反斜杠及控制字符
+     * 保留普通空格与 Unicode 文本，清理后再校验属性长度
+     */
+    private static String sanitizeCommandAttribute(String value) {
+        if (value == null) throw new IllegalArgumentException("交互标签属性不能为空");
+        StringBuilder result = new StringBuilder(value.length());
+        value.codePoints().forEach(codePoint -> {
+            if (codePoint == '"' || codePoint == '\'' || codePoint == '<' || codePoint == '>'
+                    || codePoint == '&' || codePoint == '\\' || Character.isISOControl(codePoint)
+                    || codePoint == 0x2028 || codePoint == 0x2029) return;
+            result.appendCodePoint(codePoint);
+        });
+        return result.toString();
     }
 
     public static String at(String userOpenId) {
@@ -100,9 +113,7 @@ public class Markdown {
     }
 
     /**
-     * 群消息发送失败，
-     * 错误码：40034106
-     * 原因：群消息不支持 @全体成员（qqbot-at-everyone）
+     * 每日仅限一次，允许在普通文本和 Markdown 中使用，且需要开发者启用发送权限
      */
     public static String atAll() {
         return "<qqbot-at-everyone />";
@@ -132,18 +143,6 @@ public class Markdown {
 
     public Markdown setKeyboard(Keyboard keyboard) {
         this.keyboard = keyboard;
-        return this;
-    }
-
-    public Markdown setKeyboard(Keyboard keyboard, boolean toMarkdown) {
-        this.keyboard = keyboard;
-
-        if (toMarkdown) {
-            var k = keyboard.toMarkdownString();
-            this.keyboard = null;
-            return append(k);
-        }
-
         return this;
     }
 

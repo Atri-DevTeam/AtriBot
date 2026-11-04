@@ -1,5 +1,7 @@
 package top.yzljc.atribot.test;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
@@ -103,7 +105,7 @@ public class MarkdownDisplayTest implements CommandExecutor {
                 "## 颜色代码\n" +
                 "$\\textcolor{#27AE60}{\\text{我}}\\textcolor{#27AE60}{\\text{真}}\\textcolor{#E74C3C}{\\text{厉}}\\textcolor{#FF8C00}{\\text{害}}$");
 
-        Object keyboard = TC.keyboard(
+        Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(
                                 new Button("t0", "样式0", "这里什么都没有", false, ButtonStyle.GRAY, ButtonType.COMMAND),
@@ -114,11 +116,11 @@ public class MarkdownDisplayTest implements CommandExecutor {
                                 new Button("t3", "样式3", "这里什么都没有", false, ButtonStyle.RED, ButtonType.COMMAND),
                                 new Button("t4", "样式4", "这里什么都没有", false, ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.COMMAND),
                                 new Button("t5", "链接样式", "https://qun.qq.com/qunpro/robot/qunshare?robot_uin=3889798968&robot_appid=102808581&sceneData=Y2m6DyvYd2SX5MyQfppq4axrIRdiOobQ6HDJim4ofdHS4e7PXVyNveeS8neRVhk4WdeLSBVcwJqpoXQTamuFFFC", false, ButtonStyle.ICON_BUTTON, ButtonType.LINK
+                                )
                         )
-                )
-        ));
+                ));
 
-        qq.sendMessage(md, keyboard, false);
+        qq.sendMessage(md.setKeyboard(keyboard), false);
         return true;
     }
 }

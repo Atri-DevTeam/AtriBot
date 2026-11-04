@@ -22,7 +22,7 @@ String replyId = GroupChat.replyMessage(groupOpenId, RT.message(messageId),
 | --- | --- | --- |
 | String 文本 | `sendMessage(target, text)` | `replyMessage(target, rt, text)` |
 | Markdown | `sendMessage(target, markdown)` | `replyMessage(target, rt, markdown)` |
-| Markdown 与键盘 | `sendMessage(target, markdown, keyboard)` | `replyMessage(target, rt, markdown, keyboard)` |
+| Markdown 与键盘 | `sendMessage(target, markdown.setKeyboard(keyboard))` | `replyMessage(target, rt, markdown.setKeyboard(keyboard))` |
 | ImageComponent 图片 | `sendMessage(target, image)` | `replyMessage(target, rt, image)` |
 | Ark | `sendMessage(target, ark)` | `replyMessage(target, rt, ark)`，需私域机器人 |
 | Card | `sendMessage(target, card)` | `replyMessage(target, rt, card)` |
@@ -41,15 +41,15 @@ Ark 被动消息需要私域机器人才能使用，同步与异步重载均适�
 | 调用 | 效果 |
 | --- | --- |
 | `replyMessage(groupOpenId, rt, userOpenId, markdown)` | 回复并提及目标用户 |
-| `replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard)` | 提及、Markdown 和键盘 |
-| `replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard, refIdx)` | 在上述基础上附加引用 |
+| `replyMessage(groupOpenId, rt, userOpenId, markdown.setKeyboard(keyboard))` | 提及、Markdown 和键盘 |
+| `replyMessage(groupOpenId, rt, userOpenId, markdown.setKeyboard(keyboard), refIdx)` | 在上述基础上附加引用 |
 | `replyMessage(groupOpenId, rt, text, refIdx)` | 文本回复并引用 |
 | `replyMessage(groupOpenId, rt, image, refIdx)` | 图片回复并引用 |
-| `replyMessage(groupOpenId, rt, markdown, keyboard, refIdx)` | Markdown 回复并引用 |
+| `replyMessage(groupOpenId, rt, markdown.setKeyboard(keyboard), refIdx)` | Markdown 回复并引用 |
 | `sendMessage(groupOpenId, image, refIdx)` | 主动图片消息并引用 |
-| `sendMessage(groupOpenId, markdown, keyboard, refIdx)` | 主动 Markdown 消息并引用 |
+| `sendMessage(groupOpenId, markdown.setKeyboard(keyboard), refIdx)` | 主动 Markdown 消息并引用 |
 | `refMessage(groupOpenId, refIdx, text / image / markdown)` | 主动引用消息 |
-| `refMessage(groupOpenId, refIdx, markdown, keyboard)` | 主动引用并带键盘 |
+| `refMessage(groupOpenId, refIdx, markdown.setKeyboard(keyboard))` | 主动引用并带键盘 |
 
 `userOpenId` 是被提及者，`refIdx` 是引用索引，两者不替代 rt 中的来源 ID
 
@@ -74,27 +74,23 @@ AsyncGroupChat.recallMessage(groupOpenId, sentId)
 public static String sendMessage(String openId, FileType fileType, Path file);
 public static String replyMessage(String openId, RT rt, FileType fileType, Path file);
 public static String sendMessage(String groupOpenId, ImageComponent image, String refIdx);
-public static String sendMessage(String groupOpenId, Markdown markdown, Object keyboard, String refIdx);
+public static String sendMessage(String groupOpenId, Markdown markdown, String refIdx);
 public static String refMessage(String groupOpenId, String refIdx, ImageComponent image);
 public static String refMessage(String groupOpenId, String refIdx, Markdown markdown);
-public static String refMessage(String groupOpenId, String refIdx, Markdown markdown, Object keyboard);
-public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard, String refIdx);
-public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard, String refIdx);
+public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, String refIdx);
+public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, String refIdx);
 public static String replyMessage(String groupOpenId, RT rt, ImageComponent image, String refIdx);
 public static String sendMessage(String groupOpenId, String text);
 public static String sendMessage(String groupOpenId, Ark ark);
 public static String sendMessage(String groupOpenId, Card card);
 public static String sendMessage(String groupOpenId, Markdown markdown);
 public static String sendMessage(String groupOpenId, ImageComponent image);
-public static String sendMessage(String groupOpenId, Markdown markdown, Object keyboard);
 public static String replyMessage(String groupOpenId, RT rt, String replyText);
 public static String replyMessage(String groupOpenId, RT rt, Ark ark);
 public static String replyMessage(String groupOpenId, RT rt, Card card);
 public static String replyMessage(String groupOpenId, RT rt, String replyText, String refIdx);
 public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown);
 public static String replyMessage(String groupOpenId, RT rt, Markdown markdown);
-public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard);
-public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard);
 public static String replyMessage(String groupOpenId, RT rt, ImageComponent image);
 public static String replyMessage(String groupOpenId, RT rt, FileType fileType, String value);
 public static String replyAudioMessage(String groupOpenId, RT rt, String url);
@@ -109,27 +105,23 @@ public static CompletableFuture<String> sendMessage(String openId, FileType file
 public static CompletableFuture<String> replyMessage(String openId, RT rt, FileType fileType, Path file);
 public static CompletableFuture<Boolean> recallMessage(String groupOpenId, String messageId);
 public static CompletableFuture<String> sendMessage(String groupOpenId, ImageComponent image, String refIdx);
-public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, Object keyboard, String refIdx);
+public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, String refIdx);
 public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, ImageComponent image);
 public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, Markdown markdown);
-public static CompletableFuture<String> refMessage(String groupOpenId, String refIdx, Markdown markdown, Object keyboard);
-public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard, String refIdx);
-public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard, String refIdx);
+public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, String refIdx);
+public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, String refIdx);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, ImageComponent image, String refIdx);
 public static CompletableFuture<String> sendMessage(String groupOpenId, String text);
 public static CompletableFuture<String> sendMessage(String groupOpenId, Ark ark);
 public static CompletableFuture<String> sendMessage(String groupOpenId, Card card);
 public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown);
 public static CompletableFuture<String> sendMessage(String groupOpenId, ImageComponent image);
-public static CompletableFuture<String> sendMessage(String groupOpenId, Markdown markdown, Object keyboard);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String replyText);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Ark ark);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Card card);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String replyText, String refIdx);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown);
-public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard);
-public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, ImageComponent image);
 public static CompletableFuture<String> replyMessage(String groupOpenId, RT rt, FileType fileType, String value);
 public static CompletableFuture<String> replyAudioMessage(String groupOpenId, RT rt, String url);

@@ -3,14 +3,12 @@ package top.yzljc.atribot.test;
 
 import top.yzljc.atricore.chat.official.*;
 import top.yzljc.atricore.chat.official.button.*;
-import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
 import top.yzljc.atricore.command.ConsoleCommandSender;
 import top.yzljc.atricore.command.QQCommandSender;
 import top.yzljc.atricore.event.Listener;
-import top.yzljc.atricore.platform.qq.QQBot;
 import top.yzljc.sakuraba_ema.guild.impl.ChannelCliResult;
 
 import java.util.List;
@@ -220,10 +218,23 @@ public class Test implements CommandExecutor, Listener {
 //        var c = Card.tuWen("网易云音乐: BadApple", "时长: 11:22:33", QQBot.BOT_AVATAR_URL, "https://music.163.com/song?id=83106&uct2=U2FsdGVkX18QIJZVsrFDjNTR3Qb00lGsIvi6pHUvO1g=");
 //
 //        GroupChat.replyMessage(u.getGroupId(), RT.message(u.getMessage().getMessageId()), c);
-        sender.sendMessage("已发送调研问卷，请在私聊中完成喵~");
+//        sender.sendMessage("已发送调研问卷，请在私聊中完成喵~");
+
+        var ab = new ActionButton().setCallbackData("test").setReGenerate(true);
+        u.sendMessage(TC.md("TTT"), ab);
 
         return true;
     }
+//
+//    @EventHandler
+//    public void t(OfficialC2CPromptFeedbackEvent event) {
+//        System.out.println(1);
+//        var ab = new ActionButton().setCallbackData("test").setReGenerate(true);
+//        if (Objects.equals(event.getCallbackData(), "test")) {
+//            System.out.println(2);
+//            C2CChat.replyMessage(event.getUserOpenId(), RT.event(event.getEventId()), TC.md("RRR"), ab);
+//        }
+//    }
 
     private static Keyboard getMiniGames() {
         return new Keyboard(

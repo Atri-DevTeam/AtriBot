@@ -1,5 +1,7 @@
 package top.yzljc.atricore.event.events;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import top.yzljc.atricore.chat.ImageComponent;
@@ -7,7 +9,6 @@ import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
-import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
 import top.yzljc.atricore.event.impl.FriendAddScene;
 
@@ -52,17 +53,18 @@ public class OfficialFriendAddEvent extends Event {
      * @return 平台返回的消息 ID
      */
     public String sendOpeningMessage(String message) {
-        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), message);
+        return sendOpeningMessage(message, null);
     }
 
     /**
-     * 被动消息好友开场白消息 - Markdown 消息（按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置，旧的参数形式已弃用）
+     * 被动消息好友开场白消息 - 纯文本，附带消息操作栏
      *
-     * @param markdown 开场白 Markdown 消息
+     * @param message      开场白文本消息
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 平台返回的消息 ID
      */
-    public String sendOpeningMessage(Markdown markdown) {
-        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown);
+    public String sendOpeningMessage(String message, ActionButton actionButton) {
+        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), message, actionButton);
     }
 
     /**
@@ -72,19 +74,38 @@ public class OfficialFriendAddEvent extends Event {
      * @return 平台返回的消息 ID
      */
     public String sendOpeningMessage(ImageComponent image) {
-        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), image);
+        return sendOpeningMessage(image, null);
+    }
+
+    /**
+     * 被动消息好友开场白消息 - 图片消息，附带消息操作栏
+     *
+     * @param image        开场白图片对象
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    public String sendOpeningMessage(ImageComponent image, ActionButton actionButton) {
+        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), image, actionButton);
     }
 
     /**
      * 被动消息好友开场白消息 - Markdown 消息 + 按钮
      *
      * @param markdown 开场白 Markdown 消息
-     * @param keyboard 按钮键盘对象
      * @return 平台返回的消息 ID
-     * @deprecated 请使用 {@link OfficialFriendAddEvent#sendOpeningMessage(Markdown)} 发送
      */
-    @Deprecated
-    public String sendOpeningMessage(Markdown markdown, Object keyboard) {
-        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown, keyboard);
+    public String sendOpeningMessage(Markdown markdown) {
+        return sendOpeningMessage(markdown, null);
+    }
+
+    /**
+     * 被动消息好友开场白消息 - Markdown 消息 + 按钮，附带消息操作栏
+     *
+     * @param markdown     开场白 Markdown 消息
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 平台返回的消息 ID
+     */
+    public String sendOpeningMessage(Markdown markdown, ActionButton actionButton) {
+        return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown, actionButton);
     }
 }

@@ -23,7 +23,7 @@ public final class JoinWelcomeDAO {
 
     public static ObjectNode validate(JsonNode source) {
         require(source != null && source.isObject(), "配置必须是 JSON 对象");
-        ObjectNode config = (ObjectNode) source.deepCopy();
+        ObjectNode config = source.deepCopy();
         String text = string(config, "text", "", 16000);
         enumValue(config, "button_size", ButtonSize.class, ButtonSize.UNDEFINED);
         JsonNode keyboard = config.path("keyboard");

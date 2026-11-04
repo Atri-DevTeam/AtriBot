@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 
-import top.yzljc.atricore.chat.napcat.NapcatDebugGroup;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atribot.database.repo.CoinGainLogRepository;
@@ -54,7 +53,7 @@ public class QQEventRecord implements Listener {
     @EventHandler
     public void onGroupJoin(OfficialGroupAddRobotEvent event) {
         Markdown md = TC.md("嘿嘿，我是高性能的亚托莉喵~\n\n为大家提供社区娱乐、Minecraft主题相关数据查询和动态推送等多种服务，有更好的建议可以和开发者联系哦Ciallo～(∠・ω< )⌒★" + Markdown.img(RS.get("bot.atri_header"), 1916, 959));
-        Object keyboard = TC.keyboard(
+        Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(new Button("c1", "看看指令", "/help", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                                 new Button("c2", "每日打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -62,7 +61,7 @@ public class QQEventRecord implements Listener {
                 ), ButtonSize.SMALL
         );
 
-        event.sendOpeningMessage(md, keyboard);
+        event.sendOpeningMessage(md.setKeyboard(keyboard));
 
         boolean result = OfficialGroups.registerGroup(event.getGroupOpenId(), event.getOpMemberOpenId(), event.getTimestamp());
         if (!result) {
@@ -158,7 +157,6 @@ public class QQEventRecord implements Listener {
         } else {
             log.error("Failed to remove official friend record: {}", userOpenId);
             Alert.notify("好友已删除，但删除私聊记录失败，OpenID: " + userOpenId);
-            return;
         }
 //        Alert.notify("有好友删除了亚托莉喵，OpenID: " + userOpenId);
     }
@@ -237,10 +235,10 @@ public class QQEventRecord implements Listener {
 
         if (qq.getPlatform() == Platform.OFFICIAL_GROUP && OfficialGroups.isGroupBlacklisted(qq.getGroupId())) {
             if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
-                Object key = TC.keyboard(List.of(
+                Keyboard key = new Keyboard(List.of(
                         List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
-                qq.sendMessage(TC.md("> 该群聊因违反指令使用规则已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
+                qq.sendMessage(TC.md("> 该群聊因违反指令使用规则已被禁止使用指令，如有任何疑问请联系开发者处理！").setKeyboard(key));
                 log.warn("Command from blacklisted group {}: {} {}", qq.getGroupId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                 event.setCancelled(true);
                 return;
@@ -250,10 +248,10 @@ public class QQEventRecord implements Listener {
         if (qq.getPlatform() == Platform.OFFICIAL_C2C && (OfficialUsers.isBlocked(qq.getUserId()) || OfficialUsers.isIgnored(qq.getUserId()))) {
             if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
-                    Object key = TC.keyboard(List.of(
+                    Keyboard key = new Keyboard(List.of(
                             List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                     ));
-                    qq.sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！"), key);
+                    qq.sendMessage(TC.md("> 你已被禁止使用指令，如有任何疑问请联系开发者处理！").setKeyboard(key));
                     log.warn("Command from blacklisted user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                     event.setCancelled(true);
                     return;
@@ -268,10 +266,10 @@ public class QQEventRecord implements Listener {
         if (qq.getPlatform() == Platform.OFFICIAL_GROUP && (OfficialUsers.isBlocked(qq.getUserId()) || OfficialUsers.isIgnored(qq.getUserId()))) {
             if (!OfficialUsers.isIgnored(qq.getUserId())) {
                 if (!event.getCommandHeader().equalsIgnoreCase("feedback")) {
-                    Object key = TC.keyboard(List.of(
+                    Keyboard key = new Keyboard(List.of(
                             List.of(new Button("c1", "联系开发者", "/feedback ", true, ButtonStyle.BLUE, ButtonType.COMMAND))
                     ));
-                    qq.sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！"), key);
+                    qq.sendMessage(TC.md("> 你已被禁止在群聊中使用指令，如有任何疑问请联系开发者处理！").setKeyboard(key));
                     log.warn("Command from group-blacklisted user {}: {} {}", qq.getUserId(), event.getCommandHeader(), String.join(" ", event.getArgs()));
                     event.setCancelled(true);
                     return;

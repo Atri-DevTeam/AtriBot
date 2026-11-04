@@ -122,9 +122,7 @@ public class ImageReviewService {
             return true;
         }
 
-        ThreadManager.execute(() -> {
-            notifyUploader(dto);
-        });
+        ThreadManager.execute(() -> notifyUploader(dto));
         return true;
     }
 

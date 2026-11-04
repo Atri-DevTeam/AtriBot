@@ -127,7 +127,7 @@ public class MinesweeperGame implements Listener, CommandExecutor {
         layout.add(List.of(new Button("btn_custom", "自定义雷数并开始", "/扫雷 start ",
                 false, ButtonStyle.GRAY, ButtonType.COMMAND)));
 
-        // Object keyboard = TC.keyboard(layout);
+        // Keyboard keyboard = new Keyboard(layout);
         sender.sendMessage(TC.md(markdown).setKeyboard(selectDifficultyKeyboard()));
     }
 
@@ -453,8 +453,8 @@ public class MinesweeperGame implements Listener, CommandExecutor {
             layout.add(rowBtn);
         }
 
-        Object keyboard = TC.keyboard(layout);
-        String newMessageId = sender.sendMessage(TC.md(markdown), keyboard);
+        Keyboard keyboard = new Keyboard(layout);
+        String newMessageId = sender.sendMessage(TC.md(markdown).setKeyboard(keyboard));
         recallPreviousBoard(game, sender);
         game.lastMessageId = newMessageId;
     }

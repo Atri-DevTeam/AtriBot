@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import Icon from './Icon.vue'
 import DropdownSelect from './DropdownSelect.vue'
 import {ApiError} from '../session'
@@ -14,13 +14,6 @@ const emit = defineEmits<{retry: []; copy: [value: string]; update: [settings: S
 const saving = ref(false)
 const notice = ref('')
 const error = ref('')
-const helpOpen = ref(false)
-const helpRoot = ref<HTMLElement>()
-function closeHelpOutside(event: PointerEvent) {
-  if (!helpRoot.value?.contains(event.target as Node)) helpOpen.value = false
-}
-onMounted(() => document.addEventListener('pointerdown', closeHelpOutside, true))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', closeHelpOutside, true))
 const drafts = ref<Record<string, string>>({})
 const disabled = computed(() => props.busy || props.failed || saving.value)
 const items = computed(() => (props.settings?.reward.items || []).map(item => ({
@@ -115,24 +108,6 @@ function savePriority(item: string, clear = false) {
           </details>
         </div>
         <div class="settings-group">
-          <dl class="settings-fields">
-            <div>
-              <dt ref="helpRoot" class="settings-help-label"
-                  @pointerenter="event => { if (event.pointerType === 'mouse') helpOpen = true }"
-                  @pointerleave="event => { if (event.pointerType === 'mouse') helpOpen = false }"
-                  @keydown.esc.stop="helpOpen = false">按钮兼容模式<button type="button" class="settings-help-button" aria-label="按钮兼容模式说明"
-                  :aria-describedby="helpOpen ? 'keyboard-help' : undefined" @click="helpOpen = true"
-                  @focus="event => { if ((event.target as HTMLElement).matches(':focus-visible')) helpOpen = true }"
-                  @blur="helpOpen = false">?</button>
-                <span v-if="helpOpen" id="keyboard-help" role="tooltip" class="settings-tooltip">部分设备可能不支持内联键盘按钮，可以启用此功能以适配一些操作</span>
-              </dt>
-              <dd><button type="button" class="settings-switch" role="switch" aria-label="按钮兼容模式"
-                          :aria-checked="settings.unsupportedKeyboard" :disabled="disabled"
-                          @click="save({action: 'keyboard', enabled: !settings.unsupportedKeyboard}, current => ({...current, unsupportedKeyboard: !current.unsupportedKeyboard}))"><span/></button></dd>
-            </div>
-          </dl>
-        </div>
-        <div class="settings-group">
           <h3 class="settings-subtitle">分享与邀请</h3>
           <dl class="settings-fields">
             <div>
@@ -190,10 +165,6 @@ function savePriority(item: string, clear = false) {
 .reward-editor input { width: 64px; min-width: 0; padding: 7px 8px; border: 1px solid var(--ui-border); border-radius: 8px; background: var(--ui-input); color: var(--ui-text); font: inherit; font-size: 12px; }
 .settings-action { border: 1px solid var(--ui-border); padding: 7px 12px; border-radius: 8px; background: var(--ui-raised); color: var(--ui-text); font: inherit; font-size: 11px; cursor: pointer; }
 .settings-action:disabled, .reward-editor .text-button:disabled { opacity: .45; cursor: default; }
-.settings-help-label { position: relative; display: inline-flex; align-items: center; gap: 6px; }
-.settings-tooltip { position: absolute; z-index: 20; bottom: calc(100% + 10px); left: 0; width: 240px; max-width: calc(100vw - 80px); box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-raised); color: var(--ui-text); box-shadow: var(--ui-shadow); font-size: 11px; font-weight: 400; line-height: 1.7; white-space: normal; text-align: left; }
-.settings-help-label::after { content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 10px; }
-.settings-help-button { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; padding: 0; border: 1px solid var(--ui-border); border-radius: 50%; background: transparent; color: var(--ui-muted); font: inherit; font-size: 10px; cursor: pointer; }
 .settings-feedback { margin: 14px 0 0; color: var(--ui-secondary); font-size: 11px; }
 .settings-feedback.error { color: var(--ui-danger); }
 @media (prefers-reduced-motion: reduce) { .settings-switch, .settings-switch > span, .reward-priorities > summary > svg { transition: none; } }

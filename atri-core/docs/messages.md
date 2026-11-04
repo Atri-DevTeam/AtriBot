@@ -37,7 +37,7 @@ QQ 频道用户的 `getUserId()` / `getChannelUserId()` 是频道用户 ID，`ge
 | --- | --- |
 | QQ 消息 | [调用约定](qq/messages/conventions.md)、[群聊](qq/messages/group.md)、[C2C](qq/messages/c2c.md)、[频道](qq/messages/guild.md) |
 | 上传与流式 | [图片与文件](qq/messages/media.md)、[备用上传](qq/messages/backup-upload.md)、[流式消息](qq/messages/stream.md) |
-| 消息组件 | [Markdown](qq/components/markdown.md)、[按钮](qq/components/buttons.md)、[图文卡片](qq/components/cards.md)、[Ark](qq/components/ark.md)、[Embed](qq/components/embed.md) |
+| 消息组件 | [Markdown](qq/components/markdown.md)、[按钮](qq/components/buttons.md)、[私聊操作栏](qq/components/action-button.md)、[图文卡片](qq/components/cards.md)、[Ark](qq/components/ark.md)、[Embed](qq/components/embed.md) |
 | 交互配置 | [自定义菜单](qq/interaction/menu.md)、[指令面板](qq/interaction/panel.md)、[按钮交互](qq/interaction/callback.md) |
 | 群管理 | [禁言](qq/management/mute.md)、[成员](qq/management/members.md)、[黑名单](qq/management/blacklist.md)、[申请](qq/management/join-requests.md)、[策略](qq/management/join-strategies.md) |
 | Napcat | [消息](napcat/messages.md)、[消息段](napcat/segments.md)、[转发](napcat/forwarding.md)、[群操作](napcat/groups.md)、[用户](napcat/users.md)、[请求](napcat/requests.md) |

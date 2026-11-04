@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import lombok.Getter;
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atricore.chat.official.Markdown;
@@ -73,13 +75,13 @@ public class PushTaskCommand implements CommandExecutor {
             markdown.append("\n---\n\n");
             markdown.append("> 点击名称可以查看详细描述, 点击按钮可以快速开关功能");
 
-            Object feedbackButton = TC.keyboard(
+            Keyboard feedbackButton = new Keyboard(
                     List.of(
                             List.of(new Button("c1", "向开发者反馈", "/feedback ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                     )
             );
 
-            qq.sendMessage(TC.md(markdown.toString()), feedbackButton);
+            qq.sendMessage(TC.md(markdown.toString()).setKeyboard(feedbackButton));
             return true;
         }
 
@@ -100,7 +102,7 @@ public class PushTaskCommand implements CommandExecutor {
 
             switch (cmd) {
                 case "detail" -> {
-                    qq.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : qq.getUserId()), buttons(functionId));
+                    qq.sendMessage(task.getDescription(platform, platform.equals(Platform.OFFICIAL_GROUP) ? groupOpenId : qq.getUserId()).setKeyboard(buttons(functionId)));
                     return true;
                 }
                 case "enable" -> {
@@ -170,14 +172,14 @@ public class PushTaskCommand implements CommandExecutor {
         return null;
     }
 
-    private static Object buttons(String functionId) {
+    private static Keyboard buttons(String functionId) {
         PushTask task = get(functionId);
         if (task == null) return null;
 
         Button toggleOffButton = new Button("c1", "关闭任务", "/tasks disable " + functionId, true, ButtonStyle.RED, ButtonType.COMMAND);
         Button toggleOnButton = new Button("c2", "开启任务", "/tasks enable " + functionId, true, ButtonStyle.BLUE, ButtonType.COMMAND);
 
-        return TC.keyboard(
+        return new Keyboard(
                 List.of(
                         List.of(toggleOnButton, toggleOffButton),
                         List.of(back())

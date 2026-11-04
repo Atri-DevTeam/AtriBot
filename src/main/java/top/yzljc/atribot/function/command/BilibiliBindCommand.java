@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import top.yzljc.atribot.auth.official.OfficialUsers;
@@ -82,7 +84,7 @@ public class BilibiliBindCommand implements CommandExecutor {
                 varBtn = new Button("c2", "验证关注", "/bvbind ", false, ButtonStyle.BLUE, ButtonType.COMMAND);
             }
 
-            var keyboard = TC.keyboard(
+            var keyboard = new Keyboard(
                     List.of(
                             List.of(
                                     new Button("c1", "关注B站", "https://space.bilibili.com/592616376", ButtonStyle.BLUE_WITH_BACKGROUND, ButtonType.LINK),
@@ -90,7 +92,7 @@ public class BilibiliBindCommand implements CommandExecutor {
                             )
                     )
             );
-            user.sendMessage(md, keyboard);
+            user.sendMessage(md.setKeyboard(keyboard));
             return true;
         }
 

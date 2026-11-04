@@ -1,5 +1,7 @@
 package top.yzljc.atricore.event.events;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import top.yzljc.atricore.AtriProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
@@ -10,7 +12,6 @@ import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.card.Card;
 import top.yzljc.atricore.chat.official.RT;
-import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.event.Cancellable;
 import top.yzljc.atricore.event.impl.AnswerCode;
@@ -183,8 +184,7 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
     }
 
     /**
-     * 被动消息回复 - Markdown 消息（默认不自动 @）
-     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置；群聊中如需自动 @ 点击者，请用 {@link #replyMessage(Markdown, boolean)}。</p>
+     * 被动消息回复 - Markdown 消息 + 自定义键盘（默认不自动 @，已弃用）
      *
      * @param markdown Markdown 消息内容
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
@@ -192,12 +192,23 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown) {
-        return replyMessage(markdown, false);
+        return replyMessage(markdown, null);
+    }
+
+    /**
+     * 被动消息回复 - Markdown 消息 + 自定义键盘（默认不自动 @，已弃用），附带消息操作栏
+     *
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String replyMessage(Markdown markdown, ActionButton actionButton) {
+        return replyMessage(markdown, false, actionButton);
     }
 
     /**
      * 被动消息回复 - Markdown 消息（可控制自动 @）
-     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置。</p>
      *
      * @param markdown Markdown 消息内容
      * @param at       是否自动 @ 点击按钮的用户，仅群聊生效，单聊忽略此参数
@@ -206,53 +217,26 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(Markdown markdown, boolean at) {
+        return replyMessage(markdown, at, null);
+    }
+
+    /**
+     * 被动消息回复 - Markdown 消息（可控制自动 @），附带消息操作栏
+     *
+     * @param markdown     Markdown 消息内容
+     * @param at           是否自动 @ 点击按钮的用户，仅群聊生效，单聊忽略此参数
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String replyMessage(Markdown markdown, boolean at, ActionButton actionButton) {
         if (this.chatType == 1) {
             if (at) {
                 return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), this.userOpenId, markdown);
             }
             return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown);
         } else if (this.chatType == 2) {
-            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown);
-        } else {
-            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
-        }
-    }
-
-    /**
-     * 被动消息回复 - Markdown 消息 + 自定义键盘（默认不自动 @，已弃用）
-     *
-     * @param markdown Markdown 消息内容
-     * @param keyboard 自定义键盘内容
-     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
-     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
-     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #replyMessage(Markdown)} 发送
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String replyMessage(Markdown markdown, Object keyboard) {
-        return replyMessage(markdown, keyboard, false);
-    }
-
-    /**
-     * 被动消息回复 - Markdown 消息 + 自定义键盘（可控制自动 @，已弃用）
-     *
-     * @param markdown Markdown 消息内容
-     * @param keyboard 自定义键盘内容
-     * @param at       是否自动 @ 点击按钮的用户，仅群聊生效，单聊忽略此参数
-     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
-     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
-     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #replyMessage(Markdown, boolean)} 发送
-     */
-    @Deprecated
-    @SuppressWarnings("UnusedReturnValue")
-    public String replyMessage(Markdown markdown, Object keyboard, boolean at) {
-        if (this.chatType == 1) {
-            if (at) {
-                return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), this.userOpenId, markdown, keyboard);
-            }
-            return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), markdown, keyboard);
-        } else if (this.chatType == 2) {
-            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown, keyboard);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), markdown, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -267,10 +251,22 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(String text) {
+        return replyMessage(text, null);
+    }
+
+    /**
+     * 被动消息回复 - 纯文本消息，附带消息操作栏
+     *
+     * @param text         文本消息内容
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String replyMessage(String text, ActionButton actionButton) {
         if (this.chatType == 1) {
             return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), text);
         } else if (this.chatType == 2) {
-            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), text);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), text, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -285,10 +281,22 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String replyMessage(ImageComponent image) {
+        return replyMessage(image, null);
+    }
+
+    /**
+     * 被动消息回复 - 图片消息，附带消息操作栏
+     *
+     * @param image        图片组件
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String replyMessage(ImageComponent image, ActionButton actionButton) {
         if (this.chatType == 1) {
             return GroupChat.replyMessage(this.groupOpenId, RT.event(this.eventId), image);
         } else if (this.chatType == 2) {
-            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), image);
+            return C2CChat.replyMessage(this.userOpenId, RT.event(this.eventId), image, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -303,29 +311,22 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(String text) {
-        if (this.chatType == 1) {
-            return GroupChat.sendMessage(this.groupOpenId, text);
-        } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.userOpenId, text);
-        } else {
-            throw new UnknownButtonInteractionScene(this.chatType, this.scene);
-        }
+        return sendMessage(text, null);
     }
 
     /**
-     * 主动消息发送 - Markdown 消息
-     * <p>按钮请用 {@link Markdown#setKeyboard(Keyboard)} 设置。</p>
+     * 主动消息发送 - 纯文本消息，附带消息操作栏
      *
-     * @param content Markdown 消息内容
+     * @param text         文本消息内容
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
      * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(Markdown content) {
+    public String sendMessage(String text, ActionButton actionButton) {
         if (this.chatType == 1) {
-            return GroupChat.sendMessage(this.groupOpenId, content);
+            return GroupChat.sendMessage(this.groupOpenId, text);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.userOpenId, content);
+            return C2CChat.sendMessage(this.userOpenId, text, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
@@ -340,31 +341,52 @@ public class OfficialButtonInteractionEvent extends OfficialInteractionEvents im
      */
     @SuppressWarnings("UnusedReturnValue")
     public String sendMessage(ImageComponent image) {
+        return sendMessage(image, null);
+    }
+
+    /**
+     * 主动消息发送 - 图片消息，附带消息操作栏
+     *
+     * @param image        图片组件
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，上传或发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String sendMessage(ImageComponent image, ActionButton actionButton) {
         if (this.chatType == 1) {
             return GroupChat.sendMessage(this.groupOpenId, image);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.userOpenId, image);
+            return C2CChat.sendMessage(this.userOpenId, image, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }
     }
 
     /**
-     * 主动消息发送 - Markdown 消息 + 自定义键盘（已弃用）
+     * 主动消息发送 - Markdown 消息
      *
      * @param content  Markdown 消息内容
-     * @param keyboard 自定义键盘内容
      * @return 平台返回的消息 ID，发送失败时返回 {@code null}
      * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
-     * @deprecated 请用 {@link Markdown#setKeyboard(Keyboard)} 设置键盘，然后使用 {@link #sendMessage(Markdown)} 发送
      */
-    @Deprecated
     @SuppressWarnings("UnusedReturnValue")
-    public String sendMessage(Markdown content, Object keyboard) {
+    public String sendMessage(Markdown content) {
+        return sendMessage(content, null);
+    }
+
+    /**
+     * 主动消息发送 - Markdown 消息，附带消息操作栏
+     *
+     * @param content      Markdown 消息内容
+     * @param actionButton 私聊消息操作栏，群聊忽略此参数，null 表示不额外设置
+     * @return 平台返回的消息 ID，发送失败时返回 {@code null}
+     * @throws UnknownButtonInteractionScene 聊天类型不是群聊或单聊时抛出
+     */
+    public String sendMessage(Markdown content, ActionButton actionButton) {
         if (this.chatType == 1) {
-            return GroupChat.sendMessage(this.groupOpenId, content, keyboard);
+            return GroupChat.sendMessage(this.groupOpenId, content);
         } else if (this.chatType == 2) {
-            return C2CChat.sendMessage(this.userOpenId, content, keyboard);
+            return C2CChat.sendMessage(this.userOpenId, content, actionButton);
         } else {
             throw new UnknownButtonInteractionScene(this.chatType, this.scene);
         }

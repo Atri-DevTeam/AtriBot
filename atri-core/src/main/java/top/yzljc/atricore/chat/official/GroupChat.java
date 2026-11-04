@@ -47,7 +47,6 @@ public final class GroupChat {
         return await(AsyncGroupChat.replyMessage(openId, rt, fileType, file));
     }
 
-
     /**
      * 主动发送群聊图片并引用指定消息
      *
@@ -61,16 +60,15 @@ public final class GroupChat {
     }
 
     /**
-     * 主动发送带键盘的群聊 Markdown 并引用指定消息
+     * 主动发送群聊 Markdown 并引用指定消息
      *
      * @param groupOpenId 群 openId
      * @param markdown    Markdown 消息内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static String sendMessage(String groupOpenId, Markdown markdown, Object keyboard, String refIdx) {
-        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown, keyboard, refIdx));
+    public static String sendMessage(String groupOpenId, Markdown markdown, String refIdx) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown, refIdx));
     }
 
     /**
@@ -86,7 +84,7 @@ public final class GroupChat {
     }
 
     /**
-     * 主动发送群聊 Markdown并引用指定消息
+     * 主动发送群聊 Markdown 并引用指定消息
      *
      * @param groupOpenId 群 openId
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
@@ -98,31 +96,16 @@ public final class GroupChat {
     }
 
     /**
-     * 主动发送带键盘的群聊 Markdown 并引用指定消息
-     *
-     * @param groupOpenId 群 openId
-     * @param refIdx      被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
-     * @param markdown    Markdown 消息内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
-     * @return 消息 ID，发送失败返回 null
-     */
-    public static String refMessage(String groupOpenId, String refIdx, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.refMessage(groupOpenId, refIdx, markdown, keyboard));
-    }
-
-
-    /**
      * 回复群聊 Markdown 消息并引用指定消息
      *
      * @param groupOpenId 群 openId
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown, keyboard, refIdx));
+    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown, refIdx));
     }
 
     /**
@@ -132,12 +115,11 @@ public final class GroupChat {
      * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param userOpenId  被 @ 的用户 openId
      * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象，无键盘时传入 null
      * @param refIdx      被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard, String refIdx) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard, refIdx));
+    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, String refIdx) {
+        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown, refIdx));
     }
 
     /**
@@ -152,7 +134,6 @@ public final class GroupChat {
     public static String replyMessage(String groupOpenId, RT rt, ImageComponent image, String refIdx) {
         return await(AsyncGroupChat.replyMessage(groupOpenId, rt, image, refIdx));
     }
-
 
     /**
      * 发送群聊纯文本主动消息
@@ -191,18 +172,6 @@ public final class GroupChat {
     }
 
     /**
-     * 发送群聊 Markdown 主动消息
-     *
-     * @param groupOpenId 群 openId
-     * @param markdown    Markdown 消息体
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String groupOpenId, Markdown markdown) {
-        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown));
-    }
-
-    /**
      * 发送群聊图片主动消息
      *
      * @param groupOpenId 群 openId
@@ -215,16 +184,15 @@ public final class GroupChat {
     }
 
     /**
-     * 发送带键盘的群聊 Markdown 主动消息
+     * 发送群聊 Markdown 主动消息
      *
      * @param groupOpenId 群 openId
      * @param markdown    Markdown 消息体
-     * @param keyboard    键盘按钮对象
      * @return 消息 ID，发送失败返回 null
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static String sendMessage(String groupOpenId, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown, keyboard));
+    public static String sendMessage(String groupOpenId, Markdown markdown) {
+        return await(AsyncGroupChat.sendMessage(groupOpenId, markdown));
     }
 
     /**
@@ -305,35 +273,6 @@ public final class GroupChat {
     @SuppressWarnings("UnusedReturnValue")
     public static String replyMessage(String groupOpenId, RT rt, Markdown markdown) {
         return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown));
-    }
-
-    /**
-     * 回复带键盘的群聊 Markdown 消息并 @ 用户
-     *
-     * @param groupOpenId 群 openId
-     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param userOpenId  被 @ 的用户 openId
-     * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, RT rt, String userOpenId, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, userOpenId, markdown, keyboard));
-    }
-
-    /**
-     * 回复带键盘的群聊 Markdown 消息（不 @）
-     *
-     * @param groupOpenId 群 openId
-     * @param rt          消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param markdown    Markdown 回复内容
-     * @param keyboard    键盘按钮对象
-     * @return 消息 ID，发送失败返回 null
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public static String replyMessage(String groupOpenId, RT rt, Markdown markdown, Object keyboard) {
-        return await(AsyncGroupChat.replyMessage(groupOpenId, rt, markdown, keyboard));
     }
 
     /**

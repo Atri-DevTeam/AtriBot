@@ -143,6 +143,6 @@ public final class AstronomyCommand implements CommandExecutor {
             rows.add(List.of(new Button("astro_default", "设置我的位置", "/astro 设置",
                     ButtonStyle.GRAY, ButtonType.COMMAND)));
         }
-        sender.sendMessage(TC.md(text).setKeyboard(new Keyboard(rows), OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
+        sender.sendMessage(TC.md(text).setKeyboard(new Keyboard(rows)));
     }
 }

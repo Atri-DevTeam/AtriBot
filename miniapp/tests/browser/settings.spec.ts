@@ -44,24 +44,17 @@ test('personal settings save independently and keep their values after navigatin
   await expect(bedwars.locator('.reward-option-heading small')).toHaveText('未设置')
   await priorities.locator('summary').click()
   await expect(priorities.locator('.reward-options')).toBeHidden()
-  const keyboard = settings.getByRole('switch', {name: '按钮兼容模式', exact: true})
-  await settings.getByRole('button', {name: '按钮兼容模式说明'}).click()
-  await expect(settings.getByRole('tooltip')).toHaveText('部分设备可能不支持内联键盘按钮，可以启用此功能以适配一些操作')
-  await keyboard.click()
-  await expect(settings.getByRole('tooltip')).toHaveCount(0)
-  await expect(keyboard).toHaveAttribute('aria-checked', 'true')
   fail = true
-  await keyboard.click()
+  await automatic.click()
   await expect(settings.getByRole('alert')).toHaveText('保存失败，请稍后重试')
-  await expect(keyboard).toHaveAttribute('aria-checked', 'true')
+  await expect(automatic).toHaveAttribute('aria-checked', 'false')
   expect(changes).toEqual([
     {action: 'reward_enabled', enabled: false}, {action: 'reward_mode', mode: 'rarity'},
     {action: 'reward_priority', item: 'BEDWARS', value: 12}, {action: 'reward_priority', item: 'BEDWARS', value: null},
-    {action: 'keyboard', enabled: true}, {action: 'keyboard', enabled: false}
+    {action: 'reward_enabled', enabled: true}
   ])
   await page.getByRole('button', {name: '我的数据', exact: true}).click()
   await page.getByRole('button', {name: '我的档案', exact: true}).click()
-  await expect(keyboard).toHaveAttribute('aria-checked', 'true')
   await expect(automatic).toHaveAttribute('aria-checked', 'false')
   await page.setViewportSize({width: 320, height: 740})
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)

@@ -23,7 +23,7 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), card)
 | `picUrl` | 封面图片地址 |
 | `jumpUrl` | 点击跳转地址 |
 
-四个参数均应提供非 null 值，底层 `Map.of` 不接受 null
+四个参数均应提供非 null 值，兼容方法 `toObject()` 使用的 `Map.of` 不接受 null
 
 ## 对象与接口
 
@@ -34,6 +34,7 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), card)
 | `new Card(content)` | 包装实现 CardContent 的内容 |
 | `Card.getType()` | 返回 `Card.Type.TuWen` |
 | `Card.getContent()` | 读取内容对象 |
+| `Card.toPayload()` | 返回包含 type 与 CardContent 的协议对象，Jackson 自动使用此结构 |
 | `Card.toObject()` | 返回包含 type 与 content 的平台对象 |
 | `TuWen.toObject()` | 返回图文内容的 Map |
 | `CardContent.getType()` / `toObject()` | 内容接口；自行扩展仍需平台支持 |
@@ -41,6 +42,8 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), card)
 发送可选 `GroupChat`、`C2CChat` 的 `sendMessage(target, card)` 或 `replyMessage(target, rt, card)`；异步使用对应 `Async` 类，返回 Future 中的消息 ID
 
 卡片的 `type` 写为 `tuwen`。图文卡片、[Ark](ark.md) 和 [Embed](embed.md) 是不同的消息结构，使用各自的发送重载
+
+内置卡片可直接交给 Jackson 序列化，业务发送无需先调用 `toObject()`。Card 发送入口不提供 ActionButton 参数
 
 ## 方法与数据类型索引
 
@@ -51,6 +54,7 @@ String sentId = GroupChat.replyMessage(groupOpenId, RT.message(messageId), card)
 ```java
 public static Card tuWen(String title, String description, String picUrl, String jumpUrl);
 public Type getType();
+public Payload toPayload();
 public Object toObject();
 ```
 

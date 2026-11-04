@@ -51,7 +51,7 @@ public final class DefaultJoinWelcomeStore {
      */
     public synchronized ObjectNode get(UnifiedRole role) throws IOException {
         ensureLoaded();
-        return ((ObjectNode) settings.get(Objects.requireNonNull(role, "role").name())).deepCopy();
+        return settings.get(Objects.requireNonNull(role, "role").name()).deepCopy();
     }
 
     /**

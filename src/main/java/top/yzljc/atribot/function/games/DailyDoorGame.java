@@ -6,7 +6,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atribot.configuration.RS;
 import top.yzljc.atribot.database.repo.DailyDoorRepository;
 import top.yzljc.atribot.database.repo.DailyDoorRepository.Result;
@@ -70,8 +69,7 @@ public final class DailyDoorGame implements CommandExecutor {
                 ? List.of(new Button("door_status", "查看状态", "/door", ButtonStyle.GRAY, ButtonType.COMMAND))
                 : List.of(new Button("door_open", "尝试开门", "/open", ButtonStyle.BLUE, ButtonType.COMMAND),
                         new Button("door_status", "查看状态", "/door", ButtonStyle.GRAY, ButtonType.COMMAND));
-        sender.sendMessage(TC.md(render(view, image)).setKeyboard(new Keyboard(List.of(buttons)),
-                OfficialUsers.isUserUnsupportedKeyboard(sender.getUserId())));
+        sender.sendMessage(TC.md(render(view, image)).setKeyboard(new Keyboard(List.of(buttons))));
     }
 
     static String render(View view, ImageDTO image) {

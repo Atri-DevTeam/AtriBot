@@ -8,7 +8,6 @@ import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.TC;
 import top.yzljc.atricore.chat.official.button.Button;
 import top.yzljc.atricore.chat.official.button.ButtonStyle;
-import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.command.*;
 import top.yzljc.atribot.function.impl.PreImageGenerate;

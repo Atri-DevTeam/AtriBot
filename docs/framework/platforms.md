@@ -235,7 +235,7 @@ Callback URL 默认指向外部地址的 `/plugins/platform-kook/webhook`。`web
 | Minecraft | `mctool`、`mcv`、`mccape`、`mojang` |
 | 日常查询 | `today`、`newyear`、`hitokoto` |
 
-`hyp` 保留通用与 SkyBlock 分类，支持全部 16 个子指令。查询玩家时显式填写玩家名或 UUID；KOOK 用户尚未绑定 AtriAccount，不使用 QQ OpenID 查询账号。山之心、树心查询可通过返回的指令切换存档；物品价格分页使用 `/hyp ip <物品> --cursor <游标>`
+`hyp` 保留通用与 SkyBlock 分类，支持全部 16 个子指令。查询玩家时显式填写玩家名或 UUID；KOOK 用户尚未绑定 AtriAccount，不使用 QQ OpenID 查询账号。山之心、树心查询可通过返回的指令切换存档
 
 `mctool` 支持 `ver`、`cape`、`pf`、`lb`、`pack`。`/mctool pf [玩家名或UUID]` 调用 UGC 的 `bot.minecraft.profile` 渲染玩家档案：QQ 省略参数时读取绑定的 Minecraft UUID，KOOK 需要显式指定玩家。查询前发送等待提示，查询结束后撤回提示，再发送结果或错误信息。QQ 专属签到、抽卡、群管理、推送配置及提醒功能未开放给 KOOK
 

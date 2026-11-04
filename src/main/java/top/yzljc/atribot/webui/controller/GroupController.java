@@ -398,7 +398,7 @@ public class GroupController {
                         Markdown markdown = new Markdown(dto.getContent());
                         messageId = isBlank(replyId)
                                 ? GroupChat.refMessage(dto.getGroupOpenId(), refId, markdown)
-                                : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), markdown, null, refId);
+                                : GroupChat.replyMessage(dto.getGroupOpenId(), RT.message(replyId), markdown, refId);
                     } else {
                         messageId = isBlank(replyId)
                                 ? GroupChat.refMessage(dto.getGroupOpenId(), refId, dto.getContent())

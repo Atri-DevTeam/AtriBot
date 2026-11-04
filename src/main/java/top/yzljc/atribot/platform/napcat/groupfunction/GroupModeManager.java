@@ -106,7 +106,7 @@ public class GroupModeManager implements Listener {
             } catch (NumberFormatException e) {
                 // 忽略非数字
             } catch (Exception e) {
-                log.error("处理配置选择时发生错误: " + e.getMessage(), e);
+                log.error("处理配置选择时发生错误: {}", e.getMessage(), e);
                 clearSession(userId);
                 GroupMessage.chatMessage(groupId, "发生错误，会话已重置");
             }

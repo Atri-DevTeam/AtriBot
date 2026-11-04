@@ -4,7 +4,6 @@ import top.yzljc.atricore.core.CoreConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.configuration.Config;
 import top.yzljc.atribot.database.DatabaseManager;
 import top.yzljc.atribot.miniapp.MiniappSessions;
 import top.yzljc.atricore.platform.qq.QQBot;

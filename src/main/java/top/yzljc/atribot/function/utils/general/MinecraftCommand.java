@@ -48,11 +48,9 @@ public class MinecraftCommand implements CommandExecutor {
 
         if (!(sender instanceof QQCommandSender qq)) return true;
 
-        switch (label) {
-            case "mcv" -> {
-                McVersionImpl.onCommand(qq);
-                return true;
-            }
+        if (label.equals("mcv")) {
+            McVersionImpl.onCommand(qq);
+            return true;
         }
 
         if (args.length < 1) {

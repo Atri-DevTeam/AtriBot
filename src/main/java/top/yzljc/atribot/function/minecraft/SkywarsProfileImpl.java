@@ -10,6 +10,7 @@ import top.yzljc.atricore.command.QQCommandSender;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static top.yzljc.atribot.function.command.component.QueryTemplate.customQueryRequest;
 import static top.yzljc.atribot.function.command.component.QueryTemplate.withQueryProgress;
@@ -35,7 +36,7 @@ public final class SkywarsProfileImpl {
             return true;
         }
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, player)).setKeyboard(QueryTemplate.getKeyboard("/hyp", "sw").append(getSkywarsButtons(player), true)), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, q.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/hyp", "sw").append(getSkywarsButtons(q.playerUuid()), true)), false);
         return true;
     }
 
@@ -58,7 +59,7 @@ public final class SkywarsProfileImpl {
             return true;
         }
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, player)).setKeyboard(QueryTemplate.getKeyboard("/hyp", "sw").append(getSkywarsButtons(player), true)), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, q.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/hyp", "sw").append(getSkywarsButtons(q.playerUuid()), true)), false);
         return true;
     }
 
@@ -74,20 +75,21 @@ public final class SkywarsProfileImpl {
             return true;
         }
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, player)).setKeyboard(QueryTemplate.getKeyboard("/hyp", "angels").append(getSkywarsButtons(player), true)), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(q.i(), userOpenId, q.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/hyp", "angels").append(getSkywarsButtons(q.playerUuid()), true)), false);
         return true;
     }
 
-    private static List<List<Button>> getSkywarsButtons(String player) {
+    private static List<List<Button>> getSkywarsButtons(UUID playerUuid) {
+        if (playerUuid == null) return List.of();
         return List.of(
                 List.of(
-                        new Button("Mini职业", "/hyp sw " + player + " mini", ButtonStyle.GRAY),
-                        new Button("天使血统", "/hyp angels " + player, ButtonStyle.RED),
-                        new Button("普通职业", "/hyp sw " + player + " normal", ButtonStyle.GRAY)
+                        new Button("Mini职业", "/hyp sw " + playerUuid + " mini", ButtonStyle.GRAY),
+                        new Button("天使血统", "/hyp angels " + playerUuid, ButtonStyle.RED),
+                        new Button("普通职业", "/hyp sw " + playerUuid + " normal", ButtonStyle.GRAY)
                 ),
                 List.of(
-                        new Button("疯狂职业", "/hyp sw " + player + " insane", ButtonStyle.GRAY),
-                        new Button("超级职业", "/hyp sw " + player + " mega", ButtonStyle.GRAY)
+                        new Button("疯狂职业", "/hyp sw " + playerUuid + " insane", ButtonStyle.GRAY),
+                        new Button("超级职业", "/hyp sw " + playerUuid + " mega", ButtonStyle.GRAY)
                 )
         );
     }

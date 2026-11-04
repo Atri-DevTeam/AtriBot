@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.games;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
@@ -78,7 +80,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 if (game.phase == Phase.PLAYING && activeGames.get(ownerId) == game)
                     markdown = endGame(game, UserGameDataRepository.ReactionOutcome.ABANDONED);
             }
-            if (markdown != null) qq.sendMessage(TC.md(markdown), buildKeyboard(game));
+            if (markdown != null) qq.sendMessage(TC.md(markdown).setKeyboard(buildKeyboard(game)));
             else qq.sendMessage("这局反应力测试已经结束了喵！");
             return true;
         }
@@ -91,7 +93,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         GameState game = new GameState(sessionId, isC2C ? Platform.OFFICIAL_C2C : Platform.OFFICIAL_GROUP, ownerId);
         activeGames.put(ownerId, game);
 
-        qq.sendMessage(TC.md(buildBoardMarkdown(game.ownerOpenId)), buildKeyboard(game));
+        qq.sendMessage(TC.md(buildBoardMarkdown(game.ownerOpenId)).setKeyboard(buildKeyboard(game)));
         game.lastCmdMsgId = qq.getMessage().getMessageId();
 
         scheduleGameTimeout(sessionId, game);
@@ -171,7 +173,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
             if (game.nextNumber > TOTAL_CELLS) {
                 String markdown = endGame(game, UserGameDataRepository.ReactionOutcome.COMPLETED);
                 event.answer(AnswerCode.SUCCESS);
-                event.replyMessage(TC.md(markdown), buildKeyboard(game));
+                event.replyMessage(TC.md(markdown).setKeyboard(buildKeyboard(game)));
                 return;
             }
 
@@ -197,7 +199,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
         return "ct_" + row + "_" + col;
     }
 
-    private Object buildKeyboard(GameState game) {
+    private Keyboard buildKeyboard(GameState game) {
         List<List<Button>> layout = new ArrayList<>();
 
         boolean finished = game.phase == Phase.FINISHED;
@@ -225,7 +227,7 @@ public class ClickTrainGame implements Listener, CommandExecutor {
             }
             layout.add(buttons);
         }
-        return TC.keyboard(layout);
+        return new Keyboard(layout);
     }
 
     private String buildBoardMarkdown(String ownerId) {
@@ -367,12 +369,12 @@ public class ClickTrainGame implements Listener, CommandExecutor {
                 if (current.phase != Phase.PLAYING) return;
 
                 String markdown = endGame(current, UserGameDataRepository.ReactionOutcome.TIMED_OUT);
-                Object keyboard = buildKeyboard(current);
+                Keyboard keyboard = buildKeyboard(current);
                 try {
                     if (current.platform == Platform.OFFICIAL_C2C) {
-                        C2CChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown), keyboard);
+                        C2CChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown).setKeyboard(keyboard));
                     } else {
-                        GroupChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown), keyboard);
+                        GroupChat.replyMessage(current.sessionId, RT.message(current.lastCmdMsgId), TC.md(markdown).setKeyboard(keyboard));
                     }
                 } catch (Exception e) {
                     log.warn("反应力测试结算面板失败: ", e);

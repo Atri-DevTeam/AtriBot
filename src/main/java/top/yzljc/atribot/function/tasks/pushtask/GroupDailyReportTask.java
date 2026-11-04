@@ -111,8 +111,8 @@ public final class GroupDailyReportTask extends PushTask implements ScheduledTas
         if (report.entries().isEmpty()) return null;
         Markdown markdown = new Markdown(render(report, OfficialGroups.getData(job.groupOpenId()).groupMemberNum()));
         String messageId = replyTarget == null
-                ? GroupChat.sendMessage(job.groupOpenId(), markdown, null, null)
-                : GroupChat.replyMessage(job.groupOpenId(), replyTarget, markdown, null, null);
+                ? GroupChat.sendMessage(job.groupOpenId(), markdown)
+                : GroupChat.replyMessage(job.groupOpenId(), replyTarget, markdown);
         if (messageId == null || messageId.isBlank()) {
             throw new IllegalStateException("群发言排行发送失败");
         }

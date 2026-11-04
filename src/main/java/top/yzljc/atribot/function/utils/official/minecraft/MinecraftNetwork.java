@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.utils.official.minecraft;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atribot.configuration.RS;
 
 import top.yzljc.atricore.chat.official.TC;
@@ -88,7 +90,7 @@ public abstract class MinecraftNetwork {
                 markdownLogs = "指令已送达，但对你隐藏";
             }
 
-            sender.sendMessage(TC.md(markdownLogs), TC.keyboard(getButtons(sender, server, args)));
+            sender.sendMessage(TC.md(markdownLogs).setKeyboard(new Keyboard(getButtons(sender, server, args))));
         });
 
         return true;

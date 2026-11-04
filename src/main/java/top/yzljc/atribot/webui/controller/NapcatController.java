@@ -214,7 +214,7 @@ public class NapcatController {
         if (headers == null || name == null) {
             return false;
         }
-        return headers.keySet().stream().anyMatch(key -> name.equalsIgnoreCase(key));
+        return headers.keySet().stream().anyMatch(name::equalsIgnoreCase);
     }
 
     public record NapcatGroupDTO(String groupId, String name) {

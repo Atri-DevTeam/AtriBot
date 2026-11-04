@@ -1,5 +1,8 @@
 package top.yzljc.atricore.chat.official.card;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.util.Map;
@@ -25,7 +28,9 @@ public class TuWen implements Card.CardContent {
 
     private final String title;
     private final String description;
+    @JsonProperty("pic_url")
     private final String picUrl;
+    @JsonProperty("url")
     private final String jumpUrl;
 
     /**
@@ -42,9 +47,21 @@ public class TuWen implements Card.CardContent {
     }
 
     @Override
+    @JsonIgnore
     public Card.Type getType() {
         return Card.Type.TuWen;
     }
+
+    /** 返回图文卡片内容的协议对象 */
+    @Override
+    @JsonValue
+    public Payload toPayload() {
+        return new Payload(title, description, picUrl, jumpUrl);
+    }
+
+    /** 图文卡片的标题、说明、图片和跳转地址 */
+    public record Payload(String title, String description, @JsonProperty("pic_url") String picUrl,
+                          @JsonProperty("url") String jumpUrl) {}
 
     @Override
     public Object toObject() {

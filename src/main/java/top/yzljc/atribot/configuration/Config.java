@@ -117,7 +117,6 @@ public class Config {
     private String US_API;
     @Getter
     private String backendApi;
-    private java.util.Properties emailProperties;
     @Getter
     private String verifyStrategyId;
 
@@ -293,7 +292,6 @@ public class Config {
             this.sslEnabled = yaml.getBoolean("email.ssl-enabled", true);
             this.connectionTimeout = yaml.getInt("email.connection-timeout", 30000);
             this.readTimeout = yaml.getInt("email.read-timeout", 300000);
-            this.emailProperties = getEmailProperties();
 
             // ########## 官方机器人配置参数 ##########
             this.officialOpenId = yaml.getString("qq.official-openId", "null");

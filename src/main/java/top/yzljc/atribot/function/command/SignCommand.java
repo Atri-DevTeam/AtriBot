@@ -1,10 +1,9 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.*;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atricore.chat.official.*;
-import top.yzljc.atricore.chat.official.button.Button;
-import top.yzljc.atricore.chat.official.button.ButtonStyle;
-import top.yzljc.atricore.chat.official.button.ButtonType;
 import top.yzljc.atricore.command.Command;
 import top.yzljc.atricore.command.CommandExecutor;
 import top.yzljc.atricore.command.CommandSender;
@@ -196,7 +195,7 @@ public class SignCommand implements CommandExecutor, Listener {
                 );
             }
 
-            Object buttons = TC.keyboard(List.of(
+            Keyboard buttons = new Keyboard(List.of(
                     List.of(new Button("c1", "打卡", "/sign", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                             new Button("c3", "钓鱼", "/fish", true, ButtonStyle.BLUE, ButtonType.COMMAND),
                             new Button("c2", "MC物品", "/item", true, ButtonStyle.BLUE, ButtonType.COMMAND),
@@ -208,10 +207,12 @@ public class SignCommand implements CommandExecutor, Listener {
                     )
             ));
 
+            var ab = new ActionButton().setFeedback(true);
+
             if (label == 1) {
-                C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), md, buttons);
+                C2CChat.replyMessage(userOpenId, RT.message(messageOpenId), md.setKeyboard(buttons), ab);
             } else {
-                GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), md, buttons);
+                GroupChat.replyMessage(groupOpenId, RT.message(messageOpenId), md.setKeyboard(buttons));
             }
         });
     }

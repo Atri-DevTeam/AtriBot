@@ -32,7 +32,7 @@ public final class PlayerProfileImpl {
             return true;
         }
 
-        sender.sendMessage(TC.md(QueryTemplate.getTemplate(r.i(), sender.getUserId(), p)).setKeyboard(QueryTemplate.getKeyboard("/mctool", "pf")), false);
+        sender.sendMessage(TC.md(QueryTemplate.getTemplate(r.i(), sender.getUserId(), r.playerUuid())).setKeyboard(QueryTemplate.getKeyboard("/mctool", "pf")), false);
 
         return true;
     }

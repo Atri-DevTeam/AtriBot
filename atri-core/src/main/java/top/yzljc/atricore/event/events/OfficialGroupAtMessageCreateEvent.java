@@ -2,9 +2,9 @@ package top.yzljc.atricore.event.events;
 
 import top.yzljc.atricore.AtriProvider;
 import lombok.Getter;
+import top.yzljc.atricore.chat.ImageComponent;
 import top.yzljc.atricore.chat.official.Markdown;
 import top.yzljc.atricore.chat.official.card.Card;
-import top.yzljc.atricore.chat.official.button.Keyboard;
 import top.yzljc.atricore.event.Event;
 import top.yzljc.atricore.platform.qq.QQUser;
 import top.yzljc.atricore.platform.qq.QQMessage;
@@ -54,6 +54,16 @@ public class OfficialGroupAtMessageCreateEvent extends Event {
     }
 
     /**
+     * 使用当前群 @ 消息 ID 发送图片回复
+     *
+     * @param image 图片组件
+     * @return 平台返回的消息 ID，上传或发送失败时返回 null
+     */
+    public String sendMessage(ImageComponent image) {
+        return this.user.sendMessage(this.groupId, this.message.getMessageId(), image);
+    }
+
+    /**
      * 被动消息回复 - Markdown 消息
      * <p>被动消息的 Markdown内容会自动携带一行 {@code <@UserOpenId>} 且独占一行，如需关闭请用 {@link OfficialGroupAtMessageCreateEvent#sendMessage(Markdown, boolean)}</p>
      *
@@ -73,24 +83,6 @@ public class OfficialGroupAtMessageCreateEvent extends Event {
      */
     public String sendMessage(Markdown markdown, boolean at) {
         return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, at);
-    }
-
-    /**
-     * 被动消息回复 - Markdown 消息 + 自定义键盘（已弃用）
-     * <p>被动消息的 Markdown内容会自动携带一行 {@code <@UserOpenId>} 且独占一行，如需关闭请用 {@link OfficialGroupAtMessageCreateEvent#sendMessage(Markdown, boolean)}</p>
-     *
-     * @param markdown Markdown 消息内容
-     * @param keyboard 自定义键盘内容
-     * @return 平台返回的消息 ID
-     * @deprecated 请使用 {@link OfficialGroupAtMessageCreateEvent#sendMessage(Markdown)} 中 {@link Markdown#setKeyboard(Keyboard)} 的方式设置键盘按钮
-     */
-    @Deprecated
-    public String sendMessage(Markdown markdown, Object keyboard) {
-        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, keyboard);
-    }
-
-    public String sendMessage(Markdown markdown, Object keyboard, boolean at) {
-        return this.user.sendMessage(this.groupId, this.message.getMessageId(), markdown, keyboard, at);
     }
 
     public boolean shouldIgnore() {

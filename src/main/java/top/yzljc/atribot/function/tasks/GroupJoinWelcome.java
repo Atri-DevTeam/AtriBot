@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.tasks;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -120,7 +122,7 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
                 .collect(Collectors.joining(" "));
         String text = batch.config().path("text").asText("");
         String message = mentions + (text.isBlank() ? "" : " " + text);
-        event.sendMessage(TC.md(message), buildWelcomeKeyboard(batch.config()));
+        event.sendMessage(TC.md(message).setKeyboard(buildWelcomeKeyboard(batch.config())));
     }
 
     private static boolean hasCustomWelcome(ObjectNode config) {
@@ -134,7 +136,7 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
         return keyboard.isArray() && !keyboard.isEmpty();
     }
 
-    public static Object buildWelcomeKeyboard(ObjectNode config) {
+    public static Keyboard buildWelcomeKeyboard(ObjectNode config) {
         if (config == null) {
             return null;
         }
@@ -164,7 +166,7 @@ public class GroupJoinWelcome implements Listener, CommandExecutor {
         }
 
         ButtonSize size = parseEnum(config.path("button_size").asText(""), ButtonSize.class, ButtonSize.UNDEFINED);
-        return TC.keyboard(layout, size);
+        return new Keyboard(layout, size);
     }
 
     /**

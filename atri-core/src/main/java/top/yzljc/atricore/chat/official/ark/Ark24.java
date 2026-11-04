@@ -21,6 +21,19 @@ public record Ark24(String description, String prompt, String title, String meta
     }
 
     @Override
+    public List<ArkValue> values() {
+        return List.of(
+                new ArkValue("#DESC#", description),
+                new ArkValue("#PROMPT#", prompt),
+                new ArkValue("#TITLE#", title),
+                new ArkValue("#METADESC#", metaDescription),
+                new ArkValue("#IMG#", picUrl),
+                new ArkValue("#LINK#", jumpUrl),
+                new ArkValue("#SUBTITLE#", subTitle)
+        );
+    }
+
+    @Override
     public List<Map<String, Object>> toObject() {
         return List.of(
                 Map.of("key", "#DESC#", "value", description),

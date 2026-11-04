@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -133,12 +135,12 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
-                Object keyboard = TC.keyboard(List.of(
+                Keyboard keyboard = new Keyboard(List.of(
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
 
                 if (sender instanceof QQCommandSender qq) {
-                    qq.sendMessage(TC.md(errorText), keyboard);
+                    qq.sendMessage(TC.md(errorText).setKeyboard(keyboard));
                 } else {
                     sender.sendMessage(errorText);
                 }
@@ -229,11 +231,11 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
-                Object keyboard = TC.keyboard(List.of(
+                Keyboard keyboard = new Keyboard(List.of(
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
 
-                event.sendMessage(TC.md(errorText), keyboard);
+                event.sendMessage(TC.md(errorText).setKeyboard(keyboard));
                 return;
             }
 
@@ -282,11 +284,11 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
 
             if (client == null || !client.isOpen()) {
                 String errorText = "> 请求失败，请向开发者报告此问题！";
-                Object keyboard = TC.keyboard(List.of(
+                Keyboard keyboard = new Keyboard(List.of(
                         List.of(new Button("c1", "领取新的签到奖励", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND))
                 ));
 
-                event.sendMessage(TC.md(errorText), keyboard);
+                event.sendMessage(TC.md(errorText).setKeyboard(keyboard));
                 return;
             }
 
@@ -546,14 +548,13 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         } else {
                             GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
                                     session.userId,
-                                    TC.md(sb.toString()),
-                                    TC.keyboard(List.of(
+                                    TC.md(sb.toString()).setKeyboard(new Keyboard(List.of(
                                             List.of(
                                                     new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER).setButtonGroupId("1001"),
                                                     new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER).setButtonGroupId("1001"),
                                                     new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setAllowedOpenIds(List.of(session.userId)).setPermissionType(PermissionType.SPECIFIC_USER).setButtonGroupId("1001")
                                             )
-                                    ))
+                                    )))
                             );
                         }
                     } else if (session.platform == Platform.OFFICIAL_C2C) {
@@ -565,14 +566,13 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                             C2CChat.replyMessage(session.userId, RT.message(session.messageId), TC.md(sb.toString()));
                         } else {
                             C2CChat.replyMessage(session.userId, RT.message(session.messageId),
-                                    TC.md(sb.toString()),
-                                    TC.keyboard(List.of(
+                                    TC.md(sb.toString()).setKeyboard(new Keyboard(List.of(
                                             List.of(
                                                     new Button("c0", "奖励 [0]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setButtonGroupId("1001"),
                                                     new Button("c1", "奖励 [1]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setButtonGroupId("1001"),
                                                     new Button("c2", "奖励 [2]", "reward_claim", true, ButtonStyle.BLUE, ButtonType.CALLBACK).setVisitedDisplayText("已领取").setButtonGroupId("1001")
                                             )
-                                    ))
+                                    )))
                             );
                         }
                     }
@@ -607,7 +607,7 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                         log.warn("奖励图片转存失败: {}", dto.errorMessage());
                     }
 
-                    Object keyboard = TC.keyboard(List.of(List.of(
+                    Keyboard keyboard = new Keyboard(List.of(List.of(
                             new Button("c0", "再领取一个", "/cl ", false, ButtonStyle.BLUE, ButtonType.COMMAND)
                     )));
 
@@ -617,20 +617,20 @@ public class HypixelRewardCommand implements CommandExecutor, Listener {
                             if (finalUrl != null) {
                                 GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
                                         session.userId,
-                                        TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
+                                        TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)).setKeyboard(keyboard));
                             } else {
                                 GroupChat.replyMessage(session.groupId, RT.message(session.messageId),
                                         session.userId,
-                                        TC.md(prefix + msg), keyboard);
+                                        TC.md(prefix + msg).setKeyboard(keyboard));
                             }
                         }
                         case OFFICIAL_C2C -> {
                             if (finalUrl != null) {
                                 C2CChat.replyMessage(session.userId, RT.message(session.messageId),
-                                        TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)), keyboard);
+                                        TC.md(prefix + msg + "\n\n" + Markdown.img(finalUrl, 764, 399)).setKeyboard(keyboard));
                             } else {
                                 C2CChat.replyMessage(session.userId, RT.message(session.messageId),
-                                        TC.md(prefix + msg), keyboard);
+                                        TC.md(prefix + msg).setKeyboard(keyboard));
                             }
                         }
                     }

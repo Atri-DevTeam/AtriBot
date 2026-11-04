@@ -27,6 +27,18 @@ public record Ark23(String description, String prompt, List<Item> items) impleme
     }
 
     @Override
+    public List<ArkValue> values() {
+        var entries = items.stream().map(item -> {
+            var fields = new ArrayList<ArkValue>();
+            fields.add(new ArkValue("desc", item.description()));
+            if (item.link() != null && !item.link().isBlank()) fields.add(new ArkValue("link", item.link()));
+            return new ArkValue.Item(List.copyOf(fields));
+        }).toList();
+        return List.of(new ArkValue("#DESC#", description), new ArkValue("#PROMPT#", prompt),
+                new ArkValue("#LIST#", null, entries));
+    }
+
+    @Override
     public List<Map<String, Object>> toObject() {
         List<Map<String, Object>> list = new ArrayList<>(items.size());
         for (Item item : items) {

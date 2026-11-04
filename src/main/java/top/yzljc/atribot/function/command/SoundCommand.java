@@ -4,7 +4,6 @@ import top.yzljc.atricore.core.CoreConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.GroupChat;
 import top.yzljc.atricore.chat.official.C2CChat;
 import top.yzljc.atricore.chat.official.Markdown;
@@ -105,7 +104,7 @@ public final class SoundCommand implements CommandExecutor, AutoCloseable {
                     question.options().stream().map(option -> option.id() + "=" + option.name()).toList());
             int seconds = Math.clamp(Config.getInstance().getSoundAnswerSeconds(), 15, 120);
 
-            String cardId = qq.sendMessage(TC.md(questionText(round)).setKeyboard(answerKeyboard(round, commandPrefix()), OfficialUsers.isUserUnsupportedKeyboard(qq.getUserId())));
+            String cardId = qq.sendMessage(TC.md(questionText(round)).setKeyboard(answerKeyboard(round, commandPrefix())));
 
             if (cardId == null || cardId.isBlank()) throw new IllegalStateException("Question card send failed");
 //            log.info("听声辨物题面已发送: round={}, session={}, cardMsg={}, audioUrl={}",

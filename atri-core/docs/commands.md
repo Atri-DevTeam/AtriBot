@@ -101,6 +101,12 @@ if (commandLine != null) {
 
 `getPlatform()` 在控制台等无平台来源下可能返回 null，业务指令应检查平台类型后再使用特定能力
 
+`QQCommandSender` 发送带按钮的 Markdown 时，通过 `markdown.setKeyboard(keyboard)` 设置键盘，再调用 `sendMessage(markdown)`，不再单独传入键盘参数
+
+::: important 消息操作栏仅私聊
+文本、Markdown 和 ImageComponent 的 `sendMessage` 方法可在末尾追加 ActionButton。私聊发送操作栏，群聊忽略此参数并正常发送正文，具体字段见 [私聊消息操作栏](qq/components/action-button.md)
+:::
+
 ## 权限与事件
 
 业务权限在执行器中通过 `sender.hasPermission(permission)` 检查，也可在 `UserRunCommandEvent` 中统一检查

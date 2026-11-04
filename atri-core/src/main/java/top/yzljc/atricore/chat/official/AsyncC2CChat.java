@@ -1,6 +1,9 @@
 package top.yzljc.atricore.chat.official;
 
+import top.yzljc.atricore.chat.official.button.ActionButton;
+
 import top.yzljc.atricore.AtriProvider;
+
 import java.nio.file.Path;
 
 import top.yzljc.atricore.chat.ImageComponent;
@@ -19,8 +22,7 @@ import java.util.concurrent.CompletableFuture;
  * @Created_at 2026/07/24
  * @Project AtriBot
  * @Package top.yzljc.atricore.chat.official
- * @Description
- * 单聊异步业务层
+ * @Description 单聊异步业务层
  * 封装所有 C2C（单聊）场景下的消息构造与发送逻辑
  * 包括主动消息、被动回复、事件回复以及流式消息
  * 底层 HTTP 传输由 {@link ChatService} 提供
@@ -30,9 +32,9 @@ public final class AsyncC2CChat {
     /**
      * 异步主动发送单聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 用户 openId
+     * @param openId   用户 openId
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID 的 Future，上传或发送失败时结果为 null
      */
     public static CompletableFuture<String> sendMessage(String openId, FileType fileType, Path file) {
@@ -45,10 +47,10 @@ public final class AsyncC2CChat {
     /**
      * 异步回复单聊本地文件，按文件大小自动选择直传或分片上传
      *
-     * @param openId 用户 openId
-     * @param rt 消息或事件回复来源
+     * @param openId   用户 openId
+     * @param rt       消息或事件回复来源
      * @param fileType 图片、视频、语音或文件类型
-     * @param file 本地文件，调用完成前不得修改或删除
+     * @param file     本地文件，调用完成前不得修改或删除
      * @return 消息 ID 的 Future，上传或发送失败时结果为 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, FileType fileType, Path file) {
@@ -59,11 +61,10 @@ public final class AsyncC2CChat {
                         : service().sendPrivateMessageAsync(openId, request));
     }
 
-
     /**
      * 异步撤回单聊消息
      *
-     * @param openId 用户 openId
+     * @param openId    用户 openId
      * @param messageId 消息 ID
      * @return 撤回结果，平台返回成功状态时为 true，请求失败时为 false
      */
@@ -100,7 +101,19 @@ public final class AsyncC2CChat {
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
     public static CompletableFuture<String> wakeupMessage(String openId, String text) {
-        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().text(text));
+        return wakeupMessage(openId, text, null);
+    }
+
+    /**
+     * 异步发送单聊纯文本召回消息，不携带回复来源或引用，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param text         纯文本消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，暂停发送或发送失败返回 null
+     */
+    public static CompletableFuture<String> wakeupMessage(String openId, String text, ActionButton actionButton) {
+        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().text(text), actionButton);
     }
 
     /**
@@ -114,7 +127,9 @@ public final class AsyncC2CChat {
         return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().ark(ark));
     }
 
-    /** 异步发送单聊卡片召回消息，不携带回复来源或引用 */
+    /**
+     * 异步发送单聊卡片召回消息，不携带回复来源或引用
+     */
     public static CompletableFuture<String> wakeupMessage(String openId, Card card) {
         return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().card(null, card));
     }
@@ -131,16 +146,15 @@ public final class AsyncC2CChat {
     }
 
     /**
-     * 异步发送带键盘的单聊 Markdown 召回消息，不携带回复来源或引用
+     * 异步发送单聊 Markdown 召回消息，不携带回复来源或引用，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，暂停发送或发送失败返回 null
      */
-    public static CompletableFuture<String> wakeupMessage(String openId, Markdown markdown, Object keyboard) {
-        return service().sendPrivateWakeupMessageAsync(openId,
-                service().getBodyFactory().markdown(markdown, keyboard));
+    public static CompletableFuture<String> wakeupMessage(String openId, Markdown markdown, ActionButton actionButton) {
+        return service().sendPrivateWakeupMessageAsync(openId, service().getBodyFactory().markdown(markdown), actionButton);
     }
 
     /**
@@ -151,10 +165,22 @@ public final class AsyncC2CChat {
      * @return 消息 ID，暂停发送或发送失败返回 null；普通上传失败沿用文字回退
      */
     public static CompletableFuture<String> wakeupMessage(String openId, ImageComponent image) {
+        return wakeupMessage(openId, image, null);
+    }
+
+    /**
+     * 异步发送单聊图片召回消息，不携带回复来源或引用，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件，支持 URL、Base64 及附带文字
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，暂停发送或发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static CompletableFuture<String> wakeupMessage(String openId, ImageComponent image, ActionButton actionButton) {
         return ThreadManager.supplyAsync(() -> service().getMediaUploader().buildImageRequest(
                         service().privateFileUrl(openId), image.getType(), image.getData(),
                         "单聊图片召回", null, image.getText()))
-                .thenCompose(request -> service().sendPrivateWakeupMessageAsync(openId, request));
+                .thenCompose(request -> service().sendPrivateWakeupMessageAsync(openId, request, actionButton));
     }
 
     /**
@@ -218,7 +244,6 @@ public final class AsyncC2CChat {
                 service().getPrivateStreamHelper().toSnapshots(markdownTexts(markdownDeltas)), true);
     }
 
-
     /**
      * 异步主动发送单聊图片并引用指定消息
      *
@@ -228,27 +253,51 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
      */
     public static CompletableFuture<String> sendMessage(String openId, ImageComponent image, String refIdx) {
+        return sendMessage(openId, image, refIdx, null);
+    }
+
+    /**
+     * 异步主动发送单聊图片并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static CompletableFuture<String> sendMessage(String openId, ImageComponent image, String refIdx, ActionButton actionButton) {
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
                                 service().privateFileUrl(openId), image.getType(), image.getData(),
                                 "单聊主动", null, image.getText(), refIdx))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
+                        : service().sendPrivateMessageAsync(openId, request, actionButton));
     }
 
     /**
-     * 异步主动发送带键盘的单聊 Markdown 并引用指定消息
+     * 异步主动发送单聊 Markdown 并引用指定消息
      *
      * @param openId   用户 openId
      * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String openId, Markdown markdown, Object keyboard, String refIdx) {
-        return service().sendPrivateMessageAsync(openId,
-                service().getBodyFactory().markdown(markdown, keyboard, null, refIdx));
+    public static CompletableFuture<String> sendMessage(String openId, Markdown markdown, String refIdx) {
+        return sendMessage(openId, markdown, refIdx, null);
+    }
+
+    /**
+     * 异步主动发送单聊 Markdown 并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息内容
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> sendMessage(String openId, Markdown markdown, String refIdx, ActionButton actionButton) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().markdown(markdown, null, refIdx), actionButton);
     }
 
     /**
@@ -260,11 +309,24 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
      */
     public static CompletableFuture<String> refMessage(String openId, String refIdx, ImageComponent image) {
-        return sendMessage(openId, image, refIdx);
+        return refMessage(openId, refIdx, image, null);
     }
 
     /**
-     * 异步主动发送单聊 Markdown并引用指定消息
+     * 异步主动发送单聊图片并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null；普通上传失败沿用文字回退
+     */
+    public static CompletableFuture<String> refMessage(String openId, String refIdx, ImageComponent image, ActionButton actionButton) {
+        return sendMessage(openId, image, refIdx, actionButton);
+    }
+
+    /**
+     * 异步主动发送单聊 Markdown 并引用指定消息
      *
      * @param openId   用户 openId
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
@@ -272,22 +334,21 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> refMessage(String openId, String refIdx, Markdown markdown) {
-        return sendMessage(openId, markdown, null, refIdx);
+        return refMessage(openId, refIdx, markdown, null);
     }
 
     /**
-     * 异步主动发送带键盘的单聊 Markdown 并引用指定消息
+     * 异步主动发送单聊 Markdown 并引用指定消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param refIdx   被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
-     * @param markdown Markdown 消息内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不提供被动回复来源
+     * @param markdown     Markdown 消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> refMessage(String openId, String refIdx, Markdown markdown, Object keyboard) {
-        return sendMessage(openId, markdown, keyboard, refIdx);
+    public static CompletableFuture<String> refMessage(String openId, String refIdx, Markdown markdown, ActionButton actionButton) {
+        return sendMessage(openId, markdown, refIdx, actionButton);
     }
-
 
     /**
      * 异步回复单聊 Markdown 消息并引用指定消息
@@ -295,14 +356,26 @@ public final class AsyncC2CChat {
      * @param openId   用户 openId
      * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
      * @param markdown Markdown 回复内容
-     * @param keyboard 键盘按钮对象，无键盘时传入 null
      * @param refIdx   被引用消息的索引 ID，null 表示不引用，不改变回复来源
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown, Object keyboard, String refIdx) {
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown, String refIdx) {
+        return replyMessage(openId, rt, markdown, refIdx, null);
+    }
+
+    /**
+     * 异步回复单聊 Markdown 消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown     Markdown 回复内容
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown, String refIdx, ActionButton actionButton) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendPrivateMessageAsync(openId,
-                service().getBodyFactory().markdown(markdown, keyboard, rt, refIdx));
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().markdown(markdown, rt, refIdx), actionButton);
     }
 
     /**
@@ -315,6 +388,20 @@ public final class AsyncC2CChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, ImageComponent image, String refIdx) {
+        return replyMessage(openId, rt, image, refIdx, null);
+    }
+
+    /**
+     * 异步回复单聊图片消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image        图片组件
+     * @param refIdx       被引用消息的索引 ID，null 表示不引用，不改变回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, ImageComponent image, String refIdx, ActionButton actionButton) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
@@ -322,9 +409,8 @@ public final class AsyncC2CChat {
                                 (rt instanceof RT.Event ? "单聊事件" : "单聊"), rt, image.getText(), refIdx))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
+                        : service().sendPrivateMessageAsync(openId, request, actionButton));
     }
-
 
     private static ChatService service() {
         return AtriProvider.getInstance().getChatService();
@@ -354,7 +440,19 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String openId, String text) {
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().text(text));
+        return sendMessage(openId, text, null);
+    }
+
+    /**
+     * 异步发送单聊纯文本主动消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param text         消息内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> sendMessage(String openId, String text, ActionButton actionButton) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().text(text), actionButton);
     }
 
     /**
@@ -387,19 +485,19 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String openId, Markdown markdown) {
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().markdown(markdown));
+        return sendMessage(openId, markdown, (ActionButton) null);
     }
 
     /**
-     * 异步发送带键盘的单聊 Markdown 主动消息
+     * 异步发送单聊 Markdown 主动消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param markdown Markdown 消息体
-     * @param keyboard 键盘按钮对象
+     * @param openId       用户 openId
+     * @param markdown     Markdown 消息体
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> sendMessage(String openId, Markdown markdown, Object keyboard) {
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().markdown(markdown, keyboard));
+    public static CompletableFuture<String> sendMessage(String openId, Markdown markdown, ActionButton actionButton) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().markdown(markdown), actionButton);
     }
 
     /**
@@ -410,12 +508,24 @@ public final class AsyncC2CChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> sendMessage(String openId, ImageComponent image) {
+        return sendMessage(openId, image, (ActionButton) null);
+    }
+
+    /**
+     * 异步发送单聊图片主动消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static CompletableFuture<String> sendMessage(String openId, ImageComponent image, ActionButton actionButton) {
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
                                 service().privateFileUrl(openId), image.getType(), image.getData(), "单聊主动", null, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
+                        : service().sendPrivateMessageAsync(openId, request, actionButton));
     }
 
     /**
@@ -427,8 +537,21 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, String replyText) {
+        return replyMessage(openId, rt, replyText, (ActionButton) null);
+    }
+
+    /**
+     * 异步回复单聊纯文本消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param replyText    回复内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, String replyText, ActionButton actionButton) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().replyText(rt, replyText));
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().replyText(rt, replyText), actionButton);
     }
 
     /**
@@ -441,8 +564,22 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, String replyText, String refIdx) {
+        return replyMessage(openId, rt, replyText, refIdx, null);
+    }
+
+    /**
+     * 异步回复单聊纯文本消息并引用指定消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param replyText    回复内容
+     * @param refIdx       被引用消息的索引 ID，不改变消息或事件回复来源
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, String replyText, String refIdx, ActionButton actionButton) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().replyTextRef(rt, replyText, refIdx));
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().replyTextRef(rt, replyText, refIdx), actionButton);
     }
 
     /**
@@ -483,7 +620,23 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> refMessage(String openId, String refIdx, String content) {
-        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().textRef(content, refIdx));
+        return refMessage(openId, refIdx, content, null);
+    }
+
+    /**
+     * 异步引用回复单聊纯文本消息，附带消息操作栏
+     *
+     * <p>与被动回复（replyMessage）不同，这里发的是带 message_reference 的主动消息，
+     * 客户端会把被引用的那条渲染成可点的引用块
+     *
+     * @param openId       用户 openId
+     * @param refIdx       被引用消息的索引 ID
+     * @param content      引用回复的文本内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，发送失败返回 null
+     */
+    public static CompletableFuture<String> refMessage(String openId, String refIdx, String content, ActionButton actionButton) {
+        return service().sendPrivateMessageAsync(openId, service().getBodyFactory().textRef(content, refIdx), actionButton);
     }
 
     /**
@@ -495,20 +648,20 @@ public final class AsyncC2CChat {
      * @return 消息 ID，发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown) {
-        return replyMessage(openId, rt, markdown, null, null);
+        return replyMessage(openId, rt, markdown, (ActionButton) null);
     }
 
     /**
-     * 异步回复带键盘的单聊 Markdown 消息
+     * 异步回复单聊 Markdown 消息，附带消息操作栏
      *
-     * @param openId   用户 openId
-     * @param rt       消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
-     * @param markdown Markdown 回复内容
-     * @param keyboard 键盘按钮对象
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param markdown     Markdown 回复内容
+     * @param actionButton 消息操作栏，null 表示不额外设置
      * @return 消息 ID，发送失败返回 null
      */
-    public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown, Object keyboard) {
-        return replyMessage(openId, rt, markdown, keyboard, null);
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, Markdown markdown, ActionButton actionButton) {
+        return replyMessage(openId, rt, markdown, null, actionButton);
     }
 
     /**
@@ -520,13 +673,26 @@ public final class AsyncC2CChat {
      * @return 消息 ID，上传或发送失败返回 null
      */
     public static CompletableFuture<String> replyMessage(String openId, RT rt, ImageComponent image) {
+        return replyMessage(openId, rt, image, (ActionButton) null);
+    }
+
+    /**
+     * 异步回复单聊图片消息，附带消息操作栏
+     *
+     * @param openId       用户 openId
+     * @param rt           消息或事件回复来源，使用 RT.message(id) 或 RT.event(id)
+     * @param image        图片组件
+     * @param actionButton 消息操作栏，null 表示不额外设置
+     * @return 消息 ID，上传或发送失败返回 null
+     */
+    public static CompletableFuture<String> replyMessage(String openId, RT rt, ImageComponent image, ActionButton actionButton) {
         Objects.requireNonNull(rt, "被动消息中msg_id和event_id不能同时为空");
         return ThreadManager.supplyAsync(() ->
                         service().getMediaUploader().buildImageRequest(
                                 service().privateFileUrl(openId), image.getType(), image.getData(), (rt instanceof RT.Event ? "单聊事件" : "单聊"), rt, image.getText()))
                 .thenCompose(request -> request == null
                         ? CompletableFuture.completedFuture(null)
-                        : service().sendPrivateMessageAsync(openId, request));
+                        : service().sendPrivateMessageAsync(openId, request, actionButton));
     }
 
     /**
@@ -616,4 +782,5 @@ public final class AsyncC2CChat {
                 .map(Markdown::getText)
                 .toList();
     }
+
 }

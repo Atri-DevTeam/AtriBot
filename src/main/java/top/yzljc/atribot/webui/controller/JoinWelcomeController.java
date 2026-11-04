@@ -102,7 +102,7 @@ public final class JoinWelcomeController {
         }
         try {
             String text = "@新成员（测试占位） " + config.path("text").asText("");
-            String messageId = GroupChat.sendMessage(groupId, TC.md(text), GroupJoinWelcome.buildWelcomeKeyboard(config));
+            String messageId = GroupChat.sendMessage(groupId, TC.md(text).setKeyboard(GroupJoinWelcome.buildWelcomeKeyboard(config)));
             if (messageId == null || messageId.isBlank()) {
                 ctx.status(502).json(Result.customFailure(targetName + "发送失败：官方接口未返回消息 ID，请检查发送日志和主动消息权限"));
                 return;

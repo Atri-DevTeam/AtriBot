@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.games;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import lombok.extern.slf4j.Slf4j;
 import top.yzljc.atribot.Atri;
 import top.yzljc.atricore.chat.official.GroupChat;
@@ -143,12 +145,12 @@ public class LuckyRouletteGame implements CommandExecutor {
 
         List<Button> row = new ArrayList<>();
         for (int n = MIN_PLAYERS; n <= MAX_PLAYERS; n++) {
-            row.add(new Button("btn_size_" + n, +n + "人局", "/幸运轮盘 start " + n,
+            row.add(new Button("btn_size_" + n, n + "人局", "/幸运轮盘 start " + n,
                     true, ButtonStyle.GRAY, ButtonType.COMMAND));
         }
 
-        Object keyboard = TC.keyboard(List.of(row));
-        sender.sendMessage(TC.md(markdown), keyboard);
+        Keyboard keyboard = new Keyboard(List.of(row));
+        sender.sendMessage(TC.md(markdown).setKeyboard(keyboard));
     }
 
     private void handleStart(String sessionId, QQCommandSender sender, String[] args) {
@@ -319,9 +321,9 @@ public class LuckyRouletteGame implements CommandExecutor {
                 + game.players.size() + "/" + game.maxPlayers + ")", "/幸运轮盘 join",
                 true, ButtonStyle.BLUE, ButtonType.COMMAND)));
 
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = sender.sendMessage(TC.md(sb.toString()), keyboard);
+        String messageId = sender.sendMessage(TC.md(sb.toString()).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = sender.getMessage().getMessageId();
@@ -374,9 +376,9 @@ public class LuckyRouletteGame implements CommandExecutor {
 
         List<List<Button>> layout = new ArrayList<>();
         layout.add(row);
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
         game.lastCmdMsgId = cmdMsgId;
@@ -413,9 +415,9 @@ public class LuckyRouletteGame implements CommandExecutor {
         List<List<Button>> layout = new ArrayList<>();
         layout.add(List.of(new Button("play_again", "再来一局", "/幸运轮盘",
                 true, ButtonStyle.BLUE, ButtonType.COMMAND)));
-        Object keyboard = TC.keyboard(layout);
+        Keyboard keyboard = new Keyboard(layout);
 
-        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()), keyboard);
+        String messageId = GroupChat.replyMessage(sessionId, RT.message(cmdMsgId), TC.md(sb.toString()).setKeyboard(keyboard));
         recallOldMessage(game);
         game.lastMessageId = messageId;
     }

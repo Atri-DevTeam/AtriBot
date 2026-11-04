@@ -143,7 +143,7 @@ public class EmailNotify implements Listener {
                 start++;
             }
             List<MessageSegment> nodes = batch.stream().map(s -> new MessageSegment("node",
-                    Map.<String, Object>of("uin", OWNER, "name", "邮件通知", "content", List.of(s)))).toList();
+                    Map.of("uin", OWNER, "name", "邮件通知", "content", List.of(s)))).toList();
             if (!sent(sender.forward(nodes, event.getSubject(), event.getContentSummary()))) sendSeparately(batch, sender);
         }
     }

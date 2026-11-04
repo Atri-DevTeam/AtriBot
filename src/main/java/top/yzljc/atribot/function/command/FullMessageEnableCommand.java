@@ -1,5 +1,7 @@
 package top.yzljc.atribot.function.command;
 
+import top.yzljc.atricore.chat.official.button.Keyboard;
+
 import top.yzljc.atribot.auth.official.OfficialGroups;
 import top.yzljc.atribot.auth.official.OfficialUsers;
 import top.yzljc.atricore.chat.official.Markdown;
@@ -66,12 +68,12 @@ public class FullMessageEnableCommand implements CommandExecutor, Listener {
         String url = "https://club.vip.qq.com/transfer?open_kuikly_info=%7B%22page_name%22%3A%20%22ai_group_service_agreement_pop_page%22%2C%22groupCode%22%3A" + groupRealId + "%2C%22botUin%22%3A3889798968%2C%22botUid%22%3A%22u_zm4xuLKgDNsyTJvJ4eIzRg%22%2C%22screen%22%3A1%7D";
         Button linkButton = new Button("c1", "群主大大请点击这里授权", url, true, ButtonStyle.BLUE, ButtonType.LINK);
         linkButton.setPermissionType(PermissionType.ADMIN);
-        Object keyboard = TC.keyboard(
+        Keyboard keyboard = new Keyboard(
                 List.of(
                         List.of(linkButton)
                 )
         );
-        qq.sendMessage(md, keyboard);
+        qq.sendMessage(md.setKeyboard(keyboard));
         OfficialGroups.setRealGroupId(qq.getGroupId(), Long.parseLong(groupRealId));
         return true;
     }
