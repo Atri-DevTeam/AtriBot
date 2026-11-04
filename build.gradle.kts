@@ -36,7 +36,7 @@ dependencies {
     api("org.apache.commons:commons-text:1.15.0")
     api("org.jsoup:jsoup:1.23.2")
     api("cn.6tail:lunar:1.7.7")
-    api("ch.qos.logback:logback-classic:1.6.5")
+    api("ch.qos.logback:logback-classic:1.6.6")
     api("com.github.stuxuhai:jpinyin:1.1.8")
     api("org.eclipse.angus:jakarta.mail:2.0.5")
     api("org.jline:jline:4.4.8")
