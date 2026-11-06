@@ -34,7 +34,7 @@ dependencies {
     api("com.mysql:mysql-connector-j:26.10.0")
     api("com.zaxxer:HikariCP:7.1.0")
     api("org.apache.commons:commons-text:1.15.0")
-    api("org.jsoup:jsoup:1.23.2")
+    api("org.jsoup:jsoup:1.24.1")
     api("cn.6tail:lunar:1.7.7")
     api("ch.qos.logback:logback-classic:1.6.6")
     api("com.github.stuxuhai:jpinyin:1.1.8")
